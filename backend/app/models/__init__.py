@@ -8,6 +8,9 @@ from app.models.line import Line
 from app.models.injury import Injury
 from app.models.player_game_stats import PlayerGameStats
 from app.models.model_pick import ModelPick
+from app.models.pick import Pick
+from app.models.player_stat import PlayerStat
+from app.models.historical_performance import HistoricalPerformance
 
 __all__ = [
     "Base",
@@ -20,4 +23,7 @@ __all__ = [
     "Injury",
     "PlayerGameStats",
     "ModelPick",
+    "Pick",
+    "PlayerStat",
+    "HistoricalPerformance",
 ]

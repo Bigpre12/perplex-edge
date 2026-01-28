@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     sched_odds_interval_min: int = 5
     sched_stats_interval_min: int = 15
     sched_model_interval_min: int = 10
+    
+    # Daily refresh configuration
+    daily_refresh_hour: int = 9  # 9 AM EST
+    hourly_check_interval: int = 60  # minutes
 
     @property
     def is_development(self) -> bool:
@@ -51,21 +55,17 @@ class Settings(BaseSettings):
 
     @property
     def database_url_async(self) -> str:
-        """Get database URL with async driver prefix.
-        
-        Railway provides postgresql:// but SQLAlchemy async needs postgresql+psycopg://
-        Handles various input formats: postgresql://, postgres://, postgresql+asyncpg://
-        """
+        """Convert DATABASE_URL to asyncpg format for SQLAlchemy async."""
         url = self.database_url
-        # Handle asyncpg URLs (convert to psycopg)
+        # Already has asyncpg - use as-is
         if "+asyncpg://" in url:
-            url = url.replace("+asyncpg://", "+psycopg://", 1)
-        # Handle plain postgresql:// URLs
-        elif url.startswith("postgresql://") and "+psycopg://" not in url:
-            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
-        # Handle postgres:// URLs (Heroku/Railway shorthand)
-        elif url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql+psycopg://", 1)
+            return url
+        # Convert postgresql:// to postgresql+asyncpg://
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # Convert postgres:// to postgresql+asyncpg://
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
         return url
 
     @property

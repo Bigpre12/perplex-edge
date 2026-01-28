@@ -1,0 +1,14 @@
+{
+  "name": "perplex-engine",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload",
+    "dev:frontend": "cd frontend && pnpm dev",
+    "build:frontend": "cd frontend && pnpm build",
+    "install:all": "cd frontend && pnpm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
