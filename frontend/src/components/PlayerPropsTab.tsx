@@ -148,8 +148,10 @@ export function PlayerPropsTab() {
                   <th className="px-3 py-3 text-right">Model</th>
                   <th className="px-3 py-3 text-right">Implied</th>
                   <th className="px-3 py-3 text-right">EV</th>
-                  <th className="px-3 py-3 text-right">Hit 30d</th>
+                  <th className="px-3 py-3 text-right">Hit 3g</th>
+                  <th className="px-3 py-3 text-right">Hit 5g</th>
                   <th className="px-3 py-3 text-right">Hit 10g</th>
+                  <th className="px-3 py-3 text-right">Hit 30d</th>
                   <th className="px-3 py-3 text-center">Confidence</th>
                   <th className="px-3 py-3 text-left">Start Time</th>
                 </tr>
@@ -205,10 +207,16 @@ export function PlayerPropsTab() {
                       {formatPercent(pick.expected_value)}
                     </td>
                     <td className="px-3 py-3 text-right text-gray-300">
-                      {formatPercent(pick.hit_rate_30d)}
+                      {formatPercent(pick.hit_rate_3g)}
+                    </td>
+                    <td className="px-3 py-3 text-right text-gray-300">
+                      {formatPercent(pick.hit_rate_5g)}
                     </td>
                     <td className="px-3 py-3 text-right text-gray-300">
                       {formatPercent(pick.hit_rate_10g)}
+                    </td>
+                    <td className="px-3 py-3 text-right text-gray-300">
+                      {formatPercent(pick.hit_rate_30d)}
                     </td>
                     <td className="px-3 py-3 text-center">
                       <ConfidenceBadge score={pick.confidence_score} />

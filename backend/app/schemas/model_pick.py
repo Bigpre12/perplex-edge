@@ -16,6 +16,8 @@ class ModelPickBase(BaseModel):
     expected_value: float
     hit_rate_30d: Optional[float] = None
     hit_rate_10g: Optional[float] = None
+    hit_rate_5g: Optional[float] = None
+    hit_rate_3g: Optional[float] = None
     confidence_score: float
     is_active: bool = True
 

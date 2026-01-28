@@ -271,6 +271,8 @@ async def list_player_prop_picks(
             expected_value=pick.expected_value,
             hit_rate_30d=pick.hit_rate_30d,
             hit_rate_10g=pick.hit_rate_10g,
+            hit_rate_5g=pick.hit_rate_5g,
+            hit_rate_3g=pick.hit_rate_3g,
             confidence_score=pick.confidence_score,
             game_id=game.id,
             game_start_time=game.start_time,

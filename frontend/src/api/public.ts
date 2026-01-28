@@ -68,6 +68,8 @@ export interface PlayerPropPick {
   expected_value: number;
   hit_rate_30d: number | null;
   hit_rate_10g: number | null;
+  hit_rate_5g: number | null;
+  hit_rate_3g: number | null;
   confidence_score: number;
   game_id: number;
   game_start_time: string;

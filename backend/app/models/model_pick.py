@@ -48,6 +48,10 @@ class ModelPick(Base):
     # Hit rate for similar picks over last 30 days
     hit_rate_10g: Mapped[Optional[float]] = mapped_column(Float)
     # Hit rate for player over last 10 games (for props)
+    hit_rate_5g: Mapped[Optional[float]] = mapped_column(Float)
+    # Hit rate for player over last 5 games (for props)
+    hit_rate_3g: Mapped[Optional[float]] = mapped_column(Float)
+    # Hit rate for player over last 3 games (for props)
     
     # Confidence and status
     confidence_score: Mapped[float] = mapped_column(Float, nullable=False)

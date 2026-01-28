@@ -99,6 +99,8 @@ class PlayerPropPick(BaseModel):
     expected_value: float
     hit_rate_30d: Optional[float]
     hit_rate_10g: Optional[float]
+    hit_rate_5g: Optional[float]
+    hit_rate_3g: Optional[float]
     confidence_score: float
     
     # Game info

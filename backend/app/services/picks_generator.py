@@ -156,7 +156,7 @@ def _generate_stub_hit_rates(
     player_avg_stats: dict[str, float],
     line_value: float,
     side: str = "over",
-) -> tuple[float, float]:
+) -> tuple[float, float, float, float]:
     """
     Generate synthetic hit rates for stub mode when no PlayerGameStats exist.
     
@@ -169,10 +169,10 @@ def _generate_stub_hit_rates(
         side: 'over' or 'under'
     
     Returns:
-        Tuple of (hit_rate_10g, hit_rate_30d)
+        Tuple of (hit_rate_10g, hit_rate_30d, hit_rate_5g, hit_rate_3g)
     """
     if not player_avg_stats:
-        return (0.5, 0.5)
+        return (0.5, 0.5, 0.5, 0.5)
     
     # Get the first (and typically only) stat value
     avg_value = list(player_avg_stats.values())[0] if player_avg_stats else line_value
@@ -196,8 +196,11 @@ def _generate_stub_hit_rates(
     hit_rate_10g = round(min(0.9, max(0.1, base_hit_rate + variance)), 4)
     # 30d tends to be slightly more stable (closer to expected)
     hit_rate_30d = round(min(0.9, max(0.1, base_hit_rate + variance * 0.5)), 4)
+    # Shorter windows have more variance
+    hit_rate_5g = round(min(0.9, max(0.1, base_hit_rate + variance * 1.2)), 4)
+    hit_rate_3g = round(min(0.9, max(0.1, base_hit_rate + variance * 1.5)), 4)
     
-    return (hit_rate_10g, hit_rate_30d)
+    return (hit_rate_10g, hit_rate_30d, hit_rate_5g, hit_rate_3g)
 
 
 def _generate_stub_player_averages(
@@ -415,6 +418,8 @@ async def _generate_picks_for_game(
         player_avg_stats = None
         hit_rate_10g = None
         hit_rate_30d = None
+        hit_rate_5g = None
+        hit_rate_3g = None
         
         if line.player_id and line.market and line.market.stat_type:
             player_avg_stats = await _get_player_averages(
@@ -428,7 +433,7 @@ async def _generate_picks_for_game(
                 )
             
             if player_avg_stats and line.line_value:
-                # Calculate both hit rates with proper side handling
+                # Calculate all hit rates with proper side handling
                 hit_rate_10g = await _calculate_hit_rate(
                     db, line.player_id, line.market.stat_type, line.line_value,
                     side=line.side or "over"
@@ -437,10 +442,18 @@ async def _generate_picks_for_game(
                     db, line.player_id, line.market.stat_type, line.line_value,
                     side=line.side or "over"
                 )
+                hit_rate_5g = await _calculate_hit_rate_5g(
+                    db, line.player_id, line.market.stat_type, line.line_value,
+                    side=line.side or "over"
+                )
+                hit_rate_3g = await _calculate_hit_rate_3g(
+                    db, line.player_id, line.market.stat_type, line.line_value,
+                    side=line.side or "over"
+                )
                 
                 # Fallback: generate synthetic hit rates in stub mode if no data
                 if use_stubs and hit_rate_10g is None:
-                    hit_rate_10g, hit_rate_30d = _generate_stub_hit_rates(
+                    hit_rate_10g, hit_rate_30d, hit_rate_5g, hit_rate_3g = _generate_stub_hit_rates(
                         player_avg_stats, line.line_value, line.side or "over"
                     )
         
@@ -471,6 +484,8 @@ async def _generate_picks_for_game(
             "confidence": confidence,
             "hit_rate_10g": hit_rate_10g,
             "hit_rate_30d": hit_rate_30d,
+            "hit_rate_5g": hit_rate_5g,
+            "hit_rate_3g": hit_rate_3g,
         }
         
         if group_key not in candidate_picks:
@@ -498,6 +513,8 @@ async def _generate_picks_for_game(
             expected_value=round(best_candidate["ev"], 4),
             hit_rate_30d=best_candidate["hit_rate_30d"],
             hit_rate_10g=best_candidate["hit_rate_10g"],
+            hit_rate_5g=best_candidate["hit_rate_5g"],
+            hit_rate_3g=best_candidate["hit_rate_3g"],
             confidence_score=best_candidate["confidence"],
             is_active=True,
         )
@@ -623,6 +640,56 @@ async def _calculate_hit_rate_30d(
         hits = sum(1 for v in values if v > line_value)
     
     return round(hits / len(values), 4)
+
+
+async def _calculate_hit_rate_5g(
+    db: AsyncSession,
+    player_id: int,
+    stat_type: str,
+    line_value: float,
+    side: str = "over",
+) -> Optional[float]:
+    """
+    Calculate hit rate over last 5 games.
+    
+    Args:
+        db: Database session
+        player_id: Player's internal ID
+        stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
+        line_value: The line to check against
+        side: 'over' or 'under' - determines hit direction
+    
+    Returns:
+        Hit rate as decimal (0-1) or None if no data
+    """
+    return await _calculate_hit_rate(
+        db, player_id, stat_type, line_value, side=side, games_back=5
+    )
+
+
+async def _calculate_hit_rate_3g(
+    db: AsyncSession,
+    player_id: int,
+    stat_type: str,
+    line_value: float,
+    side: str = "over",
+) -> Optional[float]:
+    """
+    Calculate hit rate over last 3 games.
+    
+    Args:
+        db: Database session
+        player_id: Player's internal ID
+        stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
+        line_value: The line to check against
+        side: 'over' or 'under' - determines hit direction
+    
+    Returns:
+        Hit rate as decimal (0-1) or None if no data
+    """
+    return await _calculate_hit_rate(
+        db, player_id, stat_type, line_value, side=side, games_back=3
+    )
 
 
 # =============================================================================
