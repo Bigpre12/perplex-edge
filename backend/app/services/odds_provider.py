@@ -625,90 +625,193 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
         prop_types: Optional[list[str]] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub player props for testing."""
+        """Return realistic stub player props for testing based on game."""
+        
+        # Game 1: Lakers vs Warriors
+        if external_game_id == "e912304a8b234c56d789ef0123456789":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Los Angeles Lakers",
+                "away_team": "Golden State Warriors",
+                "commence_time": "2026-01-28T00:10:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LeBron James", "price": -115, "point": 26.5},
+                                    {"name": "Under", "description": "LeBron James", "price": -105, "point": 26.5},
+                                    {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 28.5},
+                                    {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 28.5},
+                                    {"name": "Over", "description": "Anthony Davis", "price": -120, "point": 24.5},
+                                    {"name": "Under", "description": "Anthony Davis", "price": 100, "point": 24.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 7.5},
+                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 7.5},
+                                    {"name": "Over", "description": "Anthony Davis", "price": -130, "point": 11.5},
+                                    {"name": "Under", "description": "Anthony Davis", "price": 110, "point": 11.5},
+                                    {"name": "Over", "description": "Draymond Green", "price": -105, "point": 6.5},
+                                    {"name": "Under", "description": "Draymond Green", "price": -115, "point": 6.5},
+                                ],
+                            },
+                            {
+                                "key": "player_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LeBron James", "price": -125, "point": 8.5},
+                                    {"name": "Under", "description": "LeBron James", "price": 105, "point": 8.5},
+                                    {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 5.5},
+                                    {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 5.5},
+                                ],
+                            },
+                            {
+                                "key": "player_threes",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 4.5},
+                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 4.5},
+                                    {"name": "Over", "description": "Klay Thompson", "price": -110, "point": 3.5},
+                                    {"name": "Under", "description": "Klay Thompson", "price": -110, "point": 3.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 42.5},
+                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 42.5},
+                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 38.5},
+                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 38.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Game 2: Celtics vs Heat
+        elif external_game_id == "f823415b9c345d67e890fa1234567890":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Boston Celtics",
+                "away_team": "Miami Heat",
+                "commence_time": "2026-01-28T00:40:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jayson Tatum", "price": -115, "point": 27.5},
+                                    {"name": "Under", "description": "Jayson Tatum", "price": -105, "point": 27.5},
+                                    {"name": "Over", "description": "Jimmy Butler", "price": -110, "point": 22.5},
+                                    {"name": "Under", "description": "Jimmy Butler", "price": -110, "point": 22.5},
+                                    {"name": "Over", "description": "Jaylen Brown", "price": -112, "point": 24.5},
+                                    {"name": "Under", "description": "Jaylen Brown", "price": -108, "point": 24.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jayson Tatum", "price": -110, "point": 8.5},
+                                    {"name": "Under", "description": "Jayson Tatum", "price": -110, "point": 8.5},
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -125, "point": 10.5},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": 105, "point": 10.5},
+                                ],
+                            },
+                            {
+                                "key": "player_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jimmy Butler", "price": -115, "point": 5.5},
+                                    {"name": "Under", "description": "Jimmy Butler", "price": -105, "point": 5.5},
+                                    {"name": "Over", "description": "Derrick White", "price": -110, "point": 4.5},
+                                    {"name": "Under", "description": "Derrick White", "price": -110, "point": 4.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jayson Tatum", "price": -108, "point": 42.5},
+                                    {"name": "Under", "description": "Jayson Tatum", "price": -112, "point": 42.5},
+                                    {"name": "Over", "description": "Jimmy Butler", "price": -110, "point": 35.5},
+                                    {"name": "Under", "description": "Jimmy Butler", "price": -110, "point": 35.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Game 3: Suns vs Nuggets
+        elif external_game_id == "a734526c0d456e78f901ab2345678901":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Phoenix Suns",
+                "away_team": "Denver Nuggets",
+                "commence_time": "2026-01-28T02:10:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Kevin Durant", "price": -115, "point": 27.5},
+                                    {"name": "Under", "description": "Kevin Durant", "price": -105, "point": 27.5},
+                                    {"name": "Over", "description": "Nikola Jokic", "price": -120, "point": 26.5},
+                                    {"name": "Under", "description": "Nikola Jokic", "price": 100, "point": 26.5},
+                                    {"name": "Over", "description": "Devin Booker", "price": -110, "point": 25.5},
+                                    {"name": "Under", "description": "Devin Booker", "price": -110, "point": 25.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Nikola Jokic", "price": -130, "point": 12.5},
+                                    {"name": "Under", "description": "Nikola Jokic", "price": 110, "point": 12.5},
+                                    {"name": "Over", "description": "Kevin Durant", "price": -105, "point": 6.5},
+                                    {"name": "Under", "description": "Kevin Durant", "price": -115, "point": 6.5},
+                                ],
+                            },
+                            {
+                                "key": "player_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Nikola Jokic", "price": -115, "point": 9.5},
+                                    {"name": "Under", "description": "Nikola Jokic", "price": -105, "point": 9.5},
+                                    {"name": "Over", "description": "Jamal Murray", "price": -110, "point": 6.5},
+                                    {"name": "Under", "description": "Jamal Murray", "price": -110, "point": 6.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Nikola Jokic", "price": -110, "point": 48.5},
+                                    {"name": "Under", "description": "Nikola Jokic", "price": -110, "point": 48.5},
+                                    {"name": "Over", "description": "Kevin Durant", "price": -108, "point": 40.5},
+                                    {"name": "Under", "description": "Kevin Durant", "price": -112, "point": 40.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Default empty response for unknown games
         return {
             "id": external_game_id,
             "sport_key": sport_key,
-            "home_team": "Los Angeles Lakers",
-            "away_team": "Golden State Warriors",
-            "commence_time": "2026-01-28T00:10:00Z",
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [
-                        {
-                            "key": "player_points",
-                            "outcomes": [
-                                {"name": "Over", "description": "LeBron James", "price": -115, "point": 26.5},
-                                {"name": "Under", "description": "LeBron James", "price": -105, "point": 26.5},
-                                {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 28.5},
-                                {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 28.5},
-                                {"name": "Over", "description": "Anthony Davis", "price": -120, "point": 24.5},
-                                {"name": "Under", "description": "Anthony Davis", "price": 100, "point": 24.5},
-                            ],
-                        },
-                        {
-                            "key": "player_rebounds",
-                            "outcomes": [
-                                {"name": "Over", "description": "LeBron James", "price": -110, "point": 7.5},
-                                {"name": "Under", "description": "LeBron James", "price": -110, "point": 7.5},
-                                {"name": "Over", "description": "Anthony Davis", "price": -130, "point": 11.5},
-                                {"name": "Under", "description": "Anthony Davis", "price": 110, "point": 11.5},
-                                {"name": "Over", "description": "Draymond Green", "price": -105, "point": 6.5},
-                                {"name": "Under", "description": "Draymond Green", "price": -115, "point": 6.5},
-                            ],
-                        },
-                        {
-                            "key": "player_assists",
-                            "outcomes": [
-                                {"name": "Over", "description": "LeBron James", "price": -125, "point": 8.5},
-                                {"name": "Under", "description": "LeBron James", "price": 105, "point": 8.5},
-                                {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 5.5},
-                                {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 5.5},
-                            ],
-                        },
-                        {
-                            "key": "player_threes",
-                            "outcomes": [
-                                {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 4.5},
-                                {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 4.5},
-                                {"name": "Over", "description": "Klay Thompson", "price": -110, "point": 3.5},
-                                {"name": "Under", "description": "Klay Thompson", "price": -110, "point": 3.5},
-                            ],
-                        },
-                        {
-                            "key": "player_points_rebounds_assists",
-                            "outcomes": [
-                                {"name": "Over", "description": "LeBron James", "price": -110, "point": 42.5},
-                                {"name": "Under", "description": "LeBron James", "price": -110, "point": 42.5},
-                                {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 38.5},
-                                {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 38.5},
-                            ],
-                        },
-                    ],
-                },
-                {
-                    "key": "fanduel",
-                    "title": "FanDuel",
-                    "markets": [
-                        {
-                            "key": "player_points",
-                            "outcomes": [
-                                {"name": "Over", "description": "LeBron James", "price": -118, "point": 27.5},
-                                {"name": "Under", "description": "LeBron James", "price": -102, "point": 27.5},
-                                {"name": "Over", "description": "Stephen Curry", "price": -108, "point": 29.5},
-                                {"name": "Under", "description": "Stephen Curry", "price": -112, "point": 29.5},
-                            ],
-                        },
-                        {
-                            "key": "player_rebounds",
-                            "outcomes": [
-                                {"name": "Over", "description": "Anthony Davis", "price": -125, "point": 12.5},
-                                {"name": "Under", "description": "Anthony Davis", "price": 105, "point": 12.5},
-                            ],
-                        },
-                    ],
-                },
-            ],
+            "home_team": "Unknown",
+            "away_team": "Unknown",
+            "commence_time": "2026-01-28T00:00:00Z",
+            "bookmakers": [],
         }
