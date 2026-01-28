@@ -154,15 +154,22 @@ async def daily_refresh_loop(refresh_hour: int = 9):
             # Run the refresh
             logger.info("=== DAILY REFRESH STARTING ===")
             
-            # 1. Check yesterday's game results
+            # 1. Archive old picks (cleanup before refresh)
+            from app.services.data_updater import archive_old_picks
+            session_maker = get_session_maker()
+            async with session_maker() as db:
+                archive_result = await archive_old_picks(db, days_old=7)
+                logger.info(f"Archived old picks: {archive_result}")
+            
+            # 2. Check yesterday's game results
             results_summary = await check_game_results_all()
             logger.info(f"Game results check: {results_summary}")
             
-            # 2. Update historical data
+            # 3. Update historical data
             historical_summary = await update_historical_data()
             logger.info(f"Historical update: {historical_summary}")
             
-            # 3. Refresh all picks for today
+            # 4. Refresh all picks for today
             picks_summary = await refresh_all_picks()
             logger.info(f"Picks refresh: {picks_summary}")
             
