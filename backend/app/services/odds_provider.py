@@ -304,7 +304,7 @@ class XYZOddsProvider(OddsProvider):
             raw_games = self._stub_games_response(sport_key)
         else:
             raw_games = await self._request(f"/sports/{sport_key}/odds", {
-                "regions": "us",
+                "regions": "us,us2",
                 "markets": "h2h",
                 "oddsFormat": "american",
             })
@@ -323,7 +323,7 @@ class XYZOddsProvider(OddsProvider):
             raw_data = await self._request(
                 f"/sports/{sport_key}/events/{external_game_id}/odds",
                 {
-                    "regions": "us",
+                    "regions": "us,us2",
                     "markets": "h2h,spreads,totals",
                     "oddsFormat": "american",
                 },
@@ -360,7 +360,7 @@ class XYZOddsProvider(OddsProvider):
             raw_data = await self._request(
                 f"/sports/{sport_key}/events/{external_game_id}/odds",
                 {
-                    "regions": "us",
+                    "regions": "us,us2",
                     "markets": markets,
                     "oddsFormat": "american",
                 },
@@ -848,6 +848,111 @@ class XYZOddsProvider(OddsProvider):
                             },
                         ],
                     },
+                    # PrizePicks - Texas-legal DFS platform
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 32.5},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 32.5},
+                                    {"name": "Over", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
+                                    {"name": "Under", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
+                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 24.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jarrett Allen", "price": -110, "point": 10.5},
+                                    {"name": "Under", "description": "Jarrett Allen", "price": -110, "point": 10.5},
+                                    {"name": "Over", "description": "Deandre Ayton", "price": -110, "point": 10.5},
+                                    {"name": "Under", "description": "Deandre Ayton", "price": -110, "point": 10.5},
+                                ],
+                            },
+                            {
+                                "key": "player_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 9.5},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 9.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 50.5},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 50.5},
+                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 40.5},
+                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 40.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS platform
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 33.0},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 33.0},
+                                    {"name": "Over", "description": "Donovan Mitchell", "price": -110, "point": 27.0},
+                                    {"name": "Under", "description": "Donovan Mitchell", "price": -110, "point": 27.0},
+                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 25.0},
+                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 25.0},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jarrett Allen", "price": -110, "point": 11.0},
+                                    {"name": "Under", "description": "Jarrett Allen", "price": -110, "point": 11.0},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 51.0},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 51.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -108, "point": 32.5},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -112, "point": 32.5},
+                                    {"name": "Over", "description": "Donovan Mitchell", "price": -108, "point": 26.5},
+                                    {"name": "Under", "description": "Donovan Mitchell", "price": -112, "point": 26.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jarrett Allen", "price": -110, "point": 10.5},
+                                    {"name": "Under", "description": "Jarrett Allen", "price": -110, "point": 10.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 50.5},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 50.5},
+                                ],
+                            },
+                        ],
+                    },
                 ],
             }
         
@@ -946,6 +1051,59 @@ class XYZOddsProvider(OddsProvider):
                             },
                         ],
                     },
+                    # PrizePicks - Texas-legal DFS
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 27.5},
+                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 27.5},
+                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 22.5},
+                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 22.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 40.5},
+                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 40.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 28.0},
+                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 28.0},
+                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 23.0},
+                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 23.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jaylen Brown", "price": -108, "point": 27.5},
+                                    {"name": "Under", "description": "Jaylen Brown", "price": -112, "point": 27.5},
+                                ],
+                            },
+                        ],
+                    },
                 ],
             }
         
@@ -1037,6 +1195,61 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 3.5},
                                     {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 2.5},
                                     {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 2.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # PrizePicks - Texas-legal DFS
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 24.5},
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 21.5},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 21.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 38.5},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 38.5},
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 32.5},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 32.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 25.0},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 25.0},
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 22.0},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 22.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 24.5},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 24.5},
                                 ],
                             },
                         ],
@@ -1140,6 +1353,65 @@ class XYZOddsProvider(OddsProvider):
                             },
                         ],
                     },
+                    # PrizePicks - Texas-legal DFS
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 26.5},
+                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 26.5},
+                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 24.5},
+                                    {"name": "Over", "description": "Scottie Barnes", "price": -110, "point": 22.5},
+                                    {"name": "Under", "description": "Scottie Barnes", "price": -110, "point": 22.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 36.5},
+                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 36.5},
+                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 42.5},
+                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 42.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 27.0},
+                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 27.0},
+                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 25.0},
+                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 25.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jalen Brunson", "price": -108, "point": 26.5},
+                                    {"name": "Under", "description": "Jalen Brunson", "price": -112, "point": 26.5},
+                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -108, "point": 24.5},
+                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -112, "point": 24.5},
+                                ],
+                            },
+                        ],
+                    },
                 ],
             }
         
@@ -1231,6 +1503,70 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 3.5},
                                     {"name": "Over", "description": "Julius Randle", "price": -108, "point": 2.5},
                                     {"name": "Under", "description": "Julius Randle", "price": -112, "point": 2.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # PrizePicks - Texas-legal DFS
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 28.5},
+                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 28.5},
+                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 21.5},
+                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 21.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Rudy Gobert", "price": -110, "point": 11.5},
+                                    {"name": "Under", "description": "Rudy Gobert", "price": -110, "point": 11.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 42.5},
+                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 42.5},
+                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 36.5},
+                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 36.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 29.0},
+                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 29.0},
+                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 22.0},
+                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 22.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Anthony Edwards", "price": -108, "point": 28.5},
+                                    {"name": "Under", "description": "Anthony Edwards", "price": -112, "point": 28.5},
+                                    {"name": "Over", "description": "Julius Randle", "price": -108, "point": 21.5},
+                                    {"name": "Under", "description": "Julius Randle", "price": -112, "point": 21.5},
                                 ],
                             },
                         ],
@@ -1346,6 +1682,59 @@ class XYZOddsProvider(OddsProvider):
                             },
                         ],
                     },
+                    # PrizePicks - Texas-legal DFS
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 18.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 18.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 36.5},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 36.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 25.0},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 25.0},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 19.0},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 19.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -108, "point": 24.5},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -112, "point": 24.5},
+                                ],
+                            },
+                        ],
+                    },
                 ],
             }
         
@@ -1453,6 +1842,65 @@ class XYZOddsProvider(OddsProvider):
                             },
                         ],
                     },
+                    # PrizePicks - Texas-legal DFS
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Pascal Siakam", "price": -110, "point": 22.5},
+                                    {"name": "Under", "description": "Pascal Siakam", "price": -110, "point": 22.5},
+                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 18.5},
+                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 18.5},
+                                    {"name": "Over", "description": "Coby White", "price": -110, "point": 19.5},
+                                    {"name": "Under", "description": "Coby White", "price": -110, "point": 19.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Pascal Siakam", "price": -110, "point": 36.5},
+                                    {"name": "Under", "description": "Pascal Siakam", "price": -110, "point": 36.5},
+                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 32.5},
+                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 32.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Pascal Siakam", "price": -110, "point": 23.0},
+                                    {"name": "Under", "description": "Pascal Siakam", "price": -110, "point": 23.0},
+                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 19.0},
+                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 19.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Pascal Siakam", "price": -108, "point": 22.5},
+                                    {"name": "Under", "description": "Pascal Siakam", "price": -112, "point": 22.5},
+                                    {"name": "Over", "description": "Coby White", "price": -108, "point": 19.5},
+                                    {"name": "Under", "description": "Coby White", "price": -112, "point": 19.5},
+                                ],
+                            },
+                        ],
+                    },
                 ],
             }
         
@@ -1555,6 +2003,65 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 3.5},
                                     {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 2.5},
                                     {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 2.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # PrizePicks - Texas-legal DFS
+                    {
+                        "key": "prizepicks",
+                        "title": "PrizePicks",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 24.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 24.5},
+                                    {"name": "Over", "description": "Brandon Miller", "price": -110, "point": 18.5},
+                                    {"name": "Under", "description": "Brandon Miller", "price": -110, "point": 18.5},
+                                ],
+                            },
+                            {
+                                "key": "player_points_rebounds_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 40.5},
+                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 40.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 36.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 36.5},
+                                ],
+                            },
+                        ],
+                    },
+                    # Underdog Fantasy - Texas-legal DFS
+                    {
+                        "key": "underdog",
+                        "title": "Underdog Fantasy",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 25.0},
+                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 25.0},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 25.0},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 25.0},
+                                ],
+                            },
+                        ],
+                    },
+                    # Fliff - Texas-legal social sportsbook
+                    {
+                        "key": "fliff",
+                        "title": "Fliff",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "LaMelo Ball", "price": -108, "point": 24.5},
+                                    {"name": "Under", "description": "LaMelo Ball", "price": -112, "point": 24.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 24.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 24.5},
                                 ],
                             },
                         ],
