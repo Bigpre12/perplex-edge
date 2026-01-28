@@ -738,11 +738,12 @@ async def _sync_player_props(
                 team_id=team_id,
             )
             
-            # Update player's team_id if it was null but we now know the team
-            if player.team_id is None and team_id is not None:
+            # Update player's team_id if it changed or was null
+            if team_id is not None and player.team_id != team_id:
+                old_team_id = player.team_id
                 player.team_id = team_id
                 await db.flush()
-                logger.info(f"Updated player {prop.player_name} team to {team_id}")
+                logger.info(f"Updated player {prop.player_name} team from {old_team_id} to {team_id}")
             
             # Get or create prop market
             market_key = f"player_prop_{prop.stat_type}"
