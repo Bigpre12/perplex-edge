@@ -949,7 +949,8 @@ class XYZOddsProvider(OddsProvider):
                 ],
             }
         
-        # Game: Magic @ Heat (Bane/Banchero Magic vs Bam/Herro/Wiggins Heat)
+        # Game: Magic @ Heat (Bane/Banchero Magic vs Bam/Wiggins Heat)
+        # Note: Tyler Herro (OUT-Toe/Rib), Franz Wagner (DAY_TO_DAY)
         elif external_game_id == "game_orl_mia_20260128":
             return {
                 "id": external_game_id,
@@ -967,12 +968,10 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Paolo Banchero", "price": -115, "point": 24.5},
                                     {"name": "Under", "description": "Paolo Banchero", "price": -105, "point": 24.5},
-                                    {"name": "Over", "description": "Tyler Herro", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "Tyler Herro", "price": -110, "point": 22.5},
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 21.5},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 21.5},
                                     {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 20.5},
                                     {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 20.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 17.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 17.5},
                                 ],
                             },
                             {
@@ -980,8 +979,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Bam Adebayo", "price": -125, "point": 10.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": 105, "point": 10.5},
-                                    {"name": "Over", "description": "Franz Wagner", "price": -110, "point": 5.5},
-                                    {"name": "Under", "description": "Franz Wagner", "price": -110, "point": 5.5},
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 7.5},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 7.5},
                                 ],
                             },
                             # Combination props
@@ -992,8 +991,6 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 38.5},
                                     {"name": "Over", "description": "Bam Adebayo", "price": -115, "point": 32.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": -105, "point": 32.5},
-                                    {"name": "Over", "description": "Tyler Herro", "price": -108, "point": 32.5},
-                                    {"name": "Under", "description": "Tyler Herro", "price": -112, "point": 32.5},
                                 ],
                             },
                             {
@@ -1008,10 +1005,10 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Tyler Herro", "price": -110, "point": 28.5},
-                                    {"name": "Under", "description": "Tyler Herro", "price": -110, "point": 28.5},
                                     {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 26.5},
                                     {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 26.5},
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 26.5},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 26.5},
                                 ],
                             },
                             # Defensive/misc props
@@ -1029,17 +1026,17 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Bam Adebayo", "price": -120, "point": 1.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": 100, "point": 1.5},
-                                    {"name": "Over", "description": "Franz Wagner", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Franz Wagner", "price": -110, "point": 0.5},
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 0.5},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 0.5},
                                 ],
                             },
                             {
                                 "key": "player_turnovers",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Tyler Herro", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Tyler Herro", "price": -110, "point": 2.5},
                                     {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 3.5},
                                     {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 3.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 2.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 2.5},
                                 ],
                             },
                         ],
@@ -1048,6 +1045,7 @@ class XYZOddsProvider(OddsProvider):
             }
         
         # Game: Knicks @ Raptors (KAT/Brunson/Bridges Knicks vs Barnes/Ingram Raptors)
+        # Note: Jakob Poeltl (OUT-Back Indefinite)
         elif external_game_id == "game_nyk_tor_20260128":
             return {
                 "id": external_game_id,
@@ -1078,8 +1076,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Karl-Anthony Towns", "price": -120, "point": 11.5},
                                     {"name": "Under", "description": "Karl-Anthony Towns", "price": 100, "point": 11.5},
-                                    {"name": "Over", "description": "Jakob Poeltl", "price": -115, "point": 9.5},
-                                    {"name": "Under", "description": "Jakob Poeltl", "price": -105, "point": 9.5},
+                                    {"name": "Over", "description": "Scottie Barnes", "price": -115, "point": 7.5},
+                                    {"name": "Under", "description": "Scottie Barnes", "price": -105, "point": 7.5},
                                 ],
                             },
                             # Combination props
@@ -1127,8 +1125,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Karl-Anthony Towns", "price": -115, "point": 1.5},
                                     {"name": "Under", "description": "Karl-Anthony Towns", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Jakob Poeltl", "price": -120, "point": 1.5},
-                                    {"name": "Under", "description": "Jakob Poeltl", "price": 100, "point": 1.5},
+                                    {"name": "Over", "description": "Scottie Barnes", "price": -110, "point": 0.5},
+                                    {"name": "Under", "description": "Scottie Barnes", "price": -110, "point": 0.5},
                                 ],
                             },
                             {
@@ -1145,7 +1143,8 @@ class XYZOddsProvider(OddsProvider):
                 ],
             }
         
-        # Game: Timberwolves @ Mavericks (Edwards/Randle Wolves vs AD/Klay Mavs)
+        # Game: Timberwolves @ Mavericks (Edwards/Randle/Gobert Wolves vs depleted Mavs)
+        # Note: Anthony Davis (OUT-Hand), Kyrie Irving (OUT-Knee), Klay Thompson (DAY_TO_DAY)
         elif external_game_id == "game_min_dal_20260128":
             return {
                 "id": external_game_id,
@@ -1163,23 +1162,21 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Anthony Edwards", "price": -115, "point": 28.5},
                                     {"name": "Under", "description": "Anthony Edwards", "price": -105, "point": 28.5},
-                                    {"name": "Over", "description": "Anthony Davis", "price": -120, "point": 25.5},
-                                    {"name": "Under", "description": "Anthony Davis", "price": 100, "point": 25.5},
                                     {"name": "Over", "description": "Julius Randle", "price": -110, "point": 21.5},
                                     {"name": "Under", "description": "Julius Randle", "price": -110, "point": 21.5},
-                                    {"name": "Over", "description": "Klay Thompson", "price": -108, "point": 14.5},
-                                    {"name": "Under", "description": "Klay Thompson", "price": -112, "point": 14.5},
+                                    {"name": "Over", "description": "P.J. Washington", "price": -108, "point": 16.5},
+                                    {"name": "Under", "description": "P.J. Washington", "price": -112, "point": 16.5},
                                 ],
                             },
                             {
                                 "key": "player_rebounds",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Anthony Davis", "price": -130, "point": 11.5},
-                                    {"name": "Under", "description": "Anthony Davis", "price": 110, "point": 11.5},
                                     {"name": "Over", "description": "Rudy Gobert", "price": -125, "point": 11.5},
                                     {"name": "Under", "description": "Rudy Gobert", "price": 105, "point": 11.5},
                                     {"name": "Over", "description": "Julius Randle", "price": -110, "point": 8.5},
                                     {"name": "Under", "description": "Julius Randle", "price": -110, "point": 8.5},
+                                    {"name": "Over", "description": "P.J. Washington", "price": -108, "point": 6.5},
+                                    {"name": "Under", "description": "P.J. Washington", "price": -112, "point": 6.5},
                                 ],
                             },
                             # Combination props
@@ -1188,8 +1185,6 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 42.5},
                                     {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 42.5},
-                                    {"name": "Over", "description": "Anthony Davis", "price": -115, "point": 44.5},
-                                    {"name": "Under", "description": "Anthony Davis", "price": -105, "point": 44.5},
                                     {"name": "Over", "description": "Julius Randle", "price": -108, "point": 36.5},
                                     {"name": "Under", "description": "Julius Randle", "price": -112, "point": 36.5},
                                 ],
@@ -1197,10 +1192,10 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points_rebounds",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Anthony Davis", "price": -115, "point": 37.5},
-                                    {"name": "Under", "description": "Anthony Davis", "price": -105, "point": 37.5},
                                     {"name": "Over", "description": "Julius Randle", "price": -110, "point": 30.5},
                                     {"name": "Under", "description": "Julius Randle", "price": -110, "point": 30.5},
+                                    {"name": "Over", "description": "P.J. Washington", "price": -108, "point": 23.5},
+                                    {"name": "Under", "description": "P.J. Washington", "price": -112, "point": 23.5},
                                 ],
                             },
                             {
@@ -1208,8 +1203,6 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 34.5},
                                     {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 34.5},
-                                    {"name": "Over", "description": "Klay Thompson", "price": -108, "point": 18.5},
-                                    {"name": "Under", "description": "Klay Thompson", "price": -112, "point": 18.5},
                                 ],
                             },
                             # Defensive/misc props
@@ -1218,17 +1211,17 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Anthony Edwards", "price": -115, "point": 1.5},
                                     {"name": "Under", "description": "Anthony Edwards", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Anthony Davis", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "Anthony Davis", "price": -110, "point": 1.5},
+                                    {"name": "Over", "description": "P.J. Washington", "price": -110, "point": 0.5},
+                                    {"name": "Under", "description": "P.J. Washington", "price": -110, "point": 0.5},
                                 ],
                             },
                             {
                                 "key": "player_blocks",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Anthony Davis", "price": -115, "point": 2.5},
-                                    {"name": "Under", "description": "Anthony Davis", "price": -105, "point": 2.5},
                                     {"name": "Over", "description": "Rudy Gobert", "price": -120, "point": 2.5},
                                     {"name": "Under", "description": "Rudy Gobert", "price": 100, "point": 2.5},
+                                    {"name": "Over", "description": "P.J. Washington", "price": -105, "point": 0.5},
+                                    {"name": "Under", "description": "P.J. Washington", "price": -115, "point": 0.5},
                                 ],
                             },
                             {
@@ -1245,7 +1238,8 @@ class XYZOddsProvider(OddsProvider):
                 ],
             }
         
-        # Game: Warriors @ Jazz (Curry/Butler Warriors vs Markkanen Jazz)
+        # Game: Warriors @ Jazz (depleted Warriors vs Markkanen Jazz)
+        # Note: Jimmy Butler (OUT-ACL Season), Stephen Curry (DAY_TO_DAY), Draymond Green (DAY_TO_DAY)
         elif external_game_id == "game_gsw_uta_20260128":
             return {
                 "id": external_game_id,
@@ -1261,12 +1255,12 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 27.5},
                                     {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
                                     {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
-                                    {"name": "Over", "description": "Jimmy Butler", "price": -108, "point": 21.5},
-                                    {"name": "Under", "description": "Jimmy Butler", "price": -112, "point": 21.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -115, "point": 18.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -105, "point": 18.5},
+                                    {"name": "Over", "description": "Collin Sexton", "price": -108, "point": 17.5},
+                                    {"name": "Under", "description": "Collin Sexton", "price": -112, "point": 17.5},
                                 ],
                             },
                             {
@@ -1276,36 +1270,34 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Jusuf Nurkic", "price": -105, "point": 9.5},
                                     {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 7.5},
                                     {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 7.5},
-                                    {"name": "Over", "description": "Draymond Green", "price": -105, "point": 6.5},
-                                    {"name": "Under", "description": "Draymond Green", "price": -115, "point": 6.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -105, "point": 4.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -115, "point": 4.5},
                                 ],
                             },
                             {
                                 "key": "player_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 5.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 5.5},
+                                    {"name": "Over", "description": "Collin Sexton", "price": -115, "point": 4.5},
+                                    {"name": "Under", "description": "Collin Sexton", "price": -105, "point": 4.5},
                                 ],
                             },
                             {
                                 "key": "player_threes",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 4.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 4.5},
                                     {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 2.5},
                                     {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 2.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -108, "point": 1.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -112, "point": 1.5},
                                 ],
                             },
                             # Combination props
                             {
                                 "key": "player_points_rebounds_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 38.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 38.5},
                                     {"name": "Over", "description": "Lauri Markkanen", "price": -115, "point": 36.5},
                                     {"name": "Under", "description": "Lauri Markkanen", "price": -105, "point": 36.5},
-                                    {"name": "Over", "description": "Jimmy Butler", "price": -108, "point": 34.5},
-                                    {"name": "Under", "description": "Jimmy Butler", "price": -112, "point": 34.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 26.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 26.5},
                                 ],
                             },
                             {
@@ -1313,47 +1305,43 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 32.5},
                                     {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 32.5},
-                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 32.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 32.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -108, "point": 23.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -112, "point": 23.5},
                                 ],
                             },
                             {
                                 "key": "player_points_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 33.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 33.5},
-                                    {"name": "Over", "description": "Jimmy Butler", "price": -110, "point": 28.5},
-                                    {"name": "Under", "description": "Jimmy Butler", "price": -110, "point": 28.5},
+                                    {"name": "Over", "description": "Collin Sexton", "price": -115, "point": 22.5},
+                                    {"name": "Under", "description": "Collin Sexton", "price": -105, "point": 22.5},
                                 ],
                             },
                             # Defensive/misc props
                             {
                                 "key": "player_steals",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 1.5},
-                                    {"name": "Over", "description": "Draymond Green", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Draymond Green", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Jimmy Butler", "price": -108, "point": 1.5},
-                                    {"name": "Under", "description": "Jimmy Butler", "price": -112, "point": 1.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 0.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 0.5},
+                                    {"name": "Over", "description": "Collin Sexton", "price": -115, "point": 0.5},
+                                    {"name": "Under", "description": "Collin Sexton", "price": -105, "point": 0.5},
                                 ],
                             },
                             {
                                 "key": "player_blocks",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Draymond Green", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Draymond Green", "price": -105, "point": 1.5},
                                     {"name": "Over", "description": "Jusuf Nurkic", "price": -110, "point": 0.5},
                                     {"name": "Under", "description": "Jusuf Nurkic", "price": -110, "point": 0.5},
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -115, "point": 0.5},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -105, "point": 0.5},
                                 ],
                             },
                             {
                                 "key": "player_turnovers",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 3.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 3.5},
                                     {"name": "Over", "description": "Lauri Markkanen", "price": -108, "point": 2.5},
                                     {"name": "Under", "description": "Lauri Markkanen", "price": -112, "point": 2.5},
+                                    {"name": "Over", "description": "Collin Sexton", "price": -110, "point": 2.5},
+                                    {"name": "Under", "description": "Collin Sexton", "price": -110, "point": 2.5},
                                 ],
                             },
                         ],
@@ -1468,7 +1456,8 @@ class XYZOddsProvider(OddsProvider):
                 ],
             }
         
-        # Game: Hornets @ Grizzlies (LaMelo/Miller Hornets vs Ja/JJJ Grizzlies)
+        # Game: Hornets @ Grizzlies (LaMelo/Miller Hornets vs JJJ/depleted Grizzlies)
+        # Note: Ja Morant (OUT-Elbow), Zach Edey (OUT-Ankle), Brandon Clarke (OUT-Calf)
         elif external_game_id == "game_cha_mem_20260128":
             return {
                 "id": external_game_id,
@@ -1486,12 +1475,12 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 24.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 24.5},
-                                    {"name": "Over", "description": "Ja Morant", "price": -110, "point": 23.5},
-                                    {"name": "Under", "description": "Ja Morant", "price": -110, "point": 23.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 22.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 22.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 24.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 24.5},
                                     {"name": "Over", "description": "Brandon Miller", "price": -110, "point": 18.5},
                                     {"name": "Under", "description": "Brandon Miller", "price": -110, "point": 18.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 20.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 20.5},
                                 ],
                             },
                             {
@@ -1499,8 +1488,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -120, "point": 8.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": 100, "point": 8.5},
-                                    {"name": "Over", "description": "Ja Morant", "price": -115, "point": 7.5},
-                                    {"name": "Under", "description": "Ja Morant", "price": -105, "point": 7.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 5.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 5.5},
                                 ],
                             },
                             # Combination props
@@ -1509,17 +1498,15 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 40.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 40.5},
-                                    {"name": "Over", "description": "Ja Morant", "price": -115, "point": 38.5},
-                                    {"name": "Under", "description": "Ja Morant", "price": -105, "point": 38.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 32.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 32.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 36.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 36.5},
                                 ],
                             },
                             {
                                 "key": "player_points_rebounds",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 28.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 28.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 30.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 30.5},
                                     {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 31.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 31.5},
                                 ],
@@ -1529,8 +1516,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 33.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 33.5},
-                                    {"name": "Over", "description": "Ja Morant", "price": -110, "point": 31.5},
-                                    {"name": "Under", "description": "Ja Morant", "price": -110, "point": 31.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 26.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 26.5},
                                 ],
                             },
                             {
@@ -1538,8 +1525,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 15.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 15.5},
-                                    {"name": "Over", "description": "Ja Morant", "price": -108, "point": 14.5},
-                                    {"name": "Under", "description": "Ja Morant", "price": -112, "point": 14.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 9.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 9.5},
                                 ],
                             },
                             # Defensive/misc props
@@ -1548,8 +1535,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 1.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Ja Morant", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "Ja Morant", "price": -110, "point": 1.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 1.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 1.5},
                                 ],
                             },
                             {
@@ -1566,8 +1553,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 3.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 3.5},
-                                    {"name": "Over", "description": "Ja Morant", "price": -108, "point": 3.5},
-                                    {"name": "Under", "description": "Ja Morant", "price": -112, "point": 3.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 2.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 2.5},
                                 ],
                             },
                         ],

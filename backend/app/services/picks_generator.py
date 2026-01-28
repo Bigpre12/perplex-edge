@@ -394,13 +394,13 @@ async def _generate_picks_for_game(
             continue
         evaluated_keys.add(pick_key)
         
-        # Skip injured players (OUT or DOUBTFUL)
+        # Skip injured players (OUT, DOUBTFUL, GTD, or DAY_TO_DAY)
         if line.player_id:
             injury_result = await db.execute(
                 select(Injury).where(
                     and_(
                         Injury.player_id == line.player_id,
-                        Injury.status.in_(["OUT", "DOUBTFUL"]),
+                        Injury.status.in_(["OUT", "DOUBTFUL", "GTD", "DAY_TO_DAY"]),
                     )
                 )
             )
