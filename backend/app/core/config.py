@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # Environment
     environment: str = "development"
+    port: int = 8000
 
     # Database
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/perplex"
@@ -31,9 +32,11 @@ class Settings(BaseSettings):
 
     # Frontend URL (for CORS)
     frontend_url: str = "http://localhost:5173"
+    # Additional CORS origins (comma-separated)
+    cors_origins: str = ""
 
-    # Scheduler
-    scheduler_enabled: bool = True
+    # Scheduler (disabled by default - enable once DB is confirmed working)
+    scheduler_enabled: bool = False
     sched_odds_interval_min: int = 5
     sched_stats_interval_min: int = 15
     sched_model_interval_min: int = 10
@@ -45,6 +48,38 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
+
+    @property
+    def database_url_async(self) -> str:
+        """Get database URL with async driver prefix.
+        
+        Railway provides postgresql:// but SQLAlchemy async needs postgresql+psycopg://
+        Handles various input formats: postgresql://, postgres://, postgresql+asyncpg://
+        """
+        url = self.database_url
+        # Handle asyncpg URLs (convert to psycopg)
+        if "+asyncpg://" in url:
+            url = url.replace("+asyncpg://", "+psycopg://", 1)
+        # Handle plain postgresql:// URLs
+        elif url.startswith("postgresql://") and "+psycopg://" not in url:
+            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        # Handle postgres:// URLs (Heroku/Railway shorthand)
+        elif url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+psycopg://", 1)
+        return url
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        """Get list of allowed CORS origins."""
+        origins = ["http://localhost:5173"]
+        if self.frontend_url and self.frontend_url not in origins:
+            origins.append(self.frontend_url)
+        if self.cors_origins:
+            for origin in self.cors_origins.split(","):
+                origin = origin.strip()
+                if origin and origin not in origins:
+                    origins.append(origin)
+        return origins
 
 
 @lru_cache

@@ -31,12 +31,22 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
     logger.info("Starting Perplex Engine...")
+    logger.info(f"Environment: {settings.environment}")
+    logger.info(f"Scheduler enabled: {settings.scheduler_enabled}")
+    
+    # Log masked database URL for debugging
+    db_url = settings.database_url_async
+    if "@" in db_url:
+        masked_url = db_url.split("@")[0].rsplit(":", 1)[0] + ":***@" + db_url.split("@")[1]
+    else:
+        masked_url = "invalid-url-format"
+    logger.info(f"Database URL: {masked_url}")
     
     try:
         await init_db()
         logger.info("Database connected successfully")
     except Exception as e:
-        logger.warning(f"Database connection failed: {e}")
+        logger.error(f"Database connection failed: {e}")
         logger.warning("App will start without database - some features unavailable")
     
     # Start background tasks if scheduler is enabled
@@ -67,15 +77,15 @@ app = FastAPI(
     title="Perplex Engine",
     description="Sports betting analytics platform",
     version="0.1.0",
-    docs_url="/docs" if settings.is_development else None,
-    redoc_url="/redoc" if settings.is_development else None,
+    docs_url="/docs",  # Always enable for debugging
+    redoc_url="/redoc",
     lifespan=lifespan,
 )
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url, "http://localhost:5173"],
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -88,11 +98,31 @@ app.include_router(api_router, prefix="/api")
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
+    # Check database connectivity
+    db_status = "unknown"
+    try:
+        from sqlalchemy import text
+        from app.core.database import get_engine
+        engine = get_engine()
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)[:100]}"
+    
     return {
         "status": "healthy",
         "environment": settings.environment,
         "version": "0.1.0",
+        "database": db_status,
+        "scheduler_enabled": settings.scheduler_enabled,
     }
+
+
+@app.get("/ping")
+async def ping():
+    """Simple ping endpoint - no dependencies."""
+    return {"ping": "pong"}
 
 
 @app.get("/")
@@ -100,5 +130,7 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Perplex Engine API",
-        "docs": "/docs" if settings.is_development else "disabled",
+        "docs": "/docs",
+        "health": "/health",
+        "ping": "/ping",
     }
