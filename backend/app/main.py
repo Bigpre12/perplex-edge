@@ -24,6 +24,7 @@ from app.scheduler import (
     get_scheduler_status,
 )
 from app.api.admin import router as admin_router
+from app.api.public import router as public_router
 
 # Configure logging
 logging.basicConfig(
@@ -111,8 +112,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include admin router
+# Include routers
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
+app.include_router(public_router, prefix="/api", tags=["public"])
 
 
 # =============================================================================
