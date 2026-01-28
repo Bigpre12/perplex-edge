@@ -382,20 +382,12 @@ async def _generate_picks_for_game(
     )
     lines = list(result.scalars().all())
     
-    # Group lines by market/player to avoid duplicate picks
-    evaluated_keys = set()
+    # Cache for injured players to avoid repeated queries
+    injured_player_ids = set()
     
+    # First pass: identify all injured players
     for line in lines:
-        stats["lines_evaluated"] += 1
-        
-        # Create unique key to avoid duplicates
-        pick_key = (game.id, line.market_id, line.player_id, line.side)
-        if pick_key in evaluated_keys:
-            continue
-        evaluated_keys.add(pick_key)
-        
-        # Skip injured players (OUT, DOUBTFUL, GTD, or DAY_TO_DAY)
-        if line.player_id:
+        if line.player_id and line.player_id not in injured_player_ids:
             injury_result = await db.execute(
                 select(Injury).where(
                     and_(
@@ -404,10 +396,20 @@ async def _generate_picks_for_game(
                     )
                 )
             )
-            injury = injury_result.scalar_one_or_none()
-            if injury:
-                logger.debug(f"Skipping injured player {line.player_id}: {injury.status}")
-                continue
+            if injury_result.scalar_one_or_none():
+                injured_player_ids.add(line.player_id)
+    
+    # Group lines by player/market (NOT including side) to find best pick per prop
+    # Key: (market_id, player_id, sportsbook) -> list of candidate picks
+    candidate_picks: dict[tuple, list[dict]] = {}
+    
+    for line in lines:
+        stats["lines_evaluated"] += 1
+        
+        # Skip injured players
+        if line.player_id and line.player_id in injured_player_ids:
+            logger.debug(f"Skipping injured player {line.player_id}")
+            continue
         
         # Get player stats for props
         player_avg_stats = None
@@ -458,6 +460,30 @@ async def _generate_picks_for_game(
         if ev < min_ev or confidence < min_confidence:
             continue
         
+        # Group by market/player/sportsbook (exclude side) - we'll pick best side later
+        group_key = (line.market_id, line.player_id, line.sportsbook)
+        
+        candidate = {
+            "line": line,
+            "model_prob": model_prob,
+            "implied_prob": implied_prob,
+            "ev": ev,
+            "confidence": confidence,
+            "hit_rate_10g": hit_rate_10g,
+            "hit_rate_30d": hit_rate_30d,
+        }
+        
+        if group_key not in candidate_picks:
+            candidate_picks[group_key] = []
+        candidate_picks[group_key].append(candidate)
+    
+    # Second pass: select BEST pick (highest EV) for each player/market/sportsbook
+    # This prevents contradicting picks (both over AND under for same prop)
+    for group_key, candidates in candidate_picks.items():
+        # Sort by EV descending and pick the best one
+        best_candidate = max(candidates, key=lambda c: c["ev"])
+        line = best_candidate["line"]
+        
         # Create pick
         pick = ModelPick(
             sport_id=sport.id,
@@ -467,14 +493,17 @@ async def _generate_picks_for_game(
             side=line.side,
             line_value=line.line_value,
             odds=line.odds,
-            model_probability=model_prob,
-            implied_probability=implied_prob,
-            expected_value=round(ev, 4),
-            hit_rate_30d=hit_rate_30d,
-            hit_rate_10g=hit_rate_10g,
-            confidence_score=confidence,
+            model_probability=best_candidate["model_prob"],
+            implied_probability=best_candidate["implied_prob"],
+            expected_value=round(best_candidate["ev"], 4),
+            hit_rate_30d=best_candidate["hit_rate_30d"],
+            hit_rate_10g=best_candidate["hit_rate_10g"],
+            confidence_score=best_candidate["confidence"],
             is_active=True,
         )
+        # Store sportsbook if the model supports it
+        if hasattr(pick, 'sportsbook'):
+            pick.sportsbook = line.sportsbook
         db.add(pick)
         stats["picks_created"] += 1
     
