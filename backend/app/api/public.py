@@ -70,7 +70,7 @@ async def list_games_today(
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
     # Calculate today's date range
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     tomorrow = today + timedelta(days=1)
     
     # Alias for home and away teams
@@ -177,7 +177,7 @@ async def list_player_prop_picks(
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
     # Calculate today's date range
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     tomorrow = today + timedelta(days=1)
     
     # Aliases for team joins
@@ -185,11 +185,11 @@ async def list_player_prop_picks(
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
     
-    # Build query with all necessary joins
+    # Build query with all necessary joins (outerjoin for PlayerTeam since team_id can be null)
     query = (
         select(ModelPick, Player, PlayerTeam, Game, HomeTeam, AwayTeam, Market)
         .join(Player, ModelPick.player_id == Player.id)
-        .join(PlayerTeam, Player.team_id == PlayerTeam.id)
+        .outerjoin(PlayerTeam, Player.team_id == PlayerTeam.id)
         .join(Game, ModelPick.game_id == Game.id)
         .join(HomeTeam, Game.home_team_id == HomeTeam.id)
         .join(AwayTeam, Game.away_team_id == AwayTeam.id)
@@ -312,7 +312,7 @@ async def list_game_line_picks(
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
     # Calculate today's date range
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     tomorrow = today + timedelta(days=1)
     
     # Aliases for team joins
