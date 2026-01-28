@@ -200,6 +200,30 @@ def _generate_stub_hit_rates(
     return (hit_rate_10g, hit_rate_30d)
 
 
+def _generate_stub_player_averages(
+    stat_type: str,
+    line_value: float,
+) -> dict[str, float]:
+    """
+    Generate synthetic player averages for stub mode when PlayerGameStats is empty.
+    
+    Creates realistic averages that hover around the betting line value,
+    which produces meaningful hit rate calculations.
+    
+    Args:
+        stat_type: The stat type (e.g., 'PTS', 'REB', 'AST')
+        line_value: The betting line value
+    
+    Returns:
+        Dict with stat_type -> average value
+    """
+    # Base average slightly above/below line for realistic values
+    random.seed(hash(f"{stat_type}_{line_value}"))
+    variance = random.gauss(0, 0.15)
+    avg = line_value * (1 + variance)
+    return {stat_type: round(avg, 1)}
+
+
 # =============================================================================
 # Main Generator Function
 # =============================================================================
@@ -394,6 +418,13 @@ async def _generate_picks_for_game(
             player_avg_stats = await _get_player_averages(
                 db, line.player_id, line.market.stat_type
             )
+            
+            # Fallback: generate stub averages if none exist in stub mode
+            if use_stubs and player_avg_stats is None and line.line_value:
+                player_avg_stats = _generate_stub_player_averages(
+                    line.market.stat_type, line.line_value
+                )
+            
             if player_avg_stats and line.line_value:
                 # Calculate both hit rates with proper side handling
                 hit_rate_10g = await _calculate_hit_rate(
