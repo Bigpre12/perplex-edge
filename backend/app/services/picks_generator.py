@@ -156,49 +156,79 @@ def _generate_stub_hit_rates(
     player_avg_stats: dict[str, float],
     line_value: float,
     side: str = "over",
+    player_name: str = "",
+    stat_type: str = "",
 ) -> tuple[float, float, float, float]:
     """
     Generate synthetic hit rates for stub mode when no PlayerGameStats exist.
     
     Uses player averages to estimate realistic hit rates based on how far
-    the line is from the player's average.
+    the line is from the player's average. Produces varied, realistic percentages
+    that differ by player consistency and stat type.
     
     Args:
         player_avg_stats: Dict with player's average for stat type
         line_value: The betting line value
         side: 'over' or 'under'
+        player_name: Player name for consistent variance per player
+        stat_type: Type of stat (points, rebounds, assists, etc.)
     
     Returns:
         Tuple of (hit_rate_10g, hit_rate_30d, hit_rate_5g, hit_rate_3g)
     """
     if not player_avg_stats:
-        return (0.5, 0.5, 0.5, 0.5)
+        # Return varied defaults based on player/stat hash
+        seed_str = f"{player_name}_{stat_type}_{line_value}_{side}"
+        random.seed(hash(seed_str) % (2**32))
+        base = random.uniform(0.45, 0.65)
+        return (
+            round(base + random.uniform(-0.08, 0.08), 4),
+            round(base + random.uniform(-0.05, 0.05), 4),
+            round(base + random.uniform(-0.12, 0.12), 4),
+            round(base + random.uniform(-0.15, 0.15), 4),
+        )
     
     # Get the first (and typically only) stat value
     avg_value = list(player_avg_stats.values())[0] if player_avg_stats else line_value
     
     # Calculate edge: how much the average exceeds/falls short of the line
     if side.lower() == "over":
-        # For overs: higher avg = higher hit rate
         edge = (avg_value - line_value) / max(line_value, 1)
     else:
-        # For unders: lower avg = higher hit rate  
         edge = (line_value - avg_value) / max(line_value, 1)
     
-    # Convert edge to hit rate (sigmoid-like curve)
-    # Edge of 0 = 50% hit rate, edge of 0.2 = ~70%, edge of -0.2 = ~30%
-    base_hit_rate = 0.5 + (edge * 1.5)
+    # Stat type consistency multipliers (assists more consistent than points)
+    stat_consistency = {
+        "player_assists": 1.1,      # Most consistent
+        "player_rebounds": 1.0,
+        "player_points": 0.9,       # Moderate variance
+        "player_threes": 0.7,       # High variance
+        "player_steals": 0.6,
+        "player_blocks": 0.6,
+        "player_turnovers": 0.8,
+    }
+    consistency = stat_consistency.get(stat_type, 0.85)
     
-    # Clamp and add slight variance for realism
-    random.seed(hash(f"{avg_value}_{line_value}_{side}"))
-    variance = random.gauss(0, 0.05)
+    # Player-specific seed for consistent but varied results
+    seed_str = f"{player_name}_{stat_type}_{line_value}_{side}"
+    random.seed(hash(seed_str) % (2**32))
     
-    hit_rate_10g = round(min(0.9, max(0.1, base_hit_rate + variance)), 4)
-    # 30d tends to be slightly more stable (closer to expected)
-    hit_rate_30d = round(min(0.9, max(0.1, base_hit_rate + variance * 0.5)), 4)
-    # Shorter windows have more variance
-    hit_rate_5g = round(min(0.9, max(0.1, base_hit_rate + variance * 1.2)), 4)
-    hit_rate_3g = round(min(0.9, max(0.1, base_hit_rate + variance * 1.5)), 4)
+    # Star players are more consistent (higher volume, less variance)
+    # Use line value as proxy for star status (higher lines = bigger stars)
+    is_star = line_value > 20 if "points" in stat_type else line_value > 8
+    player_variance = 0.06 if is_star else 0.10
+    
+    # Base hit rate with edge adjustment (softer curve for realism)
+    base_hit_rate = 0.50 + (edge * consistency * 1.2)
+    
+    # Add player-specific variance
+    player_offset = random.gauss(0, player_variance)
+    
+    # Calculate each window with increasing variance for shorter windows
+    hit_rate_30d = round(min(0.85, max(0.35, base_hit_rate + player_offset * 0.6)), 4)
+    hit_rate_10g = round(min(0.85, max(0.30, base_hit_rate + player_offset * 1.0)), 4)
+    hit_rate_5g = round(min(0.90, max(0.25, base_hit_rate + player_offset * 1.4 + random.gauss(0, 0.04))), 4)
+    hit_rate_3g = round(min(0.95, max(0.20, base_hit_rate + player_offset * 1.8 + random.gauss(0, 0.06))), 4)
     
     return (hit_rate_10g, hit_rate_30d, hit_rate_5g, hit_rate_3g)
 
@@ -453,8 +483,11 @@ async def _generate_picks_for_game(
                 
                 # Fallback: generate synthetic hit rates in stub mode if no data
                 if use_stubs and hit_rate_10g is None:
+                    player_name = line.player.name if line.player else ""
+                    stat_type = line.market.stat_type if line.market else ""
                     hit_rate_10g, hit_rate_30d, hit_rate_5g, hit_rate_3g = _generate_stub_hit_rates(
-                        player_avg_stats, line.line_value, line.side or "over"
+                        player_avg_stats, line.line_value, line.side or "over",
+                        player_name=player_name, stat_type=stat_type
                     )
         
         # Generate model probability
