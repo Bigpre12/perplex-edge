@@ -1128,8 +1128,8 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Paolo Banchero", "price": -105, "point": 24.5},
                                     {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 21.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 21.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 20.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 20.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -108, "point": 18.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -112, "point": 18.5},
                                 ],
                             },
                             {
@@ -1163,8 +1163,8 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 26.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 26.5},
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 30.5},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 30.5},
                                     {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 26.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 26.5},
                                 ],
@@ -1193,8 +1193,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 3.5},
                                     {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 3.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 2.5},
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 2.5},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 2.5},
                                 ],
                             },
                         ],
