@@ -9,7 +9,7 @@ from sqlalchemy import select, update, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Sport, Game, Line, Market, Player, PlayerGameStats, ModelPick
+from app.models import Sport, Game, Line, Market, Player, PlayerGameStats, ModelPick, Injury
 
 logger = logging.getLogger(__name__)
 
@@ -322,16 +322,36 @@ async def _generate_picks_for_game(
             continue
         evaluated_keys.add(pick_key)
         
+        # Skip injured players (OUT or DOUBTFUL)
+        if line.player_id:
+            injury_result = await db.execute(
+                select(Injury).where(
+                    and_(
+                        Injury.player_id == line.player_id,
+                        Injury.status.in_(["OUT", "DOUBTFUL"]),
+                    )
+                )
+            )
+            injury = injury_result.scalar_one_or_none()
+            if injury:
+                logger.debug(f"Skipping injured player {line.player_id}: {injury.status}")
+                continue
+        
         # Get player stats for props
         player_avg_stats = None
-        hit_rate = None
+        hit_rate_10g = None
+        hit_rate_30d = None
         
         if line.player_id and line.market and line.market.stat_type:
             player_avg_stats = await _get_player_averages(
                 db, line.player_id, line.market.stat_type
             )
             if player_avg_stats and line.line_value:
-                hit_rate = await _calculate_hit_rate(
+                # Calculate both hit rates
+                hit_rate_10g = await _calculate_hit_rate(
+                    db, line.player_id, line.market.stat_type, line.line_value
+                )
+                hit_rate_30d = await _calculate_hit_rate_30d(
                     db, line.player_id, line.market.stat_type, line.line_value
                 )
         
@@ -345,7 +365,7 @@ async def _generate_picks_for_game(
         # Calculate metrics
         implied_prob = american_odds_to_probability(line.odds)
         ev = calculate_expected_value(model_prob, line.odds)
-        confidence = calculate_confidence_score(model_prob, implied_prob, ev, hit_rate)
+        confidence = calculate_confidence_score(model_prob, implied_prob, ev, hit_rate_10g)
         
         # Check thresholds
         if ev < min_ev or confidence < min_confidence:
@@ -363,8 +383,8 @@ async def _generate_picks_for_game(
             model_probability=model_prob,
             implied_probability=implied_prob,
             expected_value=round(ev, 4),
-            hit_rate_30d=None,  # Would need historical data
-            hit_rate_10g=hit_rate,
+            hit_rate_30d=hit_rate_30d,
+            hit_rate_10g=hit_rate_10g,
             confidence_score=confidence,
             is_active=True,
         )
@@ -405,7 +425,7 @@ async def _calculate_hit_rate(
     line_value: float,
     games_back: int = 10,
 ) -> Optional[float]:
-    """Calculate hit rate for a player over a line."""
+    """Calculate hit rate for a player over a line (last N games)."""
     result = await db.execute(
         select(PlayerGameStats.value)
         .where(
@@ -416,6 +436,46 @@ async def _calculate_hit_rate(
         )
         .order_by(PlayerGameStats.created_at.desc())
         .limit(games_back)
+    )
+    values = [row[0] for row in result.all()]
+    
+    if not values:
+        return None
+    
+    hits = sum(1 for v in values if v > line_value)
+    return round(hits / len(values), 4)
+
+
+async def _calculate_hit_rate_30d(
+    db: AsyncSession,
+    player_id: int,
+    stat_type: str,
+    line_value: float,
+) -> Optional[float]:
+    """
+    Calculate hit rate over last 30 days.
+    
+    Args:
+        db: Database session
+        player_id: Player's internal ID
+        stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
+        line_value: The line to check against
+    
+    Returns:
+        Hit rate as decimal (0-1) or None if no data
+    """
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    
+    result = await db.execute(
+        select(PlayerGameStats.value)
+        .where(
+            and_(
+                PlayerGameStats.player_id == player_id,
+                PlayerGameStats.stat_type == stat_type,
+                PlayerGameStats.created_at >= thirty_days_ago,
+            )
+        )
+        .order_by(PlayerGameStats.created_at.desc())
     )
     values = [row[0] for row in result.all()]
     

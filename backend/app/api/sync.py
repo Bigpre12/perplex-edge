@@ -182,6 +182,38 @@ async def sync_single_player_roster(
         raise HTTPException(status_code=500, detail=f"Player roster sync failed: {str(e)}")
 
 
+@router.post("/player-teams")
+async def sync_player_teams(
+    sport: str = "basketball_nba",
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Bulk sync all player teams from PLAYER_TEAMS mapping.
+    
+    This updates all players in the database to have the correct team_id
+    based on the PLAYER_TEAMS dictionary in etl_games_and_lines.py.
+    
+    Use this endpoint after updating PLAYER_TEAMS or to fix stale team assignments.
+    
+    Args:
+        sport: Sport key (default: basketball_nba)
+    
+    Returns:
+        Sync statistics: updated, not_found, teams_not_found, already_correct
+    """
+    from app.services.etl_games_and_lines import sync_all_player_teams
+    
+    try:
+        stats = await sync_all_player_teams(db, sport)
+        return {
+            "status": "success",
+            "sport": sport,
+            "stats": stats,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Player team sync failed: {str(e)}")
+
+
 @router.get("/status")
 async def get_sync_status(
     db: AsyncSession = Depends(get_db),

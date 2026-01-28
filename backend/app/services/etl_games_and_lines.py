@@ -833,3 +833,81 @@ async def sync_all_sports(
             results[sport_key] = {"error": str(e)}
     
     return results
+
+
+async def sync_all_player_teams(
+    db: AsyncSession,
+    sport_key: str,
+) -> dict[str, Any]:
+    """
+    Bulk update all player teams from PLAYER_TEAMS mapping.
+    
+    This function iterates through all players in PLAYER_TEAMS and updates
+    their team_id in the database to match the current mapping.
+    
+    Args:
+        db: Database session
+        sport_key: Sport identifier (e.g., 'basketball_nba')
+    
+    Returns:
+        Dictionary with counts: {'updated': n, 'not_found': n, 'teams_not_found': n, 'already_correct': n}
+    """
+    counts = {
+        "updated": 0,
+        "not_found": 0,
+        "teams_not_found": 0,
+        "already_correct": 0,
+    }
+    
+    # Get sport
+    league_code = SPORT_KEY_TO_NAME.get(sport_key, (sport_key.upper(), sport_key.upper()))[1]
+    result = await db.execute(
+        select(Sport).where(Sport.league_code == league_code)
+    )
+    sport = result.scalar_one_or_none()
+    
+    if not sport:
+        logger.warning(f"Sport not found: {league_code}")
+        return {"error": f"Sport not found: {league_code}"}
+    
+    # Build team name to id cache
+    result = await db.execute(
+        select(Team).where(Team.sport_id == sport.id)
+    )
+    teams = {team.name: team.id for team in result.scalars().all()}
+    
+    logger.info(f"Syncing player teams for {len(PLAYER_TEAMS)} players")
+    
+    for player_name, team_name in PLAYER_TEAMS.items():
+        # Find player by name
+        result = await db.execute(
+            select(Player).where(
+                Player.name == player_name,
+                Player.sport_id == sport.id,
+            )
+        )
+        player = result.scalar_one_or_none()
+        
+        if not player:
+            counts["not_found"] += 1
+            continue
+        
+        # Get team ID from cache
+        team_id = teams.get(team_name)
+        if not team_id:
+            logger.warning(f"Team not found for player {player_name}: {team_name}")
+            counts["teams_not_found"] += 1
+            continue
+        
+        # Update if different
+        if player.team_id != team_id:
+            old_team_id = player.team_id
+            player.team_id = team_id
+            counts["updated"] += 1
+            logger.info(f"Updated {player_name}: team_id {old_team_id} -> {team_id} ({team_name})")
+        else:
+            counts["already_correct"] += 1
+    
+    await db.commit()
+    logger.info(f"Player team sync complete: {counts}")
+    return counts
