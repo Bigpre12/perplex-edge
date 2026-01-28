@@ -473,8 +473,9 @@ async def _generate_picks_for_game(
         if ev < min_ev or confidence < min_confidence:
             continue
         
-        # Group by market/player/sportsbook (exclude side) - we'll pick best side later
-        group_key = (line.market_id, line.player_id, line.sportsbook)
+        # Group by market/player only (exclude side AND sportsbook)
+        # This ensures only ONE pick per player/stat - the best one across all sportsbooks
+        group_key = (line.market_id, line.player_id)
         
         candidate = {
             "line": line,
