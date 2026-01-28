@@ -236,20 +236,30 @@ async def list_player_prop_picks(
     for row in result.all():
         pick, player, player_team, game, home_team, away_team, market = row
         
-        # Determine opponent team
-        if player_team.id == home_team.id:
-            opponent_team = away_team.name
-            opponent_abbr = away_team.abbreviation
+        # Handle player_team being None (players without assigned team)
+        if player_team is not None:
+            team_name = player_team.name
+            team_abbr = player_team.abbreviation
+            # Determine opponent team
+            if player_team.id == home_team.id:
+                opponent_team = away_team.name
+                opponent_abbr = away_team.abbreviation
+            else:
+                opponent_team = home_team.name
+                opponent_abbr = home_team.abbreviation
         else:
-            opponent_team = home_team.name
-            opponent_abbr = home_team.abbreviation
+            # Player without team - use game teams as context
+            team_name = "Unknown"
+            team_abbr = "UNK"
+            opponent_team = f"{away_team.name} vs {home_team.name}"
+            opponent_abbr = f"{away_team.abbreviation} vs {home_team.abbreviation}"
         
         picks.append(PlayerPropPick(
             pick_id=pick.id,
             player_name=player.name,
             player_id=player.id,
-            team=player_team.name,
-            team_abbr=player_team.abbreviation,
+            team=team_name,
+            team_abbr=team_abbr,
             opponent_team=opponent_team,
             opponent_abbr=opponent_abbr,
             stat_type=market.stat_type or "",
