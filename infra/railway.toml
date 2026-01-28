@@ -1,0 +1,17 @@
+# Railway configuration for Perplex Engine
+# This file configures deployment settings for Railway
+
+[build]
+# Builder to use
+builder = "DOCKERFILE"
+
+[deploy]
+# Number of replicas
+numReplicas = 1
+# Health check path
+healthcheckPath = "/health"
+# Health check timeout
+healthcheckTimeout = 100
+# Restart policy
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
