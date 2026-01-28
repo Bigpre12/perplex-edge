@@ -1128,8 +1128,8 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Paolo Banchero", "price": -105, "point": 24.5},
                                     {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 21.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 21.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -108, "point": 18.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -112, "point": 18.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 20.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 20.5},
                                 ],
                             },
                             {
@@ -1149,6 +1149,8 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 38.5},
                                     {"name": "Over", "description": "Bam Adebayo", "price": -115, "point": 32.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": -105, "point": 32.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 33.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 33.5},
                                 ],
                             },
                             {
@@ -1163,8 +1165,8 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 30.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 30.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 26.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 26.5},
                                     {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 26.5},
                                     {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 26.5},
                                 ],
@@ -1193,8 +1195,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 3.5},
                                     {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 3.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 2.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 2.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 2.5},
                                 ],
                             },
                         ],
@@ -1927,8 +1929,8 @@ class XYZOddsProvider(OddsProvider):
                                     {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 24.5},
                                     {"name": "Over", "description": "Brandon Miller", "price": -110, "point": 18.5},
                                     {"name": "Under", "description": "Brandon Miller", "price": -110, "point": 18.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 20.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 20.5},
+                                    {"name": "Over", "description": "Marcus Smart", "price": -108, "point": 12.5},
+                                    {"name": "Under", "description": "Marcus Smart", "price": -112, "point": 12.5},
                                 ],
                             },
                             {
@@ -1936,8 +1938,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -120, "point": 8.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": 100, "point": 8.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 5.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 5.5},
+                                    {"name": "Over", "description": "Marcus Smart", "price": -110, "point": 5.5},
+                                    {"name": "Under", "description": "Marcus Smart", "price": -110, "point": 5.5},
                                 ],
                             },
                             # Combination props
@@ -1964,8 +1966,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 33.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 33.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 26.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 26.5},
+                                    {"name": "Over", "description": "Marcus Smart", "price": -110, "point": 18.5},
+                                    {"name": "Under", "description": "Marcus Smart", "price": -110, "point": 18.5},
                                 ],
                             },
                             {
@@ -1983,8 +1985,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 1.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 1.5},
+                                    {"name": "Over", "description": "Marcus Smart", "price": -110, "point": 1.5},
+                                    {"name": "Under", "description": "Marcus Smart", "price": -110, "point": 1.5},
                                 ],
                             },
                             {
@@ -2001,8 +2003,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 3.5},
                                     {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 3.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 2.5},
+                                    {"name": "Over", "description": "Brandon Miller", "price": -108, "point": 2.5},
+                                    {"name": "Under", "description": "Brandon Miller", "price": -112, "point": 2.5},
                                 ],
                             },
                         ],
