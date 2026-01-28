@@ -474,7 +474,8 @@ async def _generate_picks_for_game(
             continue
         
         # Group by market/player only (exclude side AND sportsbook)
-        # This ensures only ONE pick per player/stat - the best one across all sportsbooks
+        # This ensures only ONE pick per player/stat combination
+        # Selects the best EV across all sportsbooks and both sides
         group_key = (line.market_id, line.player_id)
         
         candidate = {
