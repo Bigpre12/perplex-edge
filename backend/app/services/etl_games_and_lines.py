@@ -879,16 +879,16 @@ async def sync_all_player_teams(
     logger.info(f"Syncing player teams for {len(PLAYER_TEAMS)} players")
     
     for player_name, team_name in PLAYER_TEAMS.items():
-        # Find player by name
+        # Find all players with this name (handle duplicates)
         result = await db.execute(
             select(Player).where(
                 Player.name == player_name,
                 Player.sport_id == sport.id,
             )
         )
-        player = result.scalar_one_or_none()
+        players = result.scalars().all()
         
-        if not player:
+        if not players:
             counts["not_found"] += 1
             continue
         
@@ -899,14 +899,15 @@ async def sync_all_player_teams(
             counts["teams_not_found"] += 1
             continue
         
-        # Update if different
-        if player.team_id != team_id:
-            old_team_id = player.team_id
-            player.team_id = team_id
-            counts["updated"] += 1
-            logger.info(f"Updated {player_name}: team_id {old_team_id} -> {team_id} ({team_name})")
-        else:
-            counts["already_correct"] += 1
+        # Update all matching players
+        for player in players:
+            if player.team_id != team_id:
+                old_team_id = player.team_id
+                player.team_id = team_id
+                counts["updated"] += 1
+                logger.info(f"Updated {player_name} (id={player.id}): team_id {old_team_id} -> {team_id} ({team_name})")
+            else:
+                counts["already_correct"] += 1
     
     await db.commit()
     logger.info(f"Player team sync complete: {counts}")
