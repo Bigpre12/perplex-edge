@@ -152,6 +152,54 @@ def generate_stub_probability(
     return round(min(0.95, max(0.05, model_prob)), 4)
 
 
+def _generate_stub_hit_rates(
+    player_avg_stats: dict[str, float],
+    line_value: float,
+    side: str = "over",
+) -> tuple[float, float]:
+    """
+    Generate synthetic hit rates for stub mode when no PlayerGameStats exist.
+    
+    Uses player averages to estimate realistic hit rates based on how far
+    the line is from the player's average.
+    
+    Args:
+        player_avg_stats: Dict with player's average for stat type
+        line_value: The betting line value
+        side: 'over' or 'under'
+    
+    Returns:
+        Tuple of (hit_rate_10g, hit_rate_30d)
+    """
+    if not player_avg_stats:
+        return (0.5, 0.5)
+    
+    # Get the first (and typically only) stat value
+    avg_value = list(player_avg_stats.values())[0] if player_avg_stats else line_value
+    
+    # Calculate edge: how much the average exceeds/falls short of the line
+    if side.lower() == "over":
+        # For overs: higher avg = higher hit rate
+        edge = (avg_value - line_value) / max(line_value, 1)
+    else:
+        # For unders: lower avg = higher hit rate  
+        edge = (line_value - avg_value) / max(line_value, 1)
+    
+    # Convert edge to hit rate (sigmoid-like curve)
+    # Edge of 0 = 50% hit rate, edge of 0.2 = ~70%, edge of -0.2 = ~30%
+    base_hit_rate = 0.5 + (edge * 1.5)
+    
+    # Clamp and add slight variance for realism
+    random.seed(hash(f"{avg_value}_{line_value}_{side}"))
+    variance = random.gauss(0, 0.05)
+    
+    hit_rate_10g = round(min(0.9, max(0.1, base_hit_rate + variance)), 4)
+    # 30d tends to be slightly more stable (closer to expected)
+    hit_rate_30d = round(min(0.9, max(0.1, base_hit_rate + variance * 0.5)), 4)
+    
+    return (hit_rate_10g, hit_rate_30d)
+
+
 # =============================================================================
 # Main Generator Function
 # =============================================================================
@@ -347,13 +395,21 @@ async def _generate_picks_for_game(
                 db, line.player_id, line.market.stat_type
             )
             if player_avg_stats and line.line_value:
-                # Calculate both hit rates
+                # Calculate both hit rates with proper side handling
                 hit_rate_10g = await _calculate_hit_rate(
-                    db, line.player_id, line.market.stat_type, line.line_value
+                    db, line.player_id, line.market.stat_type, line.line_value,
+                    side=line.side or "over"
                 )
                 hit_rate_30d = await _calculate_hit_rate_30d(
-                    db, line.player_id, line.market.stat_type, line.line_value
+                    db, line.player_id, line.market.stat_type, line.line_value,
+                    side=line.side or "over"
                 )
+                
+                # Fallback: generate synthetic hit rates in stub mode if no data
+                if use_stubs and hit_rate_10g is None:
+                    hit_rate_10g, hit_rate_30d = _generate_stub_hit_rates(
+                        player_avg_stats, line.line_value, line.side or "over"
+                    )
         
         # Generate model probability
         if use_stubs:
@@ -423,9 +479,23 @@ async def _calculate_hit_rate(
     player_id: int,
     stat_type: str,
     line_value: float,
+    side: str = "over",
     games_back: int = 10,
 ) -> Optional[float]:
-    """Calculate hit rate for a player over a line (last N games)."""
+    """
+    Calculate hit rate for a player over/under a line (last N games).
+    
+    Args:
+        db: Database session
+        player_id: Player's internal ID
+        stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
+        line_value: The line to check against
+        side: 'over' or 'under' - determines hit direction
+        games_back: Number of games to look back
+    
+    Returns:
+        Hit rate as decimal (0-1) or None if no data
+    """
     result = await db.execute(
         select(PlayerGameStats.value)
         .where(
@@ -442,7 +512,12 @@ async def _calculate_hit_rate(
     if not values:
         return None
     
-    hits = sum(1 for v in values if v > line_value)
+    # Count hits based on side
+    if side.lower() == "under":
+        hits = sum(1 for v in values if v < line_value)
+    else:
+        hits = sum(1 for v in values if v > line_value)
+    
     return round(hits / len(values), 4)
 
 
@@ -451,6 +526,7 @@ async def _calculate_hit_rate_30d(
     player_id: int,
     stat_type: str,
     line_value: float,
+    side: str = "over",
 ) -> Optional[float]:
     """
     Calculate hit rate over last 30 days.
@@ -460,6 +536,7 @@ async def _calculate_hit_rate_30d(
         player_id: Player's internal ID
         stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
         line_value: The line to check against
+        side: 'over' or 'under' - determines hit direction
     
     Returns:
         Hit rate as decimal (0-1) or None if no data
@@ -482,7 +559,12 @@ async def _calculate_hit_rate_30d(
     if not values:
         return None
     
-    hits = sum(1 for v in values if v > line_value)
+    # Count hits based on side
+    if side.lower() == "under":
+        hits = sum(1 for v in values if v < line_value)
+    else:
+        hits = sum(1 for v in values if v > line_value)
+    
     return round(hits / len(values), 4)
 
 
