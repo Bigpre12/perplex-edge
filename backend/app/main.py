@@ -23,6 +23,7 @@ from app.scheduler import (
     stop_background_tasks,
     get_scheduler_status,
 )
+from app.api.admin import router as admin_router
 
 # Configure logging
 logging.basicConfig(
@@ -109,6 +110,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include admin router
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 
 # =============================================================================
