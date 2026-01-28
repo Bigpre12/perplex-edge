@@ -4,10 +4,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from sqlalchemy import select, update, and_
+from sqlalchemy import select, update, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Sport, Team, Game, Market, Line, Player
+from app.models import Sport, Team, Game, Market, Line, Player, ModelPick
 from app.services.odds_provider import XYZOddsProvider, GameData, LineData, PropData
 
 logger = logging.getLogger(__name__)
@@ -911,4 +911,76 @@ async def sync_all_player_teams(
     
     await db.commit()
     logger.info(f"Player team sync complete: {counts}")
+    return counts
+
+
+async def clear_stale_games(
+    db: AsyncSession,
+    sport_key: str,
+) -> dict[str, Any]:
+    """
+    Delete all games, lines, and picks for a sport to start fresh.
+    
+    Keeps teams and players but removes game-related data.
+    Use this to clear stale data before a fresh sync.
+    
+    Args:
+        db: Database session
+        sport_key: Sport identifier (e.g., 'basketball_nba')
+    
+    Returns:
+        Dictionary with deletion counts
+    """
+    # Get sport
+    league_code = SPORT_KEY_TO_NAME.get(sport_key, (sport_key.upper(), sport_key.upper()))[1]
+    result = await db.execute(
+        select(Sport).where(Sport.league_code == league_code)
+    )
+    sport = result.scalar_one_or_none()
+    
+    if not sport:
+        logger.warning(f"Sport not found: {league_code}")
+        return {"error": f"Sport not found: {league_code}"}
+    
+    logger.info(f"Clearing stale games for {sport.league_code} (id={sport.id})")
+    
+    # Get all game IDs for this sport (needed for line deletion)
+    game_ids_result = await db.execute(
+        select(Game.id).where(Game.sport_id == sport.id)
+    )
+    game_ids = [row[0] for row in game_ids_result.all()]
+    
+    # Delete in order (foreign key constraints):
+    # 1. Delete ModelPick (references games)
+    picks_result = await db.execute(
+        delete(ModelPick).where(ModelPick.sport_id == sport.id)
+    )
+    picks_deleted = picks_result.rowcount
+    logger.info(f"Deleted {picks_deleted} picks")
+    
+    # 2. Delete Lines (references games)
+    lines_deleted = 0
+    if game_ids:
+        lines_result = await db.execute(
+            delete(Line).where(Line.game_id.in_(game_ids))
+        )
+        lines_deleted = lines_result.rowcount
+    logger.info(f"Deleted {lines_deleted} lines")
+    
+    # 3. Delete Games
+    games_result = await db.execute(
+        delete(Game).where(Game.sport_id == sport.id)
+    )
+    games_deleted = games_result.rowcount
+    logger.info(f"Deleted {games_deleted} games")
+    
+    await db.commit()
+    
+    counts = {
+        "sport": sport.league_code,
+        "picks_deleted": picks_deleted,
+        "lines_deleted": lines_deleted,
+        "games_deleted": games_deleted,
+    }
+    logger.info(f"Clear stale games complete: {counts}")
     return counts

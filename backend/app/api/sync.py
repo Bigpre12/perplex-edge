@@ -214,6 +214,36 @@ async def sync_player_teams(
         raise HTTPException(status_code=500, detail=f"Player team sync failed: {str(e)}")
 
 
+@router.post("/clear-games")
+async def clear_games(
+    sport: str = "basketball_nba",
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Clear all games, lines, and picks for a sport to start fresh.
+    
+    Use this to remove stale data before running a fresh sync.
+    Keeps teams and players but removes all game-related data.
+    
+    Args:
+        sport: Sport key (default: basketball_nba)
+    
+    Returns:
+        Deletion counts: picks_deleted, lines_deleted, games_deleted
+    """
+    from app.services.etl_games_and_lines import clear_stale_games
+    
+    try:
+        stats = await clear_stale_games(db, sport)
+        return {
+            "status": "success",
+            "sport": sport,
+            "stats": stats,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clear games failed: {str(e)}")
+
+
 @router.get("/status")
 async def get_sync_status(
     db: AsyncSession = Depends(get_db),
