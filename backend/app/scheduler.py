@@ -209,13 +209,18 @@ async def hourly_odds_check_loop(interval_minutes: int = 60):
         await asyncio.sleep(interval_minutes * 60)
 
 
-async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0):
+async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stubs: bool = True):
     """
     Background task that syncs games, lines, and injuries on interval.
     
     Runs:
     - sync_games_and_lines (fetches games and odds)
     - sync_injuries (fetches injury data)
+    
+    Args:
+        interval_minutes: Sync interval in minutes
+        initial_delay: Delay before first sync in seconds
+        use_stubs: If True, use stub data instead of real API calls
     """
     from app.services import sync_games_and_lines, sync_injuries
 
@@ -223,7 +228,7 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0):
         logger.info(f"Odds sync loop starting in {initial_delay}s...")
         await asyncio.sleep(initial_delay)
 
-    logger.info(f"Odds sync loop started (interval: {interval_minutes} min)")
+    logger.info(f"Odds sync loop started (interval: {interval_minutes} min, use_stubs={use_stubs})")
 
     while True:
         try:
@@ -232,11 +237,11 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0):
             
             async with session_maker() as db:
                 # Sync games and lines for NBA
-                games_result = await sync_games_and_lines(db, "basketball_nba")
+                games_result = await sync_games_and_lines(db, "basketball_nba", use_stubs=use_stubs)
                 logger.info(f"Games/lines sync: {games_result}")
 
                 # Sync injuries for NBA
-                injuries_result = await sync_injuries(db, "basketball_nba")
+                injuries_result = await sync_injuries(db, "basketball_nba", use_stubs=use_stubs)
                 logger.info(f"Injuries sync: {injuries_result}")
 
             logger.info("Odds/injuries sync completed")
@@ -251,12 +256,17 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0):
         await asyncio.sleep(interval_minutes * 60)
 
 
-async def stats_sync_loop(interval_minutes: int, initial_delay: int = 30):
+async def stats_sync_loop(interval_minutes: int, initial_delay: int = 30, use_stubs: bool = True):
     """
     Background task that syncs player statistics on interval.
     
     Runs:
     - sync_recent_player_stats (fetches recent game logs for active players)
+    
+    Args:
+        interval_minutes: Sync interval in minutes
+        initial_delay: Delay before first sync in seconds
+        use_stubs: If True, use stub data instead of real API calls
     """
     from app.services import sync_recent_player_stats
 
@@ -264,7 +274,7 @@ async def stats_sync_loop(interval_minutes: int, initial_delay: int = 30):
         logger.info(f"Stats sync loop starting in {initial_delay}s...")
         await asyncio.sleep(initial_delay)
 
-    logger.info(f"Stats sync loop started (interval: {interval_minutes} min)")
+    logger.info(f"Stats sync loop started (interval: {interval_minutes} min, use_stubs={use_stubs})")
 
     while True:
         try:
@@ -276,7 +286,8 @@ async def stats_sync_loop(interval_minutes: int, initial_delay: int = 30):
                 stats_result = await sync_recent_player_stats(
                     db, 
                     sport_key="basketball_nba",
-                    n_games=10
+                    n_games=10,
+                    use_stubs=use_stubs,
                 )
                 logger.info(f"Stats sync: {stats_result}")
 
@@ -292,12 +303,17 @@ async def stats_sync_loop(interval_minutes: int, initial_delay: int = 30):
         await asyncio.sleep(interval_minutes * 60)
 
 
-async def model_generation_loop(interval_minutes: int, initial_delay: int = 60):
+async def model_generation_loop(interval_minutes: int, initial_delay: int = 60, use_stubs: bool = True):
     """
     Background task that generates model picks on interval.
     
     Runs:
     - generate_model_picks_for_today (computes probabilities and creates picks)
+    
+    Args:
+        interval_minutes: Generation interval in minutes
+        initial_delay: Delay before first generation in seconds
+        use_stubs: If True, use stub probability generator
     """
     from app.services import generate_model_picks_for_today
 
@@ -305,7 +321,7 @@ async def model_generation_loop(interval_minutes: int, initial_delay: int = 60):
         logger.info(f"Model generation loop starting in {initial_delay}s...")
         await asyncio.sleep(initial_delay)
 
-    logger.info(f"Model generation loop started (interval: {interval_minutes} min)")
+    logger.info(f"Model generation loop started (interval: {interval_minutes} min, use_stubs={use_stubs})")
 
     while True:
         try:
@@ -319,6 +335,7 @@ async def model_generation_loop(interval_minutes: int, initial_delay: int = 60):
                     sport_key="basketball_nba",
                     ev_threshold=0.03,  # 3% minimum EV
                     confidence_threshold=0.4,  # 40% minimum confidence
+                    use_stubs=use_stubs,
                 )
                 logger.info(f"Model picks: {picks_result}")
 
@@ -334,7 +351,7 @@ async def model_generation_loop(interval_minutes: int, initial_delay: int = 60):
         await asyncio.sleep(interval_minutes * 60)
 
 
-async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120):
+async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120, use_stubs: bool = True):
     """
     Background task that syncs player rosters daily.
     
@@ -344,6 +361,7 @@ async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120):
     Args:
         interval_hours: Sync interval in hours (default: 24 = daily)
         initial_delay: Initial delay in seconds before first run
+        use_stubs: If True, use stub data instead of real API calls
     """
     from app.services import sync_rosters
 
@@ -351,7 +369,7 @@ async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120):
         logger.info(f"Roster sync loop starting in {initial_delay}s...")
         await asyncio.sleep(initial_delay)
 
-    logger.info(f"Roster sync loop started (interval: {interval_hours} hours)")
+    logger.info(f"Roster sync loop started (interval: {interval_hours} hours, use_stubs={use_stubs})")
 
     while True:
         try:
@@ -363,7 +381,7 @@ async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120):
                 roster_result = await sync_rosters(
                     db,
                     sport_key="basketball_nba",
-                    use_stubs=False,  # Use real API when available
+                    use_stubs=use_stubs,
                 )
                 logger.info(f"Roster sync: {roster_result}")
 
@@ -393,6 +411,10 @@ def start_background_tasks() -> List[asyncio.Task]:
 
     settings = get_settings()
     tasks = []
+    
+    # Get use_stubs setting (default True for scheduled tasks)
+    use_stubs = getattr(settings, 'scheduler_use_stubs', True)
+    logger.info(f"Scheduler use_stubs={use_stubs}")
 
     # Daily refresh task (9 AM EST)
     daily_hour = getattr(settings, 'daily_refresh_hour', 9)
@@ -417,33 +439,36 @@ def start_background_tasks() -> List[asyncio.Task]:
         odds_sync_loop(
             interval_minutes=settings.sched_odds_interval_min,
             initial_delay=0,
+            use_stubs=use_stubs,
         ),
         name="odds_sync_loop"
     )
     tasks.append(task1)
-    logger.info(f"Created odds_sync_loop task (every {settings.sched_odds_interval_min} min)")
+    logger.info(f"Created odds_sync_loop task (every {settings.sched_odds_interval_min} min, use_stubs={use_stubs})")
 
     # Stats sync task
     task2 = asyncio.create_task(
         stats_sync_loop(
             interval_minutes=settings.sched_stats_interval_min,
             initial_delay=30,  # Stagger start by 30 seconds
+            use_stubs=use_stubs,
         ),
         name="stats_sync_loop"
     )
     tasks.append(task2)
-    logger.info(f"Created stats_sync_loop task (every {settings.sched_stats_interval_min} min)")
+    logger.info(f"Created stats_sync_loop task (every {settings.sched_stats_interval_min} min, use_stubs={use_stubs})")
 
     # Model generation task
     task3 = asyncio.create_task(
         model_generation_loop(
             interval_minutes=settings.sched_model_interval_min,
             initial_delay=60,  # Stagger start by 60 seconds
+            use_stubs=use_stubs,
         ),
         name="model_generation_loop"
     )
     tasks.append(task3)
-    logger.info(f"Created model_generation_loop task (every {settings.sched_model_interval_min} min)")
+    logger.info(f"Created model_generation_loop task (every {settings.sched_model_interval_min} min, use_stubs={use_stubs})")
 
     # Roster sync task (daily)
     roster_interval_hours = getattr(settings, 'sched_roster_interval_hours', 24)
@@ -451,11 +476,12 @@ def start_background_tasks() -> List[asyncio.Task]:
         roster_sync_loop(
             interval_hours=roster_interval_hours,
             initial_delay=120,  # Stagger start by 2 minutes
+            use_stubs=use_stubs,
         ),
         name="roster_sync_loop"
     )
     tasks.append(task4)
-    logger.info(f"Created roster_sync_loop task (every {roster_interval_hours} hours)")
+    logger.info(f"Created roster_sync_loop task (every {roster_interval_hours} hours, use_stubs={use_stubs})")
 
     _background_tasks = tasks
     return tasks

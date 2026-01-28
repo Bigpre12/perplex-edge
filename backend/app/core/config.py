@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     # Scheduler (disabled by default - enable once DB is confirmed working)
     scheduler_enabled: bool = False
+    scheduler_use_stubs: bool = True  # Use stub data for scheduled syncs (no API keys needed)
     sched_odds_interval_min: int = 5
     sched_stats_interval_min: int = 15
     sched_model_interval_min: int = 10
