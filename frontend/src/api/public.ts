@@ -110,6 +110,7 @@ export interface GameLinePickList {
 
 export interface PlayerPropFilters {
   stat_type?: string;
+    [key: string]: unknown;
   min_confidence?: number;
   min_ev?: number;
   game_id?: number;
@@ -119,6 +120,7 @@ export interface PlayerPropFilters {
 
 export interface GameLineFilters {
   market_type?: string;
+    [key: string]: unknown;
   min_confidence?: number;
   min_ev?: number;
   game_id?: number;
