@@ -210,8 +210,8 @@ async def generate_picks(
         deactivated = await _deactivate_old_picks(db, sport.id)
         stats["picks_deactivated"] = deactivated
         
-        # Get today's games
-        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        # Get today's games (use naive datetime for PostgreSQL compatibility)
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + timedelta(days=1)
         
         result = await db.execute(

@@ -49,8 +49,8 @@ async def get_players_with_lines_today(
     """
     target_date = target_date or date.today()
     
-    # Calculate start and end of day in UTC
-    day_start = datetime.combine(target_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    # Calculate start and end of day (naive datetime for PostgreSQL)
+    day_start = datetime.combine(target_date, datetime.min.time())
     day_end = day_start + timedelta(days=1)
     
     # Query players with active lines on games today
@@ -89,7 +89,7 @@ async def get_all_active_players(
     Returns:
         List of active Player objects
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
+    cutoff = datetime.utcnow() - timedelta(days=days_back)
     
     result = await db.execute(
         select(Player)

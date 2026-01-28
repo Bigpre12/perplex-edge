@@ -192,7 +192,11 @@ async def upsert_injury(
     Returns:
         Tuple of (Injury, created) where created is True if new record
     """
-    updated_at = updated_at or datetime.now(timezone.utc)
+    # Convert to naive datetime for PostgreSQL
+    if updated_at is None:
+        updated_at = datetime.utcnow()
+    elif updated_at.tzinfo is not None:
+        updated_at = updated_at.replace(tzinfo=None)
     
     # Check for existing injury
     result = await db.execute(
@@ -256,7 +260,13 @@ async def update_starter_flag(
     
     if injury:
         injury.is_starter_flag = is_starter
-        injury.updated_at = updated_at or datetime.now(timezone.utc)
+        # Convert to naive datetime
+        if updated_at is None:
+            injury.updated_at = datetime.utcnow()
+        elif updated_at.tzinfo is not None:
+            injury.updated_at = updated_at.replace(tzinfo=None)
+        else:
+            injury.updated_at = updated_at
         return True
     
     return False
@@ -449,7 +459,7 @@ async def clear_old_injuries(
     from datetime import timedelta
     from sqlalchemy import delete
     
-    cutoff = datetime.now(timezone.utc) - timedelta(days=older_than_days)
+    cutoff = datetime.utcnow() - timedelta(days=older_than_days)
     
     result = await db.execute(
         delete(Injury).where(
