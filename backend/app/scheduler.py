@@ -334,6 +334,51 @@ async def model_generation_loop(interval_minutes: int, initial_delay: int = 60):
         await asyncio.sleep(interval_minutes * 60)
 
 
+async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120):
+    """
+    Background task that syncs player rosters daily.
+    
+    Runs:
+    - sync_rosters (updates player-team relationships from roster API)
+    
+    Args:
+        interval_hours: Sync interval in hours (default: 24 = daily)
+        initial_delay: Initial delay in seconds before first run
+    """
+    from app.services import sync_rosters
+
+    if initial_delay > 0:
+        logger.info(f"Roster sync loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+
+    logger.info(f"Roster sync loop started (interval: {interval_hours} hours)")
+
+    while True:
+        try:
+            logger.info("Running roster sync...")
+            session_maker = get_session_maker()
+
+            async with session_maker() as db:
+                # Sync rosters for NBA
+                roster_result = await sync_rosters(
+                    db,
+                    sport_key="basketball_nba",
+                    use_stubs=False,  # Use real API when available
+                )
+                logger.info(f"Roster sync: {roster_result}")
+
+            logger.info("Roster sync completed")
+
+        except asyncio.CancelledError:
+            logger.info("Roster sync loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Roster sync loop error: {e}", exc_info=True)
+
+        # Wait for next interval (in hours)
+        await asyncio.sleep(interval_hours * 3600)
+
+
 # =============================================================================
 # Scheduler Control Functions
 # =============================================================================
@@ -399,6 +444,18 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task3)
     logger.info(f"Created model_generation_loop task (every {settings.sched_model_interval_min} min)")
+
+    # Roster sync task (daily)
+    roster_interval_hours = getattr(settings, 'sched_roster_interval_hours', 24)
+    task4 = asyncio.create_task(
+        roster_sync_loop(
+            interval_hours=roster_interval_hours,
+            initial_delay=120,  # Stagger start by 2 minutes
+        ),
+        name="roster_sync_loop"
+    )
+    tasks.append(task4)
+    logger.info(f"Created roster_sync_loop task (every {roster_interval_hours} hours)")
 
     _background_tasks = tasks
     return tasks

@@ -27,51 +27,250 @@ SPORT_KEY_TO_NAME = {
 }
 
 # =============================================================================
-# Player-Team Mappings (2025-26 Season)
+# Player-Team Mappings (January 2026 - Verified Current Rosters)
 # =============================================================================
 
 PLAYER_TEAMS = {
-    # Los Angeles Lakers
-    "LeBron James": "Los Angeles Lakers",
-    "Anthony Davis": "Los Angeles Lakers",
-    "Austin Reaves": "Los Angeles Lakers",
-    "D'Angelo Russell": "Los Angeles Lakers",
-    "Rui Hachimura": "Los Angeles Lakers",
+    # ==========================================================================
+    # WESTERN CONFERENCE
+    # ==========================================================================
     
-    # Golden State Warriors
-    "Stephen Curry": "Golden State Warriors",
-    "Klay Thompson": "Golden State Warriors",
-    "Draymond Green": "Golden State Warriors",
-    "Andrew Wiggins": "Golden State Warriors",
-    "Jonathan Kuminga": "Golden State Warriors",
+    # Oklahoma City Thunder (37-10, 1st West - 2025 NBA Champions)
+    "Shai Gilgeous-Alexander": "Oklahoma City Thunder",
+    "Chet Holmgren": "Oklahoma City Thunder",
+    "Jalen Williams": "Oklahoma City Thunder",
+    "Lu Dort": "Oklahoma City Thunder",
+    "Alex Caruso": "Oklahoma City Thunder",
+    "Ousmane Dieng": "Oklahoma City Thunder",
     
-    # Boston Celtics
-    "Jayson Tatum": "Boston Celtics",
-    "Jaylen Brown": "Boston Celtics",
-    "Derrick White": "Boston Celtics",
-    "Kristaps Porzingis": "Boston Celtics",
-    "Jrue Holiday": "Boston Celtics",
+    # San Antonio Spurs (31-15, 2nd West)
+    "Victor Wembanyama": "San Antonio Spurs",
+    "De'Aaron Fox": "San Antonio Spurs",
+    "Stephon Castle": "San Antonio Spurs",
+    "Harrison Barnes": "San Antonio Spurs",
+    "Julian Champagnie": "San Antonio Spurs",
+    "Devin Vassell": "San Antonio Spurs",
     
-    # Miami Heat
-    "Jimmy Butler": "Miami Heat",
-    "Bam Adebayo": "Miami Heat",
-    "Tyler Herro": "Miami Heat",
-    "Terry Rozier": "Miami Heat",
-    "Jaime Jaquez Jr.": "Miami Heat",
-    
-    # Denver Nuggets
+    # Denver Nuggets (31-15, 3rd West)
     "Nikola Jokic": "Denver Nuggets",
     "Jamal Murray": "Denver Nuggets",
     "Michael Porter Jr.": "Denver Nuggets",
-    "Aaron Gordon": "Denver Nuggets",
-    "Kentavious Caldwell-Pope": "Denver Nuggets",
+    "Cameron Johnson": "Denver Nuggets",
+    "Peyton Watson": "Denver Nuggets",
+    "Christian Braun": "Denver Nuggets",
+    
+    # Houston Rockets
+    "Kevin Durant": "Houston Rockets",
+    "Alperen Sengun": "Houston Rockets",
+    "Fred VanVleet": "Houston Rockets",
+    "Amen Thompson": "Houston Rockets",
+    "Clint Capela": "Houston Rockets",
+    "Jabari Smith Jr.": "Houston Rockets",
+    
+    # Los Angeles Lakers (28-17, 5th West)
+    "LeBron James": "Los Angeles Lakers",
+    "Luka Doncic": "Los Angeles Lakers",
+    "Austin Reaves": "Los Angeles Lakers",
+    "Rui Hachimura": "Los Angeles Lakers",
+    "Deandre Ayton": "Los Angeles Lakers",
+    "Marcus Smart": "Los Angeles Lakers",
+    
+    # Minnesota Timberwolves (28-19, 6th West)
+    "Anthony Edwards": "Minnesota Timberwolves",
+    "Julius Randle": "Minnesota Timberwolves",
+    "Rudy Gobert": "Minnesota Timberwolves",
+    "Jaden McDaniels": "Minnesota Timberwolves",
+    "Mike Conley": "Minnesota Timberwolves",
+    "Donte DiVincenzo": "Minnesota Timberwolves",
+    
+    # Golden State Warriors (26-22, 8th West)
+    "Stephen Curry": "Golden State Warriors",
+    "Jimmy Butler": "Golden State Warriors",
+    "Draymond Green": "Golden State Warriors",
+    "Al Horford": "Golden State Warriors",
+    "Jonathan Kuminga": "Golden State Warriors",
+    "Brandin Podziemski": "Golden State Warriors",
+    
+    # Los Angeles Clippers (21-24, 10th West)
+    "Kawhi Leonard": "Los Angeles Clippers",
+    "James Harden": "Los Angeles Clippers",
+    "Bradley Beal": "Los Angeles Clippers",
+    "Ivica Zubac": "Los Angeles Clippers",
+    "Brook Lopez": "Los Angeles Clippers",
+    "John Collins": "Los Angeles Clippers",
+    
+    # Dallas Mavericks (19-27, 11th West)
+    "Anthony Davis": "Dallas Mavericks",
+    "Kyrie Irving": "Dallas Mavericks",
+    "Klay Thompson": "Dallas Mavericks",
+    "D'Angelo Russell": "Dallas Mavericks",
+    "P.J. Washington": "Dallas Mavericks",
+    "Dereck Lively II": "Dallas Mavericks",
+    "Daniel Gafford": "Dallas Mavericks",
     
     # Phoenix Suns
-    "Kevin Durant": "Phoenix Suns",
     "Devin Booker": "Phoenix Suns",
-    "Bradley Beal": "Phoenix Suns",
-    "Jusuf Nurkic": "Phoenix Suns",
+    "Jalen Green": "Phoenix Suns",
+    "Dillon Brooks": "Phoenix Suns",
     "Grayson Allen": "Phoenix Suns",
+    "Royce O'Neale": "Phoenix Suns",
+    
+    # Memphis Grizzlies (18-26, 12th West)
+    "Ja Morant": "Memphis Grizzlies",
+    "Jaren Jackson Jr.": "Memphis Grizzlies",
+    "Kentavious Caldwell-Pope": "Memphis Grizzlies",
+    "Santi Aldama": "Memphis Grizzlies",
+    "Zach Edey": "Memphis Grizzlies",
+    
+    # Sacramento Kings (12-35, 14th West)
+    "Domantas Sabonis": "Sacramento Kings",
+    "Zach LaVine": "Sacramento Kings",
+    "DeMar DeRozan": "Sacramento Kings",
+    "Malik Monk": "Sacramento Kings",
+    "Keegan Murray": "Sacramento Kings",
+    "Kevin Huerter": "Sacramento Kings",
+    
+    # New Orleans Pelicans (12-36, 15th West)
+    "Zion Williamson": "New Orleans Pelicans",
+    "Dejounte Murray": "New Orleans Pelicans",
+    "Trey Murphy III": "New Orleans Pelicans",
+    "Herb Jones": "New Orleans Pelicans",
+    "Bruce Brown": "New Orleans Pelicans",
+    "Jonas Valanciunas": "New Orleans Pelicans",
+    
+    # Portland Trail Blazers
+    "Scoot Henderson": "Portland Trail Blazers",
+    "Damian Lillard": "Portland Trail Blazers",
+    "Jrue Holiday": "Portland Trail Blazers",
+    "Shaedon Sharpe": "Portland Trail Blazers",
+    "Jerami Grant": "Portland Trail Blazers",
+    "Donovan Clingan": "Portland Trail Blazers",
+    "Deni Avdija": "Portland Trail Blazers",
+    
+    # Utah Jazz (15-31)
+    "Lauri Markkanen": "Utah Jazz",
+    "Jusuf Nurkic": "Utah Jazz",
+    "Keyonte George": "Utah Jazz",
+    "Walker Kessler": "Utah Jazz",
+    "Kyle Anderson": "Utah Jazz",
+    
+    # ==========================================================================
+    # EASTERN CONFERENCE
+    # ==========================================================================
+    
+    # Detroit Pistons (33-11, 1st East)
+    "Cade Cunningham": "Detroit Pistons",
+    "Jaden Ivey": "Detroit Pistons",
+    "Ausar Thompson": "Detroit Pistons",
+    "Jalen Duren": "Detroit Pistons",
+    "Tobias Harris": "Detroit Pistons",
+    
+    # Boston Celtics (29-17, 2nd East)
+    "Jayson Tatum": "Boston Celtics",
+    "Jaylen Brown": "Boston Celtics",
+    "Derrick White": "Boston Celtics",
+    "Anfernee Simons": "Boston Celtics",
+    "Georges Niang": "Boston Celtics",
+    "Sam Hauser": "Boston Celtics",
+    
+    # Toronto Raptors (29-19, 3rd East)
+    "Scottie Barnes": "Toronto Raptors",
+    "Brandon Ingram": "Toronto Raptors",
+    "RJ Barrett": "Toronto Raptors",
+    "Immanuel Quickley": "Toronto Raptors",
+    "Jakob Poeltl": "Toronto Raptors",
+    "Ochai Agbaji": "Toronto Raptors",
+    
+    # New York Knicks (27-18, 4th East)
+    "Jalen Brunson": "New York Knicks",
+    "Karl-Anthony Towns": "New York Knicks",
+    "Mikal Bridges": "New York Knicks",
+    "OG Anunoby": "New York Knicks",
+    "Josh Hart": "New York Knicks",
+    "Miles McBride": "New York Knicks",
+    
+    # Cleveland Cavaliers (28-20, 5th East)
+    "Donovan Mitchell": "Cleveland Cavaliers",
+    "Darius Garland": "Cleveland Cavaliers",
+    "Evan Mobley": "Cleveland Cavaliers",
+    "Jarrett Allen": "Cleveland Cavaliers",
+    "Max Strus": "Cleveland Cavaliers",
+    
+    # Philadelphia 76ers (24-21, 6th East)
+    "Joel Embiid": "Philadelphia 76ers",
+    "Tyrese Maxey": "Philadelphia 76ers",
+    "Paul George": "Philadelphia 76ers",
+    "Jared McCain": "Philadelphia 76ers",
+    "Kyle Lowry": "Philadelphia 76ers",
+    "Andre Drummond": "Philadelphia 76ers",
+    
+    # Miami Heat (25-22, 7th East)
+    "Bam Adebayo": "Miami Heat",
+    "Tyler Herro": "Miami Heat",
+    "Andrew Wiggins": "Miami Heat",
+    "Terry Rozier": "Miami Heat",
+    "Norman Powell": "Miami Heat",
+    "Jaime Jaquez Jr.": "Miami Heat",
+    
+    # Orlando Magic (23-22, 8th East)
+    "Paolo Banchero": "Orlando Magic",
+    "Franz Wagner": "Orlando Magic",
+    "Desmond Bane": "Orlando Magic",
+    "Jalen Suggs": "Orlando Magic",
+    "Wendell Carter Jr.": "Orlando Magic",
+    "Tyus Jones": "Orlando Magic",
+    
+    # Chicago Bulls (23-23, 9th East)
+    "Coby White": "Chicago Bulls",
+    "Josh Giddey": "Chicago Bulls",
+    "Nikola Vucevic": "Chicago Bulls",
+    "Ayo Dosunmu": "Chicago Bulls",
+    "Zach Collins": "Chicago Bulls",
+    "Tre Jones": "Chicago Bulls",
+    
+    # Atlanta Hawks
+    "CJ McCollum": "Atlanta Hawks",
+    "Jalen Johnson": "Atlanta Hawks",
+    "Kristaps Porzingis": "Atlanta Hawks",
+    "Corey Kispert": "Atlanta Hawks",
+    "Onyeka Okongwu": "Atlanta Hawks",
+    "Dyson Daniels": "Atlanta Hawks",
+    
+    # Milwaukee Bucks
+    "Giannis Antetokounmpo": "Milwaukee Bucks",
+    "Kyle Kuzma": "Milwaukee Bucks",
+    "Myles Turner": "Milwaukee Bucks",
+    "Bobby Portis": "Milwaukee Bucks",
+    "Gary Trent Jr.": "Milwaukee Bucks",
+    
+    # Indiana Pacers
+    "Pascal Siakam": "Indiana Pacers",
+    "Tyrese Haliburton": "Indiana Pacers",
+    "Bennedict Mathurin": "Indiana Pacers",
+    "Aaron Nesmith": "Indiana Pacers",
+    "Andrew Nembhard": "Indiana Pacers",
+    
+    # Brooklyn Nets (12-32)
+    "Cam Thomas": "Brooklyn Nets",
+    "Nic Claxton": "Brooklyn Nets",
+    "Dennis Schroder": "Brooklyn Nets",
+    "Ben Simmons": "Brooklyn Nets",
+    "Day'Ron Sharpe": "Brooklyn Nets",
+    
+    # Charlotte Hornets (19-28)
+    "LaMelo Ball": "Charlotte Hornets",
+    "Brandon Miller": "Charlotte Hornets",
+    "Miles Bridges": "Charlotte Hornets",
+    "Collin Sexton": "Charlotte Hornets",
+    "Mark Williams": "Charlotte Hornets",
+    "Spencer Dinwiddie": "Charlotte Hornets",
+    
+    # Washington Wizards (10-34, 15th East)
+    "Trae Young": "Washington Wizards",
+    "Khris Middleton": "Washington Wizards",
+    "Jordan Poole": "Washington Wizards",
+    "Bilal Coulibaly": "Washington Wizards",
+    "Alex Sarr": "Washington Wizards",
 }
 
 

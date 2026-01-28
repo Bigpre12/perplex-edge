@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     injury_api_key: str = ""
     injury_api_base_url: str = "https://api.injurytracker.example.com/v1"
 
+    # Roster API (balldontlie.io)
+    roster_api_key: str = ""
+    roster_api_base_url: str = "https://api.balldontlie.io/v1"
+
     # Frontend URL (for CORS)
     frontend_url: str = "http://localhost:5173"
     # Additional CORS origins (comma-separated)
@@ -40,6 +44,7 @@ class Settings(BaseSettings):
     sched_odds_interval_min: int = 5
     sched_stats_interval_min: int = 15
     sched_model_interval_min: int = 10
+    sched_roster_interval_hours: int = 24  # Daily roster sync
     
     # Daily refresh configuration
     daily_refresh_hour: int = 9  # 9 AM EST

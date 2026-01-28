@@ -476,34 +476,84 @@ class XYZOddsProvider(OddsProvider):
     # =========================================================================
     
     def _stub_games_response(self, sport_key: str) -> list[dict[str, Any]]:
-        """Return realistic stub game data for testing."""
+        """Return realistic stub game data for testing - January 28, 2026 actual slate."""
         if "basketball" in sport_key:
             return [
+                # 7:00 PM ET Games
                 {
-                    "id": "e912304a8b234c56d789ef0123456789",
+                    "id": "game_chi_ind_20260128",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-28T00:10:00Z",
-                    "home_team": "Los Angeles Lakers",
-                    "away_team": "Golden State Warriors",
+                    "commence_time": "2026-01-29T00:00:00Z",
+                    "home_team": "Indiana Pacers",
+                    "away_team": "Chicago Bulls",
                     "bookmakers": [],
                 },
                 {
-                    "id": "f823415b9c345d67e890fa1234567890",
+                    "id": "game_lal_cle_20260128",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-28T00:40:00Z",
+                    "commence_time": "2026-01-29T00:00:00Z",
+                    "home_team": "Cleveland Cavaliers",
+                    "away_team": "Los Angeles Lakers",
+                    "bookmakers": [],
+                },
+                # 7:30 PM ET Games
+                {
+                    "id": "game_atl_bos_20260128",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": "2026-01-29T00:30:00Z",
                     "home_team": "Boston Celtics",
-                    "away_team": "Miami Heat",
+                    "away_team": "Atlanta Hawks",
                     "bookmakers": [],
                 },
                 {
-                    "id": "a734526c0d456e78f901ab2345678901",
+                    "id": "game_orl_mia_20260128",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-28T02:10:00Z",
-                    "home_team": "Phoenix Suns",
-                    "away_team": "Denver Nuggets",
+                    "commence_time": "2026-01-29T00:30:00Z",
+                    "home_team": "Miami Heat",
+                    "away_team": "Orlando Magic",
+                    "bookmakers": [],
+                },
+                {
+                    "id": "game_nyk_tor_20260128",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": "2026-01-29T00:30:00Z",
+                    "home_team": "Toronto Raptors",
+                    "away_team": "New York Knicks",
+                    "bookmakers": [],
+                },
+                # 8:00 PM ET Game
+                {
+                    "id": "game_cha_mem_20260128",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": "2026-01-29T01:00:00Z",
+                    "home_team": "Memphis Grizzlies",
+                    "away_team": "Charlotte Hornets",
+                    "bookmakers": [],
+                },
+                # 8:30 PM ET Game
+                {
+                    "id": "game_min_dal_20260128",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": "2026-01-29T01:30:00Z",
+                    "home_team": "Dallas Mavericks",
+                    "away_team": "Minnesota Timberwolves",
+                    "bookmakers": [],
+                },
+                # 9:00 PM ET Game
+                {
+                    "id": "game_gsw_uta_20260128",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": "2026-01-29T02:00:00Z",
+                    "home_team": "Utah Jazz",
+                    "away_team": "Golden State Warriors",
                     "bookmakers": [],
                 },
             ]
@@ -527,13 +577,55 @@ class XYZOddsProvider(OddsProvider):
         sport_key: str,
         external_game_id: str,
     ) -> dict[str, Any]:
-        """Return realistic stub betting lines for testing."""
+        """Return realistic stub betting lines for testing - January 28, 2026 slate."""
+        # Game-specific lines based on actual January 28, 2026 slate
+        game_lines = {
+            "game_chi_ind_20260128": {
+                "home_team": "Indiana Pacers", "away_team": "Chicago Bulls",
+                "home_spread": 1.5, "total": 224.5, "home_ml": 105, "away_ml": -125,
+            },
+            "game_lal_cle_20260128": {
+                "home_team": "Cleveland Cavaliers", "away_team": "Los Angeles Lakers",
+                "home_spread": -3.5, "total": 231.5, "home_ml": -160, "away_ml": 140,
+            },
+            "game_atl_bos_20260128": {
+                "home_team": "Boston Celtics", "away_team": "Atlanta Hawks",
+                "home_spread": -6.5, "total": 226.0, "home_ml": -275, "away_ml": 225,
+            },
+            "game_orl_mia_20260128": {
+                "home_team": "Miami Heat", "away_team": "Orlando Magic",
+                "home_spread": -3.0, "total": 212.5, "home_ml": -150, "away_ml": 130,
+            },
+            "game_nyk_tor_20260128": {
+                "home_team": "Toronto Raptors", "away_team": "New York Knicks",
+                "home_spread": 1.5, "total": 228.0, "home_ml": 105, "away_ml": -125,
+            },
+            "game_cha_mem_20260128": {
+                "home_team": "Memphis Grizzlies", "away_team": "Charlotte Hornets",
+                "home_spread": 2.0, "total": 218.5, "home_ml": 115, "away_ml": -135,
+            },
+            "game_min_dal_20260128": {
+                "home_team": "Dallas Mavericks", "away_team": "Minnesota Timberwolves",
+                "home_spread": 6.5, "total": 224.0, "home_ml": 240, "away_ml": -300,
+            },
+            "game_gsw_uta_20260128": {
+                "home_team": "Utah Jazz", "away_team": "Golden State Warriors",
+                "home_spread": 10.5, "total": 232.0, "home_ml": 420, "away_ml": -550,
+            },
+        }
+        
+        # Get game-specific lines or use defaults
+        lines = game_lines.get(external_game_id, {
+            "home_team": "Home Team", "away_team": "Away Team",
+            "home_spread": -3.0, "total": 220.0, "home_ml": -150, "away_ml": 130,
+        })
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
-            "home_team": "Los Angeles Lakers",
-            "away_team": "Golden State Warriors",
-            "commence_time": "2026-01-28T00:10:00Z",
+            "home_team": lines["home_team"],
+            "away_team": lines["away_team"],
+            "commence_time": "2026-01-29T00:00:00Z",
             "bookmakers": [
                 {
                     "key": "draftkings",
@@ -542,22 +634,22 @@ class XYZOddsProvider(OddsProvider):
                         {
                             "key": "h2h",
                             "outcomes": [
-                                {"name": "Los Angeles Lakers", "price": -150},
-                                {"name": "Golden State Warriors", "price": 130},
+                                {"name": lines["home_team"], "price": lines["home_ml"]},
+                                {"name": lines["away_team"], "price": lines["away_ml"]},
                             ],
                         },
                         {
                             "key": "spreads",
                             "outcomes": [
-                                {"name": "Los Angeles Lakers", "price": -110, "point": -3.5},
-                                {"name": "Golden State Warriors", "price": -110, "point": 3.5},
+                                {"name": lines["home_team"], "price": -110, "point": lines["home_spread"]},
+                                {"name": lines["away_team"], "price": -110, "point": -lines["home_spread"]},
                             ],
                         },
                         {
                             "key": "totals",
                             "outcomes": [
-                                {"name": "Over", "price": -110, "point": 228.5},
-                                {"name": "Under", "price": -110, "point": 228.5},
+                                {"name": "Over", "price": -110, "point": lines["total"]},
+                                {"name": "Under", "price": -110, "point": lines["total"]},
                             ],
                         },
                     ],
@@ -569,22 +661,22 @@ class XYZOddsProvider(OddsProvider):
                         {
                             "key": "h2h",
                             "outcomes": [
-                                {"name": "Los Angeles Lakers", "price": -145},
-                                {"name": "Golden State Warriors", "price": 125},
+                                {"name": lines["home_team"], "price": lines["home_ml"] - 5},
+                                {"name": lines["away_team"], "price": lines["away_ml"] + 5},
                             ],
                         },
                         {
                             "key": "spreads",
                             "outcomes": [
-                                {"name": "Los Angeles Lakers", "price": -108, "point": -3.5},
-                                {"name": "Golden State Warriors", "price": -112, "point": 3.5},
+                                {"name": lines["home_team"], "price": -108, "point": lines["home_spread"]},
+                                {"name": lines["away_team"], "price": -112, "point": -lines["home_spread"]},
                             ],
                         },
                         {
                             "key": "totals",
                             "outcomes": [
-                                {"name": "Over", "price": -108, "point": 229.0},
-                                {"name": "Under", "price": -112, "point": 229.0},
+                                {"name": "Over", "price": -108, "point": lines["total"] + 0.5},
+                                {"name": "Under", "price": -112, "point": lines["total"] + 0.5},
                             ],
                         },
                     ],
@@ -596,15 +688,15 @@ class XYZOddsProvider(OddsProvider):
                         {
                             "key": "h2h",
                             "outcomes": [
-                                {"name": "Los Angeles Lakers", "price": -155},
-                                {"name": "Golden State Warriors", "price": 135},
+                                {"name": lines["home_team"], "price": lines["home_ml"] + 5},
+                                {"name": lines["away_team"], "price": lines["away_ml"] - 5},
                             ],
                         },
                         {
                             "key": "spreads",
                             "outcomes": [
-                                {"name": "Los Angeles Lakers", "price": -110, "point": -4.0},
-                                {"name": "Golden State Warriors", "price": -110, "point": 4.0},
+                                {"name": lines["home_team"], "price": -110, "point": lines["home_spread"] - 0.5},
+                                {"name": lines["away_team"], "price": -110, "point": -(lines["home_spread"] - 0.5)},
                             ],
                         },
                         {
@@ -625,16 +717,16 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
         prop_types: Optional[list[str]] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub player props for testing based on game."""
+        """Return realistic stub player props for January 28, 2026 games."""
         
-        # Game 1: Lakers vs Warriors
-        if external_game_id == "e912304a8b234c56d789ef0123456789":
+        # Game: Lakers @ Cavaliers (Luka-led Lakers vs Mitchell-led Cavs)
+        if external_game_id == "game_lal_cle_20260128":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
-                "home_team": "Los Angeles Lakers",
-                "away_team": "Golden State Warriors",
-                "commence_time": "2026-01-28T00:10:00Z",
+                "home_team": "Cleveland Cavaliers",
+                "away_team": "Los Angeles Lakers",
+                "commence_time": "2026-01-29T00:00:00Z",
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -643,21 +735,234 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points",
                                 "outcomes": [
-                                    {"name": "Over", "description": "LeBron James", "price": -115, "point": 26.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -105, "point": 26.5},
-                                    {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 28.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 28.5},
-                                    {"name": "Over", "description": "Anthony Davis", "price": -120, "point": 24.5},
-                                    {"name": "Under", "description": "Anthony Davis", "price": 100, "point": 24.5},
+                                    {"name": "Over", "description": "Luka Doncic", "price": -115, "point": 32.5},
+                                    {"name": "Under", "description": "Luka Doncic", "price": -105, "point": 32.5},
+                                    {"name": "Over", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
+                                    {"name": "Under", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
+                                    {"name": "Over", "description": "LeBron James", "price": -108, "point": 24.5},
+                                    {"name": "Under", "description": "LeBron James", "price": -112, "point": 24.5},
+                                    {"name": "Over", "description": "Darius Garland", "price": -110, "point": 19.5},
+                                    {"name": "Under", "description": "Darius Garland", "price": -110, "point": 19.5},
                                 ],
                             },
                             {
                                 "key": "player_rebounds",
                                 "outcomes": [
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 7.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 7.5},
+                                    {"name": "Over", "description": "Jarrett Allen", "price": -125, "point": 10.5},
+                                    {"name": "Under", "description": "Jarrett Allen", "price": 105, "point": 10.5},
+                                    {"name": "Over", "description": "Deandre Ayton", "price": -110, "point": 10.5},
+                                    {"name": "Under", "description": "Deandre Ayton", "price": -110, "point": 10.5},
+                                    {"name": "Over", "description": "Evan Mobley", "price": -115, "point": 8.5},
+                                    {"name": "Under", "description": "Evan Mobley", "price": -105, "point": 8.5},
+                                ],
+                            },
+                            {
+                                "key": "player_assists",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Luka Doncic", "price": -120, "point": 9.5},
+                                    {"name": "Under", "description": "Luka Doncic", "price": 100, "point": 9.5},
+                                    {"name": "Over", "description": "Darius Garland", "price": -115, "point": 6.5},
+                                    {"name": "Under", "description": "Darius Garland", "price": -105, "point": 6.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Game: Hawks @ Celtics (CJ McCollum/Porzingis Hawks vs Tatum-less Celtics)
+        elif external_game_id == "game_atl_bos_20260128":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Boston Celtics",
+                "away_team": "Atlanta Hawks",
+                "commence_time": "2026-01-29T00:30:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jaylen Brown", "price": -115, "point": 27.5},
+                                    {"name": "Under", "description": "Jaylen Brown", "price": -105, "point": 27.5},
+                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 22.5},
+                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 22.5},
+                                    {"name": "Over", "description": "Kristaps Porzingis", "price": -108, "point": 19.5},
+                                    {"name": "Under", "description": "Kristaps Porzingis", "price": -112, "point": 19.5},
+                                    {"name": "Over", "description": "Anfernee Simons", "price": -110, "point": 18.5},
+                                    {"name": "Under", "description": "Anfernee Simons", "price": -110, "point": 18.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Kristaps Porzingis", "price": -115, "point": 7.5},
+                                    {"name": "Under", "description": "Kristaps Porzingis", "price": -105, "point": 7.5},
+                                    {"name": "Over", "description": "Jalen Johnson", "price": -110, "point": 6.5},
+                                    {"name": "Under", "description": "Jalen Johnson", "price": -110, "point": 6.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Game: Magic @ Heat (Bane/Banchero Magic vs Bam/Herro/Wiggins Heat)
+        elif external_game_id == "game_orl_mia_20260128":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Miami Heat",
+                "away_team": "Orlando Magic",
+                "commence_time": "2026-01-29T00:30:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Paolo Banchero", "price": -115, "point": 24.5},
+                                    {"name": "Under", "description": "Paolo Banchero", "price": -105, "point": 24.5},
+                                    {"name": "Over", "description": "Tyler Herro", "price": -110, "point": 22.5},
+                                    {"name": "Under", "description": "Tyler Herro", "price": -110, "point": 22.5},
+                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 20.5},
+                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 20.5},
+                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 17.5},
+                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 17.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Bam Adebayo", "price": -125, "point": 10.5},
+                                    {"name": "Under", "description": "Bam Adebayo", "price": 105, "point": 10.5},
+                                    {"name": "Over", "description": "Franz Wagner", "price": -110, "point": 5.5},
+                                    {"name": "Under", "description": "Franz Wagner", "price": -110, "point": 5.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Game: Knicks @ Raptors (KAT/Brunson/Bridges Knicks vs Barnes/Ingram Raptors)
+        elif external_game_id == "game_nyk_tor_20260128":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Toronto Raptors",
+                "away_team": "New York Knicks",
+                "commence_time": "2026-01-29T00:30:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jalen Brunson", "price": -115, "point": 26.5},
+                                    {"name": "Under", "description": "Jalen Brunson", "price": -105, "point": 26.5},
+                                    {"name": "Over", "description": "Scottie Barnes", "price": -110, "point": 22.5},
+                                    {"name": "Under", "description": "Scottie Barnes", "price": -110, "point": 22.5},
+                                    {"name": "Over", "description": "Brandon Ingram", "price": -108, "point": 21.5},
+                                    {"name": "Under", "description": "Brandon Ingram", "price": -112, "point": 21.5},
+                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 24.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -120, "point": 11.5},
+                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": 100, "point": 11.5},
+                                    {"name": "Over", "description": "Jakob Poeltl", "price": -115, "point": 9.5},
+                                    {"name": "Under", "description": "Jakob Poeltl", "price": -105, "point": 9.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Game: Timberwolves @ Mavericks (Edwards/Randle Wolves vs AD/Klay Mavs)
+        elif external_game_id == "game_min_dal_20260128":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Dallas Mavericks",
+                "away_team": "Minnesota Timberwolves",
+                "commence_time": "2026-01-29T01:30:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Anthony Edwards", "price": -115, "point": 28.5},
+                                    {"name": "Under", "description": "Anthony Edwards", "price": -105, "point": 28.5},
+                                    {"name": "Over", "description": "Anthony Davis", "price": -120, "point": 25.5},
+                                    {"name": "Under", "description": "Anthony Davis", "price": 100, "point": 25.5},
+                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 21.5},
+                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 21.5},
+                                    {"name": "Over", "description": "Klay Thompson", "price": -108, "point": 14.5},
+                                    {"name": "Under", "description": "Klay Thompson", "price": -112, "point": 14.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
                                     {"name": "Over", "description": "Anthony Davis", "price": -130, "point": 11.5},
                                     {"name": "Under", "description": "Anthony Davis", "price": 110, "point": 11.5},
+                                    {"name": "Over", "description": "Rudy Gobert", "price": -125, "point": 11.5},
+                                    {"name": "Under", "description": "Rudy Gobert", "price": 105, "point": 11.5},
+                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 8.5},
+                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 8.5},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            }
+        
+        # Game: Warriors @ Jazz (Curry/Butler Warriors vs Markkanen Jazz)
+        elif external_game_id == "game_gsw_uta_20260128":
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Utah Jazz",
+                "away_team": "Golden State Warriors",
+                "commence_time": "2026-01-29T02:00:00Z",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {
+                                "key": "player_points",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 27.5},
+                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 27.5},
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
+                                    {"name": "Over", "description": "Jimmy Butler", "price": -108, "point": 21.5},
+                                    {"name": "Under", "description": "Jimmy Butler", "price": -112, "point": 21.5},
+                                ],
+                            },
+                            {
+                                "key": "player_rebounds",
+                                "outcomes": [
+                                    {"name": "Over", "description": "Jusuf Nurkic", "price": -115, "point": 9.5},
+                                    {"name": "Under", "description": "Jusuf Nurkic", "price": -105, "point": 9.5},
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 7.5},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 7.5},
                                     {"name": "Over", "description": "Draymond Green", "price": -105, "point": 6.5},
                                     {"name": "Under", "description": "Draymond Green", "price": -115, "point": 6.5},
                                 ],
@@ -665,10 +970,8 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "LeBron James", "price": -125, "point": 8.5},
-                                    {"name": "Under", "description": "LeBron James", "price": 105, "point": 8.5},
-                                    {"name": "Over", "description": "Stephen Curry", "price": -110, "point": 5.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -110, "point": 5.5},
+                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 5.5},
+                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 5.5},
                                 ],
                             },
                             {
@@ -676,17 +979,8 @@ class XYZOddsProvider(OddsProvider):
                                 "outcomes": [
                                     {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 4.5},
                                     {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 4.5},
-                                    {"name": "Over", "description": "Klay Thompson", "price": -110, "point": 3.5},
-                                    {"name": "Under", "description": "Klay Thompson", "price": -110, "point": 3.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 42.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 42.5},
-                                    {"name": "Over", "description": "Stephen Curry", "price": -115, "point": 38.5},
-                                    {"name": "Under", "description": "Stephen Curry", "price": -105, "point": 38.5},
+                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 2.5},
+                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 2.5},
                                 ],
                             },
                         ],
@@ -694,14 +988,14 @@ class XYZOddsProvider(OddsProvider):
                 ],
             }
         
-        # Game 2: Celtics vs Heat
-        elif external_game_id == "f823415b9c345d67e890fa1234567890":
+        # Game: Bulls @ Pacers (Giddey/Vucevic Bulls vs Siakam/Haliburton Pacers)
+        elif external_game_id == "game_chi_ind_20260128":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
-                "home_team": "Boston Celtics",
-                "away_team": "Miami Heat",
-                "commence_time": "2026-01-28T00:40:00Z",
+                "home_team": "Indiana Pacers",
+                "away_team": "Chicago Bulls",
+                "commence_time": "2026-01-29T00:00:00Z",
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -710,39 +1004,32 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Jayson Tatum", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "Jayson Tatum", "price": -105, "point": 27.5},
-                                    {"name": "Over", "description": "Jimmy Butler", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "Jimmy Butler", "price": -110, "point": 22.5},
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -112, "point": 24.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -108, "point": 24.5},
+                                    {"name": "Over", "description": "Pascal Siakam", "price": -115, "point": 22.5},
+                                    {"name": "Under", "description": "Pascal Siakam", "price": -105, "point": 22.5},
+                                    {"name": "Over", "description": "Coby White", "price": -110, "point": 19.5},
+                                    {"name": "Under", "description": "Coby White", "price": -110, "point": 19.5},
+                                    {"name": "Over", "description": "Nikola Vucevic", "price": -108, "point": 17.5},
+                                    {"name": "Under", "description": "Nikola Vucevic", "price": -112, "point": 17.5},
+                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 18.5},
+                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 18.5},
                                 ],
                             },
                             {
                                 "key": "player_rebounds",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Jayson Tatum", "price": -110, "point": 8.5},
-                                    {"name": "Under", "description": "Jayson Tatum", "price": -110, "point": 8.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -125, "point": 10.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": 105, "point": 10.5},
+                                    {"name": "Over", "description": "Pascal Siakam", "price": -115, "point": 7.5},
+                                    {"name": "Under", "description": "Pascal Siakam", "price": -105, "point": 7.5},
+                                    {"name": "Over", "description": "Nikola Vucevic", "price": -120, "point": 9.5},
+                                    {"name": "Under", "description": "Nikola Vucevic", "price": 100, "point": 9.5},
+                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 8.5},
+                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 8.5},
                                 ],
                             },
                             {
                                 "key": "player_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Jimmy Butler", "price": -115, "point": 5.5},
-                                    {"name": "Under", "description": "Jimmy Butler", "price": -105, "point": 5.5},
-                                    {"name": "Over", "description": "Derrick White", "price": -110, "point": 4.5},
-                                    {"name": "Under", "description": "Derrick White", "price": -110, "point": 4.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jayson Tatum", "price": -108, "point": 42.5},
-                                    {"name": "Under", "description": "Jayson Tatum", "price": -112, "point": 42.5},
-                                    {"name": "Over", "description": "Jimmy Butler", "price": -110, "point": 35.5},
-                                    {"name": "Under", "description": "Jimmy Butler", "price": -110, "point": 35.5},
+                                    {"name": "Over", "description": "Josh Giddey", "price": -115, "point": 8.5},
+                                    {"name": "Under", "description": "Josh Giddey", "price": -105, "point": 8.5},
                                 ],
                             },
                         ],
@@ -750,14 +1037,14 @@ class XYZOddsProvider(OddsProvider):
                 ],
             }
         
-        # Game 3: Suns vs Nuggets
-        elif external_game_id == "a734526c0d456e78f901ab2345678901":
+        # Game: Hornets @ Grizzlies (LaMelo/Miller Hornets vs Ja/JJJ Grizzlies)
+        elif external_game_id == "game_cha_mem_20260128":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
-                "home_team": "Phoenix Suns",
-                "away_team": "Denver Nuggets",
-                "commence_time": "2026-01-28T02:10:00Z",
+                "home_team": "Memphis Grizzlies",
+                "away_team": "Charlotte Hornets",
+                "commence_time": "2026-01-29T01:00:00Z",
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -766,39 +1053,23 @@ class XYZOddsProvider(OddsProvider):
                             {
                                 "key": "player_points",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Kevin Durant", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "Kevin Durant", "price": -105, "point": 27.5},
-                                    {"name": "Over", "description": "Nikola Jokic", "price": -120, "point": 26.5},
-                                    {"name": "Under", "description": "Nikola Jokic", "price": 100, "point": 26.5},
-                                    {"name": "Over", "description": "Devin Booker", "price": -110, "point": 25.5},
-                                    {"name": "Under", "description": "Devin Booker", "price": -110, "point": 25.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Nikola Jokic", "price": -130, "point": 12.5},
-                                    {"name": "Under", "description": "Nikola Jokic", "price": 110, "point": 12.5},
-                                    {"name": "Over", "description": "Kevin Durant", "price": -105, "point": 6.5},
-                                    {"name": "Under", "description": "Kevin Durant", "price": -115, "point": 6.5},
+                                    {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 24.5},
+                                    {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 24.5},
+                                    {"name": "Over", "description": "Ja Morant", "price": -110, "point": 23.5},
+                                    {"name": "Under", "description": "Ja Morant", "price": -110, "point": 23.5},
+                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 22.5},
+                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 22.5},
+                                    {"name": "Over", "description": "Brandon Miller", "price": -110, "point": 18.5},
+                                    {"name": "Under", "description": "Brandon Miller", "price": -110, "point": 18.5},
                                 ],
                             },
                             {
                                 "key": "player_assists",
                                 "outcomes": [
-                                    {"name": "Over", "description": "Nikola Jokic", "price": -115, "point": 9.5},
-                                    {"name": "Under", "description": "Nikola Jokic", "price": -105, "point": 9.5},
-                                    {"name": "Over", "description": "Jamal Murray", "price": -110, "point": 6.5},
-                                    {"name": "Under", "description": "Jamal Murray", "price": -110, "point": 6.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Nikola Jokic", "price": -110, "point": 48.5},
-                                    {"name": "Under", "description": "Nikola Jokic", "price": -110, "point": 48.5},
-                                    {"name": "Over", "description": "Kevin Durant", "price": -108, "point": 40.5},
-                                    {"name": "Under", "description": "Kevin Durant", "price": -112, "point": 40.5},
+                                    {"name": "Over", "description": "LaMelo Ball", "price": -120, "point": 8.5},
+                                    {"name": "Under", "description": "LaMelo Ball", "price": 100, "point": 8.5},
+                                    {"name": "Over", "description": "Ja Morant", "price": -115, "point": 7.5},
+                                    {"name": "Under", "description": "Ja Morant", "price": -105, "point": 7.5},
                                 ],
                             },
                         ],
@@ -812,6 +1083,6 @@ class XYZOddsProvider(OddsProvider):
             "sport_key": sport_key,
             "home_team": "Unknown",
             "away_team": "Unknown",
-            "commence_time": "2026-01-28T00:00:00Z",
+            "commence_time": "2026-01-29T00:00:00Z",
             "bookmakers": [],
         }

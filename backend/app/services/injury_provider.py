@@ -511,7 +511,7 @@ class InjuryProvider:
         sport_key: str,
         team: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub injury data for testing."""
+        """Return realistic stub injury data for testing - January 2026 rosters."""
         injuries = []
         
         if "basketball" in sport_key:
@@ -519,7 +519,7 @@ class InjuryProvider:
                 {
                     "player_id": "anthony_davis_456",
                     "player_name": "Anthony Davis",
-                    "team": "Los Angeles Lakers",
+                    "team": "Dallas Mavericks",
                     "status": "QUESTIONABLE",
                     "injury": "Knee - Soreness",
                     "probability": 0.65,
@@ -542,7 +542,7 @@ class InjuryProvider:
                 {
                     "player_id": "luka_doncic_101",
                     "player_name": "Luka Doncic",
-                    "team": "Dallas Mavericks",
+                    "team": "Los Angeles Lakers",
                     "status": "GTD",
                     "injury": "Ankle - Sprain",
                     "probability": 0.50,
@@ -570,6 +570,41 @@ class InjuryProvider:
                     "probability": 0.85,
                     "is_starter": True,
                     "updated": "2026-01-27T19:00:00Z",
+                    "source": "official",
+                },
+                {
+                    "player_id": "klay_thompson_404",
+                    "player_name": "Klay Thompson",
+                    "team": "Dallas Mavericks",
+                    "status": "PROBABLE",
+                    "injury": "Knee - Maintenance",
+                    "probability": 0.90,
+                    "is_starter": True,
+                    "updated": "2026-01-27T16:00:00Z",
+                    "source": "official",
+                },
+                {
+                    "player_id": "kyrie_irving_501",
+                    "player_name": "Kyrie Irving",
+                    "team": "Dallas Mavericks",
+                    "status": "OUT",
+                    "injury": "ACL - Torn",
+                    "probability": 0.0,
+                    "is_starter": None,
+                    "expected_return": "2026-10-01T00:00:00Z",
+                    "updated": "2026-01-27T12:00:00Z",
+                    "source": "official",
+                },
+                {
+                    "player_id": "jayson_tatum_601",
+                    "player_name": "Jayson Tatum",
+                    "team": "Boston Celtics",
+                    "status": "OUT",
+                    "injury": "Achilles - Tear",
+                    "probability": 0.0,
+                    "is_starter": None,
+                    "expected_return": "2026-03-01T00:00:00Z",
+                    "updated": "2026-01-27T14:00:00Z",
                     "source": "official",
                 },
             ]
@@ -610,30 +645,79 @@ class InjuryProvider:
         sport_key: str,
         external_game_id: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub lineup data for testing."""
+        """Return realistic stub lineup data for January 28, 2026 games."""
         if "basketball" in sport_key:
             return {
                 "games": [
+                    # Lakers @ Cavaliers
                     {
-                        "game_id": "e912304a8b234c56d789ef0123456789",
+                        "game_id": "game_lal_cle_20260128",
                         "home": {
+                            "team": "Cleveland Cavaliers",
+                            "lineup": [
+                                {"player_id": "darius_garland_101", "player_name": "Darius Garland", "position": "PG", "is_starter": True, "confirmed": True},
+                                {"player_id": "donovan_mitchell_102", "player_name": "Donovan Mitchell", "position": "SG", "is_starter": True, "confirmed": True},
+                                {"player_id": "max_strus_103", "player_name": "Max Strus", "position": "SF", "is_starter": True, "confirmed": True},
+                                {"player_id": "evan_mobley_104", "player_name": "Evan Mobley", "position": "PF", "is_starter": True, "confirmed": True},
+                                {"player_id": "jarrett_allen_105", "player_name": "Jarrett Allen", "position": "C", "is_starter": True, "confirmed": True},
+                            ],
+                        },
+                        "away": {
                             "team": "Los Angeles Lakers",
                             "lineup": [
-                                {"player_id": "lebron_james_123", "player_name": "LeBron James", "position": "SF", "is_starter": True, "confirmed": True},
-                                {"player_id": "anthony_davis_456", "player_name": "Anthony Davis", "position": "PF", "is_starter": True, "confirmed": False},
-                                {"player_id": "austin_reaves_789", "player_name": "Austin Reaves", "position": "SG", "is_starter": True, "confirmed": True},
-                                {"player_id": "dangelo_russell_101", "player_name": "D'Angelo Russell", "position": "PG", "is_starter": True, "confirmed": True},
-                                {"player_id": "rui_hachimura_102", "player_name": "Rui Hachimura", "position": "PF", "is_starter": True, "confirmed": True},
+                                {"player_id": "luka_doncic_201", "player_name": "Luka Doncic", "position": "PG", "is_starter": True, "confirmed": True},
+                                {"player_id": "austin_reaves_202", "player_name": "Austin Reaves", "position": "SG", "is_starter": True, "confirmed": True},
+                                {"player_id": "lebron_james_203", "player_name": "LeBron James", "position": "SF", "is_starter": True, "confirmed": True},
+                                {"player_id": "rui_hachimura_204", "player_name": "Rui Hachimura", "position": "PF", "is_starter": True, "confirmed": True},
+                                {"player_id": "deandre_ayton_205", "player_name": "Deandre Ayton", "position": "C", "is_starter": True, "confirmed": True},
+                            ],
+                        },
+                    },
+                    # Timberwolves @ Mavericks
+                    {
+                        "game_id": "game_min_dal_20260128",
+                        "home": {
+                            "team": "Dallas Mavericks",
+                            "lineup": [
+                                {"player_id": "dangelo_russell_301", "player_name": "D'Angelo Russell", "position": "PG", "is_starter": True, "confirmed": True},
+                                {"player_id": "klay_thompson_302", "player_name": "Klay Thompson", "position": "SG", "is_starter": True, "confirmed": True},
+                                {"player_id": "pj_washington_303", "player_name": "P.J. Washington", "position": "SF", "is_starter": True, "confirmed": True},
+                                {"player_id": "anthony_davis_304", "player_name": "Anthony Davis", "position": "PF", "is_starter": True, "confirmed": False},
+                                {"player_id": "dereck_lively_305", "player_name": "Dereck Lively II", "position": "C", "is_starter": True, "confirmed": True},
+                            ],
+                        },
+                        "away": {
+                            "team": "Minnesota Timberwolves",
+                            "lineup": [
+                                {"player_id": "mike_conley_401", "player_name": "Mike Conley", "position": "PG", "is_starter": True, "confirmed": True},
+                                {"player_id": "anthony_edwards_402", "player_name": "Anthony Edwards", "position": "SG", "is_starter": True, "confirmed": True},
+                                {"player_id": "jaden_mcdaniels_403", "player_name": "Jaden McDaniels", "position": "SF", "is_starter": True, "confirmed": True},
+                                {"player_id": "julius_randle_404", "player_name": "Julius Randle", "position": "PF", "is_starter": True, "confirmed": True},
+                                {"player_id": "rudy_gobert_405", "player_name": "Rudy Gobert", "position": "C", "is_starter": True, "confirmed": True},
+                            ],
+                        },
+                    },
+                    # Warriors @ Jazz
+                    {
+                        "game_id": "game_gsw_uta_20260128",
+                        "home": {
+                            "team": "Utah Jazz",
+                            "lineup": [
+                                {"player_id": "keyonte_george_501", "player_name": "Keyonte George", "position": "PG", "is_starter": True, "confirmed": True},
+                                {"player_id": "kyle_anderson_502", "player_name": "Kyle Anderson", "position": "SG", "is_starter": True, "confirmed": True},
+                                {"player_id": "lauri_markkanen_503", "player_name": "Lauri Markkanen", "position": "SF", "is_starter": True, "confirmed": True},
+                                {"player_id": "walker_kessler_504", "player_name": "Walker Kessler", "position": "PF", "is_starter": True, "confirmed": True},
+                                {"player_id": "jusuf_nurkic_505", "player_name": "Jusuf Nurkic", "position": "C", "is_starter": True, "confirmed": True},
                             ],
                         },
                         "away": {
                             "team": "Golden State Warriors",
                             "lineup": [
-                                {"player_id": "stephen_curry_201", "player_name": "Stephen Curry", "position": "PG", "is_starter": True, "confirmed": True},
-                                {"player_id": "klay_thompson_202", "player_name": "Klay Thompson", "position": "SG", "is_starter": True, "confirmed": True},
-                                {"player_id": "andrew_wiggins_203", "player_name": "Andrew Wiggins", "position": "SF", "is_starter": True, "confirmed": True},
-                                {"player_id": "draymond_green_204", "player_name": "Draymond Green", "position": "PF", "is_starter": True, "confirmed": True},
-                                {"player_id": "kevon_looney_205", "player_name": "Kevon Looney", "position": "C", "is_starter": True, "confirmed": True},
+                                {"player_id": "stephen_curry_601", "player_name": "Stephen Curry", "position": "PG", "is_starter": True, "confirmed": True},
+                                {"player_id": "brandin_podziemski_602", "player_name": "Brandin Podziemski", "position": "SG", "is_starter": True, "confirmed": True},
+                                {"player_id": "jimmy_butler_603", "player_name": "Jimmy Butler", "position": "SF", "is_starter": True, "confirmed": True},
+                                {"player_id": "draymond_green_604", "player_name": "Draymond Green", "position": "PF", "is_starter": True, "confirmed": True},
+                                {"player_id": "al_horford_605", "player_name": "Al Horford", "position": "C", "is_starter": True, "confirmed": True},
                             ],
                         },
                     },
@@ -651,7 +735,7 @@ class InjuryProvider:
             "anthony_davis_456": {
                 "player_id": "anthony_davis_456",
                 "player_name": "Anthony Davis",
-                "team": "Los Angeles Lakers",
+                "team": "Dallas Mavericks",
                 "status": "QUESTIONABLE",
                 "injury": "Knee - Soreness",
                 "probability": 0.65,
@@ -667,6 +751,16 @@ class InjuryProvider:
                 "probability": 0.0,
                 "is_starter": None,
                 "updated": "2026-01-27T15:30:00Z",
+            },
+            "klay_thompson_404": {
+                "player_id": "klay_thompson_404",
+                "player_name": "Klay Thompson",
+                "team": "Dallas Mavericks",
+                "status": "PROBABLE",
+                "injury": "Knee - Maintenance",
+                "probability": 0.90,
+                "is_starter": True,
+                "updated": "2026-01-27T16:00:00Z",
             },
         }
         

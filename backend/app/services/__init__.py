@@ -4,6 +4,7 @@
 from app.services.odds_provider import OddsProvider, XYZOddsProvider
 from app.services.stats_provider import StatsProvider
 from app.services.injury_provider import InjuryProvider
+from app.services.roster_provider import RosterProvider
 
 # ETL Functions
 from app.services.etl_games_and_lines import (
@@ -19,6 +20,11 @@ from app.services.etl_injuries import (
     sync_injuries,
     sync_all_injuries,
     clear_old_injuries,
+)
+from app.services.etl_rosters import (
+    sync_rosters,
+    update_player_team,
+    sync_player_team_from_roster_api,
 )
 
 # Picks Generator
@@ -43,6 +49,7 @@ __all__ = [
     "XYZOddsProvider",
     "StatsProvider",
     "InjuryProvider",
+    "RosterProvider",
     # ETL - Games & Lines
     "sync_games_and_lines",
     "sync_all_sports",
@@ -54,6 +61,10 @@ __all__ = [
     "sync_injuries",
     "sync_all_injuries",
     "clear_old_injuries",
+    # ETL - Rosters
+    "sync_rosters",
+    "update_player_team",
+    "sync_player_team_from_roster_api",
     # Picks Generator
     "generate_picks",
     "generate_all_picks",
