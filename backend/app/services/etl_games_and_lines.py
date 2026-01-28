@@ -26,6 +26,54 @@ SPORT_KEY_TO_NAME = {
     "americanfootball_ncaaf": ("NCAA Football", "NCAAF"),
 }
 
+# =============================================================================
+# Player-Team Mappings (2025-26 Season)
+# =============================================================================
+
+PLAYER_TEAMS = {
+    # Los Angeles Lakers
+    "LeBron James": "Los Angeles Lakers",
+    "Anthony Davis": "Los Angeles Lakers",
+    "Austin Reaves": "Los Angeles Lakers",
+    "D'Angelo Russell": "Los Angeles Lakers",
+    "Rui Hachimura": "Los Angeles Lakers",
+    
+    # Golden State Warriors
+    "Stephen Curry": "Golden State Warriors",
+    "Klay Thompson": "Golden State Warriors",
+    "Draymond Green": "Golden State Warriors",
+    "Andrew Wiggins": "Golden State Warriors",
+    "Jonathan Kuminga": "Golden State Warriors",
+    
+    # Boston Celtics
+    "Jayson Tatum": "Boston Celtics",
+    "Jaylen Brown": "Boston Celtics",
+    "Derrick White": "Boston Celtics",
+    "Kristaps Porzingis": "Boston Celtics",
+    "Jrue Holiday": "Boston Celtics",
+    
+    # Miami Heat
+    "Jimmy Butler": "Miami Heat",
+    "Bam Adebayo": "Miami Heat",
+    "Tyler Herro": "Miami Heat",
+    "Terry Rozier": "Miami Heat",
+    "Jaime Jaquez Jr.": "Miami Heat",
+    
+    # Denver Nuggets
+    "Nikola Jokic": "Denver Nuggets",
+    "Jamal Murray": "Denver Nuggets",
+    "Michael Porter Jr.": "Denver Nuggets",
+    "Aaron Gordon": "Denver Nuggets",
+    "Kentavious Caldwell-Pope": "Denver Nuggets",
+    
+    # Phoenix Suns
+    "Kevin Durant": "Phoenix Suns",
+    "Devin Booker": "Phoenix Suns",
+    "Bradley Beal": "Phoenix Suns",
+    "Jusuf Nurkic": "Phoenix Suns",
+    "Grayson Allen": "Phoenix Suns",
+}
+
 
 # =============================================================================
 # Helper Functions - Get or Create
@@ -466,14 +514,36 @@ async def _sync_player_props(
             game.external_game_id,
         )
         
+        # Get home and away team names for player-team matching
+        home_team_result = await db.execute(select(Team).where(Team.id == game.home_team_id))
+        away_team_result = await db.execute(select(Team).where(Team.id == game.away_team_id))
+        home_team = home_team_result.scalar_one_or_none()
+        away_team = away_team_result.scalar_one_or_none()
+        
         for prop in props_data:
-            # Get or create player
+            # Determine player's team based on PLAYER_TEAMS mapping
+            team_id = None
+            if prop.player_name in PLAYER_TEAMS:
+                player_team_name = PLAYER_TEAMS[prop.player_name]
+                if home_team and player_team_name == home_team.name:
+                    team_id = home_team.id
+                elif away_team and player_team_name == away_team.name:
+                    team_id = away_team.id
+            
+            # Get or create player with team assignment
             player = await get_or_create_player(
                 db,
                 sport.id,
                 prop.player_name,
                 prop.player_external_id,
+                team_id=team_id,
             )
+            
+            # Update player's team_id if it was null but we now know the team
+            if player.team_id is None and team_id is not None:
+                player.team_id = team_id
+                await db.flush()
+                logger.info(f"Updated player {prop.player_name} team to {team_id}")
             
             # Get or create prop market
             market_key = f"player_prop_{prop.stat_type}"
