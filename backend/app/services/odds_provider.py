@@ -349,7 +349,7 @@ class XYZOddsProvider(OddsProvider):
             else:
                 # Default props based on sport
                 if "basketball" in sport_key:
-                    markets = "player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists"
+                    markets = "player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists,player_steals,player_blocks,player_turnovers"
                 elif "football" in sport_key:
                     markets = "player_pass_yds,player_rush_yds,player_reception_yds,player_receptions"
                 elif "baseball" in sport_key:
