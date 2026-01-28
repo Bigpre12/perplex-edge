@@ -484,7 +484,7 @@ async def _generate_picks_for_game(
         best_candidate = max(candidates, key=lambda c: c["ev"])
         line = best_candidate["line"]
         
-        # Create pick
+        # Create pick (select best side - highest EV - per player/market)
         pick = ModelPick(
             sport_id=sport.id,
             game_id=game.id,
@@ -501,9 +501,6 @@ async def _generate_picks_for_game(
             confidence_score=best_candidate["confidence"],
             is_active=True,
         )
-        # Store sportsbook if the model supports it
-        if hasattr(pick, 'sportsbook'):
-            pick.sportsbook = line.sportsbook
         db.add(pick)
         stats["picks_created"] += 1
     

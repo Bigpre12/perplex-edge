@@ -34,8 +34,6 @@ class ModelPick(Base):
     # side: home, away, over, under
     line_value: Mapped[Optional[float]] = mapped_column(Float)
     odds: Mapped[float] = mapped_column(Float, nullable=False)
-    sportsbook: Mapped[Optional[str]] = mapped_column(String(50))
-    # Sportsbook the line is from (e.g., draftkings, prizepicks, underdog, fliff)
     
     # Model metrics
     model_probability: Mapped[float] = mapped_column(Float, nullable=False)
