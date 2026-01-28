@@ -106,6 +106,12 @@ async def get_or_create_game(
     Returns:
         Tuple of (Game, created) where created is True if new record was created
     """
+    # Convert timezone-aware datetime to naive (UTC) for database
+    if start_time.tzinfo is not None:
+        start_time_naive = start_time.replace(tzinfo=None)
+    else:
+        start_time_naive = start_time
+    
     result = await db.execute(
         select(Game).where(
             Game.sport_id == sport_id,
@@ -121,7 +127,7 @@ async def get_or_create_game(
             external_game_id=external_game_id,
             home_team_id=home_team_id,
             away_team_id=away_team_id,
-            start_time=start_time,
+            start_time=start_time_naive,
             status=status,
         )
         db.add(game)
@@ -130,8 +136,8 @@ async def get_or_create_game(
         logger.debug(f"Created game: {external_game_id}")
     else:
         # Update start time if changed
-        if game.start_time != start_time:
-            game.start_time = start_time
+        if game.start_time != start_time_naive:
+            game.start_time = start_time_naive
             await db.flush()
     
     return game, created
@@ -251,6 +257,14 @@ async def insert_line(
     fetched_at: Optional[datetime] = None,
 ) -> Line:
     """Insert a new line with is_current=True."""
+    # Convert timezone-aware datetime to naive (UTC) for database
+    if fetched_at is None:
+        fetched_at_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    elif fetched_at.tzinfo is not None:
+        fetched_at_naive = fetched_at.replace(tzinfo=None)
+    else:
+        fetched_at_naive = fetched_at
+    
     line = Line(
         game_id=game_id,
         market_id=market_id,
@@ -260,7 +274,7 @@ async def insert_line(
         odds=odds,
         side=side,
         is_current=True,
-        fetched_at=fetched_at or datetime.now(timezone.utc),
+        fetched_at=fetched_at_naive,
     )
     db.add(line)
     return line
