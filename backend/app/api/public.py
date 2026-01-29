@@ -69,9 +69,19 @@ async def list_games_today(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    # Calculate today's date range using US Eastern time
+    # This ensures games show for today's US schedule even after midnight UTC
+    utc_now = datetime.now(timezone.utc)
+    eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
+    eastern_now = utc_now + eastern_offset
+    
+    # Get today's date in Eastern, then create UTC range
+    today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    tomorrow_et = today_et + timedelta(days=1)
+    
+    # Convert to UTC by adding 5 hours (naive datetimes for PostgreSQL)
+    today = today_et + timedelta(hours=5)  # Midnight ET = 5am UTC
+    tomorrow = tomorrow_et + timedelta(hours=5)
     
     # Alias for home and away teams
     HomeTeam = aliased(Team)
@@ -176,9 +186,14 @@ async def list_player_prop_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    # Calculate today's date range using US Eastern time
+    utc_now = datetime.now(timezone.utc)
+    eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
+    eastern_now = utc_now + eastern_offset
+    today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    tomorrow_et = today_et + timedelta(days=1)
+    today = today_et + timedelta(hours=5)
+    tomorrow = tomorrow_et + timedelta(hours=5)
     
     # Aliases for team joins
     PlayerTeam = aliased(Team)
@@ -323,9 +338,14 @@ async def list_game_line_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    # Calculate today's date range using US Eastern time
+    utc_now = datetime.now(timezone.utc)
+    eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
+    eastern_now = utc_now + eastern_offset
+    today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    tomorrow_et = today_et + timedelta(days=1)
+    today = today_et + timedelta(hours=5)
+    tomorrow = tomorrow_et + timedelta(hours=5)
     
     # Aliases for team joins
     HomeTeam = aliased(Team)
