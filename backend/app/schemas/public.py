@@ -1,8 +1,21 @@
 """Public API Pydantic schemas for consumer-facing endpoints."""
 
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from typing import Optional, Annotated
+from pydantic import BaseModel, ConfigDict, PlainSerializer
+
+
+# Custom serializer to ensure datetime is formatted with Z suffix for UTC
+def serialize_datetime_utc(dt: datetime) -> str:
+    """Serialize datetime to ISO format with Z suffix for UTC."""
+    if dt is None:
+        return None
+    # Format as ISO and append Z to indicate UTC
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# Type alias for UTC datetime that serializes with Z suffix
+UTCDatetime = Annotated[datetime, PlainSerializer(serialize_datetime_utc)]
 
 
 # =============================================================================
@@ -38,7 +51,7 @@ class PublicGame(BaseModel):
     home_team_abbr: Optional[str]
     away_team: str
     away_team_abbr: Optional[str]
-    start_time: datetime
+    start_time: UTCDatetime
     status: str
 
 
@@ -105,7 +118,7 @@ class PlayerPropPick(BaseModel):
     
     # Game info
     game_id: int
-    game_start_time: datetime
+    game_start_time: UTCDatetime
 
 
 class PlayerPropPickList(BaseModel):
@@ -131,7 +144,7 @@ class GameLinePick(BaseModel):
     home_team_abbr: Optional[str]
     away_team: str
     away_team_abbr: Optional[str]
-    game_start_time: datetime
+    game_start_time: UTCDatetime
     
     # Line details
     market_type: str  # "spread", "total", "moneyline"
