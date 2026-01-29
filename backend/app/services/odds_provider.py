@@ -18,28 +18,29 @@ logger = logging.getLogger(__name__)
 
 def _get_stub_game_times() -> dict[str, str]:
     """
-    Generate game times for today's date in US Eastern timezone.
+    Generate game times for today's date.
     
-    This ensures stub data uses today's date based on US Eastern time,
-    which is when NBA games are scheduled.
+    Uses evening UTC times that correspond to afternoon/evening in US Eastern.
+    This keeps games on "today" in both UTC and ET timezones.
     
     Returns:
         Dictionary mapping time slots to ISO datetime strings
     """
-    # Use US Eastern time to determine "today" (UTC-5, ignoring DST for simplicity)
-    # This ensures games show as "today" for US users
+    # Use US Eastern time to determine "today"
     utc_now = datetime.now(timezone.utc)
     eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
     eastern_now = utc_now + eastern_offset
     today = eastern_now.strftime("%Y-%m-%d")
     
-    # Game times in UTC (add 5 hours to ET times)
+    # Use late afternoon/evening UTC times (which are afternoon ET)
+    # This keeps games on "today" in both UTC and ET
+    # 23:00 UTC = 6pm ET, 23:30 UTC = 6:30pm ET, etc.
     return {
-        "early": f"{today}T00:00:00Z",      # 7:00 PM ET = midnight UTC
-        "mid": f"{today}T00:30:00Z",        # 7:30 PM ET
-        "late": f"{today}T01:00:00Z",       # 8:00 PM ET
-        "night": f"{today}T01:30:00Z",      # 8:30 PM ET
-        "west": f"{today}T02:00:00Z",       # 9:00 PM ET
+        "early": f"{today}T23:00:00Z",      # 6:00 PM ET
+        "mid": f"{today}T23:30:00Z",        # 6:30 PM ET
+        "late": f"{today}T23:45:00Z",       # 6:45 PM ET
+        "night": f"{today}T23:50:00Z",      # 6:50 PM ET
+        "west": f"{today}T23:55:00Z",       # 6:55 PM ET
     }
 
 
