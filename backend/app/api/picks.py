@@ -249,24 +249,55 @@ async def refresh_picks(
     sport: str = Query("nba", description="Sport to refresh: nba, nfl, mlb, nhl"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Trigger manual refresh of picks for a sport."""
+    """
+    Full refresh: clear old games, sync new data, generate picks.
+    
+    This endpoint performs a complete data refresh for a sport:
+    1. Clears stale games from previous days
+    2. Syncs fresh games and lines (including player props)
+    3. Generates model picks
+    
+    Use this to ensure you always see today's games, not yesterday's.
+    """
+    from app.services.etl_games_and_lines import clear_stale_games, sync_games_and_lines
+    
     try:
         sport_key = SPORT_KEY_MAP.get(sport.lower())
         if not sport_key:
             raise HTTPException(status_code=400, detail=f"Unknown sport: {sport}")
         
-        result = await generate_picks(
+        # Step 1: Clear stale games from previous days
+        logger.info(f"Clearing stale games for {sport_key}...")
+        clear_stats = await clear_stale_games(db, sport_key)
+        logger.info(f"Cleared: {clear_stats}")
+        
+        # Step 2: Sync fresh games and lines (with props)
+        logger.info(f"Syncing games and lines for {sport_key}...")
+        sync_stats = await sync_games_and_lines(
+            db,
+            sport_key,
+            include_props=True,
+            use_stubs=True,  # Use stubs for now
+        )
+        logger.info(f"Synced: {sync_stats}")
+        
+        # Step 3: Generate picks
+        logger.info(f"Generating picks for {sport_key}...")
+        picks_result = await generate_picks(
             db,
             sport_key,
             min_ev=0.0,
             min_confidence=0.5,
             use_stubs=True,  # Use stubs for now
         )
+        logger.info(f"Generated: {picks_result}")
         
         return {
             "status": "success",
             "sport": sport,
-            "result": result,
+            "clear_stats": clear_stats,
+            "sync_stats": sync_stats,
+            "picks_result": picks_result,
         }
     except HTTPException:
         raise
