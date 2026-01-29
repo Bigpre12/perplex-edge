@@ -545,85 +545,86 @@ class XYZOddsProvider(OddsProvider):
         times = _get_stub_game_times()
         
         if "basketball" in sport_key:
+            # Real NBA Schedule for January 29, 2026
             return [
-                # Game 1: Bulls @ Pacers (7:00 PM ET)
+                # Game 1: Kings @ 76ers (7:00 PM ET)
                 {
-                    "id": "game_chi_ind_today",
+                    "id": "game_sac_phi_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
                     "commence_time": times["early"],
-                    "home_team": "Indiana Pacers",
-                    "away_team": "Chicago Bulls",
+                    "home_team": "Philadelphia 76ers",
+                    "away_team": "Sacramento Kings",
                     "bookmakers": [],
                 },
-                # Game 2: Lakers @ Cavaliers (7:00 PM ET)
+                # Game 2: Bucks @ Wizards (8:00 PM ET)
                 {
-                    "id": "game_lal_cle_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["early"],
-                    "home_team": "Cleveland Cavaliers",
-                    "away_team": "Los Angeles Lakers",
-                    "bookmakers": [],
-                },
-                # Game 3: Hawks @ Celtics (7:30 PM ET)
-                {
-                    "id": "game_atl_bos_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["mid"],
-                    "home_team": "Boston Celtics",
-                    "away_team": "Atlanta Hawks",
-                    "bookmakers": [],
-                },
-                # Game 4: Magic @ Heat (7:30 PM ET)
-                {
-                    "id": "game_orl_mia_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["mid"],
-                    "home_team": "Miami Heat",
-                    "away_team": "Orlando Magic",
-                    "bookmakers": [],
-                },
-                # Game 5: Knicks @ Raptors (7:30 PM ET)
-                {
-                    "id": "game_nyk_tor_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["mid"],
-                    "home_team": "Toronto Raptors",
-                    "away_team": "New York Knicks",
-                    "bookmakers": [],
-                },
-                # Game 6: Hornets @ Grizzlies (8:00 PM ET)
-                {
-                    "id": "game_cha_mem_today",
+                    "id": "game_mil_was_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
                     "commence_time": times["late"],
-                    "home_team": "Memphis Grizzlies",
-                    "away_team": "Charlotte Hornets",
+                    "home_team": "Washington Wizards",
+                    "away_team": "Milwaukee Bucks",
                     "bookmakers": [],
                 },
-                # Game 7: Timberwolves @ Mavericks (8:30 PM ET)
+                # Game 3: Heat @ Bulls (8:00 PM ET)
                 {
-                    "id": "game_min_dal_today",
+                    "id": "game_mia_chi_today",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": times["late"],
+                    "home_team": "Chicago Bulls",
+                    "away_team": "Miami Heat",
+                    "bookmakers": [],
+                },
+                # Game 4: Rockets @ Hawks (8:30 PM ET)
+                {
+                    "id": "game_hou_atl_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
                     "commence_time": times["night"],
-                    "home_team": "Dallas Mavericks",
-                    "away_team": "Minnesota Timberwolves",
+                    "home_team": "Atlanta Hawks",
+                    "away_team": "Houston Rockets",
                     "bookmakers": [],
                 },
-                # Game 8: Warriors @ Jazz (9:00 PM ET)
+                # Game 5: Hornets @ Mavericks (9:00 PM ET)
                 {
-                    "id": "game_gsw_uta_today",
+                    "id": "game_cha_dal_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
                     "commence_time": times["west"],
-                    "home_team": "Utah Jazz",
-                    "away_team": "Golden State Warriors",
+                    "home_team": "Dallas Mavericks",
+                    "away_team": "Charlotte Hornets",
+                    "bookmakers": [],
+                },
+                # Game 6: Nets @ Nuggets (9:00 PM ET)
+                {
+                    "id": "game_bkn_den_today",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": times["west"],
+                    "home_team": "Denver Nuggets",
+                    "away_team": "Brooklyn Nets",
+                    "bookmakers": [],
+                },
+                # Game 7: Pistons @ Suns (9:30 PM ET)
+                {
+                    "id": "game_det_pho_today",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": times["west"],
+                    "home_team": "Phoenix Suns",
+                    "away_team": "Detroit Pistons",
+                    "bookmakers": [],
+                },
+                # Game 8: Thunder @ Timberwolves (9:00 PM ET)
+                {
+                    "id": "game_okc_min_today",
+                    "sport_key": sport_key,
+                    "sport_title": "NBA",
+                    "commence_time": times["west"],
+                    "home_team": "Minnesota Timberwolves",
+                    "away_team": "Oklahoma City Thunder",
                     "bookmakers": [],
                 },
             ]
@@ -648,39 +649,39 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
     ) -> dict[str, Any]:
         """Return realistic stub betting lines for testing with dynamic dates."""
-        # Game-specific lines (game IDs use 'today' suffix for dynamic dates)
+        # Game-specific lines for Jan 29, 2026 games
         game_lines = {
-            "game_chi_ind_today": {
-                "home_team": "Indiana Pacers", "away_team": "Chicago Bulls",
-                "home_spread": 1.5, "total": 224.5, "home_ml": 105, "away_ml": -125,
+            "game_sac_phi_today": {
+                "home_team": "Philadelphia 76ers", "away_team": "Sacramento Kings",
+                "home_spread": -4.5, "total": 226.5, "home_ml": -185, "away_ml": 155,
             },
-            "game_lal_cle_today": {
-                "home_team": "Cleveland Cavaliers", "away_team": "Los Angeles Lakers",
-                "home_spread": -3.5, "total": 231.5, "home_ml": -160, "away_ml": 140,
+            "game_mil_was_today": {
+                "home_team": "Washington Wizards", "away_team": "Milwaukee Bucks",
+                "home_spread": 9.5, "total": 231.5, "home_ml": 340, "away_ml": -450,
             },
-            "game_atl_bos_today": {
-                "home_team": "Boston Celtics", "away_team": "Atlanta Hawks",
-                "home_spread": -6.5, "total": 226.0, "home_ml": -275, "away_ml": 225,
+            "game_mia_chi_today": {
+                "home_team": "Chicago Bulls", "away_team": "Miami Heat",
+                "home_spread": 2.5, "total": 218.5, "home_ml": 120, "away_ml": -140,
             },
-            "game_orl_mia_today": {
-                "home_team": "Miami Heat", "away_team": "Orlando Magic",
-                "home_spread": -3.0, "total": 212.5, "home_ml": -150, "away_ml": 130,
+            "game_hou_atl_today": {
+                "home_team": "Atlanta Hawks", "away_team": "Houston Rockets",
+                "home_spread": 3.5, "total": 230.0, "home_ml": 145, "away_ml": -170,
             },
-            "game_nyk_tor_today": {
-                "home_team": "Toronto Raptors", "away_team": "New York Knicks",
-                "home_spread": 1.5, "total": 228.0, "home_ml": 105, "away_ml": -125,
+            "game_cha_dal_today": {
+                "home_team": "Dallas Mavericks", "away_team": "Charlotte Hornets",
+                "home_spread": -9.5, "total": 224.5, "home_ml": -400, "away_ml": 320,
             },
-            "game_cha_mem_today": {
-                "home_team": "Memphis Grizzlies", "away_team": "Charlotte Hornets",
-                "home_spread": 2.0, "total": 218.5, "home_ml": 115, "away_ml": -135,
+            "game_bkn_den_today": {
+                "home_team": "Denver Nuggets", "away_team": "Brooklyn Nets",
+                "home_spread": -10.5, "total": 226.0, "home_ml": -500, "away_ml": 380,
             },
-            "game_min_dal_today": {
-                "home_team": "Dallas Mavericks", "away_team": "Minnesota Timberwolves",
-                "home_spread": 6.5, "total": 224.0, "home_ml": 240, "away_ml": -300,
+            "game_det_pho_today": {
+                "home_team": "Phoenix Suns", "away_team": "Detroit Pistons",
+                "home_spread": -8.5, "total": 222.5, "home_ml": -360, "away_ml": 290,
             },
-            "game_gsw_uta_today": {
-                "home_team": "Utah Jazz", "away_team": "Golden State Warriors",
-                "home_spread": 10.5, "total": 232.0, "home_ml": 420, "away_ml": -550,
+            "game_okc_min_today": {
+                "home_team": "Minnesota Timberwolves", "away_team": "Oklahoma City Thunder",
+                "home_spread": 2.5, "total": 215.5, "home_ml": 115, "away_ml": -135,
             },
         }
         
@@ -773,8 +774,8 @@ class XYZOddsProvider(OddsProvider):
                         {
                             "key": "totals",
                             "outcomes": [
-                                {"name": "Over", "price": -105, "point": 228.0},
-                                {"name": "Under", "price": -115, "point": 228.0},
+                                {"name": "Over", "price": -105, "point": lines["total"]},
+                                {"name": "Under", "price": -115, "point": lines["total"]},
                             ],
                         },
                     ],
@@ -788,1360 +789,182 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
         prop_types: Optional[list[str]] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub player props with dynamic dates."""
-        # Get dynamic game times
+        """Return realistic stub player props for Jan 29, 2026 NBA games."""
         times = _get_stub_game_times()
         
-        # Game: Lakers @ Cavaliers (Luka-led Lakers vs Mitchell-led Cavs)
-        if external_game_id == "game_lal_cle_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Cleveland Cavaliers",
-                "away_team": "Los Angeles Lakers",
+        # Define props for each real game
+        game_props = {
+            # Game 1: Kings @ 76ers
+            "game_sac_phi_today": {
+                "home_team": "Philadelphia 76ers",
+                "away_team": "Sacramento Kings",
                 "commence_time": times["early"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -115, "point": 32.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -105, "point": 32.5},
-                                    {"name": "Over", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
-                                    {"name": "Under", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
-                                    {"name": "Over", "description": "LeBron James", "price": -108, "point": 22.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -112, "point": 22.5},
-                                    {"name": "Over", "description": "Darius Garland", "price": -110, "point": 19.5},
-                                    {"name": "Under", "description": "Darius Garland", "price": -110, "point": 19.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jarrett Allen", "price": -125, "point": 10.5},
-                                    {"name": "Under", "description": "Jarrett Allen", "price": 105, "point": 10.5},
-                                    {"name": "Over", "description": "Deandre Ayton", "price": -110, "point": 10.5},
-                                    {"name": "Under", "description": "Deandre Ayton", "price": -110, "point": 10.5},
-                                    {"name": "Over", "description": "Evan Mobley", "price": -115, "point": 8.5},
-                                    {"name": "Under", "description": "Evan Mobley", "price": -105, "point": 8.5},
-                                ],
-                            },
-                            {
-                                "key": "player_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -120, "point": 9.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": 100, "point": 9.5},
-                                    {"name": "Over", "description": "Darius Garland", "price": -115, "point": 6.5},
-                                    {"name": "Under", "description": "Darius Garland", "price": -105, "point": 6.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 50.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 50.5},
-                                    {"name": "Over", "description": "Donovan Mitchell", "price": -115, "point": 38.5},
-                                    {"name": "Under", "description": "Donovan Mitchell", "price": -105, "point": 38.5},
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 35.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 35.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -108, "point": 40.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -112, "point": 40.5},
-                                    {"name": "Over", "description": "Donovan Mitchell", "price": -110, "point": 31.5},
-                                    {"name": "Under", "description": "Donovan Mitchell", "price": -110, "point": 31.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -115, "point": 42.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -105, "point": 42.5},
-                                    {"name": "Over", "description": "Darius Garland", "price": -110, "point": 26.5},
-                                    {"name": "Under", "description": "Darius Garland", "price": -110, "point": 26.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 17.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 17.5},
-                                    {"name": "Over", "description": "Darius Garland", "price": -108, "point": 10.5},
-                                    {"name": "Under", "description": "Darius Garland", "price": -112, "point": 10.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 1.5},
-                                    {"name": "Over", "description": "Donovan Mitchell", "price": -108, "point": 1.5},
-                                    {"name": "Under", "description": "Donovan Mitchell", "price": -112, "point": 1.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jarrett Allen", "price": -120, "point": 1.5},
-                                    {"name": "Under", "description": "Jarrett Allen", "price": 100, "point": 1.5},
-                                    {"name": "Over", "description": "Evan Mobley", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Evan Mobley", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Deandre Ayton", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Deandre Ayton", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -115, "point": 4.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -105, "point": 4.5},
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 3.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 3.5},
-                                    {"name": "Over", "description": "Darius Garland", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "Darius Garland", "price": -112, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS platform
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 32.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 32.5},
-                                    {"name": "Over", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
-                                    {"name": "Under", "description": "Donovan Mitchell", "price": -110, "point": 26.5},
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 22.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jarrett Allen", "price": -110, "point": 10.5},
-                                    {"name": "Under", "description": "Jarrett Allen", "price": -110, "point": 10.5},
-                                    {"name": "Over", "description": "Deandre Ayton", "price": -110, "point": 10.5},
-                                    {"name": "Under", "description": "Deandre Ayton", "price": -110, "point": 10.5},
-                                ],
-                            },
-                            {
-                                "key": "player_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 9.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 9.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 50.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 50.5},
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 35.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 35.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS platform
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 33.0},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 33.0},
-                                    {"name": "Over", "description": "Donovan Mitchell", "price": -110, "point": 27.0},
-                                    {"name": "Under", "description": "Donovan Mitchell", "price": -110, "point": 27.0},
-                                    {"name": "Over", "description": "LeBron James", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "LeBron James", "price": -110, "point": 22.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jarrett Allen", "price": -110, "point": 11.0},
-                                    {"name": "Under", "description": "Jarrett Allen", "price": -110, "point": 11.0},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 51.0},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 51.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -108, "point": 32.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -112, "point": 32.5},
-                                    {"name": "Over", "description": "Donovan Mitchell", "price": -108, "point": 26.5},
-                                    {"name": "Under", "description": "Donovan Mitchell", "price": -112, "point": 26.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jarrett Allen", "price": -110, "point": 10.5},
-                                    {"name": "Under", "description": "Jarrett Allen", "price": -110, "point": 10.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Luka Doncic", "price": -110, "point": 50.5},
-                                    {"name": "Under", "description": "Luka Doncic", "price": -110, "point": 50.5},
-                                ],
-                            },
-                        ],
-                    },
+                "players": [
+                    # 76ers
+                    {"name": "Joel Embiid", "pts": 32.5, "reb": 11.5, "ast": 4.5, "pra": 48.5},
+                    {"name": "Tyrese Maxey", "pts": 26.5, "reb": 3.5, "ast": 6.5, "pra": 36.5},
+                    # Kings
+                    {"name": "De'Aaron Fox", "pts": 27.5, "reb": 4.5, "ast": 6.5, "pra": 38.5},
+                    {"name": "Domantas Sabonis", "pts": 19.5, "reb": 13.5, "ast": 7.5, "pra": 40.5},
                 ],
-            }
-        
-        # Game: Hawks @ Celtics (CJ McCollum/Porzingis Hawks vs Tatum-less Celtics)
-        elif external_game_id == "game_atl_bos_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Boston Celtics",
-                "away_team": "Atlanta Hawks",
-                "commence_time": times["mid"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -105, "point": 27.5},
-                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 22.5},
-                                    {"name": "Over", "description": "Kristaps Porzingis", "price": -108, "point": 19.5},
-                                    {"name": "Under", "description": "Kristaps Porzingis", "price": -112, "point": 19.5},
-                                    {"name": "Over", "description": "Anfernee Simons", "price": -110, "point": 18.5},
-                                    {"name": "Under", "description": "Anfernee Simons", "price": -110, "point": 18.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Kristaps Porzingis", "price": -115, "point": 7.5},
-                                    {"name": "Under", "description": "Kristaps Porzingis", "price": -105, "point": 7.5},
-                                    {"name": "Over", "description": "Jalen Johnson", "price": -110, "point": 6.5},
-                                    {"name": "Under", "description": "Jalen Johnson", "price": -110, "point": 6.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 39.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 39.5},
-                                    {"name": "Over", "description": "CJ McCollum", "price": -108, "point": 32.5},
-                                    {"name": "Under", "description": "CJ McCollum", "price": -112, "point": 32.5},
-                                    {"name": "Over", "description": "Kristaps Porzingis", "price": -110, "point": 31.5},
-                                    {"name": "Under", "description": "Kristaps Porzingis", "price": -110, "point": 31.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -115, "point": 33.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -105, "point": 33.5},
-                                    {"name": "Over", "description": "Kristaps Porzingis", "price": -110, "point": 27.5},
-                                    {"name": "Under", "description": "Kristaps Porzingis", "price": -110, "point": 27.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 28.5},
-                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 28.5},
-                                    {"name": "Over", "description": "Anfernee Simons", "price": -108, "point": 24.5},
-                                    {"name": "Under", "description": "Anfernee Simons", "price": -112, "point": 24.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 1.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Kristaps Porzingis", "price": -120, "point": 1.5},
-                                    {"name": "Under", "description": "Kristaps Porzingis", "price": 100, "point": 1.5},
-                                    {"name": "Over", "description": "Jalen Johnson", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Jalen Johnson", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 2.5},
-                                    {"name": "Over", "description": "CJ McCollum", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "CJ McCollum", "price": -112, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 27.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 27.5},
-                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 22.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 40.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 40.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -110, "point": 28.0},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -110, "point": 28.0},
-                                    {"name": "Over", "description": "CJ McCollum", "price": -110, "point": 23.0},
-                                    {"name": "Under", "description": "CJ McCollum", "price": -110, "point": 23.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaylen Brown", "price": -108, "point": 27.5},
-                                    {"name": "Under", "description": "Jaylen Brown", "price": -112, "point": 27.5},
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            }
-        
-        # Game: Magic @ Heat (Bane/Banchero Magic vs Bam/Wiggins Heat)
-        # Note: Tyler Herro (OUT-Toe/Rib), Franz Wagner (DAY_TO_DAY)
-        elif external_game_id == "game_orl_mia_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Miami Heat",
-                "away_team": "Orlando Magic",
-                "commence_time": times["mid"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -115, "point": 24.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -105, "point": 24.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 17.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 17.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 18.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 18.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -125, "point": 9.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": 105, "point": 9.5},
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 7.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 7.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 38.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 38.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -115, "point": 30.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -105, "point": 30.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 28.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 28.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 32.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 32.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -105, "point": 27.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Desmond Bane", "price": -108, "point": 23.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -112, "point": 23.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 20.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 20.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -120, "point": 1.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": 100, "point": 1.5},
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 3.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 3.5},
-                                    {"name": "Over", "description": "Desmond Bane", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Desmond Bane", "price": -110, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 24.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 24.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 17.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 17.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 38.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 38.5},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 32.5},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 32.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -110, "point": 25.0},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -110, "point": 25.0},
-                                    {"name": "Over", "description": "Bam Adebayo", "price": -110, "point": 22.0},
-                                    {"name": "Under", "description": "Bam Adebayo", "price": -110, "point": 22.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Paolo Banchero", "price": -108, "point": 24.5},
-                                    {"name": "Under", "description": "Paolo Banchero", "price": -112, "point": 24.5},
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            }
-        
-        # Game: Knicks @ Raptors (KAT/Brunson/Bridges Knicks vs Barnes/Ingram Raptors)
-        # Note: Jakob Poeltl (OUT-Back Indefinite)
-        elif external_game_id == "game_nyk_tor_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Toronto Raptors",
-                "away_team": "New York Knicks",
-                "commence_time": times["mid"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -105, "point": 27.5},
-                                    {"name": "Over", "description": "Scottie Barnes", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "Scottie Barnes", "price": -110, "point": 22.5},
-                                    {"name": "Over", "description": "Brandon Ingram", "price": -108, "point": 21.5},
-                                    {"name": "Under", "description": "Brandon Ingram", "price": -112, "point": 21.5},
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 20.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 20.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -120, "point": 11.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": 100, "point": 11.5},
-                                    {"name": "Over", "description": "Scottie Barnes", "price": -115, "point": 7.5},
-                                    {"name": "Under", "description": "Scottie Barnes", "price": -105, "point": 7.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 36.5},
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -115, "point": 35.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -105, "point": 35.5},
-                                    {"name": "Over", "description": "Scottie Barnes", "price": -108, "point": 35.5},
-                                    {"name": "Under", "description": "Scottie Barnes", "price": -112, "point": 35.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 36.5},
-                                    {"name": "Over", "description": "Scottie Barnes", "price": -115, "point": 29.5},
-                                    {"name": "Under", "description": "Scottie Barnes", "price": -105, "point": 29.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -115, "point": 33.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -105, "point": 33.5},
-                                    {"name": "Over", "description": "Brandon Ingram", "price": -110, "point": 27.5},
-                                    {"name": "Under", "description": "Brandon Ingram", "price": -110, "point": 27.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Scottie Barnes", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Scottie Barnes", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Scottie Barnes", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Scottie Barnes", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 2.5},
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -112, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 27.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 27.5},
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 20.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 20.5},
-                                    {"name": "Over", "description": "Scottie Barnes", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "Scottie Barnes", "price": -110, "point": 22.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 36.5},
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 35.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 35.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -110, "point": 28.0},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -110, "point": 28.0},
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -110, "point": 21.0},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -110, "point": 21.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jalen Brunson", "price": -108, "point": 27.5},
-                                    {"name": "Under", "description": "Jalen Brunson", "price": -112, "point": 27.5},
-                                    {"name": "Over", "description": "Karl-Anthony Towns", "price": -108, "point": 24.5},
-                                    {"name": "Under", "description": "Karl-Anthony Towns", "price": -112, "point": 24.5},
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            }
-        
-        # Game: Timberwolves @ Mavericks (Edwards/Randle/Gobert Wolves vs depleted Mavs)
-        # Note: Anthony Davis (OUT-Hand), Kyrie Irving (OUT-Knee), Klay Thompson (DAY_TO_DAY)
-        elif external_game_id == "game_min_dal_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Dallas Mavericks",
-                "away_team": "Minnesota Timberwolves",
-                "commence_time": times["night"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -115, "point": 29.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -105, "point": 29.5},
-                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 21.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 21.5},
-                                    {"name": "Over", "description": "P.J. Washington", "price": -108, "point": 16.5},
-                                    {"name": "Under", "description": "P.J. Washington", "price": -112, "point": 16.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Rudy Gobert", "price": -125, "point": 11.5},
-                                    {"name": "Under", "description": "Rudy Gobert", "price": 105, "point": 11.5},
-                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 8.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 8.5},
-                                    {"name": "Over", "description": "P.J. Washington", "price": -108, "point": 6.5},
-                                    {"name": "Under", "description": "P.J. Washington", "price": -112, "point": 6.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 38.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 38.5},
-                                    {"name": "Over", "description": "Julius Randle", "price": -108, "point": 36.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -112, "point": 36.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 30.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 30.5},
-                                    {"name": "Over", "description": "P.J. Washington", "price": -108, "point": 23.5},
-                                    {"name": "Under", "description": "P.J. Washington", "price": -112, "point": 23.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 35.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 35.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "P.J. Washington", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "P.J. Washington", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Rudy Gobert", "price": -120, "point": 2.5},
-                                    {"name": "Under", "description": "Rudy Gobert", "price": 100, "point": 2.5},
-                                    {"name": "Over", "description": "P.J. Washington", "price": -105, "point": 0.5},
-                                    {"name": "Under", "description": "P.J. Washington", "price": -115, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 3.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 3.5},
-                                    {"name": "Over", "description": "Julius Randle", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -112, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 29.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 29.5},
-                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 21.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 21.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Rudy Gobert", "price": -110, "point": 11.5},
-                                    {"name": "Under", "description": "Rudy Gobert", "price": -110, "point": 11.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 38.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 38.5},
-                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 36.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -110, "point": 30.0},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -110, "point": 30.0},
-                                    {"name": "Over", "description": "Julius Randle", "price": -110, "point": 22.0},
-                                    {"name": "Under", "description": "Julius Randle", "price": -110, "point": 22.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Anthony Edwards", "price": -108, "point": 29.5},
-                                    {"name": "Under", "description": "Anthony Edwards", "price": -112, "point": 29.5},
-                                    {"name": "Over", "description": "Julius Randle", "price": -108, "point": 21.5},
-                                    {"name": "Under", "description": "Julius Randle", "price": -112, "point": 21.5},
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            }
-        
-        # Game: Warriors @ Jazz (depleted Warriors vs Markkanen Jazz)
-        # Note: Jimmy Butler (OUT-ACL Season), Stephen Curry (DAY_TO_DAY), Draymond Green (DAY_TO_DAY)
-        elif external_game_id == "game_gsw_uta_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Utah Jazz",
-                "away_team": "Golden State Warriors",
-                "commence_time": times["west"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -115, "point": 18.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -105, "point": 18.5},
-                                    {"name": "Over", "description": "Collin Sexton", "price": -108, "point": 17.5},
-                                    {"name": "Under", "description": "Collin Sexton", "price": -112, "point": 17.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jusuf Nurkic", "price": -115, "point": 9.5},
-                                    {"name": "Under", "description": "Jusuf Nurkic", "price": -105, "point": 9.5},
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 7.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 7.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -105, "point": 4.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -115, "point": 4.5},
-                                ],
-                            },
-                            {
-                                "key": "player_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Collin Sexton", "price": -115, "point": 4.5},
-                                    {"name": "Under", "description": "Collin Sexton", "price": -105, "point": 4.5},
-                                ],
-                            },
-                            {
-                                "key": "player_threes",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 2.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -108, "point": 1.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -112, "point": 1.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -115, "point": 36.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -105, "point": 36.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 26.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 26.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 32.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 32.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -108, "point": 23.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -112, "point": 23.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Collin Sexton", "price": -115, "point": 22.5},
-                                    {"name": "Under", "description": "Collin Sexton", "price": -105, "point": 22.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 0.5},
-                                    {"name": "Over", "description": "Collin Sexton", "price": -115, "point": 0.5},
-                                    {"name": "Under", "description": "Collin Sexton", "price": -105, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jusuf Nurkic", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Jusuf Nurkic", "price": -110, "point": 0.5},
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -115, "point": 0.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -105, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -112, "point": 2.5},
-                                    {"name": "Over", "description": "Collin Sexton", "price": -110, "point": 2.5},
-                                    {"name": "Under", "description": "Collin Sexton", "price": -110, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 24.5},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 18.5},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 18.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 36.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -110, "point": 25.0},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -110, "point": 25.0},
-                                    {"name": "Over", "description": "Andrew Wiggins", "price": -110, "point": 19.0},
-                                    {"name": "Under", "description": "Andrew Wiggins", "price": -110, "point": 19.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Lauri Markkanen", "price": -108, "point": 24.5},
-                                    {"name": "Under", "description": "Lauri Markkanen", "price": -112, "point": 24.5},
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            }
-        
-        # Game: Bulls @ Pacers (Giddey/Vucevic Bulls vs Siakam/Haliburton Pacers)
-        elif external_game_id == "game_chi_ind_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Indiana Pacers",
-                "away_team": "Chicago Bulls",
-                "commence_time": times["early"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -115, "point": 22.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -105, "point": 22.5},
-                                    {"name": "Over", "description": "Coby White", "price": -110, "point": 19.5},
-                                    {"name": "Under", "description": "Coby White", "price": -110, "point": 19.5},
-                                    {"name": "Over", "description": "Nikola Vucevic", "price": -108, "point": 17.5},
-                                    {"name": "Under", "description": "Nikola Vucevic", "price": -112, "point": 17.5},
-                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 18.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 18.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -115, "point": 7.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -105, "point": 7.5},
-                                    {"name": "Over", "description": "Nikola Vucevic", "price": -120, "point": 9.5},
-                                    {"name": "Under", "description": "Nikola Vucevic", "price": 100, "point": 9.5},
-                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 8.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 8.5},
-                                ],
-                            },
-                            {
-                                "key": "player_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Josh Giddey", "price": -115, "point": 8.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -105, "point": 8.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -110, "point": 36.5},
-                                    {"name": "Over", "description": "Josh Giddey", "price": -115, "point": 35.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -105, "point": 35.5},
-                                    {"name": "Over", "description": "Nikola Vucevic", "price": -108, "point": 32.5},
-                                    {"name": "Under", "description": "Nikola Vucevic", "price": -112, "point": 32.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Nikola Vucevic", "price": -110, "point": 27.5},
-                                    {"name": "Under", "description": "Nikola Vucevic", "price": -110, "point": 27.5},
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -115, "point": 30.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -105, "point": 30.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Josh Giddey", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -105, "point": 27.5},
-                                    {"name": "Over", "description": "Coby White", "price": -110, "point": 25.5},
-                                    {"name": "Under", "description": "Coby White", "price": -110, "point": 25.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 1.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Nikola Vucevic", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Nikola Vucevic", "price": -110, "point": 0.5},
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -115, "point": 0.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -105, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 3.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 3.5},
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -112, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -110, "point": 22.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -110, "point": 22.5},
-                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 18.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 18.5},
-                                    {"name": "Over", "description": "Coby White", "price": -110, "point": 19.5},
-                                    {"name": "Under", "description": "Coby White", "price": -110, "point": 19.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -110, "point": 36.5},
-                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 32.5},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 32.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -110, "point": 23.0},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -110, "point": 23.0},
-                                    {"name": "Over", "description": "Josh Giddey", "price": -110, "point": 19.0},
-                                    {"name": "Under", "description": "Josh Giddey", "price": -110, "point": 19.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Pascal Siakam", "price": -108, "point": 22.5},
-                                    {"name": "Under", "description": "Pascal Siakam", "price": -112, "point": 22.5},
-                                    {"name": "Over", "description": "Coby White", "price": -108, "point": 19.5},
-                                    {"name": "Under", "description": "Coby White", "price": -112, "point": 19.5},
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            }
-        
-        # Game: Hornets @ Grizzlies (LaMelo/Miller Hornets vs JJJ/depleted Grizzlies)
-        # Note: Ja Morant (OUT-Elbow), Zach Edey (OUT-Ankle), Brandon Clarke (OUT-Calf)
-        elif external_game_id == "game_cha_mem_today":
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Memphis Grizzlies",
-                "away_team": "Charlotte Hornets",
+            },
+            # Game 2: Bucks @ Wizards
+            "game_mil_was_today": {
+                "home_team": "Washington Wizards",
+                "away_team": "Milwaukee Bucks",
                 "commence_time": times["late"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 19.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 19.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 24.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 24.5},
-                                    {"name": "Over", "description": "Brandon Miller", "price": -110, "point": 18.5},
-                                    {"name": "Under", "description": "Brandon Miller", "price": -110, "point": 18.5},
-                                    {"name": "Over", "description": "Marcus Smart", "price": -108, "point": 12.5},
-                                    {"name": "Under", "description": "Marcus Smart", "price": -112, "point": 12.5},
-                                ],
-                            },
-                            {
-                                "key": "player_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -120, "point": 7.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": 100, "point": 7.5},
-                                    {"name": "Over", "description": "Marcus Smart", "price": -110, "point": 5.5},
-                                    {"name": "Under", "description": "Marcus Smart", "price": -110, "point": 5.5},
-                                ],
-                            },
-                            # Combination props
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 32.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 32.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 36.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 36.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 30.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 30.5},
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 24.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 24.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 27.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 27.5},
-                                    {"name": "Over", "description": "Marcus Smart", "price": -110, "point": 18.5},
-                                    {"name": "Under", "description": "Marcus Smart", "price": -110, "point": 18.5},
-                                ],
-                            },
-                            {
-                                "key": "player_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 12.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 12.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 9.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 9.5},
-                                ],
-                            },
-                            # Defensive/misc props
-                            {
-                                "key": "player_steals",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -115, "point": 1.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -105, "point": 1.5},
-                                    {"name": "Over", "description": "Marcus Smart", "price": -110, "point": 1.5},
-                                    {"name": "Under", "description": "Marcus Smart", "price": -110, "point": 1.5},
-                                ],
-                            },
-                            {
-                                "key": "player_blocks",
-                                "outcomes": [
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -120, "point": 2.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": 100, "point": 2.5},
-                                    {"name": "Over", "description": "Brandon Miller", "price": -110, "point": 0.5},
-                                    {"name": "Under", "description": "Brandon Miller", "price": -110, "point": 0.5},
-                                ],
-                            },
-                            {
-                                "key": "player_turnovers",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 3.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 3.5},
-                                    {"name": "Over", "description": "Brandon Miller", "price": -108, "point": 2.5},
-                                    {"name": "Under", "description": "Brandon Miller", "price": -112, "point": 2.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # PrizePicks - Texas-legal DFS
-                    {
-                        "key": "prizepicks",
-                        "title": "PrizePicks",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 19.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 19.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 24.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 24.5},
-                                    {"name": "Over", "description": "Brandon Miller", "price": -110, "point": 18.5},
-                                    {"name": "Under", "description": "Brandon Miller", "price": -110, "point": 18.5},
-                                ],
-                            },
-                            {
-                                "key": "player_points_rebounds_assists",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 32.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 32.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 36.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 36.5},
-                                ],
-                            },
-                        ],
-                    },
-                    # Underdog Fantasy - Texas-legal DFS
-                    {
-                        "key": "underdog",
-                        "title": "Underdog Fantasy",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -110, "point": 20.0},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -110, "point": 20.0},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -110, "point": 25.0},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -110, "point": 25.0},
-                                ],
-                            },
-                        ],
-                    },
-                    # Fliff - Texas-legal social sportsbook
-                    {
-                        "key": "fliff",
-                        "title": "Fliff",
-                        "markets": [
-                            {
-                                "key": "player_points",
-                                "outcomes": [
-                                    {"name": "Over", "description": "LaMelo Ball", "price": -108, "point": 19.5},
-                                    {"name": "Under", "description": "LaMelo Ball", "price": -112, "point": 19.5},
-                                    {"name": "Over", "description": "Jaren Jackson Jr.", "price": -108, "point": 24.5},
-                                    {"name": "Under", "description": "Jaren Jackson Jr.", "price": -112, "point": 24.5},
-                                ],
-                            },
-                        ],
-                    },
+                "players": [
+                    # Bucks
+                    {"name": "Giannis Antetokounmpo", "pts": 31.5, "reb": 11.5, "ast": 6.5, "pra": 49.5},
+                    {"name": "Damian Lillard", "pts": 25.5, "reb": 4.5, "ast": 7.5, "pra": 37.5},
+                    # Wizards
+                    {"name": "Jordan Poole", "pts": 20.5, "reb": 2.5, "ast": 4.5, "pra": 27.5},
+                    {"name": "Kyle Kuzma", "pts": 18.5, "reb": 5.5, "ast": 2.5, "pra": 26.5},
                 ],
+            },
+            # Game 3: Heat @ Bulls
+            "game_mia_chi_today": {
+                "home_team": "Chicago Bulls",
+                "away_team": "Miami Heat",
+                "commence_time": times["late"],
+                "players": [
+                    # Heat
+                    {"name": "Bam Adebayo", "pts": 19.5, "reb": 10.5, "ast": 4.5, "pra": 34.5},
+                    {"name": "Tyler Herro", "pts": 22.5, "reb": 5.5, "ast": 4.5, "pra": 32.5},
+                    # Bulls
+                    {"name": "Coby White", "pts": 19.5, "reb": 4.5, "ast": 5.5, "pra": 29.5},
+                    {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5},
+                ],
+            },
+            # Game 4: Rockets @ Hawks
+            "game_hou_atl_today": {
+                "home_team": "Atlanta Hawks",
+                "away_team": "Houston Rockets",
+                "commence_time": times["night"],
+                "players": [
+                    # Rockets
+                    {"name": "Jalen Green", "pts": 22.5, "reb": 4.5, "ast": 3.5, "pra": 30.5},
+                    {"name": "Alperen Sengun", "pts": 18.5, "reb": 9.5, "ast": 5.5, "pra": 33.5},
+                    # Hawks
+                    {"name": "Trae Young", "pts": 26.5, "reb": 3.5, "ast": 10.5, "pra": 40.5},
+                    {"name": "Dejounte Murray", "pts": 21.5, "reb": 5.5, "ast": 6.5, "pra": 33.5},
+                ],
+            },
+            # Game 5: Hornets @ Mavericks
+            "game_cha_dal_today": {
+                "home_team": "Dallas Mavericks",
+                "away_team": "Charlotte Hornets",
+                "commence_time": times["west"],
+                "players": [
+                    # Mavericks
+                    {"name": "Luka Doncic", "pts": 33.5, "reb": 9.5, "ast": 9.5, "pra": 52.5},
+                    {"name": "Kyrie Irving", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5},
+                    # Hornets
+                    {"name": "LaMelo Ball", "pts": 23.5, "reb": 5.5, "ast": 8.5, "pra": 37.5},
+                    {"name": "Brandon Miller", "pts": 18.5, "reb": 4.5, "ast": 2.5, "pra": 25.5},
+                ],
+            },
+            # Game 6: Nets @ Nuggets
+            "game_bkn_den_today": {
+                "home_team": "Denver Nuggets",
+                "away_team": "Brooklyn Nets",
+                "commence_time": times["west"],
+                "players": [
+                    # Nuggets
+                    {"name": "Nikola Jokic", "pts": 26.5, "reb": 12.5, "ast": 9.5, "pra": 48.5},
+                    {"name": "Jamal Murray", "pts": 21.5, "reb": 4.5, "ast": 6.5, "pra": 32.5},
+                    # Nets
+                    {"name": "Mikal Bridges", "pts": 19.5, "reb": 4.5, "ast": 3.5, "pra": 27.5},
+                    {"name": "Cam Thomas", "pts": 24.5, "reb": 3.5, "ast": 3.5, "pra": 31.5},
+                ],
+            },
+            # Game 7: Pistons @ Suns
+            "game_det_pho_today": {
+                "home_team": "Phoenix Suns",
+                "away_team": "Detroit Pistons",
+                "commence_time": times["west"],
+                "players": [
+                    # Suns
+                    {"name": "Kevin Durant", "pts": 27.5, "reb": 6.5, "ast": 5.5, "pra": 39.5},
+                    {"name": "Devin Booker", "pts": 26.5, "reb": 4.5, "ast": 6.5, "pra": 37.5},
+                    # Pistons
+                    {"name": "Cade Cunningham", "pts": 23.5, "reb": 4.5, "ast": 7.5, "pra": 35.5},
+                    {"name": "Jaden Ivey", "pts": 17.5, "reb": 3.5, "ast": 4.5, "pra": 25.5},
+                ],
+            },
+            # Game 8: Thunder @ Timberwolves
+            "game_okc_min_today": {
+                "home_team": "Minnesota Timberwolves",
+                "away_team": "Oklahoma City Thunder",
+                "commence_time": times["west"],
+                "players": [
+                    # Thunder
+                    {"name": "Shai Gilgeous-Alexander", "pts": 31.5, "reb": 5.5, "ast": 6.5, "pra": 43.5},
+                    {"name": "Chet Holmgren", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5},
+                    # Timberwolves
+                    {"name": "Anthony Edwards", "pts": 26.5, "reb": 5.5, "ast": 5.5, "pra": 37.5},
+                    {"name": "Karl-Anthony Towns", "pts": 22.5, "reb": 9.5, "ast": 3.5, "pra": 35.5},
+                ],
+            },
+        }
+        
+        # Check if this game exists
+        if external_game_id not in game_props:
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": "Unknown",
+                "away_team": "Unknown",
+                "commence_time": times["early"],
+                "bookmakers": [],
             }
         
-        # Default empty response for unknown games
+        game = game_props[external_game_id]
+        
+        # Build markets from player data
+        points_outcomes = []
+        rebounds_outcomes = []
+        assists_outcomes = []
+        pra_outcomes = []
+        
+        for player in game["players"]:
+            # Points
+            points_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pts"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pts"]},
+            ])
+            # Rebounds
+            rebounds_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["reb"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["reb"]},
+            ])
+            # Assists
+            assists_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["ast"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["ast"]},
+            ])
+            # PRA
+            pra_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pra"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pra"]},
+            ])
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
-            "home_team": "Unknown",
-            "away_team": "Unknown",
-            "commence_time": times["early"],
-            "bookmakers": [],
+            "home_team": game["home_team"],
+            "away_team": game["away_team"],
+            "commence_time": game["commence_time"],
+            "bookmakers": [
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [
+                        {"key": "player_points", "outcomes": points_outcomes},
+                        {"key": "player_rebounds", "outcomes": rebounds_outcomes},
+                        {"key": "player_assists", "outcomes": assists_outcomes},
+                        {"key": "player_points_rebounds_assists", "outcomes": pra_outcomes},
+                    ],
+                },
+            ],
         }
