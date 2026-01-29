@@ -13,6 +13,30 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# Dynamic Stub Date Generation
+# =============================================================================
+
+def _get_stub_game_times() -> dict[str, str]:
+    """
+    Generate game times for today's date.
+    
+    This ensures stub data always uses today's date, preventing
+    the date mismatch issue when the calendar day changes.
+    
+    Returns:
+        Dictionary mapping time slots to ISO datetime strings
+    """
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return {
+        "early": f"{today}T19:00:00Z",      # 7:00 PM ET (midnight UTC)
+        "mid": f"{today}T19:30:00Z",        # 7:30 PM ET
+        "late": f"{today}T20:00:00Z",       # 8:00 PM ET
+        "night": f"{today}T20:30:00Z",      # 8:30 PM ET
+        "west": f"{today}T21:00:00Z",       # 9:00 PM ET
+    }
+
+
+# =============================================================================
 # Data Classes for normalized structures
 # =============================================================================
 
@@ -479,87 +503,88 @@ class XYZOddsProvider(OddsProvider):
     # =========================================================================
     
     def _stub_games_response(self, sport_key: str) -> list[dict[str, Any]]:
-        """Return realistic stub game data for testing - January 28, 2026 actual slate."""
+        """Return realistic stub game data for testing with dynamic dates."""
+        # Get dynamic game times based on today's date
+        times = _get_stub_game_times()
+        
         if "basketball" in sport_key:
-            # Use January 28 UTC times so picks generator finds them for "today"
-            # (Real 7PM ET = midnight UTC next day, but we use 23:00 UTC same day for testing)
             return [
                 # Game 1: Bulls @ Pacers (7:00 PM ET)
                 {
-                    "id": "game_chi_ind_20260128",
+                    "id": "game_chi_ind_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T19:00:00Z",
+                    "commence_time": times["early"],
                     "home_team": "Indiana Pacers",
                     "away_team": "Chicago Bulls",
                     "bookmakers": [],
                 },
                 # Game 2: Lakers @ Cavaliers (7:00 PM ET)
                 {
-                    "id": "game_lal_cle_20260128",
+                    "id": "game_lal_cle_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T19:00:00Z",
+                    "commence_time": times["early"],
                     "home_team": "Cleveland Cavaliers",
                     "away_team": "Los Angeles Lakers",
                     "bookmakers": [],
                 },
                 # Game 3: Hawks @ Celtics (7:30 PM ET)
                 {
-                    "id": "game_atl_bos_20260128",
+                    "id": "game_atl_bos_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T19:30:00Z",
+                    "commence_time": times["mid"],
                     "home_team": "Boston Celtics",
                     "away_team": "Atlanta Hawks",
                     "bookmakers": [],
                 },
                 # Game 4: Magic @ Heat (7:30 PM ET)
                 {
-                    "id": "game_orl_mia_20260128",
+                    "id": "game_orl_mia_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T19:30:00Z",
+                    "commence_time": times["mid"],
                     "home_team": "Miami Heat",
                     "away_team": "Orlando Magic",
                     "bookmakers": [],
                 },
                 # Game 5: Knicks @ Raptors (7:30 PM ET)
                 {
-                    "id": "game_nyk_tor_20260128",
+                    "id": "game_nyk_tor_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T19:30:00Z",
+                    "commence_time": times["mid"],
                     "home_team": "Toronto Raptors",
                     "away_team": "New York Knicks",
                     "bookmakers": [],
                 },
                 # Game 6: Hornets @ Grizzlies (8:00 PM ET)
                 {
-                    "id": "game_cha_mem_20260128",
+                    "id": "game_cha_mem_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T20:00:00Z",
+                    "commence_time": times["late"],
                     "home_team": "Memphis Grizzlies",
                     "away_team": "Charlotte Hornets",
                     "bookmakers": [],
                 },
                 # Game 7: Timberwolves @ Mavericks (8:30 PM ET)
                 {
-                    "id": "game_min_dal_20260128",
+                    "id": "game_min_dal_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T20:30:00Z",
+                    "commence_time": times["night"],
                     "home_team": "Dallas Mavericks",
                     "away_team": "Minnesota Timberwolves",
                     "bookmakers": [],
                 },
                 # Game 8: Warriors @ Jazz (9:00 PM ET)
                 {
-                    "id": "game_gsw_uta_20260128",
+                    "id": "game_gsw_uta_today",
                     "sport_key": sport_key,
                     "sport_title": "NBA",
-                    "commence_time": "2026-01-29T21:00:00Z",
+                    "commence_time": times["west"],
                     "home_team": "Utah Jazz",
                     "away_team": "Golden State Warriors",
                     "bookmakers": [],
@@ -568,10 +593,10 @@ class XYZOddsProvider(OddsProvider):
         elif "football" in sport_key:
             return [
                 {
-                    "id": "nfl_game_001",
+                    "id": "nfl_game_today",
                     "sport_key": sport_key,
                     "sport_title": "NFL",
-                    "commence_time": "2026-01-29T18:00:00Z",
+                    "commence_time": times["early"],
                     "home_team": "Kansas City Chiefs",
                     "away_team": "Buffalo Bills",
                     "bookmakers": [],
@@ -585,38 +610,38 @@ class XYZOddsProvider(OddsProvider):
         sport_key: str,
         external_game_id: str,
     ) -> dict[str, Any]:
-        """Return realistic stub betting lines for testing - January 28, 2026 slate."""
-        # Game-specific lines based on actual January 28, 2026 slate
+        """Return realistic stub betting lines for testing with dynamic dates."""
+        # Game-specific lines (game IDs use 'today' suffix for dynamic dates)
         game_lines = {
-            "game_chi_ind_20260128": {
+            "game_chi_ind_today": {
                 "home_team": "Indiana Pacers", "away_team": "Chicago Bulls",
                 "home_spread": 1.5, "total": 224.5, "home_ml": 105, "away_ml": -125,
             },
-            "game_lal_cle_20260128": {
+            "game_lal_cle_today": {
                 "home_team": "Cleveland Cavaliers", "away_team": "Los Angeles Lakers",
                 "home_spread": -3.5, "total": 231.5, "home_ml": -160, "away_ml": 140,
             },
-            "game_atl_bos_20260128": {
+            "game_atl_bos_today": {
                 "home_team": "Boston Celtics", "away_team": "Atlanta Hawks",
                 "home_spread": -6.5, "total": 226.0, "home_ml": -275, "away_ml": 225,
             },
-            "game_orl_mia_20260128": {
+            "game_orl_mia_today": {
                 "home_team": "Miami Heat", "away_team": "Orlando Magic",
                 "home_spread": -3.0, "total": 212.5, "home_ml": -150, "away_ml": 130,
             },
-            "game_nyk_tor_20260128": {
+            "game_nyk_tor_today": {
                 "home_team": "Toronto Raptors", "away_team": "New York Knicks",
                 "home_spread": 1.5, "total": 228.0, "home_ml": 105, "away_ml": -125,
             },
-            "game_cha_mem_20260128": {
+            "game_cha_mem_today": {
                 "home_team": "Memphis Grizzlies", "away_team": "Charlotte Hornets",
                 "home_spread": 2.0, "total": 218.5, "home_ml": 115, "away_ml": -135,
             },
-            "game_min_dal_20260128": {
+            "game_min_dal_today": {
                 "home_team": "Dallas Mavericks", "away_team": "Minnesota Timberwolves",
                 "home_spread": 6.5, "total": 224.0, "home_ml": 240, "away_ml": -300,
             },
-            "game_gsw_uta_20260128": {
+            "game_gsw_uta_today": {
                 "home_team": "Utah Jazz", "away_team": "Golden State Warriors",
                 "home_spread": 10.5, "total": 232.0, "home_ml": 420, "away_ml": -550,
             },
@@ -628,12 +653,13 @@ class XYZOddsProvider(OddsProvider):
             "home_spread": -3.0, "total": 220.0, "home_ml": -150, "away_ml": 130,
         })
         
+        times = _get_stub_game_times()
         return {
             "id": external_game_id,
             "sport_key": sport_key,
             "home_team": lines["home_team"],
             "away_team": lines["away_team"],
-            "commence_time": "2026-01-29T19:00:00Z",
+            "commence_time": times["early"],
             "bookmakers": [
                 {
                     "key": "draftkings",
@@ -725,16 +751,18 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
         prop_types: Optional[list[str]] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub player props for January 28, 2026 games."""
+        """Return realistic stub player props with dynamic dates."""
+        # Get dynamic game times
+        times = _get_stub_game_times()
         
         # Game: Lakers @ Cavaliers (Luka-led Lakers vs Mitchell-led Cavs)
-        if external_game_id == "game_lal_cle_20260128":
+        if external_game_id == "game_lal_cle_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Cleveland Cavaliers",
                 "away_team": "Los Angeles Lakers",
-                "commence_time": "2026-01-29T19:00:00Z",
+                "commence_time": times["early"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -957,13 +985,13 @@ class XYZOddsProvider(OddsProvider):
             }
         
         # Game: Hawks @ Celtics (CJ McCollum/Porzingis Hawks vs Tatum-less Celtics)
-        elif external_game_id == "game_atl_bos_20260128":
+        elif external_game_id == "game_atl_bos_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Boston Celtics",
                 "away_team": "Atlanta Hawks",
-                "commence_time": "2026-01-29T19:30:00Z",
+                "commence_time": times["mid"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -1109,13 +1137,13 @@ class XYZOddsProvider(OddsProvider):
         
         # Game: Magic @ Heat (Bane/Banchero Magic vs Bam/Wiggins Heat)
         # Note: Tyler Herro (OUT-Toe/Rib), Franz Wagner (DAY_TO_DAY)
-        elif external_game_id == "game_orl_mia_20260128":
+        elif external_game_id == "game_orl_mia_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Miami Heat",
                 "away_team": "Orlando Magic",
-                "commence_time": "2026-01-29T19:30:00Z",
+                "commence_time": times["mid"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -1261,13 +1289,13 @@ class XYZOddsProvider(OddsProvider):
         
         # Game: Knicks @ Raptors (KAT/Brunson/Bridges Knicks vs Barnes/Ingram Raptors)
         # Note: Jakob Poeltl (OUT-Back Indefinite)
-        elif external_game_id == "game_nyk_tor_20260128":
+        elif external_game_id == "game_nyk_tor_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Toronto Raptors",
                 "away_team": "New York Knicks",
-                "commence_time": "2026-01-29T19:30:00Z",
+                "commence_time": times["mid"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -1419,13 +1447,13 @@ class XYZOddsProvider(OddsProvider):
         
         # Game: Timberwolves @ Mavericks (Edwards/Randle/Gobert Wolves vs depleted Mavs)
         # Note: Anthony Davis (OUT-Hand), Kyrie Irving (OUT-Knee), Klay Thompson (DAY_TO_DAY)
-        elif external_game_id == "game_min_dal_20260128":
+        elif external_game_id == "game_min_dal_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Dallas Mavericks",
                 "away_team": "Minnesota Timberwolves",
-                "commence_time": "2026-01-29T20:30:00Z",
+                "commence_time": times["night"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -1578,13 +1606,13 @@ class XYZOddsProvider(OddsProvider):
         
         # Game: Warriors @ Jazz (depleted Warriors vs Markkanen Jazz)
         # Note: Jimmy Butler (OUT-ACL Season), Stephen Curry (DAY_TO_DAY), Draymond Green (DAY_TO_DAY)
-        elif external_game_id == "game_gsw_uta_20260128":
+        elif external_game_id == "game_gsw_uta_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Utah Jazz",
                 "away_team": "Golden State Warriors",
-                "commence_time": "2026-01-29T21:00:00Z",
+                "commence_time": times["west"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -1741,13 +1769,13 @@ class XYZOddsProvider(OddsProvider):
             }
         
         # Game: Bulls @ Pacers (Giddey/Vucevic Bulls vs Siakam/Haliburton Pacers)
-        elif external_game_id == "game_chi_ind_20260128":
+        elif external_game_id == "game_chi_ind_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Indiana Pacers",
                 "away_team": "Chicago Bulls",
-                "commence_time": "2026-01-29T19:00:00Z",
+                "commence_time": times["early"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -1908,13 +1936,13 @@ class XYZOddsProvider(OddsProvider):
         
         # Game: Hornets @ Grizzlies (LaMelo/Miller Hornets vs JJJ/depleted Grizzlies)
         # Note: Ja Morant (OUT-Elbow), Zach Edey (OUT-Ankle), Brandon Clarke (OUT-Calf)
-        elif external_game_id == "game_cha_mem_20260128":
+        elif external_game_id == "game_cha_mem_today":
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": "Memphis Grizzlies",
                 "away_team": "Charlotte Hornets",
-                "commence_time": "2026-01-29T20:00:00Z",
+                "commence_time": times["late"],
                 "bookmakers": [
                     {
                         "key": "draftkings",
@@ -2077,6 +2105,6 @@ class XYZOddsProvider(OddsProvider):
             "sport_key": sport_key,
             "home_team": "Unknown",
             "away_team": "Unknown",
-            "commence_time": "2026-01-29T19:00:00Z",
+            "commence_time": times["early"],
             "bookmakers": [],
         }
