@@ -649,6 +649,11 @@ class ResultsTracker:
         """
         import random
         
+        # Verify game exists
+        game = await db.get(Game, game_id)
+        if not game:
+            return {"error": f"Game {game_id} not found"}
+        
         # Get all picks for this game
         result = await db.execute(
             select(ModelPick)
@@ -656,31 +661,52 @@ class ResultsTracker:
                 and_(
                     ModelPick.game_id == game_id,
                     ModelPick.player_id.isnot(None),
+                    ModelPick.is_active == True,
                 )
             )
             .options(selectinload(ModelPick.market))
         )
         picks = result.scalars().all()
         
+        if not picks:
+            return {
+                "game_id": game_id,
+                "message": "No player picks found for this game",
+                "settled": 0,
+                "hits": 0,
+                "misses": 0,
+                "hit_rate": 0,
+            }
+        
+        logger.info(f"Simulating results for game {game_id} with {len(picks)} picks")
+        
         # Generate simulated stats for each player
         player_lines: dict[int, list[tuple[str, float, str]]] = {}
         for pick in picks:
+            if not pick.player_id:
+                continue
             if pick.player_id not in player_lines:
                 player_lines[pick.player_id] = []
             stat_type = pick.market.stat_type if pick.market else "PTS"
-            player_lines[pick.player_id].append((stat_type, pick.line_value or 0, pick.side))
+            line_value = pick.line_value if pick.line_value is not None else 0
+            side = pick.side if pick.side else "over"
+            player_lines[pick.player_id].append((stat_type, line_value, side))
         
         # Create simulated stats
+        stats_created = 0
         for player_id, lines in player_lines.items():
             for stat_type, line_value, side in lines:
                 # Simulate actual value around the line with some variance
+                # Use a safe variance calculation (min 1.0 to avoid issues with 0 lines)
+                variance = max(1.0, abs(line_value) * 0.2)
+                
                 # Slightly favor hitting the pick (55% hit rate)
                 if side.lower() == "over":
                     # More likely to go over
-                    actual = line_value + random.gauss(0.5, line_value * 0.2)
+                    actual = line_value + random.gauss(0.5, variance)
                 else:
                     # More likely to go under
-                    actual = line_value + random.gauss(-0.5, line_value * 0.2)
+                    actual = line_value + random.gauss(-0.5, variance)
                 
                 actual = max(0, actual)  # No negative stats
                 
@@ -703,8 +729,10 @@ class ResultsTracker:
                         minutes=random.randint(20, 38),
                     )
                     db.add(stat)
+                    stats_created += 1
         
         await db.commit()
+        logger.info(f"Created {stats_created} simulated stats for game {game_id}")
         
         # Now settle the picks
         return await self.settle_picks_for_game(db, game_id)

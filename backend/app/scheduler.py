@@ -433,23 +433,35 @@ async def results_settlement_loop(interval_minutes: int = 30, initial_delay: int
             tracker = ResultsTracker(use_stubs=use_stubs)
 
             async with session_maker() as db:
-                # Find games that are final and have unsettled picks
-                # First get games with final status
-                games_result = await db.execute(
-                    select(Game.id)
-                    .where(Game.status == "final")
-                )
-                final_game_ids = [row[0] for row in games_result.all()]
-                
-                if not final_game_ids:
-                    logger.info("No final games found")
+                # Find games to settle
+                if use_stubs:
+                    # For stub mode: find games that started 3+ hours ago (treat as "completed")
+                    from datetime import datetime, timedelta
+                    cutoff_time = datetime.utcnow() - timedelta(hours=3)
+                    games_result = await db.execute(
+                        select(Game.id)
+                        .where(Game.start_time < cutoff_time)
+                    )
+                    logger.info(f"Stub mode: looking for games started before {cutoff_time}")
                 else:
-                    # For each final game, check if there are unsettled picks
+                    # For real mode: find games with final status
+                    games_result = await db.execute(
+                        select(Game.id)
+                        .where(Game.status == "final")
+                    )
+                
+                game_ids_to_settle = [row[0] for row in games_result.all()]
+                
+                if not game_ids_to_settle:
+                    logger.info("No games found to settle")
+                else:
+                    # For each game, check if there are unsettled picks
                     total_settled = 0
                     total_hits = 0
                     total_misses = 0
+                    logger.info(f"Found {len(game_ids_to_settle)} games to check for settlement")
                     
-                    for game_id in final_game_ids:
+                    for game_id in game_ids_to_settle:
                         # Check if game has unsettled picks
                         unsettled_result = await db.execute(
                             select(ModelPick.id)
