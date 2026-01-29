@@ -295,16 +295,25 @@ async def simulate_game_results(
     Creates fake player stats and settles picks based on simulated outcomes.
     Useful for testing the hit rate tracking system.
     """
-    tracker = ResultsTracker()
-    result = await tracker.simulate_game_results(db, game_id)
+    import logging
+    logger = logging.getLogger(__name__)
     
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    
-    return SettleResponse(
-        game_id=result.get("game_id", game_id),
-        settled=result.get("settled", 0),
-        hits=result.get("hits", 0),
-        misses=result.get("misses", 0),
-        hit_rate=result.get("hit_rate", 0),
-    )
+    try:
+        tracker = ResultsTracker()
+        result = await tracker.simulate_game_results(db, game_id)
+        
+        if "error" in result:
+            raise HTTPException(status_code=404, detail=result["error"])
+        
+        return SettleResponse(
+            game_id=result.get("game_id", game_id),
+            settled=result.get("settled", 0),
+            hits=result.get("hits", 0),
+            misses=result.get("misses", 0),
+            hit_rate=result.get("hit_rate", 0),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error simulating game {game_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)[:200]}")
