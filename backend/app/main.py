@@ -50,7 +50,41 @@ async def lifespan(app: FastAPI):
     
     # Initialize database
     async with db_lifespan(app):
+        # =================================================================
+        # Auto-refresh data on startup (ensures fresh games every deploy)
+        # =================================================================
+        try:
+            from app.services.etl_games_and_lines import clear_stale_games, sync_games_and_lines
+            from app.services.picks_generator import generate_picks
+            from app.core.database import get_session_maker
+            
+            logger.info("Running startup data refresh...")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                # Step 1: Clear old games from previous days
+                clear_stats = await clear_stale_games(db, "basketball_nba")
+                logger.info(f"Cleared stale games: {clear_stats}")
+                
+                # Step 2: Sync fresh games and lines for today
+                sync_stats = await sync_games_and_lines(
+                    db, "basketball_nba", include_props=True, use_stubs=True
+                )
+                logger.info(f"Synced games: {sync_stats}")
+                
+                # Step 3: Generate picks for today's games
+                picks_result = await generate_picks(
+                    db, "basketball_nba", min_ev=0.0, min_confidence=0.5, use_stubs=True
+                )
+                logger.info(f"Generated picks: {picks_result}")
+                
+            logger.info("Startup data refresh complete")
+        except Exception as e:
+            logger.error(f"Startup data refresh failed (non-fatal): {e}")
+        
+        # =================================================================
         # Start background tasks if scheduler is enabled
+        # =================================================================
         background_tasks = []
         if settings.scheduler_enabled:
             try:
