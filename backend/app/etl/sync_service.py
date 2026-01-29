@@ -123,57 +123,85 @@ class SyncService:
             market = await self.get_or_create_market(sport.id, market_type)
             market_map[market_type] = market.id
 
-        stats = {"games": 0, "lines": 0, "teams": 0}
+        stats = {"games": 0, "lines": 0, "teams": 0, "errors": []}
 
         async with OddsAPIClient() as client:
             games_data = await client.get_odds(sport_key)
+            
+            # Handle empty response (could be from API error or no games)
+            if not games_data:
+                logger.warning(f"No games data returned for {sport_name}")
+                await self.db.commit()
+                return stats
 
             for game_data in games_data:
-                # Get or create teams
-                home_team = await self.get_or_create_team(
-                    sport.id, game_data["home_team"]
-                )
-                away_team = await self.get_or_create_team(
-                    sport.id, game_data["away_team"]
-                )
+                try:
+                    # Validate required fields with defensive access
+                    game_id = game_data.get("id")
+                    home_team_name = game_data.get("home_team")
+                    away_team_name = game_data.get("away_team")
+                    commence_time = game_data.get("commence_time")
+                    
+                    if not all([game_id, home_team_name, away_team_name, commence_time]):
+                        logger.warning(f"Missing required fields in game data: {game_data}")
+                        stats["errors"].append(f"Missing fields for game: {game_id or 'unknown'}")
+                        continue
+                    
+                    # Get or create teams
+                    home_team = await self.get_or_create_team(sport.id, home_team_name)
+                    away_team = await self.get_or_create_team(sport.id, away_team_name)
 
-                # Get or create game
-                result = await self.db.execute(
-                    select(Game).where(
-                        Game.sport_id == sport.id,
-                        Game.external_game_id == game_data["id"],
+                    # Get or create game
+                    result = await self.db.execute(
+                        select(Game).where(
+                            Game.sport_id == sport.id,
+                            Game.external_game_id == game_id,
+                        )
                     )
-                )
-                game = result.scalar_one_or_none()
+                    game = result.scalar_one_or_none()
 
-                if not game:
-                    game = Game(
-                        sport_id=sport.id,
-                        external_game_id=game_data["id"],
-                        home_team_id=home_team.id,
-                        away_team_id=away_team.id,
-                        start_time=datetime.fromisoformat(
-                            game_data["commence_time"].replace("Z", "+00:00")
-                        ),
-                        status="scheduled",
+                    if not game:
+                        try:
+                            start_time = datetime.fromisoformat(
+                                commence_time.replace("Z", "+00:00")
+                            )
+                        except (ValueError, AttributeError) as e:
+                            logger.warning(f"Invalid commence_time '{commence_time}': {e}")
+                            stats["errors"].append(f"Invalid time for game {game_id}")
+                            continue
+                        
+                        game = Game(
+                            sport_id=sport.id,
+                            external_game_id=game_id,
+                            home_team_id=home_team.id,
+                            away_team_id=away_team.id,
+                            start_time=start_time,
+                            status="scheduled",
+                        )
+                        self.db.add(game)
+                        await self.db.flush()
+                        stats["games"] += 1
+
+                    # Mark old lines as not current
+                    await self.db.execute(
+                        update(Line)
+                        .where(Line.game_id == game.id, Line.is_current == True)
+                        .values(is_current=False)
                     )
-                    self.db.add(game)
-                    await self.db.flush()
-                    stats["games"] += 1
 
-                # Mark old lines as not current
-                await self.db.execute(
-                    update(Line)
-                    .where(Line.game_id == game.id, Line.is_current == True)
-                    .values(is_current=False)
-                )
-
-                # Parse and insert new lines
-                lines = parse_lines_from_odds(game_data, game.id, market_map)
-                for line_data in lines:
-                    line = Line(**line_data)
-                    self.db.add(line)
-                    stats["lines"] += 1
+                    # Parse and insert new lines
+                    lines = parse_lines_from_odds(game_data, game.id, market_map)
+                    for line_data in lines:
+                        line = Line(**line_data)
+                        self.db.add(line)
+                        stats["lines"] += 1
+                        
+                except Exception as e:
+                    # Log error but continue processing other games
+                    game_id = game_data.get("id", "unknown")
+                    logger.error(f"Error processing game {game_id}: {e}", exc_info=True)
+                    stats["errors"].append(f"Error processing game {game_id}: {str(e)[:100]}")
+                    continue
 
         await self.db.commit()
         logger.info(f"Synced {sport_name}: {stats}")

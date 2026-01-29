@@ -667,8 +667,8 @@ async def sync_games_and_lines(
                         stats["lines_marked_old"] += props_result.get("lines_marked_old", 0)
                 
                 except Exception as e:
-                    logger.error(f"Error processing game {game_data.external_game_id}: {e}")
-                    stats["errors"].append(str(e))
+                    logger.error(f"Error processing game {game_data.external_game_id}: {e}", exc_info=True)
+                    stats["errors"].append(f"Game {game_data.external_game_id}: {str(e)[:100]}")
         
         # Commit transaction
         await db.commit()

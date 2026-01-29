@@ -181,7 +181,29 @@ class RosterProvider:
             headers["Authorization"] = self.api_key
         
         response = await self.client.get(url, params=params, headers=headers)
-        response.raise_for_status()
+        
+        # Handle HTTP errors gracefully
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 422:
+                # 422 typically means validation error - log and return empty
+                logger.warning(
+                    f"Roster API returned 422 for {endpoint}: {e.response.text[:500]}"
+                )
+                return []
+            elif e.response.status_code == 429:
+                # Rate limited
+                logger.warning(f"Roster API rate limited: {e.response.text[:200]}")
+                return []
+            elif e.response.status_code == 404:
+                # Resource not found - not necessarily an error
+                logger.info(f"Roster API resource not found: {endpoint}")
+                return []
+            else:
+                # Re-raise other errors
+                logger.error(f"Roster API error {e.response.status_code}: {e.response.text[:500]}")
+                raise
         
         return response.json()
     
