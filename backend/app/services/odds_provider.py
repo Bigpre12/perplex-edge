@@ -653,47 +653,48 @@ class XYZOddsProvider(OddsProvider):
         INJURY-ADJUSTED LINES - Jan 29, 2026:
         Lines reflect major injuries: Embiid, Giannis, Jokic, AD, Booker, Trae OUT
         """
-        # Game-specific lines ADJUSTED FOR INJURIES
+        # Game-specific lines ADJUSTED FOR INJURIES - Jan 29, 2026
+        # Based on DraftKings/FanDuel market research
         game_lines = {
-            # Kings slight favorites (EMBIID OUT - knee, hasn't played since Jan 4)
+            # Kings favored by 5.5 (EMBIID OUT since Jan 4, PG questionable)
             "game_sac_phi_today": {
                 "home_team": "Philadelphia 76ers", "away_team": "Sacramento Kings",
-                "home_spread": 2.5, "total": 222.5, "home_ml": 120, "away_ml": -140,
+                "home_spread": 5.5, "total": 226.5, "home_ml": 200, "away_ml": -245,
             },
-            # Wizards slight favorites (GIANNIS OUT - calf 4-6 weeks, TRAE OUT - MCL)
+            # Bucks favored by 2.5 (GIANNIS OUT but Bucks still deeper roster)
             "game_mil_was_today": {
                 "home_team": "Washington Wizards", "away_team": "Milwaukee Bucks",
-                "home_spread": -1.5, "total": 218.5, "home_ml": -125, "away_ml": 105,
+                "home_spread": 2.5, "total": 222.5, "home_ml": 120, "away_ml": -140,
             },
-            # Bulls favorites (HERRO OUT - toe injury, missed 28/34 games)
+            # Bulls favored by 1.5 (HERRO OUT, home court)
             "game_mia_chi_today": {
                 "home_team": "Chicago Bulls", "away_team": "Miami Heat",
-                "home_spread": -2.5, "total": 215.5, "home_ml": -140, "away_ml": 120,
+                "home_spread": -1.5, "total": 218.5, "home_ml": -125, "away_ml": 105,
             },
-            # Rockets heavy favorites (KD healthy vs gutted Hawks)
+            # Rockets favored by 7.5 (KD healthy vs gutted Hawks roster)
             "game_hou_atl_today": {
                 "home_team": "Atlanta Hawks", "away_team": "Houston Rockets",
-                "home_spread": 8.5, "total": 224.0, "home_ml": 320, "away_ml": -420,
+                "home_spread": 7.5, "total": 225.0, "home_ml": 280, "away_ml": -360,
             },
-            # Hornets favorites (AD OUT - hand ligament 6 weeks, LaMelo avg 28.2 PPG)
+            # Hornets favored by 3.5 (AD OUT, LaMelo averaging 28.2 PPG)
             "game_cha_dal_today": {
                 "home_team": "Dallas Mavericks", "away_team": "Charlotte Hornets",
-                "home_spread": 3.5, "total": 224.5, "home_ml": 150, "away_ml": -175,
+                "home_spread": 3.5, "total": 225.5, "home_ml": 150, "away_ml": -175,
             },
-            # Nuggets slight favorites (JOKIC OUT - knee, no timetable; CAM THOMAS OUT)
+            # Nuggets favored by 3.5 (JOKIC OUT, CAM THOMAS OUT, both depleted)
             "game_bkn_den_today": {
                 "home_team": "Denver Nuggets", "away_team": "Brooklyn Nets",
-                "home_spread": -4.5, "total": 216.0, "home_ml": -190, "away_ml": 160,
+                "home_spread": -3.5, "total": 218.0, "home_ml": -165, "away_ml": 140,
             },
-            # Pistons heavy favorites (BOOKER OUT - ankle, JALEN GREEN DTD; Pistons 34-11)
+            # Pistons favored by 8.5 (BOOKER OUT, Pistons 34-11 best record)
             "game_det_pho_today": {
                 "home_team": "Phoenix Suns", "away_team": "Detroit Pistons",
-                "home_spread": 6.5, "total": 214.5, "home_ml": 240, "away_ml": -295,
+                "home_spread": 8.5, "total": 215.5, "home_ml": 320, "away_ml": -420,
             },
-            # Thunder favorites (SGA MVP form; ANT EDWARDS DTD - foot)
+            # Thunder favored by 5.5 (SGA MVP form, ANT EDWARDS DTD)
             "game_okc_min_today": {
                 "home_team": "Minnesota Timberwolves", "away_team": "Oklahoma City Thunder",
-                "home_spread": 6.5, "total": 216.5, "home_ml": 240, "away_ml": -295,
+                "home_spread": 5.5, "total": 218.5, "home_ml": 200, "away_ml": -245,
             },
         }
         
