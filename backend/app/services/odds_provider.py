@@ -649,39 +649,47 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
     ) -> dict[str, Any]:
         """Return realistic stub betting lines for testing with dynamic dates."""
-        # Game-specific lines for Jan 29, 2026 games
+        # Game-specific lines for Jan 29, 2026 games (updated with current rosters)
         game_lines = {
+            # 76ers favored at home (Embiid/Maxey/PG vs LaVine/DeRozan/Sabonis)
             "game_sac_phi_today": {
                 "home_team": "Philadelphia 76ers", "away_team": "Sacramento Kings",
-                "home_spread": -4.5, "total": 226.5, "home_ml": -185, "away_ml": 155,
+                "home_spread": -6.5, "total": 228.5, "home_ml": -260, "away_ml": 215,
             },
+            # Bucks favored on road (Giannis without Dame vs rebuilding Wizards w/Trae)
             "game_mil_was_today": {
                 "home_team": "Washington Wizards", "away_team": "Milwaukee Bucks",
-                "home_spread": 9.5, "total": 231.5, "home_ml": 340, "away_ml": -450,
+                "home_spread": 5.5, "total": 224.5, "home_ml": 200, "away_ml": -245,
             },
+            # Close game (Heat with Wiggins vs Bulls without LaVine)
             "game_mia_chi_today": {
                 "home_team": "Chicago Bulls", "away_team": "Miami Heat",
-                "home_spread": 2.5, "total": 218.5, "home_ml": 120, "away_ml": -140,
+                "home_spread": 1.5, "total": 218.5, "home_ml": 105, "away_ml": -125,
             },
+            # Rockets favored (KD/Sengun/VanVleet vs rebuilding Hawks)
             "game_hou_atl_today": {
                 "home_team": "Atlanta Hawks", "away_team": "Houston Rockets",
-                "home_spread": 3.5, "total": 230.0, "home_ml": 145, "away_ml": -170,
+                "home_spread": 6.5, "total": 226.0, "home_ml": 230, "away_ml": -280,
             },
+            # Mavs favored (AD/Kyrie/Klay vs young Hornets)
             "game_cha_dal_today": {
                 "home_team": "Dallas Mavericks", "away_team": "Charlotte Hornets",
-                "home_spread": -9.5, "total": 224.5, "home_ml": -400, "away_ml": 320,
+                "home_spread": -7.5, "total": 222.5, "home_ml": -320, "away_ml": 260,
             },
+            # Nuggets heavy favorites (Jokic vs rebuilding Nets)
             "game_bkn_den_today": {
                 "home_team": "Denver Nuggets", "away_team": "Brooklyn Nets",
-                "home_spread": -10.5, "total": 226.0, "home_ml": -500, "away_ml": 380,
+                "home_spread": -12.5, "total": 224.0, "home_ml": -650, "away_ml": 475,
             },
+            # Close game (Booker/Jalen Green vs surging Pistons w/Cade)
             "game_det_pho_today": {
                 "home_team": "Phoenix Suns", "away_team": "Detroit Pistons",
-                "home_spread": -8.5, "total": 222.5, "home_ml": -360, "away_ml": 290,
+                "home_spread": -2.5, "total": 226.5, "home_ml": -135, "away_ml": 115,
             },
+            # Thunder favored (Defending champs SGA/Chet/JWill vs Ant/Randle/Gobert)
             "game_okc_min_today": {
                 "home_team": "Minnesota Timberwolves", "away_team": "Oklahoma City Thunder",
-                "home_spread": 2.5, "total": 215.5, "home_ml": 115, "away_ml": -135,
+                "home_spread": 4.5, "total": 218.5, "home_ml": 175, "away_ml": -210,
             },
         }
         
@@ -789,10 +797,20 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
         prop_types: Optional[list[str]] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub player props for Jan 29, 2026 NBA games."""
+        """Return realistic stub player props for Jan 29, 2026 NBA games.
+        
+        UPDATED with accurate 2025-26 rosters after major trades:
+        - KD to Rockets, Jalen Green to Suns (July 2025)
+        - Luka to Lakers, AD to Mavs (Feb 2025)
+        - De'Aaron Fox to Spurs, Zach LaVine to Kings (Feb 2025)
+        - Trae Young to Wizards (Jan 2026)
+        - KAT to Knicks (Oct 2024)
+        - Dame waived by Bucks (Achilles)
+        - Jimmy Butler to Warriors (Feb 2025)
+        """
         times = _get_stub_game_times()
         
-        # Define props for each real game
+        # Define props for each real game with CURRENT 2025-26 rosters
         game_props = {
             # Game 1: Kings @ 76ers
             "game_sac_phi_today": {
@@ -803,8 +821,10 @@ class XYZOddsProvider(OddsProvider):
                     # 76ers
                     {"name": "Joel Embiid", "pts": 32.5, "reb": 11.5, "ast": 4.5, "pra": 48.5},
                     {"name": "Tyrese Maxey", "pts": 26.5, "reb": 3.5, "ast": 6.5, "pra": 36.5},
-                    # Kings
-                    {"name": "De'Aaron Fox", "pts": 27.5, "reb": 4.5, "ast": 6.5, "pra": 38.5},
+                    {"name": "Paul George", "pts": 22.5, "reb": 5.5, "ast": 4.5, "pra": 32.5},
+                    # Kings (Fox traded to Spurs, got Zach LaVine)
+                    {"name": "Zach LaVine", "pts": 24.5, "reb": 4.5, "ast": 4.5, "pra": 33.5},
+                    {"name": "DeMar DeRozan", "pts": 23.5, "reb": 4.5, "ast": 5.5, "pra": 33.5},
                     {"name": "Domantas Sabonis", "pts": 19.5, "reb": 13.5, "ast": 7.5, "pra": 40.5},
                 ],
             },
@@ -814,12 +834,14 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Milwaukee Bucks",
                 "commence_time": times["late"],
                 "players": [
-                    # Bucks
+                    # Bucks (Dame waived - Achilles, got Kyle Kuzma from Wizards)
                     {"name": "Giannis Antetokounmpo", "pts": 31.5, "reb": 11.5, "ast": 6.5, "pra": 49.5},
-                    {"name": "Damian Lillard", "pts": 25.5, "reb": 4.5, "ast": 7.5, "pra": 37.5},
-                    # Wizards
-                    {"name": "Jordan Poole", "pts": 20.5, "reb": 2.5, "ast": 4.5, "pra": 27.5},
                     {"name": "Kyle Kuzma", "pts": 18.5, "reb": 5.5, "ast": 2.5, "pra": 26.5},
+                    {"name": "Myles Turner", "pts": 14.5, "reb": 6.5, "ast": 1.5, "pra": 22.5},
+                    # Wizards (Got Trae Young Jan 2026, Khris Middleton from Bucks)
+                    {"name": "Trae Young", "pts": 26.5, "reb": 3.5, "ast": 10.5, "pra": 40.5},
+                    {"name": "Khris Middleton", "pts": 17.5, "reb": 4.5, "ast": 4.5, "pra": 26.5},
+                    {"name": "Alex Sarr", "pts": 12.5, "reb": 7.5, "ast": 2.5, "pra": 22.5},
                 ],
             },
             # Game 3: Heat @ Bulls
@@ -828,12 +850,14 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Miami Heat",
                 "commence_time": times["late"],
                 "players": [
-                    # Heat
+                    # Heat (Butler to Warriors, got Andrew Wiggins)
                     {"name": "Bam Adebayo", "pts": 19.5, "reb": 10.5, "ast": 4.5, "pra": 34.5},
                     {"name": "Tyler Herro", "pts": 22.5, "reb": 5.5, "ast": 4.5, "pra": 32.5},
-                    # Bulls
+                    {"name": "Andrew Wiggins", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5},
+                    # Bulls (LaVine traded to Kings, kept core)
                     {"name": "Coby White", "pts": 19.5, "reb": 4.5, "ast": 5.5, "pra": 29.5},
                     {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5},
+                    {"name": "Josh Giddey", "pts": 14.5, "reb": 6.5, "ast": 6.5, "pra": 27.5},
                 ],
             },
             # Game 4: Rockets @ Hawks
@@ -842,12 +866,14 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Houston Rockets",
                 "commence_time": times["night"],
                 "players": [
-                    # Rockets
-                    {"name": "Jalen Green", "pts": 22.5, "reb": 4.5, "ast": 3.5, "pra": 30.5},
+                    # Rockets (Got Kevin Durant July 2025!)
+                    {"name": "Kevin Durant", "pts": 27.5, "reb": 6.5, "ast": 5.5, "pra": 39.5},
                     {"name": "Alperen Sengun", "pts": 18.5, "reb": 9.5, "ast": 5.5, "pra": 33.5},
-                    # Hawks
-                    {"name": "Trae Young", "pts": 26.5, "reb": 3.5, "ast": 10.5, "pra": 40.5},
-                    {"name": "Dejounte Murray", "pts": 21.5, "reb": 5.5, "ast": 6.5, "pra": 33.5},
+                    {"name": "Fred VanVleet", "pts": 17.5, "reb": 3.5, "ast": 6.5, "pra": 27.5},
+                    # Hawks (Trae traded to Wizards, Murray to Pelicans - got CJ McCollum)
+                    {"name": "CJ McCollum", "pts": 21.5, "reb": 3.5, "ast": 4.5, "pra": 29.5},
+                    {"name": "Bogdan Bogdanovic", "pts": 16.5, "reb": 3.5, "ast": 3.5, "pra": 23.5},
+                    {"name": "Zaccharie Risacher", "pts": 14.5, "reb": 5.5, "ast": 2.5, "pra": 22.5},
                 ],
             },
             # Game 5: Hornets @ Mavericks
@@ -856,12 +882,14 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Charlotte Hornets",
                 "commence_time": times["west"],
                 "players": [
-                    # Mavericks
-                    {"name": "Luka Doncic", "pts": 33.5, "reb": 9.5, "ast": 9.5, "pra": 52.5},
+                    # Mavericks (Luka traded to Lakers Feb 2025, got Anthony Davis!)
+                    {"name": "Anthony Davis", "pts": 25.5, "reb": 11.5, "ast": 3.5, "pra": 40.5},
                     {"name": "Kyrie Irving", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5},
+                    {"name": "Klay Thompson", "pts": 14.5, "reb": 3.5, "ast": 2.5, "pra": 20.5},
                     # Hornets
                     {"name": "LaMelo Ball", "pts": 23.5, "reb": 5.5, "ast": 8.5, "pra": 37.5},
                     {"name": "Brandon Miller", "pts": 18.5, "reb": 4.5, "ast": 2.5, "pra": 25.5},
+                    {"name": "Miles Bridges", "pts": 17.5, "reb": 6.5, "ast": 3.5, "pra": 27.5},
                 ],
             },
             # Game 6: Nets @ Nuggets
@@ -873,9 +901,11 @@ class XYZOddsProvider(OddsProvider):
                     # Nuggets
                     {"name": "Nikola Jokic", "pts": 26.5, "reb": 12.5, "ast": 9.5, "pra": 48.5},
                     {"name": "Jamal Murray", "pts": 21.5, "reb": 4.5, "ast": 6.5, "pra": 32.5},
-                    # Nets
-                    {"name": "Mikal Bridges", "pts": 19.5, "reb": 4.5, "ast": 3.5, "pra": 27.5},
+                    {"name": "Aaron Gordon", "pts": 14.5, "reb": 6.5, "ast": 3.5, "pra": 24.5},
+                    # Nets (Mikal Bridges traded to Knicks July 2024, rebuilding)
                     {"name": "Cam Thomas", "pts": 24.5, "reb": 3.5, "ast": 3.5, "pra": 31.5},
+                    {"name": "Nic Claxton", "pts": 11.5, "reb": 8.5, "ast": 2.5, "pra": 22.5},
+                    {"name": "Dennis Schroder", "pts": 15.5, "reb": 2.5, "ast": 5.5, "pra": 23.5},
                 ],
             },
             # Game 7: Pistons @ Suns
@@ -884,12 +914,14 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Detroit Pistons",
                 "commence_time": times["west"],
                 "players": [
-                    # Suns
-                    {"name": "Kevin Durant", "pts": 27.5, "reb": 6.5, "ast": 5.5, "pra": 39.5},
+                    # Suns (KD traded to Rockets July 2025, got Jalen Green + Dillon Brooks)
                     {"name": "Devin Booker", "pts": 26.5, "reb": 4.5, "ast": 6.5, "pra": 37.5},
+                    {"name": "Jalen Green", "pts": 22.5, "reb": 4.5, "ast": 3.5, "pra": 30.5},
+                    {"name": "Dillon Brooks", "pts": 15.5, "reb": 3.5, "ast": 2.5, "pra": 21.5},
                     # Pistons
-                    {"name": "Cade Cunningham", "pts": 23.5, "reb": 4.5, "ast": 7.5, "pra": 35.5},
+                    {"name": "Cade Cunningham", "pts": 23.5, "reb": 4.5, "ast": 9.5, "pra": 37.5},
                     {"name": "Jaden Ivey", "pts": 17.5, "reb": 3.5, "ast": 4.5, "pra": 25.5},
+                    {"name": "Jalen Duren", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5},
                 ],
             },
             # Game 8: Thunder @ Timberwolves
@@ -898,12 +930,14 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Oklahoma City Thunder",
                 "commence_time": times["west"],
                 "players": [
-                    # Thunder
+                    # Thunder (2025 NBA Champs!)
                     {"name": "Shai Gilgeous-Alexander", "pts": 31.5, "reb": 5.5, "ast": 6.5, "pra": 43.5},
                     {"name": "Chet Holmgren", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5},
-                    # Timberwolves
+                    {"name": "Jalen Williams", "pts": 20.5, "reb": 5.5, "ast": 5.5, "pra": 31.5},
+                    # Timberwolves (KAT traded to Knicks Oct 2024, got Julius Randle)
                     {"name": "Anthony Edwards", "pts": 26.5, "reb": 5.5, "ast": 5.5, "pra": 37.5},
-                    {"name": "Karl-Anthony Towns", "pts": 22.5, "reb": 9.5, "ast": 3.5, "pra": 35.5},
+                    {"name": "Julius Randle", "pts": 21.5, "reb": 9.5, "ast": 4.5, "pra": 35.5},
+                    {"name": "Rudy Gobert", "pts": 11.5, "reb": 11.5, "ast": 1.5, "pra": 24.5},
                 ],
             },
         }
