@@ -1,9 +1,10 @@
 """Model Picks API endpoints."""
 
+import logging
 from typing import Optional
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -11,8 +12,19 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models import ModelPick, Game, Sport, Market, Player
 from app.schemas.model_pick import ModelPickList, ModelPickWithDetails, PickSummary
+from app.services.picks_generator import generate_picks
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Sport key mappings for refresh endpoint
+SPORT_KEY_MAP = {
+    "nba": "basketball_nba",
+    "nfl": "americanfootball_nfl",
+    "mlb": "baseball_mlb",
+    "nhl": "icehockey_nhl",
+}
 
 
 @router.get("", response_model=ModelPickList)
@@ -230,3 +242,34 @@ async def get_picks_summary(
         avg_confidence=round(avg_confidence, 4),
         high_confidence_picks=high_confidence_picks,
     )
+
+
+@router.post("/refresh")
+async def refresh_picks(
+    sport: str = Query("nba", description="Sport to refresh: nba, nfl, mlb, nhl"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Trigger manual refresh of picks for a sport."""
+    try:
+        sport_key = SPORT_KEY_MAP.get(sport.lower())
+        if not sport_key:
+            raise HTTPException(status_code=400, detail=f"Unknown sport: {sport}")
+        
+        result = await generate_picks(
+            db,
+            sport_key,
+            min_ev=0.0,
+            min_confidence=0.5,
+            use_stubs=True,  # Use stubs for now
+        )
+        
+        return {
+            "status": "success",
+            "sport": sport,
+            "result": result,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refreshing picks: {e}")
+        raise HTTPException(status_code=500, detail=str(e)[:200])
