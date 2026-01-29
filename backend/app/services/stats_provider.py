@@ -1,7 +1,7 @@
 """Stats provider for fetching player game logs and writing to PlayerGameStats."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
 import httpx
@@ -486,14 +486,20 @@ class StatsProvider:
         import random
         random.seed(hash(external_player_id))  # Consistent randomness per player
         
+        # Use dynamic dates based on today
+        today = datetime.now(timezone.utc).replace(hour=19, minute=0, second=0, microsecond=0)
+        
         for i in range(min(n_games, 10)):
-            game_date = datetime(2026, 1, 25 - i, tzinfo=timezone.utc)
+            # Games from today going back
+            game_date = today - timedelta(days=i)
             
             # Add some variance
             variance = {k: int(v * (0.7 + random.random() * 0.6)) for k, v in base_stats.items()}
             
+            # Dynamic game_id based on date
+            date_str = game_date.strftime("%Y%m%d")
             games.append({
-                "game_id": f"game_{2026012500 - i}",
+                "game_id": f"game_{date_str}_{i}",
                 "date": game_date.isoformat(),
                 "opponent": opponents[i % len(opponents)],
                 "home": i % 2 == 0,

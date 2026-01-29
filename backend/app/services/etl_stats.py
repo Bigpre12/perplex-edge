@@ -177,6 +177,10 @@ async def find_game_by_date_approx(
     
     Used when we don't have an exact external_game_id match.
     """
+    # Convert timezone-aware datetime to naive (UTC) for PostgreSQL
+    if game_date.tzinfo is not None:
+        game_date = game_date.replace(tzinfo=None)
+    
     # Look for games within 1 day of the date
     day_start = game_date.replace(hour=0, minute=0, second=0, microsecond=0)
     day_end = day_start + timedelta(days=1)
