@@ -648,48 +648,52 @@ class XYZOddsProvider(OddsProvider):
         sport_key: str,
         external_game_id: str,
     ) -> dict[str, Any]:
-        """Return realistic stub betting lines for testing with dynamic dates."""
-        # Game-specific lines for Jan 29, 2026 games (updated with current rosters)
+        """Return realistic stub betting lines for testing with dynamic dates.
+        
+        INJURY-ADJUSTED LINES - Jan 29, 2026:
+        Lines reflect major injuries: Embiid, Giannis, Jokic, AD, Booker, Trae OUT
+        """
+        # Game-specific lines ADJUSTED FOR INJURIES
         game_lines = {
-            # 76ers favored at home (Embiid/Maxey/PG vs LaVine/DeRozan/Sabonis)
+            # Kings slight favorites (EMBIID OUT - knee, hasn't played since Jan 4)
             "game_sac_phi_today": {
                 "home_team": "Philadelphia 76ers", "away_team": "Sacramento Kings",
-                "home_spread": -6.5, "total": 228.5, "home_ml": -260, "away_ml": 215,
+                "home_spread": 2.5, "total": 222.5, "home_ml": 120, "away_ml": -140,
             },
-            # Bucks favored on road (Giannis without Dame vs rebuilding Wizards w/Trae)
+            # Wizards slight favorites (GIANNIS OUT - calf 4-6 weeks, TRAE OUT - MCL)
             "game_mil_was_today": {
                 "home_team": "Washington Wizards", "away_team": "Milwaukee Bucks",
-                "home_spread": 5.5, "total": 224.5, "home_ml": 200, "away_ml": -245,
+                "home_spread": -1.5, "total": 218.5, "home_ml": -125, "away_ml": 105,
             },
-            # Close game (Heat with Wiggins vs Bulls without LaVine)
+            # Bulls favorites (HERRO OUT - toe injury, missed 28/34 games)
             "game_mia_chi_today": {
                 "home_team": "Chicago Bulls", "away_team": "Miami Heat",
-                "home_spread": 1.5, "total": 218.5, "home_ml": 105, "away_ml": -125,
+                "home_spread": -2.5, "total": 215.5, "home_ml": -140, "away_ml": 120,
             },
-            # Rockets favored (KD/Sengun/VanVleet vs rebuilding Hawks)
+            # Rockets heavy favorites (KD healthy vs gutted Hawks)
             "game_hou_atl_today": {
                 "home_team": "Atlanta Hawks", "away_team": "Houston Rockets",
-                "home_spread": 6.5, "total": 226.0, "home_ml": 230, "away_ml": -280,
+                "home_spread": 8.5, "total": 224.0, "home_ml": 320, "away_ml": -420,
             },
-            # Mavs favored (AD/Kyrie/Klay vs young Hornets)
+            # Hornets favorites (AD OUT - hand ligament 6 weeks, LaMelo avg 28.2 PPG)
             "game_cha_dal_today": {
                 "home_team": "Dallas Mavericks", "away_team": "Charlotte Hornets",
-                "home_spread": -7.5, "total": 222.5, "home_ml": -320, "away_ml": 260,
+                "home_spread": 3.5, "total": 224.5, "home_ml": 150, "away_ml": -175,
             },
-            # Nuggets heavy favorites (Jokic vs rebuilding Nets)
+            # Nuggets slight favorites (JOKIC OUT - knee, no timetable; CAM THOMAS OUT)
             "game_bkn_den_today": {
                 "home_team": "Denver Nuggets", "away_team": "Brooklyn Nets",
-                "home_spread": -12.5, "total": 224.0, "home_ml": -650, "away_ml": 475,
+                "home_spread": -4.5, "total": 216.0, "home_ml": -190, "away_ml": 160,
             },
-            # Close game (Booker/Jalen Green vs surging Pistons w/Cade)
+            # Pistons heavy favorites (BOOKER OUT - ankle, JALEN GREEN DTD; Pistons 34-11)
             "game_det_pho_today": {
                 "home_team": "Phoenix Suns", "away_team": "Detroit Pistons",
-                "home_spread": -2.5, "total": 226.5, "home_ml": -135, "away_ml": 115,
+                "home_spread": 6.5, "total": 214.5, "home_ml": 240, "away_ml": -295,
             },
-            # Thunder favored (Defending champs SGA/Chet/JWill vs Ant/Randle/Gobert)
+            # Thunder favorites (SGA MVP form; ANT EDWARDS DTD - foot)
             "game_okc_min_today": {
                 "home_team": "Minnesota Timberwolves", "away_team": "Oklahoma City Thunder",
-                "home_spread": 4.5, "total": 218.5, "home_ml": 175, "away_ml": -210,
+                "home_spread": 6.5, "total": 216.5, "home_ml": 240, "away_ml": -295,
             },
         }
         
@@ -799,145 +803,156 @@ class XYZOddsProvider(OddsProvider):
     ) -> dict[str, Any]:
         """Return realistic stub player props for Jan 29, 2026 NBA games.
         
-        UPDATED with accurate 2025-26 rosters after major trades:
-        - KD to Rockets, Jalen Green to Suns (July 2025)
-        - Luka to Lakers, AD to Mavs (Feb 2025)
-        - De'Aaron Fox to Spurs, Zach LaVine to Kings (Feb 2025)
-        - Trae Young to Wizards (Jan 2026)
-        - KAT to Knicks (Oct 2024)
-        - Dame waived by Bucks (Achilles)
-        - Jimmy Butler to Warriors (Feb 2025)
+        INJURY REPORT - Jan 29, 2026:
+        - Embiid OUT (knee) - hasn't played since Jan 4
+        - Giannis OUT (calf strain 4-6 weeks) - injured Jan 23
+        - Trae Young OUT (MCL sprain) - won't debut for Wizards until All-Star break
+        - Tyler Herro OUT (toe) - missed 28 of 34 games
+        - Anthony Davis OUT (hand ligament, 6 weeks) - injured Jan 8
+        - Jokic OUT (knee hyperextension) - no timetable
+        - Cam Thomas OUT (hamstring)
+        - Booker OUT (ankle sprain, 1+ week) - injured Jan 24
+        - Jalen Green DAY-TO-DAY (hamstring) - only 4 games this season
+        - Anthony Edwards DAY-TO-DAY (foot maintenance)
         """
         times = _get_stub_game_times()
         
-        # Define props for each real game with CURRENT 2025-26 rosters
+        # Define props with INJURY-ADJUSTED rosters for Jan 29, 2026
         game_props = {
-            # Game 1: Kings @ 76ers
+            # Game 1: Kings @ 76ers - EMBIID OUT, Paul George questionable
             "game_sac_phi_today": {
                 "home_team": "Philadelphia 76ers",
                 "away_team": "Sacramento Kings",
                 "commence_time": times["early"],
                 "players": [
-                    # 76ers
-                    {"name": "Joel Embiid", "pts": 32.5, "reb": 11.5, "ast": 4.5, "pra": 48.5},
-                    {"name": "Tyrese Maxey", "pts": 26.5, "reb": 3.5, "ast": 6.5, "pra": 36.5},
-                    {"name": "Paul George", "pts": 22.5, "reb": 5.5, "ast": 4.5, "pra": 32.5},
-                    # Kings (Fox traded to Spurs, got Zach LaVine)
-                    {"name": "Zach LaVine", "pts": 24.5, "reb": 4.5, "ast": 4.5, "pra": 33.5},
-                    {"name": "DeMar DeRozan", "pts": 23.5, "reb": 4.5, "ast": 5.5, "pra": 33.5},
+                    # 76ers (Embiid OUT - knee, hasn't played since Jan 4)
+                    {"name": "Tyrese Maxey", "pts": 29.5, "reb": 4.5, "ast": 7.5, "pra": 41.5},  # Increased w/o Embiid
+                    {"name": "Paul George", "pts": 24.5, "reb": 6.5, "ast": 5.5, "pra": 36.5},  # If playing
+                    {"name": "Andre Drummond", "pts": 10.5, "reb": 10.5, "ast": 1.5, "pra": 22.5},  # Starts for Embiid
+                    {"name": "Kyle Lowry", "pts": 8.5, "reb": 3.5, "ast": 5.5, "pra": 17.5},
+                    # Kings
+                    {"name": "Zach LaVine", "pts": 25.5, "reb": 4.5, "ast": 4.5, "pra": 34.5},
+                    {"name": "DeMar DeRozan", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5},
                     {"name": "Domantas Sabonis", "pts": 19.5, "reb": 13.5, "ast": 7.5, "pra": 40.5},
                 ],
             },
-            # Game 2: Bucks @ Wizards
+            # Game 2: Bucks @ Wizards - GIANNIS OUT (calf), TRAE YOUNG OUT (MCL)
             "game_mil_was_today": {
                 "home_team": "Washington Wizards",
                 "away_team": "Milwaukee Bucks",
                 "commence_time": times["late"],
                 "players": [
-                    # Bucks (Dame waived - Achilles, got Kyle Kuzma from Wizards)
-                    {"name": "Giannis Antetokounmpo", "pts": 31.5, "reb": 11.5, "ast": 6.5, "pra": 49.5},
-                    {"name": "Kyle Kuzma", "pts": 18.5, "reb": 5.5, "ast": 2.5, "pra": 26.5},
-                    {"name": "Myles Turner", "pts": 14.5, "reb": 6.5, "ast": 1.5, "pra": 22.5},
-                    # Wizards (Got Trae Young Jan 2026, Khris Middleton from Bucks)
-                    {"name": "Trae Young", "pts": 26.5, "reb": 3.5, "ast": 10.5, "pra": 40.5},
-                    {"name": "Khris Middleton", "pts": 17.5, "reb": 4.5, "ast": 4.5, "pra": 26.5},
-                    {"name": "Alex Sarr", "pts": 12.5, "reb": 7.5, "ast": 2.5, "pra": 22.5},
+                    # Bucks (Giannis OUT - calf strain 4-6 weeks, Dame waived)
+                    {"name": "Kyle Kuzma", "pts": 22.5, "reb": 6.5, "ast": 3.5, "pra": 32.5},  # Increased w/o Giannis
+                    {"name": "Myles Turner", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5},  # Increased
+                    {"name": "Bobby Portis", "pts": 15.5, "reb": 8.5, "ast": 1.5, "pra": 25.5},  # Key role player
+                    {"name": "Gary Trent Jr.", "pts": 14.5, "reb": 2.5, "ast": 1.5, "pra": 18.5},
+                    # Wizards (Trae Young OUT - MCL, hasn't debuted yet)
+                    {"name": "Khris Middleton", "pts": 18.5, "reb": 5.5, "ast": 5.5, "pra": 29.5},
+                    {"name": "Bilal Coulibaly", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5},
+                    {"name": "Alex Sarr", "pts": 13.5, "reb": 8.5, "ast": 2.5, "pra": 24.5},  # Rookie getting run
                 ],
             },
-            # Game 3: Heat @ Bulls
+            # Game 3: Heat @ Bulls - TYLER HERRO OUT (toe, missed 28/34 games)
             "game_mia_chi_today": {
                 "home_team": "Chicago Bulls",
                 "away_team": "Miami Heat",
                 "commence_time": times["late"],
                 "players": [
-                    # Heat (Butler to Warriors, got Andrew Wiggins)
-                    {"name": "Bam Adebayo", "pts": 19.5, "reb": 10.5, "ast": 4.5, "pra": 34.5},
-                    {"name": "Tyler Herro", "pts": 22.5, "reb": 5.5, "ast": 4.5, "pra": 32.5},
-                    {"name": "Andrew Wiggins", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5},
-                    # Bulls (LaVine traded to Kings, kept core)
-                    {"name": "Coby White", "pts": 19.5, "reb": 4.5, "ast": 5.5, "pra": 29.5},
+                    # Heat (Herro OUT - toe injury, Bam probable)
+                    {"name": "Bam Adebayo", "pts": 21.5, "reb": 11.5, "ast": 5.5, "pra": 38.5},  # Carries load
+                    {"name": "Andrew Wiggins", "pts": 18.5, "reb": 5.5, "ast": 2.5, "pra": 26.5},
+                    {"name": "Terry Rozier", "pts": 17.5, "reb": 3.5, "ast": 5.5, "pra": 26.5},  # Key w/o Herro
+                    {"name": "Jaime Jaquez Jr.", "pts": 13.5, "reb": 4.5, "ast": 2.5, "pra": 20.5},
+                    # Bulls
+                    {"name": "Coby White", "pts": 20.5, "reb": 4.5, "ast": 5.5, "pra": 30.5},
                     {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5},
-                    {"name": "Josh Giddey", "pts": 14.5, "reb": 6.5, "ast": 6.5, "pra": 27.5},
+                    {"name": "Josh Giddey", "pts": 15.5, "reb": 7.5, "ast": 7.5, "pra": 30.5},
                 ],
             },
-            # Game 4: Rockets @ Hawks
+            # Game 4: Rockets @ Hawks - KD healthy, Hawks gutted after trades
             "game_hou_atl_today": {
                 "home_team": "Atlanta Hawks",
                 "away_team": "Houston Rockets",
                 "commence_time": times["night"],
                 "players": [
-                    # Rockets (Got Kevin Durant July 2025!)
-                    {"name": "Kevin Durant", "pts": 27.5, "reb": 6.5, "ast": 5.5, "pra": 39.5},
-                    {"name": "Alperen Sengun", "pts": 18.5, "reb": 9.5, "ast": 5.5, "pra": 33.5},
-                    {"name": "Fred VanVleet", "pts": 17.5, "reb": 3.5, "ast": 6.5, "pra": 27.5},
-                    # Hawks (Trae traded to Wizards, Murray to Pelicans - got CJ McCollum)
-                    {"name": "CJ McCollum", "pts": 21.5, "reb": 3.5, "ast": 4.5, "pra": 29.5},
-                    {"name": "Bogdan Bogdanovic", "pts": 16.5, "reb": 3.5, "ast": 3.5, "pra": 23.5},
-                    {"name": "Zaccharie Risacher", "pts": 14.5, "reb": 5.5, "ast": 2.5, "pra": 22.5},
+                    # Rockets (KD healthy and dominant)
+                    {"name": "Kevin Durant", "pts": 28.5, "reb": 7.5, "ast": 5.5, "pra": 41.5},
+                    {"name": "Alperen Sengun", "pts": 19.5, "reb": 10.5, "ast": 5.5, "pra": 35.5},
+                    {"name": "Fred VanVleet", "pts": 17.5, "reb": 3.5, "ast": 7.5, "pra": 28.5},
+                    {"name": "Amen Thompson", "pts": 12.5, "reb": 6.5, "ast": 3.5, "pra": 22.5},
+                    # Hawks (Trae/Murray gone, rebuilding)
+                    {"name": "CJ McCollum", "pts": 22.5, "reb": 4.5, "ast": 5.5, "pra": 32.5},  # Primary scorer now
+                    {"name": "Bogdan Bogdanovic", "pts": 17.5, "reb": 3.5, "ast": 4.5, "pra": 25.5},
+                    {"name": "Clint Capela", "pts": 11.5, "reb": 11.5, "ast": 1.5, "pra": 24.5},
                 ],
             },
-            # Game 5: Hornets @ Mavericks
+            # Game 5: Hornets @ Mavericks - ANTHONY DAVIS OUT (hand, 6 weeks)
             "game_cha_dal_today": {
                 "home_team": "Dallas Mavericks",
                 "away_team": "Charlotte Hornets",
                 "commence_time": times["west"],
                 "players": [
-                    # Mavericks (Luka traded to Lakers Feb 2025, got Anthony Davis!)
-                    {"name": "Anthony Davis", "pts": 25.5, "reb": 11.5, "ast": 3.5, "pra": 40.5},
-                    {"name": "Kyrie Irving", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5},
-                    {"name": "Klay Thompson", "pts": 14.5, "reb": 3.5, "ast": 2.5, "pra": 20.5},
-                    # Hornets
-                    {"name": "LaMelo Ball", "pts": 23.5, "reb": 5.5, "ast": 8.5, "pra": 37.5},
-                    {"name": "Brandon Miller", "pts": 18.5, "reb": 4.5, "ast": 2.5, "pra": 25.5},
-                    {"name": "Miles Bridges", "pts": 17.5, "reb": 6.5, "ast": 3.5, "pra": 27.5},
+                    # Mavericks (AD OUT - hand ligament injury)
+                    {"name": "Kyrie Irving", "pts": 28.5, "reb": 5.5, "ast": 7.5, "pra": 41.5},  # Carries offense
+                    {"name": "Klay Thompson", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5},  # More shots w/o AD
+                    {"name": "PJ Washington", "pts": 15.5, "reb": 7.5, "ast": 2.5, "pra": 25.5},  # Starts at 4
+                    {"name": "Daniel Gafford", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5},  # Starts at 5
+                    # Hornets (LaMelo healthy, averaging 28.2 PPG)
+                    {"name": "LaMelo Ball", "pts": 28.5, "reb": 6.5, "ast": 9.5, "pra": 44.5},  # Star player
+                    {"name": "Brandon Miller", "pts": 20.5, "reb": 5.5, "ast": 3.5, "pra": 29.5},
+                    {"name": "Miles Bridges", "pts": 18.5, "reb": 7.5, "ast": 4.5, "pra": 30.5},
                 ],
             },
-            # Game 6: Nets @ Nuggets
+            # Game 6: Nets @ Nuggets - JOKIC OUT (knee), CAM THOMAS OUT (hamstring)
             "game_bkn_den_today": {
                 "home_team": "Denver Nuggets",
                 "away_team": "Brooklyn Nets",
                 "commence_time": times["west"],
                 "players": [
-                    # Nuggets
-                    {"name": "Nikola Jokic", "pts": 26.5, "reb": 12.5, "ast": 9.5, "pra": 48.5},
-                    {"name": "Jamal Murray", "pts": 21.5, "reb": 4.5, "ast": 6.5, "pra": 32.5},
-                    {"name": "Aaron Gordon", "pts": 14.5, "reb": 6.5, "ast": 3.5, "pra": 24.5},
-                    # Nets (Mikal Bridges traded to Knicks July 2024, rebuilding)
-                    {"name": "Cam Thomas", "pts": 24.5, "reb": 3.5, "ast": 3.5, "pra": 31.5},
-                    {"name": "Nic Claxton", "pts": 11.5, "reb": 8.5, "ast": 2.5, "pra": 22.5},
-                    {"name": "Dennis Schroder", "pts": 15.5, "reb": 2.5, "ast": 5.5, "pra": 23.5},
+                    # Nuggets (Jokic OUT - knee hyperextension, no timetable)
+                    {"name": "Jamal Murray", "pts": 26.5, "reb": 5.5, "ast": 8.5, "pra": 40.5},  # Carries team w/o Jokic
+                    {"name": "Aaron Gordon", "pts": 18.5, "reb": 8.5, "ast": 4.5, "pra": 31.5},  # Increased role
+                    {"name": "Christian Braun", "pts": 15.5, "reb": 5.5, "ast": 3.5, "pra": 24.5},  # Key now
+                    {"name": "Peyton Watson", "pts": 11.5, "reb": 5.5, "ast": 1.5, "pra": 18.5},
+                    # Nets (Cam Thomas OUT - hamstring)
+                    {"name": "Dennis Schroder", "pts": 19.5, "reb": 3.5, "ast": 7.5, "pra": 30.5},  # Primary ball handler
+                    {"name": "Nic Claxton", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5},
+                    {"name": "Day'Ron Sharpe", "pts": 10.5, "reb": 7.5, "ast": 1.5, "pra": 19.5},
                 ],
             },
-            # Game 7: Pistons @ Suns
+            # Game 7: Pistons @ Suns - BOOKER OUT (ankle), JALEN GREEN DAY-TO-DAY (hamstring)
             "game_det_pho_today": {
                 "home_team": "Phoenix Suns",
                 "away_team": "Detroit Pistons",
                 "commence_time": times["west"],
                 "players": [
-                    # Suns (KD traded to Rockets July 2025, got Jalen Green + Dillon Brooks)
-                    {"name": "Devin Booker", "pts": 26.5, "reb": 4.5, "ast": 6.5, "pra": 37.5},
-                    {"name": "Jalen Green", "pts": 22.5, "reb": 4.5, "ast": 3.5, "pra": 30.5},
-                    {"name": "Dillon Brooks", "pts": 15.5, "reb": 3.5, "ast": 2.5, "pra": 21.5},
-                    # Pistons
-                    {"name": "Cade Cunningham", "pts": 23.5, "reb": 4.5, "ast": 9.5, "pra": 37.5},
-                    {"name": "Jaden Ivey", "pts": 17.5, "reb": 3.5, "ast": 4.5, "pra": 25.5},
-                    {"name": "Jalen Duren", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5},
+                    # Suns (Booker OUT - ankle sprain, Jalen Green questionable - hamstring)
+                    {"name": "Dillon Brooks", "pts": 20.5, "reb": 4.5, "ast": 3.5, "pra": 28.5},  # Primary scorer
+                    {"name": "Royce O'Neale", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5},
+                    {"name": "Nick Richards", "pts": 13.5, "reb": 9.5, "ast": 1.5, "pra": 24.5},
+                    {"name": "Ryan Dunn", "pts": 9.5, "reb": 4.5, "ast": 1.5, "pra": 15.5},
+                    # Pistons (Cade playing through wrist but producing)
+                    {"name": "Cade Cunningham", "pts": 24.5, "reb": 5.5, "ast": 9.5, "pra": 39.5},  # All-Star level
+                    {"name": "Jaden Ivey", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5},
+                    {"name": "Jalen Duren", "pts": 13.5, "reb": 11.5, "ast": 2.5, "pra": 27.5},
                 ],
             },
-            # Game 8: Thunder @ Timberwolves
+            # Game 8: Thunder @ Timberwolves - ANT EDWARDS DAY-TO-DAY (foot)
             "game_okc_min_today": {
                 "home_team": "Minnesota Timberwolves",
                 "away_team": "Oklahoma City Thunder",
                 "commence_time": times["west"],
                 "players": [
-                    # Thunder (2025 NBA Champs!)
-                    {"name": "Shai Gilgeous-Alexander", "pts": 31.5, "reb": 5.5, "ast": 6.5, "pra": 43.5},
-                    {"name": "Chet Holmgren", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5},
-                    {"name": "Jalen Williams", "pts": 20.5, "reb": 5.5, "ast": 5.5, "pra": 31.5},
-                    # Timberwolves (KAT traded to Knicks Oct 2024, got Julius Randle)
-                    {"name": "Anthony Edwards", "pts": 26.5, "reb": 5.5, "ast": 5.5, "pra": 37.5},
-                    {"name": "Julius Randle", "pts": 21.5, "reb": 9.5, "ast": 4.5, "pra": 35.5},
-                    {"name": "Rudy Gobert", "pts": 11.5, "reb": 11.5, "ast": 1.5, "pra": 24.5},
+                    # Thunder (2025 NBA Champs - SGA healthy and MVP form)
+                    {"name": "Shai Gilgeous-Alexander", "pts": 32.5, "reb": 5.5, "ast": 6.5, "pra": 44.5},  # MVP
+                    {"name": "Chet Holmgren", "pts": 17.5, "reb": 9.5, "ast": 3.5, "pra": 30.5},
+                    {"name": "Jalen Williams", "pts": 21.5, "reb": 6.5, "ast": 6.5, "pra": 34.5},  # All-Star
+                    {"name": "Alex Caruso", "pts": 8.5, "reb": 3.5, "ast": 4.5, "pra": 16.5},
+                    # Timberwolves (Ant Edwards DAY-TO-DAY - foot maintenance)
+                    {"name": "Julius Randle", "pts": 23.5, "reb": 10.5, "ast": 5.5, "pra": 39.5},  # Key if Ant out
+                    {"name": "Rudy Gobert", "pts": 12.5, "reb": 12.5, "ast": 1.5, "pra": 26.5},
+                    {"name": "Naz Reid", "pts": 14.5, "reb": 6.5, "ast": 2.5, "pra": 23.5},  # Bigger role if Ant out
                 ],
             },
         }
