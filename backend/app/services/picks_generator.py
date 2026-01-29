@@ -315,9 +315,21 @@ async def generate_picks(
         deactivated = await _deactivate_old_picks(db, sport.id)
         stats["picks_deactivated"] = deactivated
         
-        # Get today's games (use naive datetime for PostgreSQL compatibility)
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        tomorrow = today + timedelta(days=1)
+        # Get today's games using Eastern time to determine "today"
+        # This ensures we get games for today's US schedule even if UTC has rolled over
+        utc_now = datetime.now(timezone.utc)
+        eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
+        eastern_now = utc_now + eastern_offset
+        
+        # Get today's date in Eastern, then create UTC range
+        # Today at midnight ET = today at 05:00 UTC
+        # Tomorrow at midnight ET = tomorrow at 05:00 UTC
+        today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+        tomorrow_et = today_et + timedelta(days=1)
+        
+        # Convert to UTC by adding 5 hours (naive datetimes for PostgreSQL)
+        today = today_et + timedelta(hours=5)  # Midnight ET = 5am UTC
+        tomorrow = tomorrow_et + timedelta(hours=5)
         
         result = await db.execute(
             select(Game)
