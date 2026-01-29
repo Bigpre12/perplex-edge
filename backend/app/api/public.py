@@ -57,6 +57,7 @@ async def list_sports(
 @router.get("/sports/{sport_id}/games/today", response_model=PublicGameList, tags=["public"])
 async def list_games_today(
     sport_id: int,
+    upcoming_only: bool = Query(True, description="Only show games that haven't started yet"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -72,6 +73,7 @@ async def list_games_today(
     # Calculate today's date range using US Eastern time
     # This ensures games show for today's US schedule even after midnight UTC
     utc_now = datetime.now(timezone.utc)
+    utc_now_naive = utc_now.replace(tzinfo=None)  # Naive UTC for DB comparison
     eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
     eastern_now = utc_now + eastern_offset
     
@@ -87,17 +89,22 @@ async def list_games_today(
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
     
+    # Build filter conditions
+    conditions = [
+        Game.sport_id == sport_id,
+        Game.start_time >= today,
+        Game.start_time < tomorrow,
+    ]
+    
+    # Only show games that haven't started
+    if upcoming_only:
+        conditions.append(Game.start_time > utc_now_naive)
+    
     result = await db.execute(
         select(Game, HomeTeam, AwayTeam)
         .join(HomeTeam, Game.home_team_id == HomeTeam.id)
         .join(AwayTeam, Game.away_team_id == AwayTeam.id)
-        .where(
-            and_(
-                Game.sport_id == sport_id,
-                Game.start_time >= today,
-                Game.start_time < tomorrow,
-            )
-        )
+        .where(and_(*conditions))
         .order_by(Game.start_time)
     )
     
@@ -164,6 +171,7 @@ async def list_player_prop_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
+    fresh_only: bool = Query(True, description="Only show fresh picks (generated within 12h, games not started)"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -188,6 +196,7 @@ async def list_player_prop_picks(
     
     # Calculate today's date range using US Eastern time
     utc_now = datetime.now(timezone.utc)
+    utc_now_naive = utc_now.replace(tzinfo=None)  # Naive UTC for DB comparison
     eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
     eastern_now = utc_now + eastern_offset
     today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
@@ -195,10 +204,32 @@ async def list_player_prop_picks(
     today = today_et + timedelta(hours=5)
     tomorrow = tomorrow_et + timedelta(hours=5)
     
+    # Freshness threshold - picks generated within last 12 hours
+    freshness_cutoff = utc_now_naive - timedelta(hours=12)
+    
     # Aliases for team joins
     PlayerTeam = aliased(Team)
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
+    
+    # Base filter conditions
+    base_conditions = [
+        ModelPick.sport_id == sport_id,
+        ModelPick.is_active == True,
+        ModelPick.player_id.isnot(None),
+        Market.market_type == "player_prop",
+        Game.start_time >= today,
+        Game.start_time < tomorrow,
+    ]
+    
+    # Add freshness filters if requested
+    if fresh_only:
+        base_conditions.extend([
+            # Only games that haven't started yet
+            Game.start_time > utc_now_naive,
+            # Only picks generated recently
+            ModelPick.generated_at >= freshness_cutoff,
+        ])
     
     # Build query with all necessary joins (outerjoin for PlayerTeam since team_id can be null)
     query = (
@@ -209,16 +240,7 @@ async def list_player_prop_picks(
         .join(HomeTeam, Game.home_team_id == HomeTeam.id)
         .join(AwayTeam, Game.away_team_id == AwayTeam.id)
         .join(Market, ModelPick.market_id == Market.id)
-        .where(
-            and_(
-                ModelPick.sport_id == sport_id,
-                ModelPick.is_active == True,
-                ModelPick.player_id.isnot(None),
-                Market.market_type == "player_prop",
-                Game.start_time >= today,
-                Game.start_time < tomorrow,
-            )
-        )
+        .where(and_(*base_conditions))
     )
     
     # Apply filters
@@ -317,6 +339,7 @@ async def list_game_line_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
+    fresh_only: bool = Query(True, description="Only show fresh picks (generated within 12h, games not started)"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -340,12 +363,16 @@ async def list_game_line_picks(
     
     # Calculate today's date range using US Eastern time
     utc_now = datetime.now(timezone.utc)
+    utc_now_naive = utc_now.replace(tzinfo=None)  # Naive UTC for DB comparison
     eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
     eastern_now = utc_now + eastern_offset
     today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
     tomorrow_et = today_et + timedelta(days=1)
     today = today_et + timedelta(hours=5)
     tomorrow = tomorrow_et + timedelta(hours=5)
+    
+    # Freshness threshold - picks generated within last 12 hours
+    freshness_cutoff = utc_now_naive - timedelta(hours=12)
     
     # Aliases for team joins
     HomeTeam = aliased(Team)
@@ -354,6 +381,25 @@ async def list_game_line_picks(
     # Game line market types
     game_line_types = ["spread", "total", "moneyline"]
     
+    # Base filter conditions
+    base_conditions = [
+        ModelPick.sport_id == sport_id,
+        ModelPick.is_active == True,
+        ModelPick.player_id.is_(None),  # Game lines only (no player)
+        Market.market_type.in_(game_line_types),
+        Game.start_time >= today,
+        Game.start_time < tomorrow,
+    ]
+    
+    # Add freshness filters if requested
+    if fresh_only:
+        base_conditions.extend([
+            # Only games that haven't started yet
+            Game.start_time > utc_now_naive,
+            # Only picks generated recently
+            ModelPick.generated_at >= freshness_cutoff,
+        ])
+    
     # Build query with all necessary joins
     query = (
         select(ModelPick, Game, HomeTeam, AwayTeam, Market)
@@ -361,16 +407,7 @@ async def list_game_line_picks(
         .join(HomeTeam, Game.home_team_id == HomeTeam.id)
         .join(AwayTeam, Game.away_team_id == AwayTeam.id)
         .join(Market, ModelPick.market_id == Market.id)
-        .where(
-            and_(
-                ModelPick.sport_id == sport_id,
-                ModelPick.is_active == True,
-                ModelPick.player_id.is_(None),  # Game lines only (no player)
-                Market.market_type.in_(game_line_types),
-                Game.start_time >= today,
-                Game.start_time < tomorrow,
-            )
-        )
+        .where(and_(*base_conditions))
     )
     
     # Apply filters
