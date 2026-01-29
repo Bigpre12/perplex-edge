@@ -7,7 +7,7 @@ from typing import Any, Optional
 from sqlalchemy import select, update, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Sport, Team, Game, Market, Line, Player, ModelPick, PlayerGameStats
+from app.models import Sport, Team, Game, Market, Line, Player, ModelPick, PlayerGameStats, PickResult
 from app.services.odds_provider import XYZOddsProvider, GameData, LineData, PropData
 
 logger = logging.getLogger(__name__)
@@ -976,7 +976,16 @@ async def clear_stale_games(
         stats_deleted = stats_result.rowcount
     logger.info(f"Deleted {stats_deleted} player game stats")
     
-    # 4. Delete Games
+    # 4. Delete PickResult (references games)
+    results_deleted = 0
+    if game_ids:
+        results_result = await db.execute(
+            delete(PickResult).where(PickResult.game_id.in_(game_ids))
+        )
+        results_deleted = results_result.rowcount
+    logger.info(f"Deleted {results_deleted} pick results")
+    
+    # 5. Delete Games
     games_result = await db.execute(
         delete(Game).where(Game.sport_id == sport.id)
     )
@@ -990,6 +999,7 @@ async def clear_stale_games(
         "picks_deleted": picks_deleted,
         "lines_deleted": lines_deleted,
         "stats_deleted": stats_deleted,
+        "results_deleted": results_deleted,
         "games_deleted": games_deleted,
     }
     logger.info(f"Clear stale games complete: {counts}")
