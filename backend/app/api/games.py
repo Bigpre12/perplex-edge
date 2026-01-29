@@ -1,7 +1,8 @@
 """Games API endpoints."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import select, func
@@ -13,6 +14,9 @@ from app.models import Game, Sport, Team
 from app.schemas.game import GameList, GameWithTeams, GameWithOdds
 
 router = APIRouter()
+
+# Eastern timezone (handles DST automatically)
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 
 @router.get("", response_model=GameList)
@@ -65,9 +69,15 @@ async def list_todays_games(
     sport: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """List today's games."""
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    """List today's games (using Eastern time for US sports schedule)."""
+    # Use Eastern time to determine "today" (handles DST automatically)
+    now_et = datetime.now(EASTERN_TZ)
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC (naive datetimes for PostgreSQL)
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
 
     query = (
         select(Game)
