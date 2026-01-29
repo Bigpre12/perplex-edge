@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api import games, odds, props, injuries, picks, sync, admin, public
+from app.api import games, odds, props, injuries, picks, sync, admin, public, stats
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(injuries.router, prefix="/injuries", tags=["injuries"]
 api_router.include_router(picks.router, prefix="/picks", tags=["picks"])
 api_router.include_router(sync.router, prefix="/sync", tags=["sync"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+api_router.include_router(stats.router, prefix="/stats", tags=["stats"])

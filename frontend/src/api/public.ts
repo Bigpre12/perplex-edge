@@ -363,6 +363,79 @@ export interface SchedulerStatus {
 }
 
 // =============================================================================
+// Hit Rate Tracking Types
+// =============================================================================
+
+export interface HotPlayer {
+  player_id: number;
+  player_name: string;
+  hit_rate_7d: number;
+  total_7d: number;
+  hits_7d: number;
+  current_streak: number;
+  last_5: string | null;
+}
+
+export interface HotPlayerList {
+  items: HotPlayer[];
+  total: number;
+}
+
+export interface StreakPlayer {
+  player_id: number;
+  player_name: string;
+  streak: number;
+  hit_rate_7d: number | null;
+  last_5: string | null;
+}
+
+export interface StreaksList {
+  hot: StreakPlayer[];
+  cold: StreakPlayer[];
+}
+
+export interface RecentResult {
+  result_id: number;
+  player_id: number;
+  player_name: string;
+  stat_type: string | null;
+  line: number;
+  side: string;
+  actual_value: number;
+  hit: boolean;
+  settled_at: string;
+  game_id: number;
+}
+
+export interface RecentResultList {
+  items: RecentResult[];
+  total: number;
+}
+
+export interface PlayerHistory {
+  player_id: number;
+  player_name: string;
+  stats: {
+    hit_rate_7d: number | null;
+    total_7d: number;
+    hit_rate_all: number | null;
+    total_all: number;
+    current_streak: number;
+    best_streak: number;
+    worst_streak: number;
+    last_5: string | null;
+  };
+  results: Array<{
+    stat_type: string | null;
+    line: number;
+    side: string;
+    actual_value: number;
+    hit: boolean;
+    settled_at: string;
+  }>;
+}
+
+// =============================================================================
 // Stats API Functions
 // =============================================================================
 
@@ -390,6 +463,37 @@ export async function refreshPicks(sport: string = 'nba'): Promise<RefreshRespon
 
 export async function fetchSchedulerStatus(): Promise<SchedulerStatus> {
   return fetchJson<SchedulerStatus>(`${API_BASE_URL}/api/scheduler/status`);
+}
+
+// Hit Rate Tracking API Functions
+export async function fetchHotPlayers(sportId: number, minPicks: number = 5, limit: number = 10): Promise<HotPlayerList> {
+  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/hot-players?min_picks=${minPicks}&limit=${limit}`);
+}
+
+export async function fetchColdPlayers(sportId: number, minPicks: number = 5, limit: number = 10): Promise<HotPlayerList> {
+  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/cold-players?min_picks=${minPicks}&limit=${limit}`);
+}
+
+export async function fetchStreaks(sportId: number, minStreak: number = 3, limit: number = 20): Promise<StreaksList> {
+  return fetchJson<StreaksList>(`${API_BASE_URL}/api/stats/sports/${sportId}/streaks?min_streak=${minStreak}&limit=${limit}`);
+}
+
+export async function fetchRecentResults(sportId: number, limit: number = 20): Promise<RecentResultList> {
+  return fetchJson<RecentResultList>(`${API_BASE_URL}/api/stats/sports/${sportId}/recent-results?limit=${limit}`);
+}
+
+export async function fetchPlayerHistory(playerId: number, limit: number = 50): Promise<PlayerHistory> {
+  return fetchJson<PlayerHistory>(`${API_BASE_URL}/api/stats/players/${playerId}/history?limit=${limit}`);
+}
+
+export async function settleGame(gameId: number, simulate: boolean = false): Promise<{ game_id: number; settled: number; hits: number; misses: number; hit_rate: number }> {
+  const response = await fetch(`${API_BASE_URL}/api/stats/games/${gameId}/settle?simulate=${simulate}`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response.json();
 }
 
 // =============================================================================
@@ -441,5 +545,69 @@ export function useSchedulerStatus() {
     queryFn: fetchSchedulerStatus,
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
+  });
+}
+
+/**
+ * Fetch hot players by 7-day hit rate.
+ */
+export function useHotPlayers(sportId: number | null, minPicks: number = 5, limit: number = 10) {
+  return useQuery({
+    queryKey: ['hot-players', sportId, minPicks, limit],
+    queryFn: () => fetchHotPlayers(sportId!, minPicks, limit),
+    enabled: sportId !== null,
+    staleTime: 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Fetch cold players by 7-day hit rate.
+ */
+export function useColdPlayers(sportId: number | null, minPicks: number = 5, limit: number = 10) {
+  return useQuery({
+    queryKey: ['cold-players', sportId, minPicks, limit],
+    queryFn: () => fetchColdPlayers(sportId!, minPicks, limit),
+    enabled: sportId !== null,
+    staleTime: 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Fetch players on streaks.
+ */
+export function useStreaks(sportId: number | null, minStreak: number = 3) {
+  return useQuery({
+    queryKey: ['streaks', sportId, minStreak],
+    queryFn: () => fetchStreaks(sportId!, minStreak),
+    enabled: sportId !== null,
+    staleTime: 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Fetch recent pick results.
+ */
+export function useRecentResults(sportId: number | null, limit: number = 20) {
+  return useQuery({
+    queryKey: ['recent-results', sportId, limit],
+    queryFn: () => fetchRecentResults(sportId!, limit),
+    enabled: sportId !== null,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+}
+
+/**
+ * Fetch detailed history for a player.
+ */
+export function usePlayerHistory(playerId: number | null) {
+  return useQuery({
+    queryKey: ['player-history', playerId],
+    queryFn: () => fetchPlayerHistory(playerId!),
+    enabled: playerId !== null,
+    staleTime: 60 * 1000,
   });
 }

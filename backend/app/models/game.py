@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.line import Line
     from app.models.player_game_stats import PlayerGameStats
     from app.models.model_pick import ModelPick
+    from app.models.pick_result import PickResult
 
 
 class Game(Base, TimestampMixin):
@@ -44,6 +45,7 @@ class Game(Base, TimestampMixin):
     lines: Mapped[List["Line"]] = relationship(back_populates="game")
     player_stats: Mapped[List["PlayerGameStats"]] = relationship(back_populates="game")
     model_picks: Mapped[List["ModelPick"]] = relationship(back_populates="game")
+    pick_results: Mapped[List["PickResult"]] = relationship(back_populates="game")
 
     def __repr__(self) -> str:
         return f"<Game(id={self.id}, external_id='{self.external_game_id}', status='{self.status}')>"

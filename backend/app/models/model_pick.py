@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.game import Game
     from app.models.player import Player
     from app.models.market import Market
+    from app.models.pick_result import PickResult
 
 
 class ModelPick(Base):
@@ -67,6 +68,7 @@ class ModelPick(Base):
     game: Mapped["Game"] = relationship(back_populates="model_picks")
     player: Mapped[Optional["Player"]] = relationship(back_populates="model_picks")
     market: Mapped["Market"] = relationship(back_populates="model_picks")
+    result: Mapped[Optional["PickResult"]] = relationship(back_populates="pick", uselist=False)
 
     def __repr__(self) -> str:
         return f"<ModelPick(id={self.id}, side='{self.side}', ev={self.expected_value:.2f}, conf={self.confidence_score:.2f})>"

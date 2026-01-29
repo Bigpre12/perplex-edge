@@ -33,6 +33,9 @@ from app.services.picks_generator import (
     generate_all_picks,
 )
 
+# Results Tracker
+from app.services.results_tracker import ResultsTracker
+
 # Model Functions
 from app.services.model import (
     american_to_implied_prob,
@@ -68,6 +71,8 @@ __all__ = [
     # Picks Generator
     "generate_picks",
     "generate_all_picks",
+    # Results Tracker
+    "ResultsTracker",
     # Model Functions
     "american_to_implied_prob",
     "implied_prob_to_decimal",

@@ -11,6 +11,8 @@ from app.models.model_pick import ModelPick
 from app.models.pick import Pick
 from app.models.player_stat import PlayerStat
 from app.models.historical_performance import HistoricalPerformance
+from app.models.pick_result import PickResult
+from app.models.player_hit_rate import PlayerHitRate
 
 __all__ = [
     "Base",
@@ -26,4 +28,6 @@ __all__ = [
     "Pick",
     "PlayerStat",
     "HistoricalPerformance",
+    "PickResult",
+    "PlayerHitRate",
 ]

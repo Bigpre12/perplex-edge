@@ -404,6 +404,99 @@ async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120, u
         await asyncio.sleep(interval_hours * 3600)
 
 
+async def results_settlement_loop(interval_minutes: int = 30, initial_delay: int = 180, use_stubs: bool = True):
+    """
+    Background task that settles picks for completed games.
+    
+    Checks for games with status "final" that have unsettled picks,
+    then calculates hit/miss for each pick and updates player hit rates.
+    
+    Args:
+        interval_minutes: Check interval in minutes
+        initial_delay: Initial delay in seconds before first run
+        use_stubs: If True, simulate game results for testing
+    """
+    from sqlalchemy import select, and_
+    from app.models import Game, ModelPick, PickResult
+    from app.services.results_tracker import ResultsTracker
+
+    if initial_delay > 0:
+        logger.info(f"Results settlement loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+
+    logger.info(f"Results settlement loop started (interval: {interval_minutes} min, use_stubs={use_stubs})")
+
+    while True:
+        try:
+            logger.info("Checking for games to settle...")
+            session_maker = get_session_maker()
+            tracker = ResultsTracker(use_stubs=use_stubs)
+
+            async with session_maker() as db:
+                # Find games that are final and have unsettled picks
+                # First get games with final status
+                games_result = await db.execute(
+                    select(Game.id)
+                    .where(Game.status == "final")
+                )
+                final_game_ids = [row[0] for row in games_result.all()]
+                
+                if not final_game_ids:
+                    logger.info("No final games found")
+                else:
+                    # For each final game, check if there are unsettled picks
+                    total_settled = 0
+                    total_hits = 0
+                    total_misses = 0
+                    
+                    for game_id in final_game_ids:
+                        # Check if game has unsettled picks
+                        unsettled_result = await db.execute(
+                            select(ModelPick.id)
+                            .outerjoin(PickResult, ModelPick.id == PickResult.pick_id)
+                            .where(
+                                and_(
+                                    ModelPick.game_id == game_id,
+                                    ModelPick.player_id.isnot(None),
+                                    PickResult.id.is_(None),
+                                )
+                            )
+                            .limit(1)
+                        )
+                        
+                        if unsettled_result.first():
+                            # Settle the game
+                            if use_stubs:
+                                result = await tracker.simulate_game_results(db, game_id)
+                            else:
+                                result = await tracker.settle_picks_for_game(db, game_id)
+                            
+                            settled = result.get("settled", 0)
+                            hits = result.get("hits", 0)
+                            misses = result.get("misses", 0)
+                            
+                            total_settled += settled
+                            total_hits += hits
+                            total_misses += misses
+                            
+                            logger.info(f"Settled game {game_id}: {hits}/{settled} hits")
+                    
+                    if total_settled > 0:
+                        hit_rate = total_hits / total_settled if total_settled > 0 else 0
+                        logger.info(f"Settlement complete: {total_settled} picks, {hit_rate:.1%} hit rate")
+                    else:
+                        logger.info("No unsettled picks found")
+
+        except asyncio.CancelledError:
+            logger.info("Results settlement loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Results settlement loop error: {e}", exc_info=True)
+
+        # Wait for next interval
+        await asyncio.sleep(interval_minutes * 60)
+
+
 # =============================================================================
 # Scheduler Control Functions
 # =============================================================================
@@ -489,6 +582,19 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task4)
     logger.info(f"Created roster_sync_loop task (every {roster_interval_hours} hours, use_stubs={use_stubs})")
+
+    # Results settlement task (checks for completed games and settles picks)
+    settlement_interval = getattr(settings, 'sched_settlement_interval_min', 30)
+    task5 = asyncio.create_task(
+        results_settlement_loop(
+            interval_minutes=settlement_interval,
+            initial_delay=180,  # Stagger start by 3 minutes
+            use_stubs=use_stubs,
+        ),
+        name="results_settlement_loop"
+    )
+    tasks.append(task5)
+    logger.info(f"Created results_settlement_loop task (every {settlement_interval} min, use_stubs={use_stubs})")
 
     _background_tasks = tasks
     return tasks

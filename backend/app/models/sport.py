@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.market import Market
     from app.models.injury import Injury
     from app.models.model_pick import ModelPick
+    from app.models.player_hit_rate import PlayerHitRate
 
 
 class Sport(Base, TimestampMixin):
@@ -29,6 +30,7 @@ class Sport(Base, TimestampMixin):
     markets: Mapped[List["Market"]] = relationship(back_populates="sport")
     injuries: Mapped[List["Injury"]] = relationship(back_populates="sport")
     model_picks: Mapped[List["ModelPick"]] = relationship(back_populates="sport")
+    player_hit_rates: Mapped[List["PlayerHitRate"]] = relationship(back_populates="sport")
 
     def __repr__(self) -> str:
         return f"<Sport(id={self.id}, name='{self.name}', league_code='{self.league_code}')>"
