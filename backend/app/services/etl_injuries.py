@@ -475,32 +475,3 @@ async def clear_old_injuries(
     
     logger.info(f"Cleared {deleted} old injury records for sport {sport_id}")
     return deleted
-
-
-async def get_injury_summary(
-    db: AsyncSession,
-    sport_id: int,
-) -> dict[str, Any]:
-    """
-    Get a summary of current injuries for a sport.
-    
-    Returns:
-        Dictionary with injury counts by status
-    """
-    from sqlalchemy import func
-    
-    result = await db.execute(
-        select(Injury.status, func.count(Injury.id))
-        .where(Injury.sport_id == sport_id)
-        .group_by(Injury.status)
-    )
-    
-    counts = {row[0]: row[1] for row in result.all()}
-    
-    total = sum(counts.values())
-    
-    return {
-        "sport_id": sport_id,
-        "total": total,
-        "by_status": counts,
-    }

@@ -77,22 +77,6 @@ def implied_prob_to_decimal(imp: float) -> float:
     return 1 / imp
 
 
-def decimal_to_american(decimal_odds: float) -> int:
-    """
-    Convert decimal odds to American odds.
-    
-    Args:
-        decimal_odds: Decimal odds (e.g., 2.0, 1.5)
-    
-    Returns:
-        American odds (e.g., +100, -200)
-    """
-    if decimal_odds >= 2.0:
-        return int(round((decimal_odds - 1) * 100))
-    else:
-        return int(round(-100 / (decimal_odds - 1)))
-
-
 def compute_ev(model_prob: float, odds: int) -> float:
     """
     Compute expected value for a bet.
@@ -157,11 +141,6 @@ def compute_variance(values: list[float]) -> float:
     mean = sum(values) / len(values)
     variance = sum((v - mean) ** 2 for v in values) / len(values)
     return variance
-
-
-def compute_std_dev(values: list[float]) -> float:
-    """Compute standard deviation of a list of values."""
-    return math.sqrt(compute_variance(values))
 
 
 def calculate_model_confidence(

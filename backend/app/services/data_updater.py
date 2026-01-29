@@ -12,40 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Injury Reports
-# =============================================================================
-
-async def fetch_injury_reports(
-    db: AsyncSession,
-    sport_key: str,
-) -> dict[str, Any]:
-    """
-    Fetch and process injury reports for a sport.
-    
-    In production, this would call an external injury API.
-    For now, returns stub data structure.
-    
-    Args:
-        db: Database session
-        sport_key: Sport identifier (e.g., 'basketball_nba')
-    
-    Returns:
-        Dictionary with injury report summary
-    """
-    logger.info(f"Fetching injury reports for {sport_key}")
-    
-    # TODO: Integrate with real injury API
-    # For now, return structure for future implementation
-    return {
-        "sport": sport_key,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "injuries": [],
-        "updates_applied": 0,
-        "status": "stub_data",
-    }
-
-
-# =============================================================================
 # Line Movement Detection
 # =============================================================================
 
@@ -129,59 +95,6 @@ async def check_line_movements(
         "significant_movements": 0,
         "movements": movements[:10],  # Limit output
     }
-
-
-# =============================================================================
-# Confidence Updates
-# =============================================================================
-
-async def update_pick_confidence(
-    db: AsyncSession,
-    pick_id: int,
-    new_confidence: Optional[float] = None,
-    new_ev: Optional[float] = None,
-    new_odds: Optional[int] = None,
-) -> bool:
-    """
-    Update a pick's confidence and related metrics based on new data.
-    
-    Args:
-        db: Database session
-        pick_id: Pick ID to update
-        new_confidence: New confidence score (0-1)
-        new_ev: New EV percentage
-        new_odds: New odds value
-    
-    Returns:
-        True if updated successfully
-    """
-    try:
-        updates = {}
-        
-        if new_confidence is not None:
-            updates["confidence"] = new_confidence
-        if new_ev is not None:
-            updates["ev_percentage"] = new_ev
-        if new_odds is not None:
-            updates["odds"] = new_odds
-        
-        if not updates:
-            return False
-        
-        await db.execute(
-            update(Pick)
-            .where(Pick.id == pick_id)
-            .values(**updates)
-        )
-        await db.commit()
-        
-        logger.info(f"Updated pick {pick_id} with: {updates}")
-        return True
-    
-    except Exception as e:
-        logger.error(f"Error updating pick {pick_id}: {e}")
-        await db.rollback()
-        return False
 
 
 # =============================================================================

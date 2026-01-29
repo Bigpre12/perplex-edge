@@ -522,6 +522,12 @@ def start_background_tasks() -> List[asyncio.Task]:
     global _background_tasks
 
     settings = get_settings()
+    
+    # Safety guard: check if scheduler is enabled
+    if not settings.scheduler_enabled:
+        logger.info("Scheduler disabled via SCHEDULER_ENABLED=false - no background tasks started")
+        return []
+    
     tasks = []
     
     # Get use_stubs setting (default True for scheduled tasks)

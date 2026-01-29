@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     sched_stats_interval_min: int = 60  # Hourly stats sync
     sched_model_interval_min: int = 60  # Hourly pick generation
     sched_roster_interval_hours: int = 24  # Daily roster sync
+    sched_settlement_interval_min: int = 30  # Settlement check interval (hit rate tracking)
     
     # Daily refresh configuration
     daily_refresh_hour: int = 9  # 9 AM EST
