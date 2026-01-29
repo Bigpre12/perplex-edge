@@ -1,8 +1,8 @@
 import { useSports, useHotPlayers, useColdPlayers, useStreaks, useRecentResults } from '../api/public';
-import { useSport } from '../context/SportContext';
+import { useSportContext } from '../context/SportContext';
 
 export function StatsDashboard() {
-  const { sportId } = useSport();
+  const { sportId } = useSportContext();
   const { data: sportsData } = useSports();
   
   // Use NBA as default if no sport selected

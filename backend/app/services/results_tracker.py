@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_, or_, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -708,7 +708,3 @@ class ResultsTracker:
         
         # Now settle the picks
         return await self.settle_picks_for_game(db, game_id)
-
-
-# Import for type hints
-from sqlalchemy import Integer
