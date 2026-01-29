@@ -951,14 +951,25 @@ async def clear_stale_games(
     game_ids = [row[0] for row in game_ids_result.all()]
     
     # Delete in order (foreign key constraints):
-    # 1. Delete ModelPick (references games)
+    # PickResult -> ModelPick -> Games (PickResult references both ModelPick and Games)
+    
+    # 1. Delete PickResult FIRST (references model_picks AND games)
+    results_deleted = 0
+    if game_ids:
+        results_result = await db.execute(
+            delete(PickResult).where(PickResult.game_id.in_(game_ids))
+        )
+        results_deleted = results_result.rowcount
+    logger.info(f"Deleted {results_deleted} pick results")
+    
+    # 2. Delete ModelPick (references games)
     picks_result = await db.execute(
         delete(ModelPick).where(ModelPick.sport_id == sport.id)
     )
     picks_deleted = picks_result.rowcount
-    logger.info(f"Deleted {picks_deleted} picks")
+    logger.info(f"Deleted {picks_deleted} model picks")
     
-    # 2. Delete Lines (references games)
+    # 3. Delete Lines (references games)
     lines_deleted = 0
     if game_ids:
         lines_result = await db.execute(
@@ -967,7 +978,7 @@ async def clear_stale_games(
         lines_deleted = lines_result.rowcount
     logger.info(f"Deleted {lines_deleted} lines")
     
-    # 3. Delete PlayerGameStats (references games)
+    # 4. Delete PlayerGameStats (references games)
     stats_deleted = 0
     if game_ids:
         stats_result = await db.execute(
@@ -975,15 +986,6 @@ async def clear_stale_games(
         )
         stats_deleted = stats_result.rowcount
     logger.info(f"Deleted {stats_deleted} player game stats")
-    
-    # 4. Delete PickResult (references games)
-    results_deleted = 0
-    if game_ids:
-        results_result = await db.execute(
-            delete(PickResult).where(PickResult.game_id.in_(game_ids))
-        )
-        results_deleted = results_result.rowcount
-    logger.info(f"Deleted {results_deleted} pick results")
     
     # 5. Delete legacy Pick records (references games)
     legacy_picks_deleted = 0
