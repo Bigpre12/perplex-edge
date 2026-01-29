@@ -57,7 +57,7 @@ async def list_sports(
 @router.get("/sports/{sport_id}/games/today", response_model=PublicGameList, tags=["public"])
 async def list_games_today(
     sport_id: int,
-    upcoming_only: bool = Query(True, description="Only show games that haven't started yet"),
+    upcoming_only: bool = Query(False, description="Only show games that haven't started yet"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -171,7 +171,7 @@ async def list_player_prop_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
-    fresh_only: bool = Query(True, description="Only show fresh picks (generated within 12h, games not started)"),
+    fresh_only: bool = Query(False, description="Only show fresh picks (generated within 12h, games not started)"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -339,7 +339,7 @@ async def list_game_line_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
-    fresh_only: bool = Query(True, description="Only show fresh picks (generated within 12h, games not started)"),
+    fresh_only: bool = Query(False, description="Only show fresh picks (generated within 12h, games not started)"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
