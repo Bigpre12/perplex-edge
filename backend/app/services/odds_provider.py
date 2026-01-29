@@ -819,6 +819,7 @@ class XYZOddsProvider(OddsProvider):
         times = _get_stub_game_times()
         
         # Define props with INJURY-ADJUSTED rosters for Jan 29, 2026
+        # Stats: pts, reb, ast, pra, pr, pa, ra, 3pm, stl, blk, to
         game_props = {
             # Game 1: Kings @ 76ers - EMBIID OUT, Paul George questionable
             "game_sac_phi_today": {
@@ -826,15 +827,15 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Sacramento Kings",
                 "commence_time": times["early"],
                 "players": [
-                    # 76ers (Embiid OUT - knee, hasn't played since Jan 4)
-                    {"name": "Tyrese Maxey", "pts": 29.5, "reb": 4.5, "ast": 7.5, "pra": 41.5},  # Increased w/o Embiid
-                    {"name": "Paul George", "pts": 24.5, "reb": 6.5, "ast": 5.5, "pra": 36.5},  # If playing
-                    {"name": "Andre Drummond", "pts": 10.5, "reb": 10.5, "ast": 1.5, "pra": 22.5},  # Starts for Embiid
-                    {"name": "Kyle Lowry", "pts": 8.5, "reb": 3.5, "ast": 5.5, "pra": 17.5},
+                    # 76ers (Embiid OUT)
+                    {"name": "Tyrese Maxey", "pts": 29.5, "reb": 4.5, "ast": 7.5, "pra": 41.5, "pr": 34.0, "pa": 37.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Paul George", "pts": 24.5, "reb": 6.5, "ast": 5.5, "pra": 36.5, "pr": 31.0, "pa": 30.0, "ra": 12.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Andre Drummond", "pts": 10.5, "reb": 10.5, "ast": 1.5, "pra": 22.5, "pr": 21.0, "pa": 12.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Kyle Lowry", "pts": 8.5, "reb": 3.5, "ast": 5.5, "pra": 17.5, "pr": 12.0, "pa": 14.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                     # Kings
-                    {"name": "Zach LaVine", "pts": 25.5, "reb": 4.5, "ast": 4.5, "pra": 34.5},
-                    {"name": "DeMar DeRozan", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5},
-                    {"name": "Domantas Sabonis", "pts": 19.5, "reb": 13.5, "ast": 7.5, "pra": 40.5},
+                    {"name": "Zach LaVine", "pts": 25.5, "reb": 4.5, "ast": 4.5, "pra": 34.5, "pr": 30.0, "pa": 30.0, "ra": 9.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "DeMar DeRozan", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5, "pr": 29.0, "pa": 30.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Domantas Sabonis", "pts": 19.5, "reb": 13.5, "ast": 7.5, "pra": 40.5, "pr": 33.0, "pa": 27.0, "ra": 21.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
                 ],
             },
             # Game 2: Bucks @ Wizards - GIANNIS OUT (calf), TRAE YOUNG OUT (MCL)
@@ -843,66 +844,66 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Milwaukee Bucks",
                 "commence_time": times["late"],
                 "players": [
-                    # Bucks (Giannis OUT - calf strain 4-6 weeks, Dame waived)
-                    {"name": "Kyle Kuzma", "pts": 22.5, "reb": 6.5, "ast": 3.5, "pra": 32.5},  # Increased w/o Giannis
-                    {"name": "Myles Turner", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5},  # Increased
-                    {"name": "Bobby Portis", "pts": 15.5, "reb": 8.5, "ast": 1.5, "pra": 25.5},  # Key role player
-                    {"name": "Gary Trent Jr.", "pts": 14.5, "reb": 2.5, "ast": 1.5, "pra": 18.5},
-                    # Wizards (Trae Young OUT - MCL, hasn't debuted yet)
-                    {"name": "Khris Middleton", "pts": 18.5, "reb": 5.5, "ast": 5.5, "pra": 29.5},
-                    {"name": "Bilal Coulibaly", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5},
-                    {"name": "Alex Sarr", "pts": 13.5, "reb": 8.5, "ast": 2.5, "pra": 24.5},  # Rookie getting run
+                    # Bucks (Giannis OUT)
+                    {"name": "Kyle Kuzma", "pts": 22.5, "reb": 6.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 26.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Myles Turner", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 19.0, "ra": 11.0, "3pm": 1.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    {"name": "Bobby Portis", "pts": 15.5, "reb": 8.5, "ast": 1.5, "pra": 25.5, "pr": 24.0, "pa": 17.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Gary Trent Jr.", "pts": 14.5, "reb": 2.5, "ast": 1.5, "pra": 18.5, "pr": 17.0, "pa": 16.0, "ra": 4.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    # Wizards (Trae Young OUT)
+                    {"name": "Khris Middleton", "pts": 18.5, "reb": 5.5, "ast": 5.5, "pra": 29.5, "pr": 24.0, "pa": 24.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Bilal Coulibaly", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 16.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Alex Sarr", "pts": 13.5, "reb": 8.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 16.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
                 ],
             },
-            # Game 3: Heat @ Bulls - TYLER HERRO OUT (toe, missed 28/34 games)
+            # Game 3: Heat @ Bulls - TYLER HERRO OUT (toe)
             "game_mia_chi_today": {
                 "home_team": "Chicago Bulls",
                 "away_team": "Miami Heat",
                 "commence_time": times["late"],
                 "players": [
-                    # Heat (Herro OUT - toe injury, Bam probable)
-                    {"name": "Bam Adebayo", "pts": 21.5, "reb": 11.5, "ast": 5.5, "pra": 38.5},  # Carries load
-                    {"name": "Andrew Wiggins", "pts": 18.5, "reb": 5.5, "ast": 2.5, "pra": 26.5},
-                    {"name": "Terry Rozier", "pts": 17.5, "reb": 3.5, "ast": 5.5, "pra": 26.5},  # Key w/o Herro
-                    {"name": "Jaime Jaquez Jr.", "pts": 13.5, "reb": 4.5, "ast": 2.5, "pra": 20.5},
+                    # Heat (Herro OUT)
+                    {"name": "Bam Adebayo", "pts": 21.5, "reb": 11.5, "ast": 5.5, "pra": 38.5, "pr": 33.0, "pa": 27.0, "ra": 17.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                    {"name": "Andrew Wiggins", "pts": 18.5, "reb": 5.5, "ast": 2.5, "pra": 26.5, "pr": 24.0, "pa": 21.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Terry Rozier", "pts": 17.5, "reb": 3.5, "ast": 5.5, "pra": 26.5, "pr": 21.0, "pa": 23.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Jaime Jaquez Jr.", "pts": 13.5, "reb": 4.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 16.0, "ra": 7.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                     # Bulls
-                    {"name": "Coby White", "pts": 20.5, "reb": 4.5, "ast": 5.5, "pra": 30.5},
-                    {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5},
-                    {"name": "Josh Giddey", "pts": 15.5, "reb": 7.5, "ast": 7.5, "pra": 30.5},
+                    {"name": "Coby White", "pts": 20.5, "reb": 4.5, "ast": 5.5, "pra": 30.5, "pr": 25.0, "pa": 26.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 22.0, "ra": 14.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Josh Giddey", "pts": 15.5, "reb": 7.5, "ast": 7.5, "pra": 30.5, "pr": 23.0, "pa": 23.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
                 ],
             },
-            # Game 4: Rockets @ Hawks - KD healthy, Hawks gutted after trades
+            # Game 4: Rockets @ Hawks - KD healthy, Hawks gutted
             "game_hou_atl_today": {
                 "home_team": "Atlanta Hawks",
                 "away_team": "Houston Rockets",
                 "commence_time": times["night"],
                 "players": [
-                    # Rockets (KD healthy and dominant)
-                    {"name": "Kevin Durant", "pts": 28.5, "reb": 7.5, "ast": 5.5, "pra": 41.5},
-                    {"name": "Alperen Sengun", "pts": 19.5, "reb": 10.5, "ast": 5.5, "pra": 35.5},
-                    {"name": "Fred VanVleet", "pts": 17.5, "reb": 3.5, "ast": 7.5, "pra": 28.5},
-                    {"name": "Amen Thompson", "pts": 12.5, "reb": 6.5, "ast": 3.5, "pra": 22.5},
-                    # Hawks (Trae/Murray gone, rebuilding)
-                    {"name": "CJ McCollum", "pts": 22.5, "reb": 4.5, "ast": 5.5, "pra": 32.5},  # Primary scorer now
-                    {"name": "Bogdan Bogdanovic", "pts": 17.5, "reb": 3.5, "ast": 4.5, "pra": 25.5},
-                    {"name": "Clint Capela", "pts": 11.5, "reb": 11.5, "ast": 1.5, "pra": 24.5},
+                    # Rockets (KD healthy)
+                    {"name": "Kevin Durant", "pts": 28.5, "reb": 7.5, "ast": 5.5, "pra": 41.5, "pr": 36.0, "pa": 34.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                    {"name": "Alperen Sengun", "pts": 19.5, "reb": 10.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 25.0, "ra": 16.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 3.5},
+                    {"name": "Fred VanVleet", "pts": 17.5, "reb": 3.5, "ast": 7.5, "pra": 28.5, "pr": 21.0, "pa": 25.0, "ra": 11.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Amen Thompson", "pts": 12.5, "reb": 6.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 16.0, "ra": 10.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    # Hawks (gutted roster)
+                    {"name": "CJ McCollum", "pts": 22.5, "reb": 4.5, "ast": 5.5, "pra": 32.5, "pr": 27.0, "pa": 28.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Bogdan Bogdanovic", "pts": 17.5, "reb": 3.5, "ast": 4.5, "pra": 25.5, "pr": 21.0, "pa": 22.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Clint Capela", "pts": 11.5, "reb": 11.5, "ast": 1.5, "pra": 24.5, "pr": 23.0, "pa": 13.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                 ],
             },
-            # Game 5: Hornets @ Mavericks - ANTHONY DAVIS OUT (hand, 6 weeks)
+            # Game 5: Hornets @ Mavericks - ANTHONY DAVIS OUT (hand)
             "game_cha_dal_today": {
                 "home_team": "Dallas Mavericks",
                 "away_team": "Charlotte Hornets",
                 "commence_time": times["west"],
                 "players": [
-                    # Mavericks (AD OUT - hand ligament injury)
-                    {"name": "Kyrie Irving", "pts": 28.5, "reb": 5.5, "ast": 7.5, "pra": 41.5},  # Carries offense
-                    {"name": "Klay Thompson", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5},  # More shots w/o AD
-                    {"name": "PJ Washington", "pts": 15.5, "reb": 7.5, "ast": 2.5, "pra": 25.5},  # Starts at 4
-                    {"name": "Daniel Gafford", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5},  # Starts at 5
-                    # Hornets (LaMelo healthy, averaging 28.2 PPG)
-                    {"name": "LaMelo Ball", "pts": 28.5, "reb": 6.5, "ast": 9.5, "pra": 44.5},  # Star player
-                    {"name": "Brandon Miller", "pts": 20.5, "reb": 5.5, "ast": 3.5, "pra": 29.5},
-                    {"name": "Miles Bridges", "pts": 18.5, "reb": 7.5, "ast": 4.5, "pra": 30.5},
+                    # Mavericks (AD OUT)
+                    {"name": "Kyrie Irving", "pts": 28.5, "reb": 5.5, "ast": 7.5, "pra": 41.5, "pr": 34.0, "pa": 36.0, "ra": 13.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Klay Thompson", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 20.0, "ra": 7.0, "3pm": 3.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+                    {"name": "PJ Washington", "pts": 15.5, "reb": 7.5, "ast": 2.5, "pra": 25.5, "pr": 23.0, "pa": 18.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Daniel Gafford", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Hornets (LaMelo healthy)
+                    {"name": "LaMelo Ball", "pts": 28.5, "reb": 6.5, "ast": 9.5, "pra": 44.5, "pr": 35.0, "pa": 38.0, "ra": 16.0, "3pm": 4.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                    {"name": "Brandon Miller", "pts": 20.5, "reb": 5.5, "ast": 3.5, "pra": 29.5, "pr": 26.0, "pa": 24.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Miles Bridges", "pts": 18.5, "reb": 7.5, "ast": 4.5, "pra": 30.5, "pr": 26.0, "pa": 23.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 ],
             },
             # Game 6: Nets @ Nuggets - JOKIC OUT (knee), CAM THOMAS OUT (hamstring)
@@ -911,32 +912,32 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Brooklyn Nets",
                 "commence_time": times["west"],
                 "players": [
-                    # Nuggets (Jokic OUT - knee hyperextension, no timetable)
-                    {"name": "Jamal Murray", "pts": 26.5, "reb": 5.5, "ast": 8.5, "pra": 40.5},  # Carries team w/o Jokic
-                    {"name": "Aaron Gordon", "pts": 18.5, "reb": 8.5, "ast": 4.5, "pra": 31.5},  # Increased role
-                    {"name": "Christian Braun", "pts": 15.5, "reb": 5.5, "ast": 3.5, "pra": 24.5},  # Key now
-                    {"name": "Peyton Watson", "pts": 11.5, "reb": 5.5, "ast": 1.5, "pra": 18.5},
-                    # Nets (Cam Thomas OUT - hamstring)
-                    {"name": "Dennis Schroder", "pts": 19.5, "reb": 3.5, "ast": 7.5, "pra": 30.5},  # Primary ball handler
-                    {"name": "Nic Claxton", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5},
-                    {"name": "Day'Ron Sharpe", "pts": 10.5, "reb": 7.5, "ast": 1.5, "pra": 19.5},
+                    # Nuggets (Jokic OUT)
+                    {"name": "Jamal Murray", "pts": 26.5, "reb": 5.5, "ast": 8.5, "pra": 40.5, "pr": 32.0, "pa": 35.0, "ra": 14.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Aaron Gordon", "pts": 18.5, "reb": 8.5, "ast": 4.5, "pra": 31.5, "pr": 27.0, "pa": 23.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Christian Braun", "pts": 15.5, "reb": 5.5, "ast": 3.5, "pra": 24.5, "pr": 21.0, "pa": 19.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Peyton Watson", "pts": 11.5, "reb": 5.5, "ast": 1.5, "pra": 18.5, "pr": 17.0, "pa": 13.0, "ra": 7.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                    # Nets (Cam Thomas OUT)
+                    {"name": "Dennis Schroder", "pts": 19.5, "reb": 3.5, "ast": 7.5, "pra": 30.5, "pr": 23.0, "pa": 27.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Nic Claxton", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 15.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
+                    {"name": "Day'Ron Sharpe", "pts": 10.5, "reb": 7.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 12.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                 ],
             },
-            # Game 7: Pistons @ Suns - BOOKER OUT (ankle), JALEN GREEN DAY-TO-DAY (hamstring)
+            # Game 7: Pistons @ Suns - BOOKER OUT (ankle)
             "game_det_pho_today": {
                 "home_team": "Phoenix Suns",
                 "away_team": "Detroit Pistons",
                 "commence_time": times["west"],
                 "players": [
-                    # Suns (Booker OUT - ankle sprain, Jalen Green questionable - hamstring)
-                    {"name": "Dillon Brooks", "pts": 20.5, "reb": 4.5, "ast": 3.5, "pra": 28.5},  # Primary scorer
-                    {"name": "Royce O'Neale", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5},
-                    {"name": "Nick Richards", "pts": 13.5, "reb": 9.5, "ast": 1.5, "pra": 24.5},
-                    {"name": "Ryan Dunn", "pts": 9.5, "reb": 4.5, "ast": 1.5, "pra": 15.5},
-                    # Pistons (Cade playing through wrist but producing)
-                    {"name": "Cade Cunningham", "pts": 24.5, "reb": 5.5, "ast": 9.5, "pra": 39.5},  # All-Star level
-                    {"name": "Jaden Ivey", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5},
-                    {"name": "Jalen Duren", "pts": 13.5, "reb": 11.5, "ast": 2.5, "pra": 27.5},
+                    # Suns (Booker OUT)
+                    {"name": "Dillon Brooks", "pts": 20.5, "reb": 4.5, "ast": 3.5, "pra": 28.5, "pr": 25.0, "pa": 24.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Royce O'Neale", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 16.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Nick Richards", "pts": 13.5, "reb": 9.5, "ast": 1.5, "pra": 24.5, "pr": 23.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Ryan Dunn", "pts": 9.5, "reb": 4.5, "ast": 1.5, "pra": 15.5, "pr": 14.0, "pa": 11.0, "ra": 6.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    # Pistons
+                    {"name": "Cade Cunningham", "pts": 24.5, "reb": 5.5, "ast": 9.5, "pra": 39.5, "pr": 30.0, "pa": 34.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                    {"name": "Jaden Ivey", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5, "pr": 23.0, "pa": 24.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Jalen Duren", "pts": 13.5, "reb": 11.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 16.0, "ra": 14.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
                 ],
             },
             # Game 8: Thunder @ Timberwolves - ANT EDWARDS DAY-TO-DAY (foot)
@@ -945,15 +946,15 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "Oklahoma City Thunder",
                 "commence_time": times["west"],
                 "players": [
-                    # Thunder (2025 NBA Champs - SGA healthy and MVP form)
-                    {"name": "Shai Gilgeous-Alexander", "pts": 32.5, "reb": 5.5, "ast": 6.5, "pra": 44.5},  # MVP
-                    {"name": "Chet Holmgren", "pts": 17.5, "reb": 9.5, "ast": 3.5, "pra": 30.5},
-                    {"name": "Jalen Williams", "pts": 21.5, "reb": 6.5, "ast": 6.5, "pra": 34.5},  # All-Star
-                    {"name": "Alex Caruso", "pts": 8.5, "reb": 3.5, "ast": 4.5, "pra": 16.5},
-                    # Timberwolves (Ant Edwards DAY-TO-DAY - foot maintenance)
-                    {"name": "Julius Randle", "pts": 23.5, "reb": 10.5, "ast": 5.5, "pra": 39.5},  # Key if Ant out
-                    {"name": "Rudy Gobert", "pts": 12.5, "reb": 12.5, "ast": 1.5, "pra": 26.5},
-                    {"name": "Naz Reid", "pts": 14.5, "reb": 6.5, "ast": 2.5, "pra": 23.5},  # Bigger role if Ant out
+                    # Thunder (SGA MVP form)
+                    {"name": "Shai Gilgeous-Alexander", "pts": 32.5, "reb": 5.5, "ast": 6.5, "pra": 44.5, "pr": 38.0, "pa": 39.0, "ra": 12.0, "3pm": 2.5, "stl": 2.5, "blk": 1.5, "to": 2.5},
+                    {"name": "Chet Holmgren", "pts": 17.5, "reb": 9.5, "ast": 3.5, "pra": 30.5, "pr": 27.0, "pa": 21.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
+                    {"name": "Jalen Williams", "pts": 21.5, "reb": 6.5, "ast": 6.5, "pra": 34.5, "pr": 28.0, "pa": 28.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Alex Caruso", "pts": 8.5, "reb": 3.5, "ast": 4.5, "pra": 16.5, "pr": 12.0, "pa": 13.0, "ra": 8.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 1.5},
+                    # Timberwolves
+                    {"name": "Julius Randle", "pts": 23.5, "reb": 10.5, "ast": 5.5, "pra": 39.5, "pr": 34.0, "pa": 29.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                    {"name": "Rudy Gobert", "pts": 12.5, "reb": 12.5, "ast": 1.5, "pra": 26.5, "pr": 25.0, "pa": 14.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    {"name": "Naz Reid", "pts": 14.5, "reb": 6.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                 ],
             },
         }
@@ -976,6 +977,13 @@ class XYZOddsProvider(OddsProvider):
         rebounds_outcomes = []
         assists_outcomes = []
         pra_outcomes = []
+        pr_outcomes = []
+        pa_outcomes = []
+        ra_outcomes = []
+        threes_outcomes = []
+        steals_outcomes = []
+        blocks_outcomes = []
+        turnovers_outcomes = []
         
         for player in game["players"]:
             # Points
@@ -993,10 +1001,45 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Over", "description": player["name"], "price": -110, "point": player["ast"]},
                 {"name": "Under", "description": player["name"], "price": -110, "point": player["ast"]},
             ])
-            # PRA
+            # PRA (Points + Rebounds + Assists)
             pra_outcomes.extend([
                 {"name": "Over", "description": player["name"], "price": -110, "point": player["pra"]},
                 {"name": "Under", "description": player["name"], "price": -110, "point": player["pra"]},
+            ])
+            # PR (Points + Rebounds)
+            pr_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pr"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pr"]},
+            ])
+            # PA (Points + Assists)
+            pa_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pa"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pa"]},
+            ])
+            # RA (Rebounds + Assists)
+            ra_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["ra"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["ra"]},
+            ])
+            # 3PM (Three Pointers Made)
+            threes_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["3pm"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["3pm"]},
+            ])
+            # Steals
+            steals_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["stl"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["stl"]},
+            ])
+            # Blocks
+            blocks_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["blk"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["blk"]},
+            ])
+            # Turnovers
+            turnovers_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["to"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["to"]},
             ])
         
         return {
@@ -1014,6 +1057,13 @@ class XYZOddsProvider(OddsProvider):
                         {"key": "player_rebounds", "outcomes": rebounds_outcomes},
                         {"key": "player_assists", "outcomes": assists_outcomes},
                         {"key": "player_points_rebounds_assists", "outcomes": pra_outcomes},
+                        {"key": "player_points_rebounds", "outcomes": pr_outcomes},
+                        {"key": "player_points_assists", "outcomes": pa_outcomes},
+                        {"key": "player_rebounds_assists", "outcomes": ra_outcomes},
+                        {"key": "player_threes", "outcomes": threes_outcomes},
+                        {"key": "player_steals", "outcomes": steals_outcomes},
+                        {"key": "player_blocks", "outcomes": blocks_outcomes},
+                        {"key": "player_turnovers", "outcomes": turnovers_outcomes},
                     ],
                 },
             ],
