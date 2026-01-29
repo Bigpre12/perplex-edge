@@ -27,6 +27,11 @@ from app.api.admin import router as admin_router
 from app.api.public import router as public_router
 from app.api.sync import router as sync_router
 from app.api.stats import router as stats_router
+from app.api.games import router as games_router
+from app.api.odds import router as odds_router
+from app.api.props import router as props_router
+from app.api.injuries import router as injuries_router
+from app.api.picks import router as picks_router
 
 # Configure logging
 logging.basicConfig(
@@ -119,6 +124,11 @@ app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(public_router, prefix="/api", tags=["public"])
 app.include_router(sync_router, prefix="/api/sync", tags=["sync"])
 app.include_router(stats_router, prefix="/api/stats", tags=["stats"])
+app.include_router(games_router, prefix="/api/games", tags=["games"])
+app.include_router(odds_router, prefix="/api/odds", tags=["odds"])
+app.include_router(props_router, prefix="/api/props", tags=["props"])
+app.include_router(injuries_router, prefix="/api/injuries", tags=["injuries"])
+app.include_router(picks_router, prefix="/api/picks", tags=["picks"])
 
 
 # =============================================================================
