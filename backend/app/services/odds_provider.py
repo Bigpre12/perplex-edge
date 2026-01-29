@@ -4,12 +4,16 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
 import httpx
 
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+# Eastern timezone (handles DST automatically)
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 
 # =============================================================================
@@ -20,27 +24,30 @@ def _get_stub_game_times() -> dict[str, str]:
     """
     Generate game times for today's date.
     
-    Uses evening UTC times that correspond to afternoon/evening in US Eastern.
-    This keeps games on "today" in both UTC and ET timezones.
+    Uses proper timezone handling to set games in the evening ET
+    for the current day in Eastern time.
     
     Returns:
-        Dictionary mapping time slots to ISO datetime strings
+        Dictionary mapping time slots to ISO datetime strings (UTC)
     """
-    # Use US Eastern time to determine "today"
-    utc_now = datetime.now(timezone.utc)
-    eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
-    eastern_now = utc_now + eastern_offset
-    today = eastern_now.strftime("%Y-%m-%d")
+    # Get current time in Eastern timezone (handles DST automatically)
+    now_et = datetime.now(EASTERN_TZ)
+    today_et = now_et.date()
     
-    # Use late afternoon/evening UTC times (which are afternoon ET)
-    # This keeps games on "today" in both UTC and ET
-    # 23:00 UTC = 6pm ET, 23:30 UTC = 6:30pm ET, etc.
+    # Create game times for evening Eastern time (7 PM - 10 PM ET range)
+    # These are typical NBA game start times
+    game_times = {
+        "early": datetime(today_et.year, today_et.month, today_et.day, 19, 0, tzinfo=EASTERN_TZ),    # 7:00 PM ET
+        "mid": datetime(today_et.year, today_et.month, today_et.day, 19, 30, tzinfo=EASTERN_TZ),    # 7:30 PM ET
+        "late": datetime(today_et.year, today_et.month, today_et.day, 20, 0, tzinfo=EASTERN_TZ),    # 8:00 PM ET
+        "night": datetime(today_et.year, today_et.month, today_et.day, 21, 0, tzinfo=EASTERN_TZ),   # 9:00 PM ET
+        "west": datetime(today_et.year, today_et.month, today_et.day, 22, 0, tzinfo=EASTERN_TZ),    # 10:00 PM ET
+    }
+    
+    # Convert to UTC ISO strings
     return {
-        "early": f"{today}T23:00:00Z",      # 6:00 PM ET
-        "mid": f"{today}T23:30:00Z",        # 6:30 PM ET
-        "late": f"{today}T23:45:00Z",       # 6:45 PM ET
-        "night": f"{today}T23:50:00Z",      # 6:50 PM ET
-        "west": f"{today}T23:55:00Z",       # 6:55 PM ET
+        slot: dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        for slot, dt in game_times.items()
     }
 
 

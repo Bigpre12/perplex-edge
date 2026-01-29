@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     sched_settlement_interval_min: int = 30  # Settlement check interval (hit rate tracking)
     
     # Daily refresh configuration
-    daily_refresh_hour: int = 9  # 9 AM EST
+    daily_refresh_hour: int = 6  # 6 AM ET (before NBA games posted)
     hourly_check_interval: int = 60  # minutes
 
     @property

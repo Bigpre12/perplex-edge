@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import select, func, and_
@@ -24,6 +25,9 @@ from app.schemas.public import (
 )
 
 router = APIRouter()
+
+# Eastern timezone (handles DST automatically)
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 
 # =============================================================================
@@ -70,20 +74,18 @@ async def list_games_today(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range using US Eastern time
+    # Calculate today's date range using US Eastern time (handles DST)
     # This ensures games show for today's US schedule even after midnight UTC
-    utc_now = datetime.now(timezone.utc)
-    utc_now_naive = utc_now.replace(tzinfo=None)  # Naive UTC for DB comparison
-    eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
-    eastern_now = utc_now + eastern_offset
+    now_et = datetime.now(EASTERN_TZ)
+    utc_now_naive = datetime.now(timezone.utc).replace(tzinfo=None)  # Naive UTC for DB comparison
     
-    # Get today's date in Eastern, then create UTC range
-    today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-    tomorrow_et = today_et + timedelta(days=1)
+    # Get today's date boundaries in Eastern time
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
     
-    # Convert to UTC by adding 5 hours (naive datetimes for PostgreSQL)
-    today = today_et + timedelta(hours=5)  # Midnight ET = 5am UTC
-    tomorrow = tomorrow_et + timedelta(hours=5)
+    # Convert to UTC (naive datetimes for PostgreSQL)
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     
     # Alias for home and away teams
     HomeTeam = aliased(Team)
@@ -194,15 +196,17 @@ async def list_player_prop_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range using US Eastern time
-    utc_now = datetime.now(timezone.utc)
-    utc_now_naive = utc_now.replace(tzinfo=None)  # Naive UTC for DB comparison
-    eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
-    eastern_now = utc_now + eastern_offset
-    today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-    tomorrow_et = today_et + timedelta(days=1)
-    today = today_et + timedelta(hours=5)
-    tomorrow = tomorrow_et + timedelta(hours=5)
+    # Calculate today's date range using US Eastern time (handles DST)
+    now_et = datetime.now(EASTERN_TZ)
+    utc_now_naive = datetime.now(timezone.utc).replace(tzinfo=None)  # Naive UTC for DB comparison
+    
+    # Get today's date boundaries in Eastern time
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC (naive datetimes for PostgreSQL)
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     
     # Freshness threshold - picks generated within last 12 hours
     freshness_cutoff = utc_now_naive - timedelta(hours=12)
@@ -361,15 +365,17 @@ async def list_game_line_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range using US Eastern time
-    utc_now = datetime.now(timezone.utc)
-    utc_now_naive = utc_now.replace(tzinfo=None)  # Naive UTC for DB comparison
-    eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
-    eastern_now = utc_now + eastern_offset
-    today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-    tomorrow_et = today_et + timedelta(days=1)
-    today = today_et + timedelta(hours=5)
-    tomorrow = tomorrow_et + timedelta(hours=5)
+    # Calculate today's date range using US Eastern time (handles DST)
+    now_et = datetime.now(EASTERN_TZ)
+    utc_now_naive = datetime.now(timezone.utc).replace(tzinfo=None)  # Naive UTC for DB comparison
+    
+    # Get today's date boundaries in Eastern time
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC (naive datetimes for PostgreSQL)
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     
     # Freshness threshold - picks generated within last 12 hours
     freshness_cutoff = utc_now_naive - timedelta(hours=12)

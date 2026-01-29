@@ -4,6 +4,7 @@ import logging
 import random
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select, update, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,9 @@ from sqlalchemy.orm import selectinload
 from app.models import Sport, Game, Line, Market, Player, PlayerGameStats, ModelPick, Injury
 
 logger = logging.getLogger(__name__)
+
+# Eastern timezone (handles DST automatically)
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 
 # =============================================================================
@@ -315,21 +319,17 @@ async def generate_picks(
         deactivated = await _deactivate_old_picks(db, sport.id)
         stats["picks_deactivated"] = deactivated
         
-        # Get today's games using Eastern time to determine "today"
+        # Get today's games using Eastern time to determine "today" (handles DST)
         # This ensures we get games for today's US schedule even if UTC has rolled over
-        utc_now = datetime.now(timezone.utc)
-        eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
-        eastern_now = utc_now + eastern_offset
+        now_et = datetime.now(EASTERN_TZ)
         
-        # Get today's date in Eastern, then create UTC range
-        # Today at midnight ET = today at 05:00 UTC
-        # Tomorrow at midnight ET = tomorrow at 05:00 UTC
-        today_et = eastern_now.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-        tomorrow_et = today_et + timedelta(days=1)
+        # Get today's date boundaries in Eastern time
+        today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start_et = today_start_et + timedelta(days=1)
         
-        # Convert to UTC by adding 5 hours (naive datetimes for PostgreSQL)
-        today = today_et + timedelta(hours=5)  # Midnight ET = 5am UTC
-        tomorrow = tomorrow_et + timedelta(hours=5)
+        # Convert to UTC (naive datetimes for PostgreSQL)
+        today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+        tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
         
         result = await db.execute(
             select(Game)
