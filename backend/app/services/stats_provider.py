@@ -486,8 +486,11 @@ class StatsProvider:
         import random
         random.seed(hash(external_player_id))  # Consistent randomness per player
         
-        # Use dynamic dates based on today
-        today = datetime.now(timezone.utc).replace(hour=19, minute=0, second=0, microsecond=0)
+        # Use dynamic dates based on today in US Eastern timezone
+        utc_now = datetime.now(timezone.utc)
+        eastern_offset = timedelta(hours=-5)  # EST (UTC-5)
+        eastern_now = utc_now + eastern_offset
+        today = eastern_now.replace(hour=19, minute=0, second=0, microsecond=0)
         
         for i in range(min(n_games, 10)):
             # Games from today going back
