@@ -141,6 +141,53 @@ async def run_quota_safe_sync(
 # Force Refresh Endpoint (Clear + Sync)
 # =============================================================================
 
+@router.get("/jobs/refresh/{sport}")
+async def browser_force_refresh(
+    sport: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Browser-friendly GET endpoint to force refresh data.
+    
+    Just open in browser:
+    - /admin/jobs/refresh/basketball_nba
+    - /admin/jobs/refresh/basketball_ncaab  
+    - /admin/jobs/refresh/americanfootball_nfl
+    """
+    from app.services.etl_games_and_lines import clear_stale_games
+    
+    if sport not in AVAILABLE_SPORTS:
+        return {"error": f"Unknown sport: {sport}", "available": AVAILABLE_SPORTS}
+    
+    start_time = time.time()
+    
+    try:
+        # Clear old data
+        clear_result = await clear_stale_games(db, sport, keep_today=False)
+        
+        # Sync fresh data
+        sync_result = await sync_with_fallback(
+            db,
+            sport_key=sport,
+            include_props=True,
+            use_real_api=False,
+        )
+        
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        return {
+            "status": "success",
+            "sport": sport,
+            "duration_ms": duration_ms,
+            "games_synced": sync_result.get("games", 0),
+            "lines_synced": sync_result.get("lines", 0),
+            "props_synced": sync_result.get("props", 0),
+            "data_source": sync_result.get("data_source", "unknown"),
+        }
+    except Exception as e:
+        return {"status": "error", "sport": sport, "error": str(e)}
+
+
 @router.post("/jobs/force-refresh")
 async def force_refresh_games(
     sport: str = Query("basketball_nba", description="Sport key to refresh"),
