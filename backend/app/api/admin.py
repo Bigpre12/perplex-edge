@@ -18,6 +18,8 @@ from app.services import (
     load_snapshot,
     check_sync_health,
     run_all_health_checks,
+    validate_database_state,
+    get_api_monitor,
 )
 from app.services.picks_generator import generate_picks
 
@@ -269,6 +271,120 @@ async def get_sport_health(
     
     result = await check_sync_health(db, sport)
     return result.to_dict()
+
+
+# =============================================================================
+# API Monitoring Endpoints
+# =============================================================================
+
+@router.get("/monitoring/api")
+async def get_api_metrics(
+    minutes: int = Query(60, description="Time window in minutes"),
+):
+    """
+    Get API call metrics and statistics.
+    
+    Returns:
+    - Total calls, error rates, latency
+    - Per-provider breakdown
+    - Recent call history
+    """
+    monitor = get_api_monitor()
+    return {
+        "metrics": monitor.get_metrics(minutes=minutes),
+        "recent_calls": [c.to_dict() for c in monitor.get_recent_calls(minutes=minutes)[-20:]],
+    }
+
+
+@router.get("/monitoring/alerts")
+async def get_api_alerts():
+    """
+    Check for API monitoring alerts.
+    
+    Returns active alerts for:
+    - High error rates (>10%)
+    - Rate limiting (429 responses)
+    - High latency (>5s average)
+    - Sudden count drops
+    """
+    monitor = get_api_monitor()
+    alerts = monitor.get_alerts()
+    
+    return {
+        "alert_count": len(alerts),
+        "has_critical": any(a.get("severity") == "error" for a in alerts),
+        "alerts": alerts,
+    }
+
+
+# =============================================================================
+# Data Quality Endpoints
+# =============================================================================
+
+@router.get("/quality/{sport}")
+async def get_data_quality(
+    sport: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Run data quality validation on current database state.
+    
+    Checks:
+    - No duplicate game IDs
+    - Game times within expected windows
+    - Prop lines within valid ranges (no 0 pts, no 500 pt totals)
+    - Count comparison vs. yesterday (detect sudden drops)
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    result = await validate_database_state(db, sport)
+    
+    # Add alert level to response
+    if not result.valid:
+        alert_level = "error"
+    elif result.warning_count > 5:
+        alert_level = "warning"
+    else:
+        alert_level = "ok"
+    
+    return {
+        "alert_level": alert_level,
+        "validation": result.to_dict(),
+    }
+
+
+@router.get("/quality")
+async def get_all_data_quality(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Run data quality validation on all sports.
+    
+    Returns combined quality report.
+    """
+    results = {}
+    all_valid = True
+    total_errors = 0
+    total_warnings = 0
+    
+    for sport in ["basketball_nba", "basketball_ncaab", "americanfootball_nfl"]:
+        result = await validate_database_state(db, sport)
+        results[sport] = result.to_dict()
+        if not result.valid:
+            all_valid = False
+        total_errors += result.error_count
+        total_warnings += result.warning_count
+    
+    return {
+        "overall_valid": all_valid,
+        "total_errors": total_errors,
+        "total_warnings": total_warnings,
+        "sports": results,
+    }
 
 
 # =============================================================================

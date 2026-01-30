@@ -358,7 +358,10 @@ class XYZOddsProvider(OddsProvider):
         endpoint: str,
         params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
-        """Make an authenticated request to the API."""
+        """Make an authenticated request to the API with full monitoring."""
+        from app.services.api_monitor import log_api_call
+        import time
+        
         if not self.api_key:
             raise ValueError("ODDS_API_KEY not configured")
         
@@ -366,38 +369,80 @@ class XYZOddsProvider(OddsProvider):
         params = params or {}
         params["apiKey"] = self.api_key
         
-        response = await self.client.get(url, params=params)
+        start_time = time.time()
+        status_code = 0
+        response_count = 0
+        error_msg = None
         
-        # Handle HTTP errors gracefully
         try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 422:
-                # 422 typically means validation error - log and return empty
-                logger.warning(
-                    f"Odds API returned 422 for {endpoint}: {e.response.text[:500]}"
-                )
-                return []
-            elif e.response.status_code == 429:
-                # Rate limited
-                logger.warning(f"Odds API rate limited: {e.response.text[:200]}")
-                return []
-            elif e.response.status_code == 404:
-                # Resource not found - not necessarily an error
-                logger.info(f"Odds API resource not found: {endpoint}")
-                return []
-            else:
-                # Re-raise other errors
-                logger.error(f"Odds API error {e.response.status_code}: {e.response.text[:500]}")
-                raise
-        
-        # Track and log API usage
-        remaining = response.headers.get("x-requests-remaining")
-        used = response.headers.get("x-requests-used")
-        _update_quota_from_headers(remaining, used)
-        logger.info(f"Odds API: {used or '?'} used, {remaining or '?'} remaining")
-        
-        return response.json()
+            response = await self.client.get(url, params=params)
+            status_code = response.status_code
+            
+            # Handle HTTP errors gracefully
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                error_msg = str(e)[:100]
+                if e.response.status_code == 422:
+                    # 422 typically means validation error - log and return empty
+                    logger.warning(
+                        f"Odds API returned 422 for {endpoint}: {e.response.text[:500]}"
+                    )
+                    return []
+                elif e.response.status_code == 429:
+                    # Rate limited
+                    logger.warning(f"Odds API rate limited: {e.response.text[:200]}")
+                    return []
+                elif e.response.status_code == 404:
+                    # Resource not found - not necessarily an error
+                    logger.info(f"Odds API resource not found: {endpoint}")
+                    return []
+                else:
+                    # Re-raise other errors
+                    logger.error(f"Odds API error {e.response.status_code}: {e.response.text[:500]}")
+                    raise
+            
+            # Track and log API usage
+            remaining = response.headers.get("x-requests-remaining")
+            used = response.headers.get("x-requests-used")
+            _update_quota_from_headers(remaining, used)
+            logger.info(f"Odds API: {used or '?'} used, {remaining or '?'} remaining")
+            
+            result = response.json()
+            
+            # Count response items
+            if isinstance(result, list):
+                response_count = len(result)
+            elif isinstance(result, dict) and "data" in result:
+                response_count = len(result["data"])
+            
+            return result
+            
+        except httpx.TimeoutException as e:
+            status_code = 408
+            error_msg = "Request timeout"
+            raise
+        except httpx.ConnectError as e:
+            status_code = 503
+            error_msg = "Connection error"
+            raise
+        except Exception as e:
+            if status_code == 0:
+                status_code = 500
+            error_msg = str(e)[:100]
+            raise
+        finally:
+            # Always log the API call
+            latency_ms = int((time.time() - start_time) * 1000)
+            log_api_call(
+                provider="odds_api",
+                endpoint=endpoint,
+                status_code=status_code,
+                latency_ms=latency_ms,
+                response_count=response_count,
+                method="GET",
+                error=error_msg,
+            )
     
     # =========================================================================
     # Public API Methods

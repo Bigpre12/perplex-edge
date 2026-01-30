@@ -49,6 +49,21 @@ from app.services.snapshot_service import (
     post_sync_validation,
 )
 
+# Data Quality
+from app.services.data_quality import (
+    validate_feed,
+    validate_database_state,
+    create_quality_gate,
+    DataQualityError,
+)
+
+# API Monitoring
+from app.services.api_monitor import (
+    get_api_monitor,
+    log_api_call,
+    track_api_call,
+)
+
 # Model Functions
 from app.services.model import (
     american_to_implied_prob,
@@ -105,4 +120,13 @@ __all__ = [
     "run_all_health_checks",
     "pre_refresh_snapshot",
     "post_sync_validation",
+    # Data Quality
+    "validate_feed",
+    "validate_database_state",
+    "create_quality_gate",
+    "DataQualityError",
+    # API Monitoring
+    "get_api_monitor",
+    "log_api_call",
+    "track_api_call",
 ]
