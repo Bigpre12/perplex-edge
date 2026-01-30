@@ -295,7 +295,7 @@ async def calculate_ev_performance(
     Returns:
         EV performance statistics
     """
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     
     # Query settled picks with their results
     query = (
@@ -378,7 +378,7 @@ async def calculate_odds_trends(
     Returns:
         Trend analysis data
     """
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     
     # Get odds snapshots for this player
     query = (
@@ -475,7 +475,7 @@ async def get_analytics_dashboard(
     if not sport:
         return {"error": f"Sport not found: {sport_key}"}
     
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     
     # Overall pick performance
     picks_query = (
@@ -541,5 +541,5 @@ async def get_analytics_dashboard(
             "hit_rate": round((total_hits or 0) / total_picks * 100, 2) if total_picks > 0 else 0,
         },
         "top_players": top_players,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }

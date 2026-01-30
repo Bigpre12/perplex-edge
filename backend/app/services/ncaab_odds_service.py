@@ -5,7 +5,7 @@ Implements cascade fetch: OddsAPI -> BetStack -> JSON Backup
 """
 
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import select, delete, and_, func
@@ -63,7 +63,7 @@ def _get_current_ncaab_season() -> str:
     Returns:
         Season string like "2025-2026"
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     year = now.year
     month = now.month
     
@@ -245,7 +245,7 @@ async def save_live_odds(
                     draw_odds=odds.get("draw_odds"),
                     bookmaker=odds["bookmaker"],
                     season=odds["season"],
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(timezone.utc),
                 )
                 db.add(live_odds)
                 stats["inserted"] += 1

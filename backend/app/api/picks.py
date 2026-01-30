@@ -122,7 +122,7 @@ async def list_picks(
             player_name=player.name if player else None,
             home_team=game.home_team.name if game and game.home_team else "Unknown",
             away_team=game.away_team.name if game and game.away_team else "Unknown",
-            game_time=game.start_time if game else datetime.utcnow(),
+            game_time=game.start_time if game else datetime.now(timezone.utc),
         ))
 
     return ModelPickList(items=items, total=total or 0)
@@ -202,7 +202,7 @@ async def get_top_picks(
             player_name=player.name if player else None,
             home_team=game.home_team.name if game and game.home_team else "Unknown",
             away_team=game.away_team.name if game and game.away_team else "Unknown",
-            game_time=game.start_time if game else datetime.utcnow(),
+            game_time=game.start_time if game else datetime.now(timezone.utc),
         ))
 
     return ModelPickList(items=items, total=len(items))

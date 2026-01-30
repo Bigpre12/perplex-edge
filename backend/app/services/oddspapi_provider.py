@@ -7,7 +7,7 @@ from OddsPapi API (https://oddspapi.io).
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import httpx
@@ -275,7 +275,7 @@ class OddsPapiProvider:
             List of fixtures that have ended
         """
         fixtures = await self.fetch_fixtures(tournament_ids)
-        cutoff = datetime.utcnow() - timedelta(days=days_back)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
         completed = []
         
         for fixture in fixtures:
@@ -285,7 +285,7 @@ class OddsPapiProvider:
                     # Parse ISO datetime
                     dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
                     # If game started more than 4 hours ago, it's likely finished
-                    if dt < datetime.utcnow() - timedelta(hours=4):
+                    if dt < datetime.now(timezone.utc) - timedelta(hours=4):
                         completed.append(fixture)
                 except (ValueError, TypeError):
                     pass

@@ -9,7 +9,7 @@ Syncs data from OddsPapi for:
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from sqlalchemy import select, and_
@@ -83,7 +83,7 @@ async def sync_historical_odds(
             return stats
         
         # Get recent games that need historical odds
-        cutoff = datetime.utcnow() - timedelta(days=days_back)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
         games_result = await db.execute(
             select(Game).where(
                 and_(
@@ -250,8 +250,8 @@ async def sync_game_results(
             return stats
         
         # Get games that might be completed (started more than 4 hours ago)
-        cutoff_end = datetime.utcnow() - timedelta(hours=4)
-        cutoff_start = datetime.utcnow() - timedelta(days=days_back)
+        cutoff_end = datetime.now(timezone.utc) - timedelta(hours=4)
+        cutoff_start = datetime.now(timezone.utc) - timedelta(days=days_back)
         
         games_result = await db.execute(
             select(Game).where(
@@ -311,7 +311,7 @@ async def sync_game_results(
                         existing.away_score = away_score
                         existing.period_scores = period_scores_str
                         existing.is_settled = True
-                        existing.settled_at = datetime.utcnow()
+                        existing.settled_at = datetime.now(timezone.utc)
                         stats["results_updated"] += 1
                     else:
                         # Create new result

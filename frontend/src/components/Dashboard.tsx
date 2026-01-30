@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api, SyncStatus, PickSummary, GameList } from '../api/client';
 import { LastUpdated } from './LastUpdated';
+
+// Auto-refresh interval (60 seconds)
+const REFRESH_INTERVAL = 60 * 1000;
 
 export function Dashboard() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
@@ -9,27 +12,35 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const [status, summary, games] = await Promise.all([
-          api.getSyncStatus().catch(() => null),
-          api.getPicksSummary().catch(() => null),
-          api.getTodaysGames().catch(() => null),
-        ]);
-        setSyncStatus(status);
-        setPicksSummary(summary);
-        setTodaysGames(games);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } finally {
-        setLoading(false);
-      }
+  const fetchData = useCallback(async (showLoading = false) => {
+    try {
+      if (showLoading) setLoading(true);
+      const [status, summary, games] = await Promise.all([
+        api.getSyncStatus().catch(() => null),
+        api.getPicksSummary().catch(() => null),
+        api.getTodaysGames().catch(() => null),
+      ]);
+      setSyncStatus(status);
+      setPicksSummary(summary);
+      setTodaysGames(games);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      if (showLoading) setLoading(false);
     }
-    fetchData();
   }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchData(true);
+  }, [fetchData]);
+
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => fetchData(false), REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   if (loading) {
     return (

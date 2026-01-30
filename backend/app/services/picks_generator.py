@@ -895,7 +895,7 @@ async def _calculate_hit_rate_30d(
     Returns:
         Hit rate as decimal (0-1) or None if no data
     """
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     
     result = await db.execute(
         select(PlayerGameStats.value)

@@ -6,7 +6,7 @@ Saves daily backups of NCAAB odds data for fallback when APIs fail.
 
 import json
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -68,7 +68,7 @@ def save_backup(odds_data: list[dict[str, Any]], backup_date: Optional[date] = N
     
     backup_content = {
         "backup_date": backup_date.isoformat(),
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "sport": "NCAAB",
         "count": len(odds_data),
         "odds": odds_data,

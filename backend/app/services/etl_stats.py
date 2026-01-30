@@ -89,7 +89,7 @@ async def get_all_active_players(
     Returns:
         List of active Player objects
     """
-    cutoff = datetime.utcnow() - timedelta(days=days_back)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
     
     result = await db.execute(
         select(Player)

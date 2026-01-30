@@ -7,7 +7,7 @@ some data to display.
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -49,7 +49,7 @@ def save_to_cache(sport_key: str, data: dict[str, Any]) -> bool:
         # Update cache for this sport
         cache[sport_key] = {
             "data": data,
-            "cached_at": datetime.utcnow().isoformat(),
+            "cached_at": datetime.now(timezone.utc).isoformat(),
         }
         
         # Save cache
@@ -85,7 +85,7 @@ def load_from_cache(sport_key: str) -> Optional[dict[str, Any]]:
         
         entry = cache[sport_key]
         cached_at = datetime.fromisoformat(entry["cached_at"])
-        age_hours = (datetime.utcnow() - cached_at).total_seconds() / 3600
+        age_hours = (datetime.now(timezone.utc) - cached_at).total_seconds() / 3600
         
         if age_hours > CACHE_EXPIRY_HOURS:
             logger.warning(f"Cache for {sport_key} expired ({age_hours:.1f}h old)")
@@ -117,7 +117,7 @@ def get_cache_status() -> dict[str, Any]:
         
         for sport_key, entry in cache.items():
             cached_at = datetime.fromisoformat(entry["cached_at"])
-            age_hours = (datetime.utcnow() - cached_at).total_seconds() / 3600
+            age_hours = (datetime.now(timezone.utc) - cached_at).total_seconds() / 3600
             
             status["sports"][sport_key] = {
                 "cached_at": entry["cached_at"],
