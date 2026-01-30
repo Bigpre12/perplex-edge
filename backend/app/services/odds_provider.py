@@ -545,10 +545,11 @@ class XYZOddsProvider(OddsProvider):
         times = _get_stub_game_times()
         
         if sport_key == "basketball_ncaab":
-            # College Basketball games (2025-26 Season)
+            # College Basketball games (2025-26 Season) - 8 Games, 16 Top Teams
             return [
+                # Game 1: Kansas vs Duke
                 {
-                    "id": "ncaab_duke_unc_today",
+                    "id": "ncaab_game_1",
                     "sport_key": sport_key,
                     "sport_title": "NCAAB",
                     "commence_time": times["early"],
@@ -559,62 +560,141 @@ class XYZOddsProvider(OddsProvider):
                             "key": "draftkings",
                             "title": "DraftKings",
                             "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Kansas Jayhawks", "price": -140},
-                                {"name": "Duke Blue Devils", "price": 120}
+                                {"name": "Kansas Jayhawks", "price": -135},
+                                {"name": "Duke Blue Devils", "price": 115}
                             ]}]
                         }
                     ],
                 },
+                # Game 2: Kentucky vs Houston
                 {
-                    "id": "ncaab_kansas_kentucky_today",
+                    "id": "ncaab_game_2",
                     "sport_key": sport_key,
                     "sport_title": "NCAAB",
-                    "commence_time": times["late"],
+                    "commence_time": times["early"],
                     "home_team": "Kentucky Wildcats",
-                    "away_team": "Kansas Jayhawks",
+                    "away_team": "Houston Cougars",
                     "bookmakers": [
                         {
                             "key": "fanduel",
                             "title": "FanDuel",
                             "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Kentucky Wildcats", "price": -115},
-                                {"name": "Kansas Jayhawks", "price": -105}
+                                {"name": "Kentucky Wildcats", "price": 110},
+                                {"name": "Houston Cougars", "price": -130}
                             ]}]
                         }
                     ],
                 },
+                # Game 3: Gonzaga vs UConn
                 {
-                    "id": "ncaab_gonzaga_ucla_today",
+                    "id": "ncaab_game_3",
                     "sport_key": sport_key,
                     "sport_title": "NCAAB",
-                    "commence_time": times["night"],
-                    "home_team": "Kentucky Wildcats",
-                    "away_team": "Gonzaga Bulldogs",
+                    "commence_time": times["late"],
+                    "home_team": "Gonzaga Bulldogs",
+                    "away_team": "UConn Huskies",
                     "bookmakers": [
                         {
                             "key": "betmgm",
                             "title": "BetMGM",
                             "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Kentucky Wildcats", "price": 105},
-                                {"name": "Gonzaga Bulldogs", "price": -125}
+                                {"name": "Gonzaga Bulldogs", "price": -120},
+                                {"name": "UConn Huskies", "price": 100}
                             ]}]
                         }
                     ],
                 },
+                # Game 4: Purdue vs Florida
                 {
-                    "id": "ncaab_purdue_michigan_today",
+                    "id": "ncaab_game_4",
                     "sport_key": sport_key,
                     "sport_title": "NCAAB",
-                    "commence_time": times["west"],
-                    "home_team": "Gonzaga Bulldogs",
-                    "away_team": "Duke Blue Devils",
+                    "commence_time": times["late"],
+                    "home_team": "Purdue Boilermakers",
+                    "away_team": "Florida Gators",
                     "bookmakers": [
                         {
                             "key": "caesars",
                             "title": "Caesars",
                             "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Gonzaga Bulldogs", "price": -145},
-                                {"name": "Duke Blue Devils", "price": 125}
+                                {"name": "Purdue Boilermakers", "price": -145},
+                                {"name": "Florida Gators", "price": 125}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 5: UCLA vs Arizona
+                {
+                    "id": "ncaab_game_5",
+                    "sport_key": sport_key,
+                    "sport_title": "NCAAB",
+                    "commence_time": times["night"],
+                    "home_team": "UCLA Bruins",
+                    "away_team": "Arizona Wildcats",
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "UCLA Bruins", "price": 105},
+                                {"name": "Arizona Wildcats", "price": -125}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 6: Alabama vs Tennessee
+                {
+                    "id": "ncaab_game_6",
+                    "sport_key": sport_key,
+                    "sport_title": "NCAAB",
+                    "commence_time": times["night"],
+                    "home_team": "Alabama Crimson Tide",
+                    "away_team": "Tennessee Volunteers",
+                    "bookmakers": [
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Alabama Crimson Tide", "price": -115},
+                                {"name": "Tennessee Volunteers", "price": -105}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 7: St. John's vs Michigan
+                {
+                    "id": "ncaab_game_7",
+                    "sport_key": sport_key,
+                    "sport_title": "NCAAB",
+                    "commence_time": times["west"],
+                    "home_team": "St. John's Red Storm",
+                    "away_team": "Michigan Wolverines",
+                    "bookmakers": [
+                        {
+                            "key": "betmgm",
+                            "title": "BetMGM",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "St. John's Red Storm", "price": -140},
+                                {"name": "Michigan Wolverines", "price": 120}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 8: Arkansas vs Illinois
+                {
+                    "id": "ncaab_game_8",
+                    "sport_key": sport_key,
+                    "sport_title": "NCAAB",
+                    "commence_time": times["west"],
+                    "home_team": "Arkansas Razorbacks",
+                    "away_team": "Illinois Fighting Illini",
+                    "bookmakers": [
+                        {
+                            "key": "caesars",
+                            "title": "Caesars",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Arkansas Razorbacks", "price": 100},
+                                {"name": "Illinois Fighting Illini", "price": -120}
                             ]}]
                         }
                     ],
@@ -1035,85 +1115,166 @@ class XYZOddsProvider(OddsProvider):
             },
             # =================================================================
             # NCAAB GAMES - College Basketball Player Props (2025-26 Season)
+            # 8 Games, 16 Top Teams, 80 Players
             # =================================================================
-            # Duke @ Kansas - Non-Conference Showdown
-            "ncaab_duke_unc_today": {
+            # Game 1: Kansas vs Duke
+            "ncaab_game_1": {
                 "home_team": "Kansas Jayhawks",
                 "away_team": "Duke Blue Devils",
                 "commence_time": times["early"],
                 "players": [
                     # Kansas Jayhawks (2025-26)
+                    {"name": "Darryn Peterson", "pts": 15.5, "reb": 5.5, "ast": 3.5, "pra": 24.5, "pr": 21.0, "pa": 19.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                     {"name": "Melvin Council Jr.", "pts": 13.5, "reb": 3.5, "ast": 4.5, "pra": 21.5, "pr": 17.0, "pa": 18.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                     {"name": "Jayden Dawson", "pts": 11.5, "reb": 3.5, "ast": 2.5, "pra": 17.5, "pr": 15.0, "pa": 14.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Darryn Peterson", "pts": 15.5, "reb": 5.5, "ast": 3.5, "pra": 24.5, "pr": 21.0, "pa": 19.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                     {"name": "Tre White", "pts": 10.5, "reb": 6.5, "ast": 1.5, "pra": 18.5, "pr": 17.0, "pa": 12.0, "ra": 8.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                     {"name": "Flory Bidunga", "pts": 12.5, "reb": 9.5, "ast": 1.5, "pra": 23.5, "pr": 22.0, "pa": 14.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
                     # Duke Blue Devils (2025-26)
                     {"name": "Caleb Foster", "pts": 14.5, "reb": 3.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Cayden Boozer", "pts": 12.5, "reb": 4.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 15.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Isaiah Evans", "pts": 11.5, "reb": 5.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 14.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Isaiah Evans", "pts": 13.5, "reb": 5.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 16.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Dame Sarr", "pts": 11.5, "reb": 4.5, "ast": 3.5, "pra": 19.5, "pr": 16.0, "pa": 15.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                     {"name": "Cameron Boozer", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 19.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
-                    {"name": "Patrick Ngongba II", "pts": 8.5, "reb": 7.5, "ast": 1.5, "pra": 17.5, "pr": 16.0, "pa": 10.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    {"name": "Patrick Ngongba", "pts": 8.5, "reb": 7.5, "ast": 1.5, "pra": 17.5, "pr": 16.0, "pa": 10.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
                 ],
             },
-            # Kansas @ Kentucky
-            "ncaab_kansas_kentucky_today": {
+            # Game 2: Kentucky vs Houston
+            "ncaab_game_2": {
                 "home_team": "Kentucky Wildcats",
-                "away_team": "Kansas Jayhawks",
+                "away_team": "Houston Cougars",
+                "commence_time": times["early"],
+                "players": [
+                    # Kentucky Wildcats (2025-26)
+                    {"name": "Jaland Lowe", "pts": 14.5, "reb": 3.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Otega Oweh", "pts": 15.5, "reb": 4.5, "ast": 3.5, "pra": 23.5, "pr": 20.0, "pa": 19.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Denzel Aberdeen", "pts": 12.5, "reb": 3.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Mo Dioubate", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Brandon Garrison", "pts": 9.5, "reb": 6.5, "ast": 1.5, "pra": 17.5, "pr": 16.0, "pa": 11.0, "ra": 8.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Houston Cougars (2025-26)
+                    {"name": "Milos Uzan", "pts": 13.5, "reb": 4.5, "ast": 6.5, "pra": 24.5, "pr": 18.0, "pa": 20.0, "ra": 11.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Emanuel Sharp", "pts": 14.5, "reb": 3.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 17.0, "ra": 6.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Isiah Harwell", "pts": 10.5, "reb": 3.5, "ast": 3.5, "pra": 17.5, "pr": 14.0, "pa": 14.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Chris Cenac Jr.", "pts": 12.5, "reb": 6.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 15.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Joseph Tugler", "pts": 10.5, "reb": 8.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 12.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                ],
+            },
+            # Game 3: Gonzaga vs UConn
+            "ncaab_game_3": {
+                "home_team": "Gonzaga Bulldogs",
+                "away_team": "UConn Huskies",
                 "commence_time": times["late"],
                 "players": [
-                    # Kentucky Wildcats (2025-26)
-                    {"name": "Denzel Aberdeen", "pts": 12.5, "reb": 3.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Collin Chandler", "pts": 14.5, "reb": 4.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 17.0, "ra": 7.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Walker Horn", "pts": 10.5, "reb": 5.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 13.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Mouhamed Dioubate", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                    {"name": "Malachi Moreno", "pts": 9.5, "reb": 8.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 11.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                    # Kansas Jayhawks (2025-26)
-                    {"name": "Melvin Council Jr.", "pts": 13.5, "reb": 3.5, "ast": 4.5, "pra": 21.5, "pr": 17.0, "pa": 18.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Jayden Dawson", "pts": 11.5, "reb": 3.5, "ast": 2.5, "pra": 17.5, "pr": 15.0, "pa": 14.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Darryn Peterson", "pts": 15.5, "reb": 5.5, "ast": 3.5, "pra": 24.5, "pr": 21.0, "pa": 19.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Tre White", "pts": 10.5, "reb": 6.5, "ast": 1.5, "pra": 18.5, "pr": 17.0, "pa": 12.0, "ra": 8.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                    {"name": "Flory Bidunga", "pts": 12.5, "reb": 9.5, "ast": 1.5, "pra": 23.5, "pr": 22.0, "pa": 14.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Gonzaga Bulldogs (2025-26)
+                    {"name": "Braeden Smith", "pts": 12.5, "reb": 3.5, "ast": 6.5, "pra": 22.5, "pr": 16.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Adam Miller", "pts": 14.5, "reb": 3.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 18.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Jalen Warley", "pts": 12.5, "reb": 4.5, "ast": 4.5, "pra": 21.5, "pr": 17.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Braden Huff", "pts": 14.5, "reb": 6.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Graham Ike", "pts": 17.5, "reb": 9.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 20.0, "ra": 12.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
+                    # UConn Huskies (2025-26)
+                    {"name": "Silas Demary Jr.", "pts": 13.5, "reb": 3.5, "ast": 4.5, "pra": 21.5, "pr": 17.0, "pa": 18.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Solo Ball", "pts": 11.5, "reb": 3.5, "ast": 5.5, "pra": 20.5, "pr": 15.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Braylon Mullins", "pts": 10.5, "reb": 3.5, "ast": 2.5, "pra": 16.5, "pr": 14.0, "pa": 13.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Alex Karaban", "pts": 15.5, "reb": 6.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 19.0, "ra": 10.0, "3pm": 2.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
+                    {"name": "Tarris Reed Jr.", "pts": 12.5, "reb": 8.5, "ast": 1.5, "pra": 22.5, "pr": 21.0, "pa": 14.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
                 ],
             },
-            # Gonzaga @ Kentucky
-            "ncaab_gonzaga_ucla_today": {
-                "home_team": "Kentucky Wildcats",
-                "away_team": "Gonzaga Bulldogs",
+            # Game 4: Purdue vs Florida
+            "ncaab_game_4": {
+                "home_team": "Purdue Boilermakers",
+                "away_team": "Florida Gators",
+                "commence_time": times["late"],
+                "players": [
+                    # Purdue Boilermakers (2025-26)
+                    {"name": "Braden Smith", "pts": 13.5, "reb": 4.5, "ast": 7.5, "pra": 25.5, "pr": 18.0, "pa": 21.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "CJ Cox", "pts": 11.5, "reb": 3.5, "ast": 3.5, "pra": 18.5, "pr": 15.0, "pa": 15.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Fletcher Loyer", "pts": 14.5, "reb": 2.5, "ast": 3.5, "pra": 20.5, "pr": 17.0, "pa": 18.0, "ra": 6.0, "3pm": 3.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Trey Kaufman-Renn", "pts": 17.5, "reb": 6.5, "ast": 2.5, "pra": 26.5, "pr": 24.0, "pa": 20.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Oscar Cluff", "pts": 9.5, "reb": 7.5, "ast": 1.5, "pra": 18.5, "pr": 17.0, "pa": 11.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Florida Gators (2025-26)
+                    {"name": "Xaivian Lee", "pts": 12.5, "reb": 3.5, "ast": 5.5, "pra": 21.5, "pr": 16.0, "pa": 18.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Boogie Fland", "pts": 15.5, "reb": 3.5, "ast": 4.5, "pra": 23.5, "pr": 19.0, "pa": 20.0, "ra": 8.0, "3pm": 2.5, "stl": 2.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Thomas Haugh", "pts": 11.5, "reb": 5.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 14.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Alex Condon", "pts": 13.5, "reb": 6.5, "ast": 2.5, "pra": 22.5, "pr": 20.0, "pa": 16.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Rueben Chinyelu", "pts": 10.5, "reb": 8.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 12.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                ],
+            },
+            # Game 5: UCLA vs Arizona
+            "ncaab_game_5": {
+                "home_team": "UCLA Bruins",
+                "away_team": "Arizona Wildcats",
                 "commence_time": times["night"],
                 "players": [
-                    # Kentucky Wildcats (2025-26)
-                    {"name": "Denzel Aberdeen", "pts": 12.5, "reb": 3.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Collin Chandler", "pts": 14.5, "reb": 4.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 17.0, "ra": 7.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Walker Horn", "pts": 10.5, "reb": 5.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 13.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Mouhamed Dioubate", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                    {"name": "Malachi Moreno", "pts": 9.5, "reb": 8.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 11.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                    # Gonzaga Bulldogs (2025-26)
-                    {"name": "Tyon Grant-Foster", "pts": 13.5, "reb": 4.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Adam Miller", "pts": 14.5, "reb": 3.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 18.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Jalen Warley", "pts": 12.5, "reb": 4.5, "ast": 4.5, "pra": 21.5, "pr": 17.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Graham Ike", "pts": 17.5, "reb": 9.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 20.0, "ra": 12.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
-                    {"name": "Ismaila Diagne", "pts": 8.5, "reb": 7.5, "ast": 1.5, "pra": 17.5, "pr": 16.0, "pa": 10.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # UCLA Bruins (2025-26)
+                    {"name": "Donovan Dent", "pts": 14.5, "reb": 3.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Skyy Clark", "pts": 12.5, "reb": 3.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Eric Dailey Jr.", "pts": 13.5, "reb": 5.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 16.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Tyler Bilodeau", "pts": 14.5, "reb": 6.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Xavier Booker", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Arizona Wildcats (2025-26)
+                    {"name": "Jaden Bradley", "pts": 14.5, "reb": 3.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 20.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Brayden Burries", "pts": 12.5, "reb": 3.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 15.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Anthony Dell'Orso", "pts": 13.5, "reb": 4.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 16.0, "ra": 7.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Koa Peat", "pts": 16.5, "reb": 7.5, "ast": 3.5, "pra": 27.5, "pr": 24.0, "pa": 20.0, "ra": 11.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                    {"name": "Tobe Awaka", "pts": 10.5, "reb": 8.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 12.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
                 ],
             },
-            # Duke @ Gonzaga
-            "ncaab_purdue_michigan_today": {
-                "home_team": "Gonzaga Bulldogs",
-                "away_team": "Duke Blue Devils",
+            # Game 6: Alabama vs Tennessee
+            "ncaab_game_6": {
+                "home_team": "Alabama Crimson Tide",
+                "away_team": "Tennessee Volunteers",
+                "commence_time": times["night"],
+                "players": [
+                    # Alabama Crimson Tide (2025-26)
+                    {"name": "Labaron Philon", "pts": 14.5, "reb": 3.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Aden Holloway", "pts": 12.5, "reb": 3.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 2.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Latrell Wrightsell Jr.", "pts": 15.5, "reb": 4.5, "ast": 2.5, "pra": 22.5, "pr": 20.0, "pa": 18.0, "ra": 7.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Taylor Bol Bowen", "pts": 11.5, "reb": 6.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 14.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Aiden Sherrell", "pts": 12.5, "reb": 7.5, "ast": 1.5, "pra": 21.5, "pr": 20.0, "pa": 14.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Tennessee Volunteers (2025-26)
+                    {"name": "Ja'Kobi Gillespie", "pts": 13.5, "reb": 3.5, "ast": 5.5, "pra": 22.5, "pr": 17.0, "pa": 19.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Amaree Abram", "pts": 14.5, "reb": 4.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 17.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Nate Ament", "pts": 10.5, "reb": 5.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 13.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Cade Phillips", "pts": 12.5, "reb": 6.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 15.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Felix Okpara", "pts": 9.5, "reb": 8.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 11.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 3.5, "to": 1.5},
+                ],
+            },
+            # Game 7: St. John's vs Michigan
+            "ncaab_game_7": {
+                "home_team": "St. John's Red Storm",
+                "away_team": "Michigan Wolverines",
                 "commence_time": times["west"],
                 "players": [
-                    # Gonzaga Bulldogs (2025-26)
-                    {"name": "Tyon Grant-Foster", "pts": 13.5, "reb": 4.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Adam Miller", "pts": 14.5, "reb": 3.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 18.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Jalen Warley", "pts": 12.5, "reb": 4.5, "ast": 4.5, "pra": 21.5, "pr": 17.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Graham Ike", "pts": 17.5, "reb": 9.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 20.0, "ra": 12.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
-                    {"name": "Ismaila Diagne", "pts": 8.5, "reb": 7.5, "ast": 1.5, "pra": 17.5, "pr": 16.0, "pa": 10.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                    # Duke Blue Devils (2025-26)
-                    {"name": "Caleb Foster", "pts": 14.5, "reb": 3.5, "ast": 5.5, "pra": 23.5, "pr": 18.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Cayden Boozer", "pts": 12.5, "reb": 4.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 15.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Isaiah Evans", "pts": 11.5, "reb": 5.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 14.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Cameron Boozer", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 19.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
-                    {"name": "Patrick Ngongba II", "pts": 8.5, "reb": 7.5, "ast": 1.5, "pra": 17.5, "pr": 16.0, "pa": 10.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # St. John's Red Storm (2025-26)
+                    {"name": "Ian Jackson", "pts": 16.5, "reb": 4.5, "ast": 4.5, "pra": 25.5, "pr": 21.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Oziyah Sellers", "pts": 12.5, "reb": 3.5, "ast": 3.5, "pra": 19.5, "pr": 16.0, "pa": 16.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Joson Sanon", "pts": 10.5, "reb": 3.5, "ast": 4.5, "pra": 18.5, "pr": 14.0, "pa": 15.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Bryce Hopkins", "pts": 14.5, "reb": 6.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Zuby Ejiofor", "pts": 11.5, "reb": 8.5, "ast": 1.5, "pra": 21.5, "pr": 20.0, "pa": 13.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Michigan Wolverines (2025-26)
+                    {"name": "Elliot Cadeau", "pts": 13.5, "reb": 3.5, "ast": 6.5, "pra": 23.5, "pr": 17.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Roddy Gayle Jr.", "pts": 14.5, "reb": 4.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 18.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Nimari Burnett", "pts": 12.5, "reb": 3.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 15.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Yaxel Lendeborg", "pts": 11.5, "reb": 6.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 14.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Aday Mara", "pts": 10.5, "reb": 7.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 12.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                ],
+            },
+            # Game 8: Arkansas vs Illinois
+            "ncaab_game_8": {
+                "home_team": "Arkansas Razorbacks",
+                "away_team": "Illinois Fighting Illini",
+                "commence_time": times["west"],
+                "players": [
+                    # Arkansas Razorbacks (2025-26)
+                    {"name": "DJ Wagner", "pts": 15.5, "reb": 3.5, "ast": 5.5, "pra": 24.5, "pr": 19.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Darius Acuff", "pts": 11.5, "reb": 3.5, "ast": 4.5, "pra": 19.5, "pr": 15.0, "pa": 16.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Karter Knox", "pts": 13.5, "reb": 5.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 16.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Trevon Brazile", "pts": 12.5, "reb": 6.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 15.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Nick Pringle", "pts": 10.5, "reb": 7.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 12.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                    # Illinois Fighting Illini (2025-26)
+                    {"name": "Keaton Wagler", "pts": 12.5, "reb": 3.5, "ast": 5.5, "pra": 21.5, "pr": 16.0, "pa": 18.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Kylan Boswell", "pts": 14.5, "reb": 3.5, "ast": 4.5, "pra": 22.5, "pr": 18.0, "pa": 19.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                    {"name": "Andrej Stojakovic", "pts": 15.5, "reb": 4.5, "ast": 2.5, "pra": 22.5, "pr": 20.0, "pa": 18.0, "ra": 7.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                    {"name": "Ben Humrichous", "pts": 11.5, "reb": 5.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 14.0, "ra": 8.0, "3pm": 2.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                    {"name": "Tomislav Ivisic", "pts": 13.5, "reb": 8.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 16.0, "ra": 11.0, "3pm": 1.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
                 ],
             },
         }
