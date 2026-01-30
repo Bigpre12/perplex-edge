@@ -404,6 +404,116 @@ async def roster_sync_loop(interval_hours: int = 24, initial_delay: int = 120, u
         await asyncio.sleep(interval_hours * 3600)
 
 
+async def historical_odds_sync_loop(interval_hours: int = 24, initial_delay: int = 300):
+    """
+    Background task that syncs historical odds from OddsPapi daily.
+    
+    Fetches historical odds movements for analytics and trend analysis.
+    
+    Args:
+        interval_hours: Sync interval in hours (default: 24 = daily)
+        initial_delay: Initial delay in seconds before first run
+    """
+    from app.services.etl_historical import sync_historical_odds
+    from app.core.config import get_settings
+    
+    settings = get_settings()
+    
+    # Only run if OddsPapi API key is configured
+    if not settings.oddspapi_api_key:
+        logger.info("OddsPapi API key not configured, historical odds sync disabled")
+        return
+    
+    if initial_delay > 0:
+        logger.info(f"Historical odds sync loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"Historical odds sync loop started (interval: {interval_hours} hours)")
+    
+    while True:
+        try:
+            logger.info("Running historical odds sync from OddsPapi...")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                result = await sync_historical_odds(
+                    db,
+                    sport_key="basketball_nba",
+                    days_back=7,
+                )
+                logger.info(f"Historical odds sync: {result}")
+            
+            logger.info("Historical odds sync completed")
+            
+        except asyncio.CancelledError:
+            logger.info("Historical odds sync loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Historical odds sync loop error: {e}", exc_info=True)
+        
+        # Wait for next interval (in hours)
+        await asyncio.sleep(interval_hours * 3600)
+
+
+async def oddspapi_results_sync_loop(interval_minutes: int = 60, initial_delay: int = 240):
+    """
+    Background task that syncs game results from OddsPapi hourly.
+    
+    Fetches final scores and settlements for completed games.
+    
+    Args:
+        interval_minutes: Sync interval in minutes
+        initial_delay: Initial delay in seconds before first run
+    """
+    from app.services.etl_historical import sync_game_results, settle_picks
+    from app.core.config import get_settings
+    
+    settings = get_settings()
+    
+    # Only run if OddsPapi API key is configured
+    if not settings.oddspapi_api_key:
+        logger.info("OddsPapi API key not configured, results sync disabled")
+        return
+    
+    if initial_delay > 0:
+        logger.info(f"OddsPapi results sync loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"OddsPapi results sync loop started (interval: {interval_minutes} min)")
+    
+    while True:
+        try:
+            logger.info("Running game results sync from OddsPapi...")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                # 1. Sync game results
+                results_sync = await sync_game_results(
+                    db,
+                    sport_key="basketball_nba",
+                    days_back=3,
+                )
+                logger.info(f"Game results sync: {results_sync}")
+                
+                # 2. Settle picks based on results
+                settlement_result = await settle_picks(
+                    db,
+                    sport_key="basketball_nba",
+                )
+                logger.info(f"Pick settlement: {settlement_result}")
+            
+            logger.info("OddsPapi results sync completed")
+            
+        except asyncio.CancelledError:
+            logger.info("OddsPapi results sync loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"OddsPapi results sync loop error: {e}", exc_info=True)
+        
+        # Wait for next interval
+        await asyncio.sleep(interval_minutes * 60)
+
+
 async def results_settlement_loop(interval_minutes: int = 30, initial_delay: int = 180, use_stubs: bool = True):
     """
     Background task that settles picks for completed games.
@@ -613,6 +723,32 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task5)
     logger.info(f"Created results_settlement_loop task (every {settlement_interval} min, use_stubs={use_stubs})")
+
+    # OddsPapi historical odds sync task (daily)
+    # Only starts if ODDSPAPI_API_KEY is configured
+    if settings.oddspapi_api_key:
+        task6 = asyncio.create_task(
+            historical_odds_sync_loop(
+                interval_hours=24,
+                initial_delay=300,  # Stagger start by 5 minutes
+            ),
+            name="historical_odds_sync_loop"
+        )
+        tasks.append(task6)
+        logger.info("Created historical_odds_sync_loop task (daily)")
+        
+        # OddsPapi game results sync task (hourly)
+        task7 = asyncio.create_task(
+            oddspapi_results_sync_loop(
+                interval_minutes=60,
+                initial_delay=240,  # Stagger start by 4 minutes
+            ),
+            name="oddspapi_results_sync_loop"
+        )
+        tasks.append(task7)
+        logger.info("Created oddspapi_results_sync_loop task (hourly)")
+    else:
+        logger.info("OddsPapi tasks skipped (no API key configured)")
 
     _background_tasks = tasks
     return tasks

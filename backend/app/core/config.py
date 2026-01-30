@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     betstack_api_key: str = ""
     betstack_api_base_url: str = "https://api.the-odds-api.com/v4"  # Uses same format as Odds API
 
+    # OddsPapi API (Historical data & analytics)
+    oddspapi_api_key: str = ""
+    oddspapi_base_url: str = "https://api.oddspapi.io/v4"
+
     # Stats API
     stats_api_key: str = ""
     stats_api_base_url: str = "https://api.sportsstats.example.com/v1"

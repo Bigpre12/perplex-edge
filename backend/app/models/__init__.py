@@ -13,6 +13,8 @@ from app.models.player_stat import PlayerStat
 from app.models.historical_performance import HistoricalPerformance
 from app.models.pick_result import PickResult
 from app.models.player_hit_rate import PlayerHitRate
+from app.models.odds_snapshot import OddsSnapshot
+from app.models.game_result import GameResult
 
 __all__ = [
     "Base",
@@ -30,4 +32,6 @@ __all__ = [
     "HistoricalPerformance",
     "PickResult",
     "PlayerHitRate",
+    "OddsSnapshot",
+    "GameResult",
 ]
