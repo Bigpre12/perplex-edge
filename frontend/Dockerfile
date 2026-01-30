@@ -20,9 +20,13 @@ COPY . .
 # Default to Railway backend URL for production builds
 ARG VITE_API_BASE_URL=https://railway-engine-production.up.railway.app
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV NODE_ENV=production
 
-# Build the app
-RUN pnpm build
+# Build the app (with logging to verify env vars)
+RUN echo "=== Building frontend ===" && \
+    echo "VITE_API_BASE_URL=$VITE_API_BASE_URL" && \
+    echo "NODE_ENV=$NODE_ENV" && \
+    pnpm build
 
 # Production stage
 FROM nginx:alpine

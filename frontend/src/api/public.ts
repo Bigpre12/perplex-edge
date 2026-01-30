@@ -10,6 +10,13 @@ const API_BASE_URL = import.meta.env.DEV
   ? 'http://localhost:8000' 
   : (import.meta.env.VITE_API_BASE_URL || 'https://railway-engine-production.up.railway.app');
 
+// Log API URL on load for debugging
+console.log('[API] Configuration:', {
+  DEV: import.meta.env.DEV,
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  API_BASE_URL,
+});
+
 // =============================================================================
 // Types (matching backend schemas/public.py)
 // =============================================================================
@@ -138,17 +145,29 @@ export interface GameLineFilters {
 // =============================================================================
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    // Prevent browser caching to ensure fresh data
-    cache: 'no-store',
-    headers: {
-      'Cache-Control': 'no-cache',
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  console.log('[API] Fetching:', url);
+  
+  try {
+    const response = await fetch(url, {
+      // Prevent browser caching to ensure fresh data
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    });
+    
+    if (!response.ok) {
+      console.error('[API] Error response:', response.status, response.statusText, url);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('[API] Success:', url, { itemCount: data?.items?.length ?? data?.total ?? 'N/A' });
+    return data;
+  } catch (error) {
+    console.error('[API] Fetch failed:', url, error);
+    throw error;
   }
-  return response.json();
 }
 
 function buildQueryString(params: Record<string, unknown>): string {

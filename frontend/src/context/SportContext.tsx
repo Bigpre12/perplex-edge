@@ -15,6 +15,8 @@ interface SportContextType {
   sports: Sport[];
   setSports: (sports: Sport[]) => void;
   isLoading: boolean;
+  error: string | null;
+  setError: (error: string | null) => void;
 }
 
 const SportContext = createContext<SportContextType | undefined>(undefined);
@@ -27,31 +29,36 @@ export function SportProvider({ children }: SportProviderProps) {
   const [sportId, setSportId] = useState<number | null>(null);
   const [sportName, setSportName] = useState<string>('');
   const [leagueCode, setLeagueCode] = useState<string>('');
-  const [sports, setSports] = useState<Sport[]>([]);
+  const [sports, setSportsState] = useState<Sport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Set default sport when sports are loaded
   useEffect(() => {
+    console.log('[SportContext] Sports updated:', sports.length, 'sportId:', sportId);
+    
     if (sports.length > 0 && sportId === null) {
       const defaultSport = sports[0];
+      console.log('[SportContext] Setting default sport:', defaultSport);
       setSportId(defaultSport.id);
       setSportName(defaultSport.name);
       setLeagueCode(defaultSport.league_code);
+      // Only set loading to false AFTER setting the sport
       setIsLoading(false);
     }
   }, [sports, sportId]);
 
   const setSport = (id: number, name: string, code: string) => {
+    console.log('[SportContext] setSport called:', id, name, code);
     setSportId(id);
     setSportName(name);
     setLeagueCode(code);
   };
 
-  const handleSetSports = (newSports: Sport[]) => {
-    setSports(newSports);
-    if (newSports.length > 0 && sportId === null) {
-      setIsLoading(false);
-    }
+  const setSports = (newSports: Sport[]) => {
+    console.log('[SportContext] setSports called with:', newSports.length, 'sports');
+    setSportsState(newSports);
+    // Don't set isLoading=false here - wait for useEffect to set default sport
   };
 
   return (
@@ -62,8 +69,10 @@ export function SportProvider({ children }: SportProviderProps) {
         leagueCode,
         setSport,
         sports,
-        setSports: handleSetSports,
+        setSports,
         isLoading,
+        error,
+        setError,
       }}
     >
       {children}

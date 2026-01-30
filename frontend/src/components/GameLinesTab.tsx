@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useGameLinePicks, MARKET_TYPE_OPTIONS, GameLineFilters } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
 
 export function GameLinesTab() {
-  const { sportId } = useSportContext();
+  const { sportId, isLoading: sportLoading } = useSportContext();
 
   // Filter state
   const [marketType, setMarketType] = useState<string>('');
@@ -24,6 +24,18 @@ export function GameLinesTab() {
 
   // Fetch data with React Query
   const { data, isLoading, error, isFetching } = useGameLinePicks(sportId, filters);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[GameLinesTab] State:', { 
+      sportId, 
+      sportLoading, 
+      dataTotal: data?.total, 
+      itemCount: data?.items?.length,
+      isLoading,
+      error: error?.message 
+    });
+  }, [sportId, sportLoading, data, isLoading, error]);
 
   // Format helpers
   const formatOdds = (odds: number) => (odds > 0 ? `+${odds}` : odds.toString());

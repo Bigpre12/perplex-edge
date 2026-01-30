@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
 
 export function PlayerPropsTab() {
-  const { sportId } = useSportContext();
+  const { sportId, isLoading: sportLoading } = useSportContext();
 
   // Filter state
   const [statType, setStatType] = useState<string>('');
@@ -24,6 +24,18 @@ export function PlayerPropsTab() {
 
   // Fetch data with React Query
   const { data, isLoading, error, isFetching } = usePlayerPropPicks(sportId, filters);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[PlayerPropsTab] State:', { 
+      sportId, 
+      sportLoading, 
+      dataTotal: data?.total, 
+      itemCount: data?.items?.length,
+      isLoading,
+      error: error?.message 
+    });
+  }, [sportId, sportLoading, data, isLoading, error]);
 
   // Format helpers
   const formatOdds = (odds: number) => (odds > 0 ? `+${odds}` : odds.toString());

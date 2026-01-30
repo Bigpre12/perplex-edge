@@ -3,11 +3,20 @@ import { useSports } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 
 export function TopNav() {
-  const { sportId, sportName, setSport, setSports } = useSportContext();
+  const { sportId, sportName, setSport, setSports, setError } = useSportContext();
   const { data: sportsData, isLoading, error } = useSports();
+
+  // Log errors for debugging
+  useEffect(() => {
+    if (error) {
+      console.error('[TopNav] Failed to load sports:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load sports');
+    }
+  }, [error, setError]);
 
   // Update context when sports are loaded
   useEffect(() => {
+    console.log('[TopNav] Sports data received:', sportsData?.items?.length ?? 0, 'sports');
     if (sportsData?.items) {
       setSports(sportsData.items);
     }
