@@ -715,13 +715,16 @@ async def _sync_player_props(
         "players_created": 0,
         "props_added": 0,
         "lines_marked_old": 0,
+        "props_errors": [],
     }
     
     try:
+        logger.info(f"Fetching props for game {game.external_game_id} (sport: {sport_key})")
         props_data = await provider.fetch_player_props(
             sport_key,
             game.external_game_id,
         )
+        logger.info(f"Got {len(props_data)} prop lines for game {game.external_game_id}")
         
         # Get home and away team names for player-team matching
         home_team_result = await db.execute(select(Team).where(Team.id == game.home_team_id))
@@ -740,6 +743,15 @@ async def _sync_player_props(
                     team_id = away_team.id
             
             # Get or create player with team assignment
+            # Check if player exists first
+            existing_player = await db.execute(
+                select(Player).where(
+                    Player.sport_id == sport.id,
+                    Player.external_player_id == (prop.player_external_id or prop.player_name.lower().replace(" ", "_")),
+                )
+            )
+            was_new = existing_player.scalar_one_or_none() is None
+            
             player = await get_or_create_player(
                 db,
                 sport.id,
@@ -747,6 +759,9 @@ async def _sync_player_props(
                 prop.player_external_id,
                 team_id=team_id,
             )
+            
+            if was_new:
+                stats["players_created"] += 1
             
             # Update player's team_id if it changed or was null
             if team_id is not None and player.team_id != team_id:
@@ -808,7 +823,8 @@ async def _sync_player_props(
             stats["props_added"] += 1
     
     except Exception as e:
-        logger.error(f"Error syncing props for game {game.external_game_id}: {e}")
+        logger.error(f"Error syncing props for game {game.external_game_id}: {e}", exc_info=True)
+        stats["props_errors"].append(f"Game {game.external_game_id}: {str(e)[:100]}")
     
     return stats
 
