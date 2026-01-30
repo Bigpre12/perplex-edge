@@ -935,7 +935,7 @@ async def clear_stale_games(
     Returns:
         Dictionary with deletion counts
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
     
     # Get sport
     league_code = SPORT_KEY_TO_NAME.get(sport_key, (sport_key.upper(), sport_key.upper()))[1]
@@ -948,9 +948,9 @@ async def clear_stale_games(
         logger.warning(f"Sport not found: {league_code}")
         return {"error": f"Sport not found: {league_code}"}
     
-    # Calculate cutoff for "stale" games (start of today UTC)
+    # Calculate cutoff for "stale" games (start of today UTC, timezone-naive for DB comparison)
     if keep_today:
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         logger.info(f"Clearing stale games for {sport.league_code} (before {today_start})")
         
         # Get only STALE game IDs (games before today)
