@@ -138,6 +138,76 @@ async def run_quota_safe_sync(
 
 
 # =============================================================================
+# Force Refresh Endpoint (Clear + Sync)
+# =============================================================================
+
+@router.post("/jobs/force-refresh")
+async def force_refresh_games(
+    sport: str = Query("basketball_nba", description="Sport key to refresh"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Force refresh games by clearing old data and syncing with stubs.
+    
+    This endpoint:
+    1. Clears all existing games for the sport
+    2. Syncs fresh games using dynamic schedule stubs
+    
+    Use this when data appears stale or to reset to today's schedule.
+    """
+    from app.services.etl_games_and_lines import clear_stale_games
+    
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    start_time = time.time()
+    
+    try:
+        # Step 1: Clear old games
+        clear_result = await clear_stale_games(db, sport)
+        
+        # Step 2: Sync fresh data with stubs (guaranteed to work)
+        sync_result = await sync_with_fallback(
+            db,
+            sport_key=sport,
+            include_props=True,
+            use_real_api=False,  # Force stubs for reliability
+        )
+        
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        return {
+            "job": "force-refresh",
+            "status": "success",
+            "sport": sport,
+            "duration_ms": duration_ms,
+            "cleared": clear_result,
+            "synced": {
+                "data_source": sync_result.get("data_source", "stubs"),
+                "games_created": sync_result.get("games_created", 0),
+                "lines_added": sync_result.get("lines_added", 0),
+                "props_added": sync_result.get("props_added", 0),
+            },
+        }
+    
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "job": "force-refresh",
+                "status": "error",
+                "sport": sport,
+                "duration_ms": duration_ms,
+                "error": str(e),
+            },
+        )
+
+
+# =============================================================================
 # Snapshot Endpoints
 # =============================================================================
 
