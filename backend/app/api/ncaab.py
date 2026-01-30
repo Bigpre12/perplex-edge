@@ -81,6 +81,7 @@ async def sync_odds(
 @router.post("/games/sync")
 async def sync_ncaab_games(
     include_props: bool = Query(True, description="Include player props"),
+    use_stubs: bool = Query(True, description="Use stub data (set False for real API)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -90,6 +91,9 @@ async def sync_ncaab_games(
     - Games and spreads/totals
     - Player props (points, rebounds, assists, etc.)
     - Creates player records as needed
+    
+    Note: Real API (use_stubs=False) requires Odds API plan with NCAAB coverage.
+    Default uses stub data with sample college basketball games.
     """
     from app.services.etl_games_and_lines import sync_games_and_lines
     
@@ -98,11 +102,12 @@ async def sync_ncaab_games(
             db, 
             "basketball_ncaab", 
             include_props=include_props,
-            use_stubs=False,
+            use_stubs=use_stubs,
         )
         return {
             "status": "success",
             "sport": "NCAAB",
+            "use_stubs": use_stubs,
             "result": result,
         }
     except Exception as e:
