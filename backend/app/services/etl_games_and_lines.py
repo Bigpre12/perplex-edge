@@ -917,20 +917,26 @@ async def sync_all_player_teams(
 async def clear_stale_games(
     db: AsyncSession,
     sport_key: str,
+    keep_today: bool = True,
 ) -> dict[str, Any]:
     """
-    Delete all games, lines, and picks for a sport to start fresh.
+    Delete stale games, lines, and picks for a sport.
+    
+    By default, only deletes games from PREVIOUS days (keeps today's games).
+    This prevents data loss when called after a sync.
     
     Keeps teams and players but removes game-related data.
-    Use this to clear stale data before a fresh sync.
     
     Args:
         db: Database session
         sport_key: Sport identifier (e.g., 'basketball_nba')
+        keep_today: If True, only delete games from previous days (default: True)
     
     Returns:
         Dictionary with deletion counts
     """
+    from datetime import datetime, timezone
+    
     # Get sport
     league_code = SPORT_KEY_TO_NAME.get(sport_key, (sport_key.upper(), sport_key.upper()))[1]
     result = await db.execute(
@@ -942,13 +948,39 @@ async def clear_stale_games(
         logger.warning(f"Sport not found: {league_code}")
         return {"error": f"Sport not found: {league_code}"}
     
-    logger.info(f"Clearing stale games for {sport.league_code} (id={sport.id})")
+    # Calculate cutoff for "stale" games (start of today UTC)
+    if keep_today:
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        logger.info(f"Clearing stale games for {sport.league_code} (before {today_start})")
+        
+        # Get only STALE game IDs (games before today)
+        game_ids_result = await db.execute(
+            select(Game.id).where(
+                Game.sport_id == sport.id,
+                Game.start_time < today_start
+            )
+        )
+    else:
+        logger.info(f"Clearing ALL games for {sport.league_code} (id={sport.id})")
+        # Get ALL game IDs for this sport
+        game_ids_result = await db.execute(
+            select(Game.id).where(Game.sport_id == sport.id)
+        )
     
-    # Get all game IDs for this sport (needed for line deletion)
-    game_ids_result = await db.execute(
-        select(Game.id).where(Game.sport_id == sport.id)
-    )
     game_ids = [row[0] for row in game_ids_result.all()]
+    
+    if not game_ids:
+        logger.info("No stale games to clear")
+        return {
+            "sport": sport.league_code,
+            "picks_deleted": 0,
+            "lines_deleted": 0,
+            "stats_deleted": 0,
+            "results_deleted": 0,
+            "legacy_picks_deleted": 0,
+            "games_deleted": 0,
+            "note": "no_stale_games" if keep_today else "no_games",
+        }
     
     # Delete in order (foreign key constraints):
     # PickResult -> ModelPick -> Games (PickResult references both ModelPick and Games)
@@ -962,11 +994,13 @@ async def clear_stale_games(
         results_deleted = results_result.rowcount
     logger.info(f"Deleted {results_deleted} pick results")
     
-    # 2. Delete ModelPick (references games)
-    picks_result = await db.execute(
-        delete(ModelPick).where(ModelPick.sport_id == sport.id)
-    )
-    picks_deleted = picks_result.rowcount
+    # 2. Delete ModelPick (only for stale games)
+    picks_deleted = 0
+    if game_ids:
+        picks_result = await db.execute(
+            delete(ModelPick).where(ModelPick.game_id.in_(game_ids))
+        )
+        picks_deleted = picks_result.rowcount
     logger.info(f"Deleted {picks_deleted} model picks")
     
     # 3. Delete Lines (references games)
@@ -996,11 +1030,13 @@ async def clear_stale_games(
         legacy_picks_deleted = legacy_result.rowcount
     logger.info(f"Deleted {legacy_picks_deleted} legacy picks")
     
-    # 6. Delete Games
-    games_result = await db.execute(
-        delete(Game).where(Game.sport_id == sport.id)
-    )
-    games_deleted = games_result.rowcount
+    # 6. Delete Games (only stale ones)
+    games_deleted = 0
+    if game_ids:
+        games_result = await db.execute(
+            delete(Game).where(Game.id.in_(game_ids))
+        )
+        games_deleted = games_result.rowcount
     logger.info(f"Deleted {games_deleted} games")
     
     await db.commit()

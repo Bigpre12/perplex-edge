@@ -265,55 +265,99 @@ async def refresh_picks(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Full refresh: clear old games, sync new data, generate picks.
+    Full refresh: sync new data, clear old games, generate picks.
     
-    This endpoint performs a complete data refresh for a sport:
-    1. Clears stale games from previous days
-    2. Syncs fresh games and lines (including player props)
-    3. Generates model picks
+    This endpoint performs a SAFE data refresh for a sport:
+    1. Tries to sync from real Odds API first
+    2. Falls back to stub data if API fails (rate limit, errors, etc.)
+    3. Only clears old data AFTER new data is confirmed
+    4. Generates model picks
     
-    Use this to ensure you always see today's games, not yesterday's.
+    This prevents data loss when the API is unavailable.
     """
     from app.services.etl_games_and_lines import clear_stale_games, sync_games_and_lines
     from app.core.config import get_settings
     
     settings = get_settings()
-    use_stubs = settings.scheduler_use_stubs
+    prefer_stubs = settings.scheduler_use_stubs
     
     try:
         sport_key = SPORT_KEY_MAP.get(sport.lower())
         if not sport_key:
             raise HTTPException(status_code=400, detail=f"Unknown sport: {sport}")
         
-        # Step 1: Clear stale games from previous days
-        logger.info(f"Clearing stale games for {sport_key}...")
-        clear_stats = await clear_stale_games(db, sport_key)
-        logger.info(f"Cleared: {clear_stats}")
+        sync_stats = None
+        used_stubs = prefer_stubs
+        clear_stats = {"skipped": True, "reason": "no_new_data"}
         
-        # Step 2: Sync fresh games and lines (with props)
-        logger.info(f"Syncing games and lines for {sport_key} (use_stubs={use_stubs})...")
-        sync_stats = await sync_games_and_lines(
-            db,
-            sport_key,
-            include_props=True,
-            use_stubs=use_stubs,
-        )
-        logger.info(f"Synced: {sync_stats}")
+        # =================================================================
+        # Step 1: Try to sync data (API first if not preferring stubs)
+        # =================================================================
+        if not prefer_stubs:
+            # Try real API first
+            logger.info(f"Trying real API for {sport_key}...")
+            try:
+                sync_stats = await sync_games_and_lines(
+                    db, sport_key, include_props=True, use_stubs=False
+                )
+                
+                # Check if API returned useful data
+                has_errors = len(sync_stats.get("errors", [])) > 0
+                has_games = sync_stats.get("games_created", 0) > 0 or sync_stats.get("games_updated", 0) > 0
+                has_props = sync_stats.get("props_added", 0) > 0
+                
+                if has_errors and not has_props:
+                    logger.warning(f"API had errors and no props, falling back to stubs: {sync_stats.get('errors', [])[:3]}")
+                    sync_stats = None  # Will trigger fallback
+                elif not has_games and not has_props:
+                    logger.warning("API returned no data, falling back to stubs")
+                    sync_stats = None  # Will trigger fallback
+                else:
+                    logger.info(f"API sync successful: {sync_stats}")
+                    used_stubs = False
+            except Exception as e:
+                logger.warning(f"API sync failed, falling back to stubs: {e}")
+                sync_stats = None
         
+        # Fallback to stubs if API failed or stubs preferred
+        if sync_stats is None:
+            logger.info(f"Using stub data for {sport_key}...")
+            sync_stats = await sync_games_and_lines(
+                db, sport_key, include_props=True, use_stubs=True
+            )
+            used_stubs = True
+            logger.info(f"Stub sync: {sync_stats}")
+        
+        # =================================================================
+        # Step 2: Clear old data ONLY if we got new data
+        # =================================================================
+        new_games = sync_stats.get("games_created", 0) + sync_stats.get("games_updated", 0)
+        new_props = sync_stats.get("props_added", 0)
+        
+        if new_games > 0 or new_props > 0:
+            logger.info(f"New data confirmed ({new_games} games, {new_props} props), clearing stale data...")
+            clear_stats = await clear_stale_games(db, sport_key)
+            logger.info(f"Cleared: {clear_stats}")
+        else:
+            logger.warning("No new data fetched, keeping existing data")
+        
+        # =================================================================
         # Step 3: Generate picks
-        logger.info(f"Generating picks for {sport_key} (use_stubs={use_stubs})...")
+        # =================================================================
+        logger.info(f"Generating picks for {sport_key} (used_stubs={used_stubs})...")
         picks_result = await generate_picks(
             db,
             sport_key,
             min_ev=0.0,
             min_confidence=0.5,
-            use_stubs=use_stubs,
+            use_stubs=used_stubs,
         )
         logger.info(f"Generated: {picks_result}")
         
         return {
             "status": "success",
             "sport": sport,
+            "used_stubs": used_stubs,
             "clear_stats": clear_stats,
             "sync_stats": sync_stats,
             "picks_result": picks_result,
