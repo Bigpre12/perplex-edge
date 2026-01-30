@@ -464,15 +464,12 @@ async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False)
                 else:
                     use_real_api = True
                 
-                # 3. Sync each sport with failover
+                # 3. Sync each sport with failover (upsert mode - no pre-clear)
+                # NOTE: We don't clear games before sync anymore to prevent data loss
+                # if the API fails. Games are upserted (add new, update existing).
                 for sport_key in SPORT_KEYS:
                     sync_start = time.time()
                     try:
-                        # Clear old games before syncing to ensure fresh data
-                        logger.info(f"Clearing old games for {sport_key}...")
-                        clear_result = await clear_stale_games(db, sport_key, keep_today=False)
-                        logger.info(f"Cleared {sport_key}: {clear_result}")
-                        
                         result = await sync_with_fallback(
                             db, 
                             sport_key, 
