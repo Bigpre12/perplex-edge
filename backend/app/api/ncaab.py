@@ -81,6 +81,7 @@ async def sync_odds(
 @router.post("/games/sync")
 async def sync_ncaab_games(
     include_props: bool = Query(True, description="Include player props"),
+    generate_picks: bool = Query(True, description="Also generate picks after sync"),
     use_stubs: bool = Query(True, description="Use stub data (set False for real API)"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -91,11 +92,13 @@ async def sync_ncaab_games(
     - Games and spreads/totals
     - Player props (points, rebounds, assists, etc.)
     - Creates player records as needed
+    - Generates model picks (if generate_picks=True)
     
     Note: Real API (use_stubs=False) requires Odds API plan with NCAAB coverage.
     Default uses stub data with sample college basketball games.
     """
     from app.services.etl_games_and_lines import sync_games_and_lines
+    from app.services.picks_generator import generate_picks as gen_picks
     
     try:
         result = await sync_games_and_lines(
@@ -104,11 +107,23 @@ async def sync_ncaab_games(
             include_props=include_props,
             use_stubs=use_stubs,
         )
+        
+        picks_result = None
+        if generate_picks:
+            picks_result = await gen_picks(
+                db,
+                sport_key="basketball_ncaab",
+                min_ev=0.0,
+                min_confidence=0.5,
+                use_stubs=True,
+            )
+        
         return {
             "status": "success",
             "sport": "NCAAB",
             "use_stubs": use_stubs,
             "result": result,
+            "picks": picks_result,
         }
     except Exception as e:
         logger.error(f"Error syncing NCAAB games: {e}")
