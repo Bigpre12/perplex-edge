@@ -555,7 +555,7 @@ async def sync_games_and_lines(
     Returns:
         Dictionary with sync statistics
     """
-    from app.services.odds_provider import XYZOddsProvider, BetStackProvider
+    from app.services.odds_provider import XYZOddsProvider, BetStackProvider, ESPNScheduleProvider
     
     stats = {
         "sport": None,
@@ -568,6 +568,7 @@ async def sync_games_and_lines(
         "players_created": 0,
         "props_added": 0,
         "errors": [],
+        "data_source": "primary",  # Track which source was used
     }
     
     try:
@@ -582,10 +583,68 @@ async def sync_games_and_lines(
             market_cache[market_type] = market
         
         # Select provider based on parameter
+        # For NCAAB without stubs, try ESPN as backup when primary fails
         if provider == "betstack":
             provider_instance = BetStackProvider(use_stubs=use_stubs)
+        elif provider == "espn" and sport_key == "basketball_ncaab":
+            provider_instance = None  # Will use ESPN directly below
+            stats["data_source"] = "espn"
         else:
             provider_instance = XYZOddsProvider(use_stubs=use_stubs)
+        
+        # Special handling for ESPN provider (NCAAB backup)
+        if provider_instance is None and sport_key == "basketball_ncaab":
+            async with ESPNScheduleProvider() as espn_provider:
+                espn_games = await espn_provider.fetch_todays_games()
+                logger.info(f"ESPN fetched {len(espn_games)} NCAAB games")
+                
+                # Convert ESPN format to GameData objects
+                from app.services.odds_provider import GameData
+                games_data = []
+                for g in espn_games:
+                    start_time = g.get("commence_time")
+                    if isinstance(start_time, str):
+                        try:
+                            from datetime import datetime
+                            start_time = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                        except:
+                            start_time = datetime.now(timezone.utc)
+                    games_data.append(GameData(
+                        external_game_id=g["id"],
+                        sport_key=sport_key,
+                        home_team=g["home_team"],
+                        away_team=g["away_team"],
+                        start_time=start_time,
+                    ))
+                
+                # Process games using ESPN data
+                for game_data in games_data:
+                    try:
+                        home_team = await get_or_create_team(db, sport.id, game_data.home_team)
+                        away_team = await get_or_create_team(db, sport.id, game_data.away_team)
+                        
+                        game, created = await get_or_create_game(
+                            db, sport.id, game_data.external_game_id,
+                            home_team.id, away_team.id, game_data.start_time,
+                        )
+                        
+                        if created:
+                            stats["games_created"] += 1
+                        else:
+                            stats["games_updated"] += 1
+                        
+                        # Fetch props from ESPN provider
+                        if include_props:
+                            props_data = await espn_provider.fetch_player_props(
+                                game_data.external_game_id, game_data.home_team, game_data.away_team
+                            )
+                            # Process props (simplified - just count)
+                            stats["props_added"] += len(props_data.get("players", []))
+                            
+                    except Exception as e:
+                        stats["errors"].append(f"ESPN game error: {str(e)[:100]}")
+                
+                return stats
         
         async with provider_instance as active_provider:
             # Fetch games

@@ -1447,3 +1447,272 @@ class BetStackProvider(XYZOddsProvider):
         logger.info(f"BetStack API: {used} used, {remaining} remaining")
         
         return response.json()
+
+
+# =============================================================================
+# ESPN Schedule Provider (Free NCAAB Backup)
+# =============================================================================
+
+# Team power ratings (higher = better) for generating realistic odds
+NCAAB_TEAM_RATINGS = {
+    # Top 25 teams with power ratings
+    "Duke Blue Devils": 95, "Kansas Jayhawks": 94, "Houston Cougars": 93,
+    "Kentucky Wildcats": 92, "Gonzaga Bulldogs": 91, "UConn Huskies": 90,
+    "Purdue Boilermakers": 89, "Florida Gators": 88, "UCLA Bruins": 87,
+    "Arizona Wildcats": 86, "Alabama Crimson Tide": 85, "Tennessee Volunteers": 84,
+    "St. John's Red Storm": 83, "Michigan Wolverines": 82, "Arkansas Razorbacks": 81,
+    "Illinois Fighting Illini": 80, "Iowa State Cyclones": 79, "BYU Cougars": 78,
+    "Texas Tech Red Raiders": 77, "Louisville Cardinals": 76, "Marquette Golden Eagles": 75,
+    "Michigan State Spartans": 74, "North Carolina Tar Heels": 73, "Ohio State Buckeyes": 72,
+    "Wisconsin Badgers": 71, "Texas Longhorns": 70, "Auburn Tigers": 69,
+    "Baylor Bears": 68, "Indiana Hoosiers": 67, "Creighton Bluejays": 66,
+}
+
+# Rosters for generating props (5 starters per team)
+NCAAB_ROSTERS = {
+    "Kansas Jayhawks": ["Darryn Peterson", "Melvin Council Jr.", "Jayden Dawson", "Tre White", "Flory Bidunga"],
+    "Duke Blue Devils": ["Caleb Foster", "Isaiah Evans", "Dame Sarr", "Cameron Boozer", "Patrick Ngongba"],
+    "Kentucky Wildcats": ["Jaland Lowe", "Otega Oweh", "Denzel Aberdeen", "Mo Dioubate", "Brandon Garrison"],
+    "Houston Cougars": ["Milos Uzan", "Emanuel Sharp", "Isiah Harwell", "Chris Cenac Jr.", "Joseph Tugler"],
+    "Gonzaga Bulldogs": ["Braeden Smith", "Adam Miller", "Jalen Warley", "Braden Huff", "Graham Ike"],
+    "UConn Huskies": ["Silas Demary Jr.", "Solo Ball", "Braylon Mullins", "Alex Karaban", "Tarris Reed Jr."],
+    "Purdue Boilermakers": ["Braden Smith", "CJ Cox", "Fletcher Loyer", "Trey Kaufman-Renn", "Oscar Cluff"],
+    "Florida Gators": ["Xaivian Lee", "Boogie Fland", "Thomas Haugh", "Alex Condon", "Rueben Chinyelu"],
+    "UCLA Bruins": ["Donovan Dent", "Skyy Clark", "Eric Dailey Jr.", "Tyler Bilodeau", "Xavier Booker"],
+    "Arizona Wildcats": ["Jaden Bradley", "Brayden Burries", "Anthony Dell'Orso", "Koa Peat", "Tobe Awaka"],
+    "Alabama Crimson Tide": ["Labaron Philon", "Aden Holloway", "Latrell Wrightsell Jr.", "Taylor Bol Bowen", "Aiden Sherrell"],
+    "Tennessee Volunteers": ["Ja'Kobi Gillespie", "Amaree Abram", "Nate Ament", "Cade Phillips", "Felix Okpara"],
+    "St. John's Red Storm": ["Ian Jackson", "Oziyah Sellers", "Joson Sanon", "Bryce Hopkins", "Zuby Ejiofor"],
+    "Michigan Wolverines": ["Elliot Cadeau", "Roddy Gayle Jr.", "Nimari Burnett", "Yaxel Lendeborg", "Aday Mara"],
+    "Arkansas Razorbacks": ["DJ Wagner", "Darius Acuff", "Karter Knox", "Trevon Brazile", "Nick Pringle"],
+    "Illinois Fighting Illini": ["Keaton Wagler", "Kylan Boswell", "Andrej Stojakovic", "Ben Humrichous", "Tomislav Ivisic"],
+    "Iowa State Cyclones": ["Tamin Lipsey", "Jamarion Batemon", "Milan Momcilovic", "Joshua Jefferson", "Blake Buchanan"],
+    "BYU Cougars": ["Rob Wright", "Kennard Davis", "Richie Saunders", "AJ Dybantsa", "Keba Keita"],
+    "Texas Tech Red Raiders": ["Christian Anderson", "Tyeree Bryan", "LeJuan Watts", "JT Toppin", "Luke Bamgboye"],
+    "Louisville Cardinals": ["Mikel Brown Jr.", "Ryan Conwell", "Isaac McKneely", "J'Vonne Hadley", "Sananda Fru"],
+    "North Carolina Tar Heels": ["RJ Davis", "Seth Trimble", "Elliot Cadeau", "Jalen Washington", "Jae'Lyn Withers"],
+    "Auburn Tigers": ["Miles Kelly", "Chad Baker-Mazara", "Denver Jones", "Johni Broome", "Dylan Cardwell"],
+    "Baylor Bears": ["Jayden Nunn", "VJ Edgecombe", "Jeremy Roach", "Josh Ojianwuna", "Norchad Omier"],
+}
+
+# Default roster for teams not in the list
+DEFAULT_ROSTER = ["Player One", "Player Two", "Player Three", "Player Four", "Player Five"]
+
+
+class ESPNScheduleProvider:
+    """
+    Free NCAAB schedule provider using ESPN's public API.
+    
+    Fetches real game schedules and generates realistic odds/props
+    based on team power ratings.
+    """
+    
+    def __init__(self):
+        self._client: Optional[httpx.AsyncClient] = None
+        self.base_url = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball"
+    
+    @property
+    def client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=30.0)
+        return self._client
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._client:
+            await self._client.aclose()
+            self._client = None
+    
+    async def fetch_todays_games(self) -> list[dict[str, Any]]:
+        """
+        Fetch today's NCAAB games from ESPN.
+        
+        Returns:
+            List of game dictionaries with teams, times, and generated odds
+        """
+        try:
+            # ESPN scoreboard endpoint (today's games)
+            url = f"{self.base_url}/scoreboard"
+            response = await self.client.get(url)
+            response.raise_for_status()
+            
+            data = response.json()
+            events = data.get("events", [])
+            
+            games = []
+            times = _get_stub_game_times()
+            time_slots = ["early", "mid", "late", "night", "west"]
+            
+            for i, event in enumerate(events[:12]):  # Limit to 12 games
+                try:
+                    competition = event.get("competitions", [{}])[0]
+                    competitors = competition.get("competitors", [])
+                    
+                    if len(competitors) < 2:
+                        continue
+                    
+                    # ESPN uses 0=away, 1=home
+                    home_comp = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+                    away_comp = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
+                    
+                    home_team = home_comp.get("team", {}).get("displayName", "Unknown Home")
+                    away_team = away_comp.get("team", {}).get("displayName", "Unknown Away")
+                    
+                    # Get game time or use slot time
+                    game_time = event.get("date", times[time_slots[i % len(time_slots)]])
+                    
+                    # Generate odds based on team ratings
+                    home_rating = NCAAB_TEAM_RATINGS.get(home_team, 60)
+                    away_rating = NCAAB_TEAM_RATINGS.get(away_team, 60)
+                    
+                    # Home court advantage = +3 rating points
+                    home_adjusted = home_rating + 3
+                    
+                    # Convert rating difference to American odds
+                    diff = home_adjusted - away_rating
+                    home_odds, away_odds = self._rating_diff_to_odds(diff)
+                    
+                    game_id = f"ncaab_espn_{event.get('id', i)}"
+                    
+                    games.append({
+                        "id": game_id,
+                        "sport_key": "basketball_ncaab",
+                        "sport_title": "NCAAB",
+                        "commence_time": game_time,
+                        "home_team": home_team,
+                        "away_team": away_team,
+                        "bookmakers": [
+                            {
+                                "key": "consensus",
+                                "title": "Consensus",
+                                "markets": [{"key": "h2h", "outcomes": [
+                                    {"name": home_team, "price": home_odds},
+                                    {"name": away_team, "price": away_odds}
+                                ]}]
+                            }
+                        ],
+                    })
+                    
+                except Exception as e:
+                    logger.warning(f"Error parsing ESPN event: {e}")
+                    continue
+            
+            logger.info(f"ESPN fetched {len(games)} NCAAB games for today")
+            return games
+            
+        except Exception as e:
+            logger.error(f"ESPN API error: {e}")
+            return []
+    
+    def _rating_diff_to_odds(self, diff: float) -> tuple[int, int]:
+        """
+        Convert rating difference to American odds.
+        
+        Args:
+            diff: Rating difference (positive = home favored)
+        
+        Returns:
+            Tuple of (home_odds, away_odds) in American format
+        """
+        # Clamp difference to reasonable range
+        diff = max(-20, min(20, diff))
+        
+        if abs(diff) < 2:
+            # Close game: near pick'em
+            return -110, -110
+        elif diff > 0:
+            # Home favored
+            fav_odds = int(-100 - (diff * 10))
+            dog_odds = int(100 + (diff * 8))
+            return fav_odds, dog_odds
+        else:
+            # Away favored
+            diff = abs(diff)
+            fav_odds = int(-100 - (diff * 10))
+            dog_odds = int(100 + (diff * 8))
+            return dog_odds, fav_odds
+    
+    async def fetch_player_props(self, game_id: str, home_team: str, away_team: str) -> dict[str, Any]:
+        """
+        Generate player props for a game based on team rosters.
+        
+        Args:
+            game_id: Game identifier
+            home_team: Home team name
+            away_team: Away team name
+        
+        Returns:
+            Props data structure matching stub format
+        """
+        times = _get_stub_game_times()
+        
+        home_roster = NCAAB_ROSTERS.get(home_team, DEFAULT_ROSTER)
+        away_roster = NCAAB_ROSTERS.get(away_team, DEFAULT_ROSTER)
+        
+        players = []
+        
+        # Generate props for home team
+        for i, name in enumerate(home_roster):
+            players.append(self._generate_player_props(name, i))
+        
+        # Generate props for away team
+        for i, name in enumerate(away_roster):
+            players.append(self._generate_player_props(name, i))
+        
+        return {
+            "id": game_id,
+            "sport_key": "basketball_ncaab",
+            "home_team": home_team,
+            "away_team": away_team,
+            "commence_time": times["early"],
+            "players": players,
+        }
+    
+    def _generate_player_props(self, name: str, position_idx: int) -> dict[str, float]:
+        """
+        Generate realistic player props based on position.
+        
+        Position index 0-1 = guards (more points/assists)
+        Position index 2 = wing (balanced)
+        Position index 3-4 = forwards/center (more rebounds/blocks)
+        """
+        import random
+        
+        # Base stats vary by position
+        if position_idx <= 1:  # Guards
+            pts = round(random.uniform(12.0, 16.0) * 2) / 2
+            reb = round(random.uniform(3.0, 4.5) * 2) / 2
+            ast = round(random.uniform(4.0, 6.0) * 2) / 2
+            blk = 0.5
+        elif position_idx == 2:  # Wing
+            pts = round(random.uniform(11.0, 14.0) * 2) / 2
+            reb = round(random.uniform(4.5, 6.0) * 2) / 2
+            ast = round(random.uniform(2.0, 3.5) * 2) / 2
+            blk = 0.5
+        else:  # Forwards/Center
+            pts = round(random.uniform(10.0, 14.0) * 2) / 2
+            reb = round(random.uniform(6.5, 9.0) * 2) / 2
+            ast = round(random.uniform(1.5, 2.5) * 2) / 2
+            blk = round(random.uniform(1.5, 2.5) * 2) / 2
+        
+        pra = pts + reb + ast
+        pr = pts + reb
+        pa = pts + ast
+        ra = reb + ast
+        
+        return {
+            "name": name,
+            "pts": pts,
+            "reb": reb,
+            "ast": ast,
+            "pra": pra,
+            "pr": pr,
+            "pa": pa,
+            "ra": ra,
+            "3pm": round(random.uniform(1.0, 3.0) * 2) / 2,
+            "stl": round(random.uniform(0.5, 1.5) * 2) / 2,
+            "blk": blk,
+            "to": round(random.uniform(1.5, 2.5) * 2) / 2,
+        }

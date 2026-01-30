@@ -82,7 +82,8 @@ async def sync_odds(
 async def sync_ncaab_games(
     include_props: bool = Query(True, description="Include player props"),
     generate_picks: bool = Query(True, description="Also generate picks after sync"),
-    use_stubs: bool = Query(True, description="Use stub data (set False for real API)"),
+    use_stubs: bool = Query(True, description="Use stub data (set False for real API or ESPN)"),
+    use_espn: bool = Query(False, description="Use ESPN free API for real daily games"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -94,18 +95,26 @@ async def sync_ncaab_games(
     - Creates player records as needed
     - Generates model picks (if generate_picks=True)
     
-    Note: Real API (use_stubs=False) requires Odds API plan with NCAAB coverage.
-    Default uses stub data with sample college basketball games.
+    Data Sources:
+    - use_stubs=True (default): Static stub data with 16 top teams
+    - use_stubs=False, use_espn=False: The Odds API (requires paid plan)
+    - use_stubs=False, use_espn=True: ESPN free API (real daily schedule)
     """
     from app.services.etl_games_and_lines import sync_games_and_lines
     from app.services.picks_generator import generate_picks as gen_picks
     
     try:
+        # Determine provider
+        provider = "odds_api"
+        if use_espn and not use_stubs:
+            provider = "espn"
+        
         result = await sync_games_and_lines(
             db, 
             "basketball_ncaab", 
             include_props=include_props,
             use_stubs=use_stubs,
+            provider=provider,
         )
         
         picks_result = None
@@ -115,13 +124,15 @@ async def sync_ncaab_games(
                 sport_key="basketball_ncaab",
                 min_ev=0.0,
                 min_confidence=0.5,
-                use_stubs=True,
+                use_stubs=use_stubs,  # Match the sync mode
             )
         
         return {
             "status": "success",
             "sport": "NCAAB",
             "use_stubs": use_stubs,
+            "use_espn": use_espn,
+            "data_source": result.get("data_source", "primary"),
             "result": result,
             "picks": picks_result,
         }
