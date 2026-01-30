@@ -138,6 +138,52 @@ async def run_quota_safe_sync(
 
 
 # =============================================================================
+# Debug Endpoint (Check Schedule Files)
+# =============================================================================
+
+@router.get("/debug/schedules")
+async def debug_schedules():
+    """Check if schedule files exist and can be read."""
+    from pathlib import Path
+    import json
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    
+    EASTERN_TZ = ZoneInfo("America/New_York")
+    today = datetime.now(EASTERN_TZ).date()
+    today_str = today.isoformat()
+    
+    schedules_dir = Path(__file__).parent.parent.parent / "data" / "schedules"
+    
+    result = {
+        "today_eastern": today_str,
+        "schedules_dir": str(schedules_dir),
+        "schedules_dir_exists": schedules_dir.exists(),
+        "files": {},
+    }
+    
+    for sport, filename in [("nba", "nba_2025_26.json"), ("ncaab", "ncaab_2025_26.json")]:
+        filepath = schedules_dir / filename
+        file_info = {
+            "path": str(filepath),
+            "exists": filepath.exists(),
+        }
+        if filepath.exists():
+            try:
+                with open(filepath) as f:
+                    data = json.load(f)
+                file_info["total_games"] = len(data.get("games", []))
+                todays_games = [g for g in data.get("games", []) if g.get("date") == today_str]
+                file_info["games_today"] = len(todays_games)
+                file_info["sample_today"] = todays_games[:2] if todays_games else []
+            except Exception as e:
+                file_info["error"] = str(e)
+        result["files"][sport] = file_info
+    
+    return result
+
+
+# =============================================================================
 # Force Refresh Endpoint (Clear + Sync)
 # =============================================================================
 
@@ -183,9 +229,12 @@ async def browser_force_refresh(
             "lines_synced": sync_result.get("lines", 0),
             "props_synced": sync_result.get("props", 0),
             "data_source": sync_result.get("data_source", "unknown"),
+            "cleared": clear_result,
+            "full_sync_result": sync_result,  # Debug: show full result
         }
     except Exception as e:
-        return {"status": "error", "sport": sport, "error": str(e)}
+        import traceback
+        return {"status": "error", "sport": sport, "error": str(e), "traceback": traceback.format_exc()}
 
 
 @router.post("/jobs/force-refresh")
