@@ -620,6 +620,117 @@ async def results_settlement_loop(interval_minutes: int = 30, initial_delay: int
 
 
 # =============================================================================
+# NFL Scheduler Loops
+# =============================================================================
+
+async def nfl_odds_sync_loop(interval_minutes: int = 60, initial_delay: int = 60):
+    """
+    Background task that syncs NFL odds hourly.
+    
+    Uses cascade: OddsAPI -> BetStack -> JSON backup
+    
+    Args:
+        interval_minutes: Sync interval in minutes
+        initial_delay: Initial delay in seconds before first run
+    """
+    from app.services.nfl_odds_service import sync_nfl_odds
+    
+    if initial_delay > 0:
+        logger.info(f"NFL odds sync loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"NFL odds sync loop started (interval: {interval_minutes} min)")
+    
+    while True:
+        try:
+            logger.info("Running NFL odds sync...")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                result = await sync_nfl_odds(db)
+                logger.info(f"NFL odds sync: fetched {result.get('records_fetched', 0)} from {result.get('fetch_source', 'unknown')}")
+            
+            logger.info("NFL odds sync completed")
+            
+        except asyncio.CancelledError:
+            logger.info("NFL odds sync loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"NFL odds sync loop error: {e}", exc_info=True)
+        
+        await asyncio.sleep(interval_minutes * 60)
+
+
+async def nfl_snapshot_loop(snapshot_hour: int = 6, initial_delay: int = 120):
+    """
+    Background task that creates daily NFL odds snapshots.
+    
+    Runs at the specified hour each day (EST).
+    
+    Args:
+        snapshot_hour: Hour to run snapshot (24h format, EST)
+        initial_delay: Initial delay in seconds before first check
+    """
+    from datetime import timezone, timedelta
+    from app.services.nfl_odds_service import create_daily_snapshot
+    from app.services.nfl_backup import save_backup
+    
+    if initial_delay > 0:
+        logger.info(f"NFL snapshot loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"NFL snapshot loop started (runs at {snapshot_hour}:00 EST)")
+    
+    while True:
+        try:
+            # Calculate time until next snapshot
+            now = datetime.now(timezone.utc)
+            est_offset = timedelta(hours=-5)
+            now_est = now + est_offset
+            
+            target = now_est.replace(
+                hour=snapshot_hour,
+                minute=0,
+                second=0,
+                microsecond=0,
+            )
+            
+            if now_est >= target:
+                target += timedelta(days=1)
+            
+            wait_seconds = (target - now_est).total_seconds()
+            logger.info(f"Next NFL snapshot in {wait_seconds/3600:.1f} hours")
+            await asyncio.sleep(wait_seconds)
+            
+            # Run the snapshot
+            logger.info("=== NFL DAILY SNAPSHOT STARTING ===")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                # Create historical snapshot
+                snapshot_result = await create_daily_snapshot(db)
+                logger.info(f"NFL snapshot: {snapshot_result}")
+                
+                # Get live odds for JSON backup
+                from app.services.nfl_odds_service import get_live_odds
+                live_odds = await get_live_odds(db)
+                
+                if live_odds:
+                    backup_path = save_backup(live_odds)
+                    logger.info(f"NFL backup saved: {backup_path}")
+            
+            logger.info("=== NFL DAILY SNAPSHOT COMPLETE ===")
+            
+        except asyncio.CancelledError:
+            logger.info("NFL snapshot loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"NFL snapshot loop error: {e}", exc_info=True)
+            # Wait an hour before retrying on error
+            await asyncio.sleep(3600)
+
+
+# =============================================================================
 # Scheduler Control Functions
 # =============================================================================
 
@@ -749,6 +860,30 @@ def start_background_tasks() -> List[asyncio.Task]:
         logger.info("Created oddspapi_results_sync_loop task (hourly)")
     else:
         logger.info("OddsPapi tasks skipped (no API key configured)")
+
+    # NFL odds sync task (hourly)
+    nfl_sync_interval = getattr(settings, 'nfl_sync_interval_min', 60)
+    task_nfl_sync = asyncio.create_task(
+        nfl_odds_sync_loop(
+            interval_minutes=nfl_sync_interval,
+            initial_delay=90,  # Stagger start
+        ),
+        name="nfl_odds_sync_loop"
+    )
+    tasks.append(task_nfl_sync)
+    logger.info(f"Created nfl_odds_sync_loop task (every {nfl_sync_interval} min)")
+    
+    # NFL daily snapshot task
+    nfl_snapshot_hour = getattr(settings, 'nfl_snapshot_hour', 6)
+    task_nfl_snapshot = asyncio.create_task(
+        nfl_snapshot_loop(
+            snapshot_hour=nfl_snapshot_hour,
+            initial_delay=120,  # Stagger start
+        ),
+        name="nfl_snapshot_loop"
+    )
+    tasks.append(task_nfl_snapshot)
+    logger.info(f"Created nfl_snapshot_loop task (daily at {nfl_snapshot_hour}:00 EST)")
 
     _background_tasks = tasks
     return tasks

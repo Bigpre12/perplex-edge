@@ -15,6 +15,7 @@ from app.models.pick_result import PickResult
 from app.models.player_hit_rate import PlayerHitRate
 from app.models.odds_snapshot import OddsSnapshot
 from app.models.game_result import GameResult
+from app.models.nfl_odds import LiveOddsNFL, HistoricalOddsNFL
 
 __all__ = [
     "Base",
@@ -34,4 +35,6 @@ __all__ = [
     "PlayerHitRate",
     "OddsSnapshot",
     "GameResult",
+    "LiveOddsNFL",
+    "HistoricalOddsNFL",
 ]

@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     daily_refresh_hour: int = 6  # 6 AM ET (before NBA games posted)
     hourly_check_interval: int = 60  # minutes
 
+    # NFL-specific settings
+    nfl_sync_interval_min: int = 60  # Hourly NFL odds sync
+    nfl_snapshot_hour: int = 6  # 6 AM ET daily snapshot
+    nfl_backup_dir: str = "backups"  # JSON backup directory
+
     @property
     def is_development(self) -> bool:
         return self.environment == "development"

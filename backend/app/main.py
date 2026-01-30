@@ -29,6 +29,7 @@ from app.api.props import router as props_router
 from app.api.injuries import router as injuries_router
 from app.api.picks import router as picks_router
 from app.api.analytics import router as analytics_router
+from app.api.nfl import router as nfl_router
 
 # Configure logging
 logging.basicConfig(
@@ -108,6 +109,7 @@ app.include_router(props_router, prefix="/api/props", tags=["props"])
 app.include_router(injuries_router, prefix="/api/injuries", tags=["injuries"])
 app.include_router(picks_router, prefix="/api/picks", tags=["picks"])
 app.include_router(analytics_router, prefix="/api", tags=["analytics"])
+app.include_router(nfl_router, prefix="/api", tags=["nfl"])
 
 
 # =============================================================================
