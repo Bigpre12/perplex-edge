@@ -17,7 +17,8 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build arg for API URL (baked in at build time)
-ARG VITE_API_BASE_URL=http://localhost:8000
+# Default to Railway backend URL for production builds
+ARG VITE_API_BASE_URL=https://railway-engine-production.up.railway.app
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build the app
