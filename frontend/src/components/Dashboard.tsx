@@ -1,60 +1,71 @@
 import { useEffect, useState, useCallback } from 'react';
-import { api, SyncStatus, PickSummary, GameList } from '../api/client';
+import { api, SyncStatus, PickSummary } from '../api/client';
+import { useTodaysGames } from '../api/public';
+import { useSportContext } from '../context/SportContext';
 import { LastUpdated } from './LastUpdated';
 
 // Auto-refresh interval (60 seconds)
 const REFRESH_INTERVAL = 60 * 1000;
 
 export function Dashboard() {
+  const { sportId, leagueCode, isLoading: sportLoading } = useSportContext();
+  
+  // Use React Query for games (with proper sportId)
+  const { data: todaysGames, isLoading: gamesLoading } = useTodaysGames(sportId);
+  
+  // Manual state for sync status and picks (no sport-specific hooks available)
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [picksSummary, setPicksSummary] = useState<PickSummary | null>(null);
-  const [todaysGames, setTodaysGames] = useState<GameList | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
 
-  const fetchData = useCallback(async (showLoading = false) => {
+  const fetchStatusData = useCallback(async (showLoading = false) => {
+    if (!leagueCode) return;
+    
     try {
-      if (showLoading) setLoading(true);
-      const [status, summary, games] = await Promise.all([
+      if (showLoading) setStatusLoading(true);
+      const [status, summary] = await Promise.all([
         api.getSyncStatus().catch(() => null),
-        api.getPicksSummary().catch(() => null),
-        api.getTodaysGames().catch(() => null),
+        api.getPicksSummary(leagueCode.toLowerCase()).catch(() => null),
       ]);
       setSyncStatus(status);
       setPicksSummary(summary);
-      setTodaysGames(games);
-      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      console.error('Failed to fetch status data:', err);
     } finally {
-      if (showLoading) setLoading(false);
+      if (showLoading) setStatusLoading(false);
     }
-  }, []);
+  }, [leagueCode]);
 
-  // Initial load
+  // Initial load when sport changes
   useEffect(() => {
-    fetchData(true);
-  }, [fetchData]);
+    if (leagueCode) {
+      fetchStatusData(true);
+    }
+  }, [leagueCode, fetchStatusData]);
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
-    const interval = setInterval(() => fetchData(false), REFRESH_INTERVAL);
+    if (!leagueCode) return;
+    const interval = setInterval(() => fetchStatusData(false), REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [leagueCode, fetchStatusData]);
 
-  if (loading) {
+  // Show loading while sport context initializes
+  if (sportLoading || !sportId) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+        <span className="ml-3 text-gray-400">Loading sports...</span>
       </div>
     );
   }
 
-  if (error) {
+  const isLoading = gamesLoading || statusLoading;
+
+  if (isLoading) {
     return (
-      <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
-        <p className="text-red-400">Error: {error}</p>
-        <p className="text-sm text-gray-400 mt-2">Make sure the backend is running on port 8000</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -111,8 +122,8 @@ export function Dashboard() {
                 >
                   <div>
                     <p className="text-white font-medium">
-                      {game.away_team.abbreviation || game.away_team.name} @{' '}
-                      {game.home_team.abbreviation || game.home_team.name}
+                      {game.away_team_abbr || game.away_team} @{' '}
+                      {game.home_team_abbr || game.home_team}
                     </p>
                     <p className="text-sm text-gray-400">
                       {new Date(game.start_time).toLocaleTimeString([], {

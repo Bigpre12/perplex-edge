@@ -219,6 +219,15 @@ async def browser_force_refresh(
             use_real_api=False,
         )
         
+        # Generate picks for the synced data
+        picks_result = await generate_picks(
+            db,
+            sport_key=sport,
+            min_ev=0.0,
+            min_confidence=0.5,
+            use_stubs=True,
+        )
+        
         duration_ms = int((time.time() - start_time) * 1000)
         
         return {
@@ -228,9 +237,11 @@ async def browser_force_refresh(
             "games_synced": sync_result.get("games_created", 0) + sync_result.get("games_updated", 0),
             "lines_synced": sync_result.get("lines_added", 0),
             "props_synced": sync_result.get("props_added", 0),
+            "picks_generated": picks_result.get("picks_created", 0),
             "data_source": sync_result.get("data_source", "unknown"),
             "cleared": clear_result,
-            "full_sync_result": sync_result,  # Debug: show full result
+            "full_sync_result": sync_result,
+            "picks_result": picks_result,
         }
     except Exception as e:
         import traceback
