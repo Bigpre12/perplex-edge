@@ -46,18 +46,6 @@ function LastUpdatedBadge({ sportKey, metadata, showCounts = false }: LastUpdate
     }
   }
   
-  // Format last updated time for display
-  let timeDisplay = 'Never synced';
-  if (metadata.last_updated) {
-    const date = new Date(metadata.last_updated);
-    timeDisplay = date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZoneName: 'short',
-    });
-  }
-  
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${bgColor}`}>
       {/* Status dot */}
