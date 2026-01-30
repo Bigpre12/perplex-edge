@@ -785,15 +785,160 @@ class XYZOddsProvider(OddsProvider):
                 },
             ]
         elif "football" in sport_key:
+            # NFL Playoffs - Super Bowl LX (February 8, 2026)
+            # Seahawks beat Rams 31-27 (NFC), Patriots beat Broncos 10-7 (AFC)
             return [
+                # SUPER BOWL LX - February 8, 2026
                 {
-                    "id": "nfl_game_today",
+                    "id": "nfl_superbowl_lx",
+                    "sport_key": sport_key,
+                    "sport_title": "NFL",
+                    "commence_time": times["night"],
+                    "home_team": "Seattle Seahawks",
+                    "away_team": "New England Patriots",
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Seattle Seahawks", "price": -120},
+                                {"name": "New England Patriots", "price": 100}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 2: Chiefs vs Bills - AFC Rivalry
+                {
+                    "id": "nfl_game_2",
                     "sport_key": sport_key,
                     "sport_title": "NFL",
                     "commence_time": times["early"],
                     "home_team": "Kansas City Chiefs",
                     "away_team": "Buffalo Bills",
-                    "bookmakers": [],
+                    "bookmakers": [
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Kansas City Chiefs", "price": -145},
+                                {"name": "Buffalo Bills", "price": 125}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 3: 49ers vs Eagles - NFC Powerhouses
+                {
+                    "id": "nfl_game_3",
+                    "sport_key": sport_key,
+                    "sport_title": "NFL",
+                    "commence_time": times["early"],
+                    "home_team": "San Francisco 49ers",
+                    "away_team": "Philadelphia Eagles",
+                    "bookmakers": [
+                        {
+                            "key": "betmgm",
+                            "title": "BetMGM",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "San Francisco 49ers", "price": -135},
+                                {"name": "Philadelphia Eagles", "price": 115}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 4: Lions vs Cowboys - NFC Showdown
+                {
+                    "id": "nfl_game_4",
+                    "sport_key": sport_key,
+                    "sport_title": "NFL",
+                    "commence_time": times["late"],
+                    "home_team": "Detroit Lions",
+                    "away_team": "Dallas Cowboys",
+                    "bookmakers": [
+                        {
+                            "key": "caesars",
+                            "title": "Caesars",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Detroit Lions", "price": -155},
+                                {"name": "Dallas Cowboys", "price": 135}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 5: Ravens vs Bengals - AFC North
+                {
+                    "id": "nfl_game_5",
+                    "sport_key": sport_key,
+                    "sport_title": "NFL",
+                    "commence_time": times["late"],
+                    "home_team": "Baltimore Ravens",
+                    "away_team": "Cincinnati Bengals",
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Baltimore Ravens", "price": -140},
+                                {"name": "Cincinnati Bengals", "price": 120}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 6: Dolphins vs Packers - Cross-Conference
+                {
+                    "id": "nfl_game_6",
+                    "sport_key": sport_key,
+                    "sport_title": "NFL",
+                    "commence_time": times["night"],
+                    "home_team": "Miami Dolphins",
+                    "away_team": "Green Bay Packers",
+                    "bookmakers": [
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Miami Dolphins", "price": -130},
+                                {"name": "Green Bay Packers", "price": 110}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 7: Texans vs Rams - Young QBs
+                {
+                    "id": "nfl_game_7",
+                    "sport_key": sport_key,
+                    "sport_title": "NFL",
+                    "commence_time": times["west"],
+                    "home_team": "Houston Texans",
+                    "away_team": "Los Angeles Rams",
+                    "bookmakers": [
+                        {
+                            "key": "betmgm",
+                            "title": "BetMGM",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Houston Texans", "price": -125},
+                                {"name": "Los Angeles Rams", "price": 105}
+                            ]}]
+                        }
+                    ],
+                },
+                # Game 8: Buccaneers vs Jets - East Coast Battle
+                {
+                    "id": "nfl_game_8",
+                    "sport_key": sport_key,
+                    "sport_title": "NFL",
+                    "commence_time": times["west"],
+                    "home_team": "Tampa Bay Buccaneers",
+                    "away_team": "New York Jets",
+                    "bookmakers": [
+                        {
+                            "key": "caesars",
+                            "title": "Caesars",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Tampa Bay Buccaneers", "price": -110},
+                                {"name": "New York Jets", "price": -110}
+                            ]}]
+                        }
+                    ],
                 },
             ]
         else:
@@ -1275,6 +1420,169 @@ class XYZOddsProvider(OddsProvider):
                     {"name": "Andrej Stojakovic", "pts": 15.5, "reb": 4.5, "ast": 2.5, "pra": 22.5, "pr": 20.0, "pa": 18.0, "ra": 7.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                     {"name": "Ben Humrichous", "pts": 11.5, "reb": 5.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 14.0, "ra": 8.0, "3pm": 2.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                     {"name": "Tomislav Ivisic", "pts": 13.5, "reb": 8.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 16.0, "ra": 11.0, "3pm": 1.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                ],
+            },
+            # =================================================================
+            # NFL GAMES - Super Bowl LX & Playoff Matchups (February 2026)
+            # =================================================================
+            # SUPER BOWL LX: Seahawks vs Patriots - February 8, 2026
+            "nfl_superbowl_lx": {
+                "home_team": "Seattle Seahawks",
+                "away_team": "New England Patriots",
+                "commence_time": times["night"],
+                "players": [
+                    # Seattle Seahawks
+                    {"name": "Geno Smith", "pass_yds": 265.5, "pass_tds": 2.5, "pass_att": 34.5, "pass_comp": 23.5, "int": 0.5, "rush_yds": 18.5, "rush_att": 4.5},
+                    {"name": "Kenneth Walker III", "rush_yds": 78.5, "rush_att": 17.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 22.5},
+                    {"name": "DK Metcalf", "rec": 5.5, "rec_yds": 72.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Tyler Lockett", "rec": 4.5, "rec_yds": 55.5, "rec_tds": 0.5, "targets": 6.5},
+                    {"name": "Jaxon Smith-Njigba", "rec": 5.5, "rec_yds": 58.5, "rec_tds": 0.5, "targets": 7.5},
+                    # New England Patriots
+                    {"name": "Drake Maye", "pass_yds": 245.5, "pass_tds": 1.5, "pass_att": 32.5, "pass_comp": 20.5, "int": 1.0, "rush_yds": 22.5, "rush_att": 5.5},
+                    {"name": "Rhamondre Stevenson", "rush_yds": 72.5, "rush_att": 16.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 18.5},
+                    {"name": "Ja'Lynn Polk", "rec": 4.5, "rec_yds": 52.5, "rec_tds": 0.5, "targets": 7.5},
+                    {"name": "Kendrick Bourne", "rec": 3.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 5.5},
+                    {"name": "Hunter Henry", "rec": 4.5, "rec_yds": 38.5, "rec_tds": 0.5, "targets": 6.5},
+                ],
+            },
+            # Game 2: Chiefs vs Bills - AFC Rivalry
+            "nfl_game_2": {
+                "home_team": "Kansas City Chiefs",
+                "away_team": "Buffalo Bills",
+                "commence_time": times["early"],
+                "players": [
+                    # Kansas City Chiefs
+                    {"name": "Patrick Mahomes", "pass_yds": 285.5, "pass_tds": 2.5, "pass_att": 36.5, "pass_comp": 25.5, "int": 0.5, "rush_yds": 28.5, "rush_att": 4.5},
+                    {"name": "Isiah Pacheco", "rush_yds": 68.5, "rush_att": 15.5, "rush_tds": 0.5, "rec": 2.5, "rec_yds": 15.5},
+                    {"name": "Travis Kelce", "rec": 6.5, "rec_yds": 68.5, "rec_tds": 0.5, "targets": 9.5},
+                    {"name": "Rashee Rice", "rec": 5.5, "rec_yds": 62.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Hollywood Brown", "rec": 3.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 5.5},
+                    # Buffalo Bills
+                    {"name": "Josh Allen", "pass_yds": 275.5, "pass_tds": 2.5, "pass_att": 35.5, "pass_comp": 23.5, "int": 0.5, "rush_yds": 35.5, "rush_att": 6.5},
+                    {"name": "James Cook", "rush_yds": 72.5, "rush_att": 14.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 25.5},
+                    {"name": "Stefon Diggs", "rec": 6.5, "rec_yds": 78.5, "rec_tds": 0.5, "targets": 10.5},
+                    {"name": "Dalton Kincaid", "rec": 5.5, "rec_yds": 52.5, "rec_tds": 0.5, "targets": 7.5},
+                    {"name": "Gabe Davis", "rec": 3.5, "rec_yds": 45.5, "rec_tds": 0.5, "targets": 5.5},
+                ],
+            },
+            # Game 3: 49ers vs Eagles - NFC Powerhouses
+            "nfl_game_3": {
+                "home_team": "San Francisco 49ers",
+                "away_team": "Philadelphia Eagles",
+                "commence_time": times["early"],
+                "players": [
+                    # San Francisco 49ers
+                    {"name": "Brock Purdy", "pass_yds": 255.5, "pass_tds": 2.5, "pass_att": 28.5, "pass_comp": 20.5, "int": 0.5, "rush_yds": 12.5, "rush_att": 3.5},
+                    {"name": "Christian McCaffrey", "rush_yds": 85.5, "rush_att": 18.5, "rush_tds": 1.0, "rec": 4.5, "rec_yds": 32.5},
+                    {"name": "Deebo Samuel", "rec": 4.5, "rec_yds": 58.5, "rec_tds": 0.5, "targets": 7.5},
+                    {"name": "Brandon Aiyuk", "rec": 5.5, "rec_yds": 68.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "George Kittle", "rec": 4.5, "rec_yds": 52.5, "rec_tds": 0.5, "targets": 6.5},
+                    # Philadelphia Eagles
+                    {"name": "Jalen Hurts", "pass_yds": 235.5, "pass_tds": 1.5, "pass_att": 30.5, "pass_comp": 19.5, "int": 0.5, "rush_yds": 42.5, "rush_att": 8.5},
+                    {"name": "Saquon Barkley", "rush_yds": 88.5, "rush_att": 19.5, "rush_tds": 1.0, "rec": 3.5, "rec_yds": 25.5},
+                    {"name": "AJ Brown", "rec": 5.5, "rec_yds": 72.5, "rec_tds": 0.5, "targets": 9.5},
+                    {"name": "DeVonta Smith", "rec": 5.5, "rec_yds": 62.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Dallas Goedert", "rec": 4.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 6.5},
+                ],
+            },
+            # Game 4: Lions vs Cowboys - NFC Showdown
+            "nfl_game_4": {
+                "home_team": "Detroit Lions",
+                "away_team": "Dallas Cowboys",
+                "commence_time": times["late"],
+                "players": [
+                    # Detroit Lions
+                    {"name": "Jared Goff", "pass_yds": 275.5, "pass_tds": 2.5, "pass_att": 32.5, "pass_comp": 23.5, "int": 0.5, "rush_yds": 5.5, "rush_att": 2.5},
+                    {"name": "Jahmyr Gibbs", "rush_yds": 75.5, "rush_att": 14.5, "rush_tds": 0.5, "rec": 4.5, "rec_yds": 35.5},
+                    {"name": "Amon-Ra St. Brown", "rec": 7.5, "rec_yds": 82.5, "rec_tds": 0.5, "targets": 11.5},
+                    {"name": "Sam LaPorta", "rec": 5.5, "rec_yds": 55.5, "rec_tds": 0.5, "targets": 7.5},
+                    {"name": "David Montgomery", "rush_yds": 48.5, "rush_att": 12.5, "rush_tds": 0.5, "rec": 2.5, "rec_yds": 15.5},
+                    # Dallas Cowboys
+                    {"name": "Dak Prescott", "pass_yds": 268.5, "pass_tds": 2.5, "pass_att": 34.5, "pass_comp": 22.5, "int": 1.0, "rush_yds": 15.5, "rush_att": 3.5},
+                    {"name": "Rico Dowdle", "rush_yds": 62.5, "rush_att": 14.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 22.5},
+                    {"name": "CeeDee Lamb", "rec": 7.5, "rec_yds": 92.5, "rec_tds": 0.5, "targets": 12.5},
+                    {"name": "Jake Ferguson", "rec": 4.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 6.5},
+                    {"name": "Brandin Cooks", "rec": 3.5, "rec_yds": 38.5, "rec_tds": 0.5, "targets": 5.5},
+                ],
+            },
+            # Game 5: Ravens vs Bengals - AFC North
+            "nfl_game_5": {
+                "home_team": "Baltimore Ravens",
+                "away_team": "Cincinnati Bengals",
+                "commence_time": times["late"],
+                "players": [
+                    # Baltimore Ravens
+                    {"name": "Lamar Jackson", "pass_yds": 225.5, "pass_tds": 1.5, "pass_att": 28.5, "pass_comp": 18.5, "int": 0.5, "rush_yds": 65.5, "rush_att": 12.5},
+                    {"name": "Derrick Henry", "rush_yds": 95.5, "rush_att": 22.5, "rush_tds": 1.0, "rec": 1.5, "rec_yds": 8.5},
+                    {"name": "Zay Flowers", "rec": 5.5, "rec_yds": 62.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Mark Andrews", "rec": 4.5, "rec_yds": 48.5, "rec_tds": 0.5, "targets": 6.5},
+                    {"name": "Rashod Bateman", "rec": 3.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 5.5},
+                    # Cincinnati Bengals
+                    {"name": "Joe Burrow", "pass_yds": 285.5, "pass_tds": 2.5, "pass_att": 38.5, "pass_comp": 26.5, "int": 0.5, "rush_yds": 15.5, "rush_att": 3.5},
+                    {"name": "Zack Moss", "rush_yds": 58.5, "rush_att": 14.5, "rush_tds": 0.5, "rec": 2.5, "rec_yds": 18.5},
+                    {"name": "Ja'Marr Chase", "rec": 7.5, "rec_yds": 98.5, "rec_tds": 1.0, "targets": 11.5},
+                    {"name": "Tee Higgins", "rec": 5.5, "rec_yds": 68.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Mike Gesicki", "rec": 3.5, "rec_yds": 35.5, "rec_tds": 0.5, "targets": 5.5},
+                ],
+            },
+            # Game 6: Dolphins vs Packers - Cross-Conference
+            "nfl_game_6": {
+                "home_team": "Miami Dolphins",
+                "away_team": "Green Bay Packers",
+                "commence_time": times["night"],
+                "players": [
+                    # Miami Dolphins
+                    {"name": "Tua Tagovailoa", "pass_yds": 275.5, "pass_tds": 2.5, "pass_att": 35.5, "pass_comp": 25.5, "int": 0.5, "rush_yds": 8.5, "rush_att": 2.5},
+                    {"name": "De'Von Achane", "rush_yds": 72.5, "rush_att": 13.5, "rush_tds": 0.5, "rec": 4.5, "rec_yds": 35.5},
+                    {"name": "Tyreek Hill", "rec": 6.5, "rec_yds": 88.5, "rec_tds": 0.5, "targets": 10.5},
+                    {"name": "Jaylen Waddle", "rec": 5.5, "rec_yds": 65.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Raheem Mostert", "rush_yds": 45.5, "rush_att": 10.5, "rush_tds": 0.5, "rec": 2.5, "rec_yds": 15.5},
+                    # Green Bay Packers
+                    {"name": "Jordan Love", "pass_yds": 265.5, "pass_tds": 2.5, "pass_att": 34.5, "pass_comp": 22.5, "int": 1.0, "rush_yds": 18.5, "rush_att": 4.5},
+                    {"name": "Josh Jacobs", "rush_yds": 78.5, "rush_att": 18.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 22.5},
+                    {"name": "Jayden Reed", "rec": 5.5, "rec_yds": 68.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Christian Watson", "rec": 3.5, "rec_yds": 52.5, "rec_tds": 0.5, "targets": 5.5},
+                    {"name": "Romeo Doubs", "rec": 4.5, "rec_yds": 48.5, "rec_tds": 0.5, "targets": 6.5},
+                ],
+            },
+            # Game 7: Texans vs Rams - Young QBs
+            "nfl_game_7": {
+                "home_team": "Houston Texans",
+                "away_team": "Los Angeles Rams",
+                "commence_time": times["west"],
+                "players": [
+                    # Houston Texans
+                    {"name": "CJ Stroud", "pass_yds": 278.5, "pass_tds": 2.5, "pass_att": 35.5, "pass_comp": 24.5, "int": 0.5, "rush_yds": 15.5, "rush_att": 3.5},
+                    {"name": "Joe Mixon", "rush_yds": 75.5, "rush_att": 17.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 25.5},
+                    {"name": "Nico Collins", "rec": 5.5, "rec_yds": 78.5, "rec_tds": 0.5, "targets": 9.5},
+                    {"name": "Tank Dell", "rec": 4.5, "rec_yds": 55.5, "rec_tds": 0.5, "targets": 7.5},
+                    {"name": "Stefon Diggs", "rec": 5.5, "rec_yds": 62.5, "rec_tds": 0.5, "targets": 8.5},
+                    # Los Angeles Rams
+                    {"name": "Matthew Stafford", "pass_yds": 268.5, "pass_tds": 2.5, "pass_att": 34.5, "pass_comp": 22.5, "int": 0.5, "rush_yds": 5.5, "rush_att": 2.5},
+                    {"name": "Kyren Williams", "rush_yds": 72.5, "rush_att": 16.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 25.5},
+                    {"name": "Puka Nacua", "rec": 7.5, "rec_yds": 92.5, "rec_tds": 0.5, "targets": 11.5},
+                    {"name": "Cooper Kupp", "rec": 6.5, "rec_yds": 72.5, "rec_tds": 0.5, "targets": 9.5},
+                    {"name": "Tutu Atwell", "rec": 3.5, "rec_yds": 35.5, "rec_tds": 0.5, "targets": 5.5},
+                ],
+            },
+            # Game 8: Buccaneers vs Jets - East Coast Battle
+            "nfl_game_8": {
+                "home_team": "Tampa Bay Buccaneers",
+                "away_team": "New York Jets",
+                "commence_time": times["west"],
+                "players": [
+                    # Tampa Bay Buccaneers
+                    {"name": "Baker Mayfield", "pass_yds": 258.5, "pass_tds": 2.5, "pass_att": 33.5, "pass_comp": 21.5, "int": 1.0, "rush_yds": 15.5, "rush_att": 4.5},
+                    {"name": "Rachaad White", "rush_yds": 65.5, "rush_att": 15.5, "rush_tds": 0.5, "rec": 4.5, "rec_yds": 32.5},
+                    {"name": "Mike Evans", "rec": 5.5, "rec_yds": 78.5, "rec_tds": 0.5, "targets": 9.5},
+                    {"name": "Chris Godwin", "rec": 6.5, "rec_yds": 72.5, "rec_tds": 0.5, "targets": 10.5},
+                    {"name": "Cade Otton", "rec": 4.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 6.5},
+                    # New York Jets
+                    {"name": "Aaron Rodgers", "pass_yds": 255.5, "pass_tds": 2.5, "pass_att": 32.5, "pass_comp": 21.5, "int": 0.5, "rush_yds": 8.5, "rush_att": 3.5},
+                    {"name": "Breece Hall", "rush_yds": 78.5, "rush_att": 17.5, "rush_tds": 0.5, "rec": 4.5, "rec_yds": 35.5},
+                    {"name": "Garrett Wilson", "rec": 6.5, "rec_yds": 78.5, "rec_tds": 0.5, "targets": 10.5},
+                    {"name": "Allen Lazard", "rec": 3.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 5.5},
+                    {"name": "Mike Williams", "rec": 3.5, "rec_yds": 48.5, "rec_tds": 0.5, "targets": 6.5},
                 ],
             },
         }
