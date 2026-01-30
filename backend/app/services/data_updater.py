@@ -117,7 +117,8 @@ async def archive_old_picks(
     Returns:
         Number of picks archived
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days_old)
+    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days_old)).replace(tzinfo=None)
     
     try:
         # Find old picks
@@ -225,8 +226,9 @@ async def check_game_results(
     logger.info(f"Checking game results for {sport_key}")
     
     # Find games that should have completed
-    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
-    today = datetime.now(timezone.utc)
+    # Use naive datetimes for TIMESTAMP WITHOUT TIME ZONE column comparison
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).replace(tzinfo=None)
+    today = datetime.now(timezone.utc).replace(tzinfo=None)
     
     result = await db.execute(
         select(Game).where(

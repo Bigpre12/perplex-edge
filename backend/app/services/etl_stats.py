@@ -89,7 +89,8 @@ async def get_all_active_players(
     Returns:
         List of active Player objects
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
+    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days_back)).replace(tzinfo=None)
     
     result = await db.execute(
         select(Player)

@@ -89,7 +89,8 @@ async def get_recent_performance(
     Returns:
         List of recent stat records
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
     
     result = await db.execute(
         select(PlayerStat)
@@ -295,7 +296,8 @@ async def calculate_ev_performance(
     Returns:
         EV performance statistics
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
     
     # Query settled picks with their results
     query = (
@@ -378,7 +380,8 @@ async def calculate_odds_trends(
     Returns:
         Trend analysis data
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
     
     # Get odds snapshots for this player
     query = (
@@ -475,7 +478,8 @@ async def get_analytics_dashboard(
     if not sport:
         return {"error": f"Sport not found: {sport_key}"}
     
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
     
     # Overall pick performance
     picks_query = (

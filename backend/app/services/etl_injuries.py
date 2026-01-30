@@ -459,7 +459,8 @@ async def clear_old_injuries(
     from datetime import timedelta
     from sqlalchemy import delete
     
-    cutoff = datetime.now(timezone.utc) - timedelta(days=older_than_days)
+    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=older_than_days)).replace(tzinfo=None)
     
     result = await db.execute(
         delete(Injury).where(

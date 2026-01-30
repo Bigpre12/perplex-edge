@@ -83,7 +83,8 @@ async def sync_historical_odds(
             return stats
         
         # Get recent games that need historical odds
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
+        # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days_back)).replace(tzinfo=None)
         games_result = await db.execute(
             select(Game).where(
                 and_(
@@ -250,8 +251,9 @@ async def sync_game_results(
             return stats
         
         # Get games that might be completed (started more than 4 hours ago)
-        cutoff_end = datetime.now(timezone.utc) - timedelta(hours=4)
-        cutoff_start = datetime.now(timezone.utc) - timedelta(days=days_back)
+        # Use naive datetimes for TIMESTAMP WITHOUT TIME ZONE column comparison
+        cutoff_end = (datetime.now(timezone.utc) - timedelta(hours=4)).replace(tzinfo=None)
+        cutoff_start = (datetime.now(timezone.utc) - timedelta(days=days_back)).replace(tzinfo=None)
         
         games_result = await db.execute(
             select(Game).where(
