@@ -18,6 +18,21 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+@router.get("/debug/config")
+async def debug_config():
+    """Debug endpoint to check current configuration values."""
+    from app.core.config import get_settings
+    settings = get_settings()
+    return {
+        "scheduler_use_stubs": settings.scheduler_use_stubs,
+        "scheduler_enabled": settings.scheduler_enabled,
+        "odds_api_key_set": bool(settings.odds_api_key),
+        "odds_api_key_preview": settings.odds_api_key[:8] + "..." if settings.odds_api_key else None,
+        "environment": settings.environment,
+    }
+
+
 # Sport key mappings for refresh endpoint
 SPORT_KEY_MAP = {
     "nba": "basketball_nba",
