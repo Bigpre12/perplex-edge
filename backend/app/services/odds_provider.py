@@ -1664,16 +1664,26 @@ class XYZOddsProvider(OddsProvider):
             },
         }
         
-        # Check if this game exists
+        # Check if this game exists in static props
         if external_game_id not in game_props:
-            return {
-                "id": external_game_id,
-                "sport_key": sport_key,
-                "home_team": "Unknown",
-                "away_team": "Unknown",
-                "commence_time": times["early"],
-                "bookmakers": [],
-            }
+            # Generate dynamic props for NBA games using team names from game ID
+            # Game IDs format: game_lal_was_20260130 -> LAL vs WAS
+            if "basketball_nba" in sport_key:
+                return self._generate_dynamic_nba_props(external_game_id, sport_key, times)
+            elif "basketball_ncaab" in sport_key:
+                return self._generate_dynamic_ncaab_props(external_game_id, sport_key, times)
+            elif "football" in sport_key:
+                return self._generate_dynamic_nfl_props(external_game_id, sport_key, times)
+            else:
+                # Unknown sport - return empty
+                return {
+                    "id": external_game_id,
+                    "sport_key": sport_key,
+                    "home_team": "Unknown",
+                    "away_team": "Unknown",
+                    "commence_time": times["early"],
+                    "bookmakers": [],
+                }
         
         game = game_props[external_game_id]
         
@@ -1854,6 +1864,365 @@ class XYZOddsProvider(OddsProvider):
             ],
         }
 
+    def _generate_dynamic_nba_props(
+        self,
+        external_game_id: str,
+        sport_key: str,
+        times: dict[str, str],
+    ) -> dict[str, Any]:
+        """Generate dynamic NBA player props for any game using roster data."""
+        import random
+        
+        # Try to extract team abbreviations from game ID
+        # Format: game_lal_was_20260130
+        parts = external_game_id.split("_")
+        home_team = "Unknown"
+        away_team = "Unknown"
+        
+        # Map abbreviations to full team names
+        abbr_to_team = {
+            "lal": "Los Angeles Lakers", "bos": "Boston Celtics", "gsw": "Golden State Warriors",
+            "phi": "Philadelphia 76ers", "mil": "Milwaukee Bucks", "den": "Denver Nuggets",
+            "cle": "Cleveland Cavaliers", "phx": "Phoenix Suns", "min": "Minnesota Timberwolves",
+            "nyk": "New York Knicks", "mia": "Miami Heat", "dal": "Dallas Mavericks",
+            "sac": "Sacramento Kings", "lac": "Los Angeles Clippers", "nop": "New Orleans Pelicans",
+            "ind": "Indiana Pacers", "orl": "Orlando Magic", "atl": "Atlanta Hawks",
+            "chi": "Chicago Bulls", "hou": "Houston Rockets", "bkn": "Brooklyn Nets",
+            "mem": "Memphis Grizzlies", "tor": "Toronto Raptors", "uta": "Utah Jazz",
+            "sas": "San Antonio Spurs", "por": "Portland Trail Blazers", "cha": "Charlotte Hornets",
+            "was": "Washington Wizards", "det": "Detroit Pistons", "okc": "Oklahoma City Thunder",
+        }
+        
+        if len(parts) >= 3:
+            away_abbr = parts[1].lower()
+            home_abbr = parts[2].lower()
+            away_team = abbr_to_team.get(away_abbr, "Unknown")
+            home_team = abbr_to_team.get(home_abbr, "Unknown")
+        
+        # Get rosters
+        home_roster = NBA_ROSTERS.get(home_team, DEFAULT_NBA_ROSTER)
+        away_roster = NBA_ROSTERS.get(away_team, DEFAULT_NBA_ROSTER)
+        
+        # Generate props for all players
+        players = []
+        
+        def gen_nba_stats(position_idx: int, team_rating: int) -> dict:
+            """Generate realistic NBA stats based on position."""
+            rating_mult = 0.9 + (team_rating / 100) * 0.2
+            
+            if position_idx == 0:  # PG
+                pts = round(random.uniform(18, 28) * rating_mult * 2) / 2
+                reb = round(random.uniform(3, 5) * 2) / 2
+                ast = round(random.uniform(6, 10) * rating_mult * 2) / 2
+                threes = round(random.uniform(2, 4) * 2) / 2
+            elif position_idx == 1:  # SG
+                pts = round(random.uniform(20, 30) * rating_mult * 2) / 2
+                reb = round(random.uniform(3.5, 5.5) * 2) / 2
+                ast = round(random.uniform(3, 6) * 2) / 2
+                threes = round(random.uniform(2.5, 4.5) * 2) / 2
+            elif position_idx == 2:  # SF
+                pts = round(random.uniform(16, 24) * rating_mult * 2) / 2
+                reb = round(random.uniform(5, 7) * 2) / 2
+                ast = round(random.uniform(2.5, 4.5) * 2) / 2
+                threes = round(random.uniform(1.5, 3.5) * 2) / 2
+            elif position_idx == 3:  # PF
+                pts = round(random.uniform(14, 22) * rating_mult * 2) / 2
+                reb = round(random.uniform(7, 10) * 2) / 2
+                ast = round(random.uniform(2, 4) * 2) / 2
+                threes = round(random.uniform(1, 2.5) * 2) / 2
+            else:  # C
+                pts = round(random.uniform(12, 20) * rating_mult * 2) / 2
+                reb = round(random.uniform(9, 13) * 2) / 2
+                ast = round(random.uniform(1.5, 3.5) * 2) / 2
+                threes = round(random.uniform(0.5, 1.5) * 2) / 2
+            
+            return {
+                "pts": pts, "reb": reb, "ast": ast,
+                "pra": round((pts + reb + ast) * 2) / 2,
+                "pr": round((pts + reb) * 2) / 2,
+                "pa": round((pts + ast) * 2) / 2,
+                "ra": round((reb + ast) * 2) / 2,
+                "3pm": threes,
+                "stl": round(random.uniform(0.5, 2) * 2) / 2,
+                "blk": round(random.uniform(0.5, 2) * 2) / 2,
+                "to": round(random.uniform(2, 4) * 2) / 2,
+            }
+        
+        home_rating = NBA_TEAM_RATINGS.get(home_team, 75)
+        away_rating = NBA_TEAM_RATINGS.get(away_team, 75)
+        
+        for i, name in enumerate(home_roster):
+            stats = gen_nba_stats(i, home_rating)
+            players.append({"name": name, **stats})
+        
+        for i, name in enumerate(away_roster):
+            stats = gen_nba_stats(i, away_rating)
+            players.append({"name": name, **stats})
+        
+        # Build outcomes
+        points_outcomes = []
+        rebounds_outcomes = []
+        assists_outcomes = []
+        pra_outcomes = []
+        pr_outcomes = []
+        pa_outcomes = []
+        ra_outcomes = []
+        threes_outcomes = []
+        steals_outcomes = []
+        blocks_outcomes = []
+        turnovers_outcomes = []
+        
+        for player in players:
+            points_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pts"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pts"]},
+            ])
+            rebounds_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["reb"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["reb"]},
+            ])
+            assists_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["ast"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["ast"]},
+            ])
+            pra_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pra"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pra"]},
+            ])
+            pr_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pr"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pr"]},
+            ])
+            pa_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pa"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pa"]},
+            ])
+            ra_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["ra"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["ra"]},
+            ])
+            threes_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["3pm"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["3pm"]},
+            ])
+            steals_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["stl"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["stl"]},
+            ])
+            blocks_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["blk"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["blk"]},
+            ])
+            turnovers_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["to"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["to"]},
+            ])
+        
+        return {
+            "id": external_game_id,
+            "sport_key": sport_key,
+            "home_team": home_team,
+            "away_team": away_team,
+            "commence_time": times["early"],
+            "bookmakers": [
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [
+                        {"key": "player_points", "outcomes": points_outcomes},
+                        {"key": "player_rebounds", "outcomes": rebounds_outcomes},
+                        {"key": "player_assists", "outcomes": assists_outcomes},
+                        {"key": "player_points_rebounds_assists", "outcomes": pra_outcomes},
+                        {"key": "player_points_rebounds", "outcomes": pr_outcomes},
+                        {"key": "player_points_assists", "outcomes": pa_outcomes},
+                        {"key": "player_rebounds_assists", "outcomes": ra_outcomes},
+                        {"key": "player_threes", "outcomes": threes_outcomes},
+                        {"key": "player_steals", "outcomes": steals_outcomes},
+                        {"key": "player_blocks", "outcomes": blocks_outcomes},
+                        {"key": "player_turnovers", "outcomes": turnovers_outcomes},
+                    ],
+                },
+            ],
+        }
+
+    def _generate_dynamic_ncaab_props(
+        self,
+        external_game_id: str,
+        sport_key: str,
+        times: dict[str, str],
+    ) -> dict[str, Any]:
+        """Generate dynamic NCAAB player props for any game using roster data."""
+        import random
+        
+        # For NCAAB, just use default roster since we can't easily map team names
+        home_roster = DEFAULT_ROSTER
+        away_roster = DEFAULT_ROSTER
+        
+        players = []
+        
+        def gen_ncaab_stats(position_idx: int) -> dict:
+            """Generate realistic NCAAB stats based on position."""
+            if position_idx <= 1:  # Guards
+                pts = round(random.uniform(12, 16) * 2) / 2
+                reb = round(random.uniform(3, 4.5) * 2) / 2
+                ast = round(random.uniform(4, 6) * 2) / 2
+                blk = 0.5
+            elif position_idx == 2:  # Wing
+                pts = round(random.uniform(11, 14) * 2) / 2
+                reb = round(random.uniform(4.5, 6) * 2) / 2
+                ast = round(random.uniform(2, 3.5) * 2) / 2
+                blk = 0.5
+            else:  # Forwards/Center
+                pts = round(random.uniform(10, 14) * 2) / 2
+                reb = round(random.uniform(6.5, 9) * 2) / 2
+                ast = round(random.uniform(1.5, 2.5) * 2) / 2
+                blk = round(random.uniform(1.5, 2.5) * 2) / 2
+            
+            return {
+                "pts": pts, "reb": reb, "ast": ast,
+                "pra": round((pts + reb + ast) * 2) / 2,
+                "pr": round((pts + reb) * 2) / 2,
+                "pa": round((pts + ast) * 2) / 2,
+                "ra": round((reb + ast) * 2) / 2,
+                "3pm": round(random.uniform(1, 3) * 2) / 2,
+                "stl": round(random.uniform(0.5, 1.5) * 2) / 2,
+                "blk": blk,
+                "to": round(random.uniform(1.5, 2.5) * 2) / 2,
+            }
+        
+        for i, name in enumerate(home_roster):
+            stats = gen_ncaab_stats(i)
+            players.append({"name": f"Home {name}", **stats})
+        
+        for i, name in enumerate(away_roster):
+            stats = gen_ncaab_stats(i)
+            players.append({"name": f"Away {name}", **stats})
+        
+        # Build same outcomes structure as NBA
+        points_outcomes = []
+        rebounds_outcomes = []
+        assists_outcomes = []
+        
+        for player in players:
+            points_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["pts"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["pts"]},
+            ])
+            rebounds_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["reb"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["reb"]},
+            ])
+            assists_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["ast"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["ast"]},
+            ])
+        
+        return {
+            "id": external_game_id,
+            "sport_key": sport_key,
+            "home_team": "Home Team",
+            "away_team": "Away Team",
+            "commence_time": times["early"],
+            "bookmakers": [
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [
+                        {"key": "player_points", "outcomes": points_outcomes},
+                        {"key": "player_rebounds", "outcomes": rebounds_outcomes},
+                        {"key": "player_assists", "outcomes": assists_outcomes},
+                    ],
+                },
+            ],
+        }
+
+    def _generate_dynamic_nfl_props(
+        self,
+        external_game_id: str,
+        sport_key: str,
+        times: dict[str, str],
+    ) -> dict[str, Any]:
+        """Generate dynamic NFL player props for any game."""
+        import random
+        
+        # Use default roster
+        home_roster = DEFAULT_NFL_ROSTER
+        away_roster = DEFAULT_NFL_ROSTER
+        
+        players = []
+        
+        def gen_nfl_stats(position_idx: int) -> dict:
+            """Generate realistic NFL stats based on position."""
+            if position_idx == 0:  # QB
+                return {
+                    "pass_yds": round(random.uniform(220, 280) * 2) / 2,
+                    "pass_tds": round(random.uniform(1.5, 2.5) * 2) / 2,
+                    "pass_att": round(random.uniform(28, 36) * 2) / 2,
+                    "int": round(random.uniform(0.5, 1) * 2) / 2,
+                    "rush_yds": round(random.uniform(8, 25) * 2) / 2,
+                }
+            elif position_idx == 1:  # RB
+                return {
+                    "rush_yds": round(random.uniform(55, 85) * 2) / 2,
+                    "rush_att": round(random.uniform(12, 18) * 2) / 2,
+                    "rec": round(random.uniform(2, 4) * 2) / 2,
+                    "rec_yds": round(random.uniform(15, 35) * 2) / 2,
+                }
+            else:  # WR/TE
+                return {
+                    "rec": round(random.uniform(4, 7) * 2) / 2,
+                    "rec_yds": round(random.uniform(50, 85) * 2) / 2,
+                    "targets": round(random.uniform(6, 10) * 2) / 2,
+                }
+        
+        for i, name in enumerate(home_roster):
+            stats = gen_nfl_stats(i)
+            players.append({"name": f"Home {name}", **stats})
+        
+        for i, name in enumerate(away_roster):
+            stats = gen_nfl_stats(i)
+            players.append({"name": f"Away {name}", **stats})
+        
+        pass_yds_outcomes = []
+        rush_yds_outcomes = []
+        rec_yds_outcomes = []
+        
+        for player in players:
+            if "pass_yds" in player:
+                pass_yds_outcomes.extend([
+                    {"name": "Over", "description": player["name"], "price": -110, "point": player["pass_yds"]},
+                    {"name": "Under", "description": player["name"], "price": -110, "point": player["pass_yds"]},
+                ])
+            if "rush_yds" in player:
+                rush_yds_outcomes.extend([
+                    {"name": "Over", "description": player["name"], "price": -110, "point": player["rush_yds"]},
+                    {"name": "Under", "description": player["name"], "price": -110, "point": player["rush_yds"]},
+                ])
+            if "rec_yds" in player:
+                rec_yds_outcomes.extend([
+                    {"name": "Over", "description": player["name"], "price": -110, "point": player["rec_yds"]},
+                    {"name": "Under", "description": player["name"], "price": -110, "point": player["rec_yds"]},
+                ])
+        
+        return {
+            "id": external_game_id,
+            "sport_key": sport_key,
+            "home_team": "Home Team",
+            "away_team": "Away Team",
+            "commence_time": times["early"],
+            "bookmakers": [
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [
+                        {"key": "player_pass_yds", "outcomes": pass_yds_outcomes},
+                        {"key": "player_rush_yds", "outcomes": rush_yds_outcomes},
+                        {"key": "player_reception_yds", "outcomes": rec_yds_outcomes},
+                    ],
+                },
+            ],
+        }
+
 
 # =============================================================================
 # BetStack Provider (Secondary Fallback)
@@ -2020,6 +2389,57 @@ NCAAB_ROSTERS = {
 # Default roster for teams not in the list
 DEFAULT_ROSTER = ["Player One", "Player Two", "Player Three", "Player Four", "Player Five"]
 
+# NBA Team Power Ratings
+NBA_TEAM_RATINGS = {
+    "Boston Celtics": 95, "Oklahoma City Thunder": 94, "Denver Nuggets": 93,
+    "Milwaukee Bucks": 92, "Cleveland Cavaliers": 91, "Phoenix Suns": 90,
+    "Minnesota Timberwolves": 89, "New York Knicks": 88, "Philadelphia 76ers": 87,
+    "Miami Heat": 86, "Dallas Mavericks": 85, "Los Angeles Lakers": 84,
+    "Golden State Warriors": 83, "Sacramento Kings": 82, "Los Angeles Clippers": 81,
+    "New Orleans Pelicans": 80, "Indiana Pacers": 79, "Orlando Magic": 78,
+    "Atlanta Hawks": 77, "Chicago Bulls": 76, "Houston Rockets": 75,
+    "Brooklyn Nets": 74, "Memphis Grizzlies": 73, "Toronto Raptors": 72,
+    "Utah Jazz": 71, "San Antonio Spurs": 70, "Portland Trail Blazers": 69,
+    "Charlotte Hornets": 68, "Washington Wizards": 67, "Detroit Pistons": 66,
+}
+
+# NBA Rosters (key players for props)
+NBA_ROSTERS = {
+    "Boston Celtics": ["Jayson Tatum", "Jaylen Brown", "Derrick White", "Jrue Holiday", "Kristaps Porzingis"],
+    "Oklahoma City Thunder": ["Shai Gilgeous-Alexander", "Chet Holmgren", "Jalen Williams", "Josh Giddey", "Luguentz Dort"],
+    "Denver Nuggets": ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Aaron Gordon", "Kentavious Caldwell-Pope"],
+    "Milwaukee Bucks": ["Giannis Antetokounmpo", "Damian Lillard", "Khris Middleton", "Brook Lopez", "Bobby Portis"],
+    "Cleveland Cavaliers": ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Jarrett Allen", "Max Strus"],
+    "Phoenix Suns": ["Kevin Durant", "Devin Booker", "Bradley Beal", "Jusuf Nurkic", "Grayson Allen"],
+    "Minnesota Timberwolves": ["Anthony Edwards", "Karl-Anthony Towns", "Rudy Gobert", "Jaden McDaniels", "Mike Conley"],
+    "New York Knicks": ["Jalen Brunson", "Julius Randle", "OG Anunoby", "Donte DiVincenzo", "Isaiah Hartenstein"],
+    "Philadelphia 76ers": ["Joel Embiid", "Tyrese Maxey", "Tobias Harris", "Buddy Hield", "Kelly Oubre Jr."],
+    "Miami Heat": ["Jimmy Butler", "Bam Adebayo", "Tyler Herro", "Terry Rozier", "Caleb Martin"],
+    "Dallas Mavericks": ["Luka Doncic", "Kyrie Irving", "PJ Washington", "Dereck Lively II", "Daniel Gafford"],
+    "Los Angeles Lakers": ["LeBron James", "Anthony Davis", "Austin Reaves", "D'Angelo Russell", "Rui Hachimura"],
+    "Golden State Warriors": ["Stephen Curry", "Klay Thompson", "Andrew Wiggins", "Draymond Green", "Chris Paul"],
+    "Sacramento Kings": ["De'Aaron Fox", "Domantas Sabonis", "Keegan Murray", "Malik Monk", "Harrison Barnes"],
+    "Los Angeles Clippers": ["Kawhi Leonard", "Paul George", "James Harden", "Ivica Zubac", "Norman Powell"],
+    "New Orleans Pelicans": ["Zion Williamson", "Brandon Ingram", "CJ McCollum", "Herb Jones", "Jonas Valanciunas"],
+    "Indiana Pacers": ["Tyrese Haliburton", "Pascal Siakam", "Myles Turner", "Buddy Hield", "Aaron Nesmith"],
+    "Orlando Magic": ["Paolo Banchero", "Franz Wagner", "Wendell Carter Jr.", "Jalen Suggs", "Cole Anthony"],
+    "Atlanta Hawks": ["Trae Young", "Dejounte Murray", "Jalen Johnson", "De'Andre Hunter", "Clint Capela"],
+    "Chicago Bulls": ["DeMar DeRozan", "Zach LaVine", "Nikola Vucevic", "Coby White", "Alex Caruso"],
+    "Houston Rockets": ["Jalen Green", "Alperen Sengun", "Fred VanVleet", "Jabari Smith Jr.", "Dillon Brooks"],
+    "Brooklyn Nets": ["Mikal Bridges", "Cam Thomas", "Spencer Dinwiddie", "Nic Claxton", "Dorian Finney-Smith"],
+    "Memphis Grizzlies": ["Ja Morant", "Desmond Bane", "Jaren Jackson Jr.", "Marcus Smart", "Luke Kennard"],
+    "Toronto Raptors": ["Scottie Barnes", "RJ Barrett", "Jakob Poeltl", "Immanuel Quickley", "Gary Trent Jr."],
+    "Utah Jazz": ["Lauri Markkanen", "Collin Sexton", "Jordan Clarkson", "John Collins", "Walker Kessler"],
+    "San Antonio Spurs": ["Victor Wembanyama", "Devin Vassell", "Keldon Johnson", "Tre Jones", "Zach Collins"],
+    "Portland Trail Blazers": ["Anfernee Simons", "Scoot Henderson", "Jerami Grant", "Deandre Ayton", "Malcolm Brogdon"],
+    "Charlotte Hornets": ["LaMelo Ball", "Terry Rozier", "Brandon Miller", "P.J. Washington", "Mark Williams"],
+    "Washington Wizards": ["Kyle Kuzma", "Jordan Poole", "Deni Avdija", "Tyus Jones", "Daniel Gafford"],
+    "Detroit Pistons": ["Cade Cunningham", "Jaden Ivey", "Jalen Duren", "Ausar Thompson", "Bojan Bogdanovic"],
+}
+
+# Default NBA roster
+DEFAULT_NBA_ROSTER = ["Guard One", "Guard Two", "Forward One", "Forward Two", "Center"]
+
 
 class ESPNScheduleProvider:
     """
@@ -2185,11 +2605,16 @@ class ESPNScheduleProvider:
         """
         times = _get_stub_game_times()
         is_nfl = self.sport_key == "americanfootball_nfl"
+        is_nba = self.sport_key == "basketball_nba"
         
         if is_nfl:
             home_roster = NFL_ROSTERS.get(home_team, DEFAULT_NFL_ROSTER)
             away_roster = NFL_ROSTERS.get(away_team, DEFAULT_NFL_ROSTER)
+        elif is_nba:
+            home_roster = NBA_ROSTERS.get(home_team, DEFAULT_NBA_ROSTER)
+            away_roster = NBA_ROSTERS.get(away_team, DEFAULT_NBA_ROSTER)
         else:
+            # NCAAB
             home_roster = NCAAB_ROSTERS.get(home_team, DEFAULT_ROSTER)
             away_roster = NCAAB_ROSTERS.get(away_team, DEFAULT_ROSTER)
         
@@ -2199,6 +2624,8 @@ class ESPNScheduleProvider:
         for i, name in enumerate(home_roster):
             if is_nfl:
                 players.append(self._generate_nfl_player_props(name, i))
+            elif is_nba:
+                players.append(self._generate_nba_player_props(name, i, home_team))
             else:
                 players.append(self._generate_ncaab_player_props(name, i))
         
@@ -2206,6 +2633,8 @@ class ESPNScheduleProvider:
         for i, name in enumerate(away_roster):
             if is_nfl:
                 players.append(self._generate_nfl_player_props(name, i))
+            elif is_nba:
+                players.append(self._generate_nba_player_props(name, i, away_team))
             else:
                 players.append(self._generate_ncaab_player_props(name, i))
         
@@ -2308,4 +2737,71 @@ class ESPNScheduleProvider:
             "stl": round(random.uniform(0.5, 1.5) * 2) / 2,
             "blk": blk,
             "to": round(random.uniform(1.5, 2.5) * 2) / 2,
+        }
+
+    def _generate_nba_player_props(self, name: str, position_idx: int, team: str) -> dict[str, float]:
+        """
+        Generate realistic NBA player props based on position and team.
+        
+        NBA stats are higher than college - more minutes, faster pace.
+        Position index 0-1 = guards, 2-3 = forwards, 4 = center
+        """
+        import random
+        
+        # Get team rating for adjustments (better teams = higher stats)
+        team_rating = NBA_TEAM_RATINGS.get(team, 75)
+        rating_multiplier = 0.9 + (team_rating / 100) * 0.2  # 0.9 to 1.1
+        
+        # Base stats vary by position
+        if position_idx == 0:  # Point Guard (high assists, moderate points)
+            pts = round(random.uniform(18.0, 28.0) * rating_multiplier * 2) / 2
+            reb = round(random.uniform(3.0, 5.0) * 2) / 2
+            ast = round(random.uniform(6.0, 10.0) * rating_multiplier * 2) / 2
+            blk = round(random.uniform(0.5, 1.0) * 2) / 2
+            threes = round(random.uniform(2.0, 4.0) * 2) / 2
+        elif position_idx == 1:  # Shooting Guard (high points)
+            pts = round(random.uniform(20.0, 30.0) * rating_multiplier * 2) / 2
+            reb = round(random.uniform(3.5, 5.5) * 2) / 2
+            ast = round(random.uniform(3.0, 6.0) * 2) / 2
+            blk = round(random.uniform(0.5, 1.0) * 2) / 2
+            threes = round(random.uniform(2.5, 4.5) * 2) / 2
+        elif position_idx == 2:  # Small Forward (balanced)
+            pts = round(random.uniform(16.0, 24.0) * rating_multiplier * 2) / 2
+            reb = round(random.uniform(5.0, 7.0) * 2) / 2
+            ast = round(random.uniform(2.5, 4.5) * 2) / 2
+            blk = round(random.uniform(0.5, 1.5) * 2) / 2
+            threes = round(random.uniform(1.5, 3.5) * 2) / 2
+        elif position_idx == 3:  # Power Forward (rebounds, moderate points)
+            pts = round(random.uniform(14.0, 22.0) * rating_multiplier * 2) / 2
+            reb = round(random.uniform(7.0, 10.0) * 2) / 2
+            ast = round(random.uniform(2.0, 4.0) * 2) / 2
+            blk = round(random.uniform(1.0, 2.0) * 2) / 2
+            threes = round(random.uniform(1.0, 2.5) * 2) / 2
+        else:  # Center (rebounds, blocks)
+            pts = round(random.uniform(12.0, 20.0) * rating_multiplier * 2) / 2
+            reb = round(random.uniform(9.0, 13.0) * 2) / 2
+            ast = round(random.uniform(1.5, 3.5) * 2) / 2
+            blk = round(random.uniform(1.5, 3.0) * 2) / 2
+            threes = round(random.uniform(0.5, 1.5) * 2) / 2
+        
+        # Combo stats
+        pra = round((pts + reb + ast) * 2) / 2
+        pr = round((pts + reb) * 2) / 2
+        pa = round((pts + ast) * 2) / 2
+        ra = round((reb + ast) * 2) / 2
+        
+        return {
+            "name": name,
+            "team": team,
+            "pts": pts,
+            "reb": reb,
+            "ast": ast,
+            "pra": pra,
+            "pr": pr,
+            "pa": pa,
+            "ra": ra,
+            "3pm": threes,
+            "stl": round(random.uniform(0.5, 2.0) * 2) / 2,
+            "blk": blk,
+            "to": round(random.uniform(2.0, 4.0) * 2) / 2,
         }
