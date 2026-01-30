@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sports-schedule": {
+      "command": "node",
+      "args": ["mcp/sports-schedule-server.js"],
+      "env": {
+        "BALLDONTLIE_API_KEY": "YOUR_BALLDONTLIE_KEY_HERE",
+        "ODDS_API_KEY": "YOUR_ODDS_API_KEY_HERE"
+      }
+    }
+  }
+}

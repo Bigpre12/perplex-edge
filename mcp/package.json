@@ -1,0 +1,17 @@
+{
+  "name": "sports-schedule-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for NBA and NCAAB schedules via BALLDONTLIE API",
+  "main": "sports-schedule-server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node sports-schedule-server.js",
+    "test": "node -e \"console.log('API Key:', process.env.BALLDONTLIE_API_KEY ? 'Set' : 'Missing')\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
