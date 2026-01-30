@@ -169,6 +169,13 @@ async def force_refresh_games(
         # Step 1: Clear ALL old games (keep_today=False ensures complete refresh)
         clear_result = await clear_stale_games(db, sport, keep_today=False)
         
+        # Check for clear errors
+        if isinstance(clear_result, dict) and "error" in clear_result:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to clear games: {clear_result['error']}",
+            )
+        
         # Step 2: Sync fresh data with stubs (guaranteed to work)
         sync_result = await sync_with_fallback(
             db,
@@ -179,9 +186,13 @@ async def force_refresh_games(
         
         duration_ms = int((time.time() - start_time) * 1000)
         
+        # Check for sync warnings/errors
+        sync_errors = sync_result.get("errors", [])
+        status = "success" if not sync_errors else "partial_success"
+        
         return {
             "job": "force-refresh",
-            "status": "success",
+            "status": status,
             "sport": sport,
             "duration_ms": duration_ms,
             "cleared": clear_result,
@@ -190,6 +201,7 @@ async def force_refresh_games(
                 "games_created": sync_result.get("games_created", 0),
                 "lines_added": sync_result.get("lines_added", 0),
                 "props_added": sync_result.get("props_added", 0),
+                "errors": sync_errors,
             },
         }
     

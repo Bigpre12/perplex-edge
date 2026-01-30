@@ -8,9 +8,13 @@ import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import List, Any
+from zoneinfo import ZoneInfo
 
 from app.core.config import get_settings
 from app.core.database import get_session_maker
+
+# Eastern timezone (handles DST automatically)
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 logger = logging.getLogger(__name__)
 
@@ -141,9 +145,8 @@ async def daily_refresh_loop(refresh_hour: int = 9):
         try:
             # Calculate time until next refresh
             now = datetime.now(timezone.utc)
-            # EST is UTC-5 (ignoring DST for simplicity)
-            est_offset = timedelta(hours=-5)
-            now_est = now + est_offset
+            # Use proper Eastern timezone (handles DST automatically)
+            now_est = now.astimezone(EASTERN_TZ)
             
             # Target time today
             target = now_est.replace(
@@ -217,9 +220,8 @@ async def daily_calibration_loop(calibration_hour: int = 10):
         try:
             # Calculate time until next calibration run
             now = datetime.now(timezone.utc)
-            # EST is UTC-5 (ignoring DST for simplicity)
-            est_offset = timedelta(hours=-5)
-            now_est = now + est_offset
+            # Use proper Eastern timezone (handles DST automatically)
+            now_est = now.astimezone(EASTERN_TZ)
             
             # Target time today
             target = now_est.replace(
@@ -877,8 +879,8 @@ async def results_settlement_loop(interval_minutes: int = 30, initial_delay: int
                 # Find games to settle
                 if use_stubs:
                     # For stub mode: find games that started 3+ hours ago (treat as "completed")
-                    from datetime import datetime, timedelta
-                    cutoff_time = datetime.utcnow() - timedelta(hours=3)
+                    from datetime import datetime, timedelta, timezone
+                    cutoff_time = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=3)
                     games_result = await db.execute(
                         select(Game.id)
                         .where(Game.start_time < cutoff_time)
@@ -1016,8 +1018,8 @@ async def nfl_snapshot_loop(snapshot_hour: int = 6, initial_delay: int = 120):
         try:
             # Calculate time until next snapshot
             now = datetime.now(timezone.utc)
-            est_offset = timedelta(hours=-5)
-            now_est = now + est_offset
+            # Use proper Eastern timezone (handles DST automatically)
+            now_est = now.astimezone(EASTERN_TZ)
             
             target = now_est.replace(
                 hour=snapshot_hour,
@@ -1127,8 +1129,8 @@ async def ncaab_snapshot_loop(snapshot_hour: int = 6, initial_delay: int = 135):
         try:
             # Calculate time until next snapshot
             now = datetime.now(timezone.utc)
-            est_offset = timedelta(hours=-5)
-            now_est = now + est_offset
+            # Use proper Eastern timezone (handles DST automatically)
+            now_est = now.astimezone(EASTERN_TZ)
             
             target = now_est.replace(
                 hour=snapshot_hour,

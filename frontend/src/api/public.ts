@@ -135,7 +135,13 @@ export interface GameLineFilters {
 // =============================================================================
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    // Prevent browser caching to ensure fresh data
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache',
+    },
+  });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
@@ -210,7 +216,8 @@ export function useTodaysGames(sportId: number | null) {
     queryKey: ['games-today', sportId],
     queryFn: () => fetchTodaysGames(sportId!),
     enabled: sportId !== null,
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // Auto-refresh every minute
   });
 }
 

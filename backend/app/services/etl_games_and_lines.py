@@ -1036,7 +1036,7 @@ async def clear_stale_games(
     
     # Calculate cutoff for "stale" games (start of today UTC, timezone-naive for DB comparison)
     if keep_today:
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
         logger.info(f"Clearing stale games for {sport.league_code} (before {today_start})")
         
         # Get only STALE game IDs (games before today)
