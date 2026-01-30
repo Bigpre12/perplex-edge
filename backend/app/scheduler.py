@@ -369,7 +369,7 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stub
         await asyncio.sleep(interval_minutes * 60)
 
 
-async def quota_safe_sync_loop(initial_delay: int = 60):
+async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False):
     """
     Quota-safe odds sync that runs 2x daily (6 AM + 5 PM ET).
     
@@ -380,6 +380,7 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
     - Pre-sync snapshots for data versioning
     - Post-sync health checks with alerting
     - Automatic failover between providers
+    - Respects SCHEDULER_USE_STUBS environment variable
     
     Schedule:
     - 6:00 AM ET (11:00 UTC): Morning sync - overnight line movements
@@ -387,6 +388,7 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
     
     Args:
         initial_delay: Delay before first sync check in seconds
+        use_stubs: If True, force stub data regardless of API quota
     """
     from app.services.etl_games_and_lines import sync_with_fallback, clear_stale_games
     from app.services.odds_provider import get_quota_status
@@ -446,11 +448,15 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
                     snapshot_result = await pre_refresh_snapshot(db, SPORT_KEYS)
                     logger.info(f"Snapshots saved: {snapshot_result}")
                 
-                # 2. Check quota before syncing
+                # 2. Determine whether to use real API or stubs
                 quota = get_quota_status()
                 logger.info(f"API quota status: {quota['used']} used, {quota['remaining']} remaining")
                 
-                if quota['remaining'] < 10:
+                if use_stubs:
+                    # SCHEDULER_USE_STUBS=true forces stub data
+                    logger.info("SCHEDULER_USE_STUBS=true, forcing stub data (no API calls)")
+                    use_real_api = False
+                elif quota['remaining'] < 10:
                     logger.warning(f"Low quota ({quota['remaining']} remaining), using stubs only")
                     use_real_api = False
                 else:
@@ -1212,7 +1218,7 @@ def start_background_tasks() -> List[asyncio.Task]:
     # Quota-safe odds sync task (2x daily: 6 AM + 5 PM ET)
     # Replaces frequent odds_sync_loop to protect API free tier quota
     task1 = asyncio.create_task(
-        quota_safe_sync_loop(initial_delay=30),
+        quota_safe_sync_loop(initial_delay=30, use_stubs=use_stubs),
         name="quota_safe_sync_loop"
     )
     tasks.append(task1)
