@@ -731,6 +731,117 @@ async def nfl_snapshot_loop(snapshot_hour: int = 6, initial_delay: int = 120):
 
 
 # =============================================================================
+# NCAAB Scheduler Loops
+# =============================================================================
+
+async def ncaab_odds_sync_loop(interval_minutes: int = 60, initial_delay: int = 75):
+    """
+    Background task that syncs NCAAB odds hourly.
+    
+    Uses cascade: OddsAPI -> BetStack -> JSON backup
+    
+    Args:
+        interval_minutes: Sync interval in minutes
+        initial_delay: Initial delay in seconds before first run
+    """
+    from app.services.ncaab_odds_service import sync_ncaab_odds
+    
+    if initial_delay > 0:
+        logger.info(f"NCAAB odds sync loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"NCAAB odds sync loop started (interval: {interval_minutes} min)")
+    
+    while True:
+        try:
+            logger.info("Running NCAAB odds sync...")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                result = await sync_ncaab_odds(db)
+                logger.info(f"NCAAB odds sync: fetched {result.get('records_fetched', 0)} from {result.get('fetch_source', 'unknown')}")
+            
+            logger.info("NCAAB odds sync completed")
+            
+        except asyncio.CancelledError:
+            logger.info("NCAAB odds sync loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"NCAAB odds sync loop error: {e}", exc_info=True)
+        
+        await asyncio.sleep(interval_minutes * 60)
+
+
+async def ncaab_snapshot_loop(snapshot_hour: int = 6, initial_delay: int = 135):
+    """
+    Background task that creates daily NCAAB odds snapshots.
+    
+    Runs at the specified hour each day (EST).
+    
+    Args:
+        snapshot_hour: Hour to run snapshot (24h format, EST)
+        initial_delay: Initial delay in seconds before first check
+    """
+    from datetime import timezone, timedelta
+    from app.services.ncaab_odds_service import create_daily_snapshot
+    from app.services.ncaab_backup import save_backup
+    
+    if initial_delay > 0:
+        logger.info(f"NCAAB snapshot loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"NCAAB snapshot loop started (runs at {snapshot_hour}:00 EST)")
+    
+    while True:
+        try:
+            # Calculate time until next snapshot
+            now = datetime.now(timezone.utc)
+            est_offset = timedelta(hours=-5)
+            now_est = now + est_offset
+            
+            target = now_est.replace(
+                hour=snapshot_hour,
+                minute=0,
+                second=0,
+                microsecond=0,
+            )
+            
+            if now_est >= target:
+                target += timedelta(days=1)
+            
+            wait_seconds = (target - now_est).total_seconds()
+            logger.info(f"Next NCAAB snapshot in {wait_seconds/3600:.1f} hours")
+            await asyncio.sleep(wait_seconds)
+            
+            # Run the snapshot
+            logger.info("=== NCAAB DAILY SNAPSHOT STARTING ===")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                # Create historical snapshot
+                snapshot_result = await create_daily_snapshot(db)
+                logger.info(f"NCAAB snapshot: {snapshot_result}")
+                
+                # Get live odds for JSON backup
+                from app.services.ncaab_odds_service import get_live_odds
+                live_odds = await get_live_odds(db)
+                
+                if live_odds:
+                    backup_path = save_backup(live_odds)
+                    logger.info(f"NCAAB backup saved: {backup_path}")
+            
+            logger.info("=== NCAAB DAILY SNAPSHOT COMPLETE ===")
+            
+        except asyncio.CancelledError:
+            logger.info("NCAAB snapshot loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"NCAAB snapshot loop error: {e}", exc_info=True)
+            # Wait an hour before retrying on error
+            await asyncio.sleep(3600)
+
+
+# =============================================================================
 # Scheduler Control Functions
 # =============================================================================
 
@@ -884,6 +995,30 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task_nfl_snapshot)
     logger.info(f"Created nfl_snapshot_loop task (daily at {nfl_snapshot_hour}:00 EST)")
+
+    # NCAAB odds sync task (hourly)
+    ncaab_sync_interval = getattr(settings, 'ncaab_sync_interval_min', 60)
+    task_ncaab_sync = asyncio.create_task(
+        ncaab_odds_sync_loop(
+            interval_minutes=ncaab_sync_interval,
+            initial_delay=75,  # Stagger start
+        ),
+        name="ncaab_odds_sync_loop"
+    )
+    tasks.append(task_ncaab_sync)
+    logger.info(f"Created ncaab_odds_sync_loop task (every {ncaab_sync_interval} min)")
+    
+    # NCAAB daily snapshot task
+    ncaab_snapshot_hour = getattr(settings, 'ncaab_snapshot_hour', 6)
+    task_ncaab_snapshot = asyncio.create_task(
+        ncaab_snapshot_loop(
+            snapshot_hour=ncaab_snapshot_hour,
+            initial_delay=135,  # Stagger start
+        ),
+        name="ncaab_snapshot_loop"
+    )
+    tasks.append(task_ncaab_snapshot)
+    logger.info(f"Created ncaab_snapshot_loop task (daily at {ncaab_snapshot_hour}:00 EST)")
 
     _background_tasks = tasks
     return tasks

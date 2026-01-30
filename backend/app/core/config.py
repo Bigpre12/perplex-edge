@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     nfl_snapshot_hour: int = 6  # 6 AM ET daily snapshot
     nfl_backup_dir: str = "backups"  # JSON backup directory
 
+    # NCAAB-specific settings
+    ncaab_sync_interval_min: int = 60  # Hourly NCAAB odds sync
+    ncaab_snapshot_hour: int = 6  # 6 AM ET daily snapshot
+    ncaab_backup_dir: str = "backups"  # JSON backup directory
+
     @property
     def is_development(self) -> bool:
         return self.environment == "development"
