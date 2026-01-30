@@ -353,10 +353,12 @@ async def get_or_create_game(
     Returns:
         Tuple of (Game, created) where created is True if new record was created
     """
-    # Convert timezone-aware datetime to naive (UTC) for database
+    # Convert timezone-aware datetime to naive UTC for database
     if start_time.tzinfo is not None:
-        start_time_naive = start_time.replace(tzinfo=None)
+        # Convert to UTC first, then strip timezone info
+        start_time_naive = start_time.astimezone(timezone.utc).replace(tzinfo=None)
     else:
+        # Assume naive datetimes are already UTC
         start_time_naive = start_time
     
     result = await db.execute(

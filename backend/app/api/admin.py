@@ -225,9 +225,9 @@ async def browser_force_refresh(
             "status": "success",
             "sport": sport,
             "duration_ms": duration_ms,
-            "games_synced": sync_result.get("games", 0),
-            "lines_synced": sync_result.get("lines", 0),
-            "props_synced": sync_result.get("props", 0),
+            "games_synced": sync_result.get("games_created", 0) + sync_result.get("games_updated", 0),
+            "lines_synced": sync_result.get("lines_added", 0),
+            "props_synced": sync_result.get("props_added", 0),
             "data_source": sync_result.get("data_source", "unknown"),
             "cleared": clear_result,
             "full_sync_result": sync_result,  # Debug: show full result
