@@ -210,7 +210,7 @@ async def create_snapshot(
 @router.post("/results/{game_id}")
 async def set_game_result(
     game_id: str,
-    result: str = Query(..., regex="^(home|away)$", description="Game result"),
+    result: str = Query(..., pattern="^(home|away)$", description="Game result"),
     db: AsyncSession = Depends(get_db),
 ):
     """
