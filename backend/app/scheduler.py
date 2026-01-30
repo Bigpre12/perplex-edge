@@ -373,18 +373,20 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stub
 
 async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False):
     """
-    Quota-safe odds sync that runs 2x daily (6 AM + 5 PM ET).
+    Quota-safe odds sync that runs on startup + 2x daily (6 AM + 5 PM ET).
     
     Uses ~6 API calls/day (180/month), well under 500/month free tier.
     Automatically falls back to ESPN -> stubs if primary API fails.
     
     Features:
+    - IMMEDIATE sync on startup (ensures data is available right away)
     - Pre-sync snapshots for data versioning
     - Post-sync health checks with alerting
     - Automatic failover between providers
     - Respects SCHEDULER_USE_STUBS environment variable
     
     Schedule:
+    - On startup: Immediate sync after initial_delay
     - 6:00 AM ET (11:00 UTC): Morning sync - overnight line movements
     - 5:00 PM ET (22:00 UTC): Pre-game sync - final lines before tip-off
     
@@ -407,35 +409,44 @@ async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False)
     
     logger.info(f"Quota-safe sync loop started (runs at {MORNING_SYNC_HOUR_UTC}:00 and {PREGAME_SYNC_HOUR_UTC}:00 UTC)")
     
+    # Track if this is the first run (for immediate startup sync)
+    is_first_run = True
+    
     while True:
         try:
             now = datetime.now(timezone.utc)
             current_hour = now.hour
             
-            # Calculate next sync time
-            if current_hour < MORNING_SYNC_HOUR_UTC:
-                # Before morning sync
-                next_sync_hour = MORNING_SYNC_HOUR_UTC
-                sync_name = "MORNING"
-            elif current_hour < PREGAME_SYNC_HOUR_UTC:
-                # Between morning and pre-game
-                next_sync_hour = PREGAME_SYNC_HOUR_UTC
-                sync_name = "PRE-GAME"
+            # On first run, do an immediate sync instead of waiting
+            if is_first_run:
+                sync_name = "STARTUP"
+                is_first_run = False
+                logger.info("=== STARTUP SYNC: Running immediate sync to populate data ===")
             else:
-                # After pre-game, wait for tomorrow's morning
-                next_sync_hour = MORNING_SYNC_HOUR_UTC
-                sync_name = "MORNING"
-            
-            # Calculate wait time
-            target = now.replace(hour=next_sync_hour, minute=0, second=0, microsecond=0)
-            if target <= now:
-                target += timedelta(days=1)
-            
-            wait_seconds = (target - now).total_seconds()
-            logger.info(f"Next {sync_name} sync in {wait_seconds/3600:.1f} hours (at {target.isoformat()})")
-            
-            # Wait until sync time
-            await asyncio.sleep(wait_seconds)
+                # Calculate next sync time
+                if current_hour < MORNING_SYNC_HOUR_UTC:
+                    # Before morning sync
+                    next_sync_hour = MORNING_SYNC_HOUR_UTC
+                    sync_name = "MORNING"
+                elif current_hour < PREGAME_SYNC_HOUR_UTC:
+                    # Between morning and pre-game
+                    next_sync_hour = PREGAME_SYNC_HOUR_UTC
+                    sync_name = "PRE-GAME"
+                else:
+                    # After pre-game, wait for tomorrow's morning
+                    next_sync_hour = MORNING_SYNC_HOUR_UTC
+                    sync_name = "MORNING"
+                
+                # Calculate wait time
+                target = now.replace(hour=next_sync_hour, minute=0, second=0, microsecond=0)
+                if target <= now:
+                    target += timedelta(days=1)
+                
+                wait_seconds = (target - now).total_seconds()
+                logger.info(f"Next {sync_name} sync in {wait_seconds/3600:.1f} hours (at {target.isoformat()})")
+                
+                # Wait until sync time
+                await asyncio.sleep(wait_seconds)
             
             # Run the sync
             logger.info(f"=== {sync_name} QUOTA-SAFE SYNC STARTING ===")
@@ -570,6 +581,29 @@ async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False)
                         logger.info(f"  {sport_data['display_name']:8} | No sync data")
             
             logger.info("-" * 60)
+            
+            # 6. Generate picks for all synced sports
+            logger.info("Generating picks for all sports...")
+            from app.services.picks_generator import generate_picks
+            picks_summary = {}
+            
+            async with session_maker() as db_picks:
+                for sport_key in SPORT_KEYS:
+                    try:
+                        picks_result = await generate_picks(
+                            db_picks,
+                            sport_key,
+                            min_ev=0.0,
+                            min_confidence=0.5,
+                            use_stubs=True,
+                        )
+                        picks_summary[sport_key] = picks_result.get("picks_created", 0)
+                        logger.info(f"  {sport_key}: {picks_result.get('picks_created', 0)} picks generated")
+                    except Exception as e:
+                        logger.error(f"  {sport_key}: Error generating picks: {e}")
+                        picks_summary[sport_key] = 0
+            
+            logger.info(f"Picks generation complete: {picks_summary}")
             
             # Final status
             if health_issues:
