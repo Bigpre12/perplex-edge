@@ -1,14 +1,20 @@
 """Odds provider for fetching games, lines, and player props from external APIs."""
 
+import json
 import logging
+import os
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 import httpx
 
 from app.core.config import get_settings
+
+# Path to schedule data files
+SCHEDULES_DIR = Path(__file__).parent.parent.parent / "data" / "schedules"
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +63,164 @@ def _update_quota_from_headers(remaining: str | None, used: str | None) -> None:
             pass
     
     _quota_last_updated = datetime.now(timezone.utc)
+
+
+# =============================================================================
+# Team Power Ratings (for generating realistic moneylines from schedule data)
+# Based on current 2025-26 season performance
+# =============================================================================
+
+NBA_POWER_RATINGS = {
+    # Elite tier (contenders)
+    "Cleveland Cavaliers": 8.5,
+    "Boston Celtics": 7.8,
+    "Oklahoma City Thunder": 7.5,
+    "Denver Nuggets": 6.2,
+    "New York Knicks": 5.8,
+    "Milwaukee Bucks": 5.5,
+    "Memphis Grizzlies": 5.2,
+    "Houston Rockets": 4.8,
+    # Playoff tier
+    "Dallas Mavericks": 4.5,
+    "Los Angeles Lakers": 4.2,
+    "Phoenix Suns": 4.0,
+    "Golden State Warriors": 3.8,
+    "Minnesota Timberwolves": 3.5,
+    "Los Angeles Clippers": 3.2,
+    "Indiana Pacers": 3.0,
+    "Orlando Magic": 2.8,
+    "Miami Heat": 2.5,
+    # Middle tier
+    "Sacramento Kings": 1.5,
+    "San Antonio Spurs": 1.2,
+    "Atlanta Hawks": 0.8,
+    "Detroit Pistons": 0.5,
+    "Chicago Bulls": 0.0,
+    "Philadelphia 76ers": -0.5,
+    "Toronto Raptors": -1.0,
+    # Lower tier
+    "Brooklyn Nets": -2.5,
+    "Utah Jazz": -3.0,
+    "Portland Trail Blazers": -4.5,
+    "Charlotte Hornets": -5.0,
+    "New Orleans Pelicans": -5.5,
+    "Washington Wizards": -7.0,
+}
+
+NCAAB_POWER_RATINGS = {
+    # Top 10
+    "Auburn Tigers": 9.0,
+    "Duke Blue Devils": 8.8,
+    "Iowa State Cyclones": 8.5,
+    "Alabama Crimson Tide": 8.2,
+    "Florida Gators": 8.0,
+    "Tennessee Volunteers": 7.8,
+    "Houston Cougars": 7.5,
+    "Kansas Jayhawks": 7.2,
+    "Michigan State Spartans": 7.0,
+    "Texas A&M Aggies": 6.8,
+    # 11-25
+    "Kentucky Wildcats": 6.5,
+    "Purdue Boilermakers": 6.2,
+    "UConn Huskies": 6.0,
+    "Gonzaga Bulldogs": 5.8,
+    "Marquette Golden Eagles": 5.5,
+    "Oregon Ducks": 5.2,
+    "Wisconsin Badgers": 5.0,
+    "St. John's Red Storm": 4.8,
+    "Missouri Tigers": 4.5,
+    "Texas Longhorns": 4.2,
+    "Louisville Cardinals": 4.0,
+    "UCLA Bruins": 3.8,
+    "Arizona Wildcats": 3.5,
+    "Illinois Fighting Illini": 3.2,
+    "Michigan Wolverines": 3.0,
+    # Strong programs
+    "North Carolina Tar Heels": 2.8,
+    "Baylor Bears": 2.5,
+    "Ohio State Buckeyes": 2.2,
+    "Creighton Bluejays": 2.0,
+    "Villanova Wildcats": 1.8,
+    "Virginia Cavaliers": 1.5,
+    "Indiana Hoosiers": 1.2,
+    "Texas Tech Red Raiders": 1.0,
+    "Arkansas Razorbacks": 0.8,
+    "BYU Cougars": 0.5,
+    # Mid-major powers
+    "Saint Mary's Gaels": 0.2,
+    "San Diego State Aztecs": 0.0,
+    "Memphis Tigers": -0.5,
+    "Xavier Musketeers": -1.0,
+    "Cincinnati Bearcats": -1.5,
+    # Default for unrated teams
+    "Miami Hurricanes": -2.0,
+    "NC State Wolfpack": -2.5,
+    "Wake Forest Demon Deacons": -3.0,
+    "Georgia Bulldogs": -3.5,
+    "Vanderbilt Commodores": -4.0,
+    "LSU Tigers": -1.8,
+    "Ole Miss Rebels": -2.2,
+    "Mississippi State Bulldogs": -2.8,
+    "South Carolina Gamecocks": -3.2,
+    "Oklahoma Sooners": -2.0,
+    "West Virginia Mountaineers": -2.5,
+    "Oklahoma State Cowboys": -3.0,
+    "TCU Horned Frogs": -3.5,
+    "Kansas State Wildcats": 1.5,
+    "Colorado Buffaloes": -1.5,
+    "Utah Utes": -2.0,
+    "Arizona State Sun Devils": -2.5,
+    "USC Trojans": 0.5,
+    "Stanford Cardinal": -3.0,
+    "Oregon State Beavers": -4.0,
+    "Washington Huskies": -3.5,
+    "California Golden Bears": -4.5,
+    "Georgetown Hoyas": -4.0,
+    "Seton Hall Pirates": -2.0,
+    "Pittsburgh Panthers": -1.5,
+    "Louisville Cardinals": 4.0,
+    "Florida State Seminoles": -2.5,
+    "Penn State Nittany Lions": -1.0,
+    "Rutgers Scarlet Knights": -2.0,
+    "Iowa Hawkeyes": 1.0,
+    "Minnesota Golden Gophers": -3.0,
+    "San Francisco Dons": -1.5,
+    "Pepperdine Waves": -5.0,
+}
+
+
+def _spread_to_moneyline(spread: float) -> tuple[int, int]:
+    """
+    Convert point spread to moneyline odds.
+    
+    Uses approximate conversion:
+    - 3pt favorite ~= -150/+130
+    - 7pt favorite ~= -300/+250
+    - Even ~= -110/-110
+    
+    Args:
+        spread: Point spread (positive = home favorite)
+    
+    Returns:
+        Tuple of (home_odds, away_odds) in American format
+    """
+    import math
+    
+    if abs(spread) < 0.5:
+        return (-110, -110)
+    
+    # Approximate conversion formula
+    if spread > 0:
+        # Home is favorite
+        fav_ml = int(-100 - (spread * 15))
+        dog_ml = int(100 + (spread * 12))
+        return (fav_ml, dog_ml)
+    else:
+        # Away is favorite
+        spread = abs(spread)
+        fav_ml = int(-100 - (spread * 15))
+        dog_ml = int(100 + (spread * 12))
+        return (dog_ml, fav_ml)
 
 
 # =============================================================================
@@ -634,254 +798,169 @@ class XYZOddsProvider(OddsProvider):
     # Stub Methods for Testing
     # =========================================================================
     
-    def _stub_games_response(self, sport_key: str) -> list[dict[str, Any]]:
-        """Return realistic stub game data for testing with dynamic dates."""
-        # Get dynamic game times based on today's date
-        times = _get_stub_game_times()
+    def _load_season_schedule(self, sport_key: str) -> dict[str, Any]:
+        """
+        Load season schedule from JSON file.
         
-        if sport_key == "basketball_ncaab":
-            # College Basketball games (2025-26 Season) - 8 Games, 16 Top Teams
-            return [
-                # Game 1: Kansas vs Duke
+        Args:
+            sport_key: Sport identifier (basketball_nba, basketball_ncaab, etc.)
+        
+        Returns:
+            Schedule dictionary with 'season' and 'games' keys
+        """
+        schedule_files = {
+            "basketball_nba": SCHEDULES_DIR / "nba_2025_26.json",
+            "basketball_ncaab": SCHEDULES_DIR / "ncaab_2025_26.json",
+        }
+        
+        schedule_file = schedule_files.get(sport_key)
+        
+        if not schedule_file or not schedule_file.exists():
+            logger.warning(f"No schedule file found for {sport_key} at {schedule_file}")
+            return {"season": "2025-26", "games": []}
+        
+        try:
+            with open(schedule_file, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading schedule for {sport_key}: {e}")
+            return {"season": "2025-26", "games": []}
+    
+    def _schedule_game_to_api_format(
+        self, 
+        game: dict[str, str], 
+        sport_key: str,
+        today_str: str,
+    ) -> dict[str, Any]:
+        """
+        Convert a schedule game entry to The Odds API format.
+        
+        Args:
+            game: Game dict from schedule JSON
+            sport_key: Sport identifier
+            today_str: Today's date as ISO string
+        
+        Returns:
+            Game dict matching The Odds API response format
+        """
+        # Parse game time and convert to UTC
+        time_et = game.get("time_et", "19:00")
+        hour, minute = map(int, time_et.split(":"))
+        
+        game_date = datetime.strptime(game["date"], "%Y-%m-%d")
+        game_dt = datetime(
+            game_date.year, game_date.month, game_date.day,
+            hour, minute, tzinfo=EASTERN_TZ
+        )
+        commence_time = game_dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        # Generate moneyline from power ratings
+        home_ml, away_ml = self._generate_moneyline_from_ratings(
+            game["home_team"], game["away_team"], sport_key
+        )
+        
+        # Generate game ID
+        home_abbr = game.get("home_abbr", game["home_team"][:3].upper())
+        away_abbr = game.get("away_abbr", game["away_team"][:3].upper())
+        game_id = f"game_{away_abbr.lower()}_{home_abbr.lower()}_{game['date'].replace('-', '')}"
+        
+        # Sport title
+        sport_titles = {
+            "basketball_nba": "NBA",
+            "basketball_ncaab": "NCAAB",
+            "americanfootball_nfl": "NFL",
+        }
+        sport_title = sport_titles.get(sport_key, sport_key.upper())
+        
+        # Pick a sportsbook (rotate through them)
+        sportsbooks = ["draftkings", "fanduel", "betmgm", "caesars"]
+        sportsbook_idx = hash(game_id) % len(sportsbooks)
+        sportsbook = sportsbooks[sportsbook_idx]
+        sportsbook_titles = {
+            "draftkings": "DraftKings",
+            "fanduel": "FanDuel",
+            "betmgm": "BetMGM",
+            "caesars": "Caesars",
+        }
+        
+        return {
+            "id": game_id,
+            "sport_key": sport_key,
+            "sport_title": sport_title,
+            "commence_time": commence_time,
+            "home_team": game["home_team"],
+            "away_team": game["away_team"],
+            "bookmakers": [
                 {
-                    "id": "ncaab_game_1",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["early"],
-                    "home_team": "Kansas Jayhawks",
-                    "away_team": "Duke Blue Devils",
-                    "bookmakers": [
-                        {
-                            "key": "draftkings",
-                            "title": "DraftKings",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Kansas Jayhawks", "price": -135},
-                                {"name": "Duke Blue Devils", "price": 115}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 2: Kentucky vs Houston
-                {
-                    "id": "ncaab_game_2",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["early"],
-                    "home_team": "Kentucky Wildcats",
-                    "away_team": "Houston Cougars",
-                    "bookmakers": [
-                        {
-                            "key": "fanduel",
-                            "title": "FanDuel",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Kentucky Wildcats", "price": 110},
-                                {"name": "Houston Cougars", "price": -130}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 3: Gonzaga vs UConn
-                {
-                    "id": "ncaab_game_3",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["late"],
-                    "home_team": "Gonzaga Bulldogs",
-                    "away_team": "UConn Huskies",
-                    "bookmakers": [
-                        {
-                            "key": "betmgm",
-                            "title": "BetMGM",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Gonzaga Bulldogs", "price": -120},
-                                {"name": "UConn Huskies", "price": 100}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 4: Purdue vs Florida
-                {
-                    "id": "ncaab_game_4",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["late"],
-                    "home_team": "Purdue Boilermakers",
-                    "away_team": "Florida Gators",
-                    "bookmakers": [
-                        {
-                            "key": "caesars",
-                            "title": "Caesars",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Purdue Boilermakers", "price": -145},
-                                {"name": "Florida Gators", "price": 125}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 5: UCLA vs Arizona
-                {
-                    "id": "ncaab_game_5",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["night"],
-                    "home_team": "UCLA Bruins",
-                    "away_team": "Arizona Wildcats",
-                    "bookmakers": [
-                        {
-                            "key": "draftkings",
-                            "title": "DraftKings",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "UCLA Bruins", "price": 105},
-                                {"name": "Arizona Wildcats", "price": -125}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 6: Alabama vs Tennessee
-                {
-                    "id": "ncaab_game_6",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["night"],
-                    "home_team": "Alabama Crimson Tide",
-                    "away_team": "Tennessee Volunteers",
-                    "bookmakers": [
-                        {
-                            "key": "fanduel",
-                            "title": "FanDuel",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Alabama Crimson Tide", "price": -115},
-                                {"name": "Tennessee Volunteers", "price": -105}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 7: St. John's vs Michigan
-                {
-                    "id": "ncaab_game_7",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["west"],
-                    "home_team": "St. John's Red Storm",
-                    "away_team": "Michigan Wolverines",
-                    "bookmakers": [
-                        {
-                            "key": "betmgm",
-                            "title": "BetMGM",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "St. John's Red Storm", "price": -140},
-                                {"name": "Michigan Wolverines", "price": 120}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 8: Arkansas vs Illinois
-                {
-                    "id": "ncaab_game_8",
-                    "sport_key": sport_key,
-                    "sport_title": "NCAAB",
-                    "commence_time": times["west"],
-                    "home_team": "Arkansas Razorbacks",
-                    "away_team": "Illinois Fighting Illini",
-                    "bookmakers": [
-                        {
-                            "key": "caesars",
-                            "title": "Caesars",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Arkansas Razorbacks", "price": 100},
-                                {"name": "Illinois Fighting Illini", "price": -120}
-                            ]}]
-                        }
-                    ],
-                },
-            ]
-        elif "basketball" in sport_key:
-            # Real NBA Schedule for January 29, 2026
-            return [
-                # Game 1: Kings @ 76ers (7:00 PM ET)
-                {
-                    "id": "game_sac_phi_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["early"],
-                    "home_team": "Philadelphia 76ers",
-                    "away_team": "Sacramento Kings",
-                    "bookmakers": [],
-                },
-                # Game 2: Bucks @ Wizards (8:00 PM ET)
-                {
-                    "id": "game_mil_was_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["late"],
-                    "home_team": "Washington Wizards",
-                    "away_team": "Milwaukee Bucks",
-                    "bookmakers": [],
-                },
-                # Game 3: Heat @ Bulls (8:00 PM ET)
-                {
-                    "id": "game_mia_chi_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["late"],
-                    "home_team": "Chicago Bulls",
-                    "away_team": "Miami Heat",
-                    "bookmakers": [],
-                },
-                # Game 4: Rockets @ Hawks (8:30 PM ET)
-                {
-                    "id": "game_hou_atl_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["night"],
-                    "home_team": "Atlanta Hawks",
-                    "away_team": "Houston Rockets",
-                    "bookmakers": [],
-                },
-                # Game 5: Hornets @ Mavericks (9:00 PM ET)
-                {
-                    "id": "game_cha_dal_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["west"],
-                    "home_team": "Dallas Mavericks",
-                    "away_team": "Charlotte Hornets",
-                    "bookmakers": [],
-                },
-                # Game 6: Nets @ Nuggets (9:00 PM ET)
-                {
-                    "id": "game_bkn_den_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["west"],
-                    "home_team": "Denver Nuggets",
-                    "away_team": "Brooklyn Nets",
-                    "bookmakers": [],
-                },
-                # Game 7: Pistons @ Suns (9:30 PM ET)
-                {
-                    "id": "game_det_pho_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["west"],
-                    "home_team": "Phoenix Suns",
-                    "away_team": "Detroit Pistons",
-                    "bookmakers": [],
-                },
-                # Game 8: Thunder @ Timberwolves (9:00 PM ET)
-                {
-                    "id": "game_okc_min_today",
-                    "sport_key": sport_key,
-                    "sport_title": "NBA",
-                    "commence_time": times["west"],
-                    "home_team": "Minnesota Timberwolves",
-                    "away_team": "Oklahoma City Thunder",
-                    "bookmakers": [],
-                },
-            ]
-        elif "football" in sport_key:
-            # NFL Playoffs - Super Bowl LX (February 8, 2026)
-            # Seahawks beat Rams 31-27 (NFC), Patriots beat Broncos 10-7 (AFC)
+                    "key": sportsbook,
+                    "title": sportsbook_titles[sportsbook],
+                    "markets": [{
+                        "key": "h2h",
+                        "outcomes": [
+                            {"name": game["home_team"], "price": home_ml},
+                            {"name": game["away_team"], "price": away_ml},
+                        ]
+                    }]
+                }
+            ],
+        }
+    
+    def _generate_moneyline_from_ratings(
+        self, 
+        home_team: str, 
+        away_team: str, 
+        sport_key: str,
+    ) -> tuple[int, int]:
+        """
+        Generate realistic moneyline odds from team power ratings.
+        
+        Uses the spread_to_moneyline conversion with home court advantage.
+        
+        Args:
+            home_team: Home team name
+            away_team: Away team name
+            sport_key: Sport for selecting correct ratings
+        
+        Returns:
+            Tuple of (home_odds, away_odds) in American format
+        """
+        # Select appropriate ratings
+        if "ncaab" in sport_key:
+            ratings = NCAAB_POWER_RATINGS
+            home_advantage = 4.0  # College home court is bigger
+        else:
+            ratings = NBA_POWER_RATINGS
+            home_advantage = 3.0  # NBA home court advantage
+        
+        home_rating = ratings.get(home_team, 0.0)
+        away_rating = ratings.get(away_team, 0.0)
+        
+        # Spread = home_rating - away_rating + home_advantage
+        # Positive spread = home is favorite
+        spread = home_rating - away_rating + home_advantage
+        
+        return _spread_to_moneyline(spread)
+    
+    def _stub_games_response(self, sport_key: str) -> list[dict[str, Any]]:
+        """
+        Return dynamic stub game data based on season schedule files.
+        
+        Automatically filters to today's games and generates realistic
+        moneylines from team power ratings.
+        
+        Args:
+            sport_key: Sport identifier
+        
+        Returns:
+            List of games in The Odds API format for today's date
+        """
+        # Get today's date in Eastern time
+        today = datetime.now(EASTERN_TZ).date()
+        today_str = today.isoformat()
+        
+        # Handle NFL separately (Super Bowl focus during playoffs)
+        if "football" in sport_key:
+            times = _get_stub_game_times()
             return [
                 # SUPER BOWL LX - February 8, 2026
                 {
@@ -902,142 +981,46 @@ class XYZOddsProvider(OddsProvider):
                         }
                     ],
                 },
-                # Game 2: Chiefs vs Bills - AFC Rivalry
-                {
-                    "id": "nfl_game_2",
-                    "sport_key": sport_key,
-                    "sport_title": "NFL",
-                    "commence_time": times["early"],
-                    "home_team": "Kansas City Chiefs",
-                    "away_team": "Buffalo Bills",
-                    "bookmakers": [
-                        {
-                            "key": "fanduel",
-                            "title": "FanDuel",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Kansas City Chiefs", "price": -145},
-                                {"name": "Buffalo Bills", "price": 125}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 3: 49ers vs Eagles - NFC Powerhouses
-                {
-                    "id": "nfl_game_3",
-                    "sport_key": sport_key,
-                    "sport_title": "NFL",
-                    "commence_time": times["early"],
-                    "home_team": "San Francisco 49ers",
-                    "away_team": "Philadelphia Eagles",
-                    "bookmakers": [
-                        {
-                            "key": "betmgm",
-                            "title": "BetMGM",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "San Francisco 49ers", "price": -135},
-                                {"name": "Philadelphia Eagles", "price": 115}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 4: Lions vs Cowboys - NFC Showdown
-                {
-                    "id": "nfl_game_4",
-                    "sport_key": sport_key,
-                    "sport_title": "NFL",
-                    "commence_time": times["late"],
-                    "home_team": "Detroit Lions",
-                    "away_team": "Dallas Cowboys",
-                    "bookmakers": [
-                        {
-                            "key": "caesars",
-                            "title": "Caesars",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Detroit Lions", "price": -155},
-                                {"name": "Dallas Cowboys", "price": 135}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 5: Ravens vs Bengals - AFC North
-                {
-                    "id": "nfl_game_5",
-                    "sport_key": sport_key,
-                    "sport_title": "NFL",
-                    "commence_time": times["late"],
-                    "home_team": "Baltimore Ravens",
-                    "away_team": "Cincinnati Bengals",
-                    "bookmakers": [
-                        {
-                            "key": "draftkings",
-                            "title": "DraftKings",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Baltimore Ravens", "price": -140},
-                                {"name": "Cincinnati Bengals", "price": 120}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 6: Dolphins vs Packers - Cross-Conference
-                {
-                    "id": "nfl_game_6",
-                    "sport_key": sport_key,
-                    "sport_title": "NFL",
-                    "commence_time": times["night"],
-                    "home_team": "Miami Dolphins",
-                    "away_team": "Green Bay Packers",
-                    "bookmakers": [
-                        {
-                            "key": "fanduel",
-                            "title": "FanDuel",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Miami Dolphins", "price": -130},
-                                {"name": "Green Bay Packers", "price": 110}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 7: Texans vs Rams - Young QBs
-                {
-                    "id": "nfl_game_7",
-                    "sport_key": sport_key,
-                    "sport_title": "NFL",
-                    "commence_time": times["west"],
-                    "home_team": "Houston Texans",
-                    "away_team": "Los Angeles Rams",
-                    "bookmakers": [
-                        {
-                            "key": "betmgm",
-                            "title": "BetMGM",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Houston Texans", "price": -125},
-                                {"name": "Los Angeles Rams", "price": 105}
-                            ]}]
-                        }
-                    ],
-                },
-                # Game 8: Buccaneers vs Jets - East Coast Battle
-                {
-                    "id": "nfl_game_8",
-                    "sport_key": sport_key,
-                    "sport_title": "NFL",
-                    "commence_time": times["west"],
-                    "home_team": "Tampa Bay Buccaneers",
-                    "away_team": "New York Jets",
-                    "bookmakers": [
-                        {
-                            "key": "caesars",
-                            "title": "Caesars",
-                            "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Tampa Bay Buccaneers", "price": -110},
-                                {"name": "New York Jets", "price": -110}
-                            ]}]
-                        }
-                    ],
-                },
             ]
-        else:
+        
+        # Load schedule for NBA/NCAAB
+        schedule = self._load_season_schedule(sport_key)
+        
+        if not schedule.get("games"):
+            logger.warning(f"No games in schedule for {sport_key}")
             return []
+        
+        # Filter to today's games
+        todays_games = [
+            g for g in schedule["games"] 
+            if g.get("date") == today_str
+        ]
+        
+        if not todays_games:
+            logger.warning(f"No games found for {sport_key} on {today_str}")
+            # Fall back to showing tomorrow's games if today has none
+            tomorrow = (today + timedelta(days=1)).isoformat()
+            todays_games = [
+                g for g in schedule["games"]
+                if g.get("date") == tomorrow
+            ]
+            if todays_games:
+                logger.info(f"Showing {len(todays_games)} games for tomorrow ({tomorrow})")
+        
+        # Sanity check: warn if zero games on a weekday
+        if not todays_games and today.weekday() < 5:  # Mon-Fri
+            logger.error(
+                f"ALERT: Zero games found for {sport_key} on {today_str} (weekday) - "
+                "check schedule file or date range"
+            )
+        
+        logger.info(f"Found {len(todays_games)} games for {sport_key} on {today_str}")
+        
+        # Convert to API format
+        return [
+            self._schedule_game_to_api_format(g, sport_key, today_str)
+            for g in todays_games
+        ]
     
     def _stub_lines_response(
         self,

@@ -480,11 +480,12 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
                             })
                         
                         # 5. Record sync metadata for "last updated" tracking
+                        games_count = result.get("games_added", 0) + result.get("games_updated", 0)
                         await record_sync(
                             db,
                             sport_key=sport_key,
                             data_type="games",
-                            games_count=result.get("games_added", 0) + result.get("games_updated", 0),
+                            games_count=games_count,
                             lines_count=result.get("lines_added", 0),
                             props_count=result.get("props_added", 0),
                             picks_count=result.get("picks_generated", 0),
@@ -492,6 +493,24 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
                             sync_duration_seconds=round(sync_duration, 2),
                             is_healthy=is_healthy,
                         )
+                        
+                        # 6. Sanity check: Alert on zero games (indicates stale schedule or API issue)
+                        if games_count == 0:
+                            # Check if it's a normal game day (NBA/NCAAB typically have games most days)
+                            from datetime import date as date_type
+                            today = date_type.today()
+                            is_weekday = today.weekday() < 5  # Mon-Fri
+                            
+                            if sport_key in ["basketball_nba", "basketball_ncaab"] and is_weekday:
+                                logger.error(
+                                    f"ALERT: Zero games synced for {sport_key} on {today.isoformat()} - "
+                                    f"check schedule data file or API response! Source: {result.get('source', 'unknown')}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"No games for {sport_key} on {today.isoformat()} - "
+                                    f"may be off-day or offseason"
+                                )
                             
                     except Exception as e:
                         sync_duration = time.time() - sync_start

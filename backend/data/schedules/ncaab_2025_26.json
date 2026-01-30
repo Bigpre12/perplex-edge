@@ -1,0 +1,82 @@
+{
+  "season": "2025-26",
+  "last_updated": "2026-01-30",
+  "games": [
+    {"date": "2026-01-30", "time_et": "18:30", "home_team": "Duke Blue Devils", "away_team": "North Carolina Tar Heels", "home_abbr": "DUKE", "away_abbr": "UNC"},
+    {"date": "2026-01-30", "time_et": "19:00", "home_team": "Kansas Jayhawks", "away_team": "Kansas State Wildcats", "home_abbr": "KU", "away_abbr": "KSU"},
+    {"date": "2026-01-30", "time_et": "19:00", "home_team": "Kentucky Wildcats", "away_team": "Tennessee Volunteers", "home_abbr": "UK", "away_abbr": "TENN"},
+    {"date": "2026-01-30", "time_et": "19:00", "home_team": "Villanova Wildcats", "away_team": "Georgetown Hoyas", "home_abbr": "NOVA", "away_abbr": "GTWN"},
+    {"date": "2026-01-30", "time_et": "20:00", "home_team": "Michigan State Spartans", "away_team": "Ohio State Buckeyes", "home_abbr": "MSU", "away_abbr": "OSU"},
+    {"date": "2026-01-30", "time_et": "20:00", "home_team": "Texas Longhorns", "away_team": "Baylor Bears", "home_abbr": "TEX", "away_abbr": "BAY"},
+    {"date": "2026-01-30", "time_et": "21:00", "home_team": "Arizona Wildcats", "away_team": "UCLA Bruins", "home_abbr": "ARIZ", "away_abbr": "UCLA"},
+    {"date": "2026-01-30", "time_et": "21:00", "home_team": "Gonzaga Bulldogs", "away_team": "Saint Mary's Gaels", "home_abbr": "GONZ", "away_abbr": "SMC"},
+
+    {"date": "2026-01-31", "time_et": "18:00", "home_team": "UConn Huskies", "away_team": "Creighton Bluejays", "home_abbr": "CONN", "away_abbr": "CREI"},
+    {"date": "2026-01-31", "time_et": "19:00", "home_team": "Purdue Boilermakers", "away_team": "Indiana Hoosiers", "home_abbr": "PUR", "away_abbr": "IND"},
+    {"date": "2026-01-31", "time_et": "19:00", "home_team": "Florida Gators", "away_team": "Auburn Tigers", "home_abbr": "FLA", "away_abbr": "AUB"},
+    {"date": "2026-01-31", "time_et": "20:00", "home_team": "Houston Cougars", "away_team": "Cincinnati Bearcats", "home_abbr": "HOU", "away_abbr": "CIN"},
+    {"date": "2026-01-31", "time_et": "20:00", "home_team": "Iowa State Cyclones", "away_team": "Texas Tech Red Raiders", "home_abbr": "ISU", "away_abbr": "TTU"},
+    {"date": "2026-01-31", "time_et": "21:00", "home_team": "Oregon Ducks", "away_team": "Washington Huskies", "home_abbr": "ORE", "away_abbr": "WASH"},
+
+    {"date": "2026-02-01", "time_et": "12:00", "home_team": "Michigan Wolverines", "away_team": "Illinois Fighting Illini", "home_abbr": "MICH", "away_abbr": "ILL"},
+    {"date": "2026-02-01", "time_et": "14:00", "home_team": "North Carolina Tar Heels", "away_team": "Virginia Cavaliers", "home_abbr": "UNC", "away_abbr": "UVA"},
+    {"date": "2026-02-01", "time_et": "16:00", "home_team": "Alabama Crimson Tide", "away_team": "Arkansas Razorbacks", "home_abbr": "BAMA", "away_abbr": "ARK"},
+    {"date": "2026-02-01", "time_et": "18:00", "home_team": "Duke Blue Devils", "away_team": "Wake Forest Demon Deacons", "home_abbr": "DUKE", "away_abbr": "WAKE"},
+    {"date": "2026-02-01", "time_et": "19:00", "home_team": "Kansas Jayhawks", "away_team": "Oklahoma Sooners", "home_abbr": "KU", "away_abbr": "OU"},
+    {"date": "2026-02-01", "time_et": "20:00", "home_team": "Kentucky Wildcats", "away_team": "Vanderbilt Commodores", "home_abbr": "UK", "away_abbr": "VAN"},
+    {"date": "2026-02-01", "time_et": "21:00", "home_team": "UCLA Bruins", "away_team": "USC Trojans", "home_abbr": "UCLA", "away_abbr": "USC"},
+
+    {"date": "2026-02-02", "time_et": "13:00", "home_team": "Gonzaga Bulldogs", "away_team": "BYU Cougars", "home_abbr": "GONZ", "away_abbr": "BYU"},
+    {"date": "2026-02-02", "time_et": "14:00", "home_team": "UConn Huskies", "away_team": "Marquette Golden Eagles", "home_abbr": "CONN", "away_abbr": "MARQ"},
+    {"date": "2026-02-02", "time_et": "16:00", "home_team": "Texas Longhorns", "away_team": "TCU Horned Frogs", "home_abbr": "TEX", "away_abbr": "TCU"},
+    {"date": "2026-02-02", "time_et": "18:00", "home_team": "Florida Gators", "away_team": "LSU Tigers", "home_abbr": "FLA", "away_abbr": "LSU"},
+    {"date": "2026-02-02", "time_et": "19:00", "home_team": "Purdue Boilermakers", "away_team": "Michigan State Spartans", "home_abbr": "PUR", "away_abbr": "MSU"},
+    {"date": "2026-02-02", "time_et": "20:00", "home_team": "Arizona Wildcats", "away_team": "Colorado Buffaloes", "home_abbr": "ARIZ", "away_abbr": "COLO"},
+
+    {"date": "2026-02-03", "time_et": "19:00", "home_team": "Tennessee Volunteers", "away_team": "South Carolina Gamecocks", "home_abbr": "TENN", "away_abbr": "SCAR"},
+    {"date": "2026-02-03", "time_et": "19:00", "home_team": "Ohio State Buckeyes", "away_team": "Wisconsin Badgers", "home_abbr": "OSU", "away_abbr": "WIS"},
+    {"date": "2026-02-03", "time_et": "20:00", "home_team": "Houston Cougars", "away_team": "Memphis Tigers", "home_abbr": "HOU", "away_abbr": "MEM"},
+    {"date": "2026-02-03", "time_et": "21:00", "home_team": "Baylor Bears", "away_team": "Oklahoma State Cowboys", "home_abbr": "BAY", "away_abbr": "OKST"},
+
+    {"date": "2026-02-04", "time_et": "19:00", "home_team": "Duke Blue Devils", "away_team": "Louisville Cardinals", "home_abbr": "DUKE", "away_abbr": "LOU"},
+    {"date": "2026-02-04", "time_et": "19:00", "home_team": "Virginia Cavaliers", "away_team": "NC State Wolfpack", "home_abbr": "UVA", "away_abbr": "NCST"},
+    {"date": "2026-02-04", "time_et": "20:00", "home_team": "Iowa Hawkeyes", "away_team": "Minnesota Golden Gophers", "home_abbr": "IOWA", "away_abbr": "MINN"},
+    {"date": "2026-02-04", "time_et": "21:00", "home_team": "Stanford Cardinal", "away_team": "Oregon State Beavers", "home_abbr": "STAN", "away_abbr": "ORST"},
+
+    {"date": "2026-02-05", "time_et": "19:00", "home_team": "Kansas Jayhawks", "away_team": "West Virginia Mountaineers", "home_abbr": "KU", "away_abbr": "WVU"},
+    {"date": "2026-02-05", "time_et": "19:00", "home_team": "Kentucky Wildcats", "away_team": "Georgia Bulldogs", "home_abbr": "UK", "away_abbr": "UGA"},
+    {"date": "2026-02-05", "time_et": "20:00", "home_team": "Auburn Tigers", "away_team": "Mississippi State Bulldogs", "home_abbr": "AUB", "away_abbr": "MSST"},
+    {"date": "2026-02-05", "time_et": "21:00", "home_team": "Gonzaga Bulldogs", "away_team": "San Francisco Dons", "home_abbr": "GONZ", "away_abbr": "USF"},
+
+    {"date": "2026-02-06", "time_et": "18:30", "home_team": "North Carolina Tar Heels", "away_team": "Pittsburgh Panthers", "home_abbr": "UNC", "away_abbr": "PITT"},
+    {"date": "2026-02-06", "time_et": "19:00", "home_team": "UConn Huskies", "away_team": "Seton Hall Pirates", "home_abbr": "CONN", "away_abbr": "HALL"},
+    {"date": "2026-02-06", "time_et": "20:00", "home_team": "Texas Longhorns", "away_team": "Iowa State Cyclones", "home_abbr": "TEX", "away_abbr": "ISU"},
+    {"date": "2026-02-06", "time_et": "21:00", "home_team": "UCLA Bruins", "away_team": "Arizona State Sun Devils", "home_abbr": "UCLA", "away_abbr": "ASU"},
+
+    {"date": "2026-02-07", "time_et": "12:00", "home_team": "Purdue Boilermakers", "away_team": "Rutgers Scarlet Knights", "home_abbr": "PUR", "away_abbr": "RUTG"},
+    {"date": "2026-02-07", "time_et": "14:00", "home_team": "Duke Blue Devils", "away_team": "Miami Hurricanes", "home_abbr": "DUKE", "away_abbr": "MIA"},
+    {"date": "2026-02-07", "time_et": "16:00", "home_team": "Alabama Crimson Tide", "away_team": "Ole Miss Rebels", "home_abbr": "BAMA", "away_abbr": "MISS"},
+    {"date": "2026-02-07", "time_et": "18:00", "home_team": "Tennessee Volunteers", "away_team": "Florida Gators", "home_abbr": "TENN", "away_abbr": "FLA"},
+    {"date": "2026-02-07", "time_et": "19:00", "home_team": "Michigan State Spartans", "away_team": "Indiana Hoosiers", "home_abbr": "MSU", "away_abbr": "IND"},
+    {"date": "2026-02-07", "time_et": "20:00", "home_team": "Houston Cougars", "away_team": "BYU Cougars", "home_abbr": "HOU", "away_abbr": "BYU"},
+    {"date": "2026-02-07", "time_et": "21:00", "home_team": "Arizona Wildcats", "away_team": "Utah Utes", "home_abbr": "ARIZ", "away_abbr": "UTAH"},
+
+    {"date": "2026-02-08", "time_et": "12:00", "home_team": "Kansas Jayhawks", "away_team": "Baylor Bears", "home_abbr": "KU", "away_abbr": "BAY"},
+    {"date": "2026-02-08", "time_et": "14:00", "home_team": "UConn Huskies", "away_team": "Villanova Wildcats", "home_abbr": "CONN", "away_abbr": "NOVA"},
+    {"date": "2026-02-08", "time_et": "16:00", "home_team": "Kentucky Wildcats", "away_team": "Auburn Tigers", "home_abbr": "UK", "away_abbr": "AUB"},
+    {"date": "2026-02-08", "time_et": "18:00", "home_team": "North Carolina Tar Heels", "away_team": "Duke Blue Devils", "home_abbr": "UNC", "away_abbr": "DUKE"},
+    {"date": "2026-02-08", "time_et": "20:00", "home_team": "Gonzaga Bulldogs", "away_team": "Pepperdine Waves", "home_abbr": "GONZ", "away_abbr": "PEPP"},
+    {"date": "2026-02-08", "time_et": "22:00", "home_team": "USC Trojans", "away_team": "Stanford Cardinal", "home_abbr": "USC", "away_abbr": "STAN"},
+
+    {"date": "2026-02-09", "time_et": "13:00", "home_team": "Illinois Fighting Illini", "away_team": "Iowa Hawkeyes", "home_abbr": "ILL", "away_abbr": "IOWA"},
+    {"date": "2026-02-09", "time_et": "15:00", "home_team": "Michigan Wolverines", "away_team": "Penn State Nittany Lions", "home_abbr": "MICH", "away_abbr": "PSU"},
+    {"date": "2026-02-09", "time_et": "17:00", "home_team": "Texas Tech Red Raiders", "away_team": "Oklahoma Sooners", "home_abbr": "TTU", "away_abbr": "OU"},
+    {"date": "2026-02-09", "time_et": "19:00", "home_team": "Creighton Bluejays", "away_team": "Xavier Musketeers", "home_abbr": "CREI", "away_abbr": "XAV"},
+    {"date": "2026-02-09", "time_et": "21:00", "home_team": "Oregon Ducks", "away_team": "California Golden Bears", "home_abbr": "ORE", "away_abbr": "CAL"},
+
+    {"date": "2026-02-10", "time_et": "19:00", "home_team": "Purdue Boilermakers", "away_team": "Ohio State Buckeyes", "home_abbr": "PUR", "away_abbr": "OSU"},
+    {"date": "2026-02-10", "time_et": "19:00", "home_team": "Virginia Cavaliers", "away_team": "Florida State Seminoles", "home_abbr": "UVA", "away_abbr": "FSU"},
+    {"date": "2026-02-10", "time_et": "20:00", "home_team": "Alabama Crimson Tide", "away_team": "LSU Tigers", "home_abbr": "BAMA", "away_abbr": "LSU"},
+    {"date": "2026-02-10", "time_et": "21:00", "home_team": "UCLA Bruins", "away_team": "Colorado Buffaloes", "home_abbr": "UCLA", "away_abbr": "COLO"}
+  ]
+}
