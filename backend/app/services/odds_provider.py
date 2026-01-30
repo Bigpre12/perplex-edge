@@ -1600,7 +1600,87 @@ class XYZOddsProvider(OddsProvider):
         
         game = game_props[external_game_id]
         
-        # Build markets from player data
+        # Check if this is an NFL game (has pass_yds instead of pts)
+        is_nfl = game["players"] and "pass_yds" in game["players"][0]
+        
+        if is_nfl:
+            # NFL-specific prop markets
+            pass_yds_outcomes = []
+            pass_tds_outcomes = []
+            pass_att_outcomes = []
+            rush_yds_outcomes = []
+            rush_att_outcomes = []
+            rec_outcomes = []
+            rec_yds_outcomes = []
+            
+            for player in game["players"]:
+                # Passing yards (QBs)
+                if "pass_yds" in player:
+                    pass_yds_outcomes.extend([
+                        {"name": "Over", "description": player["name"], "price": -110, "point": player["pass_yds"]},
+                        {"name": "Under", "description": player["name"], "price": -110, "point": player["pass_yds"]},
+                    ])
+                # Pass TDs
+                if "pass_tds" in player:
+                    pass_tds_outcomes.extend([
+                        {"name": "Over", "description": player["name"], "price": -110, "point": player["pass_tds"]},
+                        {"name": "Under", "description": player["name"], "price": -110, "point": player["pass_tds"]},
+                    ])
+                # Pass attempts
+                if "pass_att" in player:
+                    pass_att_outcomes.extend([
+                        {"name": "Over", "description": player["name"], "price": -110, "point": player["pass_att"]},
+                        {"name": "Under", "description": player["name"], "price": -110, "point": player["pass_att"]},
+                    ])
+                # Rushing yards
+                if "rush_yds" in player:
+                    rush_yds_outcomes.extend([
+                        {"name": "Over", "description": player["name"], "price": -110, "point": player["rush_yds"]},
+                        {"name": "Under", "description": player["name"], "price": -110, "point": player["rush_yds"]},
+                    ])
+                # Rushing attempts
+                if "rush_att" in player:
+                    rush_att_outcomes.extend([
+                        {"name": "Over", "description": player["name"], "price": -110, "point": player["rush_att"]},
+                        {"name": "Under", "description": player["name"], "price": -110, "point": player["rush_att"]},
+                    ])
+                # Receptions
+                if "rec" in player:
+                    rec_outcomes.extend([
+                        {"name": "Over", "description": player["name"], "price": -110, "point": player["rec"]},
+                        {"name": "Under", "description": player["name"], "price": -110, "point": player["rec"]},
+                    ])
+                # Receiving yards
+                if "rec_yds" in player:
+                    rec_yds_outcomes.extend([
+                        {"name": "Over", "description": player["name"], "price": -110, "point": player["rec_yds"]},
+                        {"name": "Under", "description": player["name"], "price": -110, "point": player["rec_yds"]},
+                    ])
+            
+            return {
+                "id": external_game_id,
+                "sport_key": sport_key,
+                "home_team": game["home_team"],
+                "away_team": game["away_team"],
+                "commence_time": game["commence_time"],
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [
+                            {"key": "player_pass_yds", "outcomes": pass_yds_outcomes},
+                            {"key": "player_pass_tds", "outcomes": pass_tds_outcomes},
+                            {"key": "player_pass_att", "outcomes": pass_att_outcomes},
+                            {"key": "player_rush_yds", "outcomes": rush_yds_outcomes},
+                            {"key": "player_rush_att", "outcomes": rush_att_outcomes},
+                            {"key": "player_receptions", "outcomes": rec_outcomes},
+                            {"key": "player_rec_yds", "outcomes": rec_yds_outcomes},
+                        ],
+                    },
+                ],
+            }
+        
+        # Basketball prop markets (NBA/NCAAB)
         points_outcomes = []
         rebounds_outcomes = []
         assists_outcomes = []
