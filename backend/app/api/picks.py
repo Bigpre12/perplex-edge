@@ -36,6 +36,7 @@ async def debug_config():
 # Sport key mappings for refresh endpoint
 SPORT_KEY_MAP = {
     "nba": "basketball_nba",
+    "ncaab": "basketball_ncaab",
     "nfl": "americanfootball_nfl",
     "mlb": "baseball_mlb",
     "nhl": "icehockey_nhl",

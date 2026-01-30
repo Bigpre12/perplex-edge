@@ -78,6 +78,38 @@ async def sync_odds(
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
 
+@router.post("/games/sync")
+async def sync_ncaab_games(
+    include_props: bool = Query(True, description="Include player props"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Sync NCAAB games, lines, and player props.
+    
+    This uses the main ETL pipeline to fetch:
+    - Games and spreads/totals
+    - Player props (points, rebounds, assists, etc.)
+    - Creates player records as needed
+    """
+    from app.services.etl_games_and_lines import sync_games_and_lines
+    
+    try:
+        result = await sync_games_and_lines(
+            db, 
+            "basketball_ncaab", 
+            include_props=include_props,
+            use_stubs=False,
+        )
+        return {
+            "status": "success",
+            "sport": "NCAAB",
+            "result": result,
+        }
+    except Exception as e:
+        logger.error(f"Error syncing NCAAB games: {e}")
+        raise HTTPException(status_code=500, detail=str(e)[:200])
+
+
 # =============================================================================
 # Historical Odds Endpoints
 # =============================================================================

@@ -243,13 +243,21 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stub
             session_maker = get_session_maker()
             
             async with session_maker() as db:
-                # Sync games and lines for NBA
-                games_result = await sync_games_and_lines(db, "basketball_nba", use_stubs=use_stubs)
-                logger.info(f"Games/lines sync: {games_result}")
+                # Sync games and lines for NBA (with player props)
+                games_result = await sync_games_and_lines(
+                    db, "basketball_nba", include_props=True, use_stubs=use_stubs
+                )
+                logger.info(f"NBA Games/lines sync: {games_result}")
 
                 # Sync injuries for NBA
                 injuries_result = await sync_injuries(db, "basketball_nba", use_stubs=use_stubs)
-                logger.info(f"Injuries sync: {injuries_result}")
+                logger.info(f"NBA Injuries sync: {injuries_result}")
+                
+                # Sync games and lines for NCAAB (with player props)
+                ncaab_games_result = await sync_games_and_lines(
+                    db, "basketball_ncaab", include_props=True, use_stubs=use_stubs
+                )
+                logger.info(f"NCAAB Games/lines sync: {ncaab_games_result}")
 
             logger.info("Odds/injuries sync completed")
 
