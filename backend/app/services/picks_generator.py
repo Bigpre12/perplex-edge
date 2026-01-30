@@ -699,8 +699,9 @@ async def _generate_picks_for_game(
                 db, line.player_id, line.market.stat_type
             )
             
-            # Fallback: generate stub averages if none exist in stub mode
-            if use_stubs and player_avg_stats is None and line.line_value:
+            # Fallback: generate estimated averages if none exist in database
+            # This applies both in stub mode AND when using real odds API without stats data
+            if player_avg_stats is None and line.line_value:
                 player_avg_stats = _generate_stub_player_averages(
                     line.market.stat_type, line.line_value
                 )
@@ -724,8 +725,9 @@ async def _generate_picks_for_game(
                     side=line.side or "over"
                 )
                 
-                # Fallback: generate synthetic hit rates in stub mode if no data
-                if use_stubs and hit_rate_10g is None:
+                # Fallback: generate synthetic hit rates if no historical data available
+                # This applies both in stub mode AND when using real odds API without stats data
+                if hit_rate_10g is None:
                     player_name = line.player.name if line.player else ""
                     stat_type = line.market.stat_type if line.market else ""
                     hit_rate_10g, hit_rate_30d, hit_rate_5g, hit_rate_3g = _generate_stub_hit_rates(
