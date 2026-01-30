@@ -1149,6 +1149,7 @@ async def sync_with_fallback(
     sport_key: str,
     include_props: bool = True,
     use_real_api: bool = True,
+    clear_first: bool = False,
 ) -> dict[str, Any]:
     """
     Sync games and lines with automatic cascading fallback.
@@ -1168,6 +1169,7 @@ async def sync_with_fallback(
         sport_key: Sport key (e.g., "basketball_nba")
         include_props: Whether to sync player props
         use_real_api: If True, try real APIs first; if False, use stubs only
+        clear_first: If True, clear old games before syncing (removes stale data)
     
     Returns:
         Sync result dictionary with data_source indicator
@@ -1182,8 +1184,16 @@ async def sync_with_fallback(
         "games_updated": 0,
         "lines_added": 0,
         "props_added": 0,
+        "cleared": None,
         "errors": [],
     }
+    
+    # Clear old games if requested (ensures fresh data)
+    if clear_first:
+        logger.info(f"[{sport_key}] Clearing old games before sync...")
+        clear_result = await clear_stale_games(db, sport_key, keep_today=False)
+        result["cleared"] = clear_result
+        logger.info(f"[{sport_key}] Cleared: {clear_result}")
     
     # If not using real API, skip straight to stubs
     if not use_real_api:

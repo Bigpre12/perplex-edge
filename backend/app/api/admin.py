@@ -166,8 +166,8 @@ async def force_refresh_games(
     start_time = time.time()
     
     try:
-        # Step 1: Clear old games
-        clear_result = await clear_stale_games(db, sport)
+        # Step 1: Clear ALL old games (keep_today=False ensures complete refresh)
+        clear_result = await clear_stale_games(db, sport, keep_today=False)
         
         # Step 2: Sync fresh data with stubs (guaranteed to work)
         sync_result = await sync_with_fallback(

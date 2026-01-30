@@ -388,7 +388,7 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
     Args:
         initial_delay: Delay before first sync check in seconds
     """
-    from app.services.etl_games_and_lines import sync_with_fallback
+    from app.services.etl_games_and_lines import sync_with_fallback, clear_stale_games
     from app.services.odds_provider import get_quota_status
     from app.services.snapshot_service import (
         pre_refresh_snapshot,
@@ -460,6 +460,11 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
                 for sport_key in SPORT_KEYS:
                     sync_start = time.time()
                     try:
+                        # Clear old games before syncing to ensure fresh data
+                        logger.info(f"Clearing old games for {sport_key}...")
+                        clear_result = await clear_stale_games(db, sport_key, keep_today=False)
+                        logger.info(f"Cleared {sport_key}: {clear_result}")
+                        
                         result = await sync_with_fallback(
                             db, 
                             sport_key, 
