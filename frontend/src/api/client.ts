@@ -1,4 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Production URL is hardcoded for reliability; localhost is only for development
+const API_BASE_URL = import.meta.env.DEV 
+  ? 'http://localhost:8000' 
+  : (import.meta.env.VITE_API_BASE_URL || 'https://railway-engine-production.up.railway.app');
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
