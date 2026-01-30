@@ -246,7 +246,8 @@ async def get_player_stats_last_n_days(
     Returns:
         List of (value, minutes) tuples
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    # Use naive datetime for comparison with TIMESTAMP WITHOUT TIME ZONE column
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
     
     result = await db.execute(
         select(PlayerGameStats.value, PlayerGameStats.minutes)
