@@ -178,7 +178,6 @@ NCAAB_POWER_RATINGS = {
     "Georgetown Hoyas": -4.0,
     "Seton Hall Pirates": -2.0,
     "Pittsburgh Panthers": -1.5,
-    "Louisville Cardinals": 4.0,
     "Florida State Seminoles": -2.5,
     "Penn State Nittany Lions": -1.0,
     "Rutgers Scarlet Knights": -2.0,
