@@ -260,6 +260,10 @@ async def refresh_picks(
     Use this to ensure you always see today's games, not yesterday's.
     """
     from app.services.etl_games_and_lines import clear_stale_games, sync_games_and_lines
+    from app.core.config import get_settings
+    
+    settings = get_settings()
+    use_stubs = settings.scheduler_use_stubs
     
     try:
         sport_key = SPORT_KEY_MAP.get(sport.lower())
@@ -272,23 +276,23 @@ async def refresh_picks(
         logger.info(f"Cleared: {clear_stats}")
         
         # Step 2: Sync fresh games and lines (with props)
-        logger.info(f"Syncing games and lines for {sport_key}...")
+        logger.info(f"Syncing games and lines for {sport_key} (use_stubs={use_stubs})...")
         sync_stats = await sync_games_and_lines(
             db,
             sport_key,
             include_props=True,
-            use_stubs=True,  # Use stubs for now
+            use_stubs=use_stubs,
         )
         logger.info(f"Synced: {sync_stats}")
         
         # Step 3: Generate picks
-        logger.info(f"Generating picks for {sport_key}...")
+        logger.info(f"Generating picks for {sport_key} (use_stubs={use_stubs})...")
         picks_result = await generate_picks(
             db,
             sport_key,
             min_ev=0.0,
             min_confidence=0.5,
-            use_stubs=True,  # Use stubs for now
+            use_stubs=use_stubs,
         )
         logger.info(f"Generated: {picks_result}")
         
