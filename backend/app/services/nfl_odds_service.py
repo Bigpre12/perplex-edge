@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.models.nfl_odds import LiveOddsNFL, HistoricalOddsNFL
+from app.models import Sport
 from app.services.nfl_backup import (
     save_backup,
     load_backup,
@@ -28,6 +29,28 @@ NFL_SPORT_KEY = "americanfootball_nfl"
 
 # Default bookmakers to track
 DEFAULT_BOOKMAKERS = ["draftkings", "fanduel", "betmgm", "caesars", "pointsbet"]
+
+
+async def ensure_nfl_sport_exists(db: AsyncSession) -> Sport:
+    """
+    Ensure the NFL sport exists in the database.
+    Creates it if it doesn't exist.
+    
+    Returns:
+        The NFL Sport record
+    """
+    result = await db.execute(
+        select(Sport).where(Sport.league_code == "NFL")
+    )
+    sport = result.scalar_one_or_none()
+    
+    if not sport:
+        sport = Sport(name="NFL", league_code="NFL")
+        db.add(sport)
+        await db.commit()
+        logger.info("Created NFL sport in database")
+    
+    return sport
 
 
 def _get_current_nfl_week() -> tuple[int, int]:

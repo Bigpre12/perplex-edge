@@ -15,6 +15,7 @@ from app.services.nfl_odds_service import (
     create_daily_snapshot,
     update_game_results,
     calculate_hit_rates,
+    ensure_nfl_sport_exists,
 )
 from app.services.nfl_backup import (
     list_backups,
@@ -252,4 +253,34 @@ async def cleanup_old_backups(
         }
     except Exception as e:
         logger.error(f"Error cleaning up backups: {e}")
+        raise HTTPException(status_code=500, detail=str(e)[:200])
+
+
+# =============================================================================
+# Setup Endpoint
+# =============================================================================
+
+@router.post("/setup")
+async def setup_nfl(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Initialize NFL sport in the database.
+    
+    Call this once to add NFL to the sports dropdown.
+    Safe to call multiple times - will not create duplicates.
+    """
+    try:
+        sport = await ensure_nfl_sport_exists(db)
+        return {
+            "status": "success",
+            "sport": {
+                "id": sport.id,
+                "name": sport.name,
+                "league_code": sport.league_code,
+            },
+            "message": "NFL sport is now available in the dropdown",
+        }
+    except Exception as e:
+        logger.error(f"Error setting up NFL: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
