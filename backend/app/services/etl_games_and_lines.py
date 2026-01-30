@@ -586,17 +586,18 @@ async def sync_games_and_lines(
         # For NCAAB without stubs, try ESPN as backup when primary fails
         if provider == "betstack":
             provider_instance = BetStackProvider(use_stubs=use_stubs)
-        elif provider == "espn" and sport_key == "basketball_ncaab":
+        elif provider == "espn" and sport_key in ("basketball_ncaab", "americanfootball_nfl"):
             provider_instance = None  # Will use ESPN directly below
             stats["data_source"] = "espn"
         else:
             provider_instance = XYZOddsProvider(use_stubs=use_stubs)
         
-        # Special handling for ESPN provider (NCAAB backup)
-        if provider_instance is None and sport_key == "basketball_ncaab":
-            async with ESPNScheduleProvider() as espn_provider:
+        # Special handling for ESPN provider (NCAAB and NFL backup)
+        if provider_instance is None and sport_key in ("basketball_ncaab", "americanfootball_nfl"):
+            async with ESPNScheduleProvider(sport_key=sport_key) as espn_provider:
                 espn_games = await espn_provider.fetch_todays_games()
-                logger.info(f"ESPN fetched {len(espn_games)} NCAAB games")
+                sport_name = "NFL" if sport_key == "americanfootball_nfl" else "NCAAB"
+                logger.info(f"ESPN fetched {len(espn_games)} {sport_name} games")
                 
                 # Convert ESPN format to GameData objects
                 from app.services.odds_provider import GameData

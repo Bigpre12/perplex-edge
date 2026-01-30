@@ -78,6 +78,69 @@ async def sync_odds(
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
 
+@router.post("/games/sync")
+async def sync_nfl_games(
+    include_props: bool = Query(True, description="Include player props"),
+    generate_picks: bool = Query(True, description="Also generate picks after sync"),
+    use_stubs: bool = Query(False, description="Use stub data (default: False for real API)"),
+    use_espn: bool = Query(False, description="Use ESPN free API for real weekly games"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Sync NFL games, lines, and player props.
+    
+    This uses the main ETL pipeline to fetch:
+    - Games and spreads/totals
+    - Player props (passing, rushing, receiving, etc.)
+    - Creates player records as needed
+    - Generates model picks (if generate_picks=True)
+    
+    Data Sources:
+    - use_stubs=False (default): The Odds API (real odds)
+    - use_stubs=True: Static stub data
+    - use_espn=True: ESPN free API (real weekly schedule)
+    """
+    from app.services.etl_games_and_lines import sync_games_and_lines
+    from app.services.picks_generator import generate_picks as gen_picks
+    
+    try:
+        # Determine provider
+        provider = "odds_api"
+        if use_espn and not use_stubs:
+            provider = "espn"
+        
+        result = await sync_games_and_lines(
+            db, 
+            "americanfootball_nfl", 
+            include_props=include_props,
+            use_stubs=use_stubs,
+            provider=provider,
+        )
+        
+        picks_result = None
+        if generate_picks:
+            picks_result = await gen_picks(
+                db,
+                sport_key="americanfootball_nfl",
+                min_ev=0.0,
+                min_confidence=0.5,
+                use_stubs=use_stubs,
+            )
+        
+        return {
+            "status": "success",
+            "sport": "NFL",
+            "use_stubs": use_stubs,
+            "use_espn": use_espn,
+            "data_source": result.get("data_source", "primary"),
+            "result": result,
+            "picks": picks_result,
+        }
+    except Exception as e:
+        logger.error(f"Error syncing NFL games: {e}")
+        raise HTTPException(status_code=500, detail=str(e)[:200])
+
+
 # =============================================================================
 # Historical Odds Endpoints
 # =============================================================================

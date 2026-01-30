@@ -1450,8 +1450,65 @@ class BetStackProvider(XYZOddsProvider):
 
 
 # =============================================================================
-# ESPN Schedule Provider (Free NCAAB Backup)
+# ESPN Schedule Provider (Free NCAAB & NFL Backup)
 # =============================================================================
+
+# NFL Team power ratings (higher = better) for generating realistic odds
+NFL_TEAM_RATINGS = {
+    # AFC
+    "Kansas City Chiefs": 95, "Buffalo Bills": 94, "Baltimore Ravens": 93,
+    "Cincinnati Bengals": 88, "Miami Dolphins": 87, "Pittsburgh Steelers": 85,
+    "Cleveland Browns": 82, "Houston Texans": 84, "Indianapolis Colts": 78,
+    "Jacksonville Jaguars": 80, "Tennessee Titans": 75, "Las Vegas Raiders": 74,
+    "Los Angeles Chargers": 83, "Denver Broncos": 76, "New York Jets": 79,
+    "New England Patriots": 72,
+    # NFC
+    "San Francisco 49ers": 94, "Philadelphia Eagles": 92, "Dallas Cowboys": 86,
+    "Detroit Lions": 91, "Green Bay Packers": 85, "Seattle Seahawks": 82,
+    "Los Angeles Rams": 84, "Arizona Cardinals": 73, "Minnesota Vikings": 83,
+    "Chicago Bears": 77, "Tampa Bay Buccaneers": 81, "New Orleans Saints": 78,
+    "Atlanta Falcons": 76, "Carolina Panthers": 70, "New York Giants": 71,
+    "Washington Commanders": 80,
+}
+
+# NFL Rosters (key offensive players for props)
+NFL_ROSTERS = {
+    "Kansas City Chiefs": ["Patrick Mahomes", "Travis Kelce", "Rashee Rice", "Isiah Pacheco", "Hollywood Brown"],
+    "Buffalo Bills": ["Josh Allen", "Stefon Diggs", "James Cook", "Dalton Kincaid", "Gabe Davis"],
+    "Baltimore Ravens": ["Lamar Jackson", "Derrick Henry", "Zay Flowers", "Mark Andrews", "Rashod Bateman"],
+    "San Francisco 49ers": ["Brock Purdy", "Christian McCaffrey", "Deebo Samuel", "Brandon Aiyuk", "George Kittle"],
+    "Philadelphia Eagles": ["Jalen Hurts", "Saquon Barkley", "AJ Brown", "DeVonta Smith", "Dallas Goedert"],
+    "Detroit Lions": ["Jared Goff", "Jahmyr Gibbs", "Amon-Ra St. Brown", "Sam LaPorta", "David Montgomery"],
+    "Dallas Cowboys": ["Dak Prescott", "CeeDee Lamb", "Rico Dowdle", "Jake Ferguson", "Brandin Cooks"],
+    "Miami Dolphins": ["Tua Tagovailoa", "Tyreek Hill", "Jaylen Waddle", "De'Von Achane", "Raheem Mostert"],
+    "Cincinnati Bengals": ["Joe Burrow", "Ja'Marr Chase", "Tee Higgins", "Zack Moss", "Mike Gesicki"],
+    "Green Bay Packers": ["Jordan Love", "Josh Jacobs", "Jayden Reed", "Christian Watson", "Romeo Doubs"],
+    "Seattle Seahawks": ["Geno Smith", "Kenneth Walker III", "DK Metcalf", "Tyler Lockett", "Jaxon Smith-Njigba"],
+    "Los Angeles Rams": ["Matthew Stafford", "Kyren Williams", "Puka Nacua", "Cooper Kupp", "Tutu Atwell"],
+    "Minnesota Vikings": ["Sam Darnold", "Aaron Jones", "Justin Jefferson", "Jordan Addison", "TJ Hockenson"],
+    "Houston Texans": ["CJ Stroud", "Joe Mixon", "Nico Collins", "Tank Dell", "Stefon Diggs"],
+    "Pittsburgh Steelers": ["Russell Wilson", "Najee Harris", "George Pickens", "Pat Freiermuth", "Calvin Austin"],
+    "Los Angeles Chargers": ["Justin Herbert", "JK Dobbins", "Keenan Allen", "Quentin Johnston", "Joshua Palmer"],
+    "Tampa Bay Buccaneers": ["Baker Mayfield", "Rachaad White", "Mike Evans", "Chris Godwin", "Cade Otton"],
+    "New Orleans Saints": ["Derek Carr", "Alvin Kamara", "Chris Olave", "Rashid Shaheed", "Juwan Johnson"],
+    "Cleveland Browns": ["Deshaun Watson", "Nick Chubb", "Amari Cooper", "Jerry Jeudy", "David Njoku"],
+    "Jacksonville Jaguars": ["Trevor Lawrence", "Travis Etienne", "Christian Kirk", "Gabe Davis", "Evan Engram"],
+    "New York Jets": ["Aaron Rodgers", "Breece Hall", "Garrett Wilson", "Allen Lazard", "Mike Williams"],
+    "Washington Commanders": ["Jayden Daniels", "Brian Robinson Jr.", "Terry McLaurin", "Jahan Dotson", "Zach Ertz"],
+    "Indianapolis Colts": ["Anthony Richardson", "Jonathan Taylor", "Michael Pittman Jr.", "Josh Downs", "Adonai Mitchell"],
+    "Denver Broncos": ["Bo Nix", "Javonte Williams", "Courtland Sutton", "Marvin Mims Jr.", "Troy Franklin"],
+    "Chicago Bears": ["Caleb Williams", "D'Andre Swift", "DJ Moore", "Keenan Allen", "Rome Odunze"],
+    "Arizona Cardinals": ["Kyler Murray", "James Conner", "Marvin Harrison Jr.", "Michael Wilson", "Trey McBride"],
+    "Atlanta Falcons": ["Kirk Cousins", "Bijan Robinson", "Drake London", "Darnell Mooney", "Kyle Pitts"],
+    "Tennessee Titans": ["Will Levis", "Tony Pollard", "DeAndre Hopkins", "Calvin Ridley", "Chig Okonkwo"],
+    "Las Vegas Raiders": ["Gardner Minshew", "Zamir White", "Davante Adams", "Jakobi Meyers", "Brock Bowers"],
+    "New York Giants": ["Daniel Jones", "Saquon Barkley", "Malik Nabers", "Wan'Dale Robinson", "Darius Slayton"],
+    "Carolina Panthers": ["Bryce Young", "Chuba Hubbard", "Diontae Johnson", "Adam Thielen", "Jonathan Mingo"],
+    "New England Patriots": ["Drake Maye", "Rhamondre Stevenson", "Ja'Lynn Polk", "Kendrick Bourne", "Hunter Henry"],
+}
+
+# Default NFL roster for teams not in the list
+DEFAULT_NFL_ROSTER = ["QB Starter", "RB Starter", "WR1 Starter", "WR2 Starter", "TE Starter"]
 
 # Team power ratings (higher = better) for generating realistic odds
 NCAAB_TEAM_RATINGS = {
@@ -1501,15 +1558,22 @@ DEFAULT_ROSTER = ["Player One", "Player Two", "Player Three", "Player Four", "Pl
 
 class ESPNScheduleProvider:
     """
-    Free NCAAB schedule provider using ESPN's public API.
+    Free schedule provider using ESPN's public API.
     
-    Fetches real game schedules and generates realistic odds/props
-    based on team power ratings.
+    Supports NCAAB and NFL - fetches real game schedules and generates 
+    realistic odds/props based on team power ratings.
     """
     
-    def __init__(self):
+    # ESPN API base URLs by sport
+    ESPN_URLS = {
+        "basketball_ncaab": "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball",
+        "americanfootball_nfl": "https://site.api.espn.com/apis/site/v2/sports/football/nfl",
+    }
+    
+    def __init__(self, sport_key: str = "basketball_ncaab"):
         self._client: Optional[httpx.AsyncClient] = None
-        self.base_url = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball"
+        self.sport_key = sport_key
+        self.base_url = self.ESPN_URLS.get(sport_key, self.ESPN_URLS["basketball_ncaab"])
     
     @property
     def client(self) -> httpx.AsyncClient:
@@ -1527,7 +1591,7 @@ class ESPNScheduleProvider:
     
     async def fetch_todays_games(self) -> list[dict[str, Any]]:
         """
-        Fetch today's NCAAB games from ESPN.
+        Fetch today's games from ESPN for the configured sport.
         
         Returns:
             List of game dictionaries with teams, times, and generated odds
@@ -1545,7 +1609,15 @@ class ESPNScheduleProvider:
             times = _get_stub_game_times()
             time_slots = ["early", "mid", "late", "night", "west"]
             
-            for i, event in enumerate(events[:12]):  # Limit to 12 games
+            # Get sport-specific settings
+            is_nfl = self.sport_key == "americanfootball_nfl"
+            team_ratings = NFL_TEAM_RATINGS if is_nfl else NCAAB_TEAM_RATINGS
+            home_advantage = 2.5 if is_nfl else 3  # NFL home field is ~2.5 pts
+            sport_title = "NFL" if is_nfl else "NCAAB"
+            game_prefix = "nfl_espn" if is_nfl else "ncaab_espn"
+            max_games = 16 if is_nfl else 12
+            
+            for i, event in enumerate(events[:max_games]):
                 try:
                     competition = event.get("competitions", [{}])[0]
                     competitors = competition.get("competitors", [])
@@ -1553,7 +1625,7 @@ class ESPNScheduleProvider:
                     if len(competitors) < 2:
                         continue
                     
-                    # ESPN uses 0=away, 1=home
+                    # ESPN uses homeAway field
                     home_comp = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
                     away_comp = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
                     
@@ -1564,22 +1636,22 @@ class ESPNScheduleProvider:
                     game_time = event.get("date", times[time_slots[i % len(time_slots)]])
                     
                     # Generate odds based on team ratings
-                    home_rating = NCAAB_TEAM_RATINGS.get(home_team, 60)
-                    away_rating = NCAAB_TEAM_RATINGS.get(away_team, 60)
+                    home_rating = team_ratings.get(home_team, 75 if is_nfl else 60)
+                    away_rating = team_ratings.get(away_team, 75 if is_nfl else 60)
                     
-                    # Home court advantage = +3 rating points
-                    home_adjusted = home_rating + 3
+                    # Home field/court advantage
+                    home_adjusted = home_rating + home_advantage
                     
                     # Convert rating difference to American odds
                     diff = home_adjusted - away_rating
                     home_odds, away_odds = self._rating_diff_to_odds(diff)
                     
-                    game_id = f"ncaab_espn_{event.get('id', i)}"
+                    game_id = f"{game_prefix}_{event.get('id', i)}"
                     
                     games.append({
                         "id": game_id,
-                        "sport_key": "basketball_ncaab",
-                        "sport_title": "NCAAB",
+                        "sport_key": self.sport_key,
+                        "sport_title": sport_title,
                         "commence_time": game_time,
                         "home_team": home_team,
                         "away_team": away_team,
@@ -1647,32 +1719,88 @@ class ESPNScheduleProvider:
             Props data structure matching stub format
         """
         times = _get_stub_game_times()
+        is_nfl = self.sport_key == "americanfootball_nfl"
         
-        home_roster = NCAAB_ROSTERS.get(home_team, DEFAULT_ROSTER)
-        away_roster = NCAAB_ROSTERS.get(away_team, DEFAULT_ROSTER)
+        if is_nfl:
+            home_roster = NFL_ROSTERS.get(home_team, DEFAULT_NFL_ROSTER)
+            away_roster = NFL_ROSTERS.get(away_team, DEFAULT_NFL_ROSTER)
+        else:
+            home_roster = NCAAB_ROSTERS.get(home_team, DEFAULT_ROSTER)
+            away_roster = NCAAB_ROSTERS.get(away_team, DEFAULT_ROSTER)
         
         players = []
         
         # Generate props for home team
         for i, name in enumerate(home_roster):
-            players.append(self._generate_player_props(name, i))
+            if is_nfl:
+                players.append(self._generate_nfl_player_props(name, i))
+            else:
+                players.append(self._generate_ncaab_player_props(name, i))
         
         # Generate props for away team
         for i, name in enumerate(away_roster):
-            players.append(self._generate_player_props(name, i))
+            if is_nfl:
+                players.append(self._generate_nfl_player_props(name, i))
+            else:
+                players.append(self._generate_ncaab_player_props(name, i))
         
         return {
             "id": game_id,
-            "sport_key": "basketball_ncaab",
+            "sport_key": self.sport_key,
             "home_team": home_team,
             "away_team": away_team,
             "commence_time": times["early"],
             "players": players,
         }
     
-    def _generate_player_props(self, name: str, position_idx: int) -> dict[str, float]:
+    def _generate_nfl_player_props(self, name: str, position_idx: int) -> dict[str, float]:
         """
-        Generate realistic player props based on position.
+        Generate realistic NFL player props based on position.
+        
+        Position index: 0=QB, 1=RB, 2-3=WR, 4=TE
+        """
+        import random
+        
+        if position_idx == 0:  # QB
+            return {
+                "name": name,
+                "pass_yds": round(random.uniform(220.0, 280.0) * 2) / 2,
+                "pass_tds": round(random.uniform(1.5, 2.5) * 2) / 2,
+                "pass_att": round(random.uniform(28.0, 36.0) * 2) / 2,
+                "pass_comp": round(random.uniform(18.0, 26.0) * 2) / 2,
+                "int": round(random.uniform(0.5, 1.0) * 2) / 2,
+                "rush_yds": round(random.uniform(8.0, 25.0) * 2) / 2,
+                "rush_att": round(random.uniform(2.0, 5.0) * 2) / 2,
+            }
+        elif position_idx == 1:  # RB
+            return {
+                "name": name,
+                "rush_yds": round(random.uniform(55.0, 85.0) * 2) / 2,
+                "rush_att": round(random.uniform(12.0, 18.0) * 2) / 2,
+                "rush_tds": round(random.uniform(0.5, 1.0) * 2) / 2,
+                "rec": round(random.uniform(2.0, 4.0) * 2) / 2,
+                "rec_yds": round(random.uniform(15.0, 35.0) * 2) / 2,
+            }
+        elif position_idx in (2, 3):  # WR
+            return {
+                "name": name,
+                "rec": round(random.uniform(4.0, 7.0) * 2) / 2,
+                "rec_yds": round(random.uniform(50.0, 85.0) * 2) / 2,
+                "rec_tds": round(random.uniform(0.5, 1.0) * 2) / 2,
+                "targets": round(random.uniform(6.0, 10.0) * 2) / 2,
+            }
+        else:  # TE (position_idx == 4)
+            return {
+                "name": name,
+                "rec": round(random.uniform(3.0, 5.0) * 2) / 2,
+                "rec_yds": round(random.uniform(35.0, 55.0) * 2) / 2,
+                "rec_tds": round(random.uniform(0.5, 0.5) * 2) / 2,
+                "targets": round(random.uniform(4.0, 7.0) * 2) / 2,
+            }
+    
+    def _generate_ncaab_player_props(self, name: str, position_idx: int) -> dict[str, float]:
+        """
+        Generate realistic NCAAB player props based on position.
         
         Position index 0-1 = guards (more points/assists)
         Position index 2 = wing (balanced)
