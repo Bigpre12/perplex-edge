@@ -1138,3 +1138,120 @@ async def clear_stale_games(
     }
     logger.info(f"Clear stale games complete: {counts}")
     return counts
+
+
+# =============================================================================
+# Quota-Safe Sync with Automatic Failover
+# =============================================================================
+
+async def sync_with_fallback(
+    db: AsyncSession,
+    sport_key: str,
+    include_props: bool = True,
+    use_real_api: bool = True,
+) -> dict[str, Any]:
+    """
+    Sync games and lines with automatic cascading fallback.
+    
+    Cascade order:
+    1. Primary: The Odds API (if use_real_api=True and quota available)
+    2. Fallback: ESPN free API (schedules + generated odds)
+    3. Last resort: Stub data (always works)
+    
+    This protects API quota by:
+    - Only using primary API when explicitly enabled
+    - Falling back to free ESPN when primary fails
+    - Using stubs as guaranteed fallback
+    
+    Args:
+        db: Database session
+        sport_key: Sport key (e.g., "basketball_nba")
+        include_props: Whether to sync player props
+        use_real_api: If True, try real APIs first; if False, use stubs only
+    
+    Returns:
+        Sync result dictionary with data_source indicator
+    """
+    import httpx
+    from app.services.odds_provider import XYZOddsProvider, ESPNScheduleProvider, get_quota_status
+    
+    result = {
+        "sport": sport_key,
+        "data_source": "unknown",
+        "games_created": 0,
+        "games_updated": 0,
+        "lines_added": 0,
+        "props_added": 0,
+        "errors": [],
+    }
+    
+    # If not using real API, skip straight to stubs
+    if not use_real_api:
+        logger.info(f"[{sport_key}] use_real_api=False, using stubs")
+        try:
+            stubs_result = await sync_games_and_lines(
+                db, sport_key, include_props=include_props, use_stubs=True
+            )
+            stubs_result["data_source"] = "stubs"
+            return stubs_result
+        except Exception as e:
+            result["errors"].append(f"Stubs failed: {str(e)[:100]}")
+            result["data_source"] = "failed"
+            return result
+    
+    # Check quota before trying primary API
+    quota = get_quota_status()
+    if quota["remaining"] < 5:
+        logger.warning(f"[{sport_key}] Low quota ({quota['remaining']} remaining), skipping primary API")
+    else:
+        # Try primary API (The Odds API)
+        try:
+            logger.info(f"[{sport_key}] Trying primary API (The Odds API)...")
+            primary_result = await sync_games_and_lines(
+                db, sport_key, include_props=include_props, use_stubs=False, provider="odds_api"
+            )
+            primary_result["data_source"] = "odds_api"
+            logger.info(f"[{sport_key}] Primary API success: {primary_result.get('games_created', 0)} games")
+            return primary_result
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                logger.warning(f"[{sport_key}] Primary API rate limited (429), falling back")
+            elif e.response.status_code == 401:
+                logger.warning(f"[{sport_key}] Primary API unauthorized (401), falling back")
+            else:
+                logger.warning(f"[{sport_key}] Primary API error {e.response.status_code}, falling back")
+            result["errors"].append(f"Primary API: {e.response.status_code}")
+        except httpx.TimeoutException:
+            logger.warning(f"[{sport_key}] Primary API timeout, falling back")
+            result["errors"].append("Primary API: timeout")
+        except Exception as e:
+            logger.warning(f"[{sport_key}] Primary API error: {e}, falling back")
+            result["errors"].append(f"Primary API: {str(e)[:50]}")
+    
+    # Try ESPN free API as fallback (for supported sports)
+    if sport_key in ("basketball_nba", "basketball_ncaab", "americanfootball_nfl"):
+        try:
+            logger.info(f"[{sport_key}] Trying ESPN free API...")
+            espn_result = await sync_games_and_lines(
+                db, sport_key, include_props=include_props, use_stubs=False, provider="espn"
+            )
+            espn_result["data_source"] = "espn"
+            logger.info(f"[{sport_key}] ESPN success: {espn_result.get('games_created', 0)} games")
+            return espn_result
+        except Exception as e:
+            logger.warning(f"[{sport_key}] ESPN failed: {e}, falling back to stubs")
+            result["errors"].append(f"ESPN: {str(e)[:50]}")
+    
+    # Last resort: stubs (always works)
+    try:
+        logger.info(f"[{sport_key}] Using stub data as last resort")
+        stubs_result = await sync_games_and_lines(
+            db, sport_key, include_props=include_props, use_stubs=True
+        )
+        stubs_result["data_source"] = "stubs"
+        return stubs_result
+    except Exception as e:
+        result["errors"].append(f"Stubs failed: {str(e)[:100]}")
+        result["data_source"] = "failed"
+        logger.error(f"[{sport_key}] All sync methods failed: {result['errors']}")
+        return result

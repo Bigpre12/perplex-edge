@@ -15,6 +15,49 @@ logger = logging.getLogger(__name__)
 # Eastern timezone (handles DST automatically)
 EASTERN_TZ = ZoneInfo("America/New_York")
 
+# =============================================================================
+# API Quota Tracking (Module-level, updates from response headers)
+# =============================================================================
+
+_quota_remaining: int = 500  # Default free tier limit
+_quota_used: int = 0
+_quota_last_updated: Optional[datetime] = None
+
+
+def get_quota_status() -> dict[str, Any]:
+    """
+    Get current API quota status.
+    
+    Returns:
+        Dictionary with remaining, used, and last_updated fields
+    """
+    return {
+        "remaining": _quota_remaining,
+        "used": _quota_used,
+        "last_updated": _quota_last_updated.isoformat() if _quota_last_updated else None,
+        "monthly_limit": 500,
+        "percent_used": round((_quota_used / 500) * 100, 1) if _quota_used else 0,
+    }
+
+
+def _update_quota_from_headers(remaining: str | None, used: str | None) -> None:
+    """Update quota tracking from API response headers."""
+    global _quota_remaining, _quota_used, _quota_last_updated
+    
+    if remaining is not None:
+        try:
+            _quota_remaining = int(remaining)
+        except ValueError:
+            pass
+    
+    if used is not None:
+        try:
+            _quota_used = int(used)
+        except ValueError:
+            pass
+    
+    _quota_last_updated = datetime.now(timezone.utc)
+
 
 # =============================================================================
 # Dynamic Stub Date Generation
@@ -348,10 +391,11 @@ class XYZOddsProvider(OddsProvider):
                 logger.error(f"Odds API error {e.response.status_code}: {e.response.text[:500]}")
                 raise
         
-        # Log API usage
-        remaining = response.headers.get("x-requests-remaining", "unknown")
-        used = response.headers.get("x-requests-used", "unknown")
-        logger.info(f"Odds API: {used} used, {remaining} remaining")
+        # Track and log API usage
+        remaining = response.headers.get("x-requests-remaining")
+        used = response.headers.get("x-requests-used")
+        _update_quota_from_headers(remaining, used)
+        logger.info(f"Odds API: {used or '?'} used, {remaining or '?'} remaining")
         
         return response.json()
     

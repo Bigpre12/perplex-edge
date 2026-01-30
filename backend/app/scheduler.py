@@ -24,8 +24,19 @@ _background_tasks: List[asyncio.Task] = []
 
 SPORT_KEYS = [
     "basketball_nba",
+    "basketball_ncaab",
     "americanfootball_nfl",
 ]
+
+# =============================================================================
+# Quota-Safe Sync Schedule (2x daily to protect free tier)
+# =============================================================================
+
+# Morning sync - 6:00 AM ET (11:00 UTC)
+MORNING_SYNC_HOUR_UTC = 11
+
+# Pre-game sync - 5:00 PM ET (22:00 UTC)
+PREGAME_SYNC_HOUR_UTC = 22
 
 
 # =============================================================================
@@ -218,11 +229,10 @@ async def hourly_odds_check_loop(interval_minutes: int = 60):
 
 async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stubs: bool = True):
     """
-    Background task that syncs games, lines, and injuries on interval.
+    DEPRECATED: Use quota_safe_sync_loop instead for production.
     
-    Runs:
-    - sync_games_and_lines (fetches games and odds)
-    - sync_injuries (fetches injury data)
+    Background task that syncs games, lines, and injuries on interval.
+    WARNING: Running this frequently will exhaust free tier API quotas.
     
     Args:
         interval_minutes: Sync interval in minutes
@@ -236,6 +246,7 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stub
         await asyncio.sleep(initial_delay)
 
     logger.info(f"Odds sync loop started (interval: {interval_minutes} min, use_stubs={use_stubs})")
+    logger.warning("WARNING: Frequent interval syncing may exhaust API quota. Consider quota_safe_sync_loop.")
 
     while True:
         try:
@@ -269,6 +280,101 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stub
 
         # Wait for next interval
         await asyncio.sleep(interval_minutes * 60)
+
+
+async def quota_safe_sync_loop(initial_delay: int = 60):
+    """
+    Quota-safe odds sync that runs 2x daily (6 AM + 5 PM ET).
+    
+    Uses ~6 API calls/day (180/month), well under 500/month free tier.
+    Automatically falls back to ESPN -> stubs if primary API fails.
+    
+    Schedule:
+    - 6:00 AM ET (11:00 UTC): Morning sync - overnight line movements
+    - 5:00 PM ET (22:00 UTC): Pre-game sync - final lines before tip-off
+    
+    Args:
+        initial_delay: Delay before first sync check in seconds
+    """
+    from app.services.etl_games_and_lines import sync_with_fallback
+    from app.services.odds_provider import get_quota_status
+    
+    if initial_delay > 0:
+        logger.info(f"Quota-safe sync loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"Quota-safe sync loop started (runs at {MORNING_SYNC_HOUR_UTC}:00 and {PREGAME_SYNC_HOUR_UTC}:00 UTC)")
+    
+    while True:
+        try:
+            now = datetime.now(timezone.utc)
+            current_hour = now.hour
+            
+            # Calculate next sync time
+            if current_hour < MORNING_SYNC_HOUR_UTC:
+                # Before morning sync
+                next_sync_hour = MORNING_SYNC_HOUR_UTC
+                sync_name = "MORNING"
+            elif current_hour < PREGAME_SYNC_HOUR_UTC:
+                # Between morning and pre-game
+                next_sync_hour = PREGAME_SYNC_HOUR_UTC
+                sync_name = "PRE-GAME"
+            else:
+                # After pre-game, wait for tomorrow's morning
+                next_sync_hour = MORNING_SYNC_HOUR_UTC
+                sync_name = "MORNING"
+            
+            # Calculate wait time
+            target = now.replace(hour=next_sync_hour, minute=0, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            
+            wait_seconds = (target - now).total_seconds()
+            logger.info(f"Next {sync_name} sync in {wait_seconds/3600:.1f} hours (at {target.isoformat()})")
+            
+            # Wait until sync time
+            await asyncio.sleep(wait_seconds)
+            
+            # Run the sync
+            logger.info(f"=== {sync_name} QUOTA-SAFE SYNC STARTING ===")
+            
+            # Check quota before syncing
+            quota = get_quota_status()
+            logger.info(f"API quota status: {quota['used']} used, {quota['remaining']} remaining")
+            
+            if quota['remaining'] < 10:
+                logger.warning(f"Low quota ({quota['remaining']} remaining), using stubs only")
+                use_real_api = False
+            else:
+                use_real_api = True
+            
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                for sport_key in SPORT_KEYS:
+                    try:
+                        result = await sync_with_fallback(
+                            db, 
+                            sport_key, 
+                            include_props=True,
+                            use_real_api=use_real_api,
+                        )
+                        logger.info(f"{sport_key} sync result: {result}")
+                    except Exception as e:
+                        logger.error(f"Error syncing {sport_key}: {e}")
+            
+            # Log updated quota
+            quota = get_quota_status()
+            logger.info(f"Post-sync quota: {quota['used']} used, {quota['remaining']} remaining")
+            logger.info(f"=== {sync_name} QUOTA-SAFE SYNC COMPLETE ===")
+            
+        except asyncio.CancelledError:
+            logger.info("Quota-safe sync loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Quota-safe sync loop error: {e}", exc_info=True)
+            # Wait an hour before retrying on error
+            await asyncio.sleep(3600)
 
 
 async def stats_sync_loop(interval_minutes: int, initial_delay: int = 30, use_stubs: bool = True):
@@ -892,17 +998,14 @@ def start_background_tasks() -> List[asyncio.Task]:
     tasks.append(task_hourly)
     logger.info(f"Created hourly_odds_check_loop task (every {hourly_interval} min)")
 
-    # Odds/injuries sync task
+    # Quota-safe odds sync task (2x daily: 6 AM + 5 PM ET)
+    # Replaces frequent odds_sync_loop to protect API free tier quota
     task1 = asyncio.create_task(
-        odds_sync_loop(
-            interval_minutes=settings.sched_odds_interval_min,
-            initial_delay=0,
-            use_stubs=use_stubs,
-        ),
-        name="odds_sync_loop"
+        quota_safe_sync_loop(initial_delay=30),
+        name="quota_safe_sync_loop"
     )
     tasks.append(task1)
-    logger.info(f"Created odds_sync_loop task (every {settings.sched_odds_interval_min} min, use_stubs={use_stubs})")
+    logger.info(f"Created quota_safe_sync_loop task (2x daily at 6 AM + 5 PM ET, use_stubs={use_stubs})")
 
     # Stats sync task
     task2 = asyncio.create_task(

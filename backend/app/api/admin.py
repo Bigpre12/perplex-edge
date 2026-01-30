@@ -11,6 +11,8 @@ from app.services import (
     sync_games_and_lines,
     sync_recent_player_stats,
     sync_injuries,
+    get_quota_status,
+    sync_with_fallback,
 )
 from app.services.picks_generator import generate_picks
 
@@ -29,6 +31,100 @@ AVAILABLE_SPORTS = [
     "basketball_ncaab",
     "americanfootball_ncaaf",
 ]
+
+
+# =============================================================================
+# Quota Management Endpoints
+# =============================================================================
+
+@router.get("/quota")
+async def get_api_quota():
+    """
+    Get current API quota status for The Odds API.
+    
+    Returns:
+        - remaining: Requests remaining this month
+        - used: Requests used this month  
+        - monthly_limit: Total monthly limit (500 for free tier)
+        - percent_used: Percentage of quota consumed
+        - last_updated: When quota was last updated from API response
+    """
+    quota = get_quota_status()
+    return {
+        "status": "ok",
+        "quota": quota,
+        "recommendations": {
+            "daily_budget": 6,  # 2x daily × 3 sports
+            "monthly_budget": 180,
+            "buffer_remaining": quota["remaining"] - 180 if quota["remaining"] > 180 else 0,
+        }
+    }
+
+
+@router.post("/jobs/sync-quota-safe")
+async def run_quota_safe_sync(
+    sport: str = Query("basketball_nba", description="Sport key to sync"),
+    include_props: bool = Query(True, description="Include player props"),
+    force_stubs: bool = Query(False, description="Force stubs (skip real API)"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Quota-safe sync with automatic failover.
+    
+    Cascade order:
+    1. The Odds API (if quota available)
+    2. ESPN free API (if available for sport)
+    3. Stub data (guaranteed fallback)
+    
+    Use this for ad-hoc syncs to protect your API quota.
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    start_time = time.time()
+    
+    try:
+        result = await sync_with_fallback(
+            db,
+            sport_key=sport,
+            include_props=include_props,
+            use_real_api=not force_stubs,
+        )
+        
+        duration_ms = int((time.time() - start_time) * 1000)
+        quota = get_quota_status()
+        
+        return {
+            "job": "sync-quota-safe",
+            "status": "success",
+            "sport": sport,
+            "data_source": result.get("data_source", "unknown"),
+            "duration_ms": duration_ms,
+            "counts": {
+                "games_created": result.get("games_created", 0),
+                "games_updated": result.get("games_updated", 0),
+                "lines_added": result.get("lines_added", 0),
+                "props_added": result.get("props_added", 0),
+            },
+            "quota": quota,
+            "errors": result.get("errors", []),
+        }
+    
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "job": "sync-quota-safe",
+                "status": "error",
+                "sport": sport,
+                "duration_ms": duration_ms,
+                "error": str(e),
+            },
+        )
 
 
 # =============================================================================

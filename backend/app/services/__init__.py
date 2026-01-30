@@ -1,7 +1,7 @@
 """Service providers and ETL functions for external data sources."""
 
 # Providers
-from app.services.odds_provider import OddsProvider, XYZOddsProvider
+from app.services.odds_provider import OddsProvider, XYZOddsProvider, get_quota_status
 from app.services.stats_provider import StatsProvider
 from app.services.injury_provider import InjuryProvider
 from app.services.roster_provider import RosterProvider
@@ -10,6 +10,7 @@ from app.services.roster_provider import RosterProvider
 from app.services.etl_games_and_lines import (
     sync_games_and_lines,
     sync_all_sports,
+    sync_with_fallback,
 )
 from app.services.etl_stats import (
     sync_recent_player_stats,
@@ -53,9 +54,12 @@ __all__ = [
     "StatsProvider",
     "InjuryProvider",
     "RosterProvider",
+    # Quota Tracking
+    "get_quota_status",
     # ETL - Games & Lines
     "sync_games_and_lines",
     "sync_all_sports",
+    "sync_with_fallback",
     # ETL - Stats
     "sync_recent_player_stats",
     "sync_player_stats_by_days",
