@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, SyncStatus, PickSummary, GameList } from '../api/client';
+import { LastUpdated } from './LastUpdated';
 
 export function Dashboard() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
@@ -49,6 +50,14 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Data Freshness Indicator */}
+      <div className="bg-gray-800 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-gray-400">Data Sync Status</h3>
+          <LastUpdated showCounts={true} layout="inline" />
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

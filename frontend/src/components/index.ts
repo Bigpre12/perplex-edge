@@ -12,6 +12,7 @@ export { StatsDashboard } from './StatsDashboard';
 export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';
 export { PickCard } from './PickCard';
 export { StatsTable } from './StatsTable';
+export { LastUpdated, LastUpdatedCompact } from './LastUpdated';
 
 // Legacy components (kept for backwards compatibility)
 export { Dashboard } from './Dashboard';

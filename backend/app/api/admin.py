@@ -24,6 +24,8 @@ from app.services import (
     get_roi_by_confidence,
     get_clv_analysis,
     compute_calibration_metrics,
+    get_all_sync_status,
+    check_stale_data,
 )
 from app.services.picks_generator import generate_picks
 
@@ -229,6 +231,37 @@ async def get_snapshot(
             status_code=404,
             detail=f"Snapshot not found for {sport} on {snapshot_date}",
         )
+
+
+# =============================================================================
+# Sync Status Endpoints
+# =============================================================================
+
+@router.get("/sync-status")
+async def get_sync_status(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get current sync status for all sports.
+    
+    Shows last_updated timestamps, counts, and health status.
+    Use this to verify that scheduled jobs are running.
+    """
+    return await get_all_sync_status(db)
+
+
+@router.get("/sync-status/stale")
+async def get_stale_data_alerts(
+    max_age_hours: int = Query(24, description="Hours before data is considered stale"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Check for stale data across all sports.
+    
+    Returns alerts for any sport/data-type that hasn't been
+    updated in the specified number of hours.
+    """
+    return await check_stale_data(db, max_age_hours)
 
 
 # =============================================================================

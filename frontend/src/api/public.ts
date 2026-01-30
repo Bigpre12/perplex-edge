@@ -611,3 +611,44 @@ export function usePlayerHistory(playerId: number | null) {
     staleTime: 60 * 1000,
   });
 }
+
+// =============================================================================
+// Data Freshness / Metadata Types and Hooks
+// =============================================================================
+
+export interface SportMetadata {
+  name: string;
+  last_updated: string | null;
+  relative: string;
+  games_count?: number;
+  lines_count?: number;
+  props_count?: number;
+  source?: string;
+  is_healthy: boolean;
+}
+
+export interface DataFreshnessResponse {
+  updated_at: string;
+  sports: Record<string, SportMetadata>;
+}
+
+/**
+ * Fetch data freshness metadata for all sports.
+ * Shows "Last updated: X" for each sport.
+ */
+export async function fetchDataFreshness(): Promise<DataFreshnessResponse> {
+  return fetchJson<DataFreshnessResponse>(`${API_BASE_URL}/api/meta`);
+}
+
+/**
+ * Hook to fetch data freshness with auto-refresh.
+ * Updates every 30 seconds to show accurate "X minutes ago" text.
+ */
+export function useDataFreshness() {
+  return useQuery({
+    queryKey: ['data-freshness'],
+    queryFn: fetchDataFreshness,
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+  });
+}

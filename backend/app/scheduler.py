@@ -394,6 +394,8 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
         pre_refresh_snapshot,
         post_sync_validation,
     )
+    from app.services.sync_metadata_service import record_sync
+    import time
     
     if initial_delay > 0:
         logger.info(f"Quota-safe sync loop starting in {initial_delay}s...")
@@ -456,6 +458,7 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
                 
                 # 3. Sync each sport with failover
                 for sport_key in SPORT_KEYS:
+                    sync_start = time.time()
                     try:
                         result = await sync_with_fallback(
                             db, 
@@ -463,30 +466,92 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
                             include_props=True,
                             use_real_api=use_real_api,
                         )
+                        sync_duration = time.time() - sync_start
                         logger.info(f"{sport_key} sync result: {result}")
                         
                         # 4. Post-sync health check
                         health_result = await post_sync_validation(db, sport_key, result)
-                        if health_result.get("alert_triggered"):
+                        is_healthy = not health_result.get("alert_triggered", False)
+                        
+                        if not is_healthy:
                             health_issues.append({
                                 "sport": sport_key,
                                 "issues": health_result["health_check"]["issues"],
                             })
+                        
+                        # 5. Record sync metadata for "last updated" tracking
+                        await record_sync(
+                            db,
+                            sport_key=sport_key,
+                            data_type="games",
+                            games_count=result.get("games_added", 0) + result.get("games_updated", 0),
+                            lines_count=result.get("lines_added", 0),
+                            props_count=result.get("props_added", 0),
+                            picks_count=result.get("picks_generated", 0),
+                            source=result.get("source", "unknown"),
+                            sync_duration_seconds=round(sync_duration, 2),
+                            is_healthy=is_healthy,
+                        )
                             
                     except Exception as e:
+                        sync_duration = time.time() - sync_start
                         logger.error(f"Error syncing {sport_key}: {e}")
                         health_issues.append({
                             "sport": sport_key,
                             "issues": [f"Sync exception: {str(e)[:100]}"],
                         })
+                        
+                        # Record failed sync
+                        await record_sync(
+                            db,
+                            sport_key=sport_key,
+                            data_type="games",
+                            source="failed",
+                            sync_duration_seconds=round(sync_duration, 2),
+                            error_message=str(e)[:500],
+                            is_healthy=False,
+                        )
             
             # Log updated quota
             quota = get_quota_status()
             logger.info(f"Post-sync quota: {quota['used']} used, {quota['remaining']} remaining")
             
-            # Summary
+            # Generate detailed summary
+            logger.info("=" * 60)
+            logger.info(f"{sync_name} SYNC SUMMARY")
+            logger.info("=" * 60)
+            
+            # Get fresh metadata for summary
+            async with session_maker() as db_summary:
+                from app.services.sync_metadata_service import get_all_sync_status
+                status = await get_all_sync_status(db_summary)
+                
+                for sport_key, sport_data in status.items():
+                    games_meta = sport_data["data_types"].get("games", {})
+                    if games_meta:
+                        logger.info(
+                            f"  {sport_data['display_name']:8} | "
+                            f"Games: {games_meta.get('games_count', 0):3} | "
+                            f"Lines: {games_meta.get('lines_count', 0):4} | "
+                            f"Props: {games_meta.get('props_count', 0):4} | "
+                            f"Source: {games_meta.get('source', 'N/A'):10} | "
+                            f"Healthy: {'YES' if games_meta.get('is_healthy') else 'NO'}"
+                        )
+                    else:
+                        logger.info(f"  {sport_data['display_name']:8} | No sync data")
+            
+            logger.info("-" * 60)
+            
+            # Final status
             if health_issues:
-                logger.warning(f"=== {sync_name} SYNC COMPLETE WITH ISSUES: {health_issues} ===")
+                logger.warning(f"=== {sync_name} SYNC COMPLETE WITH ISSUES ===")
+                for issue in health_issues:
+                    logger.warning(f"  {issue['sport']}: {issue['issues']}")
+                
+                # Alert on critical issues (low game counts for game days)
+                for issue in health_issues:
+                    if "games" in str(issue['issues']).lower():
+                        logger.error(f"ALERT: Low game count detected for {issue['sport']} - check API/data source!")
             else:
                 logger.info(f"=== {sync_name} QUOTA-SAFE SYNC COMPLETE (all healthy) ===")
             

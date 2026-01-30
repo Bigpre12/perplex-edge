@@ -76,6 +76,16 @@ from app.services.calibration_service import (
     get_clv_analysis,
 )
 
+# Sync Metadata Service
+from app.services.sync_metadata_service import (
+    record_sync,
+    get_last_updated,
+    get_sync_metadata,
+    get_all_sync_status,
+    get_frontend_meta,
+    check_stale_data,
+)
+
 # Model Functions
 from app.services.model import (
     american_to_implied_prob,
@@ -150,4 +160,11 @@ __all__ = [
     "get_reliability_data",
     "get_roi_by_confidence",
     "get_clv_analysis",
+    # Sync Metadata Service
+    "record_sync",
+    "get_last_updated",
+    "get_sync_metadata",
+    "get_all_sync_status",
+    "get_frontend_meta",
+    "check_stale_data",
 ]

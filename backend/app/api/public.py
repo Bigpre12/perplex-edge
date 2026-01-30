@@ -480,3 +480,85 @@ async def list_game_line_picks(
             "game_id": game_id,
         },
     )
+
+
+# =============================================================================
+# Metadata Endpoints
+# =============================================================================
+
+@router.get("/meta", tags=["public"])
+async def get_data_freshness(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get data freshness metadata for all sports.
+    
+    Returns last_updated timestamps for each sport so the UI can show:
+    "NBA slate last updated: 6:05 AM CT"
+    
+    This helps users know if data is fresh or stale.
+    """
+    from app.services.sync_metadata_service import get_frontend_meta
+    
+    return await get_frontend_meta(db)
+
+
+@router.get("/meta/{sport_key}", tags=["public"])
+async def get_sport_freshness(
+    sport_key: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get data freshness for a specific sport.
+    
+    Args:
+        sport_key: Sport identifier (e.g., "basketball_nba")
+    
+    Returns:
+        Last updated timestamp and sync details
+    """
+    from app.services.sync_metadata_service import get_sync_metadata
+    
+    VALID_SPORTS = ["basketball_nba", "basketball_ncaab", "americanfootball_nfl"]
+    
+    if sport_key not in VALID_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport_key}. Valid options: {VALID_SPORTS}",
+        )
+    
+    metadata = await get_sync_metadata(db, sport_key, "games")
+    
+    if not metadata:
+        return {
+            "sport_key": sport_key,
+            "last_updated": None,
+            "relative": "never synced",
+            "is_healthy": False,
+        }
+    
+    now = datetime.now(timezone.utc)
+    hours_ago = (now - metadata.last_updated).total_seconds() / 3600 if metadata.last_updated else None
+    
+    if hours_ago is not None:
+        if hours_ago < 1:
+            relative = "just now"
+        elif hours_ago < 24:
+            relative = f"{int(hours_ago)}h ago"
+        else:
+            relative = f"{int(hours_ago/24)}d ago"
+    else:
+        relative = "never"
+    
+    return {
+        "sport_key": sport_key,
+        "last_updated": metadata.last_updated.isoformat() if metadata.last_updated else None,
+        "relative": relative,
+        "games_count": metadata.games_count,
+        "lines_count": metadata.lines_count,
+        "props_count": metadata.props_count,
+        "picks_count": metadata.picks_count,
+        "source": metadata.source,
+        "sync_duration_seconds": metadata.sync_duration_seconds,
+        "is_healthy": metadata.is_healthy,
+    }
