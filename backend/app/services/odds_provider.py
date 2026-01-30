@@ -1068,3 +1068,62 @@ class XYZOddsProvider(OddsProvider):
                 },
             ],
         }
+
+
+# =============================================================================
+# BetStack Provider (Secondary Fallback)
+# =============================================================================
+
+class BetStackProvider(XYZOddsProvider):
+    """
+    Secondary odds provider using BetStack API.
+    
+    Inherits from XYZOddsProvider since BetStack uses the same format.
+    Falls back to this when primary Odds API fails.
+    """
+    
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        use_stubs: bool = False,
+    ):
+        settings = get_settings()
+        # Use BetStack credentials instead of primary Odds API
+        self.api_key = api_key or settings.betstack_api_key
+        self.base_url = base_url or settings.betstack_api_base_url
+        self.use_stubs = use_stubs
+        self._client: Optional[httpx.AsyncClient] = None
+    
+    async def _request(
+        self,
+        endpoint: str,
+        params: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any] | list[dict[str, Any]]:
+        """Make an authenticated request to BetStack API."""
+        if not self.api_key:
+            raise ValueError("BETSTACK_API_KEY not configured")
+        
+        url = f"{self.base_url}{endpoint}"
+        params = params or {}
+        params["apiKey"] = self.api_key
+        
+        response = await self.client.get(url, params=params)
+        
+        # Handle HTTP errors gracefully
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code in (422, 429, 404):
+                logger.warning(f"BetStack API {e.response.status_code}: {e.response.text[:200]}")
+                return []
+            else:
+                logger.error(f"BetStack API error {e.response.status_code}: {e.response.text[:500]}")
+                raise
+        
+        # Log API usage
+        remaining = response.headers.get("x-requests-remaining", "unknown")
+        used = response.headers.get("x-requests-used", "unknown")
+        logger.info(f"BetStack API: {used} used, {remaining} remaining")
+        
+        return response.json()

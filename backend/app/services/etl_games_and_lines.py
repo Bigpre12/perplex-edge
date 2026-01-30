@@ -536,6 +536,7 @@ async def sync_games_and_lines(
     sport_key: str,
     include_props: bool = False,
     use_stubs: bool = False,
+    provider: str = "odds_api",
 ) -> dict[str, Any]:
     """
     Sync games and betting lines for a sport from the odds provider.
@@ -549,10 +550,13 @@ async def sync_games_and_lines(
         sport_key: Sport identifier (e.g., 'basketball_nba')
         include_props: Whether to also fetch player props
         use_stubs: Use stub data instead of real API calls
+        provider: Which provider to use ('odds_api', 'betstack')
     
     Returns:
         Dictionary with sync statistics
     """
+    from app.services.odds_provider import XYZOddsProvider, BetStackProvider
+    
     stats = {
         "sport": None,
         "teams_created": 0,
@@ -577,9 +581,15 @@ async def sync_games_and_lines(
             market = await get_or_create_market(db, sport.id, market_type)
             market_cache[market_type] = market
         
-        async with XYZOddsProvider(use_stubs=use_stubs) as provider:
+        # Select provider based on parameter
+        if provider == "betstack":
+            provider_instance = BetStackProvider(use_stubs=use_stubs)
+        else:
+            provider_instance = XYZOddsProvider(use_stubs=use_stubs)
+        
+        async with provider_instance as active_provider:
             # Fetch games
-            games_data = await provider.fetch_games(sport_key)
+            games_data = await active_provider.fetch_games(sport_key)
             logger.info(f"Fetched {len(games_data)} games for {sport_key}")
             
             for game_data in games_data:
@@ -613,7 +623,7 @@ async def sync_games_and_lines(
                         stats["games_updated"] += 1
                     
                     # Fetch and sync main lines
-                    lines_data = await provider.fetch_main_lines(
+                    lines_data = await active_provider.fetch_main_lines(
                         sport_key,
                         game_data.external_game_id,
                     )
@@ -708,7 +718,7 @@ async def _sync_player_props(
     }
     
     try:
-        props_data = await provider.fetch_player_props(
+        props_data = await active_provider.fetch_player_props(
             sport_key,
             game.external_game_id,
         )

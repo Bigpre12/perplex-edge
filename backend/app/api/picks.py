@@ -265,17 +265,18 @@ async def refresh_picks(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Full refresh: sync new data, clear old games, generate picks.
+    Full refresh with multi-provider cascade.
     
-    This endpoint performs a SAFE data refresh for a sport:
-    1. Tries to sync from real Odds API first
-    2. Falls back to stub data if API fails (rate limit, errors, etc.)
-    3. Only clears old data AFTER new data is confirmed
-    4. Generates model picks
+    Cascade order:
+    1. The Odds API (primary)
+    2. BetStack API (secondary)  
+    3. Cached data (tertiary)
+    4. Stub data (last resort)
     
-    This prevents data loss when the API is unavailable.
+    This ensures data availability even when multiple APIs fail.
     """
     from app.services.etl_games_and_lines import clear_stale_games, sync_games_and_lines
+    from app.services.odds_cache import save_to_cache, load_from_cache
     from app.core.config import get_settings
     
     settings = get_settings()
@@ -287,49 +288,76 @@ async def refresh_picks(
             raise HTTPException(status_code=400, detail=f"Unknown sport: {sport}")
         
         sync_stats = None
-        used_stubs = prefer_stubs
+        data_source = "none"
         clear_stats = {"skipped": True, "reason": "no_new_data"}
         
         # =================================================================
-        # Step 1: Try to sync data (API first if not preferring stubs)
+        # Multi-Provider Cascade
         # =================================================================
+        
         if not prefer_stubs:
-            # Try real API first
-            logger.info(f"Trying real API for {sport_key}...")
+            # ----- Step 1: Try The Odds API (Primary) -----
+            logger.info(f"[1/4] Trying The Odds API for {sport_key}...")
             try:
                 sync_stats = await sync_games_and_lines(
-                    db, sport_key, include_props=True, use_stubs=False
+                    db, sport_key, include_props=True, use_stubs=False,
+                    provider="odds_api"  # Primary provider
                 )
                 
-                # Check if API returned useful data
-                has_errors = len(sync_stats.get("errors", [])) > 0
-                has_games = sync_stats.get("games_created", 0) > 0 or sync_stats.get("games_updated", 0) > 0
-                has_props = sync_stats.get("props_added", 0) > 0
-                
-                if has_errors and not has_props:
-                    logger.warning(f"API had errors and no props, falling back to stubs: {sync_stats.get('errors', [])[:3]}")
-                    sync_stats = None  # Will trigger fallback
-                elif not has_games and not has_props:
-                    logger.warning("API returned no data, falling back to stubs")
-                    sync_stats = None  # Will trigger fallback
+                if _is_sync_successful(sync_stats):
+                    logger.info(f"The Odds API success: {sync_stats}")
+                    data_source = "odds_api"
+                    # Cache successful data
+                    save_to_cache(sport_key, sync_stats)
                 else:
-                    logger.info(f"API sync successful: {sync_stats}")
-                    used_stubs = False
+                    logger.warning(f"The Odds API returned incomplete data")
+                    sync_stats = None
             except Exception as e:
-                logger.warning(f"API sync failed, falling back to stubs: {e}")
+                logger.warning(f"The Odds API failed: {e}")
                 sync_stats = None
+            
+            # ----- Step 2: Try BetStack API (Secondary) -----
+            if sync_stats is None and settings.betstack_api_key:
+                logger.info(f"[2/4] Trying BetStack API for {sport_key}...")
+                try:
+                    sync_stats = await sync_games_and_lines(
+                        db, sport_key, include_props=True, use_stubs=False,
+                        provider="betstack"  # Secondary provider
+                    )
+                    
+                    if _is_sync_successful(sync_stats):
+                        logger.info(f"BetStack API success: {sync_stats}")
+                        data_source = "betstack"
+                        save_to_cache(sport_key, sync_stats)
+                    else:
+                        logger.warning(f"BetStack API returned incomplete data")
+                        sync_stats = None
+                except Exception as e:
+                    logger.warning(f"BetStack API failed: {e}")
+                    sync_stats = None
+            
+            # ----- Step 3: Try Cached Data (Tertiary) -----
+            if sync_stats is None:
+                logger.info(f"[3/4] Trying cached data for {sport_key}...")
+                cached = load_from_cache(sport_key)
+                if cached:
+                    logger.info(f"Using cached data for {sport_key}")
+                    data_source = "cache"
+                    sync_stats = cached
+                else:
+                    logger.warning("No valid cache available")
         
-        # Fallback to stubs if API failed or stubs preferred
+        # ----- Step 4: Fallback to Stubs (Last Resort) -----
         if sync_stats is None:
-            logger.info(f"Using stub data for {sport_key}...")
+            logger.info(f"[4/4] Using stub data for {sport_key}...")
             sync_stats = await sync_games_and_lines(
                 db, sport_key, include_props=True, use_stubs=True
             )
-            used_stubs = True
+            data_source = "stubs"
             logger.info(f"Stub sync: {sync_stats}")
         
         # =================================================================
-        # Step 2: Clear old data ONLY if we got new data
+        # Clear old data ONLY if we got new data
         # =================================================================
         new_games = sync_stats.get("games_created", 0) + sync_stats.get("games_updated", 0)
         new_props = sync_stats.get("props_added", 0)
@@ -342,22 +370,23 @@ async def refresh_picks(
             logger.warning("No new data fetched, keeping existing data")
         
         # =================================================================
-        # Step 3: Generate picks
+        # Generate picks
         # =================================================================
-        logger.info(f"Generating picks for {sport_key} (used_stubs={used_stubs})...")
+        use_stubs_for_picks = data_source == "stubs"
+        logger.info(f"Generating picks for {sport_key} (source={data_source})...")
         picks_result = await generate_picks(
             db,
             sport_key,
             min_ev=0.0,
             min_confidence=0.5,
-            use_stubs=used_stubs,
+            use_stubs=use_stubs_for_picks,
         )
         logger.info(f"Generated: {picks_result}")
         
         return {
             "status": "success",
             "sport": sport,
-            "used_stubs": used_stubs,
+            "data_source": data_source,
             "clear_stats": clear_stats,
             "sync_stats": sync_stats,
             "picks_result": picks_result,
@@ -367,3 +396,21 @@ async def refresh_picks(
     except Exception as e:
         logger.error(f"Error refreshing picks: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
+
+
+def _is_sync_successful(sync_stats: dict) -> bool:
+    """Check if a sync operation returned useful data."""
+    if not sync_stats:
+        return False
+    
+    has_errors = len(sync_stats.get("errors", [])) > 0
+    has_games = sync_stats.get("games_created", 0) > 0 or sync_stats.get("games_updated", 0) > 0
+    has_props = sync_stats.get("props_added", 0) > 0
+    
+    # Success if we have games/props and either no errors or errors but still got props
+    if has_games or has_props:
+        if has_errors and not has_props:
+            return False  # Errors with no props = failure
+        return True
+    
+    return False

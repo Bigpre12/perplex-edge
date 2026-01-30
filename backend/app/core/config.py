@@ -18,9 +18,13 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/perplex"
 
-    # The Odds API
+    # The Odds API (Primary)
     odds_api_key: str = ""
     odds_api_base_url: str = "https://api.the-odds-api.com/v4"
+
+    # BetStack API (Secondary fallback)
+    betstack_api_key: str = ""
+    betstack_api_base_url: str = "https://api.the-odds-api.com/v4"  # Uses same format as Odds API
 
     # Stats API
     stats_api_key: str = ""
