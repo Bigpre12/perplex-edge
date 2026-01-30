@@ -13,6 +13,11 @@ from app.services import (
     sync_injuries,
     get_quota_status,
     sync_with_fallback,
+    save_daily_snapshot,
+    list_snapshots,
+    load_snapshot,
+    check_sync_health,
+    run_all_health_checks,
 )
 from app.services.picks_generator import generate_picks
 
@@ -125,6 +130,145 @@ async def run_quota_safe_sync(
                 "error": str(e),
             },
         )
+
+
+# =============================================================================
+# Snapshot Endpoints
+# =============================================================================
+
+@router.get("/snapshots")
+async def get_snapshots(
+    sport: Optional[str] = Query(None, description="Filter by sport key"),
+    limit: int = Query(30, description="Max snapshots to return"),
+):
+    """
+    List available data snapshots.
+    
+    Snapshots are dated backups saved before each daily refresh.
+    Use them to:
+    - Audit past slates
+    - Debug pick decisions
+    - Rebuild models from historical data
+    """
+    snapshots = list_snapshots(sport_key=sport, limit=limit)
+    return {
+        "count": len(snapshots),
+        "snapshots": snapshots,
+    }
+
+
+@router.post("/snapshots")
+async def create_snapshot(
+    sport: str = Query("basketball_nba", description="Sport to snapshot"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a manual snapshot of current data.
+    
+    Normally snapshots are created automatically before daily refresh.
+    Use this endpoint for ad-hoc backups.
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    from datetime import date
+    result = await save_daily_snapshot(db, sport, date.today())
+    
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    
+    return {
+        "status": "success",
+        "snapshot": result,
+    }
+
+
+@router.get("/snapshots/{sport}/{snapshot_date}")
+async def get_snapshot(
+    sport: str,
+    snapshot_date: str,
+):
+    """
+    Load a specific snapshot by sport and date.
+    
+    Path params:
+    - sport: Sport key or short name (e.g., "nba" or "basketball_nba")
+    - snapshot_date: Date in YYYY-MM-DD format
+    """
+    from datetime import date as date_type
+    
+    # Normalize sport key
+    if sport in ("nba", "ncaab", "nfl"):
+        sport_key = {
+            "nba": "basketball_nba",
+            "ncaab": "basketball_ncaab",
+            "nfl": "americanfootball_nfl",
+        }[sport]
+    else:
+        sport_key = sport
+    
+    try:
+        snapshot_date_parsed = date_type.fromisoformat(snapshot_date)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid date format: {snapshot_date}. Use YYYY-MM-DD.",
+        )
+    
+    try:
+        snapshot = load_snapshot(sport_key, snapshot_date_parsed)
+        return snapshot
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Snapshot not found for {sport} on {snapshot_date}",
+        )
+
+
+# =============================================================================
+# Health Check Endpoints
+# =============================================================================
+
+@router.get("/health")
+async def get_health_status(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Run health checks on all sports.
+    
+    Checks that each sport has minimum expected:
+    - Games
+    - Lines
+    - Props
+    - Picks
+    
+    Use this to detect silent sync failures.
+    """
+    result = await run_all_health_checks(db)
+    return result
+
+
+@router.get("/health/{sport}")
+async def get_sport_health(
+    sport: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Run health check for a specific sport.
+    
+    Returns detailed counts vs. thresholds.
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    result = await check_sync_health(db, sport)
+    return result.to_dict()
 
 
 # =============================================================================

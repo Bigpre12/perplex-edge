@@ -289,6 +289,11 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
     Uses ~6 API calls/day (180/month), well under 500/month free tier.
     Automatically falls back to ESPN -> stubs if primary API fails.
     
+    Features:
+    - Pre-sync snapshots for data versioning
+    - Post-sync health checks with alerting
+    - Automatic failover between providers
+    
     Schedule:
     - 6:00 AM ET (11:00 UTC): Morning sync - overnight line movements
     - 5:00 PM ET (22:00 UTC): Pre-game sync - final lines before tip-off
@@ -298,6 +303,10 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
     """
     from app.services.etl_games_and_lines import sync_with_fallback
     from app.services.odds_provider import get_quota_status
+    from app.services.snapshot_service import (
+        pre_refresh_snapshot,
+        post_sync_validation,
+    )
     
     if initial_delay > 0:
         logger.info(f"Quota-safe sync loop starting in {initial_delay}s...")
@@ -338,19 +347,27 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
             # Run the sync
             logger.info(f"=== {sync_name} QUOTA-SAFE SYNC STARTING ===")
             
-            # Check quota before syncing
-            quota = get_quota_status()
-            logger.info(f"API quota status: {quota['used']} used, {quota['remaining']} remaining")
-            
-            if quota['remaining'] < 10:
-                logger.warning(f"Low quota ({quota['remaining']} remaining), using stubs only")
-                use_real_api = False
-            else:
-                use_real_api = True
-            
             session_maker = get_session_maker()
+            health_issues = []
             
             async with session_maker() as db:
+                # 1. Save pre-sync snapshots (versioned backups)
+                if sync_name == "MORNING":
+                    logger.info("Saving pre-refresh snapshots...")
+                    snapshot_result = await pre_refresh_snapshot(db, SPORT_KEYS)
+                    logger.info(f"Snapshots saved: {snapshot_result}")
+                
+                # 2. Check quota before syncing
+                quota = get_quota_status()
+                logger.info(f"API quota status: {quota['used']} used, {quota['remaining']} remaining")
+                
+                if quota['remaining'] < 10:
+                    logger.warning(f"Low quota ({quota['remaining']} remaining), using stubs only")
+                    use_real_api = False
+                else:
+                    use_real_api = True
+                
+                # 3. Sync each sport with failover
                 for sport_key in SPORT_KEYS:
                     try:
                         result = await sync_with_fallback(
@@ -360,13 +377,31 @@ async def quota_safe_sync_loop(initial_delay: int = 60):
                             use_real_api=use_real_api,
                         )
                         logger.info(f"{sport_key} sync result: {result}")
+                        
+                        # 4. Post-sync health check
+                        health_result = await post_sync_validation(db, sport_key, result)
+                        if health_result.get("alert_triggered"):
+                            health_issues.append({
+                                "sport": sport_key,
+                                "issues": health_result["health_check"]["issues"],
+                            })
+                            
                     except Exception as e:
                         logger.error(f"Error syncing {sport_key}: {e}")
+                        health_issues.append({
+                            "sport": sport_key,
+                            "issues": [f"Sync exception: {str(e)[:100]}"],
+                        })
             
             # Log updated quota
             quota = get_quota_status()
             logger.info(f"Post-sync quota: {quota['used']} used, {quota['remaining']} remaining")
-            logger.info(f"=== {sync_name} QUOTA-SAFE SYNC COMPLETE ===")
+            
+            # Summary
+            if health_issues:
+                logger.warning(f"=== {sync_name} SYNC COMPLETE WITH ISSUES: {health_issues} ===")
+            else:
+                logger.info(f"=== {sync_name} QUOTA-SAFE SYNC COMPLETE (all healthy) ===")
             
         except asyncio.CancelledError:
             logger.info("Quota-safe sync loop cancelled")
