@@ -2,7 +2,7 @@
 
 import logging
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy import select, func
@@ -135,8 +135,17 @@ async def get_top_picks(
     db: AsyncSession = Depends(get_db),
 ):
     """Get top picks by expected value for today's games."""
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    from zoneinfo import ZoneInfo
+    EASTERN_TZ = ZoneInfo("America/New_York")
+    
+    # Use Eastern time for "today" (consistent with other endpoints)
+    now_et = datetime.now(EASTERN_TZ)
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC naive for PostgreSQL
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
 
     query = (
         select(ModelPick)

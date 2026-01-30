@@ -562,3 +562,72 @@ async def get_sport_freshness(
         "sync_duration_seconds": metadata.sync_duration_seconds,
         "is_healthy": metadata.is_healthy,
     }
+
+
+# =============================================================================
+# Debug/Diagnostic Endpoint
+# =============================================================================
+
+@router.get("/debug/date-check", tags=["debug"])
+async def debug_date_check(db: AsyncSession = Depends(get_db)):
+    """
+    Debug endpoint to check date calculations and database state.
+    
+    Use this to verify timezone handling and what games are in the database.
+    """
+    from sqlalchemy import func
+    
+    # Current times
+    now_et = datetime.now(EASTERN_TZ)
+    now_utc = datetime.now(timezone.utc)
+    
+    # Today's boundaries in ET
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC naive for DB
+    today_utc = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow_utc = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    
+    # Count games in different time ranges
+    total_games = await db.scalar(select(func.count(Game.id)))
+    
+    today_games = await db.scalar(
+        select(func.count(Game.id)).where(
+            Game.start_time >= today_utc,
+            Game.start_time < tomorrow_utc,
+        )
+    )
+    
+    # Get a sample of recent games
+    recent_games_result = await db.execute(
+        select(Game.external_game_id, Game.start_time)
+        .order_by(Game.start_time.desc())
+        .limit(10)
+    )
+    recent_games = [
+        {"id": g.external_game_id, "start_time": g.start_time.isoformat() if g.start_time else None}
+        for g in recent_games_result.fetchall()
+    ]
+    
+    return {
+        "server_time": {
+            "now_et": now_et.isoformat(),
+            "now_utc": now_utc.isoformat(),
+            "today_date_et": now_et.date().isoformat(),
+        },
+        "filter_boundaries": {
+            "today_start_utc": today_utc.isoformat(),
+            "tomorrow_start_utc": tomorrow_utc.isoformat(),
+        },
+        "database_counts": {
+            "total_games": total_games,
+            "games_matching_today_filter": today_games,
+        },
+        "recent_games_sample": recent_games,
+        "diagnosis": (
+            "STALE DATA: No games match today's filter. Run force-refresh."
+            if today_games == 0 else
+            f"OK: {today_games} games found for today ({now_et.date().isoformat()})"
+        ),
+    }

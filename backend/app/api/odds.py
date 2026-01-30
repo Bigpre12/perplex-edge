@@ -139,10 +139,18 @@ async def get_best_lines(
     db: AsyncSession = Depends(get_db),
 ):
     """Get best available lines across all games."""
-    # Get today's games
-    from datetime import datetime, timedelta
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    # Get today's games using Eastern time (consistent with other endpoints)
+    from datetime import datetime, timedelta, timezone
+    from zoneinfo import ZoneInfo
+    EASTERN_TZ = ZoneInfo("America/New_York")
+    
+    now_et = datetime.now(EASTERN_TZ)
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC naive for PostgreSQL
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
 
     query = (
         select(Line)
