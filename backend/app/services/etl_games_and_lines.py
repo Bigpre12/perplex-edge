@@ -666,7 +666,7 @@ async def sync_games_and_lines(
                     if include_props:
                         props_result = await _sync_player_props(
                             db,
-                            provider,
+                            active_provider,
                             sport,
                             game,
                             sport_key,
@@ -718,7 +718,7 @@ async def _sync_player_props(
     }
     
     try:
-        props_data = await active_provider.fetch_player_props(
+        props_data = await provider.fetch_player_props(
             sport_key,
             game.external_game_id,
         )
