@@ -20,6 +20,10 @@ from app.services import (
     run_all_health_checks,
     validate_database_state,
     get_api_monitor,
+    get_reliability_data,
+    get_roi_by_confidence,
+    get_clv_analysis,
+    compute_calibration_metrics,
 )
 from app.services.picks_generator import generate_picks
 
@@ -382,6 +386,122 @@ async def get_all_data_quality(
         "total_warnings": total_warnings,
         "sports": results,
     }
+
+
+# =============================================================================
+# Calibration Endpoints
+# =============================================================================
+
+@router.get("/calibration/{sport}")
+async def get_calibration_report(
+    sport: str,
+    days: int = Query(30, description="Number of days to analyze"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get calibration metrics by probability bucket.
+    
+    Shows how well predicted probabilities match actual hit rates.
+    Perfect calibration = predicted % equals actual hit %.
+    
+    Returns:
+    - Metrics per probability bucket (50-55%, 55-60%, etc.)
+    - Brier score (lower is better, 0 = perfect)
+    - Calibration error (ECE)
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    result = await get_reliability_data(db, sport, days)
+    return result
+
+
+@router.get("/calibration/{sport}/reliability")
+async def get_reliability_plot_data(
+    sport: str,
+    days: int = Query(30, description="Number of days to analyze"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get data for reliability plot (calibration curve).
+    
+    A reliability plot shows predicted probability vs actual hit rate.
+    Perfect calibration = diagonal line from (0,0) to (1,1).
+    
+    Use this data to visualize model calibration.
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    result = await get_reliability_data(db, sport, days)
+    
+    # Format for plotting
+    plot_data = {
+        "sport": sport,
+        "days": days,
+        "x_predicted": [b["predicted_prob"] for b in result.get("buckets", [])],
+        "y_actual": [b["actual_hit_rate"] for b in result.get("buckets", [])],
+        "sample_sizes": [b["sample_size"] for b in result.get("buckets", [])],
+        "bucket_labels": [b["probability_bucket"] for b in result.get("buckets", [])],
+        "overall_brier": result.get("overall_brier"),
+        "calibration_error": result.get("calibration_error"),
+    }
+    return plot_data
+
+
+@router.get("/calibration/{sport}/roi")
+async def get_roi_by_confidence_bucket(
+    sport: str,
+    days: int = Query(30, description="Number of days to analyze"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get ROI breakdown by confidence/probability bucket.
+    
+    Shows which confidence levels are most profitable.
+    Use this to identify your edge and optimal bet sizing.
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    result = await get_roi_by_confidence(db, sport, days)
+    return result
+
+
+@router.get("/calibration/{sport}/clv")
+async def get_clv_analysis_endpoint(
+    sport: str,
+    days: int = Query(30, description="Number of days to analyze"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get Closing Line Value (CLV) analysis.
+    
+    CLV measures how often you beat the closing line.
+    Positive CLV = got better odds than market close (edge indicator).
+    
+    Returns:
+    - Average CLV in cents
+    - % of bets with positive CLV
+    - CLV distribution
+    """
+    if sport not in AVAILABLE_SPORTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown sport: {sport}. Available: {AVAILABLE_SPORTS}",
+        )
+    
+    result = await get_clv_analysis(db, sport, days)
+    return result
 
 
 # =============================================================================

@@ -17,6 +17,7 @@ from app.models.odds_snapshot import OddsSnapshot
 from app.models.game_result import GameResult
 from app.models.nfl_odds import LiveOddsNFL, HistoricalOddsNFL
 from app.models.ncaab_odds import LiveOddsNCAAB, HistoricalOddsNCAAB
+from app.models.calibration_metrics import CalibrationMetrics
 
 __all__ = [
     "Base",
@@ -40,4 +41,5 @@ __all__ = [
     "HistoricalOddsNFL",
     "LiveOddsNCAAB",
     "HistoricalOddsNCAAB",
+    "CalibrationMetrics",
 ]

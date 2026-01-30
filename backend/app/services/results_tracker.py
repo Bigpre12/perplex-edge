@@ -9,9 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import (
-    Game, ModelPick, Player, PlayerGameStats, Market,
+    Game, ModelPick, Player, PlayerGameStats, Market, Line,
     PickResult, PlayerHitRate, Sport
 )
+from app.services.calibration_service import calculate_clv, calculate_profit_loss
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,24 @@ class ResultsTracker:
                 stats_map[stat.player_id] = {}
             stats_map[stat.player_id][stat.stat_type] = stat.value
         
+        # Get closing lines for this game (most recent lines before game start)
+        # These represent the "closing" odds/lines at game time
+        closing_lines_result = await db.execute(
+            select(Line)
+            .where(Line.game_id == game_id)
+            .order_by(Line.created_at.desc())
+        )
+        closing_lines = closing_lines_result.scalars().all()
+        
+        # Build a map of (player_id, stat_type) -> (closing_odds, closing_line_value)
+        closing_map: dict[tuple[int, str], tuple[int, float]] = {}
+        for line in closing_lines:
+            if line.player_id and line.stat_type:
+                key = (line.player_id, line.stat_type.upper())
+                if key not in closing_map:  # Keep only the most recent (first in desc order)
+                    # Use over_odds as the closing odds for "over" bets, under_odds for "under"
+                    closing_map[key] = (line.over_odds, line.line_value)
+        
         # Settle each pick
         settled = 0
         hits = 0
@@ -157,6 +176,34 @@ class ResultsTracker:
                 # For exact matches or other sides, skip
                 continue
             
+            # Get closing line data for CLV calculation
+            closing_key = (pick.player_id, stat_type.upper())
+            closing_data = closing_map.get(closing_key)
+            
+            closing_odds = None
+            closing_line_val = None
+            clv_cents = None
+            profit_loss = None
+            
+            if closing_data:
+                closing_odds_raw, closing_line_val = closing_data
+                
+                # Get the appropriate closing odds based on side
+                if side == "over":
+                    closing_odds = closing_odds_raw  # over_odds
+                else:
+                    # For under, we'd ideally have under_odds but use over_odds as approximation
+                    closing_odds = closing_odds_raw
+                
+                # Calculate CLV if we have both opening and closing odds
+                opening_odds = int(pick.odds) if pick.odds else None
+                if opening_odds and closing_odds:
+                    clv_cents = calculate_clv(opening_odds, closing_odds)
+            
+            # Calculate profit/loss
+            opening_odds = int(pick.odds) if pick.odds else -110
+            profit_loss = calculate_profit_loss(opening_odds, hit, unit=100.0)
+            
             # Create the result record
             pick_result = PickResult(
                 pick_id=pick.id,
@@ -166,6 +213,10 @@ class ResultsTracker:
                 line_value=line_value,
                 side=side,
                 hit=hit,
+                closing_odds=closing_odds,
+                closing_line=closing_line_val,
+                clv_cents=clv_cents,
+                profit_loss=profit_loss,
             )
             db.add(pick_result)
             

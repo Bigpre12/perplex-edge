@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
-from sqlalchemy import ForeignKey, Float, Boolean, Index, func
+from sqlalchemy import ForeignKey, Float, Boolean, Integer, Index, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -51,6 +51,18 @@ class PickResult(Base):
         default=func.now(),
         server_default=func.now(),
     )
+    
+    # Closing line data (captured at game start for CLV calculation)
+    closing_odds: Mapped[Optional[int]] = mapped_column(Integer)
+    closing_line: Mapped[Optional[float]] = mapped_column(Float)
+    
+    # CLV = difference between opening and closing odds in cents of juice
+    # Positive = beat the close, Negative = got worse line
+    clv_cents: Mapped[Optional[float]] = mapped_column(Float)
+    
+    # Profit/loss for $100 unit bet
+    # Win: +payout based on odds, Loss: -100
+    profit_loss: Mapped[Optional[float]] = mapped_column(Float)
 
     # Relationships
     pick: Mapped["ModelPick"] = relationship(back_populates="result")

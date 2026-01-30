@@ -195,6 +195,93 @@ async def daily_refresh_loop(refresh_hour: int = 9):
             await asyncio.sleep(3600)
 
 
+async def daily_calibration_loop(calibration_hour: int = 10):
+    """
+    Background task that computes and stores calibration metrics daily.
+    
+    Runs after the daily refresh to ensure all results are settled,
+    then computes calibration metrics for the previous day's picks.
+    
+    Args:
+        calibration_hour: Hour to run calibration (24h format, EST)
+    """
+    from datetime import date
+    from app.services.calibration_service import (
+        compute_calibration_metrics,
+        store_calibration_metrics,
+    )
+    
+    logger.info(f"Daily calibration loop started (runs at {calibration_hour}:00 EST)")
+    
+    while True:
+        try:
+            # Calculate time until next calibration run
+            now = datetime.now(timezone.utc)
+            # EST is UTC-5 (ignoring DST for simplicity)
+            est_offset = timedelta(hours=-5)
+            now_est = now + est_offset
+            
+            # Target time today
+            target = now_est.replace(
+                hour=calibration_hour,
+                minute=0,
+                second=0,
+                microsecond=0,
+            )
+            
+            # If we've passed the time today, schedule for tomorrow
+            if now_est >= target:
+                target += timedelta(days=1)
+            
+            # Wait until target time
+            wait_seconds = (target - now_est).total_seconds()
+            logger.info(f"Next calibration run in {wait_seconds/3600:.1f} hours")
+            await asyncio.sleep(wait_seconds)
+            
+            # Run the calibration
+            logger.info("=== DAILY CALIBRATION STARTING ===")
+            
+            session_maker = get_session_maker()
+            
+            # Calculate metrics for yesterday's settled picks
+            yesterday = date.today() - timedelta(days=1)
+            
+            async with session_maker() as db:
+                for sport_key in SPORT_KEYS:
+                    try:
+                        # Compute metrics for the last 7 days to capture any late settlements
+                        metrics = await compute_calibration_metrics(
+                            db,
+                            sport_key,
+                            start_date=yesterday - timedelta(days=6),
+                            end_date=yesterday,
+                        )
+                        
+                        if metrics:
+                            stored = await store_calibration_metrics(
+                                db,
+                                sport_key,
+                                metrics_date=yesterday,
+                                metrics=metrics,
+                            )
+                            logger.info(f"Stored {stored} calibration metrics for {sport_key}")
+                        else:
+                            logger.info(f"No settled picks to calibrate for {sport_key}")
+                            
+                    except Exception as e:
+                        logger.error(f"Error computing calibration for {sport_key}: {e}")
+            
+            logger.info("=== DAILY CALIBRATION COMPLETE ===")
+            
+        except asyncio.CancelledError:
+            logger.info("Daily calibration loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Daily calibration loop error: {e}", exc_info=True)
+            # Wait an hour before retrying on error
+            await asyncio.sleep(3600)
+
+
 async def hourly_odds_check_loop(interval_minutes: int = 60):
     """
     Background task that checks for line movements hourly.
@@ -1091,6 +1178,15 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task5)
     logger.info(f"Created results_settlement_loop task (every {settlement_interval} min, use_stubs={use_stubs})")
+
+    # Daily calibration task (runs at 10 AM EST, after settlement has time to process)
+    calibration_hour = getattr(settings, 'calibration_hour', 10)
+    task_calibration = asyncio.create_task(
+        daily_calibration_loop(calibration_hour=calibration_hour),
+        name="daily_calibration_loop"
+    )
+    tasks.append(task_calibration)
+    logger.info(f"Created daily_calibration_loop task (runs at {calibration_hour}:00 EST)")
 
     # OddsPapi historical odds sync task (daily)
     # Only starts if ODDSPAPI_API_KEY is configured

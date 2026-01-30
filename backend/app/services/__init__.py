@@ -64,6 +64,18 @@ from app.services.api_monitor import (
     track_api_call,
 )
 
+# Calibration Service
+from app.services.calibration_service import (
+    calculate_clv,
+    calculate_profit_loss,
+    calculate_brier_score,
+    compute_calibration_metrics,
+    store_calibration_metrics,
+    get_reliability_data,
+    get_roi_by_confidence,
+    get_clv_analysis,
+)
+
 # Model Functions
 from app.services.model import (
     american_to_implied_prob,
@@ -129,4 +141,13 @@ __all__ = [
     "get_api_monitor",
     "log_api_call",
     "track_api_call",
+    # Calibration Service
+    "calculate_clv",
+    "calculate_profit_loss",
+    "calculate_brier_score",
+    "compute_calibration_metrics",
+    "store_calibration_metrics",
+    "get_reliability_data",
+    "get_roi_by_confidence",
+    "get_clv_analysis",
 ]
