@@ -30,6 +30,17 @@ DEFAULT_SNAPSHOT_DIR = Path(__file__).parent.parent.parent / "snapshots"
 
 
 # =============================================================================
+# Sport Key to League Code Mapping
+# =============================================================================
+
+SPORT_KEY_TO_LEAGUE = {
+    "basketball_nba": "NBA",
+    "basketball_ncaab": "NCAAB",
+    "americanfootball_nfl": "NFL",
+}
+
+
+# =============================================================================
 # Health Check Thresholds
 # =============================================================================
 
@@ -118,9 +129,14 @@ async def save_daily_snapshot(
     snapshot_dir = _ensure_snapshot_dir()
     snapshot_path = snapshot_dir / get_snapshot_filename(sport_key, snapshot_date)
     
-    # Get sport
+    # Get sport by league code
+    league_code = SPORT_KEY_TO_LEAGUE.get(sport_key)
+    if not league_code:
+        logger.warning(f"Unknown sport key: {sport_key}")
+        return {"error": f"Unknown sport key: {sport_key}"}
+    
     sport_result = await db.execute(
-        select(Sport).where(Sport.key == sport_key)
+        select(Sport).where(Sport.league_code == league_code)
     )
     sport = sport_result.scalar_one_or_none()
     
@@ -412,8 +428,21 @@ async def check_sync_health(
         picks_count = sync_result.get("picks_generated", 0)
     else:
         # Query database for today's data
+        league_code = SPORT_KEY_TO_LEAGUE.get(sport_key)
+        if not league_code:
+            return HealthCheckResult(
+                healthy=False,
+                sport=sport_key,
+                games_count=0,
+                lines_count=0,
+                props_count=0,
+                picks_count=0,
+                issues=[f"Unknown sport key: {sport_key}"],
+                thresholds=thresholds,
+            )
+        
         sport_result = await db.execute(
-            select(Sport).where(Sport.key == sport_key)
+            select(Sport).where(Sport.league_code == league_code)
         )
         sport = sport_result.scalar_one_or_none()
         

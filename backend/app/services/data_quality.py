@@ -25,6 +25,17 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# Sport Key to League Code Mapping
+# =============================================================================
+
+SPORT_KEY_TO_LEAGUE = {
+    "basketball_nba": "NBA",
+    "basketball_ncaab": "NCAAB",
+    "americanfootball_nfl": "NFL",
+}
+
+
+# =============================================================================
 # Validation Rules Configuration
 # =============================================================================
 
@@ -74,9 +85,15 @@ NFL_PROP_RANGES = {
     # Short stat types
     "pass_yds": PropRanges(50.0, 450.0, "Passing Yards"),
     "pass_tds": PropRanges(0.5, 6.0, "Passing TDs"),
+    "pass_att": PropRanges(10.0, 60.0, "Pass Attempts"),
+    "pass_comp": PropRanges(5.0, 45.0, "Completions"),
+    "int": PropRanges(0.5, 4.0, "Interceptions"),
     "rush_yds": PropRanges(5.0, 200.0, "Rushing Yards"),
+    "rush_att": PropRanges(3.0, 35.0, "Rush Attempts"),
+    "rush_tds": PropRanges(0.5, 4.0, "Rushing TDs"),
     "rec_yds": PropRanges(5.0, 200.0, "Receiving Yards"),
     "rec": PropRanges(0.5, 15.0, "Receptions"),
+    "rec_tds": PropRanges(0.5, 3.0, "Receiving TDs"),
 }
 
 # Sport-specific configurations
@@ -390,9 +407,13 @@ async def validate_count_change(
     """
     issues = []
     
-    # Get sport
+    # Get sport by league code
+    league_code = SPORT_KEY_TO_LEAGUE.get(sport_key)
+    if not league_code:
+        return issues
+    
     sport_result = await db.execute(
-        select(Sport).where(Sport.key == sport_key)
+        select(Sport).where(Sport.league_code == league_code)
     )
     sport = sport_result.scalar_one_or_none()
     
@@ -536,9 +557,24 @@ async def validate_database_state(
     
     Use this to check data quality of what's already in the database.
     """
-    # Get sport
+    # Get sport by league code
+    league_code = SPORT_KEY_TO_LEAGUE.get(sport_key)
+    if not league_code:
+        return ValidationResult(
+            valid=False,
+            sport=sport_key,
+            checked_at=datetime.now(timezone.utc),
+            games_count=0,
+            props_count=0,
+            issues=[ValidationIssue(
+                severity="error",
+                category="games",
+                message=f"Unknown sport key: {sport_key}",
+            )],
+        )
+    
     sport_result = await db.execute(
-        select(Sport).where(Sport.key == sport_key)
+        select(Sport).where(Sport.league_code == league_code)
     )
     sport = sport_result.scalar_one_or_none()
     

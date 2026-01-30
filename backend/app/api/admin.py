@@ -32,11 +32,8 @@ router = APIRouter()
 
 AVAILABLE_SPORTS = [
     "basketball_nba",
-    "americanfootball_nfl",
-    "baseball_mlb",
-    "icehockey_nhl",
     "basketball_ncaab",
-    "americanfootball_ncaaf",
+    "americanfootball_nfl",
 ]
 
 
