@@ -32,6 +32,7 @@ from app.api.analytics import router as analytics_router
 from app.api.nfl import router as nfl_router
 from app.api.ncaab import router as ncaab_router
 from app.api.bets import router as bets_router
+from app.api.data_v2 import router as data_v2_router
 
 # Configure logging
 logging.basicConfig(
@@ -114,6 +115,7 @@ app.include_router(analytics_router, prefix="/api", tags=["analytics"])
 app.include_router(nfl_router, prefix="/api", tags=["nfl"])
 app.include_router(ncaab_router, prefix="/api", tags=["ncaab"])
 app.include_router(bets_router, prefix="/api", tags=["bets"])
+app.include_router(data_v2_router, prefix="/api/data", tags=["data-v2"])
 
 
 # =============================================================================
