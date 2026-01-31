@@ -543,17 +543,17 @@ async def build_parlay_legs(
     min_grade_numeric = grade_to_numeric(min_grade)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     
-    # Query active player prop picks for upcoming games
+    # Query player prop picks for upcoming games
     result = await db.execute(
         select(ModelPick, Player, Game, Team, Market)
         .join(Player, ModelPick.player_id == Player.id)
         .join(Game, ModelPick.game_id == Game.id)
-        .join(Team, Player.team_id == Team.id)
+        .outerjoin(Team, Player.team_id == Team.id)  # Outerjoin to include players without team
         .join(Market, ModelPick.market_id == Market.id)
         .where(
             and_(
                 Game.sport_id == sport_id,
-                ModelPick.is_active == True,
+                # ModelPick.is_active == True,  # Disabled - show all picks
                 ModelPick.player_id.isnot(None),  # Player props only
                 Game.start_time > now,  # Upcoming games only
             )
@@ -585,7 +585,7 @@ async def build_parlay_legs(
             "pick_id": pick.id,
             "player_name": player.name,
             "player_id": player.id,
-            "team_abbr": team.abbreviation,
+            "team_abbr": team.abbreviation if team else "UNK",
             "stat_type": stat_type,
             "line": pick.line_value,
             "side": pick.side,
@@ -733,103 +733,117 @@ async def build_parlays(
     Returns:
         ParlayBuilderResponse with recommended parlays
     """
-    # Clamp leg count
-    leg_count = max(2, min(15, leg_count))
-    
-    # Get eligible legs
-    legs = await build_parlay_legs(db, sport_id, min_leg_grade)
-    logger.info(f"Found {len(legs)} eligible legs for sport {sport_id}")
-    
-    # Find best parlays
-    best_parlays = find_best_parlays(
-        legs, 
-        leg_count, 
-        require_100_pct=include_100_pct, 
-        max_results=max_results,
-        block_correlated=block_correlated,
-        max_correlation_risk=max_correlation_risk,
-    )
-    
-    # Convert to response format
-    from app.schemas.public import CorrelationWarning
-    
-    parlay_recommendations = []
-    for p in best_parlays:
-        parlay_legs = [
-            ParlayLeg(
-                pick_id=leg["pick_id"],
-                player_name=leg["player_name"],
-                player_id=leg.get("player_id"),
-                team_abbr=leg["team_abbr"],
-                game_id=leg.get("game_id"),
-                stat_type=leg["stat_type"],
-                line=leg["line"],
-                side=leg["side"],
-                odds=leg["odds"],
-                grade=leg["grade"],
-                win_prob=leg["win_prob"],
-                edge=leg["edge"],
-                hit_rate_5g=leg.get("hit_rate_last_5"),
-                is_100_last_5=leg.get("is_100_last_5", False),
-            )
-            for leg in p["legs"]
-        ]
+    try:
+        # Clamp leg count
+        leg_count = max(2, min(15, leg_count))
         
-        # Convert correlation warnings to schema
-        correlation_warnings = [
-            CorrelationWarning(
-                type=c["type"],
-                severity=c["severity"],
-                legs=c["legs"],
-                message=c["message"],
-            )
-            for c in p.get("correlations", [])
-        ]
+        # Get eligible legs
+        legs = await build_parlay_legs(db, sport_id, min_leg_grade)
+        logger.info(f"Found {len(legs)} eligible legs for sport {sport_id}")
         
-        # Calculate Kelly sizing for this parlay
-        kelly_data = calculate_parlay_kelly(
-            parlay_prob=p["parlay_probability"],
-            decimal_odds=p["decimal_odds"],
+        # Find best parlays
+        best_parlays = find_best_parlays(
+            legs, 
+            leg_count, 
+            require_100_pct=include_100_pct, 
+            max_results=max_results,
+            block_correlated=block_correlated,
+            max_correlation_risk=max_correlation_risk,
         )
         
-        from app.schemas.public import KellySizing
-        kelly_sizing = KellySizing(
-            full_kelly_pct=kelly_data["full_kelly_pct"],
-            kelly_fraction=kelly_data["kelly_fraction"],
-            suggested_units=kelly_data["suggested_units"],
-            edge_pct=kelly_data["edge_pct"],
-            risk_level=kelly_data["risk_level"],
-        )
+        # Convert to response format
+        from app.schemas.public import CorrelationWarning
         
-        parlay_recommendations.append(
-            ParlayRecommendation(
-                legs=parlay_legs,
-                leg_count=p["leg_count"],
-                total_odds=p["total_odds"],
+        parlay_recommendations = []
+        for p in best_parlays:
+            parlay_legs = [
+                ParlayLeg(
+                    pick_id=leg["pick_id"],
+                    player_name=leg["player_name"],
+                    player_id=leg.get("player_id"),
+                    team_abbr=leg["team_abbr"],
+                    game_id=leg.get("game_id"),
+                    stat_type=leg["stat_type"],
+                    line=leg["line"],
+                    side=leg["side"],
+                    odds=leg["odds"],
+                    grade=leg["grade"],
+                    win_prob=leg["win_prob"],
+                    edge=leg["edge"],
+                    hit_rate_5g=leg.get("hit_rate_last_5"),
+                    is_100_last_5=leg.get("is_100_last_5", False),
+                )
+                for leg in p["legs"]
+            ]
+            
+            # Convert correlation warnings to schema
+            correlation_warnings = [
+                CorrelationWarning(
+                    type=c["type"],
+                    severity=c["severity"],
+                    legs=c["legs"],
+                    message=c["message"],
+                )
+                for c in p.get("correlations", [])
+            ]
+            
+            # Calculate Kelly sizing for this parlay
+            kelly_data = calculate_parlay_kelly(
+                parlay_prob=p["parlay_probability"],
                 decimal_odds=p["decimal_odds"],
-                parlay_probability=p["parlay_probability"],
-                parlay_ev=p["parlay_ev"],
-                overall_grade=p["overall_grade"],
-                label=p["label"],
-                min_leg_prob=p["min_leg_prob"],
-                avg_edge=p["avg_edge"],
-                correlations=correlation_warnings,
-                correlation_risk=p.get("correlation_risk", 0.0),
-                correlation_risk_label=p.get("correlation_risk_label", "LOW"),
-                kelly=kelly_sizing,
             )
-        )
+            
+            from app.schemas.public import KellySizing
+            kelly_sizing = KellySizing(
+                full_kelly_pct=kelly_data["full_kelly_pct"],
+                kelly_fraction=kelly_data["kelly_fraction"],
+                suggested_units=kelly_data["suggested_units"],
+                edge_pct=kelly_data["edge_pct"],
+                risk_level=kelly_data["risk_level"],
+            )
+            
+            parlay_recommendations.append(
+                ParlayRecommendation(
+                    legs=parlay_legs,
+                    leg_count=p["leg_count"],
+                    total_odds=p["total_odds"],
+                    decimal_odds=p["decimal_odds"],
+                    parlay_probability=p["parlay_probability"],
+                    parlay_ev=p["parlay_ev"],
+                    overall_grade=p["overall_grade"],
+                    label=p["label"],
+                    min_leg_prob=p["min_leg_prob"],
+                    avg_edge=p["avg_edge"],
+                    correlations=correlation_warnings,
+                    correlation_risk=p.get("correlation_risk", 0.0),
+                    correlation_risk_label=p.get("correlation_risk_label", "LOW"),
+                    kelly=kelly_sizing,
+                )
+            )
     
-    return ParlayBuilderResponse(
-        parlays=parlay_recommendations,
-        total_candidates=len(legs),
-        leg_count=leg_count,
-        filters_applied={
-            "min_leg_grade": min_leg_grade,
-            "include_100_pct": include_100_pct,
-            "sport_id": sport_id,
-        },
-    )
+        return ParlayBuilderResponse(
+            parlays=parlay_recommendations,
+            total_candidates=len(legs),
+            leg_count=leg_count,
+            filters_applied={
+                "min_leg_grade": min_leg_grade,
+                "include_100_pct": include_100_pct,
+                "sport_id": sport_id,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Error building parlays for sport {sport_id}: {e}", exc_info=True)
+        # Return empty response instead of crashing
+        return ParlayBuilderResponse(
+            parlays=[],
+            total_candidates=0,
+            leg_count=leg_count,
+            filters_applied={
+                "min_leg_grade": min_leg_grade,
+                "include_100_pct": include_100_pct,
+                "sport_id": sport_id,
+            },
+        )
 
 
 # =============================================================================
