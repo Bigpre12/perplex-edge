@@ -90,15 +90,31 @@ function ROIRow({ item }: { item: ROIByCategory }) {
 
 function StatsCard() {
   const { sportId } = useSportContext();
-  const { data: stats, isLoading } = useBetStats(sportId || undefined);
+  const { data: stats, isLoading, error } = useBetStats(sportId || undefined);
   
-  if (isLoading || !stats) {
+  if (isLoading) {
     return (
       <div className="bg-gray-800/50 rounded-lg p-6">
         <div className="animate-pulse space-y-3">
           <div className="h-6 bg-gray-700 rounded w-1/3" />
           <div className="h-4 bg-gray-700 rounded w-1/2" />
         </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="bg-gray-800/50 rounded-lg p-6 text-center text-red-400">
+        Error loading stats: {error.message}
+      </div>
+    );
+  }
+  
+  if (!stats) {
+    return (
+      <div className="bg-gray-800/50 rounded-lg p-6 text-center text-gray-400">
+        No betting stats available yet. Log your first bet to see stats!
       </div>
     );
   }
@@ -437,7 +453,7 @@ export function MyBetsTab() {
     page_size: 20,
   };
   
-  const { data: betsData, isLoading, refetch } = useBets(filters);
+  const { data: betsData, isLoading, error, refetch } = useBets(filters);
   const settleMutation = useSettleBet();
   const deleteMutation = useDeleteBet();
   
@@ -518,6 +534,10 @@ export function MyBetsTab() {
         <div className="p-8 text-center text-gray-400">
           <div className="animate-spin inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full mr-2" />
           Loading bets...
+        </div>
+      ) : error ? (
+        <div className="p-8 text-center text-red-400">
+          Error loading bets: {error.message}
         </div>
       ) : (
         <>
