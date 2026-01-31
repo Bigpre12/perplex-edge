@@ -198,9 +198,9 @@ async def save_daily_snapshot(
         "games": [
             {
                 "id": str(g.id),
-                "external_id": g.external_id,
-                "home_team": g.home_team,
-                "away_team": g.away_team,
+                "external_id": g.external_game_id,
+                "home_team_id": g.home_team_id,
+                "away_team_id": g.away_team_id,
                 "start_time": g.start_time.isoformat() if g.start_time else None,
                 "status": g.status,
             }
@@ -212,11 +212,10 @@ async def save_daily_snapshot(
                 "game_id": str(l.game_id),
                 "market_id": str(l.market_id) if l.market_id else None,
                 "player_id": str(l.player_id) if l.player_id else None,
-                "stat_type": l.stat_type,
+                "side": l.side,
                 "line_value": float(l.line_value) if l.line_value else None,
-                "over_odds": l.over_odds,
-                "under_odds": l.under_odds,
-                "bookmaker": l.bookmaker,
+                "odds": l.odds,
+                "sportsbook": l.sportsbook,
             }
             for l in lines
         ],
