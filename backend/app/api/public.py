@@ -325,7 +325,7 @@ async def list_player_prop_picks(
         ModelPick.player_id.notin_(injured_subquery),  # Exclude injured players
         Market.market_type == "player_prop",
         Game.start_time >= today,
-        Game.start_time < tomorrow,
+        Game.start_time < tomorrow + timedelta(days=7),  # Include upcoming week
     ]
     
     # Add freshness filters if requested
@@ -534,7 +534,7 @@ async def list_game_line_picks(
         ModelPick.player_id.is_(None),  # Game lines only (no player)
         Market.market_type.in_(game_line_types),
         Game.start_time >= today,
-        Game.start_time < tomorrow,
+        Game.start_time < tomorrow + timedelta(days=7),  # Include upcoming week
     ]
     
     # Add freshness filters if requested
