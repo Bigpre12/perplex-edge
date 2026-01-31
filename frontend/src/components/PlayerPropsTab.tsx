@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { AltLineExplorer } from './AltLineExplorer';
 
 // Component to show per-book line comparison
 function BookLinesPopover({ bookLines, bestBook }: { bookLines: BookLine[] | null; bestBook: string | null }) {
@@ -95,6 +96,9 @@ export function PlayerPropsTab() {
   const [statType, setStatType] = useState<string>('');
   const [minConfidence, setMinConfidence] = useState<number>(0);
   const [minEv, setMinEv] = useState<number>(0);
+  
+  // Alt-line explorer state
+  const [exploringPickId, setExploringPickId] = useState<number | null>(null);
 
   // Build filters object
   const filters: PlayerPropFilters = useMemo(
@@ -249,7 +253,9 @@ export function PlayerPropsTab() {
                   <th className="px-3 py-3 text-right">EV</th>
                   <th className="px-3 py-3 text-right">Hit 10g</th>
                   <th className="px-3 py-3 text-center">Confidence</th>
+                  <th className="px-3 py-3 text-center">Kelly</th>
                   <th className="px-3 py-3 text-left">Start Time</th>
+                  <th className="px-3 py-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
@@ -314,13 +320,47 @@ export function PlayerPropsTab() {
                     <td className="px-3 py-3 text-center">
                       <ConfidenceBadge score={pick.confidence_score} />
                     </td>
+                    <td className="px-3 py-3 text-center">
+                      {pick.kelly_units !== null && pick.kelly_units > 0 ? (
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          pick.kelly_risk_level === 'MAX' || pick.kelly_risk_level === 'STRONG'
+                            ? 'bg-yellow-900/50 text-yellow-400'
+                            : pick.kelly_risk_level === 'CONFIDENT'
+                            ? 'bg-green-900/50 text-green-400'
+                            : pick.kelly_risk_level === 'STANDARD'
+                            ? 'bg-blue-900/50 text-blue-400'
+                            : 'bg-gray-700/50 text-gray-400'
+                        }`} title={`${pick.kelly_edge_pct}% edge - ${pick.kelly_risk_level}`}>
+                          {pick.kelly_units}u
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">-</span>
+                      )}
+                    </td>
                     <td className="px-3 py-3 text-gray-400 text-xs">
                       {formatTime(pick.game_start_time)}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <button
+                        onClick={() => setExploringPickId(pick.pick_id)}
+                        className="text-blue-400 hover:text-blue-300 text-xs underline"
+                        title="Explore alternate lines"
+                      >
+                        Alt Lines
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            
+            {/* Alt-line explorer modal */}
+            {exploringPickId !== null && (
+              <AltLineExplorer
+                pickId={exploringPickId}
+                onClose={() => setExploringPickId(null)}
+              />
+            )}
           </div>
         </div>
       )}

@@ -431,6 +431,77 @@ async def force_refresh_games(
 
 
 # =============================================================================
+# Discord Alert Endpoints
+# =============================================================================
+
+@router.post("/alerts/test")
+async def test_discord_alert():
+    """
+    Send a test Discord alert to verify webhook configuration.
+    
+    Make sure DISCORD_WEBHOOK_URL environment variable is set.
+    """
+    from app.services.alerts_service import send_discord_message, create_embed, DISCORD_WEBHOOK_URL
+    
+    if not DISCORD_WEBHOOK_URL:
+        return {
+            "status": "not_configured",
+            "message": "DISCORD_WEBHOOK_URL environment variable is not set",
+            "help": "Add DISCORD_WEBHOOK_URL to your Railway environment variables",
+        }
+    
+    # Send test message
+    embed = create_embed(
+        title="Test Alert",
+        description="This is a test alert from Perplex Engine. If you see this, your Discord webhook is configured correctly!",
+        color=0x00FF00,  # Green
+        footer="Perplex Engine | Test Alert",
+    )
+    
+    success = await send_discord_message(embeds=[embed])
+    
+    return {
+        "status": "sent" if success else "failed",
+        "message": "Test alert sent to Discord" if success else "Failed to send alert",
+    }
+
+
+@router.get("/alerts/test-high-ev")
+async def test_high_ev_alert(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Send a sample high-EV pick alert to Discord.
+    """
+    from app.services.alerts_service import alert_high_ev_pick, DISCORD_WEBHOOK_URL
+    
+    if not DISCORD_WEBHOOK_URL:
+        return {
+            "status": "not_configured",
+            "message": "DISCORD_WEBHOOK_URL environment variable is not set",
+        }
+    
+    # Send sample alert
+    success = await alert_high_ev_pick(
+        player_name="LeBron James",
+        stat_type="PTS",
+        line=24.5,
+        side="over",
+        odds=-115,
+        ev=0.092,  # 9.2% EV
+        model_prob=0.62,
+        hit_rate_5g=0.8,
+        sport="NBA",
+        game_time="7:30 PM ET",
+    )
+    
+    return {
+        "status": "sent" if success else "failed",
+        "message": "Sample high-EV alert sent" if success else "Failed to send alert",
+    }
+
+
+# =============================================================================
 # Snapshot Endpoints
 # =============================================================================
 
@@ -1174,4 +1245,72 @@ async def run_all_jobs(
         "sport": sport,
         "duration_ms": duration_ms,
         "results": results,
+    }
+
+
+# =============================================================================
+# Cache Management Endpoints
+# =============================================================================
+
+@router.get("/cache/stats")
+async def get_cache_stats():
+    """
+    Get in-memory cache statistics.
+    
+    Returns:
+    - Hit/miss rates
+    - Entry counts
+    - Expiration stats
+    
+    Useful for monitoring cache effectiveness.
+    """
+    from app.services.memory_cache import cache
+    
+    return {
+        "stats": cache.get_stats(),
+        "entries": cache.get_entries_info()[:50],  # Top 50 by hits
+    }
+
+
+@router.post("/cache/clear")
+async def clear_cache(
+    key_prefix: Optional[str] = Query(None, description="Clear only keys with this prefix"),
+):
+    """
+    Clear the in-memory cache.
+    
+    Options:
+    - No prefix: Clear everything
+    - With prefix: Clear only matching keys (e.g., 'picks' clears all picks)
+    """
+    from app.services.memory_cache import cache
+    
+    if key_prefix:
+        count = cache.invalidate_prefix(key_prefix)
+        return {
+            "status": "partial_clear",
+            "prefix": key_prefix,
+            "entries_cleared": count,
+        }
+    else:
+        count = cache.clear()
+        return {
+            "status": "full_clear",
+            "entries_cleared": count,
+        }
+
+
+@router.post("/cache/cleanup")
+async def cleanup_expired_cache():
+    """
+    Remove expired entries from cache.
+    
+    This runs automatically in the background, but can be triggered manually.
+    """
+    from app.services.memory_cache import cache
+    
+    count = await cache.cleanup_expired()
+    return {
+        "status": "cleanup_complete",
+        "entries_removed": count,
     }

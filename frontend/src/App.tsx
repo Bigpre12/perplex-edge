@@ -7,12 +7,18 @@ import {
   GameLinesTab,
   StatsDashboard,
 } from './components'
+import { HundredPercentTab } from './components/HundredPercentTab'
+import { ParlayBuilder } from './components/ParlayBuilder'
+import { MyBetsTab } from './components/MyBetsTab'
 import { useAutoRefresh, formatTimeRemaining, formatLastUpdated } from './hooks/useAutoRefresh'
 
 const TABS = [
   { id: 'player-props', label: 'Player Props' },
   { id: 'game-lines', label: 'Game Lines' },
-  { id: 'stats', label: 'Stats Dashboard' },
+  { id: '100pct-hits', label: '100% Hit Rate' },
+  { id: 'parlay-builder', label: 'Parlay Builder' },
+  { id: 'my-bets', label: 'My Bets' },
+  { id: 'stats', label: 'Stats' },
 ]
 
 // Loading spinner component
@@ -73,6 +79,12 @@ function AppContent() {
         return <PlayerPropsTab />;
       case 'game-lines':
         return <GameLinesTab />;
+      case '100pct-hits':
+        return <HundredPercentTab />;
+      case 'parlay-builder':
+        return <ParlayBuilder />;
+      case 'my-bets':
+        return <MyBetsTab />;
       case 'stats':
         return <StatsDashboard />;
       default:

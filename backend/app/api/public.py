@@ -1,16 +1,20 @@
 """Public API endpoints for the betting analytics cheat sheet UI."""
 
+import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query, HTTPException
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, aliased
 
 from app.core.database import get_db
 from app.models import Sport, Team, Game, Market, Player, ModelPick, Line, Injury
+from app.services.memory_cache import cache, CacheKey
 from app.schemas.public import (
     PublicSport,
     PublicSportList,
@@ -119,16 +123,28 @@ async def list_sports(
     List all available sports and leagues.
     
     Returns sports like NBA, NFL, MLB with their league codes.
+    Uses in-memory caching for fast response (1 hour TTL).
     """
+    # Try cache first
+    cached = await cache.get(CacheKey.SPORTS_LIST)
+    if cached is not None:
+        return cached
+    
+    # Fetch from database
     result = await db.execute(
         select(Sport).order_by(Sport.name)
     )
     sports = result.scalars().all()
     
-    return PublicSportList(
+    response = PublicSportList(
         items=[PublicSport.model_validate(s) for s in sports],
         total=len(sports),
     )
+    
+    # Cache for 1 hour (sports rarely change)
+    await cache.set(CacheKey.SPORTS_LIST, response, ttl_seconds=3600)
+    
+    return response
 
 
 # =============================================================================
@@ -285,8 +301,9 @@ async def list_player_prop_picks(
     today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     
-    # Freshness threshold - picks generated within last 12 hours
-    freshness_cutoff = utc_now_naive - timedelta(hours=12)
+    # Freshness threshold - picks generated within last 24 hours
+    # Increased from 12h to 24h to be more resilient to sync gaps
+    freshness_cutoff = utc_now_naive - timedelta(hours=24)
     
     # Aliases for team joins
     PlayerTeam = aliased(Team)
@@ -359,8 +376,14 @@ async def list_player_prop_picks(
     
     # Build response
     picks = []
+    skipped_count = 0
     for row in result.all():
         pick, player, player_team, game, home_team, away_team, market = row
+        
+        # Skip picks without valid line values (these are likely data issues)
+        if pick.line_value is None or pick.line_value == 0:
+            skipped_count += 1
+            continue
         
         # Handle player_team being None (players without assigned team)
         if player_team is not None:
@@ -390,6 +413,13 @@ async def list_player_prop_picks(
             model_prob=pick.model_probability,
         )
         
+        # Calculate Kelly sizing for this pick
+        from app.services.parlay_service import calculate_kelly_fraction
+        kelly = calculate_kelly_fraction(
+            win_prob=pick.model_probability,
+            american_odds=int(pick.odds),
+        )
+        
         picks.append(PlayerPropPick(
             pick_id=pick.id,
             player_name=player.name,
@@ -399,7 +429,7 @@ async def list_player_prop_picks(
             opponent_team=opponent_team,
             opponent_abbr=opponent_abbr,
             stat_type=market.stat_type or "",
-            line=pick.line_value or 0.0,
+            line=pick.line_value,  # Already validated non-null/non-zero above
             side=pick.side,
             odds=int(pick.odds),
             model_probability=pick.model_probability,
@@ -416,7 +446,17 @@ async def list_player_prop_picks(
             book_lines=book_lines if book_lines else None,
             best_book=best_book,
             line_variance=line_variance,
+            # Kelly sizing
+            kelly_units=kelly["suggested_units"],
+            kelly_edge_pct=kelly["edge_pct"],
+            kelly_risk_level=kelly["risk_level"],
         ))
+    
+    # Debug logging to track filtered/skipped picks
+    logger.info(
+        f"[player-props] sport_id={sport_id}, fresh_only={fresh_only}: "
+        f"returning {len(picks)} picks, skipped {skipped_count} with invalid line_value, total={total}"
+    )
     
     return PlayerPropPickList(
         items=picks,
@@ -476,8 +516,9 @@ async def list_game_line_picks(
     today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     
-    # Freshness threshold - picks generated within last 12 hours
-    freshness_cutoff = utc_now_naive - timedelta(hours=12)
+    # Freshness threshold - picks generated within last 24 hours
+    # Increased from 12h to 24h to be more resilient to sync gaps
+    freshness_cutoff = utc_now_naive - timedelta(hours=24)
     
     # Aliases for team joins
     HomeTeam = aliased(Team)
@@ -568,6 +609,12 @@ async def list_game_line_picks(
             confidence_score=pick.confidence_score,
         ))
     
+    # Debug logging to track filtered/skipped picks
+    logger.info(
+        f"[game-lines] sport_id={sport_id}, fresh_only={fresh_only}: "
+        f"returning {len(picks)} picks, total={total}"
+    )
+    
     return GameLinePickList(
         items=picks,
         total=total,
@@ -579,6 +626,232 @@ async def list_game_line_picks(
             "game_id": game_id,
         },
     )
+
+
+# =============================================================================
+# 100% Hit Rate Props Endpoint
+# =============================================================================
+
+@router.get("/sports/{sport_id}/picks/100pct-hits", tags=["public"])
+async def list_100_percent_props(
+    sport_id: int,
+    window: str = Query("last_5", description="Time window: season, last_10, last_5"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum results"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get player props with 100% hit rate over specified time window.
+    
+    These are props where the player has hit EVERY game in the window.
+    Great for high-floor parlay legs.
+    
+    Args:
+        sport_id: Sport database ID
+        window: Time window - "season", "last_10", "last_5"
+        limit: Maximum results to return
+    
+    Returns:
+        List of 100% hit rate props with hit rate stats and model outputs
+    """
+    from app.services.parlay_service import get_100_percent_props
+    from app.schemas.public import HundredPercentPropList
+    
+    # Validate sport exists
+    sport = await db.get(Sport, sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+    
+    # Validate window
+    valid_windows = ["season", "last_10", "last_5"]
+    if window not in valid_windows:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid window: {window}. Valid options: {valid_windows}",
+        )
+    
+    props = await get_100_percent_props(db, sport_id, window, limit)
+    
+    return HundredPercentPropList(
+        items=props,
+        total=len(props),
+        window=window,
+    )
+
+
+# Convenience endpoint alias
+@router.get("/hitrate/100", tags=["public"])
+async def hitrate_100_alias(
+    sport: str = Query(..., description="Sport key (nba, ncaab, nfl) or sport_id"),
+    window: str = Query("last_5", description="Time window: season, last_10, last_5"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum results"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get player props with 100% hit rate (alias endpoint).
+    
+    This is a convenience alias for /sports/{sport_id}/picks/100pct-hits.
+    
+    Accepts sport as a key (nba, ncaab, nfl) or numeric sport_id.
+    """
+    from app.services.parlay_service import get_100_percent_props
+    from app.schemas.public import HundredPercentPropList
+    
+    # Resolve sport key to ID
+    sport_mapping = {
+        "nba": "basketball_nba",
+        "ncaab": "basketball_ncaab",
+        "nfl": "americanfootball_nfl",
+    }
+    
+    sport_key = sport_mapping.get(sport.lower(), sport.lower())
+    
+    # Try to find by key first
+    result = await db.execute(
+        select(Sport).where(Sport.key == sport_key)
+    )
+    sport_obj = result.scalar_one_or_none()
+    
+    # If not found by key, try by ID
+    if not sport_obj and sport.isdigit():
+        sport_obj = await db.get(Sport, int(sport))
+    
+    if not sport_obj:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Sport '{sport}' not found. Use nba, ncaab, nfl, or a sport_id.",
+        )
+    
+    # Validate window
+    valid_windows = ["season", "last_10", "last_5"]
+    if window not in valid_windows:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid window: {window}. Valid options: {valid_windows}",
+        )
+    
+    props = await get_100_percent_props(db, sport_obj.id, window, limit)
+    
+    return HundredPercentPropList(
+        items=props,
+        total=len(props),
+        window=window,
+    )
+
+
+# =============================================================================
+# Parlay Builder Endpoint
+# =============================================================================
+
+@router.get("/sports/{sport_id}/parlays/builder", tags=["public"])
+async def build_parlay(
+    sport_id: int,
+    leg_count: int = Query(3, ge=2, le=15, description="Number of legs (2-15)"),
+    include_100_pct: bool = Query(False, description="Require at least one 100% hit rate leg"),
+    min_leg_grade: str = Query("C", description="Minimum grade per leg (A, B, C, D)"),
+    max_results: int = Query(5, ge=1, le=10, description="Number of parlays to return"),
+    block_correlated: bool = Query(True, description="Block high-correlation parlays"),
+    max_correlation_risk: str = Query("MEDIUM", description="Max allowed: LOW, MEDIUM, HIGH, CRITICAL"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Build optimized parlays from today's player prop picks.
+    
+    Grades each leg (A-F based on edge), calculates combined odds and EV,
+    and returns LOCK/PLAY/SKIP recommendations.
+    
+    Grading:
+    - A: Edge >= 5%
+    - B: Edge >= 3%
+    - C: Edge >= 1%
+    - D: Edge >= 0%
+    - F: Negative edge
+    
+    Labels:
+    - LOCK: High-confidence parlay (all legs edge >= 2%, parlay EV >= 3%)
+    - PLAY: Moderate confidence (parlay EV >= 1%)
+    - SKIP: Not recommended (negative edge or low probability)
+    
+    Args:
+        sport_id: Sport database ID
+        leg_count: Number of legs per parlay (2-15)
+        include_100_pct: Require at least one 100% hit rate leg
+        min_leg_grade: Minimum grade for each leg
+        max_results: Number of parlays to return
+    
+    Returns:
+        ParlayBuilderResponse with recommended parlays
+    """
+    from app.services.parlay_service import build_parlays
+    
+    # Validate sport exists
+    sport = await db.get(Sport, sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+    
+    # Validate grade
+    valid_grades = ["A", "B", "C", "D", "F"]
+    if min_leg_grade.upper() not in valid_grades:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid grade: {min_leg_grade}. Valid options: {valid_grades}",
+        )
+    
+    # Validate correlation risk level
+    valid_risk_levels = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    if max_correlation_risk.upper() not in valid_risk_levels:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid correlation risk: {max_correlation_risk}. Valid options: {valid_risk_levels}",
+        )
+    
+    return await build_parlays(
+        db,
+        sport_id,
+        leg_count=leg_count,
+        include_100_pct=include_100_pct,
+        min_leg_grade=min_leg_grade.upper(),
+        max_results=max_results,
+        block_correlated=block_correlated,
+        max_correlation_risk=max_correlation_risk.upper(),
+    )
+
+
+# =============================================================================
+# Alt-Line Explorer Endpoint
+# =============================================================================
+
+@router.get("/picks/{pick_id}/alt-lines", tags=["public"])
+async def explore_alt_lines(
+    pick_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Explore alternate lines for a player prop.
+    
+    Shows a ladder of alternate lines with:
+    - Over/under probabilities from the model
+    - Fair odds (no vig) based on model probability
+    - Estimated market odds
+    - EV for each line
+    
+    Use this to:
+    - Find the best line for a player prop
+    - Decide between safer vs riskier alt lines for parlays
+    - Identify value at specific lines
+    
+    Args:
+        pick_id: The ModelPick ID to explore
+    
+    Returns:
+        AltLineExplorerResponse with all alternate lines
+    """
+    from app.services.parlay_service import explore_alt_lines as explore_fn
+    from app.schemas.public import AltLineExplorerResponse
+    
+    try:
+        return await explore_fn(db, pick_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # =============================================================================

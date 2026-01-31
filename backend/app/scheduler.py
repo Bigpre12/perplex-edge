@@ -633,6 +633,86 @@ async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False)
             
             logger.info(f"Picks generation complete: {picks_summary}")
             
+            # Invalidate cache after picks generation
+            try:
+                from app.services.memory_cache import invalidate_all_picks
+                invalidated = await invalidate_all_picks()
+                if invalidated > 0:
+                    logger.info(f"Invalidated {invalidated} cache entries after picks generation")
+            except Exception as cache_error:
+                logger.warning(f"Failed to invalidate cache: {cache_error}")
+            
+            # 7. Send Discord alerts for high-EV picks (if webhook configured)
+            try:
+                from app.services.alerts_service import (
+                    alert_sync_complete,
+                    process_picks_for_alerts,
+                    HIGH_EV_THRESHOLD,
+                )
+                from app.models import ModelPick, Player, Market, Sport
+                
+                # For each sport, find high-EV picks and send alerts
+                async with session_maker() as db_alerts:
+                    total_high_ev = 0
+                    
+                    for sport_key in SPORT_KEYS:
+                        # Get sport display name
+                        sport_name = {
+                            "basketball_nba": "NBA",
+                            "basketball_ncaab": "NCAAB",
+                            "americanfootball_nfl": "NFL",
+                        }.get(sport_key, sport_key)
+                        
+                        # Query high-EV picks from this sync
+                        from sqlalchemy import select
+                        result = await db_alerts.execute(
+                            select(ModelPick, Player, Market)
+                            .join(Player, ModelPick.player_id == Player.id, isouter=True)
+                            .join(Market, ModelPick.market_id == Market.id)
+                            .where(
+                                ModelPick.is_active == True,
+                                ModelPick.expected_value >= HIGH_EV_THRESHOLD,
+                            )
+                        )
+                        high_ev_picks = result.all()
+                        
+                        # Convert to dict format for alert processing
+                        picks_for_alert = []
+                        for pick, player, market in high_ev_picks:
+                            picks_for_alert.append({
+                                "player_name": player.name if player else "Unknown",
+                                "stat_type": market.stat_type or market.market_type,
+                                "line": pick.line_value,
+                                "side": pick.side,
+                                "odds": pick.odds,
+                                "expected_value": pick.expected_value,
+                                "model_probability": pick.model_probability,
+                            })
+                        
+                        if picks_for_alert:
+                            alert_result = await process_picks_for_alerts(picks_for_alert, sport_name)
+                            total_high_ev += alert_result["high_ev_count"]
+                            logger.info(f"Discord alerts for {sport_name}: {alert_result}")
+                    
+                    # Send sync complete summary
+                    total_games = sum(status.get(sk, {}).get("data_types", {}).get("games", {}).get("games_count", 0) for sk in SPORT_KEYS) if 'status' in dir() else 0
+                    total_props = sum(status.get(sk, {}).get("data_types", {}).get("games", {}).get("props_count", 0) for sk in SPORT_KEYS) if 'status' in dir() else 0
+                    total_picks = sum(picks_summary.values())
+                    
+                    # Note: Only send sync complete for significant syncs
+                    if total_games > 0 or total_picks > 0:
+                        await alert_sync_complete(
+                            sport="ALL",
+                            games_synced=total_games,
+                            props_synced=total_props,
+                            picks_generated=total_picks,
+                            high_ev_count=total_high_ev,
+                            duration_ms=int((time.time() - sync_start) * 1000) if 'sync_start' in dir() else 0,
+                        )
+                        
+            except Exception as alert_error:
+                logger.warning(f"Failed to send Discord alerts: {alert_error}")
+            
             # Final status
             if health_issues:
                 logger.warning(f"=== {sync_name} SYNC COMPLETE WITH ISSUES ===")

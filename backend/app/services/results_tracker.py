@@ -122,21 +122,23 @@ class ResultsTracker:
         
         # Get closing lines for this game (most recent lines before game start)
         # These represent the "closing" odds/lines at game time
+        # Join with Market to get stat_type
         closing_lines_result = await db.execute(
-            select(Line)
+            select(Line, Market)
+            .join(Market, Line.market_id == Market.id)
             .where(Line.game_id == game_id)
-            .order_by(Line.created_at.desc())
+            .order_by(Line.fetched_at.desc())
         )
-        closing_lines = closing_lines_result.scalars().all()
+        closing_lines = closing_lines_result.all()
         
         # Build a map of (player_id, stat_type) -> (closing_odds, closing_line_value)
         closing_map: dict[tuple[int, str], tuple[int, float]] = {}
-        for line in closing_lines:
-            if line.player_id and line.stat_type:
-                key = (line.player_id, line.stat_type.upper())
+        for line, market in closing_lines:
+            if line.player_id and market.stat_type:
+                key = (line.player_id, market.stat_type.upper())
                 if key not in closing_map:  # Keep only the most recent (first in desc order)
-                    # Use over_odds as the closing odds for "over" bets, under_odds for "under"
-                    closing_map[key] = (line.over_odds, line.line_value)
+                    # Use odds as the closing odds
+                    closing_map[key] = (int(line.odds), line.line_value)
         
         # Settle each pick
         settled = 0

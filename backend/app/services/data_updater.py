@@ -3,10 +3,10 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
-from sqlalchemy import select, update, delete, and_, func
+from sqlalchemy import select, update, delete, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Pick, PlayerStat, HistoricalPerformance, Game, Line
+from app.models import Pick, PlayerStat, HistoricalPerformance, Game, Line, Sport, PlayerGameStats
 
 logger = logging.getLogger(__name__)
 
@@ -206,67 +206,180 @@ async def _update_historical_for_pick(
 async def check_game_results(
     db: AsyncSession,
     sport_key: str,
+    use_stubs: bool = False,
 ) -> dict[str, Any]:
     """
     Check game results and mark picks as hit/miss.
     
-    In production, this would:
-    1. Fetch completed game results from API
-    2. Compare actual stats to pick lines
-    3. Update picks with hit/miss status
-    4. Update historical performance
+    This function:
+    1. Finds games that should have completed (between yesterday and today)
+    2. Marks them as "final" status
+    3. Uses ResultsTracker to settle picks based on actual PlayerGameStats
+    4. Updates historical performance
+    
+    If use_stubs is True, simulates game results for testing.
     
     Args:
         db: Database session
         sport_key: Sport identifier
+        use_stubs: If True, simulate game results
     
     Returns:
         Dictionary with results summary
     """
+    from app.services.results_tracker import ResultsTracker
+    from app.services.stats_provider import StatsProvider
+    
     logger.info(f"Checking game results for {sport_key}")
+    
+    # Initialize services
+    results_tracker = ResultsTracker(use_stubs=use_stubs)
+    stats_provider = StatsProvider()
+    
+    # Get sport
+    sport_result = await db.execute(
+        select(Sport).where(
+            or_(
+                Sport.key == sport_key,
+                Sport.league_code.ilike(f"%{sport_key}%"),
+            )
+        )
+    )
+    sport = sport_result.scalar_one_or_none()
+    
+    if not sport:
+        return {
+            "sport": sport_key,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "error": f"Sport {sport_key} not found",
+            "status": "failed",
+        }
     
     # Find games that should have completed
     # Use naive datetimes for TIMESTAMP WITHOUT TIME ZONE column comparison
-    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).replace(tzinfo=None)
-    today = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    yesterday = (now - timedelta(days=1))
+    hours_ago_4 = now - timedelta(hours=4)  # Games need at least 4 hours to complete
     
     result = await db.execute(
         select(Game).where(
             and_(
+                Game.sport_id == sport.id,
                 Game.start_time >= yesterday,
-                Game.start_time < today,
-                Game.status == "scheduled",
+                Game.start_time < hours_ago_4,  # Started at least 4 hours ago
+                Game.status.in_(["scheduled", "in_progress"]),  # Not yet final
             )
         )
     )
     games = result.scalars().all()
     
-    results_checked = 0
-    picks_updated = 0
+    if not games:
+        logger.info(f"No completed games to process for {sport_key}")
+        return {
+            "sport": sport_key,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "games_checked": 0,
+            "picks_settled": 0,
+            "total_hits": 0,
+            "total_misses": 0,
+            "status": "no_games",
+        }
+    
+    logger.info(f"Found {len(games)} completed games to process for {sport_key}")
+    
+    total_settled = 0
+    total_hits = 0
+    total_misses = 0
+    games_processed = 0
     
     for game in games:
-        # TODO: Fetch actual game results from API
-        # For now, mark game as needing result check
-        
-        # Get picks for this game
-        picks_result = await db.execute(
-            select(Pick).where(Pick.game_id == game.id)
-        )
-        game_picks = picks_result.scalars().all()
-        
-        for pick in game_picks:
-            # TODO: Compare actual stats to line and determine hit/miss
-            # This requires fetching actual player stats from completed game
-            results_checked += 1
+        try:
+            # Try to fetch actual stats if not using stubs
+            stats_fetched = False
+            
+            if not use_stubs:
+                # Check if we already have stats for this game
+                existing_stats = await db.execute(
+                    select(func.count(PlayerGameStats.id)).where(
+                        PlayerGameStats.game_id == game.id
+                    )
+                )
+                stats_count = existing_stats.scalar() or 0
+                
+                if stats_count == 0:
+                    # Try to fetch stats from provider
+                    try:
+                        box_score = await stats_provider.fetch_game_stats(
+                            sport_key=sport_key,
+                            game_id=str(game.external_id) if game.external_id else str(game.id),
+                        )
+                        
+                        if box_score:
+                            # Store the fetched stats
+                            for player_stat in box_score.get("player_stats", []):
+                                stat = PlayerGameStats(
+                                    player_id=player_stat.get("player_id"),
+                                    game_id=game.id,
+                                    stat_type=player_stat.get("stat_type"),
+                                    value=player_stat.get("value"),
+                                    minutes=player_stat.get("minutes"),
+                                )
+                                db.add(stat)
+                            
+                            await db.commit()
+                            stats_fetched = True
+                            logger.info(f"Fetched stats for game {game.id}")
+                    except Exception as e:
+                        logger.warning(f"Could not fetch stats for game {game.id}: {e}")
+                else:
+                    stats_fetched = True  # Already have stats
+            
+            # If no real stats and using stubs, simulate results
+            if use_stubs or not stats_fetched:
+                logger.info(f"Simulating results for game {game.id}")
+                settlement = await results_tracker.simulate_game_results(db, game.id)
+            else:
+                # Settle picks using actual stats
+                settlement = await results_tracker.settle_picks_for_game(db, game.id)
+            
+            if "error" not in settlement:
+                total_settled += settlement.get("settled", 0)
+                total_hits += settlement.get("hits", 0)
+                total_misses += settlement.get("misses", 0)
+                games_processed += 1
+                
+                # Mark game as final
+                game.status = "final"
+                await db.commit()
+                
+                logger.info(
+                    f"Settled game {game.id}: "
+                    f"{settlement.get('hits', 0)} hits, {settlement.get('misses', 0)} misses"
+                )
+            else:
+                logger.warning(f"Error settling game {game.id}: {settlement.get('error')}")
+                
+        except Exception as e:
+            logger.error(f"Error processing game {game.id}: {e}")
+            continue
     
-    logger.info(f"Checked {results_checked} picks for {sport_key}")
+    hit_rate = (total_hits / total_settled * 100) if total_settled > 0 else 0.0
+    
+    logger.info(
+        f"Completed results check for {sport_key}: "
+        f"{games_processed} games, {total_settled} picks settled, "
+        f"{hit_rate:.1f}% hit rate"
+    )
     
     return {
         "sport": sport_key,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "games_checked": len(games),
-        "picks_checked": results_checked,
-        "picks_updated": picks_updated,
+        "games_processed": games_processed,
+        "picks_settled": total_settled,
+        "total_hits": total_hits,
+        "total_misses": total_misses,
+        "hit_rate": round(hit_rate, 2),
         "status": "completed",
     }
 

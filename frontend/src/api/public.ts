@@ -91,10 +91,14 @@ export interface PlayerPropPick {
   confidence_score: number;
   game_id: number;
   game_start_time: string;
-  // Per-book comparison (new fields)
+  // Per-book comparison
   book_lines: BookLine[] | null;
   best_book: string | null;
-  line_variance: number | null;  // Flag if >0.5 - indicates off-market line
+  line_variance: number | null;
+  // Kelly sizing (bet size recommendation)
+  kelly_units: number | null;  // Suggested bet size (0-5 units)
+  kelly_edge_pct: number | null;  // Edge percentage
+  kelly_risk_level: string | null;  // "NO_BET", "SMALL", "STANDARD", "CONFIDENT", "STRONG", "MAX"
 }
 
 export interface PlayerPropPickList {
@@ -652,6 +656,223 @@ export function usePlayerHistory(playerId: number | null) {
     queryFn: () => fetchPlayerHistory(playerId!),
     enabled: playerId !== null,
     staleTime: 60 * 1000,
+  });
+}
+
+// =============================================================================
+// 100% Hit Rate Props Types
+// =============================================================================
+
+export interface HundredPercentProp {
+  pick_id: number;
+  player_name: string;
+  player_id: number;
+  team: string;
+  team_abbr: string | null;
+  opponent_team: string;
+  opponent_abbr: string | null;
+  stat_type: string;
+  line: number;
+  side: string;
+  odds: number;
+  sportsbook: string | null;
+  hit_rate_season: number | null;
+  games_season: number;
+  hit_rate_last_10: number | null;
+  games_last_10: number;
+  hit_rate_last_5: number | null;
+  games_last_5: number;
+  is_100_season: boolean;
+  is_100_last_10: boolean;
+  is_100_last_5: boolean;
+  model_probability: number;
+  expected_value: number;
+  confidence_score: number;
+  game_id: number;
+  game_start_time: string;
+}
+
+export interface HundredPercentPropList {
+  items: HundredPercentProp[];
+  total: number;
+  window: string;
+}
+
+// =============================================================================
+// Parlay Builder Types
+// =============================================================================
+
+export interface ParlayLeg {
+  pick_id: number;
+  player_name: string;
+  player_id: number | null;  // For correlation detection
+  team_abbr: string | null;
+  game_id: number | null;  // For correlation detection
+  stat_type: string;
+  line: number;
+  side: string;
+  odds: number;
+  grade: string;  // "A", "B", "C", "D", "F"
+  win_prob: number;
+  edge: number;
+  hit_rate_5g: number | null;
+  is_100_last_5: boolean;
+}
+
+export interface CorrelationWarning {
+  type: string;  // "same_game", "same_player", "stat_ladder", "opposing_sides"
+  severity: string;  // "high", "medium", "low"
+  legs: number[];  // Indices of correlated legs (1-indexed)
+  message: string;
+}
+
+export interface KellySizing {
+  full_kelly_pct: number;
+  kelly_fraction: number;
+  suggested_units: number;
+  edge_pct: number;
+  risk_level: string;  // "NO_BET", "SMALL", "STANDARD", "CONFIDENT", "STRONG", "MAX"
+}
+
+export interface ParlayRecommendation {
+  legs: ParlayLeg[];
+  leg_count: number;
+  total_odds: number;  // American odds
+  decimal_odds: number;
+  parlay_probability: number;
+  parlay_ev: number;
+  overall_grade: string;
+  label: string;  // "LOCK", "PLAY", "SKIP"
+  min_leg_prob: number;
+  avg_edge: number;
+  // Correlation warnings
+  correlations: CorrelationWarning[];
+  correlation_risk: number;  // 0-1 risk score
+  correlation_risk_label: string;  // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  // Kelly sizing
+  kelly: KellySizing | null;
+}
+
+export interface ParlayBuilderResponse {
+  parlays: ParlayRecommendation[];
+  total_candidates: number;
+  leg_count: number;
+  filters_applied: Record<string, unknown>;
+}
+
+export interface ParlayBuilderFilters {
+  leg_count?: number;
+  include_100_pct?: boolean;
+  min_leg_grade?: string;
+  max_results?: number;
+  block_correlated?: boolean;  // Block high-correlation parlays
+  max_correlation_risk?: string;  // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  [key: string]: unknown;  // Index signature for buildQueryString compatibility
+}
+
+// =============================================================================
+// Alt-Line Explorer Types
+// =============================================================================
+
+export interface AltLine {
+  line: number;
+  over_odds: number | null;
+  under_odds: number | null;
+  over_prob: number | null;
+  under_prob: number | null;
+  over_ev: number | null;
+  under_ev: number | null;
+  over_fair_odds: number | null;
+  under_fair_odds: number | null;
+  is_main_line: boolean;
+}
+
+export interface AltLineExplorerResponse {
+  player_name: string;
+  player_id: number;
+  team_abbr: string | null;
+  stat_type: string;
+  game_id: number;
+  opponent_abbr: string | null;
+  game_start_time: string;
+  model_projection: number;
+  projection_std: number | null;
+  alt_lines: AltLine[];
+  best_over_line: AltLine | null;
+  best_under_line: AltLine | null;
+  hit_rate_5g: number | null;
+  season_avg: number | null;
+}
+
+// =============================================================================
+// Alt-Line Explorer API Functions
+// =============================================================================
+
+export async function fetchAltLines(pickId: number): Promise<AltLineExplorerResponse> {
+  return fetchJson<AltLineExplorerResponse>(`${API_BASE_URL}/api/picks/${pickId}/alt-lines`);
+}
+
+export function useAltLines(pickId: number | null) {
+  return useQuery({
+    queryKey: ['alt-lines', pickId],
+    queryFn: () => fetchAltLines(pickId!),
+    enabled: pickId !== null,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+// =============================================================================
+// 100% Hit Rate API Functions
+// =============================================================================
+
+export async function fetch100PercentProps(
+  sportId: number,
+  window: string = 'last_5',
+  limit: number = 50
+): Promise<HundredPercentPropList> {
+  return fetchJson<HundredPercentPropList>(
+    `${API_BASE_URL}/api/sports/${sportId}/picks/100pct-hits?window=${window}&limit=${limit}`
+  );
+}
+
+export function use100PercentProps(
+  sportId: number | null,
+  window: string = 'last_5',
+  limit: number = 50
+) {
+  return useQuery({
+    queryKey: ['100pct-props', sportId, window, limit],
+    queryFn: () => fetch100PercentProps(sportId!, window, limit),
+    enabled: sportId !== null,
+    staleTime: 60 * 1000, // 1 minute
+    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
+  });
+}
+
+// =============================================================================
+// Parlay Builder API Functions
+// =============================================================================
+
+export async function fetchParlayBuilder(
+  sportId: number,
+  filters: ParlayBuilderFilters = {}
+): Promise<ParlayBuilderResponse> {
+  const qs = buildQueryString(filters);
+  return fetchJson<ParlayBuilderResponse>(
+    `${API_BASE_URL}/api/sports/${sportId}/parlays/builder${qs}`
+  );
+}
+
+export function useParlayBuilder(
+  sportId: number | null,
+  filters: ParlayBuilderFilters = {}
+) {
+  return useQuery({
+    queryKey: ['parlay-builder', sportId, filters],
+    queryFn: () => fetchParlayBuilder(sportId!, filters),
+    enabled: sportId !== null,
+    staleTime: 60 * 1000, // 1 minute
+    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
   });
 }
 

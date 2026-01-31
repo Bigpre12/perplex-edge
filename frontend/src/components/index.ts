@@ -13,6 +13,7 @@ export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';
 export { PickCard } from './PickCard';
 export { StatsTable } from './StatsTable';
 export { LastUpdated, LastUpdatedCompact } from './LastUpdated';
+export { AltLineExplorer } from './AltLineExplorer';
 
 // Legacy components (kept for backwards compatibility)
 export { Dashboard } from './Dashboard';

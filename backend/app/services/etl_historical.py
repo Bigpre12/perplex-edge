@@ -12,6 +12,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+import httpx
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -100,21 +101,61 @@ async def sync_historical_odds(
             return stats
         
         async with OddsPapiProvider() as provider:
-            for game in games:
-                try:
-                    # Use game's external_game_id as fixture_id
-                    # Note: OddsPapi fixture IDs may differ - might need mapping
-                    fixture_id = game.external_game_id
-                    
-                    # Fetch historical odds
-                    historical = await provider.fetch_historical_odds(
-                        fixture_id=fixture_id,
-                        bookmakers=bookmakers[:3],
-                    )
-                    
-                    if not historical or "bookmakers" not in historical:
-                        continue
-                    
+            for i, game in enumerate(games):
+                # Proactive rate limiting: sleep BEFORE each request (except first)
+                # OddsPapi historical-odds has 5000ms cooldown
+                if i > 0:
+                    await asyncio.sleep(5.0)
+                
+                # Use game's external_game_id as fixture_id
+                # Note: OddsPapi fixture IDs may differ - might need mapping
+                fixture_id = game.external_game_id
+                
+                # Retry loop for handling 429 rate limits
+                historical = None
+                max_retries = 3
+                
+                for attempt in range(max_retries):
+                    try:
+                        # Fetch historical odds
+                        historical = await provider.fetch_historical_odds(
+                            fixture_id=fixture_id,
+                            bookmakers=bookmakers[:3],
+                        )
+                        break  # Success, exit retry loop
+                        
+                    except httpx.HTTPStatusError as e:
+                        if e.response.status_code == 429:
+                            # Parse retry delay from API response
+                            try:
+                                retry_data = e.response.json()
+                                retry_ms = retry_data.get("error", {}).get("retryMs", 5000)
+                                retry_seconds = retry_ms / 1000 + 0.5  # Add buffer
+                            except Exception:
+                                retry_seconds = 5.0
+                            
+                            logger.warning(
+                                f"Rate limited on game {game.id}, attempt {attempt + 1}/{max_retries}. "
+                                f"Waiting {retry_seconds:.1f}s"
+                            )
+                            await asyncio.sleep(retry_seconds)
+                            
+                            if attempt == max_retries - 1:
+                                # Final attempt failed
+                                stats["errors"].append(f"Game {game.id}: Rate limited after {max_retries} attempts")
+                        else:
+                            # Non-429 error, don't retry
+                            stats["errors"].append(f"Game {game.id}: {str(e)[:100]}")
+                            logger.warning(f"Error fetching historical odds for game {game.id}: {e}")
+                            break
+                            
+                    except Exception as e:
+                        stats["errors"].append(f"Game {game.id}: {str(e)[:100]}")
+                        logger.warning(f"Error fetching historical odds for game {game.id}: {e}")
+                        break
+                
+                # Process successful response
+                if historical and "bookmakers" in historical:
                     stats["fixtures_processed"] += 1
                     
                     # Process odds data
@@ -122,13 +163,6 @@ async def sync_historical_odds(
                         db, game, historical, sport
                     )
                     stats["snapshots_created"] += snapshots
-                    
-                    # Rate limit: 5000ms between historical-odds calls
-                    await asyncio.sleep(5.0)
-                    
-                except Exception as e:
-                    stats["errors"].append(f"Game {game.id}: {str(e)[:100]}")
-                    logger.warning(f"Error fetching historical odds for game {game.id}: {e}")
         
         await db.commit()
         

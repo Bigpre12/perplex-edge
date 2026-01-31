@@ -2054,9 +2054,48 @@ class XYZOddsProvider(OddsProvider):
         """Generate dynamic NCAAB player props for any game using roster data."""
         import random
         
-        # For NCAAB, just use default roster since we can't easily map team names
-        home_roster = DEFAULT_ROSTER
-        away_roster = DEFAULT_ROSTER
+        # NCAAB abbreviation to team name mapping (matches schedule file abbreviations)
+        NCAAB_ABBR_TO_TEAM = {
+            "ku": "Kansas Jayhawks", "duke": "Duke Blue Devils", "uk": "Kentucky Wildcats",
+            "hou": "Houston Cougars", "gonz": "Gonzaga Bulldogs", "conn": "UConn Huskies",
+            "pur": "Purdue Boilermakers", "fla": "Florida Gators", "ucla": "UCLA Bruins",
+            "ariz": "Arizona Wildcats", "bama": "Alabama Crimson Tide", "tenn": "Tennessee Volunteers",
+            "sju": "St. John's Red Storm", "mich": "Michigan Wolverines", "ark": "Arkansas Razorbacks",
+            "ill": "Illinois Fighting Illini", "isu": "Iowa State Cyclones", "byu": "BYU Cougars",
+            "ttu": "Texas Tech Red Raiders", "lou": "Louisville Cardinals",
+            # Additional teams from schedule
+            "unc": "North Carolina Tar Heels", "ksu": "Kansas State Wildcats",
+            "nova": "Villanova Wildcats", "gtwn": "Georgetown Hoyas",
+            "msu": "Michigan State Spartans", "osu": "Ohio State Buckeyes",
+            "tex": "Texas Longhorns", "bay": "Baylor Bears", "smc": "Saint Mary's Gaels",
+            "crei": "Creighton Bluejays", "ind": "Indiana Hoosiers", "aub": "Auburn Tigers",
+            "cin": "Cincinnati Bearcats", "ore": "Oregon Ducks", "wash": "Washington Huskies",
+            "uva": "Virginia Cavaliers", "wake": "Wake Forest Demon Deacons",
+            "ou": "Oklahoma Sooners", "van": "Vanderbilt Commodores", "usc": "USC Trojans",
+            "marq": "Marquette Golden Eagles", "tcu": "TCU Horned Frogs", "lsu": "LSU Tigers",
+            "scar": "South Carolina Gamecocks", "wis": "Wisconsin Badgers", "mem": "Memphis Tigers",
+            "okst": "Oklahoma State Cowboys", "ncst": "NC State Wolfpack", "iowa": "Iowa Hawkeyes",
+            "minn": "Minnesota Golden Gophers", "stan": "Stanford Cardinal", "orst": "Oregon State Beavers",
+            "wvu": "West Virginia Mountaineers", "uga": "Georgia Bulldogs", "msst": "Mississippi State Bulldogs",
+            "usf": "San Francisco Dons", "pitt": "Pittsburgh Panthers", "hall": "Seton Hall Pirates",
+            "asu": "Arizona State Sun Devils", "rutg": "Rutgers Scarlet Knights", "mia": "Miami Hurricanes",
+            "miss": "Ole Miss Rebels", "utah": "Utah Utes", "pepp": "Pepperdine Waves", "xav": "Xavier Musketeers",
+            "cal": "California Golden Bears", "fsu": "Florida State Seminoles", "colo": "Colorado Buffaloes",
+            "psu": "Penn State Nittany Lions",
+        }
+        
+        # Parse game ID format: game_{away_abbr}_{home_abbr}_{date}
+        parts = external_game_id.split("_")
+        away_abbr = parts[1].lower() if len(parts) > 1 else ""
+        home_abbr = parts[2].lower() if len(parts) > 2 else ""
+        
+        # Map abbreviations to team names
+        home_team = NCAAB_ABBR_TO_TEAM.get(home_abbr, f"{home_abbr.upper()} Team")
+        away_team = NCAAB_ABBR_TO_TEAM.get(away_abbr, f"{away_abbr.upper()} Team")
+        
+        # Get rosters from NCAAB_ROSTERS
+        home_roster = NCAAB_ROSTERS.get(home_team, DEFAULT_ROSTER)
+        away_roster = NCAAB_ROSTERS.get(away_team, DEFAULT_ROSTER)
         
         players = []
         
@@ -2090,13 +2129,15 @@ class XYZOddsProvider(OddsProvider):
                 "to": round(random.uniform(1.5, 2.5) * 2) / 2,
             }
         
+        # Generate props for home team (use real player names)
         for i, name in enumerate(home_roster):
             stats = gen_ncaab_stats(i)
-            players.append({"name": f"Home {name}", **stats})
+            players.append({"name": name, "team": home_team, **stats})
         
+        # Generate props for away team (use real player names)
         for i, name in enumerate(away_roster):
             stats = gen_ncaab_stats(i)
-            players.append({"name": f"Away {name}", **stats})
+            players.append({"name": name, "team": away_team, **stats})
         
         # Build same outcomes structure as NBA
         points_outcomes = []
@@ -2120,8 +2161,8 @@ class XYZOddsProvider(OddsProvider):
         return {
             "id": external_game_id,
             "sport_key": sport_key,
-            "home_team": "Home Team",
-            "away_team": "Away Team",
+            "home_team": home_team,
+            "away_team": away_team,
             "commence_time": times["early"],
             "bookmakers": [
                 {
@@ -2384,6 +2425,53 @@ NCAAB_ROSTERS = {
     "North Carolina Tar Heels": ["RJ Davis", "Seth Trimble", "Elliot Cadeau", "Jalen Washington", "Jae'Lyn Withers"],
     "Auburn Tigers": ["Miles Kelly", "Chad Baker-Mazara", "Denver Jones", "Johni Broome", "Dylan Cardwell"],
     "Baylor Bears": ["Jayden Nunn", "VJ Edgecombe", "Jeremy Roach", "Josh Ojianwuna", "Norchad Omier"],
+    # Additional teams from schedule file
+    "Villanova Wildcats": ["Mark Armstrong", "Wooga Poplar", "Eric Dixon", "TJ Bamba", "Brendan Hausen"],
+    "Georgetown Hoyas": ["Malik Mack", "Jayden Epps", "Micah Peavy", "Thomas Sorber", "Curtis Williams Jr."],
+    "Michigan State Spartans": ["Jaden Akins", "AJ Hoggard", "Coen Carr", "Xavier Booker", "Carson Cooper"],
+    "Ohio State Buckeyes": ["Bruce Thornton", "Meechie Johnson Jr.", "Roddy Gayle Jr.", "Zed Key", "Evan Mahaffey"],
+    "Texas Longhorns": ["Max Abmas", "Tre Johnson", "Jordan Pope", "Arthur Kaluma", "Ze'rik Onyema"],
+    "Saint Mary's Gaels": ["Aidan Mahaney", "Paulius Murauskas", "Mitchell Saxen", "Luke Barrett", "Joshua Jefferson"],
+    "Creighton Bluejays": ["Ryan Kalkbrenner", "Pop Isaacs", "Steven Ashworth", "Jamiya Neal", "Francisco Farabello"],
+    "Indiana Hoosiers": ["Mackenzie Mgbako", "Oumar Ballo", "Myles Rice", "Kanaan Carlyle", "Luke Goode"],
+    "Cincinnati Bearcats": ["Dan Skillings Jr.", "Simas Lukosius", "Dillon Mitchell", "Day Day Thomas", "Aziz Bandaogo"],
+    "Oregon Ducks": ["TJ Bamba", "Jadrian Tracey", "Nate Bittle", "Jackson Shelstad", "Keeshawn Barthelemy"],
+    "Washington Huskies": ["Great Osobor", "DJ Davis", "Zoom Diallo", "Tyler Harris", "Wilhelm Breidenbach"],
+    "Virginia Cavaliers": ["Isaac McKneely", "Taine Murray", "Blake Buchanan", "Andrew Rohde", "Jacob Groves"],
+    "Wake Forest Demon Deacons": ["Hunter Sallis", "Tre'Von Spillers", "Parker Friedrichsen", "Davion Hannah", "Efton Reid"],
+    "Oklahoma Sooners": ["Jeremiah Fears", "Jalon Moore", "Kobe Elvis", "Sam Godwin", "Glenn Taylor Jr."],
+    "Vanderbilt Commodores": ["Jason Edwards", "Devin McGlockton", "Tyler Tanner", "Mikaeel Alexander", "JaVon Small"],
+    "USC Trojans": ["Isaiah Collier", "Boogie Ellis", "Kobe Johnson", "Arrinten Page", "Joshua Morgan"],
+    "Marquette Golden Eagles": ["Kam Jones", "Tyler Kolek", "Chase Ross", "Stevie Mitchell", "Ben Gold"],
+    "TCU Horned Frogs": ["Jameer Nelson Jr.", "Trazarien White", "Ernest Udeh Jr.", "Emanuel Miller", "Noah Reynolds"],
+    "LSU Tigers": ["Cam Carter", "Jordan Sears", "Derek Fountain", "Daimion Collins", "Vyctorius Miller"],
+    "South Carolina Gamecocks": ["Collin Murray-Boyles", "Zachary Davis", "Jamarii Thomas", "Nick Pringle", "Jacobi Wright"],
+    "Wisconsin Badgers": ["John Blackwell", "John Tonje", "Kamari McGee", "Steven Crowl", "Nolan Winter"],
+    "Memphis Tigers": ["PJ Haggerty", "Tyrese Hunter", "Colby Rogers", "Moussa Cisse", "Jahvon Quinerly"],
+    "Oklahoma State Cowboys": ["Javon Small", "Abou Ousmane", "Jamyron Keller", "Brandon Garrison", "Joe Bamisile"],
+    "NC State Wolfpack": ["Michael O'Connell", "Marcus Hill", "Brandon Huntley-Hatfield", "Ben Middlebrooks", "Jayden Taylor"],
+    "Iowa Hawkeyes": ["Payton Sandfort", "Owen Freeman", "Josh Dix", "Brock Harding", "Seydou Traore"],
+    "Minnesota Golden Gophers": ["Dawson Garcia", "Mike Mitchell Jr.", "Lu'Cye Patterson", "Pharrel Payne", "Cam Christie"],
+    "Stanford Cardinal": ["Maxime Raynaud", "Jaylen Blakes", "Benny Gealer", "Ryan Agarwal", "Oziyah Sellers"],
+    "Oregon State Beavers": ["Michael Rataj", "Nate Kingz", "Jordan Pope", "Parsa Fallah", "Tyler Bey"],
+    "West Virginia Mountaineers": ["Tucker DeVries", "Javon Small", "Joseph Yesufu", "Amani Hansberry", "Eduardo Andre"],
+    "Georgia Bulldogs": ["Somto Cyril", "Silas Demary Jr.", "Blue Cain", "Asa Newell", "Dylan James"],
+    "Mississippi State Bulldogs": ["Josh Hubbard", "KeShawn Murphy", "Claudell Harris Jr.", "Cameron Matthews", "Michael Nwoko"],
+    "San Francisco Dons": ["Marcus Williams", "Malik Thomas", "Josh Kunen", "Tyrell Roberts", "Ndewedo Newbury"],
+    "Pittsburgh Panthers": ["Ishmael Leggett", "Jaland Lowe", "Zack Austin", "Jorge Diaz Graham", "Cam Corhen"],
+    "Seton Hall Pirates": ["Kadary Richmond", "Dylan Addae-Wusu", "Chaunce Jenkins", "Prince Aligbe", "Jahmir Young"],
+    "Arizona State Sun Devils": ["Adam Miller", "Joson Sanon", "BJ Freeman", "Basheer Jihad", "Shawn Phillips Jr."],
+    "Rutgers Scarlet Knights": ["Dylan Harper", "Ace Bailey", "Emmanuel Ogbole", "Lathan Sommerville", "Zach Martini"],
+    "Miami Hurricanes": ["Nijel Pack", "Matthew Cleveland", "Jalen Blackmon", "Brandon Johnson", "Favor Aire"],
+    "Ole Miss Rebels": ["Sean Pedulla", "Jaylen Murray", "Malik Dia", "Jaemyn Brakefield", "Davon Barnes"],
+    "Utah Utes": ["Gabe Madsen", "Keanu Dawes", "Hunter Erickson", "Lawson Lovering", "Ezra Ausar"],
+    "Pepperdine Waves": ["Stefan Todorovic", "Michael Ajayi", "Moe Musa", "Dovydas Butka", "Boubacar Coulibaly"],
+    "Xavier Musketeers": ["Zach Freemantle", "Quincy Olivari", "Dayvion McKnight", "Ryan Conwell", "Trey Green"],
+    "California Golden Bears": ["Andrej Stojakovic", "Javan Willingham", "Joshua Ola-Joseph", "BJ Omot", "Mady Sissoko"],
+    "Florida State Seminoles": ["Daquan Davis", "Jamir Watkins", "Malique Ewin", "Chandler Jackson", "Taylor Bol Bowen"],
+    "Colorado Buffaloes": ["Andrej Jakimovski", "Julian Hammond III", "Javon Ruffin", "Elijah Malone", "Cody Williams"],
+    "Penn State Nittany Lions": ["Ace Baldwin Jr.", "Nick Kern Jr.", "Zach Hicks", "Yanic Konan Niederhäuser", "Freddie Dilione V"],
+    "Kansas State Wildcats": ["Dug McDaniel", "David N'Guessan", "Brendan Hausen", "Achor Achor", "Coleman Hawkins"],
 }
 
 # Default roster for teams not in the list

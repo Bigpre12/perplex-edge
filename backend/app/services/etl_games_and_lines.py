@@ -870,11 +870,12 @@ async def _store_espn_player_props(
                 game_id=game.id,
                 market_id=market.id,
                 player_id=player.id,
-                line=float(line_value),
+                line_value=float(line_value),  # Fixed: was 'line' instead of 'line_value'
                 odds=over_odds,
                 side="over",
                 sportsbook="stub",
                 is_current=True,
+                fetched_at=datetime.now(timezone.utc).replace(tzinfo=None),
             )
             db.add(over_line)
             stats["props_added"] += 1
@@ -884,11 +885,12 @@ async def _store_espn_player_props(
                 game_id=game.id,
                 market_id=market.id,
                 player_id=player.id,
-                line=float(line_value),
+                line_value=float(line_value),  # Fixed: was 'line' instead of 'line_value'
                 odds=under_odds,
                 side="under",
                 sportsbook="stub",
                 is_current=True,
+                fetched_at=datetime.now(timezone.utc).replace(tzinfo=None),
             )
             db.add(under_line)
             stats["props_added"] += 1

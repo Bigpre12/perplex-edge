@@ -750,6 +750,11 @@ async def _generate_picks_for_game(
     for line in lines:
         stats["lines_evaluated"] += 1
         
+        # Skip lines without valid line_value (data integrity issue)
+        if line.line_value is None or line.line_value == 0:
+            logger.debug(f"Skipping line {line.id} with invalid line_value: {line.line_value}")
+            continue
+        
         # Skip injured players
         if line.player_id and line.player_id in injured_player_ids:
             logger.debug(f"Skipping injured player {line.player_id}")
@@ -1039,6 +1044,94 @@ async def _calculate_hit_rate_3g(
     return await _calculate_hit_rate(
         db, player_id, stat_type, line_value, side=side, games_back=3
     )
+
+
+async def _calculate_hit_rate_season(
+    db: AsyncSession,
+    player_id: int,
+    stat_type: str,
+    line_value: float,
+    side: str = "over",
+) -> tuple[Optional[float], int, bool]:
+    """
+    Calculate season-to-date hit rate and 100% flag.
+    
+    Args:
+        db: Database session
+        player_id: Player's internal ID
+        stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
+        line_value: The line to check against
+        side: 'over' or 'under' - determines hit direction
+    
+    Returns:
+        Tuple of (hit_rate, games_count, is_100_percent)
+        - hit_rate: Decimal (0-1) or None if no data
+        - games_count: Number of games in sample
+        - is_100_percent: True if hit rate is 100% with min 3 games
+    """
+    # NBA 2025-26 season start: October 22, 2025
+    # NCAAB 2025-26 season start: November 4, 2025
+    # Use earliest for safety
+    season_start = datetime(2025, 10, 22).replace(tzinfo=None)
+    
+    result = await db.execute(
+        select(PlayerGameStats.value)
+        .where(
+            and_(
+                PlayerGameStats.player_id == player_id,
+                PlayerGameStats.stat_type == stat_type,
+                PlayerGameStats.created_at >= season_start,
+            )
+        )
+        .order_by(PlayerGameStats.created_at.desc())
+    )
+    values = [row[0] for row in result.all()]
+    
+    if not values:
+        return None, 0, False
+    
+    # Count hits based on side
+    if side.lower() == "under":
+        hits = sum(1 for v in values if v < line_value)
+    else:
+        hits = sum(1 for v in values if v > line_value)
+    
+    games_count = len(values)
+    hit_rate = round(hits / games_count, 4)
+    
+    # 100% hit rate requires minimum 3 games and all hits
+    is_100_percent = (hits == games_count) and (games_count >= 3)
+    
+    return hit_rate, games_count, is_100_percent
+
+
+def check_100_percent_window(
+    values: list[float],
+    line_value: float,
+    side: str = "over",
+    min_games: int = 3,
+) -> bool:
+    """
+    Check if a list of values represents 100% hit rate.
+    
+    Args:
+        values: List of stat values
+        line_value: The line to check against
+        side: 'over' or 'under'
+        min_games: Minimum games required for 100% flag
+    
+    Returns:
+        True if 100% hit rate with minimum games
+    """
+    if len(values) < min_games:
+        return False
+    
+    if side.lower() == "under":
+        hits = sum(1 for v in values if v < line_value)
+    else:
+        hits = sum(1 for v in values if v > line_value)
+    
+    return hits == len(values)
 
 
 # =============================================================================

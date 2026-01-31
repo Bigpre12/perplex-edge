@@ -19,6 +19,7 @@ from app.models.nfl_odds import LiveOddsNFL, HistoricalOddsNFL
 from app.models.ncaab_odds import LiveOddsNCAAB, HistoricalOddsNCAAB
 from app.models.calibration_metrics import CalibrationMetrics
 from app.models.sync_metadata import SyncMetadata
+from app.models.user_bet import UserBet, BetStatus
 
 __all__ = [
     "Base",
@@ -44,4 +45,6 @@ __all__ = [
     "HistoricalOddsNCAAB",
     "CalibrationMetrics",
     "SyncMetadata",
+    "UserBet",
+    "BetStatus",
 ]
