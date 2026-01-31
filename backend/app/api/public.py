@@ -629,6 +629,43 @@ async def list_game_line_picks(
 
 
 # =============================================================================
+# Debug Endpoint
+# =============================================================================
+
+@router.get("/sports/{sport_id}/picks/debug", tags=["public"])
+async def debug_picks(
+    sport_id: int,
+    limit: int = Query(10, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """Debug endpoint to see raw pick data without complex joins."""
+    result = await db.execute(
+        select(ModelPick)
+        .where(ModelPick.sport_id == sport_id)
+        .limit(limit)
+    )
+    picks = result.scalars().all()
+    
+    return {
+        "total": len(picks),
+        "picks": [
+            {
+                "id": p.id,
+                "sport_id": p.sport_id,
+                "game_id": p.game_id,
+                "player_id": p.player_id,
+                "market_id": p.market_id,
+                "is_active": p.is_active,
+                "side": p.side,
+                "line_value": p.line_value,
+                "odds": p.odds,
+            }
+            for p in picks
+        ]
+    }
+
+
+# =============================================================================
 # 100% Hit Rate Props Endpoint
 # =============================================================================
 
