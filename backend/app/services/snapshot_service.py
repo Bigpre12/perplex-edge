@@ -224,13 +224,13 @@ async def save_daily_snapshot(
                 "id": str(p.id),
                 "game_id": str(p.game_id),
                 "player_id": str(p.player_id) if p.player_id else None,
-                "pick_type": p.pick_type,
-                "stat_type": p.stat_type,
+                "market_id": str(p.market_id),
+                "side": p.side,
                 "line_value": float(p.line_value) if p.line_value else None,
-                "direction": p.direction,
+                "odds": float(p.odds) if p.odds else None,
                 "model_probability": float(p.model_probability) if p.model_probability else None,
-                "ev": float(p.ev) if p.ev else None,
-                "confidence": float(p.confidence) if p.confidence else None,
+                "expected_value": float(p.expected_value) if p.expected_value else None,
+                "confidence_score": float(p.confidence_score) if p.confidence_score else None,
             }
             for p in picks
         ],
