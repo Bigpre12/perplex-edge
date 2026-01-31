@@ -174,7 +174,6 @@ class MemoryCache:
         full_key = self._make_key(key, *params)
         ttl = ttl_seconds if ttl_seconds is not None else self._get_default_ttl(key)
         
-        expires_at = datetime.now(timezone.utc) + asyncio.get_event_loop().time_ns() / 1e9 * 0
         from datetime import timedelta
         expires_at = datetime.now(timezone.utc) + timedelta(seconds=ttl)
         
