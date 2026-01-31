@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload, aliased
 
 from app.core.database import get_db
 from app.models import Line, Game, Market, Player, Sport, Team, ModelPick, Injury
+from app.models.injury import EXCLUDED_INJURY_STATUSES
 from app.schemas.line import LineList, LineRead, LineComparison, BookmakerLine
 
 router = APIRouter()
@@ -224,7 +225,7 @@ async def search_props(
     if not include_injured:
         injured_subquery = (
             select(Injury.player_id)
-            .where(Injury.status.in_(["OUT", "DOUBTFUL"]))
+            .where(Injury.status.in_(EXCLUDED_INJURY_STATUSES))
             .scalar_subquery()
         )
         query = query.where(Player.id.notin_(injured_subquery))

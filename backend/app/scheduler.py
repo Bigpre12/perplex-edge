@@ -497,7 +497,7 @@ async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False)
                     # SCHEDULER_USE_STUBS=true forces stub data
                     logger.info("SCHEDULER_USE_STUBS=true, forcing stub data (no API calls)")
                     use_real_api = False
-                elif quota['remaining'] < 10:
+                elif quota['remaining'] < 20:
                     logger.warning(f"Low quota ({quota['remaining']} remaining), using stubs only")
                     use_real_api = False
                 else:

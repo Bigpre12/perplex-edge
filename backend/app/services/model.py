@@ -13,6 +13,7 @@ from app.models import (
     Sport, Game, Line, Market, Player, Team,
     PlayerGameStats, Injury, ModelPick,
 )
+from app.models.injury import EXCLUDED_INJURY_STATUSES
 
 logger = logging.getLogger(__name__)
 
@@ -306,7 +307,7 @@ async def get_injured_teammates(
             and_(
                 Player.team_id == player.team_id,
                 Player.id != player_id,
-                Injury.status.in_(["OUT", "DOUBTFUL"]),
+                Injury.status.in_(EXCLUDED_INJURY_STATUSES),
             )
         )
     )

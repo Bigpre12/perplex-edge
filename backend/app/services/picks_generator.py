@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import Sport, Game, Line, Market, Player, PlayerGameStats, ModelPick, Injury
+from app.models.injury import EXCLUDED_INJURY_STATUSES
 
 logger = logging.getLogger(__name__)
 
@@ -736,7 +737,7 @@ async def _generate_picks_for_game(
                 select(Injury).where(
                     and_(
                         Injury.player_id == line.player_id,
-                        Injury.status.in_(["OUT", "DOUBTFUL", "GTD", "DAY_TO_DAY"]),
+                        Injury.status.in_(EXCLUDED_INJURY_STATUSES),
                     )
                 )
             )

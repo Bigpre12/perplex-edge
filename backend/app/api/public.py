@@ -14,6 +14,7 @@ from sqlalchemy.orm import selectinload, aliased
 
 from app.core.database import get_db
 from app.models import Sport, Team, Game, Market, Player, ModelPick, Line, Injury
+from app.models.injury import EXCLUDED_INJURY_STATUSES
 from app.services.memory_cache import cache, CacheKey
 from app.schemas.public import (
     PublicSport,
@@ -308,7 +309,7 @@ async def list_player_prop_picks(
     # Subquery to find injured player IDs (filter them out)
     injured_subquery = (
         select(Injury.player_id)
-        .where(Injury.status.in_(["OUT", "DOUBTFUL", "QUESTIONABLE", "GTD", "DAY_TO_DAY"]))
+        .where(Injury.status.in_(EXCLUDED_INJURY_STATUSES))
         .scalar_subquery()
     )
     

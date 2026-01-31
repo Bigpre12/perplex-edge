@@ -38,3 +38,12 @@ class Injury(Base):
 
     def __repr__(self) -> str:
         return f"<Injury(id={self.id}, player_id={self.player_id}, status='{self.status}')>"
+
+
+# =============================================================================
+# Injury Status Constants
+# =============================================================================
+
+# Statuses that should be excluded from picks/props
+# Players with these statuses should not appear in recommendations
+EXCLUDED_INJURY_STATUSES = ["OUT", "DOUBTFUL", "QUESTIONABLE", "GTD", "DAY_TO_DAY"]
