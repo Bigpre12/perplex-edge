@@ -636,7 +636,8 @@ async def debug_picks(
     limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    """Debug endpoint to see raw pick data without complex joins."""
+    """Enhanced debug endpoint to diagnose pick visibility issues."""
+    # Get picks
     result = await db.execute(
         select(ModelPick)
         .where(ModelPick.sport_id == sport_id)
@@ -644,22 +645,67 @@ async def debug_picks(
     )
     picks = result.scalars().all()
     
+    # Get related data for each pick
+    picks_data = []
+    for p in picks:
+        # Check if player exists
+        player_exists = None
+        player_name = None
+        if p.player_id:
+            player_result = await db.execute(
+                select(Player.id, Player.name).where(Player.id == p.player_id)
+            )
+            player = player_result.first()
+            player_exists = player is not None
+            player_name = player[1] if player else None
+        
+        # Check game start_time
+        game_result = await db.execute(
+            select(Game.start_time, Game.status).where(Game.id == p.game_id)
+        )
+        game = game_result.first()
+        
+        # Check if player is injured
+        injury_status = None
+        if p.player_id:
+            injury_result = await db.execute(
+                select(Injury.status).where(Injury.player_id == p.player_id)
+            )
+            injury = injury_result.first()
+            injury_status = injury[0] if injury else None
+        
+        picks_data.append({
+            "id": p.id,
+            "player_id": p.player_id,
+            "player_name": player_name,
+            "player_exists": player_exists,
+            "injury_status": injury_status,
+            "game_id": p.game_id,
+            "game_start_time": game[0].isoformat() if game and game[0] else None,
+            "game_status": game[1] if game else None,
+            "market_id": p.market_id,
+            "is_active": p.is_active,
+            "side": p.side,
+            "line_value": p.line_value,
+        })
+    
+    # Get today's date range info
+    now_et = datetime.now(EASTERN_TZ)
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_utc = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow_utc = today_utc + timedelta(days=1)
+    week_later_utc = today_utc + timedelta(days=7)
+    
     return {
-        "total": len(picks),
-        "picks": [
-            {
-                "id": p.id,
-                "sport_id": p.sport_id,
-                "game_id": p.game_id,
-                "player_id": p.player_id,
-                "market_id": p.market_id,
-                "is_active": p.is_active,
-                "side": p.side,
-                "line_value": p.line_value,
-                "odds": p.odds,
-            }
-            for p in picks
-        ]
+        "debug_info": {
+            "now_et": now_et.isoformat(),
+            "today_utc": today_utc.isoformat(),
+            "tomorrow_utc": tomorrow_utc.isoformat(),
+            "week_later_utc": week_later_utc.isoformat(),
+            "filter_range": f"{today_utc.isoformat()} to {week_later_utc.isoformat()}",
+        },
+        "total": len(picks_data),
+        "picks": picks_data,
     }
 
 
