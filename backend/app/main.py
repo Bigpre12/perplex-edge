@@ -1,8 +1,9 @@
 """Perplex Engine - Sports Betting Analytics API."""
 import logging
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -92,15 +93,37 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware - allow all origins for frontend access
+# Get allowed origins from environment or use wildcard
+# In production, set: ALLOWED_ORIGINS=https://perplex-edge-production.up.railway.app,http://localhost:5173
+_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS = ["*"] if _origins_env == "*" else [o.strip() for o in _origins_env.split(",")]
+
+# CORS middleware - allow cross-origin requests
 # Note: allow_credentials must be False when allow_origins=["*"] per CORS spec
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight for 10 minutes
 )
+
+
+# Explicit OPTIONS handler as fallback for CORS preflight
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Handle OPTIONS requests explicitly for CORS preflight."""
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "600",
+        }
+    )
 
 # Include routers
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
