@@ -209,9 +209,9 @@ async def compute_calibration_metrics(
     if not sport:
         return []
     
-    # Get all settled picks in date range
-    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-    end_dt = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+    # Get all settled picks in date range (timezone-naive to match DB column)
+    start_dt = datetime.combine(start_date, datetime.min.time())
+    end_dt = datetime.combine(end_date, datetime.max.time())
     
     result = await db.execute(
         select(ModelPick, PickResult)
@@ -377,8 +377,9 @@ async def get_reliability_data(
     sport = sport_result.scalar_one_or_none()
     
     if sport:
-        start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-        end_dt = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+        # Timezone-naive to match DB column
+        start_dt = datetime.combine(start_date, datetime.min.time())
+        end_dt = datetime.combine(end_date, datetime.max.time())
         
         result = await db.execute(
             select(ModelPick.model_probability, PickResult.hit)
@@ -492,8 +493,9 @@ async def get_clv_analysis(
     
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
-    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-    end_dt = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+    # Timezone-naive to match DB column
+    start_dt = datetime.combine(start_date, datetime.min.time())
+    end_dt = datetime.combine(end_date, datetime.max.time())
     
     # Get all CLV values
     result = await db.execute(

@@ -459,7 +459,8 @@ async def check_sync_health(
                 thresholds=thresholds,
             )
         
-        today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+        # Use timezone-naive datetimes to match database column type
+        today_start = datetime.combine(date.today(), datetime.min.time())
         tomorrow = today_start + timedelta(days=1)
         
         # Count today's games

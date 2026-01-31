@@ -765,7 +765,7 @@ async def stats_sync_loop(interval_minutes: int, initial_delay: int = 30, use_st
                 stats_result = await sync_recent_player_stats(
                     db, 
                     sport_key="basketball_nba",
-                    n_games=10,
+                    games_back=10,
                     use_stubs=use_stubs,
                 )
                 logger.info(f"Stats sync: {stats_result}")
