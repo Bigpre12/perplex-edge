@@ -233,21 +233,37 @@ async def get_player_stats_last_n_days(
     player_id: int,
     stat_type: str,
     days: int = 30,
+    sport_id: int = 30,  # Default to NBA, but should be passed for other sports
 ) -> list[tuple[float, Optional[float]]]:
     """
-    Get player's stats from the last N days.
+    Get player's stats from the last N days, respecting season boundaries.
+    
+    The cutoff will be the later of:
+    - N days ago
+    - Season start date for the sport
+    
+    This ensures we don't accidentally include stats from the previous season.
     
     Args:
         db: Database session
         player_id: Player ID
         stat_type: Stat type
         days: Number of days to look back
+        sport_id: Sport ID (30=NBA, 31=NFL, 32=NCAAB) - determines season start
     
     Returns:
         List of (value, minutes) tuples
     """
-    # Use naive datetime for comparison with TIMESTAMP WITHOUT TIME ZONE column
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
+    from app.services.season_helper import get_season_start_for_sport_id
+    
+    # Get season start for this sport
+    season_start = get_season_start_for_sport_id(sport_id).replace(tzinfo=None)
+    
+    # Calculate N days ago cutoff
+    days_cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
+    
+    # Use the later of the two (don't go before season start)
+    cutoff = max(season_start, days_cutoff)
     
     result = await db.execute(
         select(PlayerGameStats.value, PlayerGameStats.minutes)
@@ -382,13 +398,20 @@ async def compute_player_prop_model_probabilities(
             "factors": {"error": "Player not found"},
         }
     
+    # Get game to determine sport_id for season boundaries
+    game_result = await db.execute(
+        select(Game).where(Game.id == game_id)
+    )
+    game = game_result.scalar_one_or_none()
+    sport_id = game.sport_id if game else 30  # Default to NBA if no game
+    
     # Get last 10 games stats
     stats_10g = await get_player_recent_stats(db, player_id, stat_type, n_games=10)
     values_10g = [s[0] for s in stats_10g]
     minutes_10g = [s[1] for s in stats_10g if s[1] is not None]
     
-    # Get last 30 days stats
-    stats_30d = await get_player_stats_last_n_days(db, player_id, stat_type, days=30)
+    # Get last 30 days stats (with season boundary awareness)
+    stats_30d = await get_player_stats_last_n_days(db, player_id, stat_type, days=30, sport_id=sport_id)
     values_30d = [s[0] for s in stats_30d]
     minutes_30d = [s[1] for s in stats_30d if s[1] is not None]
     

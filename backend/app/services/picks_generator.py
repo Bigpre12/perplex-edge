@@ -1052,6 +1052,7 @@ async def _calculate_hit_rate_season(
     stat_type: str,
     line_value: float,
     side: str = "over",
+    sport_id: int = 30,  # Default to NBA, but should be passed for other sports
 ) -> tuple[Optional[float], int, bool]:
     """
     Calculate season-to-date hit rate and 100% flag.
@@ -1062,6 +1063,7 @@ async def _calculate_hit_rate_season(
         stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
         line_value: The line to check against
         side: 'over' or 'under' - determines hit direction
+        sport_id: Sport ID (30=NBA, 31=NFL, 32=NCAAB) - determines season start date
     
     Returns:
         Tuple of (hit_rate, games_count, is_100_percent)
@@ -1069,9 +1071,9 @@ async def _calculate_hit_rate_season(
         - games_count: Number of games in sample
         - is_100_percent: True if hit rate is 100% with min 3 games
     """
-    # Dynamically determine season start based on current date
-    from app.services.season_helper import get_nba_season_start
-    season_start = get_nba_season_start().replace(tzinfo=None)
+    # Dynamically determine season start based on sport
+    from app.services.season_helper import get_season_start_for_sport_id
+    season_start = get_season_start_for_sport_id(sport_id).replace(tzinfo=None)
     
     result = await db.execute(
         select(PlayerGameStats.value)

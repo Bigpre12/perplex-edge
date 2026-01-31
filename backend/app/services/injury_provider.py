@@ -528,12 +528,48 @@ class InjuryProvider:
     # Stub Methods for Testing
     # =========================================================================
     
+    def _get_dynamic_stub_timestamps(self) -> dict[str, str]:
+        """Get dynamically calculated timestamps for stub data."""
+        from datetime import datetime, timezone, timedelta
+        
+        now = datetime.now(timezone.utc)
+        
+        return {
+            # Recent update times (within last 24 hours)
+            "updated_recent": now.isoformat().replace("+00:00", "Z"),
+            "updated_morning": now.replace(hour=12, minute=0, second=0).isoformat().replace("+00:00", "Z"),
+            "updated_evening": now.replace(hour=18, minute=0, second=0).isoformat().replace("+00:00", "Z"),
+            # Expected return dates (in the future)
+            "return_week": (now + timedelta(days=7)).isoformat().replace("+00:00", "Z"),
+            "return_two_weeks": (now + timedelta(days=14)).isoformat().replace("+00:00", "Z"),
+            "return_month": (now + timedelta(days=30)).isoformat().replace("+00:00", "Z"),
+        }
+    
+    def _make_stub_injuries_dynamic(self, injuries: list[dict]) -> list[dict]:
+        """Replace hardcoded dates in stub injuries with dynamic timestamps."""
+        timestamps = self._get_dynamic_stub_timestamps()
+        
+        for injury in injuries:
+            # Replace updated timestamp
+            if "updated" in injury:
+                injury["updated"] = timestamps["updated_recent"]
+            
+            # Replace expected_return timestamp
+            if injury.get("expected_return"):
+                # Use different return dates based on injury severity
+                if injury.get("status") == "OUT":
+                    injury["expected_return"] = timestamps["return_two_weeks"]
+                else:
+                    injury["expected_return"] = timestamps["return_week"]
+        
+        return injuries
+    
     def _stub_injuries_response(
         self,
         sport_key: str,
         team: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub injury data for testing - January 2026 rosters."""
+        """Return realistic stub injury data for testing with dynamic timestamps."""
         injuries = []
         
         if "basketball" in sport_key:
@@ -1698,6 +1734,9 @@ class InjuryProvider:
         # Filter by team if specified
         if team:
             injuries = [i for i in injuries if team.lower() in i["team"].lower()]
+        
+        # Apply dynamic timestamps to stub data
+        injuries = self._make_stub_injuries_dynamic(injuries)
         
         return {"injuries": injuries}
     

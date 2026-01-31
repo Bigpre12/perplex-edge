@@ -80,6 +80,83 @@ async def get_api_quota():
     }
 
 
+# =============================================================================
+# Cache Management Endpoints
+# =============================================================================
+
+@router.post("/cache/clear")
+async def clear_cache():
+    """
+    Clear the in-memory cache.
+    
+    This forces all cached data (picks, games, hit rates) to be recalculated
+    on the next request. Use after fixing season/date issues or after
+    significant data changes.
+    
+    Returns:
+        Status of cache clear operation
+    """
+    try:
+        from app.services.memory_cache import get_memory_cache
+        cache = get_memory_cache()
+        cache.clear_all()
+        
+        return {
+            "status": "ok",
+            "message": "Cache cleared successfully",
+            "note": "All cached data will be recalculated on next request",
+        }
+    except ImportError:
+        return {
+            "status": "warning",
+            "message": "Memory cache module not available",
+            "note": "No cache to clear",
+        }
+
+
+@router.get("/season-info")
+async def get_season_info():
+    """
+    Get current season information for all sports.
+    
+    Useful for verifying season calculations are correct after fixes.
+    
+    Returns:
+        Season labels, start dates, and schedule filenames for each sport
+    """
+    from app.services.season_helper import (
+        get_nba_season_label,
+        get_ncaab_season_label,
+        get_nfl_season_year,
+        get_nba_season_start,
+        get_ncaab_season_start,
+        get_nfl_season_start,
+        get_schedule_filename,
+    )
+    
+    return {
+        "status": "ok",
+        "current_date": datetime.now(timezone.utc).isoformat(),
+        "sports": {
+            "basketball_nba": {
+                "season_label": get_nba_season_label(),
+                "season_start": get_nba_season_start().isoformat(),
+                "schedule_file": get_schedule_filename("basketball_nba"),
+            },
+            "basketball_ncaab": {
+                "season_label": get_ncaab_season_label(),
+                "season_start": get_ncaab_season_start().isoformat(),
+                "schedule_file": get_schedule_filename("basketball_ncaab"),
+            },
+            "americanfootball_nfl": {
+                "season_label": str(get_nfl_season_year()),
+                "season_start": get_nfl_season_start().isoformat(),
+                "schedule_file": get_schedule_filename("americanfootball_nfl"),
+            },
+        },
+    }
+
+
 @router.post("/jobs/sync-quota-safe")
 async def run_quota_safe_sync(
     sport: str = Query("basketball_nba", description="Sport key to sync"),

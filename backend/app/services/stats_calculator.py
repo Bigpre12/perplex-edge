@@ -25,6 +25,8 @@ async def calculate_historical_hit_rate(
     db: AsyncSession,
     player_name: str,
     stat_type: str,
+    sport_id: Optional[int] = None,  # Optional sport_id to filter by current season
+    season_only: bool = False,  # If True, only include current season data
 ) -> dict[str, Any]:
     """
     Calculate historical hit rate for a player on a specific stat type.
@@ -33,18 +35,27 @@ async def calculate_historical_hit_rate(
         db: Database session
         player_name: Player's name
         stat_type: Stat type (PTS, REB, AST, etc.)
+        sport_id: Optional sport ID (30=NBA, 31=NFL, 32=NCAAB) for season filtering
+        season_only: If True, only include stats from the current season
     
     Returns:
         Dictionary with hit rate statistics
     """
+    # Build query conditions
+    conditions = [
+        PlayerStat.player_name == player_name,
+        PlayerStat.stat_type == stat_type,
+    ]
+    
+    # Add season filter if requested
+    if season_only and sport_id is not None:
+        from app.services.season_helper import get_season_start_for_sport_id
+        season_start = get_season_start_for_sport_id(sport_id).replace(tzinfo=None)
+        conditions.append(PlayerStat.date >= season_start)
+    
     result = await db.execute(
         select(PlayerStat)
-        .where(
-            and_(
-                PlayerStat.player_name == player_name,
-                PlayerStat.stat_type == stat_type,
-            )
-        )
+        .where(and_(*conditions))
         .order_by(PlayerStat.date.desc())
     )
     stats = result.scalars().all()
@@ -77,20 +88,30 @@ async def get_recent_performance(
     db: AsyncSession,
     player_name: str,
     days: int = 14,
+    sport_id: Optional[int] = None,  # Optional sport_id for season awareness
 ) -> list[dict[str, Any]]:
     """
-    Get a player's recent performance over the last N days.
+    Get a player's recent performance over the last N days, respecting season boundaries.
     
     Args:
         db: Database session
         player_name: Player's name
         days: Number of days to look back
+        sport_id: Optional sport ID (30=NBA, 31=NFL, 32=NCAAB) for season boundaries
     
     Returns:
         List of recent stat records
     """
-    # Use naive datetime for TIMESTAMP WITHOUT TIME ZONE column comparison
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
+    # Calculate days cutoff
+    days_cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(tzinfo=None)
+    
+    # If sport_id provided, also respect season boundaries
+    if sport_id is not None:
+        from app.services.season_helper import get_season_start_for_sport_id
+        season_start = get_season_start_for_sport_id(sport_id).replace(tzinfo=None)
+        cutoff = max(season_start, days_cutoff)
+    else:
+        cutoff = days_cutoff
     
     result = await db.execute(
         select(PlayerStat)

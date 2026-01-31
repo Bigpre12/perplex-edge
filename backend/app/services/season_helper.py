@@ -250,3 +250,67 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
         return str(get_nfl_season_year())
     else:
         return get_nba_season_label()
+
+
+# =============================================================================
+# Sport ID to Season Mapping (for database sport_id values)
+# =============================================================================
+
+# Mapping of database sport_id to sport_key
+SPORT_ID_TO_KEY = {
+    30: "basketball_nba",
+    31: "americanfootball_nfl",
+    32: "basketball_ncaab",
+}
+
+
+def get_sport_key_from_id(sport_id: int) -> str:
+    """
+    Convert database sport_id to sport_key string.
+    
+    Args:
+        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB)
+    
+    Returns:
+        Sport key string like "basketball_nba"
+    """
+    return SPORT_ID_TO_KEY.get(sport_id, "basketball_nba")
+
+
+def get_season_start_for_sport_id(sport_id: int) -> datetime:
+    """
+    Get the season start date for a sport based on its database ID.
+    
+    This is the main function to use when you have a sport_id from the database
+    and need the correct season start date for that sport.
+    
+    Args:
+        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB)
+    
+    Returns:
+        datetime of season start (naive UTC)
+        
+    Examples:
+        >>> get_season_start_for_sport_id(30)  # NBA
+        datetime(2025, 10, 22, 0, 0)
+        >>> get_season_start_for_sport_id(32)  # NCAAB
+        datetime(2025, 11, 4, 0, 0)
+        >>> get_season_start_for_sport_id(31)  # NFL
+        datetime(2025, 9, 7, 0, 0)
+    """
+    sport_key = get_sport_key_from_id(sport_id)
+    return get_current_season_start(sport_key)
+
+
+def get_season_label_for_sport_id(sport_id: int) -> str:
+    """
+    Get the season label for a sport based on its database ID.
+    
+    Args:
+        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB)
+    
+    Returns:
+        Season label string (e.g., "2025-26" for NBA/NCAAB, "2025" for NFL)
+    """
+    sport_key = get_sport_key_from_id(sport_id)
+    return get_current_season_label(sport_key)

@@ -451,18 +451,27 @@ async def get_hit_rate_data(
     stat_type: str,
     line_value: float,
     side: str = "over",
+    sport_id: int = 30,  # Default to NBA, but should be passed for other sports
 ) -> dict[str, Any]:
     """
     Get comprehensive hit rate data for a player prop.
+    
+    Args:
+        db: Database session
+        player_id: Player's internal ID
+        stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
+        line_value: The line to check against
+        side: 'over' or 'under' - determines hit direction
+        sport_id: Sport ID (30=NBA, 31=NFL, 32=NCAAB) - determines season start date
     
     Returns dict with:
     - hit_rate_season, games_season, is_100_season
     - hit_rate_last_10, games_last_10, is_100_last_10
     - hit_rate_last_5, games_last_5, is_100_last_5
     """
-    # Season data
+    # Season data - use sport-specific season start
     hr_season, games_season, is_100_season = await _calculate_hit_rate_season(
-        db, player_id, stat_type, line_value, side
+        db, player_id, stat_type, line_value, side, sport_id=sport_id
     )
     
     # Last 10 games
@@ -476,8 +485,8 @@ async def get_hit_rate_data(
     # Check 100% flags for last 10 and last 5
     # We need actual values for this
     from datetime import datetime
-    from app.services.season_helper import get_nba_season_start
-    season_start = get_nba_season_start()
+    from app.services.season_helper import get_season_start_for_sport_id
+    season_start = get_season_start_for_sport_id(sport_id)
     
     result = await db.execute(
         select(PlayerGameStats.value)
@@ -566,10 +575,10 @@ async def build_parlay_legs(
         if grade_to_numeric(grade) < min_grade_numeric:
             continue
         
-        # Get hit rate data
+        # Get hit rate data - use sport_id for correct season boundaries
         stat_type = market.stat_type or market.market_type
         hr_data = await get_hit_rate_data(
-            db, player.id, stat_type, pick.line_value, pick.side
+            db, player.id, stat_type, pick.line_value, pick.side, sport_id=sport_id
         )
         
         legs.append({
@@ -875,9 +884,9 @@ async def get_100_percent_props(
         
         stat_type = market.stat_type or market.market_type
         
-        # Get hit rate data
+        # Get hit rate data - use sport_id for correct season boundaries
         hr_data = await get_hit_rate_data(
-            db, player.id, stat_type, pick.line_value, pick.side
+            db, player.id, stat_type, pick.line_value, pick.side, sport_id=sport_id
         )
         
         # Check if meets 100% criteria for selected window
@@ -1226,15 +1235,18 @@ async def explore_alt_lines(
     best_over = max(alt_lines, key=lambda x: x.over_ev or -999) if alt_lines else None
     best_under = max(alt_lines, key=lambda x: x.under_ev or -999) if alt_lines else None
     
-    # Get hit rate
+    # Get sport_id from the game for correct season boundaries
+    sport_id = game.sport_id if game else 30  # Default to NBA if no game
+    
+    # Get hit rate - use sport-specific season start
     hr_data = await get_hit_rate_data(
-        db, pick.player_id, stat_type, pick.line_value if pick.line_value is not None else 0, pick.side
+        db, pick.player_id, stat_type, pick.line_value if pick.line_value is not None else 0, pick.side, sport_id=sport_id
     )
     
-    # Get season average
+    # Get season average using sport-specific season start
     from datetime import datetime
-    from app.services.season_helper import get_nba_season_start
-    season_start = get_nba_season_start()
+    from app.services.season_helper import get_season_start_for_sport_id
+    season_start = get_season_start_for_sport_id(sport_id)
     
     result = await db.execute(
         select(func.avg(PlayerGameStats.value))
