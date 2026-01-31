@@ -60,6 +60,14 @@ export interface PublicMarketList {
   total: number;
 }
 
+// Per-sportsbook line data for comparison
+export interface BookLine {
+  sportsbook: string;
+  line: number | null;
+  odds: number;
+  ev: number | null;
+}
+
 export interface PlayerPropPick {
   pick_id: number;
   player_name: string;
@@ -83,6 +91,10 @@ export interface PlayerPropPick {
   confidence_score: number;
   game_id: number;
   game_start_time: string;
+  // Per-book comparison (new fields)
+  book_lines: BookLine[] | null;
+  best_book: string | null;
+  line_variance: number | null;  // Flag if >0.5 - indicates off-market line
 }
 
 export interface PlayerPropPickList {

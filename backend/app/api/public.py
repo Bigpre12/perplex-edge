@@ -22,12 +22,89 @@ from app.schemas.public import (
     PlayerPropPickList,
     GameLinePick,
     GameLinePickList,
+    BookLine,
 )
 
 router = APIRouter()
 
 # Eastern timezone (handles DST automatically)
 EASTERN_TZ = ZoneInfo("America/New_York")
+
+
+# =============================================================================
+# Helper Functions for Per-Book Line Comparison
+# =============================================================================
+
+def calculate_ev_for_odds(model_prob: float, odds: int) -> float:
+    """Calculate EV for given model probability and American odds."""
+    if odds < 0:
+        profit = 100 / abs(odds)
+    else:
+        profit = odds / 100
+    
+    ev = (model_prob * profit) - ((1 - model_prob) * 1)
+    return round(ev, 4)
+
+
+async def get_book_lines_for_pick(
+    db: AsyncSession,
+    game_id: int,
+    player_id: int,
+    market_id: int,
+    side: str,
+    model_prob: float,
+) -> tuple[list[BookLine], str | None, float | None]:
+    """
+    Fetch all sportsbook lines for a specific player prop.
+    
+    Returns:
+        tuple of (book_lines, best_book, line_variance)
+    """
+    # Query all current lines for this player/game/market combination
+    result = await db.execute(
+        select(Line).where(
+            and_(
+                Line.game_id == game_id,
+                Line.player_id == player_id,
+                Line.market_id == market_id,
+                Line.side == side,
+                Line.is_current == True,
+            )
+        )
+    )
+    lines = result.scalars().all()
+    
+    if not lines:
+        return [], None, None
+    
+    # Build book lines with EV
+    book_lines = []
+    best_ev = float("-inf")
+    best_book = None
+    line_values = []
+    
+    for line in lines:
+        ev = calculate_ev_for_odds(model_prob, int(line.odds))
+        book_lines.append(BookLine(
+            sportsbook=line.sportsbook,
+            line=line.line_value,
+            odds=int(line.odds),
+            ev=ev,
+        ))
+        
+        if ev > best_ev:
+            best_ev = ev
+            best_book = line.sportsbook
+        
+        if line.line_value is not None:
+            line_values.append(line.line_value)
+    
+    # Calculate line variance (max difference from consensus)
+    line_variance = None
+    if len(line_values) >= 2:
+        line_variance = round(max(line_values) - min(line_values), 1)
+    
+    return book_lines, best_book, line_variance
 
 
 # =============================================================================
@@ -303,6 +380,16 @@ async def list_player_prop_picks(
             opponent_team = f"{away_team.name} vs {home_team.name}"
             opponent_abbr = f"{away_team.abbreviation} vs {home_team.abbreviation}"
         
+        # Fetch per-book lines for this prop (enables sportsbook comparison)
+        book_lines, best_book, line_variance = await get_book_lines_for_pick(
+            db,
+            game_id=game.id,
+            player_id=player.id,
+            market_id=market.id,
+            side=pick.side,
+            model_prob=pick.model_probability,
+        )
+        
         picks.append(PlayerPropPick(
             pick_id=pick.id,
             player_name=player.name,
@@ -325,6 +412,10 @@ async def list_player_prop_picks(
             confidence_score=pick.confidence_score,
             game_id=game.id,
             game_start_time=game.start_time,
+            # Per-book comparison data
+            book_lines=book_lines if book_lines else None,
+            best_book=best_book,
+            line_variance=line_variance,
         ))
     
     return PlayerPropPickList(

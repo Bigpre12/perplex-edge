@@ -82,6 +82,18 @@ class PublicMarketList(BaseModel):
 
 
 # =============================================================================
+# Book-Specific Lines (for per-sportsbook comparison)
+# =============================================================================
+
+class BookLine(BaseModel):
+    """Line from a specific sportsbook."""
+    sportsbook: str
+    line: Optional[float]
+    odds: int
+    ev: Optional[float] = None  # EV for this specific book
+
+
+# =============================================================================
 # Player Prop Picks
 # =============================================================================
 
@@ -119,6 +131,11 @@ class PlayerPropPick(BaseModel):
     # Game info
     game_id: int
     game_start_time: UTCDatetime
+    
+    # Per-book comparison (new fields for market visibility)
+    book_lines: Optional[list[BookLine]] = None  # All sportsbooks for this prop
+    best_book: Optional[str] = None  # Which book has best EV
+    line_variance: Optional[float] = None  # Max line difference across books (flag if >0.5)
 
 
 class PlayerPropPickList(BaseModel):

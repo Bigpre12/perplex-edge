@@ -33,14 +33,17 @@ SPORT_KEYS = [
 ]
 
 # =============================================================================
-# Quota-Safe Sync Schedule (2x daily to protect free tier)
+# Smart Polling Windows (optimized for peak betting hours, stays under free tier)
 # =============================================================================
 
-# Morning sync - 6:00 AM ET (11:00 UTC)
-MORNING_SYNC_HOUR_UTC = 11
+# Smart sync hours in ET - peak betting windows
+# 9 AM, 12 PM, 3 PM, 5 PM, 6 PM, 7 PM ET
+SMART_SYNC_HOURS_ET = [9, 12, 15, 17, 18, 19]
 
-# Pre-game sync - 5:00 PM ET (22:00 UTC)
-PREGAME_SYNC_HOUR_UTC = 22
+# Convert to UTC (ET is UTC-5 in winter, UTC-4 in summer - handled dynamically)
+# These are approximate for documentation; actual conversion happens at runtime
+MORNING_SYNC_HOUR_UTC = 14  # ~9 AM ET (for backward compat)
+PREGAME_SYNC_HOUR_UTC = 22  # ~5 PM ET (for backward compat)
 
 
 # =============================================================================
@@ -373,22 +376,27 @@ async def odds_sync_loop(interval_minutes: int, initial_delay: int = 0, use_stub
 
 async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False):
     """
-    Quota-safe odds sync that runs on startup + 2x daily (6 AM + 5 PM ET).
+    Smart polling sync that runs on startup + during peak betting windows.
     
-    Uses ~6 API calls/day (180/month), well under 500/month free tier.
-    Automatically falls back to ESPN -> stubs if primary API fails.
+    Uses smart windows (6x/day during peak hours) to keep data fresh while
+    staying under 500/month free tier (~360 calls/month + manual refreshes).
     
     Features:
     - IMMEDIATE sync on startup (ensures data is available right away)
-    - Pre-sync snapshots for data versioning
+    - Smart polling windows during peak betting hours (9AM-7PM ET)
+    - Pre-sync snapshots for data versioning (morning only)
     - Post-sync health checks with alerting
     - Automatic failover between providers
     - Respects SCHEDULER_USE_STUBS environment variable
     
-    Schedule:
+    Schedule (all times ET):
     - On startup: Immediate sync after initial_delay
-    - 6:00 AM ET (11:00 UTC): Morning sync - overnight line movements
-    - 5:00 PM ET (22:00 UTC): Pre-game sync - final lines before tip-off
+    - 9 AM ET: Morning sync - overnight line movements
+    - 12 PM ET: Midday sync - lunch time updates
+    - 3 PM ET: Afternoon sync - early game prep
+    - 5 PM ET: Pre-game sync - final lines
+    - 6 PM ET: Tip-off sync - last minute movements
+    - 7 PM ET: Evening sync - late game coverage
     
     Args:
         initial_delay: Delay before first sync check in seconds
@@ -407,15 +415,26 @@ async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False)
         logger.info(f"Quota-safe sync loop starting in {initial_delay}s...")
         await asyncio.sleep(initial_delay)
     
-    logger.info(f"Quota-safe sync loop started (runs at {MORNING_SYNC_HOUR_UTC}:00 and {PREGAME_SYNC_HOUR_UTC}:00 UTC)")
+    logger.info(f"Smart polling sync started (windows at {SMART_SYNC_HOURS_ET} ET)")
     
     # Track if this is the first run (for immediate startup sync)
     is_first_run = True
     
+    # Sync window names for logging
+    SYNC_WINDOW_NAMES = {
+        9: "MORNING",
+        12: "MIDDAY",
+        15: "AFTERNOON",
+        17: "PRE-GAME",
+        18: "TIP-OFF",
+        19: "EVENING",
+    }
+    
     while True:
         try:
-            now = datetime.now(timezone.utc)
-            current_hour = now.hour
+            # Get current time in Eastern
+            now_et = datetime.now(EASTERN_TZ)
+            current_hour_et = now_et.hour
             
             # On first run, do an immediate sync instead of waiting
             if is_first_run:
@@ -423,40 +442,49 @@ async def quota_safe_sync_loop(initial_delay: int = 60, use_stubs: bool = False)
                 is_first_run = False
                 logger.info("=== STARTUP SYNC: Running immediate sync to populate data ===")
             else:
-                # Calculate next sync time
-                if current_hour < MORNING_SYNC_HOUR_UTC:
-                    # Before morning sync
-                    next_sync_hour = MORNING_SYNC_HOUR_UTC
-                    sync_name = "MORNING"
-                elif current_hour < PREGAME_SYNC_HOUR_UTC:
-                    # Between morning and pre-game
-                    next_sync_hour = PREGAME_SYNC_HOUR_UTC
-                    sync_name = "PRE-GAME"
+                # Find next sync window in ET
+                next_sync_hour_et = None
+                for hour in SMART_SYNC_HOURS_ET:
+                    if hour > current_hour_et:
+                        next_sync_hour_et = hour
+                        break
+                
+                # If no more windows today, use first window tomorrow
+                if next_sync_hour_et is None:
+                    next_sync_hour_et = SMART_SYNC_HOURS_ET[0]
+                    # Target is tomorrow
+                    target_et = now_et.replace(
+                        hour=next_sync_hour_et, minute=0, second=0, microsecond=0
+                    ) + timedelta(days=1)
                 else:
-                    # After pre-game, wait for tomorrow's morning
-                    next_sync_hour = MORNING_SYNC_HOUR_UTC
-                    sync_name = "MORNING"
+                    target_et = now_et.replace(
+                        hour=next_sync_hour_et, minute=0, second=0, microsecond=0
+                    )
+                
+                sync_name = SYNC_WINDOW_NAMES.get(next_sync_hour_et, f"WINDOW_{next_sync_hour_et}")
                 
                 # Calculate wait time
-                target = now.replace(hour=next_sync_hour, minute=0, second=0, microsecond=0)
-                if target <= now:
-                    target += timedelta(days=1)
+                wait_seconds = (target_et - now_et).total_seconds()
+                if wait_seconds < 0:
+                    wait_seconds = 0
                 
-                wait_seconds = (target - now).total_seconds()
-                logger.info(f"Next {sync_name} sync in {wait_seconds/3600:.1f} hours (at {target.isoformat()})")
+                logger.info(
+                    f"Next {sync_name} sync in {wait_seconds/3600:.1f} hours "
+                    f"(at {target_et.strftime('%I:%M %p ET')})"
+                )
                 
                 # Wait until sync time
                 await asyncio.sleep(wait_seconds)
             
             # Run the sync
-            logger.info(f"=== {sync_name} QUOTA-SAFE SYNC STARTING ===")
+            logger.info(f"=== {sync_name} SMART SYNC STARTING ===")
             
             session_maker = get_session_maker()
             health_issues = []
             
             async with session_maker() as db:
-                # 1. Save pre-sync snapshots (versioned backups)
-                if sync_name == "MORNING":
+                # 1. Save pre-sync snapshots (versioned backups) - only on first sync of day (9 AM)
+                if sync_name == "MORNING" or sync_name == "STARTUP":
                     logger.info("Saving pre-refresh snapshots...")
                     snapshot_result = await pre_refresh_snapshot(db, SPORT_KEYS)
                     logger.info(f"Snapshots saved: {snapshot_result}")

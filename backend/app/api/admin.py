@@ -1,7 +1,8 @@
 """Admin API endpoints for triggering ETL jobs and picks generation."""
 
 import time
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Optional, Dict
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +31,14 @@ from app.services import (
 from app.services.picks_generator import generate_picks
 
 router = APIRouter()
+
+# =============================================================================
+# Rate Limiting for Manual Refresh (in-memory, resets on restart)
+# =============================================================================
+
+# Store last refresh time per sport: {sport_key: datetime}
+_last_refresh_times: Dict[str, datetime] = {}
+MANUAL_REFRESH_COOLDOWN_SECONDS = 300  # 5 minutes between manual refreshes
 
 
 # =============================================================================
@@ -246,6 +255,101 @@ async def browser_force_refresh(
     except Exception as e:
         import traceback
         return {"status": "error", "sport": sport, "error": str(e), "traceback": traceback.format_exc()}
+
+
+@router.get("/jobs/manual-refresh/{sport}")
+async def manual_refresh_live(
+    sport: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Manual refresh with rate limiting - fetches LIVE data from API if quota allows.
+    
+    Rate limited to 1 request per 5 minutes per sport to protect API quota.
+    Use this when you need real-time line updates before a game.
+    
+    Cascade order:
+    1. Check rate limit (5 min cooldown)
+    2. Check API quota
+    3. Fetch live odds from The Odds API (if quota available)
+    4. Fall back to stubs if API unavailable
+    5. Generate fresh picks
+    
+    Browser-friendly: just open in browser.
+    """
+    global _last_refresh_times
+    
+    if sport not in AVAILABLE_SPORTS:
+        return {"error": f"Unknown sport: {sport}", "available": AVAILABLE_SPORTS}
+    
+    # Check rate limit
+    now = datetime.now(timezone.utc)
+    last_refresh = _last_refresh_times.get(sport)
+    
+    if last_refresh:
+        seconds_since = (now - last_refresh).total_seconds()
+        if seconds_since < MANUAL_REFRESH_COOLDOWN_SECONDS:
+            remaining = int(MANUAL_REFRESH_COOLDOWN_SECONDS - seconds_since)
+            return {
+                "status": "rate_limited",
+                "sport": sport,
+                "message": f"Please wait {remaining} seconds before refreshing again",
+                "cooldown_seconds": MANUAL_REFRESH_COOLDOWN_SECONDS,
+                "seconds_remaining": remaining,
+                "last_refresh": last_refresh.isoformat(),
+            }
+    
+    start_time = time.time()
+    
+    try:
+        # Check quota - use real API if available
+        quota = get_quota_status()
+        use_real_api = quota["remaining"] > 10
+        
+        # Update rate limit tracker
+        _last_refresh_times[sport] = now
+        
+        # Sync fresh data (prefer real API for live lines)
+        sync_result = await sync_with_fallback(
+            db,
+            sport_key=sport,
+            include_props=True,
+            use_real_api=use_real_api,
+        )
+        
+        # Generate picks for the synced data
+        picks_result = await generate_picks(
+            db,
+            sport_key=sport,
+            min_ev=0.0,
+            min_confidence=0.5,
+            use_stubs=not use_real_api,
+        )
+        
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        return {
+            "status": "success",
+            "sport": sport,
+            "duration_ms": duration_ms,
+            "data_source": sync_result.get("data_source", "unknown"),
+            "used_live_api": use_real_api,
+            "games_synced": sync_result.get("games_created", 0) + sync_result.get("games_updated", 0),
+            "lines_synced": sync_result.get("lines_added", 0),
+            "props_synced": sync_result.get("props_added", 0),
+            "picks_generated": picks_result.get("picks_created", 0),
+            "quota_remaining": quota["remaining"],
+            "next_refresh_available": (now.timestamp() + MANUAL_REFRESH_COOLDOWN_SECONDS),
+            "cooldown_seconds": MANUAL_REFRESH_COOLDOWN_SECONDS,
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "sport": sport,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
 
 
 @router.post("/jobs/force-refresh")

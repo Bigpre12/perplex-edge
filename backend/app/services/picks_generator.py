@@ -322,6 +322,74 @@ def calculate_confidence_score(
     return round(min(1.0, max(0.0, confidence)), 4)
 
 
+def detect_off_market_lines(lines: list[Line], threshold: float = 0.5) -> dict[str, Any]:
+    """
+    Flag lines that differ significantly from consensus across sportsbooks.
+    
+    An "off-market" line indicates potential value or stale data from a book.
+    Use this to:
+    - Identify arbitrage opportunities
+    - Flag potentially stale lines to avoid
+    - Find soft books with different pricing
+    
+    Args:
+        lines: List of Line objects for the same prop across sportsbooks
+        threshold: Minimum line difference to flag as off-market (default 0.5 points)
+    
+    Returns:
+        Dictionary with:
+        - is_off_market: bool - True if any book is >threshold from consensus
+        - consensus_line: float - Average line across all books
+        - max_variance: float - Maximum difference from consensus
+        - off_market_books: list - Books with off-market lines
+    """
+    if len(lines) < 2:
+        return {
+            "is_off_market": False,
+            "consensus_line": lines[0].line_value if lines and lines[0].line_value else None,
+            "max_variance": 0.0,
+            "off_market_books": [],
+        }
+    
+    # Get all line values (skip nulls)
+    line_values = [l.line_value for l in lines if l.line_value is not None]
+    
+    if not line_values:
+        return {
+            "is_off_market": False,
+            "consensus_line": None,
+            "max_variance": 0.0,
+            "off_market_books": [],
+        }
+    
+    consensus = sum(line_values) / len(line_values)
+    
+    off_market_books = []
+    max_variance = 0.0
+    
+    for line in lines:
+        if line.line_value is None:
+            continue
+        
+        diff = abs(line.line_value - consensus)
+        max_variance = max(max_variance, diff)
+        
+        if diff > threshold:
+            off_market_books.append({
+                "sportsbook": line.sportsbook,
+                "line": line.line_value,
+                "diff_from_consensus": round(line.line_value - consensus, 2),
+                "odds": line.odds,
+            })
+    
+    return {
+        "is_off_market": len(off_market_books) > 0,
+        "consensus_line": round(consensus, 1),
+        "max_variance": round(max_variance, 1),
+        "off_market_books": off_market_books,
+    }
+
+
 # =============================================================================
 # Stub Model Probability Generator
 # =============================================================================

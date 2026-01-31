@@ -1,7 +1,92 @@
 import { useState, useMemo, useEffect } from 'react';
-import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters } from '../api/public';
+import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
+
+// Component to show per-book line comparison
+function BookLinesPopover({ bookLines, bestBook }: { bookLines: BookLine[] | null; bestBook: string | null }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  if (!bookLines || bookLines.length === 0) {
+    return <span className="text-gray-500">-</span>;
+  }
+  
+  const formatOdds = (odds: number) => (odds > 0 ? `+${odds}` : odds.toString());
+  const formatEv = (ev: number | null) => ev !== null ? `${(ev * 100).toFixed(1)}%` : '-';
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-blue-400 hover:text-blue-300 underline text-xs"
+      >
+        {bookLines.length} book{bookLines.length > 1 ? 's' : ''}
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-50 right-0 mt-1 bg-gray-900 border border-gray-600 rounded-lg shadow-xl p-3 min-w-[280px]">
+          <div className="text-xs text-gray-400 mb-2 font-medium">Sportsbook Comparison</div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-gray-500">
+                <th className="text-left pb-1">Book</th>
+                <th className="text-right pb-1">Line</th>
+                <th className="text-right pb-1">Odds</th>
+                <th className="text-right pb-1">EV</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookLines.map((bl, idx) => (
+                <tr 
+                  key={idx} 
+                  className={bl.sportsbook === bestBook ? 'text-green-400' : 'text-gray-300'}
+                >
+                  <td className="py-0.5">
+                    {bl.sportsbook}
+                    {bl.sportsbook === bestBook && (
+                      <span className="ml-1 text-green-500">★</span>
+                    )}
+                  </td>
+                  <td className="text-right py-0.5">{bl.line ?? '-'}</td>
+                  <td className="text-right py-0.5">{formatOdds(bl.odds)}</td>
+                  <td className={`text-right py-0.5 ${(bl.ev ?? 0) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {formatEv(bl.ev)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="mt-2 text-xs text-gray-500 hover:text-gray-400"
+          >
+            Close
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Badge for line variance (off-market indicator)
+function LineVarianceBadge({ variance }: { variance: number | null }) {
+  if (variance === null || variance === 0) {
+    return null;
+  }
+  
+  // Green if tight (< 0.5), Yellow if moderate (0.5-1.0), Red if high (> 1.0)
+  const colorClass = variance < 0.5 
+    ? 'bg-green-900/50 text-green-400' 
+    : variance < 1.0 
+      ? 'bg-yellow-900/50 text-yellow-400' 
+      : 'bg-red-900/50 text-red-400';
+  
+  return (
+    <span className={`ml-1 text-xs px-1 py-0.5 rounded ${colorClass}`} title="Line variance across books">
+      ±{variance}
+    </span>
+  );
+}
 
 export function PlayerPropsTab() {
   const { sportId, isLoading: sportLoading } = useSportContext();
@@ -158,13 +243,11 @@ export function PlayerPropsTab() {
                   <th className="px-3 py-3 text-right">Line</th>
                   <th className="px-3 py-3 text-center">Side</th>
                   <th className="px-3 py-3 text-right">Odds</th>
+                  <th className="px-3 py-3 text-center">Books</th>
                   <th className="px-3 py-3 text-right">Model</th>
                   <th className="px-3 py-3 text-right">Implied</th>
                   <th className="px-3 py-3 text-right">EV</th>
-                  <th className="px-3 py-3 text-right">Hit 3g</th>
-                  <th className="px-3 py-3 text-right">Hit 5g</th>
                   <th className="px-3 py-3 text-right">Hit 10g</th>
-                  <th className="px-3 py-3 text-right">Hit 30d</th>
                   <th className="px-3 py-3 text-center">Confidence</th>
                   <th className="px-3 py-3 text-left">Start Time</th>
                 </tr>
@@ -187,7 +270,10 @@ export function PlayerPropsTab() {
                         {pick.stat_type}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right text-white font-medium">{pick.line}</td>
+                    <td className="px-3 py-3 text-right text-white font-medium">
+                      {pick.line}
+                      <LineVarianceBadge variance={pick.line_variance} />
+                    </td>
                     <td className="px-3 py-3 text-center">
                       <span
                         className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -206,6 +292,9 @@ export function PlayerPropsTab() {
                     >
                       {formatOdds(pick.odds)}
                     </td>
+                    <td className="px-3 py-3 text-center">
+                      <BookLinesPopover bookLines={pick.book_lines} bestBook={pick.best_book} />
+                    </td>
                     <td className="px-3 py-3 text-right text-green-400">
                       {formatPercent(pick.model_probability)}
                     </td>
@@ -220,16 +309,7 @@ export function PlayerPropsTab() {
                       {formatPercent(pick.expected_value)}
                     </td>
                     <td className="px-3 py-3 text-right text-gray-300">
-                      {formatPercent(pick.hit_rate_3g)}
-                    </td>
-                    <td className="px-3 py-3 text-right text-gray-300">
-                      {formatPercent(pick.hit_rate_5g)}
-                    </td>
-                    <td className="px-3 py-3 text-right text-gray-300">
                       {formatPercent(pick.hit_rate_10g)}
-                    </td>
-                    <td className="px-3 py-3 text-right text-gray-300">
-                      {formatPercent(pick.hit_rate_30d)}
                     </td>
                     <td className="px-3 py-3 text-center">
                       <ConfidenceBadge score={pick.confidence_score} />
