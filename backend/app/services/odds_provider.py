@@ -801,29 +801,29 @@ class XYZOddsProvider(OddsProvider):
         """
         Load season schedule from JSON file.
         
+        Dynamically determines the correct season file based on current date.
+        
         Args:
             sport_key: Sport identifier (basketball_nba, basketball_ncaab, etc.)
         
         Returns:
             Schedule dictionary with 'season' and 'games' keys
         """
-        schedule_files = {
-            "basketball_nba": SCHEDULES_DIR / "nba_2025_26.json",
-            "basketball_ncaab": SCHEDULES_DIR / "ncaab_2025_26.json",
-        }
+        from app.services.season_helper import get_schedule_filepath, get_current_season_label
         
-        schedule_file = schedule_files.get(sport_key)
+        schedule_file = get_schedule_filepath(sport_key, SCHEDULES_DIR)
+        current_season = get_current_season_label(sport_key)
         
-        if not schedule_file or not schedule_file.exists():
+        if not schedule_file.exists():
             logger.warning(f"No schedule file found for {sport_key} at {schedule_file}")
-            return {"season": "2025-26", "games": []}
+            return {"season": current_season, "games": []}
         
         try:
             with open(schedule_file, "r") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Error loading schedule for {sport_key}: {e}")
-            return {"season": "2025-26", "games": []}
+            return {"season": current_season, "games": []}
     
     def _schedule_game_to_api_format(
         self, 

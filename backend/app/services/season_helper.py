@@ -1,0 +1,252 @@
+"""
+Dynamic season/year calculation helpers.
+
+This module provides functions to dynamically determine the current sports season
+based on the current date, avoiding hardcoded year values throughout the codebase.
+"""
+
+from datetime import datetime, date
+from pathlib import Path
+from typing import Tuple
+
+
+# =============================================================================
+# NBA Season Helpers
+# =============================================================================
+
+def get_nba_season_years() -> Tuple[int, int]:
+    """
+    Get the current NBA season start and end years.
+    
+    NBA season typically runs October to June:
+    - Oct-Dec: New season (e.g., in Oct 2025, season is 2025-26)
+    - Jan-Sep: Previous season (e.g., in Jan 2026, season is still 2025-26)
+    
+    Returns:
+        Tuple of (start_year, end_year) - e.g., (2025, 2026)
+    """
+    today = datetime.utcnow().date()
+    year = today.year
+    month = today.month
+    
+    if month >= 10:  # Oct-Dec: new season starts
+        return (year, year + 1)
+    else:  # Jan-Sep: still in season that started last year
+        return (year - 1, year)
+
+
+def get_nba_season_label() -> str:
+    """
+    Get the current NBA season label in format "YYYY-YY".
+    
+    Examples:
+        - In October 2025: "2025-26"
+        - In January 2026: "2025-26"
+        - In October 2026: "2026-27"
+    
+    Returns:
+        Season label string like "2025-26"
+    """
+    start_year, end_year = get_nba_season_years()
+    return f"{start_year}-{end_year % 100:02d}"
+
+
+def get_nba_season_start() -> datetime:
+    """
+    Get the approximate NBA season start date for the current season.
+    
+    NBA regular season typically starts around October 22-24.
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    start_year, _ = get_nba_season_years()
+    # NBA typically starts around October 22
+    return datetime(start_year, 10, 22)
+
+
+# =============================================================================
+# NCAAB Season Helpers
+# =============================================================================
+
+def get_ncaab_season_years() -> Tuple[int, int]:
+    """
+    Get the current NCAAB season start and end years.
+    
+    NCAAB season typically runs November to April:
+    - Nov-Dec: New season starts
+    - Jan-Oct: Previous season for stats purposes
+    
+    Returns:
+        Tuple of (start_year, end_year) - e.g., (2025, 2026)
+    """
+    today = datetime.utcnow().date()
+    year = today.year
+    month = today.month
+    
+    if month >= 11:  # Nov-Dec: new season starts
+        return (year, year + 1)
+    elif month <= 4:  # Jan-Apr: tournament/end of season
+        return (year - 1, year)
+    else:  # May-Oct: offseason, use upcoming season
+        return (year, year + 1)
+
+
+def get_ncaab_season_label() -> str:
+    """
+    Get the current NCAAB season label in format "YYYY-YY".
+    
+    Examples:
+        - In November 2025: "2025-26"
+        - In March 2026: "2025-26"
+    
+    Returns:
+        Season label string like "2025-26"
+    """
+    start_year, end_year = get_ncaab_season_years()
+    return f"{start_year}-{end_year % 100:02d}"
+
+
+def get_ncaab_season_start() -> datetime:
+    """
+    Get the approximate NCAAB season start date for the current season.
+    
+    NCAAB regular season typically starts around November 4.
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    start_year, _ = get_ncaab_season_years()
+    # NCAAB typically starts around November 4
+    return datetime(start_year, 11, 4)
+
+
+# =============================================================================
+# NFL Season Helpers
+# =============================================================================
+
+def get_nfl_season_year() -> int:
+    """
+    Get the current NFL season year.
+    
+    NFL season typically runs September to February:
+    - Sep-Dec: Current year's season
+    - Jan-Feb: Previous year's season (playoffs/Super Bowl)
+    - Mar-Aug: Offseason, use upcoming season
+    
+    Returns:
+        Single year integer (e.g., 2025 for the 2025 season)
+    """
+    today = datetime.utcnow().date()
+    year = today.year
+    month = today.month
+    
+    if month >= 9:  # Sep-Dec: current season
+        return year
+    elif month <= 2:  # Jan-Feb: playoffs from previous year's season
+        return year - 1
+    else:  # Mar-Aug: offseason, use upcoming
+        return year
+
+
+def get_nfl_season_start() -> datetime:
+    """
+    Get the approximate NFL season start date for the current season.
+    
+    NFL regular season typically starts first Thursday after Labor Day.
+    
+    Returns:
+        datetime of approximate season start (naive UTC)
+    """
+    season_year = get_nfl_season_year()
+    # NFL typically starts around September 7
+    return datetime(season_year, 9, 7)
+
+
+# =============================================================================
+# Schedule File Helpers
+# =============================================================================
+
+def get_schedule_filename(sport_key: str) -> str:
+    """
+    Get the dynamic schedule filename for a sport based on current season.
+    
+    Args:
+        sport_key: Sport identifier (e.g., "basketball_nba", "basketball_ncaab")
+    
+    Returns:
+        Filename string like "nba_2025_26.json"
+    """
+    if sport_key == "basketball_nba":
+        start_year, end_year = get_nba_season_years()
+        return f"nba_{start_year}_{end_year % 100:02d}.json"
+    elif sport_key == "basketball_ncaab":
+        start_year, end_year = get_ncaab_season_years()
+        return f"ncaab_{start_year}_{end_year % 100:02d}.json"
+    elif sport_key == "americanfootball_nfl":
+        season_year = get_nfl_season_year()
+        return f"nfl_{season_year}.json"
+    else:
+        # Default to NBA format for unknown sports
+        start_year, end_year = get_nba_season_years()
+        return f"{sport_key}_{start_year}_{end_year % 100:02d}.json"
+
+
+def get_schedule_filepath(sport_key: str, schedules_dir: Path) -> Path:
+    """
+    Get the full path to the schedule file for a sport.
+    
+    Args:
+        sport_key: Sport identifier
+        schedules_dir: Base directory for schedule files
+    
+    Returns:
+        Path to the schedule file
+    """
+    filename = get_schedule_filename(sport_key)
+    return schedules_dir / filename
+
+
+# =============================================================================
+# Generic Season Start Helper
+# =============================================================================
+
+def get_current_season_start(sport_key: str = "basketball_nba") -> datetime:
+    """
+    Get the season start date for any sport.
+    
+    Args:
+        sport_key: Sport identifier
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    if sport_key == "basketball_nba":
+        return get_nba_season_start()
+    elif sport_key == "basketball_ncaab":
+        return get_ncaab_season_start()
+    elif sport_key == "americanfootball_nfl":
+        return get_nfl_season_start()
+    else:
+        # Default to NBA for unknown
+        return get_nba_season_start()
+
+
+def get_current_season_label(sport_key: str = "basketball_nba") -> str:
+    """
+    Get the season label for any sport.
+    
+    Args:
+        sport_key: Sport identifier
+    
+    Returns:
+        Season label string
+    """
+    if sport_key == "basketball_nba":
+        return get_nba_season_label()
+    elif sport_key == "basketball_ncaab":
+        return get_ncaab_season_label()
+    elif sport_key == "americanfootball_nfl":
+        return str(get_nfl_season_year())
+    else:
+        return get_nba_season_label()

@@ -164,17 +164,29 @@ async def debug_schedules():
     
     schedules_dir = Path(__file__).parent.parent.parent / "data" / "schedules"
     
+    # Use dynamic season helpers for schedule filenames
+    from app.services.season_helper import get_schedule_filename, get_current_season_label
+    
     result = {
         "today_eastern": today_str,
         "schedules_dir": str(schedules_dir),
         "schedules_dir_exists": schedules_dir.exists(),
+        "current_nba_season": get_current_season_label("basketball_nba"),
+        "current_ncaab_season": get_current_season_label("basketball_ncaab"),
         "files": {},
     }
     
-    for sport, filename in [("nba", "nba_2025_26.json"), ("ncaab", "ncaab_2025_26.json")]:
+    sport_keys = [
+        ("nba", "basketball_nba"),
+        ("ncaab", "basketball_ncaab"),
+    ]
+    
+    for sport, sport_key in sport_keys:
+        filename = get_schedule_filename(sport_key)
         filepath = schedules_dir / filename
         file_info = {
             "path": str(filepath),
+            "filename": filename,
             "exists": filepath.exists(),
         }
         if filepath.exists():

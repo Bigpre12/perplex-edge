@@ -536,10 +536,13 @@ class StatsProvider:
         external_player_id: str,
     ) -> dict[str, Any]:
         """Return realistic stub season averages for testing."""
+        from app.services.season_helper import get_nba_season_label
+        current_season = get_nba_season_label()
+        
         if "lebron" in external_player_id.lower():
             return {
                 "player_id": external_player_id,
-                "season": "2025-26",
+                "season": current_season,
                 "games_played": 45,
                 "averages": {
                     "PTS": 26.8,
@@ -558,7 +561,7 @@ class StatsProvider:
         elif "curry" in external_player_id.lower():
             return {
                 "player_id": external_player_id,
-                "season": "2025-26",
+                "season": current_season,
                 "games_played": 42,
                 "averages": {
                     "PTS": 28.5,
@@ -577,7 +580,7 @@ class StatsProvider:
         else:
             return {
                 "player_id": external_player_id,
-                "season": "2025-26",
+                "season": current_season,
                 "games_played": 40,
                 "averages": {
                     "PTS": 14.5,

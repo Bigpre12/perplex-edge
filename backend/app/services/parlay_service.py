@@ -476,7 +476,8 @@ async def get_hit_rate_data(
     # Check 100% flags for last 10 and last 5
     # We need actual values for this
     from datetime import datetime
-    season_start = datetime(2025, 10, 22)
+    from app.services.season_helper import get_nba_season_start
+    season_start = get_nba_season_start()
     
     result = await db.execute(
         select(PlayerGameStats.value)
@@ -1232,7 +1233,8 @@ async def explore_alt_lines(
     
     # Get season average
     from datetime import datetime
-    season_start = datetime(2025, 10, 22)
+    from app.services.season_helper import get_nba_season_start
+    season_start = get_nba_season_start()
     
     result = await db.execute(
         select(func.avg(PlayerGameStats.value))

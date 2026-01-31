@@ -1069,10 +1069,9 @@ async def _calculate_hit_rate_season(
         - games_count: Number of games in sample
         - is_100_percent: True if hit rate is 100% with min 3 games
     """
-    # NBA 2025-26 season start: October 22, 2025
-    # NCAAB 2025-26 season start: November 4, 2025
-    # Use earliest for safety
-    season_start = datetime(2025, 10, 22).replace(tzinfo=None)
+    # Dynamically determine season start based on current date
+    from app.services.season_helper import get_nba_season_start
+    season_start = get_nba_season_start().replace(tzinfo=None)
     
     result = await db.execute(
         select(PlayerGameStats.value)
