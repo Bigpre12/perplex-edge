@@ -323,7 +323,7 @@ async def list_player_prop_picks(
         # ModelPick.is_active == True,  # Disabled - show all picks regardless of active status
         ModelPick.player_id.isnot(None),
         ModelPick.player_id.notin_(injured_subquery),  # Exclude injured players
-        Market.market_type == "player_prop",
+        # Market.market_type == "player_prop",  # Disabled - player_id filter is sufficient
         Game.start_time >= today,
         Game.start_time < tomorrow + timedelta(days=7),  # Include upcoming week
     ]
@@ -524,15 +524,12 @@ async def list_game_line_picks(
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
     
-    # Game line market types
-    game_line_types = ["spread", "total", "moneyline"]
-    
     # Base filter conditions
     base_conditions = [
         ModelPick.sport_id == sport_id,
         # ModelPick.is_active == True,  # Disabled - show all picks regardless of active status
         ModelPick.player_id.is_(None),  # Game lines only (no player)
-        Market.market_type.in_(game_line_types),
+        # Market.market_type.in_(["spread", "total", "moneyline"]),  # Disabled - player_id filter is sufficient
         Game.start_time >= today,
         Game.start_time < tomorrow + timedelta(days=7),  # Include upcoming week
     ]
@@ -558,10 +555,11 @@ async def list_game_line_picks(
     
     # Apply filters
     if market_type:
-        if market_type.lower() not in game_line_types:
+        valid_types = ["spread", "total", "moneyline"]
+        if market_type.lower() not in valid_types:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid market_type. Must be one of: {game_line_types}",
+                detail=f"Invalid market_type. Must be one of: {valid_types}",
             )
         query = query.where(Market.market_type == market_type.lower())
     
