@@ -289,17 +289,12 @@ async def list_player_prop_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range using US Eastern time (handles DST)
-    now_et = datetime.now(EASTERN_TZ)
-    utc_now_naive = datetime.now(timezone.utc).replace(tzinfo=None)  # Naive UTC for DB comparison
+    # Calculate today's date range using UTC (games stored with UTC midnight times)
+    utc_now_naive = datetime.utcnow()  # Naive UTC for DB comparison
     
-    # Get today's date boundaries in Eastern time
-    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow_start_et = today_start_et + timedelta(days=1)
-    
-    # Convert to UTC (naive datetimes for PostgreSQL)
-    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
-    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    # Get today's date boundaries in UTC (midnight to midnight)
+    today = utc_now_naive.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow = today + timedelta(days=1)
     
     # Freshness threshold - picks generated within last 24 hours
     # Increased from 12h to 24h to be more resilient to sync gaps
@@ -504,17 +499,12 @@ async def list_game_line_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range using US Eastern time (handles DST)
-    now_et = datetime.now(EASTERN_TZ)
-    utc_now_naive = datetime.now(timezone.utc).replace(tzinfo=None)  # Naive UTC for DB comparison
+    # Calculate today's date range using UTC (games stored with UTC midnight times)
+    utc_now_naive = datetime.utcnow()  # Naive UTC for DB comparison
     
-    # Get today's date boundaries in Eastern time
-    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow_start_et = today_start_et + timedelta(days=1)
-    
-    # Convert to UTC (naive datetimes for PostgreSQL)
-    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
-    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    # Get today's date boundaries in UTC (midnight to midnight)
+    today = utc_now_naive.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow = today + timedelta(days=1)
     
     # Freshness threshold - picks generated within last 24 hours
     # Increased from 12h to 24h to be more resilient to sync gaps
