@@ -7,6 +7,7 @@ Create Date: 2026-01-31 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -28,8 +29,12 @@ def upgrade() -> None:
     """)
     
     # Create user_bets table
-    # Note: create_type=False since we handle enum creation above
-    betstatus_enum = sa.Enum('pending', 'won', 'lost', 'push', 'void', name='betstatus', create_type=False)
+    # Use postgresql.ENUM which properly respects create_type=False in Alembic
+    betstatus_enum = postgresql.ENUM(
+        'pending', 'won', 'lost', 'push', 'void',
+        name='betstatus',
+        create_type=False  # Don't create - already exists from DO $$ block above
+    )
     
     op.create_table(
         'user_bets',
