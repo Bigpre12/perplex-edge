@@ -1196,6 +1196,57 @@ async def run_sync_injuries_job(
         )
 
 
+@router.post("/jobs/sync-injuries-espn")
+async def sync_injuries_from_espn(
+    sport: str = Query("basketball_nba", description="Sport key to sync"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Sync injuries from ESPN (free, no API key needed).
+    
+    This fetches injury data from ESPN's public API and saves it directly
+    to the Injury database table. Use this when INJURY_API_KEY is not configured.
+    """
+    from app.services.etl_injuries import sync_espn_injuries_to_db
+    
+    start_time = time.time()
+    
+    try:
+        result = await sync_espn_injuries_to_db(db, sport)
+        duration_ms = int((time.time() - start_time) * 1000)
+        
+        if "error" in result:
+            return {
+                "job": "sync-injuries-espn",
+                "status": "error",
+                "sport": sport,
+                "duration_ms": duration_ms,
+                "error": result["error"],
+            }
+        
+        return {
+            "job": "sync-injuries-espn",
+            "status": "success",
+            "sport": sport,
+            "duration_ms": duration_ms,
+            "counts": result,
+        }
+    
+    except Exception as e:
+        duration_ms = int((time.time() - start_time) * 1000)
+        logger.error(f"ESPN injury sync failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "job": "sync-injuries-espn",
+                "status": "error",
+                "sport": sport,
+                "duration_ms": duration_ms,
+                "error": str(e),
+            },
+        )
+
+
 @router.post("/jobs/generate-picks")
 async def run_generate_picks_job(
     sport: str = Query("basketball_nba", description="Sport key to generate picks for"),

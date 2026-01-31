@@ -476,3 +476,149 @@ async def clear_old_injuries(
     
     logger.info(f"Cleared {deleted} old injury records for sport {sport_id}")
     return deleted
+
+
+# =============================================================================
+# ESPN Injury Sync (no API key required)
+# =============================================================================
+
+async def sync_espn_injuries_to_db(
+    db: AsyncSession,
+    sport_key: str = "basketball_nba",
+) -> dict:
+    """
+    Fetch injuries from ESPN and save to Injury table.
+    
+    This uses the free ESPN API (no key required) and saves data directly
+    to the Injury table so the injury filter works correctly.
+    
+    Args:
+        db: Database session
+        sport_key: Sport key (e.g., "basketball_nba")
+    
+    Returns:
+        Dict with sync stats (created, updated, not_found)
+    """
+    from app.data.providers.espn import ESPNProvider
+    
+    logger.info(f"Starting ESPN injury sync for {sport_key}")
+    
+    # Get sport_id from league code
+    league_code = SPORT_KEY_TO_LEAGUE.get(sport_key)
+    if not league_code:
+        return {"error": f"Unknown sport key: {sport_key}"}
+    
+    result = await db.execute(
+        select(Sport).where(Sport.league_code == league_code)
+    )
+    sport = result.scalar_one_or_none()
+    if not sport:
+        return {"error": f"Sport not found for league: {league_code}"}
+    
+    # Fetch from ESPN
+    try:
+        async with ESPNProvider() as provider:
+            injuries_data = await provider.fetch_injuries(sport_key)
+    except Exception as e:
+        logger.error(f"Failed to fetch ESPN injuries: {e}")
+        return {"error": f"ESPN fetch failed: {str(e)}"}
+    
+    if not injuries_data:
+        return {"error": "No injury data returned from ESPN"}
+    
+    # Process each team's injuries
+    stats = {"created": 0, "updated": 0, "not_found": 0, "skipped": 0}
+    now = datetime.utcnow()
+    
+    for team_entry in injuries_data:
+        team_name = team_entry.get("displayName", "Unknown")
+        team_injuries = team_entry.get("injuries", [])
+        
+        for injury_entry in team_injuries:
+            # Get player info from the injury entry
+            athlete = injury_entry.get("athlete", {})
+            player_name = athlete.get("displayName")
+            
+            if not player_name:
+                stats["skipped"] += 1
+                continue
+            
+            # Try to find player by name (case-insensitive partial match)
+            player_result = await db.execute(
+                select(Player).where(
+                    and_(
+                        Player.sport_id == sport.id,
+                        Player.name.ilike(f"%{player_name}%"),
+                    )
+                )
+            )
+            player = player_result.scalar_one_or_none()
+            
+            if not player:
+                # Try exact match
+                player_result = await db.execute(
+                    select(Player).where(
+                        and_(
+                            Player.sport_id == sport.id,
+                            Player.name == player_name,
+                        )
+                    )
+                )
+                player = player_result.scalar_one_or_none()
+            
+            if not player:
+                logger.debug(f"Player not found: {player_name}")
+                stats["not_found"] += 1
+                continue
+            
+            # Extract injury details
+            status = injury_entry.get("status", "Unknown").upper()
+            # Normalize status
+            if status in ["O", "OUT"]:
+                status = "OUT"
+            elif status in ["D", "DOUBTFUL"]:
+                status = "DOUBTFUL"
+            elif status in ["Q", "QUESTIONABLE"]:
+                status = "QUESTIONABLE"
+            elif status in ["P", "PROBABLE"]:
+                status = "PROBABLE"
+            elif status in ["GTD", "GAME TIME DECISION", "DAY-TO-DAY"]:
+                status = "GTD"
+            
+            detail = injury_entry.get("longComment") or injury_entry.get("shortComment") or injury_entry.get("description")
+            
+            # Check for existing injury record
+            existing_result = await db.execute(
+                select(Injury).where(Injury.player_id == player.id)
+            )
+            existing = existing_result.scalar_one_or_none()
+            
+            if existing:
+                # Update existing
+                existing.status = status
+                existing.status_detail = detail[:500] if detail else None
+                existing.updated_at = now
+                existing.source = "espn"
+                stats["updated"] += 1
+            else:
+                # Create new
+                new_injury = Injury(
+                    sport_id=sport.id,
+                    player_id=player.id,
+                    status=status,
+                    status_detail=detail[:500] if detail else None,
+                    source="espn",
+                    updated_at=now,
+                )
+                db.add(new_injury)
+                stats["created"] += 1
+    
+    await db.commit()
+    
+    logger.info(
+        f"ESPN injury sync completed for {sport_key}: "
+        f"created={stats['created']}, updated={stats['updated']}, "
+        f"not_found={stats['not_found']}, skipped={stats['skipped']}"
+    )
+    
+    return stats
