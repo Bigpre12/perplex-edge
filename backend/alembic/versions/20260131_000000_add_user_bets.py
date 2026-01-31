@@ -7,7 +7,6 @@ Create Date: 2026-01-31 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -28,14 +27,8 @@ def upgrade() -> None:
         END$$;
     """)
     
-    # Create user_bets table
-    # Use postgresql.ENUM which properly respects create_type=False in Alembic
-    betstatus_enum = postgresql.ENUM(
-        'pending', 'won', 'lost', 'push', 'void',
-        name='betstatus',
-        create_type=False  # Don't create - already exists from DO $$ block above
-    )
-    
+    # Create user_bets table WITHOUT the status column first
+    # (to avoid SQLAlchemy trying to create the enum type)
     op.create_table(
         'user_bets',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -56,9 +49,6 @@ def upgrade() -> None:
         
         # Stake
         sa.Column('stake', sa.Float(), nullable=False, server_default='1.0'),
-        
-        # Status
-        sa.Column('status', betstatus_enum, nullable=False, server_default='pending'),
         
         # Result details
         sa.Column('actual_value', sa.Float(), nullable=True),
@@ -81,6 +71,9 @@ def upgrade() -> None:
         
         sa.PrimaryKeyConstraint('id'),
     )
+    
+    # Add the status column using raw SQL to bypass SQLAlchemy's enum handling
+    op.execute("ALTER TABLE user_bets ADD COLUMN status betstatus NOT NULL DEFAULT 'pending'")
     
     # Create indexes
     op.create_index('ix_user_bets_sport', 'user_bets', ['sport_id'])
