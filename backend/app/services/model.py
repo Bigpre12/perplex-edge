@@ -678,8 +678,8 @@ async def generate_model_picks_for_today(
         )
         stats["picks_deactivated"] = deactivated.rowcount
         
-        # Get today's games
-        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        # Get today's games (timezone-naive to match DB column)
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + timedelta(days=1)
         
         result = await db.execute(
