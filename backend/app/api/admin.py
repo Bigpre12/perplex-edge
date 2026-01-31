@@ -1,8 +1,11 @@
 """Admin API endpoints for triggering ETL jobs and picks generation."""
 
+import logging
 import time
 from datetime import datetime, timezone
 from typing import Optional, Dict
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -543,28 +543,28 @@ async def sync_espn_injuries_to_db(
                 stats["skipped"] += 1
                 continue
             
-            # Try to find player by name (case-insensitive partial match)
+            # Try to find player by exact name first
             player_result = await db.execute(
                 select(Player).where(
                     and_(
                         Player.sport_id == sport.id,
-                        Player.name.ilike(f"%{player_name}%"),
+                        Player.name == player_name,
                     )
                 )
             )
-            player = player_result.scalar_one_or_none()
+            player = player_result.scalars().first()
             
             if not player:
-                # Try exact match
+                # Try case-insensitive match (use first() to handle multiple matches)
                 player_result = await db.execute(
                     select(Player).where(
                         and_(
                             Player.sport_id == sport.id,
-                            Player.name == player_name,
+                            Player.name.ilike(player_name),
                         )
                     )
                 )
-                player = player_result.scalar_one_or_none()
+                player = player_result.scalars().first()
             
             if not player:
                 logger.debug(f"Player not found: {player_name}")
