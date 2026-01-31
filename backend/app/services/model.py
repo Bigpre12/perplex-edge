@@ -801,7 +801,7 @@ async def generate_model_picks_for_today(
                     existing_pick.hit_rate_30d = hit_rate_30d
                     existing_pick.confidence_score = confidence
                     existing_pick.is_active = True
-                    existing_pick.generated_at = datetime.now(timezone.utc)
+                    existing_pick.generated_at = datetime.now(timezone.utc).replace(tzinfo=None)
                     stats["picks_updated"] += 1
                 else:
                     # Create new pick
