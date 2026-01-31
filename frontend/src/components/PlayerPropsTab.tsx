@@ -17,6 +17,7 @@ export function PlayerPropsTab() {
       stat_type: statType || undefined,
       min_confidence: minConfidence > 0 ? minConfidence : undefined,
       min_ev: minEv > 0 ? minEv : undefined,
+      fresh_only: true,  // Only show picks for games that haven't started
       limit: 100,
     }),
     [statType, minConfidence, minEv]

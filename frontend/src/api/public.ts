@@ -122,20 +122,22 @@ export interface GameLinePickList {
 
 export interface PlayerPropFilters {
   stat_type?: string;
-    [key: string]: unknown;
+  [key: string]: unknown;
   min_confidence?: number;
   min_ev?: number;
   game_id?: number;
+  fresh_only?: boolean;  // Only show picks for games that haven't started
   limit?: number;
   offset?: number;
 }
 
 export interface GameLineFilters {
   market_type?: string;
-    [key: string]: unknown;
+  [key: string]: unknown;
   min_confidence?: number;
   min_ev?: number;
   game_id?: number;
+  fresh_only?: boolean;  // Only show picks for games that haven't started
   limit?: number;
   offset?: number;
 }

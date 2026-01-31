@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, aliased
 
 from app.core.database import get_db
-from app.models import Sport, Team, Game, Market, Player, ModelPick, Line
+from app.models import Sport, Team, Game, Market, Player, ModelPick, Line, Injury
 from app.schemas.public import (
     PublicSport,
     PublicSportList,
@@ -173,7 +173,7 @@ async def list_player_prop_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
-    fresh_only: bool = Query(False, description="Only show fresh picks (generated within 12h, games not started)"),
+    fresh_only: bool = Query(True, description="Only show fresh picks (generated within 12h, games not started)"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -216,11 +216,19 @@ async def list_player_prop_picks(
     HomeTeam = aliased(Team)
     AwayTeam = aliased(Team)
     
+    # Subquery to find injured player IDs (filter them out)
+    injured_subquery = (
+        select(Injury.player_id)
+        .where(Injury.status.in_(["OUT", "DOUBTFUL", "GTD", "DAY_TO_DAY"]))
+        .scalar_subquery()
+    )
+    
     # Base filter conditions
     base_conditions = [
         ModelPick.sport_id == sport_id,
         ModelPick.is_active == True,
         ModelPick.player_id.isnot(None),
+        ModelPick.player_id.notin_(injured_subquery),  # Exclude injured players
         Market.market_type == "player_prop",
         Game.start_time >= today,
         Game.start_time < tomorrow,
@@ -343,7 +351,7 @@ async def list_game_line_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
-    fresh_only: bool = Query(False, description="Only show fresh picks (generated within 12h, games not started)"),
+    fresh_only: bool = Query(True, description="Only show fresh picks (generated within 12h, games not started)"),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
