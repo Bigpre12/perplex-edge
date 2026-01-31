@@ -320,7 +320,7 @@ async def list_player_prop_picks(
     # Base filter conditions
     base_conditions = [
         ModelPick.sport_id == sport_id,
-        ModelPick.is_active == True,
+        # ModelPick.is_active == True,  # Disabled - show all picks regardless of active status
         ModelPick.player_id.isnot(None),
         ModelPick.player_id.notin_(injured_subquery),  # Exclude injured players
         Market.market_type == "player_prop",
@@ -530,7 +530,7 @@ async def list_game_line_picks(
     # Base filter conditions
     base_conditions = [
         ModelPick.sport_id == sport_id,
-        ModelPick.is_active == True,
+        # ModelPick.is_active == True,  # Disabled - show all picks regardless of active status
         ModelPick.player_id.is_(None),  # Game lines only (no player)
         Market.market_type.in_(game_line_types),
         Game.start_time >= today,

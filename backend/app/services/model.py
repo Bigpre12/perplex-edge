@@ -665,19 +665,6 @@ async def generate_model_picks_for_today(
         
         stats["sport"] = sport.league_code
         
-        # Deactivate old picks for this sport
-        deactivated = await db.execute(
-            update(ModelPick)
-            .where(
-                and_(
-                    ModelPick.sport_id == sport.id,
-                    ModelPick.is_active == True,
-                )
-            )
-            .values(is_active=False)
-        )
-        stats["picks_deactivated"] = deactivated.rowcount
-        
         # Get today's games (timezone-naive to match DB column)
         today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + timedelta(days=1)
@@ -702,6 +689,20 @@ async def generate_model_picks_for_today(
         
         logger.info(f"Processing {len(games)} games for {sport_key}")
         game_ids = [g.id for g in games]
+        
+        # Only deactivate picks for games being processed (not ALL picks)
+        deactivated = await db.execute(
+            update(ModelPick)
+            .where(
+                and_(
+                    ModelPick.sport_id == sport.id,
+                    ModelPick.game_id.in_(game_ids),
+                    ModelPick.is_active == True,
+                )
+            )
+            .values(is_active=False)
+        )
+        stats["picks_deactivated"] = deactivated.rowcount
         
         # Get all current lines for today's games
         result = await db.execute(
