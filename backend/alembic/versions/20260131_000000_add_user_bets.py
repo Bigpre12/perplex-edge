@@ -17,10 +17,20 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create bet_status enum type
-    op.execute("CREATE TYPE betstatus AS ENUM ('pending', 'won', 'lost', 'push', 'void')")
+    # Create bet_status enum type if it doesn't exist
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'betstatus') THEN
+                CREATE TYPE betstatus AS ENUM ('pending', 'won', 'lost', 'push', 'void');
+            END IF;
+        END$$;
+    """)
     
     # Create user_bets table
+    # Note: create_type=False since we handle enum creation above
+    betstatus_enum = sa.Enum('pending', 'won', 'lost', 'push', 'void', name='betstatus', create_type=False)
+    
     op.create_table(
         'user_bets',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -43,8 +53,7 @@ def upgrade() -> None:
         sa.Column('stake', sa.Float(), nullable=False, server_default='1.0'),
         
         # Status
-        sa.Column('status', sa.Enum('pending', 'won', 'lost', 'push', 'void', name='betstatus'), 
-                  nullable=False, server_default='pending'),
+        sa.Column('status', betstatus_enum, nullable=False, server_default='pending'),
         
         # Result details
         sa.Column('actual_value', sa.Float(), nullable=True),
@@ -93,5 +102,5 @@ def downgrade() -> None:
     # Drop table
     op.drop_table('user_bets')
     
-    # Drop enum type
-    op.execute("DROP TYPE betstatus")
+    # Drop enum type if it exists
+    op.execute("DROP TYPE IF EXISTS betstatus")
