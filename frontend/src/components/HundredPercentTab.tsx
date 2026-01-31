@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { use100PercentProps, HundredPercentProp } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
@@ -75,16 +75,31 @@ export function HundredPercentTab() {
     });
   };
   
-  // Log state for debugging
-  console.log('[HundredPercentTab] State:', {
-    sportId,
-    sportLoading,
-    window,
-    dataTotal: data?.total,
-    itemCount: data?.items?.length,
-    isLoading,
-    error: error?.message,
-  });
+  // Debug logging - only log on actual state changes, not every render
+  const prevStateRef = useRef<string | null>(null);
+  useEffect(() => {
+    const currentState = JSON.stringify({
+      sportId,
+      window,
+      dataTotal: data?.total,
+      itemCount: data?.items?.length,
+      isLoading,
+      hasError: !!error,
+    });
+    
+    // Only log if state actually changed
+    if (prevStateRef.current !== currentState) {
+      console.log('[HundredPercentTab] State changed:', {
+        sportId,
+        window,
+        dataTotal: data?.total,
+        itemCount: data?.items?.length,
+        isLoading,
+        error: error?.message,
+      });
+      prevStateRef.current = currentState;
+    }
+  }, [sportId, window, data?.total, data?.items?.length, isLoading, error]);
   
   if (sportLoading || !sportId) {
     return (
@@ -99,9 +114,9 @@ export function HundredPercentTab() {
       {/* Header with window selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white">100% Hit Rate Props</h2>
+          <h2 className="text-xl font-bold text-white">High Hit Rate Props</h2>
           <p className="text-sm text-gray-400">
-            Props where the player has hit EVERY game in the selected window
+            Props with the highest hit rates - 100% when available, 80%+ otherwise
           </p>
         </div>
         
@@ -130,7 +145,7 @@ export function HundredPercentTab() {
       {isLoading && (
         <div className="p-8 text-center text-gray-400">
           <div className="animate-spin inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full mr-2" />
-          Finding 100% hit rate props...
+          Finding high hit rate props...
         </div>
       )}
       
@@ -145,9 +160,9 @@ export function HundredPercentTab() {
       {!isLoading && !error && data?.items?.length === 0 && (
         <div className="p-8 text-center">
           <div className="text-5xl mb-4">🎯</div>
-          <div className="text-gray-400 text-lg">No 100% hit rate props found</div>
+          <div className="text-gray-400 text-lg">No high hit rate props found</div>
           <div className="text-gray-500 text-sm mt-2">
-            Try a different time window or check back later
+            No props with 80%+ hit rates available. Try a different time window or check back later.
           </div>
         </div>
       )}
@@ -260,7 +275,7 @@ export function HundredPercentTab() {
       {/* Summary */}
       {!isLoading && !error && data && data.items.length > 0 && (
         <div className="text-center text-sm text-gray-500 py-2">
-          Showing {data.items.length} of {data.total} props with 100% hit rate ({WINDOW_OPTIONS.find(o => o.value === window)?.label})
+          Showing {data.items.length} of {data.total} high hit rate props ({WINDOW_OPTIONS.find(o => o.value === window)?.label})
         </div>
       )}
     </div>

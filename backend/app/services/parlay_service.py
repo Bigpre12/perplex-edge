@@ -855,18 +855,23 @@ async def get_100_percent_props(
     sport_id: int,
     window: str = "season",  # "season", "last_10", "last_5"
     limit: int = 50,
+    min_hit_rate: float = 0.80,  # Fallback threshold if no 100% props exist
 ) -> list[HundredPercentProp]:
     """
-    Get props with 100% hit rate over specified window.
+    Get props with high hit rates over specified window.
+    
+    First tries to find 100% hit rate props. If none found, falls back to
+    showing props with hit_rate >= min_hit_rate, sorted by hit rate descending.
     
     Args:
         db: Database session
         sport_id: Sport ID
         window: Time window - "season", "last_10", "last_5"
         limit: Maximum results
+        min_hit_rate: Minimum hit rate threshold for fallback (0.0-1.0, default 0.80 = 80%)
     
     Returns:
-        List of HundredPercentProp
+        List of HundredPercentProp sorted by hit rate (100% first, then by rate desc)
     """
     from datetime import datetime, timezone
     
@@ -890,7 +895,9 @@ async def get_100_percent_props(
     )
     rows = result.all()
     
-    props = []
+    perfect_props = []  # 100% hit rate props
+    high_hit_props = []  # Props meeting min_hit_rate threshold
+    
     for pick, player, game, team, market in rows:
         # Skip picks with invalid line values
         if pick.line_value is None or pick.line_value == 0:
@@ -903,12 +910,22 @@ async def get_100_percent_props(
             db, player.id, stat_type, pick.line_value, pick.side, sport_id=sport_id
         )
         
-        # Check if meets 100% criteria for selected window
-        if window == "season" and not hr_data["is_100_season"]:
-            continue
-        elif window == "last_10" and not hr_data["is_100_last_10"]:
-            continue
-        elif window == "last_5" and not hr_data["is_100_last_5"]:
+        # Determine hit rate and 100% flag for selected window
+        if window == "season":
+            hit_rate = hr_data["hit_rate_season"]
+            is_100 = hr_data["is_100_season"]
+            games_count = hr_data["games_season"]
+        elif window == "last_10":
+            hit_rate = hr_data["hit_rate_last_10"]
+            is_100 = hr_data["is_100_last_10"]
+            games_count = hr_data["games_last_10"]
+        else:  # last_5
+            hit_rate = hr_data["hit_rate_last_5"]
+            is_100 = hr_data["is_100_last_5"]
+            games_count = hr_data["games_last_5"]
+        
+        # Skip if no data or insufficient games
+        if hit_rate is None or games_count < 3:
             continue
         
         # Get opponent team
@@ -928,41 +945,49 @@ async def get_100_percent_props(
         else:
             opponent = home_team
         
-        props.append(
-            HundredPercentProp(
-                pick_id=pick.id,
-                player_name=player.name,
-                player_id=player.id,
-                team=team.name if team else "Unknown",
-                team_abbr=team.abbreviation if team else "UNK",
-                opponent_team=opponent.name if opponent else "Unknown",
-                opponent_abbr=opponent.abbreviation if opponent else None,
-                stat_type=stat_type,
-                line=pick.line_value,
-                side=pick.side,
-                odds=pick.odds,
-                sportsbook=None,
-                hit_rate_season=hr_data["hit_rate_season"],
-                games_season=hr_data["games_season"],
-                hit_rate_last_10=hr_data["hit_rate_last_10"],
-                games_last_10=hr_data["games_last_10"],
-                hit_rate_last_5=hr_data["hit_rate_last_5"],
-                games_last_5=hr_data["games_last_5"],
-                is_100_season=hr_data["is_100_season"],
-                is_100_last_10=hr_data["is_100_last_10"],
-                is_100_last_5=hr_data["is_100_last_5"],
-                model_probability=pick.model_probability,
-                expected_value=pick.expected_value,
-                confidence_score=pick.confidence_score,
-                game_id=game.id,
-                game_start_time=game.start_time,
-            )
+        prop = HundredPercentProp(
+            pick_id=pick.id,
+            player_name=player.name,
+            player_id=player.id,
+            team=team.name if team else "Unknown",
+            team_abbr=team.abbreviation if team else "UNK",
+            opponent_team=opponent.name if opponent else "Unknown",
+            opponent_abbr=opponent.abbreviation if opponent else None,
+            stat_type=stat_type,
+            line=pick.line_value,
+            side=pick.side,
+            odds=pick.odds,
+            sportsbook=None,
+            hit_rate_season=hr_data["hit_rate_season"],
+            games_season=hr_data["games_season"],
+            hit_rate_last_10=hr_data["hit_rate_last_10"],
+            games_last_10=hr_data["games_last_10"],
+            hit_rate_last_5=hr_data["hit_rate_last_5"],
+            games_last_5=hr_data["games_last_5"],
+            is_100_season=hr_data["is_100_season"],
+            is_100_last_10=hr_data["is_100_last_10"],
+            is_100_last_5=hr_data["is_100_last_5"],
+            model_probability=pick.model_probability,
+            expected_value=pick.expected_value,
+            confidence_score=pick.confidence_score,
+            game_id=game.id,
+            game_start_time=game.start_time,
         )
+        
+        # Categorize: 100% props vs high hit rate props
+        if is_100:
+            perfect_props.append((prop, hit_rate))
+        elif hit_rate >= min_hit_rate:
+            high_hit_props.append((prop, hit_rate))
     
-    # Sort by EV descending
-    props.sort(key=lambda p: p.expected_value, reverse=True)
+    # If we have 100% props, return those sorted by EV
+    if perfect_props:
+        perfect_props.sort(key=lambda x: (x[1], x[0].expected_value or 0), reverse=True)
+        return [p[0] for p in perfect_props[:limit]]
     
-    return props[:limit]
+    # Otherwise, return high hit rate props sorted by hit rate desc, then EV desc
+    high_hit_props.sort(key=lambda x: (x[1], x[0].expected_value or 0), reverse=True)
+    return [p[0] for p in high_hit_props[:limit]]
 
 
 # =============================================================================

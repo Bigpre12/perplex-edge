@@ -709,21 +709,24 @@ async def list_100_percent_props(
     sport_id: int,
     window: str = Query("last_5", description="Time window: season, last_10, last_5"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
+    min_hit_rate: float = Query(0.80, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.80 = 80%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get player props with 100% hit rate over specified time window.
+    Get player props with high hit rates over specified time window.
     
-    These are props where the player has hit EVERY game in the window.
+    First returns props with 100% hit rate. If none found, falls back to 
+    showing props with hit_rate >= min_hit_rate, sorted by hit rate descending.
     Great for high-floor parlay legs.
     
     Args:
         sport_id: Sport database ID
         window: Time window - "season", "last_10", "last_5"
         limit: Maximum results to return
+        min_hit_rate: Minimum hit rate for fallback (0.0-1.0, default 0.80)
     
     Returns:
-        List of 100% hit rate props with hit rate stats and model outputs
+        List of high hit rate props with hit rate stats and model outputs
     """
     from app.services.parlay_service import get_100_percent_props
     from app.schemas.public import HundredPercentPropList
@@ -741,7 +744,7 @@ async def list_100_percent_props(
             detail=f"Invalid window: {window}. Valid options: {valid_windows}",
         )
     
-    props = await get_100_percent_props(db, sport_id, window, limit)
+    props = await get_100_percent_props(db, sport_id, window, limit, min_hit_rate)
     
     return HundredPercentPropList(
         items=props,
@@ -756,12 +759,14 @@ async def hitrate_100_alias(
     sport: str = Query(..., description="Sport key (nba, ncaab, nfl) or sport_id"),
     window: str = Query("last_5", description="Time window: season, last_10, last_5"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
+    min_hit_rate: float = Query(0.80, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.80 = 80%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get player props with 100% hit rate (alias endpoint).
+    Get player props with high hit rates (alias endpoint).
     
     This is a convenience alias for /sports/{sport_id}/picks/100pct-hits.
+    Returns 100% hit rate props first, then falls back to high hit rate props.
     
     Accepts sport as a key (nba, ncaab, nfl) or numeric sport_id.
     """
@@ -801,7 +806,7 @@ async def hitrate_100_alias(
             detail=f"Invalid window: {window}. Valid options: {valid_windows}",
         )
     
-    props = await get_100_percent_props(db, sport_obj.id, window, limit)
+    props = await get_100_percent_props(db, sport_obj.id, window, limit, min_hit_rate)
     
     return HundredPercentPropList(
         items=props,
@@ -854,6 +859,7 @@ async def build_parlay(
         ParlayBuilderResponse with recommended parlays
     """
     from app.services.parlay_service import build_parlays
+    from app.schemas.public import ParlayBuilderResponse
     
     # Validate sport exists
     sport = await db.get(Sport, sport_id)
@@ -876,16 +882,32 @@ async def build_parlay(
             detail=f"Invalid correlation risk: {max_correlation_risk}. Valid options: {valid_risk_levels}",
         )
     
-    return await build_parlays(
-        db,
-        sport_id,
-        leg_count=leg_count,
-        include_100_pct=include_100_pct,
-        min_leg_grade=min_leg_grade.upper(),
-        max_results=max_results,
-        block_correlated=block_correlated,
-        max_correlation_risk=max_correlation_risk.upper(),
-    )
+    # Wrap in try/except to ensure proper response even on errors
+    # This prevents CORS issues when the endpoint crashes
+    try:
+        return await build_parlays(
+            db,
+            sport_id,
+            leg_count=leg_count,
+            include_100_pct=include_100_pct,
+            min_leg_grade=min_leg_grade.upper(),
+            max_results=max_results,
+            block_correlated=block_correlated,
+            max_correlation_risk=max_correlation_risk.upper(),
+        )
+    except Exception as e:
+        logger.error(f"Parlay builder error for sport {sport_id}: {e}", exc_info=True)
+        # Return empty response instead of 500 error to prevent CORS issues
+        return ParlayBuilderResponse(
+            parlays=[],
+            total_candidates=0,
+            leg_count=leg_count,
+            filters_applied={
+                "min_leg_grade": min_leg_grade.upper(),
+                "include_100_pct": include_100_pct,
+                "sport_id": sport_id,
+            },
+        )
 
 
 # =============================================================================

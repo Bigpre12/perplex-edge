@@ -779,6 +779,8 @@ async def generate_model_picks_for_today(
                     continue
                 
                 # Check for existing pick to update
+                # Use scalars().first() instead of scalar_one_or_none() to handle
+                # potential duplicate picks in the database gracefully
                 result = await db.execute(
                     select(ModelPick).where(
                         and_(
@@ -789,7 +791,7 @@ async def generate_model_picks_for_today(
                         )
                     )
                 )
-                existing_pick = result.scalar_one_or_none()
+                existing_pick = result.scalars().first()
                 
                 if existing_pick:
                     # Update existing pick

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 
@@ -288,16 +288,30 @@ export function ParlayBuilder() {
   // Fetch parlays
   const { data, isLoading, error } = useParlayBuilder(sportId, filters);
   
-  // Log state for debugging
-  console.log('[ParlayBuilder] State:', {
-    sportId,
-    sportLoading,
-    filters,
-    parlaysCount: data?.parlays?.length,
-    totalCandidates: data?.total_candidates,
-    isLoading,
-    error: error?.message,
-  });
+  // Debug logging - only log on actual state changes, not every render
+  const prevStateRef = useRef<string | null>(null);
+  useEffect(() => {
+    const currentState = JSON.stringify({
+      sportId,
+      parlaysCount: data?.parlays?.length,
+      totalCandidates: data?.total_candidates,
+      isLoading,
+      hasError: !!error,
+    });
+    
+    // Only log if state actually changed
+    if (prevStateRef.current !== currentState) {
+      console.log('[ParlayBuilder] State changed:', {
+        sportId,
+        filters,
+        parlaysCount: data?.parlays?.length,
+        totalCandidates: data?.total_candidates,
+        isLoading,
+        error: error?.message,
+      });
+      prevStateRef.current = currentState;
+    }
+  }, [sportId, filters, data?.parlays?.length, data?.total_candidates, isLoading, error]);
   
   if (sportLoading || !sportId) {
     return (
