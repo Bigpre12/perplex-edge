@@ -555,7 +555,7 @@ async def build_parlay_legs(
                 Game.sport_id == sport_id,
                 # ModelPick.is_active == True,  # Disabled - show all picks
                 ModelPick.player_id.isnot(None),  # Player props only
-                Game.start_time > now,  # Upcoming games only
+                # Game.start_time > now,  # Disabled - games stored at midnight UTC
             )
         )
     )
@@ -872,19 +872,19 @@ async def get_100_percent_props(
     
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     
-    # Query active player prop picks
+    # Query player prop picks (removed is_active and start_time filters)
     result = await db.execute(
         select(ModelPick, Player, Game, Team, Market)
         .join(Player, ModelPick.player_id == Player.id)
         .join(Game, ModelPick.game_id == Game.id)
-        .join(Team, Player.team_id == Team.id)
+        .outerjoin(Team, Player.team_id == Team.id)  # Outerjoin to include players without team
         .join(Market, ModelPick.market_id == Market.id)
         .where(
             and_(
                 Game.sport_id == sport_id,
-                ModelPick.is_active == True,
+                # ModelPick.is_active == True,  # Disabled - show all picks
                 ModelPick.player_id.isnot(None),
-                Game.start_time > now,
+                # Game.start_time > now,  # Disabled - games stored at midnight UTC
             )
         )
     )
@@ -933,8 +933,8 @@ async def get_100_percent_props(
                 pick_id=pick.id,
                 player_name=player.name,
                 player_id=player.id,
-                team=team.name,
-                team_abbr=team.abbreviation,
+                team=team.name if team else "Unknown",
+                team_abbr=team.abbreviation if team else "UNK",
                 opponent_team=opponent.name if opponent else "Unknown",
                 opponent_abbr=opponent.abbreviation if opponent else None,
                 stat_type=stat_type,

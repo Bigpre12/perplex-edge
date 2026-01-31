@@ -293,104 +293,132 @@ async def get_bet_stats(
         sport_id: Optional filter by sport
         days_back: Optional filter to last N days
     """
-    
-    # Build base filter conditions
-    conditions = []
-    if sport_id:
-        conditions.append(UserBet.sport_id == sport_id)
-    if days_back:
-        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days_back)
-        conditions.append(UserBet.placed_at >= cutoff)
-    
-    base_filter = and_(*conditions) if conditions else True
-    
-    # Get total counts
-    total_bets = await db.scalar(
-        select(func.count(UserBet.id)).where(base_filter)
-    ) or 0
-    
-    pending_bets = await db.scalar(
-        select(func.count(UserBet.id)).where(
-            and_(base_filter, UserBet.status == BetStatus.PENDING)
+    try:
+        # Build base filter conditions
+        conditions = []
+        if sport_id:
+            conditions.append(UserBet.sport_id == sport_id)
+        if days_back:
+            cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days_back)
+            conditions.append(UserBet.placed_at >= cutoff)
+        
+        base_filter = and_(*conditions) if conditions else True
+        
+        # Get total counts
+        total_bets = await db.scalar(
+            select(func.count(UserBet.id)).where(base_filter)
+        ) or 0
+        
+        pending_bets = await db.scalar(
+            select(func.count(UserBet.id)).where(
+                and_(base_filter, UserBet.status == BetStatus.PENDING)
+            )
+        ) or 0
+        
+        settled_bets = total_bets - pending_bets
+        
+        # Get status breakdown for settled bets
+        settled_filter = and_(base_filter, UserBet.status != BetStatus.PENDING)
+        
+        won = await db.scalar(
+            select(func.count(UserBet.id)).where(
+                and_(base_filter, UserBet.status == BetStatus.WON)
+            )
+        ) or 0
+        
+        lost = await db.scalar(
+            select(func.count(UserBet.id)).where(
+                and_(base_filter, UserBet.status == BetStatus.LOST)
+            )
+        ) or 0
+        
+        pushed = await db.scalar(
+            select(func.count(UserBet.id)).where(
+                and_(base_filter, UserBet.status == BetStatus.PUSH)
+            )
+        ) or 0
+        
+        voided = await db.scalar(
+            select(func.count(UserBet.id)).where(
+                and_(base_filter, UserBet.status == BetStatus.VOID)
+            )
+        ) or 0
+        
+        # Calculate totals
+        total_stake = await db.scalar(
+            select(func.sum(UserBet.stake)).where(settled_filter)
+        ) or 0.0
+        
+        total_profit_loss = await db.scalar(
+            select(func.sum(UserBet.profit_loss)).where(settled_filter)
+        ) or 0.0
+        
+        # Calculate ROI and win rate
+        overall_roi = (total_profit_loss / total_stake * 100) if total_stake > 0 else 0.0
+        overall_win_rate = (won / (won + lost)) if (won + lost) > 0 else 0.0
+        
+        # CLV stats
+        clv_stats = await _calculate_clv_stats(db, base_filter)
+        
+        # ROI by market
+        by_market = await _roi_by_category(db, base_filter, UserBet.market_type)
+        
+        # ROI by sportsbook
+        by_sportsbook = await _roi_by_category(db, base_filter, UserBet.sportsbook)
+        
+        # ROI by sport
+        by_sport = await _roi_by_sport(db, base_filter)
+        
+        # Top/worst players
+        top_players, worst_players = await _roi_by_player(db, base_filter, min_bets=5)
+        
+        return BetStatsResponse(
+            total_bets=total_bets,
+            settled_bets=settled_bets,
+            pending_bets=pending_bets,
+            total_stake=round(total_stake, 2),
+            total_profit_loss=round(total_profit_loss, 2),
+            overall_roi=round(overall_roi, 2),
+            overall_win_rate=round(overall_win_rate, 4),
+            won=won,
+            lost=lost,
+            pushed=pushed,
+            voided=voided,
+            clv_stats=clv_stats,
+            by_market=by_market,
+            by_sportsbook=by_sportsbook,
+            by_sport=by_sport,
+            top_players=top_players,
+            worst_players=worst_players,
         )
-    ) or 0
-    
-    settled_bets = total_bets - pending_bets
-    
-    # Get status breakdown for settled bets
-    settled_filter = and_(base_filter, UserBet.status != BetStatus.PENDING)
-    
-    won = await db.scalar(
-        select(func.count(UserBet.id)).where(
-            and_(base_filter, UserBet.status == BetStatus.WON)
+    except Exception as e:
+        logger.error(f"Error calculating bet stats: {e}", exc_info=True)
+        # Return empty stats response instead of crashing
+        return BetStatsResponse(
+            total_bets=0,
+            settled_bets=0,
+            pending_bets=0,
+            total_stake=0.0,
+            total_profit_loss=0.0,
+            overall_roi=0.0,
+            overall_win_rate=0.0,
+            won=0,
+            lost=0,
+            pushed=0,
+            voided=0,
+            clv_stats=CLVStats(
+                total_bets_with_clv=0,
+                avg_clv_cents=0.0,
+                positive_clv_count=0,
+                positive_clv_pct=0.0,
+                total_clv_cents=0.0,
+            ),
+            by_market=[],
+            by_sportsbook=[],
+            by_sport=[],
+            top_players=[],
+            worst_players=[],
         )
-    ) or 0
-    
-    lost = await db.scalar(
-        select(func.count(UserBet.id)).where(
-            and_(base_filter, UserBet.status == BetStatus.LOST)
-        )
-    ) or 0
-    
-    pushed = await db.scalar(
-        select(func.count(UserBet.id)).where(
-            and_(base_filter, UserBet.status == BetStatus.PUSH)
-        )
-    ) or 0
-    
-    voided = await db.scalar(
-        select(func.count(UserBet.id)).where(
-            and_(base_filter, UserBet.status == BetStatus.VOID)
-        )
-    ) or 0
-    
-    # Calculate totals
-    total_stake = await db.scalar(
-        select(func.sum(UserBet.stake)).where(settled_filter)
-    ) or 0.0
-    
-    total_profit_loss = await db.scalar(
-        select(func.sum(UserBet.profit_loss)).where(settled_filter)
-    ) or 0.0
-    
-    # Calculate ROI and win rate
-    overall_roi = (total_profit_loss / total_stake * 100) if total_stake > 0 else 0.0
-    overall_win_rate = (won / (won + lost)) if (won + lost) > 0 else 0.0
-    
-    # CLV stats
-    clv_stats = await _calculate_clv_stats(db, base_filter)
-    
-    # ROI by market
-    by_market = await _roi_by_category(db, base_filter, UserBet.market_type)
-    
-    # ROI by sportsbook
-    by_sportsbook = await _roi_by_category(db, base_filter, UserBet.sportsbook)
-    
-    # ROI by sport
-    by_sport = await _roi_by_sport(db, base_filter)
-    
-    # Top/worst players
-    top_players, worst_players = await _roi_by_player(db, base_filter, min_bets=5)
-    
-    return BetStatsResponse(
-        total_bets=total_bets,
-        settled_bets=settled_bets,
-        pending_bets=pending_bets,
-        total_stake=round(total_stake, 2),
-        total_profit_loss=round(total_profit_loss, 2),
-        overall_roi=round(overall_roi, 2),
-        overall_win_rate=round(overall_win_rate, 4),
-        won=won,
-        lost=lost,
-        pushed=pushed,
-        voided=voided,
-        clv_stats=clv_stats,
-        by_market=by_market,
-        by_sportsbook=by_sportsbook,
-        by_sport=by_sport,
-        top_players=top_players,
-        worst_players=worst_players,
-    )
 
 
 async def _calculate_clv_stats(db: AsyncSession, base_filter) -> CLVStats:
@@ -909,25 +937,48 @@ async def get_session_report(
             "bet_count": count,
         })
     
-    return SessionReportResponse(
-        date_from=date_from,
-        date_to=date_to,
-        total_days=total_days,
-        total_bets=total_bets,
-        settled_bets=settled_bets,
-        pending_bets=pending_bets,
-        overall_roi=round(overall_roi, 2),
-        overall_win_rate=round(overall_win_rate, 4),
-        total_profit_loss=round(total_profit_loss, 2),
-        total_staked=round(total_staked, 2),
-        total_clv=round(total_clv, 2),
-        avg_clv=round(avg_clv, 2),
-        positive_clv_pct=round(positive_clv_pct, 2),
-        by_market=by_market,
-        by_sportsbook=by_sportsbook,
-        by_sport=by_sport,
-        daily_pl=daily_pl,
-    )
+    try:
+        return SessionReportResponse(
+            date_from=date_from,
+            date_to=date_to,
+            total_days=total_days,
+            total_bets=total_bets,
+            settled_bets=settled_bets,
+            pending_bets=pending_bets,
+            overall_roi=round(overall_roi, 2),
+            overall_win_rate=round(overall_win_rate, 4),
+            total_profit_loss=round(total_profit_loss, 2),
+            total_staked=round(total_staked, 2),
+            total_clv=round(total_clv, 2),
+            avg_clv=round(avg_clv, 2),
+            positive_clv_pct=round(positive_clv_pct, 2),
+            by_market=by_market,
+            by_sportsbook=by_sportsbook,
+            by_sport=by_sport,
+            daily_pl=daily_pl,
+        )
+    except Exception as e:
+        logger.error(f"Error generating session report: {e}", exc_info=True)
+        # Return empty session report instead of crashing
+        return SessionReportResponse(
+            date_from=date_from,
+            date_to=date_to,
+            total_days=total_days,
+            total_bets=0,
+            settled_bets=0,
+            pending_bets=0,
+            overall_roi=0.0,
+            overall_win_rate=0.0,
+            total_profit_loss=0.0,
+            total_staked=0.0,
+            total_clv=0.0,
+            avg_clv=0.0,
+            positive_clv_pct=0.0,
+            by_market=[],
+            by_sportsbook=[],
+            by_sport=[],
+            daily_pl=[],
+        )
 
 
 # Need to import Market for create_bet_from_pick
