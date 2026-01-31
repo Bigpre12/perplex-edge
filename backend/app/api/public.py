@@ -308,7 +308,7 @@ async def list_player_prop_picks(
     # Subquery to find injured player IDs (filter them out)
     injured_subquery = (
         select(Injury.player_id)
-        .where(Injury.status.in_(["OUT", "DOUBTFUL", "GTD", "DAY_TO_DAY"]))
+        .where(Injury.status.in_(["OUT", "DOUBTFUL", "QUESTIONABLE", "GTD", "DAY_TO_DAY"]))
         .scalar_subquery()
     )
     
