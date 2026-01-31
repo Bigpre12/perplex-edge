@@ -64,7 +64,7 @@ function LastUpdatedBadge({ sportKey, metadata, showCounts = false }: LastUpdate
       {/* Optional counts */}
       {showCounts && metadata.games_count !== undefined && (
         <span className="text-xs text-gray-500 border-l border-gray-600 pl-2 ml-1">
-          {metadata.games_count}g / {metadata.lines_count || 0}l / {metadata.props_count || 0}p
+          {metadata.games_count}g / {metadata.lines_count ?? '-'}l / {metadata.props_count ?? '-'}p
         </span>
       )}
     </div>
