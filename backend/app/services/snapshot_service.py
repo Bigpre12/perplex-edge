@@ -65,6 +65,59 @@ DEFAULT_THRESHOLDS = HealthThresholds(min_games=1, min_lines=2, min_props=5, min
 
 
 # =============================================================================
+# Helper Functions
+# =============================================================================
+
+async def _get_picks_count_for_sport(db: AsyncSession, sport_key: str) -> int:
+    """
+    Query the database for picks count for a given sport.
+    
+    Picks are generated separately from the sync, so we always need to
+    query the database to get the actual count.
+    
+    Args:
+        db: Database session
+        sport_key: Sport key (e.g., 'basketball_nba')
+    
+    Returns:
+        Number of picks for today's games
+    """
+    league_code = SPORT_KEY_TO_LEAGUE.get(sport_key)
+    if not league_code:
+        return 0
+    
+    sport_result = await db.execute(
+        select(Sport).where(Sport.league_code == league_code)
+    )
+    sport = sport_result.scalar_one_or_none()
+    
+    if not sport:
+        return 0
+    
+    # Use timezone-naive datetimes to match database column type
+    today_start = datetime.combine(date.today(), datetime.min.time())
+    tomorrow = today_start + timedelta(days=1)
+    
+    # Get game IDs for today's games
+    game_ids_result = await db.execute(
+        select(Game.id)
+        .where(Game.sport_id == sport.id)
+        .where(Game.start_time >= today_start)
+        .where(Game.start_time < tomorrow + timedelta(days=7))
+    )
+    game_ids = [row[0] for row in game_ids_result.all()]
+    
+    if not game_ids:
+        return 0
+    
+    picks_result = await db.execute(
+        select(func.count(ModelPick.id))
+        .where(ModelPick.game_id.in_(game_ids))
+    )
+    return picks_result.scalar() or 0
+
+
+# =============================================================================
 # Snapshot Storage
 # =============================================================================
 
@@ -425,7 +478,8 @@ async def check_sync_health(
         games_count = sync_result.get("games_created", 0) + sync_result.get("games_updated", 0)
         lines_count = sync_result.get("lines_added", 0)
         props_count = sync_result.get("props_added", 0)
-        picks_count = sync_result.get("picks_generated", 0)
+        # Always query DB for picks since they're generated separately from sync
+        picks_count = await _get_picks_count_for_sport(db, sport_key)
     else:
         # Query database for today's data
         league_code = SPORT_KEY_TO_LEAGUE.get(sport_key)
