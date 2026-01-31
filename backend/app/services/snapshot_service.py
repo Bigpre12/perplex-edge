@@ -145,8 +145,9 @@ async def save_daily_snapshot(
         return {"error": f"Sport not found: {sport_key}"}
     
     # Fetch games for today/upcoming
-    today_start = datetime.combine(snapshot_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-    tomorrow_end = datetime.combine(snapshot_date + timedelta(days=1), datetime.max.time()).replace(tzinfo=timezone.utc)
+    # Use timezone-naive datetimes to match database column type (TIMESTAMP WITHOUT TIME ZONE)
+    today_start = datetime.combine(snapshot_date, datetime.min.time())
+    tomorrow_end = datetime.combine(snapshot_date + timedelta(days=1), datetime.max.time())
     
     games_result = await db.execute(
         select(Game)

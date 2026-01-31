@@ -352,8 +352,11 @@ class ResultsTracker:
             # Update best/worst streaks
             all_results = [r.hit for r in recent]
             best, worst = self._calculate_best_worst_streaks(all_results)
-            hit_rate.best_streak = max(hit_rate.best_streak, best)
-            hit_rate.worst_streak = min(hit_rate.worst_streak, worst)
+            # Handle None values from database
+            current_best = hit_rate.best_streak if hit_rate.best_streak is not None else 0
+            current_worst = hit_rate.worst_streak if hit_rate.worst_streak is not None else 0
+            hit_rate.best_streak = max(current_best, best)
+            hit_rate.worst_streak = min(current_worst, worst)
             
             hit_rate.last_pick_at = recent[0].settled_at
         

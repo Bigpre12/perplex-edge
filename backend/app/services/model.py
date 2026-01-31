@@ -615,6 +615,7 @@ async def generate_model_picks_for_today(
     sport_key: str,
     ev_threshold: float = 0.05,
     confidence_threshold: float = 0.5,
+    use_stubs: bool = False,
 ) -> dict[str, Any]:
     """
     Generate model picks for today's games.
@@ -633,6 +634,7 @@ async def generate_model_picks_for_today(
         sport_key: Sport identifier (e.g., 'basketball_nba')
         ev_threshold: Minimum EV to create a pick (default 5%)
         confidence_threshold: Minimum confidence to create a pick (default 50%)
+        use_stubs: Placeholder for stub mode (currently unused)
     
     Returns:
         Dictionary with generation statistics
