@@ -1340,6 +1340,29 @@ async def sync_with_fallback(
             result["data_source"] = "failed"
             return result
     
+    # Check sport availability (off-season, etc.)
+    from app.core.sport_availability import get_sport_status, get_current_tennis_tournaments
+    
+    sport_status = get_sport_status(sport_key)
+    if not sport_status["is_active"]:
+        logger.warning(
+            f"[{sport_key}] Sport is not in active season: {sport_status['message']}. "
+            f"Next: {sport_status.get('next_action', 'Check back later')}"
+        )
+        result["sport_status"] = sport_status
+        # Still try to sync - might have some data like futures or preseason
+    
+    # Special handling for tennis - check active tournaments
+    if "tennis" in sport_key:
+        active_tournaments = get_current_tennis_tournaments()
+        tour_key = sport_key  # tennis_atp or tennis_wta
+        if not active_tournaments.get(tour_key):
+            logger.warning(
+                f"[{sport_key}] No active tennis tournaments for this tour. "
+                "Tennis uses tournament-specific APIs (e.g., tennis_atp_australian_open)."
+            )
+            result["tennis_note"] = "No active tournaments. Tennis data requires active tournaments."
+    
     # Check quota before trying primary API
     quota = get_quota_status()
     if quota["remaining"] < 5:
@@ -1352,7 +1375,17 @@ async def sync_with_fallback(
                 db, sport_key, include_props=include_props, use_stubs=False, provider="odds_api"
             )
             primary_result["data_source"] = "odds_api"
-            logger.info(f"[{sport_key}] Primary API success: {primary_result.get('games_created', 0)} games")
+            
+            # Log if no games found
+            games_count = primary_result.get("games_created", 0) + primary_result.get("games_updated", 0)
+            if games_count == 0:
+                if not sport_status["is_active"]:
+                    logger.info(f"[{sport_key}] No games from API (sport is off-season)")
+                else:
+                    logger.warning(f"[{sport_key}] No games returned from API despite sport being active")
+            else:
+                logger.info(f"[{sport_key}] Primary API success: {games_count} games")
+            
             return primary_result
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:

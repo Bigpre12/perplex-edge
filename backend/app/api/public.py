@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, aliased
 
 from app.core.database import get_db
+from app.core.sport_availability import get_sport_status, get_all_sport_statuses, get_current_tennis_tournaments
 from app.models import Sport, Team, Game, Market, Player, ModelPick, Line, Injury
 from app.models.injury import EXCLUDED_INJURY_STATUSES
 from app.services.memory_cache import cache, CacheKey
@@ -147,6 +148,99 @@ async def list_sports(
     await cache.set(CacheKey.SPORTS_LIST, response, ttl_seconds=3600)
     
     return response
+
+
+# =============================================================================
+# Sport Availability Endpoint
+# =============================================================================
+
+@router.get("/sports/availability", tags=["public"])
+async def get_sports_availability():
+    """
+    Get current availability status for all sports.
+    
+    Returns whether each sport is in-season, off-season, or playoffs,
+    along with helpful messages about why data might be empty.
+    
+    Use this to understand why a sport might have no props:
+    - Off-season: No live games available
+    - Active: Should have data (check sync status if empty)
+    """
+    statuses = get_all_sport_statuses()
+    tennis_tournaments = get_current_tennis_tournaments()
+    
+    return {
+        "checked_at": datetime.now(EASTERN_TZ).isoformat(),
+        "sports": statuses,
+        "tennis_tournaments": tennis_tournaments,
+        "notes": {
+            "tennis": "Tennis uses tournament-specific data. Empty results may indicate no active tournaments for that tour.",
+            "nfl": "NFL is seasonal (September-February). No data available during off-season.",
+            "ncaaf": "College football is seasonal (August-January). No data available during off-season.",
+        }
+    }
+
+
+@router.get("/sports/{sport_id}/availability", tags=["public"])
+async def get_sport_availability(
+    sport_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get availability status for a specific sport.
+    
+    Returns whether the sport is in-season and why data might be empty.
+    """
+    from app.core.constants import SPORT_ID_TO_KEY
+    
+    sport_key = SPORT_ID_TO_KEY.get(sport_id)
+    if not sport_key:
+        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+    
+    status = get_sport_status(sport_key)
+    
+    # Also get actual data counts
+    now_et = datetime.now(EASTERN_TZ)
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    today_utc = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow_utc = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    
+    # Count games and picks
+    games_count = await db.scalar(
+        select(func.count(Game.id))
+        .where(and_(
+            Game.sport_id == sport_id,
+            Game.start_time >= today_utc,
+            Game.start_time < tomorrow_utc,
+        ))
+    )
+    
+    picks_count = await db.scalar(
+        select(func.count(ModelPick.id))
+        .where(ModelPick.sport_id == sport_id)
+    )
+    
+    # Determine why data might be empty
+    reason = None
+    if not status["is_active"]:
+        reason = status["message"]
+    elif games_count == 0:
+        reason = "No games scheduled for today. Data sync may be pending or no games posted yet."
+    elif picks_count == 0:
+        reason = "Games exist but no picks generated. Check sync status."
+    
+    return {
+        "sport_id": sport_id,
+        "sport_key": sport_key,
+        "status": status,
+        "data_counts": {
+            "games_today": games_count,
+            "total_picks": picks_count,
+        },
+        "data_reason": reason,
+        "tennis_note": "Tennis uses tournament-specific APIs. Check /sports/availability for active tournaments." if "tennis" in sport_key else None,
+    }
 
 
 # =============================================================================

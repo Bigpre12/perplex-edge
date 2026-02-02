@@ -227,6 +227,41 @@ export async function fetchSports(): Promise<PublicSportList> {
   return fetchJson<PublicSportList>(`${API_BASE_URL}/api/sports`);
 }
 
+// Sport Availability
+export interface SportStatus {
+  is_active: boolean;
+  status: string;
+  message: string;
+  next_action: string | null;
+}
+
+export interface SportAvailability {
+  sport_id: number;
+  sport_key: string;
+  status: SportStatus;
+  data_counts: {
+    games_today: number;
+    total_picks: number;
+  };
+  data_reason: string | null;
+  tennis_note: string | null;
+}
+
+export interface AllSportsAvailability {
+  checked_at: string;
+  sports: Record<string, SportStatus>;
+  tennis_tournaments: Record<string, string[]>;
+  notes: Record<string, string>;
+}
+
+export async function fetchSportAvailability(sportId: number): Promise<SportAvailability> {
+  return fetchJson<SportAvailability>(`${API_BASE_URL}/api/sports/${sportId}/availability`);
+}
+
+export async function fetchAllSportsAvailability(): Promise<AllSportsAvailability> {
+  return fetchJson<AllSportsAvailability>(`${API_BASE_URL}/api/sports/availability`);
+}
+
 // Games
 export async function fetchTodaysGames(sportId: number): Promise<PublicGameList> {
   return fetchJson<PublicGameList>(`${API_BASE_URL}/api/sports/${sportId}/games/today`);
@@ -268,6 +303,30 @@ export function useSports() {
     queryKey: ['sports'],
     queryFn: fetchSports,
     staleTime: 5 * 60 * 1000, // 5 minutes - sports don't change often
+  });
+}
+
+/**
+ * Fetch availability status for a specific sport.
+ * Shows whether sport is in-season, off-season, etc.
+ */
+export function useSportAvailability(sportId: number | null) {
+  return useQuery({
+    queryKey: ['sport-availability', sportId],
+    queryFn: () => fetchSportAvailability(sportId!),
+    enabled: sportId !== null,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Fetch availability status for all sports.
+ */
+export function useAllSportsAvailability() {
+  return useQuery({
+    queryKey: ['sports-availability'],
+    queryFn: fetchAllSportsAvailability,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

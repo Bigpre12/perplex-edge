@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine, PlayerPropPick, useWatchlists, createWatchlist, deleteWatchlist, markWatchlistChecked, Watchlist } from '../api/public';
+import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine, PlayerPropPick, useWatchlists, createWatchlist, deleteWatchlist, markWatchlistChecked, Watchlist, useSportAvailability } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { AltLineExplorer } from './AltLineExplorer';
@@ -375,6 +375,9 @@ function LineVarianceBadge({ variance }: { variance: number | null }) {
 
 export function PlayerPropsTab() {
   const { sportId, isLoading: sportLoading } = useSportContext();
+  
+  // Check sport availability (off-season, etc.)
+  const { data: availability } = useSportAvailability(sportId);
 
   // Filter state - EV-first defaults for max profit
   const [statType, setStatType] = useState<string>('');
@@ -1104,12 +1107,29 @@ export function PlayerPropsTab() {
       {/* Empty State */}
       {data && data.items.length === 0 && (
         <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
-          <div className="text-4xl mb-3">🔍</div>
-          <p className="text-gray-400 text-lg">No picks match your filters</p>
+          <div className="text-4xl mb-3">
+            {availability?.status?.is_active === false ? '📅' : '🔍'}
+          </div>
+          <p className="text-gray-400 text-lg">
+            {availability?.status?.is_active === false
+              ? availability.status.message
+              : 'No picks match your filters'}
+          </p>
           <p className="text-sm text-gray-500 mt-2">
-            {rawData && rawData.total > 0 
-              ? `${rawData.total} picks available but hidden by current filters`
-              : 'No picks available for this sport right now'}
+            {availability?.status?.is_active === false ? (
+              <>
+                {availability.status.next_action}
+                {availability.tennis_note && (
+                  <span className="block mt-1 text-yellow-500">{availability.tennis_note}</span>
+                )}
+              </>
+            ) : rawData && rawData.total > 0 ? (
+              `${rawData.total} picks available but hidden by current filters`
+            ) : availability?.data_reason ? (
+              availability.data_reason
+            ) : (
+              'No picks available for this sport right now'
+            )}
           </p>
           {rawData && rawData.total > 0 && (
             <button
@@ -1118,6 +1138,13 @@ export function PlayerPropsTab() {
             >
               Reset All Filters
             </button>
+          )}
+          {/* Show data counts for debugging */}
+          {availability && (
+            <div className="mt-4 text-xs text-gray-600">
+              Games today: {availability.data_counts?.games_today ?? 0} | 
+              Total picks: {availability.data_counts?.total_picks ?? 0}
+            </div>
           )}
         </div>
       )}
