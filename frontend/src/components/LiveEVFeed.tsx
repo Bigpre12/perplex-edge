@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSports, fetchPlayerPropPicks, PlayerPropFilters, PlayerPropPick } from '../api/public';
-import { SPORT_CONFIG as BASE_SPORT_CONFIG, getSportConfig } from '../constants/sports';
+import { SPORT_CONFIG as BASE_SPORT_CONFIG } from '../constants/sports';
 
 // =============================================================================
 // Live EV Feed - Scrolling list of +EV props across ALL sports
