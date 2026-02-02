@@ -52,6 +52,9 @@ AVAILABLE_SPORTS = [
     "basketball_nba",
     "basketball_ncaab",
     "americanfootball_nfl",
+    "baseball_mlb",
+    "tennis_atp",
+    "tennis_wta",
 ]
 
 
@@ -131,9 +134,13 @@ async def get_season_info():
         get_nba_season_label,
         get_ncaab_season_label,
         get_nfl_season_year,
+        get_mlb_season_label,
+        get_ncaaf_season_label,
         get_nba_season_start,
         get_ncaab_season_start,
         get_nfl_season_start,
+        get_mlb_season_start,
+        get_ncaaf_season_start,
         get_schedule_filename,
     )
     
@@ -155,6 +162,16 @@ async def get_season_info():
                 "season_label": str(get_nfl_season_year()),
                 "season_start": get_nfl_season_start().isoformat(),
                 "schedule_file": get_schedule_filename("americanfootball_nfl"),
+            },
+            "baseball_mlb": {
+                "season_label": get_mlb_season_label(),
+                "season_start": get_mlb_season_start().isoformat(),
+                "schedule_file": get_schedule_filename("baseball_mlb"),
+            },
+            "americanfootball_ncaaf": {
+                "season_label": get_ncaaf_season_label(),
+                "season_start": get_ncaaf_season_start().isoformat(),
+                "schedule_file": get_schedule_filename("americanfootball_ncaaf"),
             },
         },
     }
@@ -805,6 +822,100 @@ async def get_api_alerts():
         "has_critical": any(a.get("severity") == "error" for a in alerts),
         "alerts": alerts,
     }
+
+
+@router.get("/metrics/dashboard")
+async def get_metrics_dashboard(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Comprehensive metrics dashboard for monitoring system health.
+    
+    Returns:
+    - Request metrics (total, error rate, latency)
+    - Database metrics (picks, games, lines counts)
+    - API quota status
+    - Circuit breaker status
+    - Top slowest endpoints
+    """
+    from datetime import datetime, timezone, timedelta
+    from sqlalchemy import select, func
+    from app.core.logging import request_metrics
+    from app.core.resilience import CircuitBreakerRegistry
+    from app.models import ModelPick, Game, Line, Sport
+    
+    # Get request metrics
+    req_metrics = request_metrics.get_metrics()
+    
+    # Get circuit breaker status
+    circuit_status = CircuitBreakerRegistry.get_status()
+    
+    # Get database counts
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Count active picks generated today
+    picks_today_result = await db.execute(
+        select(func.count(ModelPick.id)).where(
+            ModelPick.generated_at >= today_start
+        )
+    )
+    picks_today = picks_today_result.scalar() or 0
+    
+    # Count total active picks
+    total_picks_result = await db.execute(
+        select(func.count(ModelPick.id)).where(ModelPick.is_active == True)
+    )
+    total_active_picks = total_picks_result.scalar() or 0
+    
+    # Count games
+    total_games_result = await db.execute(select(func.count(Game.id)))
+    total_games = total_games_result.scalar() or 0
+    
+    # Count sports
+    sports_result = await db.execute(select(Sport))
+    sports = sports_result.scalars().all()
+    
+    # Get quota status
+    quota_status = get_quota_status()
+    
+    return {
+        "timestamp": now.isoformat(),
+        "request_metrics": {
+            "total_requests": req_metrics.get("total_requests", 0),
+            "total_errors": req_metrics.get("total_errors", 0),
+            "error_rate_pct": req_metrics.get("error_rate_pct", 0),
+            "avg_duration_ms": req_metrics.get("avg_duration_ms", 0),
+            "top_endpoints": req_metrics.get("endpoints", {}),
+        },
+        "database_metrics": {
+            "picks_generated_today": picks_today,
+            "total_active_picks": total_active_picks,
+            "total_games": total_games,
+            "sports": [{"id": s.id, "name": s.name} for s in sports],
+        },
+        "api_metrics": {
+            "odds_api_quota_remaining": quota_status.get("remaining", 0),
+            "odds_api_quota_used": quota_status.get("used", 0),
+        },
+        "circuit_breakers": circuit_status,
+        "health_summary": {
+            "all_breakers_closed": all(
+                info.get("state") != "open"
+                for info in circuit_status.values()
+            ) if circuit_status else True,
+            "quota_healthy": quota_status.get("remaining", 0) > 20,
+            "error_rate_healthy": req_metrics.get("error_rate_pct", 0) < 5,
+        },
+    }
+
+
+@router.post("/metrics/reset")
+async def reset_request_metrics():
+    """Reset request metrics counters (for testing)."""
+    from app.core.logging import request_metrics
+    request_metrics.reset()
+    return {"status": "reset", "message": "Request metrics have been reset"}
 
 
 # =============================================================================

@@ -30,6 +30,8 @@ SPORT_KEYS = [
     "basketball_nba",
     "basketball_ncaab",
     "americanfootball_nfl",
+    "tennis_atp",
+    "tennis_wta",
 ]
 
 # =============================================================================

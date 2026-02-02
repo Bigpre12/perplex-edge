@@ -4,6 +4,10 @@ import logging
 import math
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
+
+# US Eastern timezone for consistent date handling
+EASTERN_TZ = ZoneInfo("America/New_York")
 
 from sqlalchemy import select, update, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +33,8 @@ SPORT_KEY_TO_LEAGUE = {
     "icehockey_nhl": "NHL",
     "basketball_ncaab": "NCAAB",
     "americanfootball_ncaaf": "NCAAF",
+    "tennis_atp": "ATP",
+    "tennis_wta": "WTA",
 }
 
 
@@ -666,9 +672,15 @@ async def generate_model_picks_for_today(
         
         stats["sport"] = sport.league_code
         
-        # Get today's games (timezone-naive to match DB column)
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        tomorrow = today + timedelta(days=1)
+        # Get today's games using US Eastern time (handles DST)
+        # This ensures we process today's US schedule even after midnight UTC
+        now_et = datetime.now(EASTERN_TZ)
+        today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start_et = today_start_et + timedelta(days=1)
+        
+        # Convert to UTC naive datetimes for PostgreSQL
+        today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+        tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
         
         result = await db.execute(
             select(Game)

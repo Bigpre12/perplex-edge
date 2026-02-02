@@ -5,6 +5,7 @@ export interface Sport {
   id: number;
   name: string;
   league_code: string;
+  key: string;
 }
 
 interface SportContextType {

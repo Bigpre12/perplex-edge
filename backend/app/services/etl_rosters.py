@@ -22,6 +22,8 @@ SPORT_KEY_TO_LEAGUE = {
     "americanfootball_nfl": "NFL",
     "baseball_mlb": "MLB",
     "icehockey_nhl": "NHL",
+    "tennis_atp": "ATP",
+    "tennis_wta": "WTA",
 }
 
 

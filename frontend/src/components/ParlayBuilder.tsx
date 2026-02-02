@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 
@@ -286,32 +286,42 @@ export function ParlayBuilder() {
   }), [legCount, include100Pct, minGrade, maxResults, blockCorrelated, maxCorrelationRisk]);
   
   // Fetch parlays
-  const { data, isLoading, error } = useParlayBuilder(sportId, filters);
+  const queryResult = useParlayBuilder(sportId, filters);
+  const { data, isLoading, error, isFetching, status, fetchStatus } = queryResult;
   
-  // Debug logging - only log on actual state changes, not every render
-  const prevStateRef = useRef<string | null>(null);
-  useEffect(() => {
-    const currentState = JSON.stringify({
-      sportId,
-      parlaysCount: data?.parlays?.length,
-      totalCandidates: data?.total_candidates,
-      isLoading,
-      hasError: !!error,
-    });
-    
-    // Only log if state actually changed
-    if (prevStateRef.current !== currentState) {
-      console.log('[ParlayBuilder] State changed:', {
-        sportId,
-        filters,
-        parlaysCount: data?.parlays?.length,
-        totalCandidates: data?.total_candidates,
-        isLoading,
-        error: error?.message,
-      });
-      prevStateRef.current = currentState;
-    }
-  }, [sportId, filters, data?.parlays?.length, data?.total_candidates, isLoading, error]);
+  // CRITICAL: Derive display state with explicit null checks
+  // React Query's isLoading is true when: fetching AND no cached data
+  // We want to show spinner only during initial load, not refetches
+  const parlays = data?.parlays ?? [];
+  const totalCandidates = data?.total_candidates ?? 0;
+  
+  // Simple state machine:
+  // 1. isLoading=true → show spinner (initial fetch, no cache)
+  // 2. isLoading=false + error → show error
+  // 3. isLoading=false + no error + parlays.length=0 → show empty state
+  // 4. isLoading=false + no error + parlays.length>0 → show data
+  const showSpinner = isLoading;
+  const showError = !isLoading && !!error;
+  const showEmpty = !isLoading && !error && parlays.length === 0;
+  const showData = !isLoading && !error && parlays.length > 0;
+  
+  // Debug logging - log every render to help diagnose
+  console.log('[ParlayBuilder] Render:', {
+    sportId,
+    status,
+    fetchStatus,
+    isLoading,
+    isFetching,
+    error: error?.message ?? null,
+    dataExists: !!data,
+    parlaysCount: parlays.length,
+    totalCandidates,
+    // What we'll show
+    showSpinner,
+    showError,
+    showEmpty,
+    showData,
+  });
   
   if (sportLoading || !sportId) {
     return (
@@ -447,23 +457,34 @@ export function ParlayBuilder() {
         </div>
       </div>
       
-      {/* Loading state */}
-      {isLoading && (
+      {/* Loading state - spinner during initial fetch */}
+      {showSpinner && (
         <div className="p-8 text-center text-gray-400">
           <div className="animate-spin inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full mr-2" />
           Building optimal parlays...
         </div>
       )}
       
-      {/* Error state */}
-      {error && (
-        <div className="p-8 text-center text-red-400">
-          Error building parlays: {error.message}
+      {/* Refetching indicator - subtle indicator when refreshing with existing data */}
+      {isFetching && !isLoading && (
+        <div className="text-center text-sm text-gray-500 py-1">
+          <span className="animate-pulse">Refreshing...</span>
         </div>
       )}
       
-      {/* Empty state */}
-      {!isLoading && !error && data?.parlays?.length === 0 && (
+      {/* Error state */}
+      {showError && (
+        <div className="p-8 text-center text-red-400">
+          <div className="text-2xl mb-2">⚠️</div>
+          <div>Error building parlays: {error?.message ?? 'Unknown error'}</div>
+          <div className="text-sm text-gray-500 mt-2">
+            Check browser console for details
+          </div>
+        </div>
+      )}
+      
+      {/* Empty state - no parlays found */}
+      {showEmpty && (
         <div className="p-8 text-center">
           <div className="text-5xl mb-4">🎰</div>
           <div className="text-gray-400 text-lg">No qualifying parlays found</div>
@@ -473,13 +494,13 @@ export function ParlayBuilder() {
         </div>
       )}
       
-      {/* Parlays list */}
-      {!isLoading && !error && data && data.parlays.length > 0 && (
+      {/* Parlays list - only show when we have actual data */}
+      {showData && (
         <div className="space-y-4">
           {/* Summary bar */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-400">
-              Built from <span className="text-white font-medium">{data.total_candidates}</span> eligible legs
+              Built from <span className="text-white font-medium">{data?.total_candidates ?? 0}</span> eligible legs
             </span>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
@@ -494,7 +515,7 @@ export function ParlayBuilder() {
           </div>
           
           {/* Parlay cards */}
-          {data.parlays.map((parlay, index) => (
+          {parlays.map((parlay, index) => (
             <ParlayCard key={index} parlay={parlay} index={index} />
           ))}
         </div>

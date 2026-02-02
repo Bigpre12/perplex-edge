@@ -1,0 +1,120 @@
+# Perplex Engine - Cursor Rules
+
+You are an expert AI engineer responsible for my sports-betting analytics platform. The backend is **FastAPI** (`main.py` ~415 lines) deployed on **Railway**, with 14 routers and rich health-checks and logging. Your job is to continuously **improve, fix, and self-correct** this system so it behaves like a learning brain over time.
+
+## Existing Architecture (DO NOT BREAK, IMPROVE IT)
+
+### main.py Features
+- Structured logging (JSON in production, colored console in dev) and correlation-ID support.
+- Request-logging middleware that logs path, method, status, duration, and adds `X-Correlation-ID`.
+- A lifespan context that initializes Sentry, validates config, and starts/stops background scheduler tasks.
+- Health endpoints: `/health`, `/ping`, `/health/db`, `/health/full`, `/health/ready`.
+
+### Routers (14 total)
+| Prefix | Purpose |
+|--------|---------|
+| `/admin` | Admin jobs and monitoring |
+| `/api` | Public endpoints, analytics, NFL, NCAAB, bets |
+| `/api/sync` | Data synchronization |
+| `/api/stats` | Statistics endpoints |
+| `/api/games` | Game data |
+| `/api/odds` | Odds data |
+| `/api/props` | Player props |
+| `/api/injuries` | Injury data |
+| `/api/picks` | Model picks |
+| `/api/data` | Data v2 endpoints |
+
+### Core Modules
+- `app/core/logging.py` - Structured logging with correlation IDs
+- `app/core/resilience.py` - Retry logic and circuit breakers
+- `app/core/health.py` - Comprehensive health checks
+- `app/core/cache.py` - Redis/memory caching layer
+- `app/core/sentry.py` - Error monitoring
+- `app/core/degraded_mode.py` - Graceful degradation
+
+### Deployment
+- Target: **Railway** with FastAPI start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Database: PostgreSQL (async via asyncpg)
+- External APIs: The Odds API, Stats API, Injury API (all with retry + circuit breakers)
+
+---
+
+## Standing Orders (Every Time You Touch This Repo)
+
+### 1. Understand and Protect Core Behavior
+- Keep all existing routes, health checks, and logging behavior working.
+- Any refactor must preserve the contract of the 14 routers and the health endpoints.
+- Assume the frontend (parlay builder, 100% hit rate, My Bets, etc.) depends on these routes.
+
+### 2. Strengthen Self-Monitoring and Self-Correction
+- Extend or refine the existing structured logging and request middleware instead of replacing it.
+- For each router under `/api`, ensure:
+  - Clear, structured error logs when upstream APIs fail, time out, or hit rate limits.
+  - Graceful fallbacks (cache, backup API, or degraded mode) instead of crashing or returning plain 500s.
+- Make `/health/full` and `/health/ready` truly authoritative by wiring in checks for:
+  - DB connectivity and migrations.
+  - API quota status and circuit-breaker state.
+  - Scheduler heartbeat and data freshness (e.g., odds/props last updated times).
+
+### 3. Optimize for Speed, Stability, and Quota-Safety
+- Identify slow or flaky endpoints (especially under `/api/odds`, `/api/props`, `/api/picks`, `/api/data`) and:
+  - Add caching layers with short TTLs appropriate for pre-game odds.
+  - Reduce redundant external calls by centralizing them into services.
+- Ensure patterns are Railway-friendly: low memory, clear timeouts, no huge in-RAM objects.
+
+### 4. Evolve the "Brain" Structure Over Days, Months, Years
+- Gradually organize logic into service modules (e.g., odds, injuries, games, stats, sync, picks) that the existing routers call, so features can grow without spaghetti.
+- Add or improve automated checks (unit tests, health checks, internal diagnostics endpoints under `/admin`) that let the system catch its own bugs and regressions early.
+- When adding new capabilities (new sports, new analytics, smarter parlays), plug into the existing router structure (`/api/*`) rather than inventing one-off patterns.
+- Always think long-term: code should remain maintainable and extendable a year from now.
+
+### 5. Workflow Each Time You Respond
+1. First, restate the **current problem or goal** in this FastAPI + Railway context.
+2. Describe your **step-by-step plan** (what files, routers, or services you'll touch).
+3. Then write or edit the code, keeping it consistent with the existing `main.py` patterns (lifespan, logging, health, routers).
+4. Where helpful, add small comments or docstrings that future AI runs (and humans) can use as hints for further self-improvement.
+
+---
+
+## Key File Locations
+
+```
+backend/
+├── app/
+│   ├── main.py              # FastAPI app, middleware, lifespan, health endpoints
+│   ├── api/                  # All 14 routers
+│   │   ├── admin.py          # /admin - jobs, monitoring, metrics
+│   │   ├── public.py         # /api - sports, picks, parlays
+│   │   ├── sync.py           # /api/sync
+│   │   ├── stats.py          # /api/stats
+│   │   ├── games.py          # /api/games
+│   │   ├── odds.py           # /api/odds
+│   │   ├── props.py          # /api/props
+│   │   ├── injuries.py       # /api/injuries
+│   │   ├── picks.py          # /api/picks
+│   │   └── data_v2.py        # /api/data
+│   ├── core/
+│   │   ├── config.py         # Settings, env validation
+│   │   ├── database.py       # Async SQLAlchemy
+│   │   ├── logging.py        # Structured logging
+│   │   ├── resilience.py     # Retry, circuit breakers
+│   │   ├── health.py         # Health check functions
+│   │   ├── cache.py          # Redis/memory cache
+│   │   ├── sentry.py         # Error monitoring
+│   │   └── degraded_mode.py  # Graceful degradation
+│   ├── services/             # Business logic
+│   │   ├── odds_provider.py  # Odds fetching with fallbacks
+│   │   ├── parlay_service.py # Parlay builder
+│   │   ├── picks_generator.py# Model pick generation
+│   │   └── ...
+│   ├── models/               # SQLAlchemy models
+│   └── schemas/              # Pydantic schemas
+├── tests/                    # Test suite
+└── requirements.txt          # Dependencies
+```
+
+---
+
+## Remember
+
+Treat this project as a **living brain**: with every change, it should become more observable, more robust, and more accurate—minute by minute, day by day, month by month.

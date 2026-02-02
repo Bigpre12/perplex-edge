@@ -24,6 +24,8 @@ SPORT_KEY_TO_NAME = {
     "icehockey_nhl": ("NHL", "NHL"),
     "basketball_ncaab": ("NCAA Basketball", "NCAAB"),
     "americanfootball_ncaaf": ("NCAA Football", "NCAAF"),
+    "tennis_atp": ("Tennis ATP", "ATP"),
+    "tennis_wta": ("Tennis WTA", "WTA"),
 }
 
 # =============================================================================
@@ -291,10 +293,10 @@ async def get_or_create_sport(
     sport = result.scalar_one_or_none()
     
     if not sport:
-        sport = Sport(name=sport_name, league_code=league_code)
+        sport = Sport(name=sport_name, league_code=league_code, key=sport_key)
         db.add(sport)
         await db.flush()
-        logger.info(f"Created sport: {sport_name} ({league_code})")
+        logger.info(f"Created sport: {sport_name} ({league_code}, key={sport_key})")
     
     return sport
 

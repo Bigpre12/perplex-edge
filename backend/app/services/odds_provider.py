@@ -444,6 +444,8 @@ SPORT_KEYS = {
     "NHL": "icehockey_nhl",
     "NCAAB": "basketball_ncaab",
     "NCAAF": "americanfootball_ncaaf",
+    "TENNIS_ATP": "tennis_atp",
+    "TENNIS_WTA": "tennis_wta",
 }
 
 # Market type mappings from API to internal
@@ -485,6 +487,12 @@ PROP_MAPPINGS = {
     "pitcher_strikeouts": "K",
     "batter_hits": "H",
     "batter_rbis": "RBI",
+    # Tennis props
+    "player_aces": "ACES",
+    "player_double_faults": "DF",
+    "player_games_won": "GAMES",
+    "player_sets_won": "SETS",
+    "player_total_games": "TOTAL_GAMES",
 }
 
 
@@ -673,6 +681,9 @@ class XYZOddsProvider(OddsProvider):
                     markets = "player_pass_yds,player_rush_yds,player_reception_yds,player_receptions"
                 elif "baseball" in sport_key:
                     markets = "batter_total_bases,pitcher_strikeouts,batter_hits"
+                elif "tennis" in sport_key:
+                    # Tennis props: aces, double faults, games won, sets won, total games
+                    markets = "player_aces,player_double_faults,player_games_won,player_sets_won,player_total_games"
                 else:
                     markets = "player_points"
             
@@ -868,6 +879,8 @@ class XYZOddsProvider(OddsProvider):
             "basketball_nba": "NBA",
             "basketball_ncaab": "NCAAB",
             "americanfootball_nfl": "NFL",
+            "baseball_mlb": "MLB",
+            "americanfootball_ncaaf": "NCAAF",
         }
         sport_title = sport_titles.get(sport_key, sport_key.upper())
         
@@ -1028,53 +1041,63 @@ class XYZOddsProvider(OddsProvider):
     ) -> dict[str, Any]:
         """Return realistic stub betting lines for testing with dynamic dates.
         
-        INJURY-ADJUSTED LINES - Jan 29, 2026:
-        Lines reflect major injuries: Embiid, Giannis, Jokic, AD, Booker, Trae OUT
+        Dynamically generates lines based on the current schedule.
+        Uses lines from the schedule JSON if available, otherwise generates from power ratings.
         """
-        # Game-specific lines ADJUSTED FOR INJURIES - Jan 29, 2026
-        # Based on DraftKings/FanDuel market research
-        game_lines = {
-            # Kings favored by 5.5 (EMBIID OUT since Jan 4, PG questionable)
-            "game_sac_phi_today": {
-                "home_team": "Philadelphia 76ers", "away_team": "Sacramento Kings",
-                "home_spread": 5.5, "total": 226.5, "home_ml": 200, "away_ml": -245,
-            },
-            # Bucks favored by 2.5 (GIANNIS OUT but Bucks still deeper roster)
-            "game_mil_was_today": {
-                "home_team": "Washington Wizards", "away_team": "Milwaukee Bucks",
-                "home_spread": 2.5, "total": 222.5, "home_ml": 120, "away_ml": -140,
-            },
-            # Bulls favored by 1.5 (HERRO OUT, home court)
-            "game_mia_chi_today": {
-                "home_team": "Chicago Bulls", "away_team": "Miami Heat",
-                "home_spread": -1.5, "total": 218.5, "home_ml": -125, "away_ml": 105,
-            },
-            # Rockets favored by 7.5 (KD healthy vs gutted Hawks roster)
-            "game_hou_atl_today": {
-                "home_team": "Atlanta Hawks", "away_team": "Houston Rockets",
-                "home_spread": 7.5, "total": 225.0, "home_ml": 280, "away_ml": -360,
-            },
-            # Hornets favored by 3.5 (AD OUT, LaMelo averaging 28.2 PPG)
-            "game_cha_dal_today": {
-                "home_team": "Dallas Mavericks", "away_team": "Charlotte Hornets",
-                "home_spread": 3.5, "total": 225.5, "home_ml": 150, "away_ml": -175,
-            },
-            # Nuggets favored by 3.5 (JOKIC OUT, CAM THOMAS OUT, both depleted)
-            "game_bkn_den_today": {
-                "home_team": "Denver Nuggets", "away_team": "Brooklyn Nets",
-                "home_spread": -3.5, "total": 218.0, "home_ml": -165, "away_ml": 140,
-            },
-            # Pistons favored by 8.5 (BOOKER OUT, Pistons 34-11 best record)
-            "game_det_pho_today": {
-                "home_team": "Phoenix Suns", "away_team": "Detroit Pistons",
-                "home_spread": 8.5, "total": 215.5, "home_ml": 320, "away_ml": -420,
-            },
-            # Thunder favored by 5.5 (SGA MVP form, ANT EDWARDS DTD)
-            "game_okc_min_today": {
-                "home_team": "Minnesota Timberwolves", "away_team": "Oklahoma City Thunder",
-                "home_spread": 5.5, "total": 218.5, "home_ml": 200, "away_ml": -245,
-            },
-        }
+        # Get today's date for matching game IDs
+        today = datetime.now(EASTERN_TZ).date()
+        today_str = today.isoformat()
+        date_suffix = today_str.replace("-", "")
+        
+        # Load schedule to get today's games with their lines
+        schedule = self._load_season_schedule(sport_key)
+        todays_games = [
+            g for g in schedule.get("games", [])
+            if g.get("date") == today_str
+        ]
+        
+        # Build game_lines dict dynamically from schedule
+        game_lines = {}
+        for game in todays_games:
+            home_abbr = game.get("home_abbr", game["home_team"][:3].upper())
+            away_abbr = game.get("away_abbr", game["away_team"][:3].upper())
+            game_id = f"game_{away_abbr.lower()}_{home_abbr.lower()}_{date_suffix}"
+            
+            # Parse spread if available (format: "TEAM -X.X")
+            spread_str = game.get("spread", "")
+            home_spread = -3.0  # default
+            if spread_str:
+                parts = spread_str.split()
+                if len(parts) >= 2:
+                    spread_team = parts[0]
+                    spread_val = float(parts[1])
+                    # If spread team is home, home_spread is negative (favored)
+                    # If spread team is away, home_spread is positive (underdog)
+                    if spread_team == home_abbr:
+                        home_spread = spread_val
+                    else:
+                        home_spread = -spread_val
+            
+            # Parse total
+            total = float(game.get("total", 220.0))
+            
+            # Parse moneylines (convert string like "+150" to int 150)
+            def parse_ml(ml_str):
+                if not ml_str:
+                    return -110
+                return int(ml_str.replace("+", ""))
+            
+            home_ml = parse_ml(game.get("home_ml"))
+            away_ml = parse_ml(game.get("away_ml"))
+            
+            game_lines[game_id] = {
+                "home_team": game["home_team"],
+                "away_team": game["away_team"],
+                "home_spread": home_spread,
+                "total": total,
+                "home_ml": home_ml,
+                "away_ml": away_ml,
+            }
         
         # Get game-specific lines or use defaults
         lines = game_lines.get(external_game_id, {
@@ -1180,161 +1203,244 @@ class XYZOddsProvider(OddsProvider):
         external_game_id: str,
         prop_types: Optional[list[str]] = None,
     ) -> dict[str, Any]:
-        """Return realistic stub player props for Jan 29, 2026 NBA games.
+        """Return realistic stub player props dynamically based on current schedule.
         
-        INJURY REPORT - Jan 29, 2026:
-        - Embiid OUT (knee) - hasn't played since Jan 4
-        - Giannis OUT (calf strain 4-6 weeks) - injured Jan 23
-        - Trae Young OUT (MCL sprain) - won't debut for Wizards until All-Star break
-        - Tyler Herro OUT (toe) - missed 28 of 34 games
-        - Anthony Davis OUT (hand ligament, 6 weeks) - injured Jan 8
-        - Jokic OUT (knee hyperextension) - no timetable
-        - Cam Thomas OUT (hamstring)
-        - Booker OUT (ankle sprain, 1+ week) - injured Jan 24
-        - Jalen Green DAY-TO-DAY (hamstring) - only 4 games this season
-        - Anthony Edwards DAY-TO-DAY (foot maintenance)
+        Dynamically generates props from team rosters based on the actual games
+        in the schedule, rather than using hardcoded game IDs.
         """
         times = _get_stub_game_times()
         
-        # Define props with INJURY-ADJUSTED rosters for Jan 29, 2026
+        # NBA team rosters with star players and their typical prop lines
+        # Updated: 2025-26 Season Depth Charts
         # Stats: pts, reb, ast, pra, pr, pa, ra, 3pm, stl, blk, to
+        NBA_TEAM_ROSTERS = {
+            # Atlanta Hawks - D. Daniels, N. Alexander-Walker, Z. Risacher, J. Johnson, O. Okongwu
+            "ATL": [
+                {"name": "Dyson Daniels", "pts": 14.5, "reb": 4.5, "ast": 5.5, "pra": 24.5, "pr": 19.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 2.5},
+                {"name": "Jalen Johnson", "pts": 20.5, "reb": 9.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 26.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Onyeka Okongwu", "pts": 12.5, "reb": 8.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+            ],
+            # Boston Celtics - P. Pritchard, D. White, J. Brown, S. Hauser, N. Queta
+            "BOS": [
+                {"name": "Derrick White", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5, "pr": 23.0, "pa": 24.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                {"name": "Jaylen Brown", "pts": 26.5, "reb": 6.5, "ast": 4.5, "pra": 37.5, "pr": 33.0, "pa": 31.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Payton Pritchard", "pts": 15.5, "reb": 3.5, "ast": 4.5, "pra": 23.5, "pr": 19.0, "pa": 20.0, "ra": 8.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Brooklyn Nets - E. Demin, T. Mann, M. Porter Jr., N. Clowney, N. Claxton
+            "BKN": [
+                {"name": "Nic Claxton", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 15.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
+                {"name": "Terrence Mann", "pts": 14.5, "reb": 4.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 18.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Michael Porter Jr.", "pts": 18.5, "reb": 6.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Charlotte Hornets - L. Ball, K. Knueppel, B. Miller, M. Bridges, M. Diabate
+            "CHA": [
+                {"name": "LaMelo Ball", "pts": 28.5, "reb": 6.5, "ast": 9.5, "pra": 44.5, "pr": 35.0, "pa": 38.0, "ra": 16.0, "3pm": 4.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Brandon Miller", "pts": 22.5, "reb": 5.5, "ast": 4.5, "pra": 32.5, "pr": 28.0, "pa": 27.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Miles Bridges", "pts": 19.5, "reb": 7.5, "ast": 4.5, "pra": 31.5, "pr": 27.0, "pa": 24.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Chicago Bulls - J. Giddey, C. White, I. Okoro, M. Buzelis, N. Vucevic
+            "CHI": [
+                {"name": "Josh Giddey", "pts": 16.5, "reb": 7.5, "ast": 7.5, "pra": 31.5, "pr": 24.0, "pa": 24.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Coby White", "pts": 20.5, "reb": 4.5, "ast": 5.5, "pra": 30.5, "pr": 25.0, "pa": 26.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 22.0, "ra": 14.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+            ],
+            # Cleveland Cavaliers - D. Garland, D. Mitchell, D. Wade, E. Mobley, J. Allen
+            "CLE": [
+                {"name": "Donovan Mitchell", "pts": 26.5, "reb": 4.5, "ast": 5.5, "pra": 36.5, "pr": 31.0, "pa": 32.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Darius Garland", "pts": 20.5, "reb": 3.5, "ast": 7.5, "pra": 31.5, "pr": 24.0, "pa": 28.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Jarrett Allen", "pts": 14.5, "reb": 10.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 17.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+            ],
+            # Dallas Mavericks - C. Flagg, M. Christie, N. Marshall, P. Washington, D. Gafford
+            "DAL": [
+                {"name": "Cooper Flagg", "pts": 16.5, "reb": 6.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                {"name": "PJ Washington", "pts": 14.5, "reb": 7.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 17.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Daniel Gafford", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+            ],
+            # Denver Nuggets - J. Murray, C. Braun, P. Watson, S. Jones, N. Jokic
+            "DEN": [
+                {"name": "Nikola Jokic", "pts": 26.5, "reb": 12.5, "ast": 9.5, "pra": 48.5, "pr": 39.0, "pa": 36.0, "ra": 22.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Jamal Murray", "pts": 21.5, "reb": 4.5, "ast": 6.5, "pra": 32.5, "pr": 26.0, "pa": 28.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Christian Braun", "pts": 16.5, "reb": 5.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Detroit Pistons - C. Cunningham, D. Robinson, A. Thompson, T. Harris, J. Duren
+            "DET": [
+                {"name": "Cade Cunningham", "pts": 24.5, "reb": 5.5, "ast": 9.5, "pra": 39.5, "pr": 30.0, "pa": 34.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Jalen Duren", "pts": 13.5, "reb": 11.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 16.0, "ra": 14.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                {"name": "Tobias Harris", "pts": 15.5, "reb": 6.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Golden State Warriors - S. Curry, B. Podziemski, M. Moody, D. Green, A. Horford
+            "GSW": [
+                {"name": "Stephen Curry", "pts": 26.5, "reb": 4.5, "ast": 6.5, "pra": 37.5, "pr": 31.0, "pa": 33.0, "ra": 11.0, "3pm": 5.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Draymond Green", "pts": 9.5, "reb": 6.5, "ast": 6.5, "pra": 22.5, "pr": 16.0, "pa": 16.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                {"name": "Brandin Podziemski", "pts": 12.5, "reb": 5.5, "ast": 4.5, "pra": 22.5, "pr": 18.0, "pa": 17.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Houston Rockets - A. Thompson, T. Eason, K. Durant, J. Smith Jr., A. Sengun
+            "HOU": [
+                {"name": "Kevin Durant", "pts": 28.5, "reb": 6.5, "ast": 5.5, "pra": 40.5, "pr": 35.0, "pa": 34.0, "ra": 12.0, "3pm": 2.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
+                {"name": "Alperen Sengun", "pts": 19.5, "reb": 10.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 25.0, "ra": 16.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 3.5},
+                {"name": "Amen Thompson", "pts": 14.5, "reb": 7.5, "ast": 4.5, "pra": 26.5, "pr": 22.0, "pa": 19.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Indiana Pacers - A. Nembhard, B. Mathurin, A. Nesmith, J. Walker, P. Siakam
+            "IND": [
+                {"name": "Pascal Siakam", "pts": 21.5, "reb": 7.5, "ast": 4.5, "pra": 33.5, "pr": 29.0, "pa": 26.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Bennedict Mathurin", "pts": 18.5, "reb": 4.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 22.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Andrew Nembhard", "pts": 13.5, "reb": 3.5, "ast": 6.5, "pra": 23.5, "pr": 17.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # LA Clippers - J. Harden, K. Dunn, K. Leonard, J. Collins, I. Zubac
+            "LAC": [
+                {"name": "Kawhi Leonard", "pts": 24.5, "reb": 6.5, "ast": 4.5, "pra": 35.5, "pr": 31.0, "pa": 29.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "James Harden", "pts": 18.5, "reb": 5.5, "ast": 9.5, "pra": 33.5, "pr": 24.0, "pa": 28.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Ivica Zubac", "pts": 12.5, "reb": 10.5, "ast": 2.5, "pra": 25.5, "pr": 23.0, "pa": 15.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+            ],
+            # LA Lakers - L. Doncic, A. Reaves, R. Hachimura, L. James, D. Ayton
+            "LAL": [
+                {"name": "Luka Doncic", "pts": 33.5, "reb": 9.5, "ast": 9.5, "pra": 52.5, "pr": 43.0, "pa": 43.0, "ra": 19.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
+                {"name": "LeBron James", "pts": 25.5, "reb": 7.5, "ast": 8.5, "pra": 41.5, "pr": 33.0, "pa": 34.0, "ra": 16.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Deandre Ayton", "pts": 16.5, "reb": 10.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 19.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+            ],
+            # Memphis Grizzlies - C. Spencer, C. Coward, J. Wells, S. Aldama, J. Jackson Jr.
+            "MEM": [
+                {"name": "Jaren Jackson Jr.", "pts": 22.5, "reb": 6.5, "ast": 2.5, "pra": 31.5, "pr": 29.0, "pa": 25.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 2.5, "to": 2.5},
+                {"name": "Santi Aldama", "pts": 14.5, "reb": 7.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 18.0, "ra": 11.0, "3pm": 2.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Cam Spencer", "pts": 12.5, "reb": 3.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Miami Heat - D. Mitchell, T. Herro, N. Powell, A. Wiggins, B. Adebayo
+            "MIA": [
+                {"name": "Bam Adebayo", "pts": 21.5, "reb": 11.5, "ast": 5.5, "pra": 38.5, "pr": 33.0, "pa": 27.0, "ra": 17.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                {"name": "Tyler Herro", "pts": 23.5, "reb": 5.5, "ast": 6.5, "pra": 35.5, "pr": 29.0, "pa": 30.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Andrew Wiggins", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 20.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Milwaukee Bucks - R. Rollins, A. Green, G. Harris, K. Kuzma, M. Turner
+            "MIL": [
+                {"name": "Kyle Kuzma", "pts": 22.5, "reb": 6.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 26.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Myles Turner", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 19.0, "ra": 11.0, "3pm": 1.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                {"name": "Gary Harris", "pts": 10.5, "reb": 2.5, "ast": 2.5, "pra": 15.5, "pr": 13.0, "pa": 13.0, "ra": 5.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Minnesota Timberwolves - D. DiVincenzo, A. Edwards, J. McDaniels, J. Randle, R. Gobert
+            "MIN": [
+                {"name": "Anthony Edwards", "pts": 28.5, "reb": 6.5, "ast": 5.5, "pra": 40.5, "pr": 35.0, "pa": 34.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Julius Randle", "pts": 23.5, "reb": 10.5, "ast": 5.5, "pra": 39.5, "pr": 34.0, "pa": 29.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Rudy Gobert", "pts": 12.5, "reb": 12.5, "ast": 1.5, "pra": 26.5, "pr": 25.0, "pa": 14.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+            ],
+            # New Orleans Pelicans - T. Murphy III, H. Jones, S. Bey, Z. Williamson, D. Queen
+            "NOP": [
+                {"name": "Zion Williamson", "pts": 26.5, "reb": 7.5, "ast": 5.5, "pra": 39.5, "pr": 34.0, "pa": 32.0, "ra": 13.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Trey Murphy III", "pts": 17.5, "reb": 5.5, "ast": 2.5, "pra": 25.5, "pr": 23.0, "pa": 20.0, "ra": 8.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Saddiq Bey", "pts": 14.5, "reb": 5.5, "ast": 2.5, "pra": 22.5, "pr": 20.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # New York Knicks - J. Brunson, J. Hart, M. Bridges, O. Anunoby, K. Towns
+            "NYK": [
+                {"name": "Jalen Brunson", "pts": 28.5, "reb": 3.5, "ast": 7.5, "pra": 39.5, "pr": 32.0, "pa": 36.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Karl-Anthony Towns", "pts": 24.5, "reb": 11.5, "ast": 3.5, "pra": 39.5, "pr": 36.0, "pa": 28.0, "ra": 15.0, "3pm": 2.5, "stl": 0.5, "blk": 0.5, "to": 2.5},
+                {"name": "Mikal Bridges", "pts": 18.5, "reb": 4.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 22.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+            ],
+            # Oklahoma City Thunder - S. Gilgeous-Alexander, L. Dort, J. Williams, C. Holmgren, I. Hartenstein
+            "OKC": [
+                {"name": "Shai Gilgeous-Alexander", "pts": 32.5, "reb": 5.5, "ast": 6.5, "pra": 44.5, "pr": 38.0, "pa": 39.0, "ra": 12.0, "3pm": 2.5, "stl": 2.5, "blk": 1.5, "to": 2.5},
+                {"name": "Chet Holmgren", "pts": 17.5, "reb": 9.5, "ast": 3.5, "pra": 30.5, "pr": 27.0, "pa": 21.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
+                {"name": "Jalen Williams", "pts": 21.5, "reb": 6.5, "ast": 6.5, "pra": 34.5, "pr": 28.0, "pa": 28.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Orlando Magic - J. Suggs, D. Bane, F. Wagner, P. Banchero, W. Carter Jr.
+            "ORL": [
+                {"name": "Paolo Banchero", "pts": 24.5, "reb": 7.5, "ast": 5.5, "pra": 37.5, "pr": 32.0, "pa": 30.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Franz Wagner", "pts": 22.5, "reb": 6.5, "ast": 5.5, "pra": 34.5, "pr": 29.0, "pa": 28.0, "ra": 12.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Desmond Bane", "pts": 21.5, "reb": 4.5, "ast": 5.5, "pra": 31.5, "pr": 26.0, "pa": 27.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Philadelphia 76ers - T. Maxey, V. Edgecombe, K. Oubre Jr., P. George, J. Embiid
+            "PHI": [
+                {"name": "Joel Embiid", "pts": 28.5, "reb": 11.5, "ast": 4.5, "pra": 44.5, "pr": 40.0, "pa": 33.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 3.5},
+                {"name": "Tyrese Maxey", "pts": 27.5, "reb": 4.5, "ast": 7.5, "pra": 39.5, "pr": 32.0, "pa": 35.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Paul George", "pts": 22.5, "reb": 6.5, "ast": 5.5, "pra": 34.5, "pr": 29.0, "pa": 28.0, "ra": 12.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Phoenix Suns - D. Booker, J. Green, D. Brooks, R. O'Neale, M. Williams
+            "PHX": [
+                {"name": "Devin Booker", "pts": 27.5, "reb": 4.5, "ast": 6.5, "pra": 38.5, "pr": 32.0, "pa": 34.0, "ra": 11.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Dillon Brooks", "pts": 14.5, "reb": 3.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 17.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Mark Williams", "pts": 12.5, "reb": 9.5, "ast": 1.5, "pra": 23.5, "pr": 22.0, "pa": 14.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+            ],
+            # Portland Trail Blazers - J. Holiday, S. Sharpe, T. Camara, D. Avdija, D. Clingan
+            "POR": [
+                {"name": "Shaedon Sharpe", "pts": 19.5, "reb": 4.5, "ast": 3.5, "pra": 27.5, "pr": 24.0, "pa": 23.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Deni Avdija", "pts": 15.5, "reb": 7.5, "ast": 4.5, "pra": 27.5, "pr": 23.0, "pa": 20.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Donovan Clingan", "pts": 10.5, "reb": 9.5, "ast": 1.5, "pra": 21.5, "pr": 20.0, "pa": 12.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+            ],
+            # Sacramento Kings - R. Westbrook, Z. LaVine, D. DeRozan, P. Achiuwa, D. Sabonis
+            "SAC": [
+                {"name": "Domantas Sabonis", "pts": 19.5, "reb": 13.5, "ast": 7.5, "pra": 40.5, "pr": 33.0, "pa": 27.0, "ra": 21.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "DeMar DeRozan", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5, "pr": 29.0, "pa": 30.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Zach LaVine", "pts": 22.5, "reb": 4.5, "ast": 4.5, "pra": 31.5, "pr": 27.0, "pa": 27.0, "ra": 9.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # San Antonio Spurs - D. Fox, S. Castle, D. Vassell, H. Barnes, V. Wembanyama
+            "SAS": [
+                {"name": "Victor Wembanyama", "pts": 26.5, "reb": 10.5, "ast": 4.5, "pra": 41.5, "pr": 37.0, "pa": 31.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 3.5, "to": 3.5},
+                {"name": "De'Aaron Fox", "pts": 27.5, "reb": 4.5, "ast": 6.5, "pra": 38.5, "pr": 32.0, "pa": 34.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Devin Vassell", "pts": 17.5, "reb": 4.5, "ast": 4.5, "pra": 26.5, "pr": 22.0, "pa": 22.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Toronto Raptors - I. Quickley, B. Ingram, R. Barrett, S. Barnes, C. Murray-Boyles
+            "TOR": [
+                {"name": "Scottie Barnes", "pts": 22.5, "reb": 8.5, "ast": 6.5, "pra": 37.5, "pr": 31.0, "pa": 29.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Brandon Ingram", "pts": 24.5, "reb": 5.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 30.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "RJ Barrett", "pts": 21.5, "reb": 6.5, "ast": 4.5, "pra": 32.5, "pr": 28.0, "pa": 26.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+            ],
+            # Utah Jazz - K. George, C. Williams, A. Bailey, L. Markkanen, J. Nurkic
+            "UTA": [
+                {"name": "Lauri Markkanen", "pts": 24.5, "reb": 8.5, "ast": 2.5, "pra": 35.5, "pr": 33.0, "pa": 27.0, "ra": 11.0, "3pm": 2.5, "stl": 0.5, "blk": 0.5, "to": 2.5},
+                {"name": "Keyonte George", "pts": 18.5, "reb": 3.5, "ast": 6.5, "pra": 28.5, "pr": 22.0, "pa": 25.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Jusuf Nurkic", "pts": 11.5, "reb": 10.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 15.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
+            ],
+            # Washington Wizards - T. Johnson, K. George, B. Coulibaly, K. Middleton, A. Sarr
+            "WAS": [
+                {"name": "Khris Middleton", "pts": 16.5, "reb": 5.5, "ast": 5.5, "pra": 27.5, "pr": 22.0, "pa": 22.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Bilal Coulibaly", "pts": 14.5, "reb": 5.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Alex Sarr", "pts": 12.5, "reb": 8.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+            ],
+        }
+        
+        # Parse the game ID to get teams
+        # Format: game_{away_abbr}_{home_abbr}_{date}
+        parts = external_game_id.split("_")
+        if len(parts) >= 3 and parts[0] == "game":
+            away_abbr = parts[1].upper()
+            home_abbr = parts[2].upper()
+        else:
+            # Fallback for unexpected format
+            away_abbr = "LAL"
+            home_abbr = "BOS"
+        
+        # Get players for each team
+        home_players = NBA_TEAM_ROSTERS.get(home_abbr, NBA_TEAM_ROSTERS.get("BOS", []))
+        away_players = NBA_TEAM_ROSTERS.get(away_abbr, NBA_TEAM_ROSTERS.get("LAL", []))
+        
+        # Map abbreviation to full team name
+        TEAM_NAMES = {
+            "CHA": "Charlotte Hornets", "SAS": "San Antonio Spurs", "IND": "Indiana Pacers",
+            "ATL": "Atlanta Hawks", "PHI": "Philadelphia 76ers", "NOP": "New Orleans Pelicans",
+            "MIA": "Miami Heat", "CHI": "Chicago Bulls", "MEM": "Memphis Grizzlies",
+            "MIN": "Minnesota Timberwolves", "HOU": "Houston Rockets", "DAL": "Dallas Mavericks",
+            "OKC": "Oklahoma City Thunder", "DEN": "Denver Nuggets", "BOS": "Boston Celtics",
+            "MIL": "Milwaukee Bucks", "LAL": "Los Angeles Lakers", "NYK": "New York Knicks",
+            "CLE": "Cleveland Cavaliers", "PHX": "Phoenix Suns", "GSW": "Golden State Warriors",
+            "LAC": "Los Angeles Clippers", "SAC": "Sacramento Kings", "POR": "Portland Trail Blazers",
+            "WAS": "Washington Wizards", "DET": "Detroit Pistons", "BKN": "Brooklyn Nets",
+            "ORL": "Orlando Magic", "TOR": "Toronto Raptors", "UTA": "Utah Jazz",
+        }
+        
+        home_team = TEAM_NAMES.get(home_abbr, "Home Team")
+        away_team = TEAM_NAMES.get(away_abbr, "Away Team")
+        
+        # Build dynamic game_props
         game_props = {
-            # Game 1: Kings @ 76ers - EMBIID OUT, Paul George questionable
-            "game_sac_phi_today": {
-                "home_team": "Philadelphia 76ers",
-                "away_team": "Sacramento Kings",
+            external_game_id: {
+                "home_team": home_team,
+                "away_team": away_team,
                 "commence_time": times["early"],
-                "players": [
-                    # 76ers (Embiid OUT)
-                    {"name": "Tyrese Maxey", "pts": 29.5, "reb": 4.5, "ast": 7.5, "pra": 41.5, "pr": 34.0, "pa": 37.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Paul George", "pts": 24.5, "reb": 6.5, "ast": 5.5, "pra": 36.5, "pr": 31.0, "pa": 30.0, "ra": 12.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Andre Drummond", "pts": 10.5, "reb": 10.5, "ast": 1.5, "pra": 22.5, "pr": 21.0, "pa": 12.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
-                    {"name": "Kyle Lowry", "pts": 8.5, "reb": 3.5, "ast": 5.5, "pra": 17.5, "pr": 12.0, "pa": 14.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    # Kings
-                    {"name": "Zach LaVine", "pts": 25.5, "reb": 4.5, "ast": 4.5, "pra": 34.5, "pr": 30.0, "pa": 30.0, "ra": 9.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "DeMar DeRozan", "pts": 24.5, "reb": 4.5, "ast": 5.5, "pra": 34.5, "pr": 29.0, "pa": 30.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Domantas Sabonis", "pts": 19.5, "reb": 13.5, "ast": 7.5, "pra": 40.5, "pr": 33.0, "pa": 27.0, "ra": 21.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                ],
-            },
-            # Game 2: Bucks @ Wizards - GIANNIS OUT (calf), TRAE YOUNG OUT (MCL)
-            "game_mil_was_today": {
-                "home_team": "Washington Wizards",
-                "away_team": "Milwaukee Bucks",
-                "commence_time": times["late"],
-                "players": [
-                    # Bucks (Giannis OUT)
-                    {"name": "Kyle Kuzma", "pts": 22.5, "reb": 6.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 26.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Myles Turner", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 19.0, "ra": 11.0, "3pm": 1.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                    {"name": "Bobby Portis", "pts": 15.5, "reb": 8.5, "ast": 1.5, "pra": 25.5, "pr": 24.0, "pa": 17.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Gary Trent Jr.", "pts": 14.5, "reb": 2.5, "ast": 1.5, "pra": 18.5, "pr": 17.0, "pa": 16.0, "ra": 4.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    # Wizards (Trae Young OUT)
-                    {"name": "Khris Middleton", "pts": 18.5, "reb": 5.5, "ast": 5.5, "pra": 29.5, "pr": 24.0, "pa": 24.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Bilal Coulibaly", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 16.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Alex Sarr", "pts": 13.5, "reb": 8.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 16.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                ],
-            },
-            # Game 3: Heat @ Bulls - TYLER HERRO OUT (toe)
-            "game_mia_chi_today": {
-                "home_team": "Chicago Bulls",
-                "away_team": "Miami Heat",
-                "commence_time": times["late"],
-                "players": [
-                    # Heat (Herro OUT)
-                    {"name": "Bam Adebayo", "pts": 21.5, "reb": 11.5, "ast": 5.5, "pra": 38.5, "pr": 33.0, "pa": 27.0, "ra": 17.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
-                    {"name": "Andrew Wiggins", "pts": 18.5, "reb": 5.5, "ast": 2.5, "pra": 26.5, "pr": 24.0, "pa": 21.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Terry Rozier", "pts": 17.5, "reb": 3.5, "ast": 5.5, "pra": 26.5, "pr": 21.0, "pa": 23.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Jaime Jaquez Jr.", "pts": 13.5, "reb": 4.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 16.0, "ra": 7.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    # Bulls
-                    {"name": "Coby White", "pts": 20.5, "reb": 4.5, "ast": 5.5, "pra": 30.5, "pr": 25.0, "pa": 26.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 22.0, "ra": 14.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
-                    {"name": "Josh Giddey", "pts": 15.5, "reb": 7.5, "ast": 7.5, "pra": 30.5, "pr": 23.0, "pa": 23.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                ],
-            },
-            # Game 4: Rockets @ Hawks - KD healthy, Hawks gutted
-            "game_hou_atl_today": {
-                "home_team": "Atlanta Hawks",
-                "away_team": "Houston Rockets",
-                "commence_time": times["night"],
-                "players": [
-                    # Rockets (KD healthy)
-                    {"name": "Kevin Durant", "pts": 28.5, "reb": 7.5, "ast": 5.5, "pra": 41.5, "pr": 36.0, "pa": 34.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
-                    {"name": "Alperen Sengun", "pts": 19.5, "reb": 10.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 25.0, "ra": 16.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 3.5},
-                    {"name": "Fred VanVleet", "pts": 17.5, "reb": 3.5, "ast": 7.5, "pra": 28.5, "pr": 21.0, "pa": 25.0, "ra": 11.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Amen Thompson", "pts": 12.5, "reb": 6.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 16.0, "ra": 10.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    # Hawks (gutted roster)
-                    {"name": "CJ McCollum", "pts": 22.5, "reb": 4.5, "ast": 5.5, "pra": 32.5, "pr": 27.0, "pa": 28.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Bogdan Bogdanovic", "pts": 17.5, "reb": 3.5, "ast": 4.5, "pra": 25.5, "pr": 21.0, "pa": 22.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Clint Capela", "pts": 11.5, "reb": 11.5, "ast": 1.5, "pra": 24.5, "pr": 23.0, "pa": 13.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                ],
-            },
-            # Game 5: Hornets @ Mavericks - ANTHONY DAVIS OUT (hand)
-            "game_cha_dal_today": {
-                "home_team": "Dallas Mavericks",
-                "away_team": "Charlotte Hornets",
-                "commence_time": times["west"],
-                "players": [
-                    # Mavericks (AD OUT)
-                    {"name": "Kyrie Irving", "pts": 28.5, "reb": 5.5, "ast": 7.5, "pra": 41.5, "pr": 34.0, "pa": 36.0, "ra": 13.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Klay Thompson", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 20.0, "ra": 7.0, "3pm": 3.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
-                    {"name": "PJ Washington", "pts": 15.5, "reb": 7.5, "ast": 2.5, "pra": 25.5, "pr": 23.0, "pa": 18.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Daniel Gafford", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                    # Hornets (LaMelo healthy)
-                    {"name": "LaMelo Ball", "pts": 28.5, "reb": 6.5, "ast": 9.5, "pra": 44.5, "pr": 35.0, "pa": 38.0, "ra": 16.0, "3pm": 4.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                    {"name": "Brandon Miller", "pts": 20.5, "reb": 5.5, "ast": 3.5, "pra": 29.5, "pr": 26.0, "pa": 24.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Miles Bridges", "pts": 18.5, "reb": 7.5, "ast": 4.5, "pra": 30.5, "pr": 26.0, "pa": 23.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                ],
-            },
-            # Game 6: Nets @ Nuggets - JOKIC OUT (knee), CAM THOMAS OUT (hamstring)
-            "game_bkn_den_today": {
-                "home_team": "Denver Nuggets",
-                "away_team": "Brooklyn Nets",
-                "commence_time": times["west"],
-                "players": [
-                    # Nuggets (Jokic OUT)
-                    {"name": "Jamal Murray", "pts": 26.5, "reb": 5.5, "ast": 8.5, "pra": 40.5, "pr": 32.0, "pa": 35.0, "ra": 14.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Aaron Gordon", "pts": 18.5, "reb": 8.5, "ast": 4.5, "pra": 31.5, "pr": 27.0, "pa": 23.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
-                    {"name": "Christian Braun", "pts": 15.5, "reb": 5.5, "ast": 3.5, "pra": 24.5, "pr": 21.0, "pa": 19.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Peyton Watson", "pts": 11.5, "reb": 5.5, "ast": 1.5, "pra": 18.5, "pr": 17.0, "pa": 13.0, "ra": 7.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
-                    # Nets (Cam Thomas OUT)
-                    {"name": "Dennis Schroder", "pts": 19.5, "reb": 3.5, "ast": 7.5, "pra": 30.5, "pr": 23.0, "pa": 27.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Nic Claxton", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 15.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
-                    {"name": "Day'Ron Sharpe", "pts": 10.5, "reb": 7.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 12.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                ],
-            },
-            # Game 7: Pistons @ Suns - BOOKER OUT (ankle)
-            "game_det_pho_today": {
-                "home_team": "Phoenix Suns",
-                "away_team": "Detroit Pistons",
-                "commence_time": times["west"],
-                "players": [
-                    # Suns (Booker OUT)
-                    {"name": "Dillon Brooks", "pts": 20.5, "reb": 4.5, "ast": 3.5, "pra": 28.5, "pr": 25.0, "pa": 24.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Royce O'Neale", "pts": 12.5, "reb": 5.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 16.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    {"name": "Nick Richards", "pts": 13.5, "reb": 9.5, "ast": 1.5, "pra": 24.5, "pr": 23.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                    {"name": "Ryan Dunn", "pts": 9.5, "reb": 4.5, "ast": 1.5, "pra": 15.5, "pr": 14.0, "pa": 11.0, "ra": 6.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                    # Pistons
-                    {"name": "Cade Cunningham", "pts": 24.5, "reb": 5.5, "ast": 9.5, "pra": 39.5, "pr": 30.0, "pa": 34.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                    {"name": "Jaden Ivey", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5, "pr": 23.0, "pa": 24.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Jalen Duren", "pts": 13.5, "reb": 11.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 16.0, "ra": 14.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
-                ],
-            },
-            # Game 8: Thunder @ Timberwolves - ANT EDWARDS DAY-TO-DAY (foot)
-            "game_okc_min_today": {
-                "home_team": "Minnesota Timberwolves",
-                "away_team": "Oklahoma City Thunder",
-                "commence_time": times["west"],
-                "players": [
-                    # Thunder (SGA MVP form)
-                    {"name": "Shai Gilgeous-Alexander", "pts": 32.5, "reb": 5.5, "ast": 6.5, "pra": 44.5, "pr": 38.0, "pa": 39.0, "ra": 12.0, "3pm": 2.5, "stl": 2.5, "blk": 1.5, "to": 2.5},
-                    {"name": "Chet Holmgren", "pts": 17.5, "reb": 9.5, "ast": 3.5, "pra": 30.5, "pr": 27.0, "pa": 21.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
-                    {"name": "Jalen Williams", "pts": 21.5, "reb": 6.5, "ast": 6.5, "pra": 34.5, "pr": 28.0, "pa": 28.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                    {"name": "Alex Caruso", "pts": 8.5, "reb": 3.5, "ast": 4.5, "pra": 16.5, "pr": 12.0, "pa": 13.0, "ra": 8.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 1.5},
-                    # Timberwolves
-                    {"name": "Julius Randle", "pts": 23.5, "reb": 10.5, "ast": 5.5, "pra": 39.5, "pr": 34.0, "pa": 29.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                    {"name": "Rudy Gobert", "pts": 12.5, "reb": 12.5, "ast": 1.5, "pra": 26.5, "pr": 25.0, "pa": 14.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                    {"name": "Naz Reid", "pts": 14.5, "reb": 6.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 17.0, "ra": 9.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                ],
-            },
+                "players": home_players + away_players,
+            }
+        }
+        
+        # Also maintain backward compatibility with NCAAB and NFL props
+        # (keeping the original static definitions for non-NBA sports)
+        game_props.update({
             # =================================================================
             # NCAAB GAMES - College Basketball Player Props (2025-26 Season)
             # 8 Games, 16 Top Teams, 80 Players
@@ -1662,7 +1768,7 @@ class XYZOddsProvider(OddsProvider):
                     {"name": "Mike Williams", "rec": 3.5, "rec_yds": 48.5, "rec_tds": 0.5, "targets": 6.5},
                 ],
             },
-        }
+        })
         
         # Check if this game exists in static props
         if external_game_id not in game_props:
@@ -1674,6 +1780,8 @@ class XYZOddsProvider(OddsProvider):
                 return self._generate_dynamic_ncaab_props(external_game_id, sport_key, times)
             elif "football" in sport_key:
                 return self._generate_dynamic_nfl_props(external_game_id, sport_key, times)
+            elif "tennis" in sport_key:
+                return self._generate_dynamic_tennis_props(external_game_id, sport_key, times)
             else:
                 # Unknown sport - return empty
                 return {
@@ -2259,6 +2367,127 @@ class XYZOddsProvider(OddsProvider):
                         {"key": "player_pass_yds", "outcomes": pass_yds_outcomes},
                         {"key": "player_rush_yds", "outcomes": rush_yds_outcomes},
                         {"key": "player_reception_yds", "outcomes": rec_yds_outcomes},
+                    ],
+                },
+            ],
+        }
+
+    def _generate_dynamic_tennis_props(
+        self,
+        external_game_id: str,
+        sport_key: str,
+        times: dict[str, str],
+    ) -> dict[str, Any]:
+        """Generate dynamic tennis player props for any match."""
+        import random
+        
+        # Tennis match is between 2 players (player1 vs player2)
+        # Try to extract player names from game ID
+        # Format examples: match_djokovic_alcaraz_20260202, match_player1_player2_20260202
+        parts = external_game_id.split("_")
+        
+        # ATP/WTA top players for realistic stub data
+        atp_players = [
+            "Novak Djokovic", "Carlos Alcaraz", "Jannik Sinner", "Daniil Medvedev",
+            "Andrey Rublev", "Alexander Zverev", "Stefanos Tsitsipas", "Holger Rune",
+            "Taylor Fritz", "Casper Ruud", "Hubert Hurkacz", "Alex de Minaur",
+            "Tommy Paul", "Frances Tiafoe", "Ben Shelton", "Sebastian Korda",
+        ]
+        
+        wta_players = [
+            "Iga Swiatek", "Aryna Sabalenka", "Coco Gauff", "Elena Rybakina",
+            "Jessica Pegula", "Ons Jabeur", "Qinwen Zheng", "Jasmine Paolini",
+            "Madison Keys", "Emma Navarro", "Danielle Collins", "Mirra Andreeva",
+            "Jelena Ostapenko", "Maria Sakkari", "Daria Kasatkina", "Beatriz Haddad Maia",
+        ]
+        
+        # Select player pool based on sport key
+        if "wta" in sport_key:
+            players = wta_players
+        else:
+            players = atp_players
+        
+        # Try to get player names from parts or randomly select
+        if len(parts) >= 3:
+            player1_name = parts[1].replace("-", " ").title()
+            player2_name = parts[2].replace("-", " ").title()
+            # If names are generic, replace with random top players
+            if player1_name.lower() in ["player1", "home", "unknown"]:
+                player1_name = random.choice(players)
+            if player2_name.lower() in ["player2", "away", "unknown"]:
+                player2_name = random.choice([p for p in players if p != player1_name])
+        else:
+            player1_name = random.choice(players)
+            player2_name = random.choice([p for p in players if p != player1_name])
+        
+        def gen_tennis_stats(is_favorite: bool) -> dict:
+            """Generate realistic tennis prop stats."""
+            # Favorites tend to have higher stats in winning scenarios
+            mult = 1.1 if is_favorite else 0.9
+            
+            return {
+                "aces": round(random.uniform(5, 15) * mult * 2) / 2,
+                "double_faults": round(random.uniform(2, 6) * 2) / 2,
+                "games_won": round(random.uniform(10, 18) * mult * 2) / 2,
+                "sets_won": round(random.uniform(1.5, 2.5) * mult * 2) / 2,
+            }
+        
+        # Generate stats for both players
+        player1_stats = gen_tennis_stats(is_favorite=True)
+        player2_stats = gen_tennis_stats(is_favorite=False)
+        
+        players_data = [
+            {"name": player1_name, **player1_stats},
+            {"name": player2_name, **player2_stats},
+        ]
+        
+        # Build outcomes for each prop type
+        aces_outcomes = []
+        double_faults_outcomes = []
+        games_won_outcomes = []
+        sets_won_outcomes = []
+        
+        for player in players_data:
+            aces_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["aces"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["aces"]},
+            ])
+            double_faults_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["double_faults"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["double_faults"]},
+            ])
+            games_won_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["games_won"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["games_won"]},
+            ])
+            sets_won_outcomes.extend([
+                {"name": "Over", "description": player["name"], "price": -110, "point": player["sets_won"]},
+                {"name": "Under", "description": player["name"], "price": -110, "point": player["sets_won"]},
+            ])
+        
+        # Total games for the match (both players combined)
+        total_games = round((player1_stats["games_won"] + player2_stats["games_won"]) * 2) / 2
+        total_games_outcomes = [
+            {"name": "Over", "description": "Total Games", "price": -110, "point": total_games},
+            {"name": "Under", "description": "Total Games", "price": -110, "point": total_games},
+        ]
+        
+        return {
+            "id": external_game_id,
+            "sport_key": sport_key,
+            "home_team": player1_name,  # In tennis, home_team is player 1
+            "away_team": player2_name,  # away_team is player 2
+            "commence_time": times["early"],
+            "bookmakers": [
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [
+                        {"key": "player_aces", "outcomes": aces_outcomes},
+                        {"key": "player_double_faults", "outcomes": double_faults_outcomes},
+                        {"key": "player_games_won", "outcomes": games_won_outcomes},
+                        {"key": "player_sets_won", "outcomes": sets_won_outcomes},
+                        {"key": "player_total_games", "outcomes": total_games_outcomes},
                     ],
                 },
             ],

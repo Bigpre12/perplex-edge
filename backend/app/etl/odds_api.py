@@ -1,14 +1,36 @@
 """The Odds API client for fetching odds and props data."""
 
-import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 import httpx
 
 from app.core.config import get_settings
+from app.core.logging import get_logger
+from app.core.resilience import (
+    with_retry,
+    RetryConfig,
+    CircuitBreakerRegistry,
+    with_circuit_breaker,
+)
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+# Retry config for Odds API - be conservative to avoid wasting quota
+ODDS_API_RETRY_CONFIG = RetryConfig(
+    max_attempts=2,  # Only retry once to preserve quota
+    min_wait_seconds=2.0,
+    max_wait_seconds=10.0,
+    jitter=True,
+)
+
+# Create circuit breaker for Odds API
+# Opens after 5 failures, resets after 60 seconds
+_odds_api_breaker = CircuitBreakerRegistry.get_or_create(
+    "odds_api",
+    fail_max=5,
+    reset_timeout=60,
+)
 
 # Sport keys for The Odds API
 SPORT_KEYS = {
@@ -62,12 +84,13 @@ class OddsAPIClient:
             raise RuntimeError("Client not initialized. Use async context manager.")
         return self._client
 
+    @with_retry(config=ODDS_API_RETRY_CONFIG, retry_on=(httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError))
     async def _request(
         self,
         endpoint: str,
         params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
-        """Make a request to The Odds API."""
+        """Make a request to The Odds API with retry logic."""
         if not self.api_key:
             raise ValueError("ODDS_API_KEY not configured")
 
@@ -75,35 +98,72 @@ class OddsAPIClient:
         params = params or {}
         params["apiKey"] = self.api_key
 
-        response = await self.client.get(url, params=params)
+        try:
+            response = await self.client.get(url, params=params)
+        except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError) as e:
+            logger.error(
+                "odds_api_connection_error",
+                endpoint=endpoint,
+                error_type=type(e).__name__,
+                error=str(e)[:200],
+            )
+            raise  # Let retry decorator handle
         
         # Handle HTTP errors gracefully
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 422:
+            status_code = e.response.status_code
+            
+            if status_code == 422:
                 # 422 typically means validation error - log and return empty
                 logger.warning(
-                    f"Odds API returned 422 for {endpoint}: {e.response.text[:500]}"
+                    "odds_api_validation_error",
+                    endpoint=endpoint,
+                    status_code=status_code,
+                    response=e.response.text[:500],
                 )
                 return []
-            elif e.response.status_code == 429:
-                # Rate limited
-                logger.warning(f"Odds API rate limited: {e.response.text[:200]}")
+            elif status_code == 429:
+                # Rate limited - log quota info and return empty
+                logger.warning(
+                    "odds_api_rate_limited",
+                    endpoint=endpoint,
+                    retry_after=e.response.headers.get("Retry-After"),
+                )
                 return []
-            elif e.response.status_code == 404:
+            elif status_code == 404:
                 # Resource not found - not necessarily an error
-                logger.info(f"Odds API resource not found: {endpoint}")
+                logger.info("odds_api_not_found", endpoint=endpoint)
                 return []
+            elif status_code >= 500:
+                # Server error - let retry handle if applicable
+                logger.error(
+                    "odds_api_server_error",
+                    endpoint=endpoint,
+                    status_code=status_code,
+                    response=e.response.text[:200],
+                )
+                raise  # May be retried
             else:
-                # Re-raise other errors
-                logger.error(f"Odds API error {e.response.status_code}: {e.response.text[:500]}")
+                # Other client errors (400, 401, 403)
+                logger.error(
+                    "odds_api_client_error",
+                    endpoint=endpoint,
+                    status_code=status_code,
+                    response=e.response.text[:500],
+                )
                 raise
 
         # Log remaining requests from headers
         remaining = response.headers.get("x-requests-remaining", "unknown")
         used = response.headers.get("x-requests-used", "unknown")
-        logger.info(f"Odds API: {used} used, {remaining} remaining")
+        logger.info(
+            "odds_api_request_success",
+            endpoint=endpoint,
+            quota_used=used,
+            quota_remaining=remaining,
+        )
 
         return response.json()
 

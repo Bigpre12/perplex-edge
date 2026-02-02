@@ -45,7 +45,7 @@ async def ensure_ncaab_sport_exists(db: AsyncSession) -> Sport:
     sport = result.scalar_one_or_none()
     
     if not sport:
-        sport = Sport(name="NCAA Basketball", league_code="NCAAB")
+        sport = Sport(name="NCAA Basketball", league_code="NCAAB", key="basketball_ncaab")
         db.add(sport)
         await db.commit()
         logger.info("Created NCAAB sport in database")

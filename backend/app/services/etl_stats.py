@@ -24,6 +24,8 @@ SPORT_KEY_TO_LEAGUE = {
     "icehockey_nhl": "NHL",
     "basketball_ncaab": "NCAAB",
     "americanfootball_ncaaf": "NCAAF",
+    "tennis_atp": "ATP",
+    "tennis_wta": "WTA",
 }
 
 

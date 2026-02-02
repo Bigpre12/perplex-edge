@@ -164,6 +164,158 @@ def get_nfl_season_start() -> datetime:
 
 
 # =============================================================================
+# NCAAF Season Helpers
+# =============================================================================
+
+def get_ncaaf_season_year() -> int:
+    """
+    Get the current NCAAF season year.
+    
+    NCAAF season typically runs late August to early January:
+    - Aug-Dec: Current year's season (regular season + conference championships)
+    - Jan: Bowl games and CFP from previous year's season
+    - Feb-Jul: Offseason, use upcoming season
+    
+    Returns:
+        Single year integer (e.g., 2025 for the 2025 season)
+    """
+    today = datetime.utcnow().date()
+    year = today.year
+    month = today.month
+    
+    if month >= 8:  # Aug-Dec: current season
+        return year
+    elif month == 1:  # January: bowl games from previous year's season
+        return year - 1
+    else:  # Feb-Jul: offseason, use upcoming
+        return year
+
+
+def get_ncaaf_season_label() -> str:
+    """
+    Get the current NCAAF season label.
+    
+    Examples:
+        - In September 2025: "2025"
+        - In January 2026: "2025" (bowl games)
+        - In February 2026: "2026" (upcoming season)
+    
+    Returns:
+        Year as string (e.g., "2025")
+    """
+    return str(get_ncaaf_season_year())
+
+
+def get_ncaaf_season_start() -> datetime:
+    """
+    Get the approximate NCAAF season start date for the current season.
+    
+    NCAAF typically starts last weekend of August (Week 0/1).
+    
+    Returns:
+        datetime of approximate season start (naive UTC)
+    """
+    season_year = get_ncaaf_season_year()
+    # NCAAF typically starts around August 24 (Week 0)
+    return datetime(season_year, 8, 24)
+
+
+# =============================================================================
+# MLB Season Helpers
+# =============================================================================
+
+def get_mlb_season_year() -> int:
+    """
+    Get the current MLB season year.
+    
+    MLB season typically runs late March/early April to October/November:
+    - Apr-Oct: Current year's season (regular season + playoffs)
+    - Nov-Mar: Offseason, use upcoming season
+    
+    Returns:
+        Single year integer (e.g., 2026 for the 2026 season)
+    """
+    today = datetime.utcnow().date()
+    year = today.year
+    month = today.month
+    
+    if month >= 4 and month <= 10:  # Apr-Oct: current season
+        return year
+    elif month >= 11:  # Nov-Dec: offseason, use next year
+        return year + 1
+    else:  # Jan-Mar: offseason, use current year (upcoming season)
+        return year
+
+
+def get_mlb_season_label() -> str:
+    """
+    Get the current MLB season label.
+    
+    Examples:
+        - In April 2026: "2026"
+        - In January 2026: "2026"
+        - In November 2026: "2027"
+    
+    Returns:
+        Year as string (e.g., "2026")
+    """
+    return str(get_mlb_season_year())
+
+
+def get_mlb_season_start() -> datetime:
+    """
+    Get the approximate MLB season start date for the current season.
+    
+    MLB Opening Day is typically late March or early April.
+    
+    Returns:
+        datetime of approximate season start (naive UTC)
+    """
+    season_year = get_mlb_season_year()
+    # MLB typically starts around March 28 (Opening Day)
+    return datetime(season_year, 3, 28)
+
+
+# =============================================================================
+# Tennis Season Helpers
+# =============================================================================
+
+def get_tennis_season_year() -> int:
+    """
+    Get the current tennis season year.
+    
+    Tennis runs year-round on calendar year (January - December).
+    
+    Returns:
+        Current calendar year
+    """
+    return datetime.utcnow().year
+
+
+def get_tennis_season_label() -> str:
+    """
+    Get the current tennis season label.
+    
+    Returns:
+        Year as string (e.g., "2026")
+    """
+    return str(get_tennis_season_year())
+
+
+def get_tennis_season_start() -> datetime:
+    """
+    Get the tennis season start date for the current season.
+    
+    Tennis runs year-round, so season starts January 1.
+    
+    Returns:
+        datetime of January 1 of current year (naive UTC)
+    """
+    season_year = get_tennis_season_year()
+    return datetime(season_year, 1, 1)
+
+
+# =============================================================================
 # Schedule File Helpers
 # =============================================================================
 
@@ -186,6 +338,18 @@ def get_schedule_filename(sport_key: str) -> str:
     elif sport_key == "americanfootball_nfl":
         season_year = get_nfl_season_year()
         return f"nfl_{season_year}.json"
+    elif sport_key == "baseball_mlb":
+        season_year = get_mlb_season_year()
+        return f"mlb_{season_year}.json"
+    elif sport_key == "americanfootball_ncaaf":
+        season_year = get_ncaaf_season_year()
+        return f"ncaaf_{season_year}.json"
+    elif sport_key == "tennis_atp":
+        season_year = get_tennis_season_year()
+        return f"tennis_atp_{season_year}.json"
+    elif sport_key == "tennis_wta":
+        season_year = get_tennis_season_year()
+        return f"tennis_wta_{season_year}.json"
     else:
         # Default to NBA format for unknown sports
         start_year, end_year = get_nba_season_years()
@@ -227,6 +391,12 @@ def get_current_season_start(sport_key: str = "basketball_nba") -> datetime:
         return get_ncaab_season_start()
     elif sport_key == "americanfootball_nfl":
         return get_nfl_season_start()
+    elif sport_key == "baseball_mlb":
+        return get_mlb_season_start()
+    elif sport_key == "americanfootball_ncaaf":
+        return get_ncaaf_season_start()
+    elif sport_key in ("tennis_atp", "tennis_wta"):
+        return get_tennis_season_start()
     else:
         # Default to NBA for unknown
         return get_nba_season_start()
@@ -248,6 +418,12 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
         return get_ncaab_season_label()
     elif sport_key == "americanfootball_nfl":
         return str(get_nfl_season_year())
+    elif sport_key == "baseball_mlb":
+        return get_mlb_season_label()
+    elif sport_key == "americanfootball_ncaaf":
+        return get_ncaaf_season_label()
+    elif sport_key in ("tennis_atp", "tennis_wta"):
+        return get_tennis_season_label()
     else:
         return get_nba_season_label()
 
@@ -257,10 +433,17 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
 # =============================================================================
 
 # Mapping of database sport_id to sport_key
+# Note: Tennis sport_ids will be auto-generated when first synced
+# After first sync, update this mapping with the actual IDs
 SPORT_ID_TO_KEY = {
     30: "basketball_nba",
     31: "americanfootball_nfl",
     32: "basketball_ncaab",
+    40: "baseball_mlb",
+    41: "americanfootball_ncaaf",
+    # Tennis IDs will be assigned during ETL - update after first sync
+    # 33: "tennis_atp",  # Placeholder - update with actual ID
+    # 34: "tennis_wta",  # Placeholder - update with actual ID
 }
 
 
@@ -269,7 +452,7 @@ def get_sport_key_from_id(sport_id: int) -> str:
     Convert database sport_id to sport_key string.
     
     Args:
-        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB)
+        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB, 40=MLB, 41=NCAAF)
     
     Returns:
         Sport key string like "basketball_nba"
@@ -285,7 +468,7 @@ def get_season_start_for_sport_id(sport_id: int) -> datetime:
     and need the correct season start date for that sport.
     
     Args:
-        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB)
+        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB, 40=MLB, 41=NCAAF)
     
     Returns:
         datetime of season start (naive UTC)
@@ -297,6 +480,10 @@ def get_season_start_for_sport_id(sport_id: int) -> datetime:
         datetime(2025, 11, 4, 0, 0)
         >>> get_season_start_for_sport_id(31)  # NFL
         datetime(2025, 9, 7, 0, 0)
+        >>> get_season_start_for_sport_id(40)  # MLB
+        datetime(2026, 3, 28, 0, 0)
+        >>> get_season_start_for_sport_id(41)  # NCAAF
+        datetime(2026, 8, 24, 0, 0)
     """
     sport_key = get_sport_key_from_id(sport_id)
     return get_current_season_start(sport_key)
@@ -307,10 +494,10 @@ def get_season_label_for_sport_id(sport_id: int) -> str:
     Get the season label for a sport based on its database ID.
     
     Args:
-        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB)
+        sport_id: Database sport ID (30=NBA, 31=NFL, 32=NCAAB, 40=MLB, 41=NCAAF)
     
     Returns:
-        Season label string (e.g., "2025-26" for NBA/NCAAB, "2025" for NFL)
+        Season label string (e.g., "2025-26" for NBA/NCAAB, "2025" for NFL/NCAAF, "2026" for MLB)
     """
     sport_key = get_sport_key_from_id(sport_id)
     return get_current_season_label(sport_key)

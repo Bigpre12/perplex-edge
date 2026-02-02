@@ -25,6 +25,7 @@ export interface PublicSport {
   id: number;
   name: string;
   league_code: string;
+  key: string;
 }
 
 export interface PublicSportList {
@@ -162,17 +163,28 @@ export interface GameLineFilters {
 // API Functions
 // =============================================================================
 
+// Timeout helper - abort fetch after X ms
+function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = 30000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  return fetch(url, {
+    ...options,
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeoutId));
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   console.log('[API] Fetching:', url);
   
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       // Prevent browser caching to ensure fresh data
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache',
       },
-    });
+    }, 30000); // 30 second timeout
     
     if (!response.ok) {
       console.error('[API] Error response:', response.status, response.statusText, url);
@@ -183,6 +195,10 @@ async function fetchJson<T>(url: string): Promise<T> {
     console.log('[API] Success:', url, { itemCount: data?.items?.length ?? data?.total ?? 'N/A' });
     return data;
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[API] Request timed out after 30s:', url);
+      throw new Error('Request timed out - server may be slow or unavailable');
+    }
     console.error('[API] Fetch failed:', url, error);
     throw error;
   }
@@ -689,7 +705,7 @@ export interface HundredPercentProp {
   expected_value: number;
   confidence_score: number;
   game_id: number;
-  game_start_time: string;
+  game_start_time: string | null;  // Nullable if not available
 }
 
 export interface HundredPercentPropList {
@@ -842,10 +858,20 @@ export function use100PercentProps(
 ) {
   return useQuery({
     queryKey: ['100pct-props', sportId, window, limit],
-    queryFn: () => fetch100PercentProps(sportId!, window, limit),
+    queryFn: async () => {
+      const result = await fetch100PercentProps(sportId!, window, limit);
+      // Ensure we always return a valid structure
+      return {
+        items: result?.items ?? [],
+        total: result?.total ?? 0,
+        window: result?.window ?? window,
+      };
+    },
     enabled: sportId !== null,
     staleTime: 60 * 1000, // 1 minute
     refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
+    retry: 2, // Retry twice on failure
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
   });
 }
 
@@ -869,10 +895,21 @@ export function useParlayBuilder(
 ) {
   return useQuery({
     queryKey: ['parlay-builder', sportId, filters],
-    queryFn: () => fetchParlayBuilder(sportId!, filters),
+    queryFn: async () => {
+      const result = await fetchParlayBuilder(sportId!, filters);
+      // Ensure we always return a valid structure
+      return {
+        parlays: result?.parlays ?? [],
+        total_candidates: result?.total_candidates ?? 0,
+        leg_count: result?.leg_count ?? filters.leg_count ?? 3,
+        filters_applied: result?.filters_applied ?? {},
+      };
+    },
     enabled: sportId !== null,
     staleTime: 60 * 1000, // 1 minute
     refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
+    retry: 2, // Retry twice on failure
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
   });
 }
 

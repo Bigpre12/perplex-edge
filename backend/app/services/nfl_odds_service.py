@@ -45,7 +45,7 @@ async def ensure_nfl_sport_exists(db: AsyncSession) -> Sport:
     sport = result.scalar_one_or_none()
     
     if not sport:
-        sport = Sport(name="NFL", league_code="NFL")
+        sport = Sport(name="NFL", league_code="NFL", key="americanfootball_nfl")
         db.add(sport)
         await db.commit()
         logger.info("Created NFL sport in database")

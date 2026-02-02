@@ -1,9 +1,10 @@
-.PHONY: help install dev migrate migrate-down migrate-new run test lint clean
+.PHONY: help install dev stop migrate migrate-down migrate-new run test lint clean
 
 help:
 	@echo "Available commands:"
 	@echo "  make install      - Install dependencies"
-	@echo "  make dev          - Run development server"
+	@echo "  make dev          - Run development server (with data file watching)"
+	@echo "  make stop         - Force stop Python processes (Windows fallback)"
 	@echo "  make migrate      - Run all pending migrations"
 	@echo "  make migrate-down - Rollback last migration"
 	@echo "  make migrate-new  - Create new migration (usage: make migrate-new MSG='description')"
@@ -16,8 +17,13 @@ help:
 install:
 	pip install -r requirements.txt
 
+# Development server with Windows compatibility and data file watching
 dev:
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	python run.py
+
+# Force stop Python processes (Windows fallback when Ctrl+C doesn't work)
+stop:
+	taskkill /F /IM python.exe 2>NUL || echo "No Python processes found"
 
 run:
 	uvicorn app.main:app --host 0.0.0.0 --port 8000

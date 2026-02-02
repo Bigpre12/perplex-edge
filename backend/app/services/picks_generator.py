@@ -30,6 +30,8 @@ SPORT_KEY_TO_LEAGUE = {
     "icehockey_nhl": "NHL",
     "basketball_ncaab": "NCAAB",
     "americanfootball_ncaaf": "NCAAF",
+    "tennis_atp": "ATP",
+    "tennis_wta": "WTA",
 }
 
 
@@ -727,22 +729,22 @@ async def _generate_picks_for_game(
     )
     lines = list(result.scalars().all())
     
-    # Cache for injured players to avoid repeated queries
-    injured_player_ids = set()
+    # PERFORMANCE FIX: Bulk fetch all injured players in single query instead of N+1
+    # Collect all player IDs from lines
+    all_player_ids = {line.player_id for line in lines if line.player_id}
     
-    # First pass: identify all injured players
-    for line in lines:
-        if line.player_id and line.player_id not in injured_player_ids:
-            injury_result = await db.execute(
-                select(Injury).where(
-                    and_(
-                        Injury.player_id == line.player_id,
-                        Injury.status.in_(EXCLUDED_INJURY_STATUSES),
-                    )
+    # Single bulk query for all injured players
+    injured_player_ids = set()
+    if all_player_ids:
+        injury_result = await db.execute(
+            select(Injury.player_id).where(
+                and_(
+                    Injury.player_id.in_(all_player_ids),
+                    Injury.status.in_(EXCLUDED_INJURY_STATUSES),
                 )
             )
-            if injury_result.scalar_one_or_none():
-                injured_player_ids.add(line.player_id)
+        )
+        injured_player_ids = set(injury_result.scalars().all())
     
     # Group lines by player/market (NOT including side) to find best pick per prop
     # Key: (market_id, player_id, sportsbook) -> list of candidate picks
@@ -752,7 +754,9 @@ async def _generate_picks_for_game(
         stats["lines_evaluated"] += 1
         
         # Skip lines without valid line_value (data integrity issue)
-        if line.line_value is None or line.line_value == 0:
+        # Exception: moneylines don't have line values (just odds), so allow line_value=None for them
+        market_type = line.market.market_type if line.market else None
+        if market_type != "moneyline" and (line.line_value is None or line.line_value == 0):
             logger.debug(f"Skipping line {line.id} with invalid line_value: {line.line_value}")
             continue
         

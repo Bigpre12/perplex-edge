@@ -24,7 +24,7 @@ class SyncService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_or_create_sport(self, name: str, league_code: str) -> Sport:
+    async def get_or_create_sport(self, name: str, league_code: str, key: Optional[str] = None) -> Sport:
         """Get or create a sport record."""
         result = await self.db.execute(
             select(Sport).where(Sport.league_code == league_code)
@@ -32,10 +32,12 @@ class SyncService:
         sport = result.scalar_one_or_none()
 
         if not sport:
-            sport = Sport(name=name, league_code=league_code)
+            # Default key based on league_code if not provided
+            sport_key = key or league_code.lower().replace(" ", "_")
+            sport = Sport(name=name, league_code=league_code, key=sport_key)
             self.db.add(sport)
             await self.db.flush()
-            logger.info(f"Created sport: {name} ({league_code})")
+            logger.info(f"Created sport: {name} ({league_code}, key={sport_key})")
 
         return sport
 

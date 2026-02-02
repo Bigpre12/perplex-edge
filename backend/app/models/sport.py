@@ -22,6 +22,7 @@ class Sport(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     league_code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    key: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
     # Relationships
     teams: Mapped[List["Team"]] = relationship(back_populates="sport")
@@ -33,4 +34,4 @@ class Sport(Base, TimestampMixin):
     player_hit_rates: Mapped[List["PlayerHitRate"]] = relationship(back_populates="sport")
 
     def __repr__(self) -> str:
-        return f"<Sport(id={self.id}, name='{self.name}', league_code='{self.league_code}')>"
+        return f"<Sport(id={self.id}, name='{self.name}', league_code='{self.league_code}', key='{self.key}')>"

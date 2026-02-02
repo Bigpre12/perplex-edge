@@ -29,6 +29,7 @@ class PublicSport(BaseModel):
     id: int
     name: str
     league_code: str
+    key: str
 
 
 class PublicSportList(BaseModel):
@@ -200,9 +201,9 @@ class HundredPercentProp(BaseModel):
     player_name: str
     player_id: int
     team: str
-    team_abbr: Optional[str]
+    team_abbr: Optional[str] = None
     opponent_team: str
-    opponent_abbr: Optional[str]
+    opponent_abbr: Optional[str] = None
     
     # Prop details
     stat_type: str
@@ -212,26 +213,26 @@ class HundredPercentProp(BaseModel):
     sportsbook: Optional[str] = None
     
     # Hit rate stats
-    hit_rate_season: Optional[float]
-    games_season: int
-    hit_rate_last_10: Optional[float]
-    games_last_10: int
-    hit_rate_last_5: Optional[float]
-    games_last_5: int
+    hit_rate_season: Optional[float] = None
+    games_season: int = 0
+    hit_rate_last_10: Optional[float] = None
+    games_last_10: int = 0
+    hit_rate_last_5: Optional[float] = None
+    games_last_5: int = 0
     
     # Flags
-    is_100_season: bool
-    is_100_last_10: bool
-    is_100_last_5: bool
+    is_100_season: bool = False
+    is_100_last_10: bool = False
+    is_100_last_5: bool = False
     
     # Model outputs
-    model_probability: float
-    expected_value: float
-    confidence_score: float
+    model_probability: float = 0.0
+    expected_value: float = 0.0
+    confidence_score: float = 0.0
     
     # Game info
     game_id: int
-    game_start_time: UTCDatetime
+    game_start_time: Optional[str] = None  # ISO format string, None if not available
 
 
 class HundredPercentPropList(BaseModel):

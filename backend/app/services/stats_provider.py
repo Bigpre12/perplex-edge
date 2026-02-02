@@ -1,6 +1,5 @@
 """Stats provider for fetching player game logs and writing to PlayerGameStats."""
 
-import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
@@ -9,9 +8,30 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.logging import get_logger
+from app.core.resilience import (
+    with_retry,
+    RetryConfig,
+    CircuitBreakerRegistry,
+)
 from app.models import Player, Game, PlayerGameStats
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+# Retry config for Stats API
+STATS_API_RETRY_CONFIG = RetryConfig(
+    max_attempts=3,
+    min_wait_seconds=1.0,
+    max_wait_seconds=15.0,
+    jitter=True,
+)
+
+# Create circuit breaker for Stats API
+_stats_api_breaker = CircuitBreakerRegistry.get_or_create(
+    "stats_api",
+    fail_max=5,
+    reset_timeout=60,
+)
 
 
 # =============================================================================
@@ -119,41 +139,67 @@ class StatsProvider:
             raise RuntimeError("Client not initialized. Use async context manager.")
         return self._client
     
+    @with_retry(config=STATS_API_RETRY_CONFIG, retry_on=(httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError))
     async def _request(
         self,
         endpoint: str,
         params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
-        """Make an authenticated request to the stats API."""
+        """Make an authenticated request to the stats API with retry logic."""
         if not self.api_key:
             raise ValueError("STATS_API_KEY not configured")
         
         url = f"{self.base_url}{endpoint}"
         headers = {"Authorization": f"Bearer {self.api_key}"}
         
-        response = await self.client.get(url, params=params, headers=headers)
+        try:
+            response = await self.client.get(url, params=params, headers=headers)
+        except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError) as e:
+            logger.error(
+                "stats_api_connection_error",
+                endpoint=endpoint,
+                error_type=type(e).__name__,
+                error=str(e)[:200],
+            )
+            raise  # Let retry decorator handle
         
         # Handle HTTP errors gracefully
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 422:
-                # 422 typically means validation error - log and return empty
+            status_code = e.response.status_code
+            
+            if status_code == 422:
                 logger.warning(
-                    f"Stats API returned 422 for {endpoint}: {e.response.text[:500]}"
+                    "stats_api_validation_error",
+                    endpoint=endpoint,
+                    response=e.response.text[:500],
                 )
                 return []
-            elif e.response.status_code == 429:
-                # Rate limited
-                logger.warning(f"Stats API rate limited: {e.response.text[:200]}")
+            elif status_code == 429:
+                logger.warning(
+                    "stats_api_rate_limited",
+                    endpoint=endpoint,
+                    retry_after=e.response.headers.get("Retry-After"),
+                )
                 return []
-            elif e.response.status_code == 404:
-                # Resource not found - not necessarily an error
-                logger.info(f"Stats API resource not found: {endpoint}")
+            elif status_code == 404:
+                logger.info("stats_api_not_found", endpoint=endpoint)
                 return []
+            elif status_code >= 500:
+                logger.error(
+                    "stats_api_server_error",
+                    endpoint=endpoint,
+                    status_code=status_code,
+                )
+                raise  # May be retried
             else:
-                # Re-raise other errors
-                logger.error(f"Stats API error {e.response.status_code}: {e.response.text[:500]}")
+                logger.error(
+                    "stats_api_client_error",
+                    endpoint=endpoint,
+                    status_code=status_code,
+                    response=e.response.text[:500],
+                )
                 raise
         
         return response.json()
