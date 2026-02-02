@@ -1003,14 +1003,20 @@ class XYZOddsProvider(OddsProvider):
             
             # Current tournaments and players (Feb 2026)
             # ATP: Open Occitanie - Montpellier (Jan 31 - Feb 8, 2026)
-            # WTA: Multiple events ongoing
+            # WTA: Abu Dhabi Open, Ostrava Open, Mumbai Open, Transylvania Open
             if is_wta:
-                tournament = "WTA 500"
+                # Mubadala Abu Dhabi Open (WTA 500) - Jan 30 - Feb 7
+                # Mixed with Ostrava Open field
+                tournament = "Abu Dhabi Open / Ostrava Open"
                 players = [
-                    ("Iga Swiatek", -180), ("Aryna Sabalenka", -150),
-                    ("Coco Gauff", -130), ("Elena Rybakina", -120),
-                    ("Jessica Pegula", +110), ("Ons Jabeur", +120),
-                    ("Qinwen Zheng", +130), ("Jasmine Paolini", +140),
+                    ("Belinda Bencic", -180),          # Abu Dhabi defending champion
+                    ("Elena Rybakina", -160),          # Top seed likely
+                    ("Daria Kasatkina", +100),         # Strong indoor player
+                    ("Beatriz Haddad Maia", +110),     # Brazilian star
+                    ("Elina Svitolina", +120),         # Former top 5
+                    ("Liudmila Samsonova", +130),      # Russian player
+                    ("Anastasia Pavlyuchenkova", +140), # Experienced player
+                    ("Donna Vekic", +150),             # Croatian player
                 ]
             else:
                 # Open Occitanie - Montpellier (ATP 250)
