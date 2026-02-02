@@ -1,8 +1,78 @@
 import { useState, useMemo, useEffect } from 'react';
-import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine } from '../api/public';
+import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine, PlayerPropPick } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { AltLineExplorer } from './AltLineExplorer';
+
+// ============================================================================
+// Confidence Tier Helpers
+// ============================================================================
+
+type ConfidenceTier = 'green' | 'yellow' | 'red';
+
+function getConfidenceTier(modelProb: number, ev: number): ConfidenceTier {
+  // Green: high confidence (≥60%) AND strong EV (≥5%)
+  if (modelProb >= 0.6 && ev >= 0.05) return 'green';
+  // Red: negative EV
+  if (ev < 0) return 'red';
+  // Yellow: thin edge or lower confidence
+  return 'yellow';
+}
+
+function ConfidenceTierBadge({ tier }: { tier: ConfidenceTier }) {
+  const config = {
+    green: { bg: 'bg-green-900/50', border: 'border-green-500', text: 'text-green-400', label: '●' },
+    yellow: { bg: 'bg-yellow-900/50', border: 'border-yellow-500', text: 'text-yellow-400', label: '●' },
+    red: { bg: 'bg-red-900/50', border: 'border-red-500', text: 'text-red-400', label: '●' },
+  }[tier];
+  
+  return (
+    <span 
+      className={`inline-block w-3 h-3 rounded-full ${config.bg} border ${config.border}`}
+      title={tier === 'green' ? 'Strong pick' : tier === 'yellow' ? 'Thin edge' : 'Negative EV'}
+    />
+  );
+}
+
+// ============================================================================
+// Stale Line Detection
+// ============================================================================
+
+function isLinePotentiallyStale(gameStartTime: string): boolean {
+  const now = new Date();
+  const gameStart = new Date(gameStartTime);
+  const hoursUntilGame = (gameStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+  
+  // If game starts within 2 hours, lines should be fresh - flag if potentially stale
+  // For now, we just warn for games starting very soon (< 1 hour)
+  return hoursUntilGame < 1 && hoursUntilGame > 0;
+}
+
+function StaleBadge({ gameStartTime }: { gameStartTime: string }) {
+  if (!isLinePotentiallyStale(gameStartTime)) return null;
+  
+  return (
+    <span 
+      className="ml-1 px-1.5 py-0.5 text-xs bg-orange-900/50 text-orange-400 rounded"
+      title="Game starts soon - verify line is current"
+    >
+      ⏰
+    </span>
+  );
+}
+
+// ============================================================================
+// Don't Bet List - Exclusion Filters
+// ============================================================================
+
+const TRAP_STAT_TYPES = [
+  { value: 'player_threes', label: '3PT Made', reason: 'High variance' },
+  { value: 'player_steals', label: 'Steals', reason: 'Very random' },
+  { value: 'player_blocks', label: 'Blocks', reason: 'Very random' },
+  { value: 'player_turnovers', label: 'Turnovers', reason: 'Hard to model' },
+];
+
+const LOW_MINUTE_KEYWORDS = ['bench', 'backup', 'reserve'];
 
 // Component to show per-book line comparison
 function BookLinesPopover({ bookLines, bestBook }: { bookLines: BookLine[] | null; bestBook: string | null }) {
@@ -98,8 +168,24 @@ export function PlayerPropsTab() {
   const [minEv, setMinEv] = useState<number>(0.03);                 // 3%+ EV only
   const [riskLevels, setRiskLevels] = useState<string[]>(['STANDARD', 'CONFIDENT', 'STRONG']);
   
+  // Don't Bet List state
+  const [showDontBetPanel, setShowDontBetPanel] = useState(false);
+  const [excludedStatTypes, setExcludedStatTypes] = useState<Set<string>>(new Set(['player_steals', 'player_blocks']));
+  const [onlyGreenTier, setOnlyGreenTier] = useState(false);
+  const [hideStaleLines, setHideStaleLines] = useState(true);
+  
   // Alt-line explorer state
   const [exploringPickId, setExploringPickId] = useState<number | null>(null);
+  
+  // Toggle excluded stat type
+  const toggleExcludedStat = (stat: string) => {
+    setExcludedStatTypes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(stat)) newSet.delete(stat);
+      else newSet.add(stat);
+      return newSet;
+    });
+  };
 
   // Build filters object
   const filters: PlayerPropFilters = useMemo(
@@ -132,7 +218,37 @@ export function PlayerPropsTab() {
   };
 
   // Fetch data with React Query
-  const { data, isLoading, error, isFetching } = usePlayerPropPicks(sportId, filters);
+  const { data: rawData, isLoading, error, isFetching } = usePlayerPropPicks(sportId, filters);
+  
+  // Apply client-side "Don't Bet List" filters
+  const data = useMemo(() => {
+    if (!rawData) return rawData;
+    
+    let filteredItems = rawData.items;
+    
+    // Filter out excluded stat types
+    if (excludedStatTypes.size > 0) {
+      filteredItems = filteredItems.filter(pick => !excludedStatTypes.has(pick.stat_type));
+    }
+    
+    // Filter to green tier only if enabled
+    if (onlyGreenTier) {
+      filteredItems = filteredItems.filter(pick => 
+        getConfidenceTier(pick.model_probability, pick.expected_value) === 'green'
+      );
+    }
+    
+    // Hide stale lines
+    if (hideStaleLines) {
+      filteredItems = filteredItems.filter(pick => !isLinePotentiallyStale(pick.game_start_time));
+    }
+    
+    return {
+      ...rawData,
+      items: filteredItems,
+      total: filteredItems.length,
+    };
+  }, [rawData, excludedStatTypes, onlyGreenTier, hideStaleLines]);
 
   // Debug logging
   useEffect(() => {
@@ -250,16 +366,118 @@ export function PlayerPropsTab() {
             </div>
           </div>
 
-          {/* Results count */}
-          <div className="text-sm text-gray-400">
-            {isFetching && <span className="animate-pulse">Updating...</span>}
-            {data && !isFetching && (
-              <span>
-                <span className="text-white font-medium">{data.total}</span> picks found
-              </span>
-            )}
+          {/* Results count + Don't Bet Toggle */}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-400">
+              {isFetching && <span className="animate-pulse">Updating...</span>}
+              {data && !isFetching && (
+                <span>
+                  <span className="text-white font-medium">{data.total}</span> picks
+                  {rawData && rawData.total !== data.total && (
+                    <span className="text-orange-400 ml-1">
+                      ({rawData.total - data.total} filtered)
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setShowDontBetPanel(!showDontBetPanel)}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                showDontBetPanel || excludedStatTypes.size > 0 || onlyGreenTier
+                  ? 'bg-orange-900/30 border-orange-600 text-orange-400'
+                  : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
+              }`}
+            >
+              🚫 Don't Bet List {excludedStatTypes.size > 0 && `(${excludedStatTypes.size})`}
+            </button>
           </div>
         </div>
+        
+        {/* Don't Bet List Panel */}
+        {showDontBetPanel && (
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <div className="flex flex-wrap gap-6">
+              {/* Trap Stat Types */}
+              <div>
+                <div className="text-xs text-gray-400 mb-2 font-medium">Exclude Trap Stats</div>
+                <div className="flex flex-wrap gap-2">
+                  {TRAP_STAT_TYPES.map(stat => (
+                    <button
+                      key={stat.value}
+                      onClick={() => toggleExcludedStat(stat.value)}
+                      className={`px-2 py-1 text-xs rounded border transition-colors ${
+                        excludedStatTypes.has(stat.value)
+                          ? 'bg-red-900/30 border-red-600 text-red-400'
+                          : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
+                      }`}
+                      title={stat.reason}
+                    >
+                      {excludedStatTypes.has(stat.value) ? '✗' : '○'} {stat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Quality Filters */}
+              <div>
+                <div className="text-xs text-gray-400 mb-2 font-medium">Quality Controls</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setOnlyGreenTier(!onlyGreenTier)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      onlyGreenTier
+                        ? 'bg-green-900/30 border-green-600 text-green-400'
+                        : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
+                    }`}
+                    title="Only show picks with high confidence (≥60%) AND strong EV (≥5%)"
+                  >
+                    {onlyGreenTier ? '✓' : '○'} Green Tier Only
+                  </button>
+                  <button
+                    onClick={() => setHideStaleLines(!hideStaleLines)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      hideStaleLines
+                        ? 'bg-orange-900/30 border-orange-600 text-orange-400'
+                        : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
+                    }`}
+                    title="Hide props for games starting within 1 hour (lines may be stale)"
+                  >
+                    {hideStaleLines ? '✓' : '○'} Hide Stale Lines
+                  </button>
+                </div>
+              </div>
+              
+              {/* Quick Reset */}
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setExcludedStatTypes(new Set());
+                    setOnlyGreenTier(false);
+                    setHideStaleLines(true);
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-400 underline"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+            
+            {/* Legend */}
+            <div className="mt-3 pt-3 border-t border-gray-700/50 flex items-center gap-4 text-xs text-gray-500">
+              <span>Tier Legend:</span>
+              <span className="flex items-center gap-1">
+                <ConfidenceTierBadge tier="green" /> Strong (≥60% conf, ≥5% EV)
+              </span>
+              <span className="flex items-center gap-1">
+                <ConfidenceTierBadge tier="yellow" /> Thin edge
+              </span>
+              <span className="flex items-center gap-1">
+                <ConfidenceTierBadge tier="red" /> Negative EV
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading State */}
@@ -283,6 +501,7 @@ export function PlayerPropsTab() {
             <table className="w-full text-sm">
               <thead className="bg-gray-900 text-gray-400 text-xs uppercase">
                 <tr>
+                  <th className="px-2 py-3 text-center w-8" title="Confidence Tier">Tier</th>
                   <th className="px-3 py-3 text-left">Player</th>
                   <th className="px-3 py-3 text-left">Team</th>
                   <th className="px-3 py-3 text-left">Opponent</th>
@@ -302,11 +521,19 @@ export function PlayerPropsTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700">
-                {data.items.map((pick) => (
+                {data.items.map((pick) => {
+                  const tier = getConfidenceTier(pick.model_probability, pick.expected_value);
+                  return (
                   <tr
                     key={pick.pick_id}
-                    className="hover:bg-gray-700/50 transition-colors"
+                    className={`hover:bg-gray-700/50 transition-colors ${
+                      tier === 'green' ? 'bg-green-900/5' : 
+                      tier === 'red' ? 'bg-red-900/5' : ''
+                    }`}
                   >
+                    <td className="px-2 py-3 text-center">
+                      <ConfidenceTierBadge tier={tier} />
+                    </td>
                     <td className="px-3 py-3 text-white font-medium">{pick.player_name}</td>
                     <td className="px-3 py-3 text-gray-300">
                       {pick.team_abbr || pick.team}
@@ -382,6 +609,7 @@ export function PlayerPropsTab() {
                     </td>
                     <td className="px-3 py-3 text-gray-400 text-xs">
                       {formatTime(pick.game_start_time)}
+                      <StaleBadge gameStartTime={pick.game_start_time} />
                     </td>
                     <td className="px-3 py-3 text-center">
                       <button
@@ -393,7 +621,8 @@ export function PlayerPropsTab() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
             
