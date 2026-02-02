@@ -2,6 +2,106 @@ import { useState, useMemo } from 'react';
 import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 
+// ============================================================================
+// DFS Platform Payout Tables
+// ============================================================================
+
+type EntryType = 'power' | 'flex';
+
+interface PayoutEntry {
+  legs: number;
+  type: EntryType;
+  multiplier: number;
+  flexMisses?: number; // How many can miss for flex
+  flexMultiplier?: number; // Reduced payout if flex hits
+}
+
+interface PlatformConfig {
+  name: string;
+  payouts: PayoutEntry[];
+  houseEdgeLabel: string;
+  bestStructures: number[]; // Leg counts with best theoretical edge
+  warnStructures: number[]; // Leg counts with high house edge
+}
+
+const PLATFORM_CONFIGS: Record<string, PlatformConfig> = {
+  prizepicks: {
+    name: 'PrizePicks',
+    payouts: [
+      { legs: 2, type: 'power', multiplier: 3 },
+      { legs: 3, type: 'power', multiplier: 5 },
+      { legs: 3, type: 'flex', multiplier: 5, flexMisses: 1, flexMultiplier: 1.25 },
+      { legs: 4, type: 'power', multiplier: 10 },
+      { legs: 4, type: 'flex', multiplier: 10, flexMisses: 1, flexMultiplier: 1.5 },
+      { legs: 5, type: 'power', multiplier: 20 },
+      { legs: 5, type: 'flex', multiplier: 20, flexMisses: 2, flexMultiplier: 0.4 },
+      { legs: 6, type: 'power', multiplier: 37.5 },
+      { legs: 6, type: 'flex', multiplier: 37.5, flexMisses: 2, flexMultiplier: 2.5 },
+    ],
+    houseEdgeLabel: '~10-20%',
+    bestStructures: [3, 5], // 3-pick and 5-pick flex have best math
+    warnStructures: [2, 6], // 2-pick power and 6-pick have worse edges
+  },
+  fliff: {
+    name: 'Fliff',
+    payouts: [
+      { legs: 2, type: 'power', multiplier: 3 },
+      { legs: 3, type: 'power', multiplier: 5 },
+      { legs: 4, type: 'power', multiplier: 10 },
+      { legs: 5, type: 'power', multiplier: 20 },
+      { legs: 6, type: 'power', multiplier: 40 },
+    ],
+    houseEdgeLabel: '~15-25%',
+    bestStructures: [3, 4],
+    warnStructures: [2, 6],
+  },
+  underdog: {
+    name: 'Underdog',
+    payouts: [
+      { legs: 2, type: 'power', multiplier: 3 },
+      { legs: 3, type: 'power', multiplier: 6 },
+      { legs: 4, type: 'power', multiplier: 10 },
+      { legs: 5, type: 'power', multiplier: 20 },
+      { legs: 6, type: 'power', multiplier: 35 },
+    ],
+    houseEdgeLabel: '~12-18%',
+    bestStructures: [3, 5],
+    warnStructures: [2],
+  },
+  sportsbook: {
+    name: 'Sportsbook',
+    payouts: [], // Standard parlay math, no fixed table
+    houseEdgeLabel: 'Variable (vig)',
+    bestStructures: [2, 3],
+    warnStructures: [5, 6],
+  },
+};
+
+// Calculate break-even hit rate per leg for a given payout
+function calcBreakEvenPerLeg(multiplier: number, legs: number): number {
+  // For all legs to hit at multiplier X: (hitRate)^legs = 1/X
+  // hitRate = (1/X)^(1/legs)
+  return Math.pow(1 / multiplier, 1 / legs);
+}
+
+// Calculate structure EV given model probability and platform payout
+function calcStructureEV(modelProb: number, multiplier: number): number {
+  // EV = (prob * multiplier) - 1
+  return (modelProb * multiplier) - 1;
+}
+
+// Get structure edge rating
+function getStructureEdge(structureEV: number, platform: string, legs: number): { label: string; color: string } {
+  const config = PLATFORM_CONFIGS[platform];
+  const isBest = config?.bestStructures.includes(legs);
+  const isWarn = config?.warnStructures.includes(legs);
+  
+  if (structureEV > 0.08) return { label: 'Excellent', color: 'text-green-400' };
+  if (structureEV > 0.03) return { label: isBest ? 'Good' : 'Decent', color: isBest ? 'text-green-400' : 'text-blue-400' };
+  if (structureEV > 0) return { label: isWarn ? 'Marginal' : 'Neutral', color: isWarn ? 'text-yellow-400' : 'text-gray-400' };
+  return { label: 'Negative', color: 'text-red-400' };
+}
+
 // Grade colors
 const GRADE_COLORS: Record<string, string> = {
   'A': 'bg-green-500 text-white',
@@ -135,17 +235,43 @@ function LegCard({ leg, index }: { leg: ParlayLeg; index: number }) {
   );
 }
 
+// Props for ParlayCard with DFS platform info
+interface ParlayCardProps {
+  parlay: ParlayRecommendation;
+  index: number;
+  siteMode: string;
+  entryType: EntryType;
+  platformPayout: PayoutEntry | null;
+  onSelect?: (index: number) => void;
+  isSelected?: boolean;
+}
+
 // Parlay card component
-function ParlayCard({ parlay, index }: { parlay: ParlayRecommendation; index: number }) {
+function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSelect, isSelected }: ParlayCardProps) {
   const [isExpanded, setIsExpanded] = useState(index === 0); // First one expanded by default
   
   // Calculate unique games for same-game vs multi-game indicator
   const uniqueGames = new Set(parlay.legs.map(l => l.game_id).filter(id => id != null)).size;
   const isSameGame = uniqueGames === 1 && parlay.legs.length > 1;
   
+  // Calculate structure EV based on platform payout
+  const structureEV = platformPayout 
+    ? calcStructureEV(parlay.parlay_probability, platformPayout.multiplier)
+    : parlay.parlay_ev;
+  const structureEdge = platformPayout 
+    ? getStructureEdge(structureEV, siteMode, parlay.leg_count)
+    : null;
+  
+  // Entry type label for DFS
+  const entryLabel = siteMode !== 'sportsbook' && platformPayout
+    ? `${platformPayout.legs}-${entryType === 'power' ? 'Power' : 'Flex'}`
+    : null;
+  
   return (
     <div className={`border rounded-lg overflow-hidden transition-all ${
-      parlay.label === 'LOCK' 
+      isSelected
+        ? 'border-purple-500 bg-purple-900/20 ring-2 ring-purple-500/50'
+        : parlay.label === 'LOCK' 
         ? 'border-green-500/50 bg-green-900/10' 
         : parlay.label === 'PLAY'
         ? 'border-blue-500/30 bg-blue-900/5'
@@ -158,7 +284,26 @@ function ParlayCard({ parlay, index }: { parlay: ParlayRecommendation; index: nu
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {/* Checkbox for session tracking */}
+            {onSelect && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onSelect(index); }}
+                className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                  isSelected 
+                    ? 'bg-purple-600 border-purple-500 text-white' 
+                    : 'border-gray-600 hover:border-gray-400'
+                }`}
+              >
+                {isSelected && <span className="text-xs">✓</span>}
+              </button>
+            )}
             <span className="text-gray-500 text-lg font-medium">#{index + 1}</span>
+            {/* Entry type badge for DFS */}
+            {entryLabel && (
+              <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-900/50 text-purple-300 border border-purple-700">
+                {entryLabel}
+              </span>
+            )}
             <LabelBadge label={parlay.label} />
             <GradeBadge grade={parlay.overall_grade} />
             <CorrelationRiskBadge 
@@ -178,14 +323,25 @@ function ParlayCard({ parlay, index }: { parlay: ParlayRecommendation; index: nu
           </div>
           
           <div className="flex items-center gap-6">
-            {/* Odds */}
+            {/* Payout (DFS) or Odds (Sportsbook) */}
             <div className="text-right">
-              <div className="text-xl font-bold text-white">
-                {formatOdds(parlay.total_odds)}
-              </div>
-              <div className="text-xs text-gray-500">
-                {parlay.decimal_odds.toFixed(2)}x payout
-              </div>
+              {platformPayout ? (
+                <>
+                  <div className="text-xl font-bold text-green-400">
+                    {platformPayout.multiplier}x
+                  </div>
+                  <div className="text-xs text-gray-500">payout</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xl font-bold text-white">
+                    {formatOdds(parlay.total_odds)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {parlay.decimal_odds.toFixed(2)}x
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Win Prob */}
@@ -196,13 +352,25 @@ function ParlayCard({ parlay, index }: { parlay: ParlayRecommendation; index: nu
               <div className="text-xs text-gray-500">win prob</div>
             </div>
             
-            {/* EV */}
+            {/* Structure EV (DFS) or standard EV (Sportsbook) */}
             <div className="text-right">
-              <div className={`text-lg font-medium ${parlay.parlay_ev > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {parlay.parlay_ev > 0 ? '+' : ''}{formatPercent(parlay.parlay_ev)}
+              <div className={`text-lg font-medium ${structureEV > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {structureEV > 0 ? '+' : ''}{formatPercent(structureEV)}
               </div>
-              <div className="text-xs text-gray-500">EV</div>
+              <div className="text-xs text-gray-500">
+                {platformPayout ? 'structure EV' : 'EV'}
+              </div>
             </div>
+            
+            {/* Structure Edge Badge (DFS only) */}
+            {structureEdge && (
+              <div className="text-right">
+                <div className={`text-sm font-medium ${structureEdge.color}`}>
+                  {structureEdge.label}
+                </div>
+                <div className="text-xs text-gray-500">edge</div>
+              </div>
+            )}
             
             {/* Kelly Sizing */}
             {parlay.kelly && parlay.kelly.suggested_units > 0 && (
@@ -281,6 +449,10 @@ function ParlayCard({ parlay, index }: { parlay: ParlayRecommendation; index: nu
 export function ParlayBuilder() {
   const { sportId, isLoading: sportLoading } = useSportContext();
   
+  // Site mode state
+  const [siteMode, setSiteMode] = useState<string>('prizepicks');
+  const [entryType, setEntryType] = useState<EntryType>('power');
+  
   // Filter state
   const [legCount, setLegCount] = useState(3);
   const [include100Pct, setInclude100Pct] = useState(false);
@@ -288,20 +460,79 @@ export function ParlayBuilder() {
   const [maxResults, setMaxResults] = useState(5);
   const [blockCorrelated, setBlockCorrelated] = useState(true);
   const [maxCorrelationRisk, setMaxCorrelationRisk] = useState('MEDIUM');
-  const [activePreset, setActivePreset] = useState<string | null>('balanced');
+  const [activePreset, setActivePreset] = useState<string | null>('pp3Power');
   
-  // Quick presets for different strategies
-  const PRESETS = {
-    maxEdge: { legCount: 2, minGrade: 'A', label: '2-Leg Max Edge', desc: 'Tightest filters, highest edge' },
-    balanced: { legCount: 3, minGrade: 'B', label: '3-4 Balanced', desc: 'Good balance of edge and volume' },
-    highVariance: { legCount: 5, minGrade: 'C', label: '5-6 High Var', desc: 'More legs, higher variance' },
+  // Session tracking
+  const [selectedSlips, setSelectedSlips] = useState<Set<number>>(new Set());
+  
+  // Get current platform config
+  const platformConfig = PLATFORM_CONFIGS[siteMode] || PLATFORM_CONFIGS.sportsbook;
+  
+  // Get payout multiplier for current settings
+  const currentPayout = useMemo(() => {
+    if (siteMode === 'sportsbook') return null;
+    return platformConfig.payouts.find(
+      p => p.legs === legCount && p.type === entryType
+    );
+  }, [siteMode, platformConfig, legCount, entryType]);
+  
+  // Calculate break-even per leg for current structure
+  const breakEvenPerLeg = useMemo(() => {
+    if (!currentPayout) return null;
+    return calcBreakEvenPerLeg(currentPayout.multiplier, currentPayout.legs);
+  }, [currentPayout]);
+  
+  // DFS-tuned presets by platform
+  const DFS_PRESETS = {
+    // PrizePicks presets
+    pp2Power: { 
+      legCount: 2, minGrade: 'A', entryType: 'power' as EntryType, site: 'prizepicks',
+      label: 'PP 2-Power', desc: 'High edge only (3x payout, needs 6%+ edge/leg)',
+      minEvPerLeg: 0.06, // Higher threshold due to worse structure
+    },
+    pp3Power: { 
+      legCount: 3, minGrade: 'B', entryType: 'power' as EntryType, site: 'prizepicks',
+      label: 'PP 3-Power', desc: 'Workhorse (5x payout, ~58% BE/leg)',
+      minEvPerLeg: 0.03,
+    },
+    pp3Flex: { 
+      legCount: 3, minGrade: 'B', entryType: 'flex' as EntryType, site: 'prizepicks',
+      label: 'PP 3-Flex', desc: '3-pick flex (1.25x if 2/3 hit)',
+      minEvPerLeg: 0.03,
+    },
+    pp5Flex: { 
+      legCount: 5, minGrade: 'C', entryType: 'flex' as EntryType, site: 'prizepicks',
+      label: 'PP 5-Flex', desc: 'Best flex value (can miss 2)',
+      minEvPerLeg: 0.02,
+    },
+    // Sportsbook presets
+    sb2Leg: { 
+      legCount: 2, minGrade: 'A', entryType: 'power' as EntryType, site: 'sportsbook',
+      label: '2-Leg Parlay', desc: 'Conservative sportsbook parlay',
+      minEvPerLeg: 0.04,
+    },
+    sb3Leg: { 
+      legCount: 3, minGrade: 'B', entryType: 'power' as EntryType, site: 'sportsbook',
+      label: '3-Leg Parlay', desc: 'Standard sportsbook parlay',
+      minEvPerLeg: 0.03,
+    },
   };
   
-  const applyPreset = (preset: keyof typeof PRESETS) => {
-    const p = PRESETS[preset];
-    setLegCount(p.legCount);
-    setMinGrade(p.minGrade);
-    setActivePreset(preset);
+  // Filter presets by current site mode
+  const visiblePresets = useMemo(() => {
+    return Object.entries(DFS_PRESETS).filter(([_, preset]) => 
+      preset.site === siteMode || preset.site === 'sportsbook' && siteMode === 'sportsbook'
+    );
+  }, [siteMode]);
+  
+  const applyPreset = (presetKey: string) => {
+    const preset = DFS_PRESETS[presetKey as keyof typeof DFS_PRESETS];
+    if (!preset) return;
+    setLegCount(preset.legCount);
+    setMinGrade(preset.minGrade);
+    setEntryType(preset.entryType);
+    setSiteMode(preset.site);
+    setActivePreset(presetKey);
   };
   
   // Build filters
@@ -362,25 +593,91 @@ export function ParlayBuilder() {
   
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header + Site Mode */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white">Smart Parlay Builder</h2>
           <p className="text-sm text-gray-400">
-            AI-optimized parlays with grading and LOCK/PLAY/SKIP recommendations
+            AI-optimized entries for DFS pick'em and sportsbooks
           </p>
+        </div>
+        
+        {/* Site Mode Selector */}
+        <div className="flex items-center gap-2 bg-gray-800/80 rounded-lg p-1">
+          {Object.entries(PLATFORM_CONFIGS).map(([key, config]) => (
+            <button
+              key={key}
+              onClick={() => {
+                setSiteMode(key);
+                // Auto-select best preset for this site
+                if (key === 'prizepicks') applyPreset('pp3Power');
+                else if (key === 'fliff' || key === 'underdog') applyPreset('pp3Power');
+                else applyPreset('sb3Leg');
+              }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                siteMode === key
+                  ? 'bg-purple-600 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              {config.name}
+            </button>
+          ))}
         </div>
       </div>
       
-      {/* Quick Presets */}
+      {/* Platform Info Bar */}
+      {siteMode !== 'sportsbook' && (
+        <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <div>
+              <span className="text-xs text-purple-400">Platform</span>
+              <div className="text-sm font-medium text-white">{platformConfig.name}</div>
+            </div>
+            {currentPayout && (
+              <>
+                <div>
+                  <span className="text-xs text-purple-400">Payout</span>
+                  <div className="text-sm font-medium text-green-400">{currentPayout.multiplier}x</div>
+                </div>
+                <div>
+                  <span className="text-xs text-purple-400">Break-Even/Leg</span>
+                  <div className="text-sm font-medium text-yellow-400">
+                    {breakEvenPerLeg ? `${(breakEvenPerLeg * 100).toFixed(1)}%` : '-'}
+                  </div>
+                </div>
+              </>
+            )}
+            <div>
+              <span className="text-xs text-purple-400">House Edge</span>
+              <div className="text-sm font-medium text-orange-400">{platformConfig.houseEdgeLabel}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {platformConfig.bestStructures.includes(legCount) && (
+              <span className="px-2 py-1 bg-green-900/50 text-green-400 text-xs rounded-full">
+                ✓ Best Structure
+              </span>
+            )}
+            {platformConfig.warnStructures.includes(legCount) && (
+              <span className="px-2 py-1 bg-orange-900/50 text-orange-400 text-xs rounded-full">
+                ⚠ High House Edge
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* DFS-Tuned Presets */}
       <div className="flex flex-wrap gap-2">
-        {Object.entries(PRESETS).map(([key, preset]) => (
+        <span className="text-xs text-gray-500 self-center mr-2">Presets:</span>
+        {visiblePresets.map(([key, preset]) => (
           <button
             key={key}
-            onClick={() => applyPreset(key as keyof typeof PRESETS)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            onClick={() => applyPreset(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
               activePreset === key
-                ? 'bg-blue-600 text-white border-2 border-blue-400'
+                ? 'bg-purple-600 text-white border-2 border-purple-400'
                 : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-500'
             }`}
             title={preset.desc}
@@ -390,7 +687,7 @@ export function ParlayBuilder() {
         ))}
         <button
           onClick={() => setActivePreset(null)}
-          className={`px-3 py-2 rounded-lg text-sm transition-all ${
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
             activePreset === null
               ? 'bg-gray-700 text-white border border-gray-500'
               : 'bg-gray-800/50 text-gray-500 border border-gray-700 hover:text-gray-300'
@@ -402,7 +699,36 @@ export function ParlayBuilder() {
       
       {/* Filters */}
       <div className="bg-gray-800/50 rounded-lg p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          {/* Entry Type (DFS only) */}
+          {siteMode !== 'sportsbook' && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Entry Type</label>
+              <div className="flex bg-gray-700 rounded p-0.5">
+                <button
+                  onClick={() => setEntryType('power')}
+                  className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                    entryType === 'power'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Power
+                </button>
+                <button
+                  onClick={() => setEntryType('flex')}
+                  className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                    entryType === 'flex'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Flex
+                </button>
+              </div>
+            </div>
+          )}
+          
           {/* Leg count */}
           <div>
             <label className="block text-xs text-gray-400 mb-1">Legs</label>
@@ -415,7 +741,7 @@ export function ParlayBuilder() {
               </button>
               <span className="text-white font-medium w-8 text-center">{legCount}</span>
               <button
-                onClick={() => setLegCount(Math.min(15, legCount + 1))}
+                onClick={() => setLegCount(Math.min(6, legCount + 1))}
                 className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white"
               >
                 +
@@ -461,9 +787,9 @@ export function ParlayBuilder() {
               onChange={e => setMaxResults(Number(e.target.value))}
               className="w-full bg-gray-700 text-white rounded px-3 py-1.5 text-sm"
             >
-              <option value={3}>3 parlays</option>
-              <option value={5}>5 parlays</option>
-              <option value={10}>10 parlays</option>
+              <option value={3}>3 entries</option>
+              <option value={5}>5 entries</option>
+              <option value={10}>10 entries</option>
             </select>
           </div>
         </div>
@@ -584,9 +910,102 @@ export function ParlayBuilder() {
             </div>
           </div>
           
+          {/* Session Risk Panel */}
+          {selectedSlips.size > 0 && (
+            <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-700/50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-6">
+                  <div>
+                    <div className="text-xs text-purple-400">Slips Selected</div>
+                    <div className="text-2xl font-bold text-white">{selectedSlips.size}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-purple-400">Total Risk</div>
+                    <div className="text-2xl font-bold text-yellow-400">
+                      {(() => {
+                        const totalUnits = Array.from(selectedSlips).reduce((sum, idx) => {
+                          const p = parlays[idx];
+                          return sum + (p?.kelly?.suggested_units ?? 0);
+                        }, 0);
+                        return `${totalUnits.toFixed(1)}u`;
+                      })()}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-purple-400">Avg EV</div>
+                    <div className={`text-2xl font-bold ${
+                      (() => {
+                        const selected = Array.from(selectedSlips).map(idx => parlays[idx]).filter(Boolean);
+                        const avgEv = selected.length > 0 
+                          ? selected.reduce((sum, p) => {
+                              const ev = currentPayout 
+                                ? calcStructureEV(p.parlay_probability, currentPayout.multiplier)
+                                : p.parlay_ev;
+                              return sum + ev;
+                            }, 0) / selected.length
+                          : 0;
+                        return avgEv > 0.03 ? 'text-green-400' : avgEv > 0 ? 'text-yellow-400' : 'text-red-400';
+                      })()
+                    }`}>
+                      {(() => {
+                        const selected = Array.from(selectedSlips).map(idx => parlays[idx]).filter(Boolean);
+                        const avgEv = selected.length > 0 
+                          ? selected.reduce((sum, p) => {
+                              const ev = currentPayout 
+                                ? calcStructureEV(p.parlay_probability, currentPayout.multiplier)
+                                : p.parlay_ev;
+                              return sum + ev;
+                            }, 0) / selected.length
+                          : 0;
+                        return `${avgEv > 0 ? '+' : ''}${(avgEv * 100).toFixed(1)}%`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {/* Warning if risk is high */}
+                  {(() => {
+                    const totalUnits = Array.from(selectedSlips).reduce((sum, idx) => {
+                      const p = parlays[idx];
+                      return sum + (p?.kelly?.suggested_units ?? 0);
+                    }, 0);
+                    if (totalUnits > 5) {
+                      return (
+                        <div className="text-xs text-orange-400 bg-orange-900/30 px-3 py-1 rounded">
+                          ⚠ High exposure ({totalUnits.toFixed(1)}u total)
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  <button
+                    onClick={() => setSelectedSlips(new Set())}
+                    className="text-xs text-gray-400 hover:text-white px-3 py-1 bg-gray-700 rounded"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Parlay cards */}
           {parlays.map((parlay, index) => (
-            <ParlayCard key={index} parlay={parlay} index={index} />
+            <ParlayCard 
+              key={index} 
+              parlay={parlay} 
+              index={index}
+              siteMode={siteMode}
+              entryType={entryType}
+              platformPayout={currentPayout ?? null}
+              onSelect={(idx) => {
+                const newSet = new Set(selectedSlips);
+                if (newSet.has(idx)) newSet.delete(idx);
+                else newSet.add(idx);
+                setSelectedSlips(newSet);
+              }}
+              isSelected={selectedSlips.has(index)}
+            />
           ))}
         </div>
       )}
