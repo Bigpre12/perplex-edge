@@ -1,5 +1,6 @@
 """ETL for syncing player statistics from stats providers."""
 
+import asyncio
 import logging
 from datetime import datetime, date, timezone, timedelta
 from typing import Any, Optional
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Sport, Player, Game, Line, PlayerGameStats
 from app.services.stats_provider import StatsProvider, GameLog
+from app.core.config import get_batch_player_delay, get_games_window
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +220,7 @@ async def find_game_by_date_approx(
 async def sync_recent_player_stats(
     db: AsyncSession,
     sport_key: str,
-    games_back: int = 10,
+    games_back: Optional[int] = None,
     only_players_with_lines_today: bool = True,
     use_stubs: bool = False,
 ) -> dict[str, Any]:
@@ -232,13 +234,16 @@ async def sync_recent_player_stats(
     Args:
         db: Database session
         sport_key: Sport identifier (e.g., 'basketball_nba')
-        games_back: Number of recent games to fetch per player
+        games_back: Number of recent games to fetch per player (default from config)
         only_players_with_lines_today: If True, only sync players with lines today
         use_stubs: Use stub data instead of real API calls
     
     Returns:
         Dictionary with sync statistics
     """
+    # Use config-based default if not specified
+    if games_back is None:
+        games_back = get_games_window(sport_key, "medium")
     stats = {
         "sport": None,
         "players_processed": 0,
@@ -318,6 +323,11 @@ async def sync_recent_player_stats(
                                 stats["stats_updated"] += 1
                     
                     stats["players_processed"] += 1
+                    
+                    # Add delay between players to avoid overwhelming the API
+                    # Uses config-based delay setting
+                    if stats["players_processed"] < len(players):
+                        await asyncio.sleep(get_batch_player_delay())
                 
                 except Exception as e:
                     logger.error(f"Error processing player {player.name}: {e}")

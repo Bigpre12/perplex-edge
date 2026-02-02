@@ -12,6 +12,11 @@ from sqlalchemy.orm import selectinload
 
 from app.models import Sport, Game, Line, Market, Player, PlayerGameStats, ModelPick, Injury
 from app.models.injury import EXCLUDED_INJURY_STATUSES
+from app.core.config import (
+    get_games_window,
+    get_ev_threshold,
+    get_min_model_probability,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -886,9 +891,26 @@ async def _get_player_averages(
     db: AsyncSession,
     player_id: int,
     stat_type: str,
-    games_back: int = 10,
+    games_back: Optional[int] = None,
+    sport_key: str = "basketball_nba",
 ) -> Optional[dict[str, float]]:
-    """Get player's average stats over last N games."""
+    """
+    Get player's average stats over last N games.
+    
+    Args:
+        db: Database session
+        player_id: Player's internal ID
+        stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
+        games_back: Number of games to look back (default from config)
+        sport_key: Sport identifier for config lookup
+    
+    Returns:
+        Dict with stat_type -> average value, or None if no data
+    """
+    # Use config-based default if not specified
+    if games_back is None:
+        games_back = get_games_window(sport_key, "default")
+    
     result = await db.execute(
         select(func.avg(PlayerGameStats.value))
         .where(
@@ -912,7 +934,8 @@ async def _calculate_hit_rate(
     stat_type: str,
     line_value: float,
     side: str = "over",
-    games_back: int = 10,
+    games_back: Optional[int] = None,
+    sport_key: str = "basketball_nba",
 ) -> Optional[float]:
     """
     Calculate hit rate for a player over/under a line (last N games).
@@ -923,11 +946,16 @@ async def _calculate_hit_rate(
         stat_type: Stat type (e.g., 'PTS', 'REB', 'AST')
         line_value: The line to check against
         side: 'over' or 'under' - determines hit direction
-        games_back: Number of games to look back
+        games_back: Number of games to look back (default from config)
+        sport_key: Sport identifier for config lookup
     
     Returns:
         Hit rate as decimal (0-1) or None if no data
     """
+    # Use config-based default if not specified
+    if games_back is None:
+        games_back = get_games_window(sport_key, "medium")
+    
     result = await db.execute(
         select(PlayerGameStats.value)
         .where(

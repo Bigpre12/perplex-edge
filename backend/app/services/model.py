@@ -18,6 +18,12 @@ from app.models import (
     PlayerGameStats, Injury, ModelPick,
 )
 from app.models.injury import EXCLUDED_INJURY_STATUSES
+from app.core.config import (
+    get_games_window,
+    get_ev_threshold,
+    get_min_model_probability,
+    get_sport_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -207,7 +213,8 @@ async def get_player_recent_stats(
     db: AsyncSession,
     player_id: int,
     stat_type: str,
-    n_games: int = 10,
+    n_games: Optional[int] = None,
+    sport_key: str = "basketball_nba",
 ) -> list[tuple[float, Optional[float]]]:
     """
     Get player's recent stats for a specific stat type.
@@ -216,11 +223,16 @@ async def get_player_recent_stats(
         db: Database session
         player_id: Player ID
         stat_type: Stat type (e.g., "PTS", "REB")
-        n_games: Number of recent games
+        n_games: Number of recent games (default from config)
+        sport_key: Sport identifier for config lookup
     
     Returns:
         List of (value, minutes) tuples, most recent first
     """
+    # Use config-based default if not specified
+    if n_games is None:
+        n_games = get_games_window(sport_key, "medium")
+    
     result = await db.execute(
         select(PlayerGameStats.value, PlayerGameStats.minutes)
         .where(

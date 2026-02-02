@@ -1,9 +1,12 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator, model_validator
 from functools import lru_cache
 from typing import Optional, Any
 import logging
 import sys
+
+import yaml
 
 
 class Settings(BaseSettings):
@@ -233,3 +236,187 @@ def validate_startup_config() -> dict[str, Any]:
         "scheduler_enabled": settings.scheduler_enabled,
         "scheduler_use_stubs": settings.scheduler_use_stubs,
     }
+
+
+# =============================================================================
+# Stats Configuration (from YAML)
+# =============================================================================
+
+_stats_config_cache: Optional[dict[str, Any]] = None
+
+
+def load_stats_config(reload: bool = False) -> dict[str, Any]:
+    """
+    Load stats configuration from stats_config.yaml.
+    
+    Configuration is cached after first load. Pass reload=True to force reload.
+    
+    Args:
+        reload: Force reload from file (default: False)
+    
+    Returns:
+        Dictionary with stats configuration
+    
+    Example:
+        >>> config = load_stats_config()
+        >>> nba_season = config["nba"]["season"]  # "2025-26"
+        >>> default_games = config["nba"]["games_windows"]["default"]  # 5
+    """
+    global _stats_config_cache
+    
+    if _stats_config_cache is not None and not reload:
+        return _stats_config_cache
+    
+    config_path = Path(__file__).parent / "stats_config.yaml"
+    
+    if not config_path.exists():
+        logging.warning(f"Stats config file not found: {config_path}")
+        # Return sensible defaults
+        _stats_config_cache = {
+            "rate_limiting": {
+                "default_delay": 1.0,
+                "batch_player_delay": 0.5,
+            },
+            "nba": {
+                "season": "2025-26",
+                "games_windows": {"short": 3, "default": 5, "medium": 10, "long": 20},
+                "thresholds": {"points": 0.03, "rebounds": 0.04, "assists": 0.05},
+                "confidence": {"min_model_probability": 0.55, "high_confidence": 0.65},
+                "matching": {"fuzzy_threshold": 0.85},
+            },
+        }
+        return _stats_config_cache
+    
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            _stats_config_cache = yaml.safe_load(f)
+        logging.info(f"Loaded stats config from {config_path}")
+        return _stats_config_cache
+    except Exception as e:
+        logging.error(f"Failed to load stats config: {e}")
+        # Return minimal defaults on error
+        _stats_config_cache = {}
+        return _stats_config_cache
+
+
+def get_sport_config(sport_key: str) -> dict[str, Any]:
+    """
+    Get configuration for a specific sport.
+    
+    Args:
+        sport_key: Sport identifier (e.g., 'nba', 'nfl', 'basketball_nba')
+    
+    Returns:
+        Sport-specific configuration dict, or defaults if not found
+    """
+    config = load_stats_config()
+    
+    # Normalize sport key (strip "basketball_", "americanfootball_", etc.)
+    normalized = sport_key.lower()
+    if normalized.startswith("basketball_"):
+        normalized = normalized.replace("basketball_", "")
+    elif normalized.startswith("americanfootball_"):
+        normalized = normalized.replace("americanfootball_", "")
+    elif normalized.startswith("baseball_"):
+        normalized = normalized.replace("baseball_", "")
+    
+    # Try direct match first, then normalized
+    if sport_key in config:
+        return config[sport_key]
+    if normalized in config:
+        return config[normalized]
+    
+    # Return NBA defaults if sport not found
+    return config.get("nba", {})
+
+
+def get_games_window(sport_key: str, window_type: str = "default") -> int:
+    """
+    Get the games window setting for a sport.
+    
+    Args:
+        sport_key: Sport identifier
+        window_type: Window type ('short', 'default', 'medium', 'long')
+    
+    Returns:
+        Number of games to use for the window
+    """
+    sport_config = get_sport_config(sport_key)
+    windows = sport_config.get("games_windows", {})
+    return windows.get(window_type, windows.get("default", 5))
+
+
+def get_ev_threshold(sport_key: str, stat_type: str) -> float:
+    """
+    Get the EV threshold for a specific stat type.
+    
+    Args:
+        sport_key: Sport identifier
+        stat_type: Stat type (e.g., 'points', 'rebounds', 'passing_yards')
+    
+    Returns:
+        Minimum EV threshold (default: 0.03)
+    """
+    sport_config = get_sport_config(sport_key)
+    thresholds = sport_config.get("thresholds", {})
+    # Normalize stat type to lowercase
+    stat_normalized = stat_type.lower()
+    return thresholds.get(stat_normalized, 0.03)
+
+
+def get_season_string(sport_key: str) -> str:
+    """
+    Get the current season string for a sport.
+    
+    Args:
+        sport_key: Sport identifier
+    
+    Returns:
+        Season string (e.g., '2025-26' for NBA, '2025' for NFL)
+    """
+    sport_config = get_sport_config(sport_key)
+    return sport_config.get("season", "2025-26")
+
+
+def get_rate_limit_delay() -> float:
+    """Get the default API rate limit delay in seconds."""
+    config = load_stats_config()
+    rate_limiting = config.get("rate_limiting", {})
+    return rate_limiting.get("default_delay", 1.0)
+
+
+def get_batch_player_delay() -> float:
+    """Get the delay between processing players in batch ETL."""
+    config = load_stats_config()
+    rate_limiting = config.get("rate_limiting", {})
+    return rate_limiting.get("batch_player_delay", 0.5)
+
+
+def get_fuzzy_match_threshold(sport_key: str) -> float:
+    """
+    Get the fuzzy match threshold for player name matching.
+    
+    Args:
+        sport_key: Sport identifier
+    
+    Returns:
+        Minimum similarity score (0.0-1.0) for a match
+    """
+    sport_config = get_sport_config(sport_key)
+    matching = sport_config.get("matching", {})
+    return matching.get("fuzzy_threshold", 0.85)
+
+
+def get_min_model_probability(sport_key: str) -> float:
+    """
+    Get the minimum model probability threshold.
+    
+    Args:
+        sport_key: Sport identifier
+    
+    Returns:
+        Minimum win probability to consider a pick
+    """
+    sport_config = get_sport_config(sport_key)
+    confidence = sport_config.get("confidence", {})
+    return confidence.get("min_model_probability", 0.55)

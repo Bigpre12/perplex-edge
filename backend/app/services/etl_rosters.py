@@ -108,6 +108,183 @@ def normalize_player_name(name: str) -> str:
     return name
 
 
+# =============================================================================
+# Player Name Aliases
+# =============================================================================
+
+# Common nickname -> official name mappings
+PLAYER_NAME_ALIASES: dict[str, str] = {
+    "lebron": "lebron james",
+    "steph": "stephen curry",
+    "steph curry": "stephen curry",
+    "kd": "kevin durant",
+    "pg": "paul george",
+    "ad": "anthony davis",
+    "giannis": "giannis antetokounmpo",
+    "jokic": "nikola jokic",
+    "luka": "luka doncic",
+    "ja": "ja morant",
+    "sga": "shai gilgeous-alexander",
+    "ant": "anthony edwards",
+    "ant man": "anthony edwards",
+    "embiid": "joel embiid",
+    "tatum": "jayson tatum",
+    "booker": "devin booker",
+    "jimmy": "jimmy butler",
+    "jimmy buckets": "jimmy butler",
+    "cp3": "chris paul",
+    "russ": "russell westbrook",
+    "dame": "damian lillard",
+    "kyrie": "kyrie irving",
+    "kawhi": "kawhi leonard",
+    "bron": "lebron james",
+    "king james": "lebron james",
+}
+
+
+def fuzzy_match_player(
+    name: str,
+    candidates: list[str],
+    threshold: float = 0.85,
+    team_name: Optional[str] = None,
+) -> tuple[Optional[str], float]:
+    """
+    Find the best matching player name from a list of candidates using fuzzy matching.
+    
+    Uses difflib.SequenceMatcher for similarity scoring without external dependencies.
+    
+    Args:
+        name: The player name to match
+        candidates: List of candidate player names to compare against
+        threshold: Minimum similarity score (0.0-1.0) required for a match
+        team_name: Optional team name to help disambiguate when multiple matches
+    
+    Returns:
+        Tuple of (best_match, score) where best_match is None if no match meets threshold
+    
+    Example:
+        >>> fuzzy_match_player("Lebron James", ["LeBron James", "Stephen Curry"])
+        ("LeBron James", 1.0)
+        >>> fuzzy_match_player("S. Curry", ["Stephen Curry", "Seth Curry"], team_name="Warriors")
+        ("Stephen Curry", 0.87)
+    """
+    from difflib import SequenceMatcher
+    
+    # Check for alias first
+    normalized = normalize_player_name(name)
+    if normalized in PLAYER_NAME_ALIASES:
+        alias_target = PLAYER_NAME_ALIASES[normalized]
+        # Try to find alias target in candidates
+        for candidate in candidates:
+            if normalize_player_name(candidate) == alias_target:
+                return (candidate, 1.0)
+    
+    best_match: Optional[str] = None
+    best_score: float = 0.0
+    matches_above_threshold: list[tuple[str, float]] = []
+    
+    for candidate in candidates:
+        normalized_candidate = normalize_player_name(candidate)
+        
+        # Calculate similarity score
+        score = SequenceMatcher(None, normalized, normalized_candidate).ratio()
+        
+        # Boost score for exact partial matches (e.g., "LeBron" in "LeBron James")
+        if normalized in normalized_candidate or normalized_candidate in normalized:
+            score = min(1.0, score + 0.1)
+        
+        # Track matches above threshold
+        if score >= threshold:
+            matches_above_threshold.append((candidate, score))
+        
+        # Track best overall
+        if score > best_score:
+            best_match = candidate
+            best_score = score
+    
+    # If we have multiple matches above threshold and a team name, try to disambiguate
+    if len(matches_above_threshold) > 1 and team_name:
+        team_normalized = team_name.lower()
+        # This would require additional context about player-team mappings
+        # For now, just return the highest scoring match
+        matches_above_threshold.sort(key=lambda x: x[1], reverse=True)
+        best_match, best_score = matches_above_threshold[0]
+    
+    # Return None if below threshold
+    if best_score < threshold:
+        logger.debug(
+            f"Fuzzy match failed for '{name}': best match '{best_match}' "
+            f"with score {best_score:.2f} < threshold {threshold}"
+        )
+        return (None, 0.0)
+    
+    return (best_match, best_score)
+
+
+def fuzzy_match_player_in_db(
+    name: str,
+    db_players: list[Any],
+    threshold: float = 0.85,
+    team_id: Optional[int] = None,
+) -> tuple[Optional[Any], float]:
+    """
+    Find the best matching player from database Player objects.
+    
+    Similar to fuzzy_match_player but works with Player model objects and can
+    disambiguate by team_id.
+    
+    Args:
+        name: The player name to match
+        db_players: List of Player model objects
+        threshold: Minimum similarity score required
+        team_id: Optional team ID to help disambiguate
+    
+    Returns:
+        Tuple of (Player object or None, score)
+    """
+    from difflib import SequenceMatcher
+    
+    # Check for alias first
+    normalized = normalize_player_name(name)
+    if normalized in PLAYER_NAME_ALIASES:
+        alias_target = PLAYER_NAME_ALIASES[normalized]
+        for player in db_players:
+            if normalize_player_name(player.name) == alias_target:
+                # If team_id specified, check it matches
+                if team_id is None or player.team_id == team_id:
+                    return (player, 1.0)
+    
+    best_player: Optional[Any] = None
+    best_score: float = 0.0
+    matches_above_threshold: list[tuple[Any, float]] = []
+    
+    for player in db_players:
+        normalized_candidate = normalize_player_name(player.name)
+        score = SequenceMatcher(None, normalized, normalized_candidate).ratio()
+        
+        # Boost for partial matches
+        if normalized in normalized_candidate or normalized_candidate in normalized:
+            score = min(1.0, score + 0.1)
+        
+        if score >= threshold:
+            matches_above_threshold.append((player, score))
+        
+        if score > best_score:
+            best_player = player
+            best_score = score
+    
+    # Disambiguate by team_id if multiple matches
+    if len(matches_above_threshold) > 1 and team_id is not None:
+        for player, score in matches_above_threshold:
+            if player.team_id == team_id:
+                return (player, score)
+    
+    if best_score < threshold:
+        return (None, 0.0)
+    
+    return (best_player, best_score)
+
+
 async def find_player_by_name(
     db: AsyncSession,
     sport_id: int,

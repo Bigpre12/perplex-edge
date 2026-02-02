@@ -9,6 +9,7 @@ alembic>=1.13.0
 
 # Configuration
 pydantic-settings>=2.1.0
+PyYAML>=6.0.0
 
 # HTTP client (for external API calls)
 httpx>=0.26.0

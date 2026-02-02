@@ -1,0 +1,183 @@
+# =============================================================================
+# Stats API Configuration
+# =============================================================================
+# Centralized configuration for player statistics, thresholds, and API settings.
+# Edit this file to adjust behavior without modifying code.
+
+# Global rate limiting settings
+rate_limiting:
+  # Minimum seconds between API calls (proactive rate limiting)
+  default_delay: 1.0
+  # Delay between processing players in batch ETL
+  batch_player_delay: 0.5
+
+# =============================================================================
+# NBA Configuration
+# =============================================================================
+nba:
+  # Current season in YYYY-YY format (required by NBA stats API)
+  season: "2025-26"
+  
+  # Game window configurations for different use cases
+  games_windows:
+    # Quick analysis (recent form)
+    short: 3
+    # Default analysis
+    default: 5
+    # Extended analysis (season trend)
+    medium: 10
+    # Full season lookback
+    long: 20
+  
+  # EV thresholds per stat type (minimum edge to consider a pick)
+  # Higher thresholds = more conservative picks
+  thresholds:
+    points: 0.03      # 3% edge for points props
+    rebounds: 0.04    # 4% edge for rebounds
+    assists: 0.05     # 5% edge for assists
+    threes: 0.06      # 6% edge for 3-pointers
+    steals: 0.08      # 8% edge for steals (higher variance)
+    blocks: 0.08      # 8% edge for blocks (higher variance)
+    turnovers: 0.06   # 6% edge for turnovers
+    pra: 0.03         # 3% edge for points+rebounds+assists combo
+    pr: 0.04          # 4% edge for points+rebounds
+    pa: 0.04          # 4% edge for points+assists
+    ra: 0.05          # 5% edge for rebounds+assists
+  
+  # Confidence thresholds
+  confidence:
+    min_model_probability: 0.55  # Minimum win probability to consider
+    high_confidence: 0.65        # High confidence threshold
+    
+  # Player matching
+  matching:
+    fuzzy_threshold: 0.85  # Minimum similarity score for fuzzy matching
+
+# =============================================================================
+# NFL Configuration
+# =============================================================================
+nfl:
+  season: "2025"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 8
+    long: 16
+  
+  thresholds:
+    passing_yards: 0.04
+    passing_tds: 0.06
+    rushing_yards: 0.04
+    rushing_tds: 0.06
+    receiving_yards: 0.04
+    receptions: 0.05
+    receiving_tds: 0.06
+    interceptions: 0.08
+    completions: 0.05
+    attempts: 0.05
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.65
+    
+  matching:
+    fuzzy_threshold: 0.85
+
+# =============================================================================
+# MLB Configuration  
+# =============================================================================
+mlb:
+  season: "2026"
+  
+  games_windows:
+    short: 5
+    default: 10
+    medium: 20
+    long: 40
+  
+  thresholds:
+    strikeouts: 0.04
+    hits_allowed: 0.05
+    earned_runs: 0.05
+    walks: 0.06
+    hits: 0.04
+    total_bases: 0.05
+    rbis: 0.06
+    runs: 0.06
+    home_runs: 0.08
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.62
+    
+  matching:
+    fuzzy_threshold: 0.85
+
+# =============================================================================
+# NCAAB Configuration
+# =============================================================================
+ncaab:
+  season: "2025-26"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 10
+    long: 15
+  
+  thresholds:
+    points: 0.04
+    rebounds: 0.05
+    assists: 0.06
+    threes: 0.07
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.65
+    
+  matching:
+    fuzzy_threshold: 0.80  # Lower threshold for college (more name variations)
+
+# =============================================================================
+# Tennis Configuration (ATP/WTA)
+# =============================================================================
+tennis_atp:
+  season: "2026"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 10
+    long: 20
+  
+  thresholds:
+    aces: 0.05
+    double_faults: 0.06
+    games_won: 0.04
+    sets_won: 0.05
+    total_games: 0.04
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.62
+
+tennis_wta:
+  season: "2026"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 10
+    long: 20
+  
+  thresholds:
+    aces: 0.05
+    double_faults: 0.06
+    games_won: 0.04
+    sets_won: 0.05
+    total_games: 0.04
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.62
