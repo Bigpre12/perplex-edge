@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSports, fetchPlayerPropPicks, PlayerPropFilters, PlayerPropPick } from '../api/public';
 
