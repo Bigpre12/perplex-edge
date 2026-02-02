@@ -650,12 +650,18 @@ def find_best_parlays(
         logger.warning(f"Not enough legs ({len(legs)}) for {leg_count}-leg parlay")
         return []
     
-    # Generate all combinations
-    all_combos = list(combinations(legs, leg_count))
-    logger.info(f"Evaluating {len(all_combos)} {leg_count}-leg combinations")
+    # Use generator to avoid memory overhead - evaluate lazily
+    # Limit total combinations evaluated for performance
+    MAX_COMBOS_TO_EVALUATE = 25000
+    combo_count = 0
     
     parlays = []
-    for combo in all_combos:
+    for combo in combinations(legs, leg_count):
+        combo_count += 1
+        if combo_count > MAX_COMBOS_TO_EVALUATE:
+            logger.info(f"Stopped at {MAX_COMBOS_TO_EVALUATE} combinations evaluated")
+            break
+        
         combo_list = list(combo)
         
         # Check 100% requirement if enabled
@@ -719,6 +725,8 @@ def find_best_parlays(
             "correlation_risk_label": correlation_risk_label,
         })
     
+    logger.info(f"Evaluated {combo_count} combinations, found {len(parlays)} valid parlays")
+    
     # Sort by EV descending, then by probability descending
     parlays.sort(key=lambda p: (p["parlay_ev"], p["parlay_probability"]), reverse=True)
     
@@ -760,9 +768,11 @@ async def build_parlays(
         logger.info(f"Found {len(legs)} eligible legs for sport {sport_id}")
         
         # PERFORMANCE: Limit candidates to avoid combinatorial explosion
-        # With N legs and k=3, combinations are C(N,k). For N=3000, k=3 -> 4.5 billion!
-        # Take top 150 legs by EV to make computation tractable (~550k combinations for k=3)
-        MAX_CANDIDATES = 150
+        # With N legs and k=3, combinations are C(N,k). 
+        # N=50, k=3 -> 19,600 combos (fast)
+        # N=150, k=3 -> 551,300 combos (slow!)
+        # Take top 50 legs by EV for fast response (~20k combinations for k=3)
+        MAX_CANDIDATES = 50
         if len(legs) > MAX_CANDIDATES:
             legs.sort(key=lambda x: x.get("ev", 0) or 0, reverse=True)
             legs = legs[:MAX_CANDIDATES]
