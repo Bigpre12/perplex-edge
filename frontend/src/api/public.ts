@@ -142,6 +142,7 @@ export interface PlayerPropFilters {
   [key: string]: unknown;
   min_confidence?: number;
   min_ev?: number;
+  risk_levels?: string;  // Comma-separated: "STANDARD,CONFIDENT,STRONG,MAX"
   game_id?: number;
   fresh_only?: boolean;  // Only show picks for games that haven't started
   limit?: number;

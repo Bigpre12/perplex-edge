@@ -266,6 +266,7 @@ async def list_player_prop_picks(
     stat_type: Optional[str] = Query(None, description="Filter by stat type (PTS, REB, AST, 3PM, PRA, etc.)"),
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
+    risk_levels: Optional[str] = Query(None, description="Comma-separated Kelly risk levels: NO_BET,SMALL,STANDARD,CONFIDENT,STRONG,MAX"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
     fresh_only: bool = Query(True, description="Filter out stale props (games started, old picks). Set to false to show all."),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
@@ -551,6 +552,12 @@ async def list_player_prop_picks(
             kelly_risk_level=kelly["risk_level"],
         ))
     
+    # Filter by Kelly risk levels (computed field, filter in-memory)
+    if risk_levels:
+        allowed_levels = set(risk_levels.upper().split(","))
+        picks = [p for p in picks if p.kelly_risk_level in allowed_levels]
+        logger.info(f"[player-props] risk_levels filter applied: {allowed_levels}, {len(picks)} picks remaining")
+    
     # Debug logging to track filtered/skipped picks
     logger.info(
         f"[player-props] sport_id={sport_id}, fresh_only={fresh_only}: "
@@ -559,12 +566,13 @@ async def list_player_prop_picks(
     
     return PlayerPropPickList(
         items=picks,
-        total=total,
+        total=len(picks),  # Update total to reflect risk_levels filter
         filters={
             "sport_id": sport_id,
             "stat_type": stat_type,
             "min_confidence": min_confidence,
             "min_ev": min_ev,
+            "risk_levels": risk_levels,
             "game_id": game_id,
         },
     )

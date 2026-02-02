@@ -92,10 +92,11 @@ function LineVarianceBadge({ variance }: { variance: number | null }) {
 export function PlayerPropsTab() {
   const { sportId, isLoading: sportLoading } = useSportContext();
 
-  // Filter state
+  // Filter state - EV-first defaults for max profit
   const [statType, setStatType] = useState<string>('');
-  const [minConfidence, setMinConfidence] = useState<number>(0);
-  const [minEv, setMinEv] = useState<number>(0);
+  const [minConfidence, setMinConfidence] = useState<number>(0.55); // 55%+ confidence (sweet spot)
+  const [minEv, setMinEv] = useState<number>(0.03);                 // 3%+ EV only
+  const [riskLevels, setRiskLevels] = useState<string[]>(['STANDARD', 'CONFIDENT', 'STRONG']);
   
   // Alt-line explorer state
   const [exploringPickId, setExploringPickId] = useState<number | null>(null);
@@ -106,11 +107,29 @@ export function PlayerPropsTab() {
       stat_type: statType || undefined,
       min_confidence: minConfidence > 0 ? minConfidence : undefined,
       min_ev: minEv > 0 ? minEv : undefined,
+      risk_levels: riskLevels.length > 0 ? riskLevels.join(',') : undefined,
       fresh_only: false,  // Show all picks regardless of game start time
       limit: 100,
     }),
-    [statType, minConfidence, minEv]
+    [statType, minConfidence, minEv, riskLevels]
   );
+
+  // Available Kelly risk levels
+  const RISK_LEVEL_OPTIONS = [
+    { value: 'SMALL', label: 'Small', color: 'gray' },
+    { value: 'STANDARD', label: 'Standard', color: 'blue' },
+    { value: 'CONFIDENT', label: 'Confident', color: 'green' },
+    { value: 'STRONG', label: 'Strong', color: 'yellow' },
+    { value: 'MAX', label: 'Max', color: 'red' },
+  ];
+
+  const toggleRiskLevel = (level: string) => {
+    setRiskLevels(prev => 
+      prev.includes(level) 
+        ? prev.filter(l => l !== level)
+        : [...prev, level]
+    );
+  };
 
   // Fetch data with React Query
   const { data, isLoading, error, isFetching } = usePlayerPropPicks(sportId, filters);
@@ -204,6 +223,30 @@ export function PlayerPropsTab() {
               <span>0%</span>
               <span>10%</span>
               <span>20%</span>
+            </div>
+          </div>
+
+          {/* Kelly Risk Level Filter */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Kelly Risk</label>
+            <div className="flex gap-1">
+              {RISK_LEVEL_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => toggleRiskLevel(opt.value)}
+                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                    riskLevels.includes(opt.value)
+                      ? opt.value === 'SMALL' ? 'bg-gray-600 border-gray-500 text-white'
+                      : opt.value === 'STANDARD' ? 'bg-blue-900/50 border-blue-500 text-blue-400'
+                      : opt.value === 'CONFIDENT' ? 'bg-green-900/50 border-green-500 text-green-400'
+                      : opt.value === 'STRONG' ? 'bg-yellow-900/50 border-yellow-500 text-yellow-400'
+                      : 'bg-red-900/50 border-red-500 text-red-400'
+                      : 'bg-gray-800 border-gray-600 text-gray-500 hover:border-gray-500'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
