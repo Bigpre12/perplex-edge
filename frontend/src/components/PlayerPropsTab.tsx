@@ -72,8 +72,6 @@ const TRAP_STAT_TYPES = [
   { value: 'player_turnovers', label: 'Turnovers', reason: 'Hard to model' },
 ];
 
-const LOW_MINUTE_KEYWORDS = ['bench', 'backup', 'reserve'];
-
 // ============================================================================
 // Opposite Side Info - Shows model's view of both sides
 // ============================================================================

@@ -18,12 +18,6 @@ const SPORT_CONFIG: Record<number, { name: string; icon: string; color: string }
   43: { name: 'WTA', icon: '🎾', color: 'bg-pink-900/30 text-pink-400' },
 };
 
-// Extended pick type with sport info
-interface MultiSportPick extends PlayerPropPick {
-  sport_id: number;
-  sport_name: string;
-}
-
 // Confidence tier helper
 type ConfidenceTier = 'green' | 'yellow' | 'red';
 
