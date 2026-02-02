@@ -1065,6 +1065,104 @@ async def build_parlay(
 
 
 # =============================================================================
+# Auto-Generate Optimal Slips Endpoint
+# =============================================================================
+
+@router.get("/sports/{sport_id}/parlays/auto-generate", tags=["public"])
+async def auto_generate_slips(
+    sport_id: int,
+    platform: str = Query("prizepicks", description="Platform: prizepicks, fliff, underdog, sportsbook"),
+    leg_count: int = Query(4, ge=2, le=6, description="Legs per slip (2-6)"),
+    slip_count: int = Query(3, ge=1, le=5, description="Number of slips to generate (1-5)"),
+    min_leg_ev: float = Query(0.03, ge=0.0, le=0.20, description="Min EV per leg (0.03 = 3%)"),
+    min_confidence: float = Query(0.55, ge=0.40, le=0.80, description="Min model confidence per leg"),
+    allow_correlation: bool = Query(False, description="Allow correlated legs within slips"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Auto-generate N optimal non-overlapping parlays for tonight.
+    
+    This is a "one-click" endpoint that generates the best slips for a DFS platform.
+    Each slip uses completely different legs (no shared picks), so you can fire
+    multiple slips without redundancy.
+    
+    Example: "Generate 3 best 4-leg slips for PrizePicks tonight"
+    
+    The response includes:
+    - `slips`: List of non-overlapping optimal parlays
+    - `slate_quality`: "STRONG", "GOOD", "THIN", or "PASS"
+    - `avg_slip_ev`: Average EV across all slips
+    - `total_suggested_units`: Total Kelly stake suggestion
+    
+    Slate quality meaning:
+    - STRONG: Full slate with avg EV >= 5%
+    - GOOD: Full slate with avg EV >= 2%
+    - THIN: Partial slate (couldn't generate all requested slips)
+    - PASS: No valid slips - consider passing on tonight's slate
+    """
+    from app.services.parlay_service import auto_generate_slips as generate_slips
+    from app.schemas.public import AutoGenerateSlipsResponse
+    
+    # Validate sport exists
+    sport = await db.get(Sport, sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+    
+    # Validate platform
+    valid_platforms = ["prizepicks", "fliff", "underdog", "sportsbook"]
+    if platform.lower() not in valid_platforms:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid platform: {platform}. Valid options: {valid_platforms}",
+        )
+    
+    try:
+        result = await generate_slips(
+            db,
+            sport_id=sport_id,
+            platform=platform.lower(),
+            leg_count=leg_count,
+            slip_count=slip_count,
+            min_leg_ev=min_leg_ev,
+            min_confidence=min_confidence,
+            allow_correlation=allow_correlation,
+        )
+        
+        return AutoGenerateSlipsResponse(
+            slips=result["slips"],
+            slip_count=result["slip_count"],
+            leg_count=result["leg_count"],
+            platform=result["platform"],
+            total_candidates=result["total_candidates"],
+            filters=result["filters"],
+            avg_slip_ev=result["avg_slip_ev"],
+            avg_slip_probability=result["avg_slip_probability"],
+            total_suggested_units=result["total_suggested_units"],
+            slate_quality=result["slate_quality"],
+        )
+    
+    except Exception as e:
+        logger.error(f"Auto-generate error for sport {sport_id}: {e}", exc_info=True)
+        return AutoGenerateSlipsResponse(
+            slips=[],
+            slip_count=0,
+            leg_count=leg_count,
+            platform=platform.lower(),
+            total_candidates=0,
+            filters={
+                "min_leg_ev": min_leg_ev,
+                "min_confidence": min_confidence,
+                "allow_correlation": allow_correlation,
+                "sport_id": sport_id,
+            },
+            avg_slip_ev=0.0,
+            avg_slip_probability=0.0,
+            total_suggested_units=0.0,
+            slate_quality="PASS",
+        )
+
+
+# =============================================================================
 # Alt-Line Explorer Endpoint
 # =============================================================================
 

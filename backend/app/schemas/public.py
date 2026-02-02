@@ -337,6 +337,22 @@ class ParlayBuilderResponse(BaseModel):
     filters_applied: dict
 
 
+class AutoGenerateSlipsResponse(BaseModel):
+    """Response for auto-generated optimal slips."""
+    
+    slips: list[ParlayRecommendation]  # Non-overlapping optimal parlays
+    slip_count: int
+    leg_count: int
+    platform: str
+    total_candidates: int
+    filters: dict
+    # Summary stats
+    avg_slip_ev: float
+    avg_slip_probability: float
+    total_suggested_units: float
+    slate_quality: str  # "STRONG", "GOOD", "THIN", "PASS"
+
+
 # =============================================================================
 # Alt-Line Explorer
 # =============================================================================

@@ -8,6 +8,8 @@ export { PlayerPropsTab } from './PlayerPropsTab';
 export { GameLinesTab } from './GameLinesTab';
 export { StatsDashboard } from './StatsDashboard';
 export { MultiSportSlate } from './MultiSportSlate';
+export { AnalyticsDashboard } from './AnalyticsDashboard';
+export { BacktestTab } from './BacktestTab';
 
 // UI components
 export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';

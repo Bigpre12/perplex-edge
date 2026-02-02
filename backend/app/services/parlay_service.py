@@ -884,6 +884,221 @@ async def build_parlays(
 
 
 # =============================================================================
+# Auto-Generate Non-Overlapping Slips
+# =============================================================================
+
+async def auto_generate_slips(
+    db: AsyncSession,
+    sport_id: int,
+    platform: str = "prizepicks",
+    leg_count: int = 4,
+    slip_count: int = 3,
+    min_leg_ev: float = 0.03,
+    min_confidence: float = 0.55,
+    allow_correlation: bool = False,
+) -> dict:
+    """
+    Auto-generate N optimal non-overlapping parlays.
+    
+    Each slip uses completely different legs (no shared picks between slips).
+    This allows users to fire multiple slips without redundancy.
+    
+    Args:
+        db: Database session
+        sport_id: Sport ID
+        platform: DFS platform (prizepicks, fliff, underdog, sportsbook)
+        leg_count: Number of legs per slip
+        slip_count: Number of slips to generate
+        min_leg_ev: Minimum EV per leg (0.03 = 3%)
+        min_confidence: Minimum model confidence per leg (0.55 = 55%)
+        allow_correlation: If True, allow correlated legs within slips
+    
+    Returns:
+        Dict with slips, stats, and quality assessment
+    """
+    from app.schemas.public import (
+        ParlayLeg, ParlayRecommendation, CorrelationWarning, KellySizing
+    )
+    
+    try:
+        # Get eligible legs with stricter filters for auto-generate
+        legs = await build_parlay_legs(db, sport_id, min_grade="D")  # Get all, filter below
+        logger.info(f"[auto-gen] Found {len(legs)} total legs for sport {sport_id}")
+        
+        # Apply EV and confidence filters
+        legs = [
+            leg for leg in legs
+            if (leg.get("ev") or 0) >= min_leg_ev
+            and (leg.get("win_prob") or 0) >= min_confidence
+        ]
+        logger.info(f"[auto-gen] After EV/confidence filter: {len(legs)} legs")
+        
+        # Sort by EV descending - prioritize best edges
+        legs.sort(key=lambda x: (x.get("ev") or 0, x.get("win_prob") or 0), reverse=True)
+        
+        # Track used pick IDs to ensure no overlap between slips
+        used_pick_ids = set()
+        generated_slips = []
+        
+        # Correlation settings based on platform and allow_correlation flag
+        max_correlation_risk = "MEDIUM" if not allow_correlation else "CRITICAL"
+        
+        for slip_idx in range(slip_count):
+            # Filter out already-used legs
+            available_legs = [
+                leg for leg in legs
+                if leg["pick_id"] not in used_pick_ids
+            ]
+            
+            if len(available_legs) < leg_count:
+                logger.info(f"[auto-gen] Not enough unused legs for slip {slip_idx + 1}")
+                break
+            
+            # Find best parlay from available legs
+            best_parlays = find_best_parlays(
+                available_legs,
+                leg_count=leg_count,
+                require_100_pct=False,
+                max_results=1,  # Just get the best one
+                block_correlated=not allow_correlation,
+                max_correlation_risk=max_correlation_risk,
+            )
+            
+            if not best_parlays:
+                logger.info(f"[auto-gen] No valid parlay found for slip {slip_idx + 1}")
+                break
+            
+            best = best_parlays[0]
+            
+            # Mark these legs as used
+            for leg in best["legs"]:
+                used_pick_ids.add(leg["pick_id"])
+            
+            # Convert to response format
+            parlay_legs = [
+                ParlayLeg(
+                    pick_id=leg["pick_id"],
+                    player_name=leg["player_name"],
+                    player_id=leg.get("player_id"),
+                    team_abbr=leg["team_abbr"],
+                    game_id=leg.get("game_id"),
+                    stat_type=leg["stat_type"],
+                    line=leg["line"],
+                    side=leg["side"],
+                    odds=leg["odds"],
+                    grade=leg["grade"],
+                    win_prob=leg["win_prob"],
+                    edge=leg["edge"],
+                    hit_rate_5g=leg.get("hit_rate_last_5"),
+                    is_100_last_5=leg.get("is_100_last_5", False),
+                )
+                for leg in best["legs"]
+            ]
+            
+            # Correlation warnings
+            correlation_warnings = [
+                CorrelationWarning(
+                    type=c["type"],
+                    severity=c["severity"],
+                    legs=c["legs"],
+                    message=c["message"],
+                )
+                for c in best.get("correlations", [])
+            ]
+            
+            # Kelly sizing
+            kelly_data = calculate_parlay_kelly(
+                parlay_prob=best["parlay_probability"],
+                decimal_odds=best["decimal_odds"],
+            )
+            kelly_sizing = KellySizing(
+                full_kelly_pct=kelly_data["full_kelly_pct"],
+                kelly_fraction=kelly_data["kelly_fraction"],
+                suggested_units=kelly_data["suggested_units"],
+                edge_pct=kelly_data["edge_pct"],
+                risk_level=kelly_data["risk_level"],
+            )
+            
+            generated_slips.append(
+                ParlayRecommendation(
+                    legs=parlay_legs,
+                    leg_count=best["leg_count"],
+                    total_odds=best["total_odds"],
+                    decimal_odds=best["decimal_odds"],
+                    parlay_probability=best["parlay_probability"],
+                    parlay_ev=best["parlay_ev"],
+                    overall_grade=best["overall_grade"],
+                    label=best["label"],
+                    min_leg_prob=best["min_leg_prob"],
+                    avg_edge=best["avg_edge"],
+                    correlations=correlation_warnings,
+                    correlation_risk=best.get("correlation_risk", 0.0),
+                    correlation_risk_label=best.get("correlation_risk_label", "LOW"),
+                    kelly=kelly_sizing,
+                )
+            )
+        
+        # Calculate summary stats
+        if generated_slips:
+            avg_ev = sum(s.parlay_ev for s in generated_slips) / len(generated_slips)
+            avg_prob = sum(s.parlay_probability for s in generated_slips) / len(generated_slips)
+            total_units = sum(s.kelly.suggested_units for s in generated_slips if s.kelly)
+        else:
+            avg_ev = 0.0
+            avg_prob = 0.0
+            total_units = 0.0
+        
+        # Determine slate quality
+        total_candidates = len(legs)
+        if len(generated_slips) >= slip_count and avg_ev >= 0.05:
+            slate_quality = "STRONG"
+        elif len(generated_slips) >= slip_count and avg_ev >= 0.02:
+            slate_quality = "GOOD"
+        elif len(generated_slips) > 0:
+            slate_quality = "THIN"
+        else:
+            slate_quality = "PASS"
+        
+        return {
+            "slips": generated_slips,
+            "slip_count": len(generated_slips),
+            "leg_count": leg_count,
+            "platform": platform,
+            "total_candidates": total_candidates,
+            "filters": {
+                "min_leg_ev": min_leg_ev,
+                "min_confidence": min_confidence,
+                "allow_correlation": allow_correlation,
+                "sport_id": sport_id,
+            },
+            "avg_slip_ev": round(avg_ev, 4),
+            "avg_slip_probability": round(avg_prob, 4),
+            "total_suggested_units": round(total_units, 2),
+            "slate_quality": slate_quality,
+        }
+    
+    except Exception as e:
+        logger.error(f"[auto-gen] Error generating slips: {e}", exc_info=True)
+        return {
+            "slips": [],
+            "slip_count": 0,
+            "leg_count": leg_count,
+            "platform": platform,
+            "total_candidates": 0,
+            "filters": {
+                "min_leg_ev": min_leg_ev,
+                "min_confidence": min_confidence,
+                "allow_correlation": allow_correlation,
+                "sport_id": sport_id,
+            },
+            "avg_slip_ev": 0.0,
+            "avg_slip_probability": 0.0,
+            "total_suggested_units": 0.0,
+            "slate_quality": "PASS",
+        }
+
+
+# =============================================================================
 # 100% Hit Rate Props
 # =============================================================================
 

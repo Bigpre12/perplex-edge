@@ -43,6 +43,8 @@ from app.api.nfl import router as nfl_router
 from app.api.ncaab import router as ncaab_router
 from app.api.bets import router as bets_router
 from app.api.data_v2 import router as data_v2_router
+from app.api.watchlists import router as watchlists_router
+from app.api.cards import router as cards_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -243,6 +245,8 @@ app.include_router(nfl_router, prefix="/api", tags=["nfl"])
 app.include_router(ncaab_router, prefix="/api", tags=["ncaab"])
 app.include_router(bets_router, prefix="/api", tags=["bets"])
 app.include_router(data_v2_router, prefix="/api/data", tags=["data-v2"])
+app.include_router(watchlists_router, prefix="/api", tags=["watchlists"])
+app.include_router(cards_router, prefix="/api", tags=["cards"])
 
 
 # =============================================================================

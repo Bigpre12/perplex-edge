@@ -20,6 +20,8 @@ from app.models.ncaab_odds import LiveOddsNCAAB, HistoricalOddsNCAAB
 from app.models.calibration_metrics import CalibrationMetrics
 from app.models.sync_metadata import SyncMetadata
 from app.models.user_bet import UserBet, BetStatus
+from app.models.watchlist import Watchlist
+from app.models.shared_card import SharedCard
 
 __all__ = [
     "Base",
@@ -47,4 +49,6 @@ __all__ = [
     "SyncMetadata",
     "UserBet",
     "BetStatus",
+    "Watchlist",
+    "SharedCard",
 ]

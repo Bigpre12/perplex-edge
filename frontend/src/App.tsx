@@ -7,6 +7,8 @@ import {
   GameLinesTab,
   StatsDashboard,
   MultiSportSlate,
+  AnalyticsDashboard,
+  BacktestTab,
 } from './components'
 import { HundredPercentTab } from './components/HundredPercentTab'
 import { ParlayBuilder } from './components/ParlayBuilder'
@@ -20,6 +22,8 @@ const TABS = [
   { id: '100pct-hits', label: '100% Hit Rate' },
   { id: 'parlay-builder', label: 'Parlay Builder' },
   { id: 'my-bets', label: 'My Bets' },
+  { id: 'analytics', label: '📊 Analytics' },
+  { id: 'backtest', label: '🔬 Backtest' },
   { id: 'stats', label: 'Stats' },
 ]
 
@@ -89,6 +93,10 @@ function AppContent() {
         return <ParlayBuilder />;
       case 'my-bets':
         return <MyBetsTab />;
+      case 'analytics':
+        return <AnalyticsDashboard />;
+      case 'backtest':
+        return <BacktestTab />;
       case 'stats':
         return <StatsDashboard />;
       default:

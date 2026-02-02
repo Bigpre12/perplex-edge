@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
-import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine, PlayerPropPick } from '../api/public';
+import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine, PlayerPropPick, useWatchlists, createWatchlist, deleteWatchlist, markWatchlistChecked, Watchlist } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { AltLineExplorer } from './AltLineExplorer';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ============================================================================
 // Confidence Tier Helpers
@@ -317,6 +318,63 @@ export function PlayerPropsTab() {
   // Alt-line explorer state
   const [exploringPickId, setExploringPickId] = useState<number | null>(null);
   
+  // Watchlist state
+  const queryClient = useQueryClient();
+  const { data: watchlistsData } = useWatchlists(sportId ?? undefined);
+  const [showWatchlistPanel, setShowWatchlistPanel] = useState(false);
+  const [watchlistName, setWatchlistName] = useState('');
+  const [savingWatchlist, setSavingWatchlist] = useState(false);
+  
+  // Load watchlist filters
+  const loadWatchlist = async (watchlist: Watchlist) => {
+    if (watchlist.filters.stat_type) setStatType(watchlist.filters.stat_type);
+    if (watchlist.filters.min_ev !== undefined) setMinEv(watchlist.filters.min_ev);
+    if (watchlist.filters.min_confidence !== undefined) setMinConfidence(watchlist.filters.min_confidence);
+    if (watchlist.filters.risk_levels) setRiskLevels(watchlist.filters.risk_levels.split(','));
+    // Mark as checked to clear new matches badge
+    try {
+      await markWatchlistChecked(watchlist.id);
+      queryClient.invalidateQueries({ queryKey: ['watchlists'] });
+    } catch (err) {
+      console.error('Failed to mark watchlist checked:', err);
+    }
+  };
+  
+  // Save current filters as watchlist
+  const saveAsWatchlist = async () => {
+    if (!watchlistName.trim() || !sportId) return;
+    setSavingWatchlist(true);
+    try {
+      await createWatchlist({
+        name: watchlistName,
+        filters: {
+          sport_id: sportId,
+          stat_type: statType || undefined,
+          min_ev: minEv || undefined,
+          min_confidence: minConfidence || undefined,
+          risk_levels: riskLevels.length > 0 ? riskLevels.join(',') : undefined,
+        },
+      });
+      setWatchlistName('');
+      setShowWatchlistPanel(false);
+      queryClient.invalidateQueries({ queryKey: ['watchlists'] });
+    } catch (err) {
+      console.error('Failed to save watchlist:', err);
+    } finally {
+      setSavingWatchlist(false);
+    }
+  };
+  
+  // Delete a watchlist
+  const handleDeleteWatchlist = async (id: number) => {
+    try {
+      await deleteWatchlist(id);
+      queryClient.invalidateQueries({ queryKey: ['watchlists'] });
+    } catch (err) {
+      console.error('Failed to delete watchlist:', err);
+    }
+  };
+  
   // Toggle excluded stat type
   const toggleExcludedStat = (stat: string) => {
     setExcludedStatTypes(prev => {
@@ -545,7 +603,7 @@ export function PlayerPropsTab() {
             </div>
           </div>
 
-          {/* Results count + Don't Bet Toggle */}
+          {/* Results count + Watchlists + Don't Bet Toggle */}
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-400">
               {isFetching && <span className="animate-pulse">Updating...</span>}
@@ -560,6 +618,97 @@ export function PlayerPropsTab() {
                 </span>
               )}
             </div>
+            
+            {/* Watchlist Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowWatchlistPanel(!showWatchlistPanel)}
+                className={`text-xs px-3 py-1 rounded-full border transition-colors flex items-center gap-1 ${
+                  showWatchlistPanel
+                    ? 'bg-purple-900/30 border-purple-600 text-purple-400'
+                    : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
+                }`}
+              >
+                <span>📋</span>
+                <span>Watchlists</span>
+                {watchlistsData?.items && watchlistsData.items.some(w => w.new_matches_since_last_check > 0) && (
+                  <span className="bg-green-500 text-white text-[10px] px-1.5 rounded-full ml-1">
+                    {watchlistsData.items.reduce((sum, w) => sum + w.new_matches_since_last_check, 0)} new
+                  </span>
+                )}
+              </button>
+              
+              {showWatchlistPanel && (
+                <div className="absolute z-50 right-0 mt-1 bg-gray-900 border border-gray-600 rounded-lg shadow-xl p-3 min-w-[280px]">
+                  <div className="text-xs text-gray-400 mb-2 font-medium">My Watchlists</div>
+                  
+                  {/* Existing watchlists */}
+                  {watchlistsData?.items && watchlistsData.items.length > 0 ? (
+                    <div className="space-y-1 max-h-48 overflow-y-auto mb-3">
+                      {watchlistsData.items.map(w => (
+                        <div key={w.id} className="flex items-center justify-between bg-gray-800 rounded p-2 group">
+                          <button
+                            onClick={() => {
+                              loadWatchlist(w);
+                              setShowWatchlistPanel(false);
+                            }}
+                            className="flex-1 text-left text-sm text-white hover:text-purple-300"
+                          >
+                            {w.name}
+                            {w.new_matches_since_last_check > 0 && (
+                              <span className="ml-2 text-xs bg-green-500 text-white px-1.5 rounded-full">
+                                +{w.new_matches_since_last_check}
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-500 ml-1">
+                              ({w.current_match_count} matches)
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteWatchlist(w.id)}
+                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 text-xs"
+                            title="Delete watchlist"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-500 mb-3">No saved watchlists yet</div>
+                  )}
+                  
+                  {/* Save new watchlist */}
+                  <div className="border-t border-gray-700 pt-2">
+                    <div className="text-xs text-gray-400 mb-1">Save current filters:</div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={watchlistName}
+                        onChange={(e) => setWatchlistName(e.target.value)}
+                        placeholder="e.g., NBA Assists Unders"
+                        className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-white"
+                      />
+                      <button
+                        onClick={saveAsWatchlist}
+                        disabled={!watchlistName.trim() || savingWatchlist}
+                        className="px-2 py-1 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white text-xs rounded"
+                      >
+                        {savingWatchlist ? '...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowWatchlistPanel(false)}
+                    className="mt-2 text-xs text-gray-500 hover:text-gray-400"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+            
             <button
               onClick={() => setShowDontBetPanel(!showDontBetPanel)}
               className={`text-xs px-3 py-1 rounded-full border transition-colors ${

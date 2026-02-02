@@ -788,6 +788,66 @@ export interface ParlayBuilderFilters {
 }
 
 // =============================================================================
+// Auto-Generate Slips Types
+// =============================================================================
+
+export interface AutoGenerateSlipsResponse {
+  slips: ParlayRecommendation[];
+  slip_count: number;
+  leg_count: number;
+  platform: string;
+  total_candidates: number;
+  filters: Record<string, unknown>;
+  avg_slip_ev: number;
+  avg_slip_probability: number;
+  total_suggested_units: number;
+  slate_quality: string;  // "STRONG", "GOOD", "THIN", "PASS"
+}
+
+export interface AutoGenerateFilters {
+  platform?: string;
+  leg_count?: number;
+  slip_count?: number;
+  min_leg_ev?: number;
+  min_confidence?: number;
+  allow_correlation?: boolean;
+}
+
+// =============================================================================
+// Auto-Generate Slips API Functions
+// =============================================================================
+
+export async function fetchAutoGenerateSlips(
+  sportId: number,
+  filters: AutoGenerateFilters = {}
+): Promise<AutoGenerateSlipsResponse> {
+  const params = new URLSearchParams();
+  if (filters.platform) params.set('platform', filters.platform);
+  if (filters.leg_count) params.set('leg_count', filters.leg_count.toString());
+  if (filters.slip_count) params.set('slip_count', filters.slip_count.toString());
+  if (filters.min_leg_ev !== undefined) params.set('min_leg_ev', filters.min_leg_ev.toString());
+  if (filters.min_confidence !== undefined) params.set('min_confidence', filters.min_confidence.toString());
+  if (filters.allow_correlation !== undefined) params.set('allow_correlation', filters.allow_correlation.toString());
+  
+  const queryString = params.toString();
+  const url = `${API_BASE_URL}/api/sports/${sportId}/parlays/auto-generate${queryString ? `?${queryString}` : ''}`;
+  return fetchJson<AutoGenerateSlipsResponse>(url);
+}
+
+export function useAutoGenerateSlips(
+  sportId: number | null,
+  filters: AutoGenerateFilters = {},
+  enabled: boolean = false  // Only fetch when user clicks the button
+) {
+  return useQuery({
+    queryKey: ['auto-generate-slips', sportId, filters],
+    queryFn: () => fetchAutoGenerateSlips(sportId!, filters),
+    enabled: enabled && sportId !== null,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+// =============================================================================
 // Alt-Line Explorer Types
 // =============================================================================
 
@@ -952,5 +1012,439 @@ export function useDataFreshness() {
     queryFn: fetchDataFreshness,
     staleTime: 30 * 1000, // 30 seconds
     refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
+  });
+}
+
+// =============================================================================
+// Analytics Dashboard Types
+// =============================================================================
+
+export interface MarketPerformance {
+  market_type: string;
+  total_bets: number;
+  won: number;
+  lost: number;
+  win_rate: number;
+  total_stake: number;
+  total_profit_loss: number;
+  roi: number;
+  avg_clv_cents: number;
+  beat_close_pct: number;
+  sample_quality: 'high' | 'medium' | 'low';
+}
+
+export interface MarketPerformanceResponse {
+  markets: MarketPerformance[];
+  summary: {
+    total_bets: number;
+    total_profit_loss: number;
+    overall_roi: number;
+    best_market: string | null;
+    worst_market: string | null;
+  };
+  filters: {
+    days: number;
+    sport_id: number | null;
+  };
+}
+
+export interface BetStatsResponse {
+  total_bets: number;
+  pending_bets: number;
+  total_stake: number;
+  total_profit_loss: number;
+  overall_roi: number;
+  overall_win_rate: number;
+  won: number;
+  lost: number;
+  pushed: number;
+  voided: number;
+  clv_stats: {
+    total_bets_with_clv: number;
+    avg_clv_cents: number;
+    positive_clv_count: number;
+    positive_clv_pct: number;
+    total_clv_cents: number;
+  };
+  by_market: Array<{
+    category: string;
+    total_bets: number;
+    won: number;
+    lost: number;
+    pushed: number;
+    win_rate: number;
+    total_stake: number;
+    total_profit_loss: number;
+    roi: number;
+  }>;
+  by_sportsbook: Array<{
+    category: string;
+    total_bets: number;
+    won: number;
+    lost: number;
+    pushed: number;
+    win_rate: number;
+    total_stake: number;
+    total_profit_loss: number;
+    roi: number;
+  }>;
+  by_sport: Array<{
+    category: string;
+    total_bets: number;
+    won: number;
+    lost: number;
+    pushed: number;
+    win_rate: number;
+    total_stake: number;
+    total_profit_loss: number;
+    roi: number;
+  }>;
+  top_players: Array<{
+    player_id: number;
+    player_name: string;
+    total_bets: number;
+    won: number;
+    lost: number;
+    win_rate: number;
+    total_stake: number;
+    total_profit_loss: number;
+    roi: number;
+  }>;
+  worst_players: Array<{
+    player_id: number;
+    player_name: string;
+    total_bets: number;
+    won: number;
+    lost: number;
+    win_rate: number;
+    total_stake: number;
+    total_profit_loss: number;
+    roi: number;
+  }>;
+}
+
+export interface CLVHistoryPoint {
+  date: string;
+  cumulative_clv: number;
+  daily_clv: number;
+  bet_count: number;
+}
+
+export interface CLVHistoryResponse {
+  data_points: CLVHistoryPoint[];
+  total_clv: number;
+  avg_daily_clv: number;
+}
+
+// =============================================================================
+// Analytics Dashboard API Functions
+// =============================================================================
+
+export async function fetchMarketPerformance(
+  days: number = 30,
+  sportId?: number
+): Promise<MarketPerformanceResponse> {
+  const params = new URLSearchParams({ days: days.toString() });
+  if (sportId) params.set('sport_id', sportId.toString());
+  return fetchJson<MarketPerformanceResponse>(
+    `${API_BASE_URL}/api/analytics/market-performance?${params}`
+  );
+}
+
+export async function fetchBetStats(
+  sportId?: number,
+  daysBack?: number
+): Promise<BetStatsResponse> {
+  const params = new URLSearchParams();
+  if (sportId) params.set('sport_id', sportId.toString());
+  if (daysBack) params.set('days_back', daysBack.toString());
+  const queryString = params.toString();
+  return fetchJson<BetStatsResponse>(
+    `${API_BASE_URL}/api/bets/stats/summary${queryString ? `?${queryString}` : ''}`
+  );
+}
+
+export async function fetchCLVHistory(
+  sportId?: number,
+  daysBack: number = 30
+): Promise<CLVHistoryResponse> {
+  const params = new URLSearchParams({ days_back: daysBack.toString() });
+  if (sportId) params.set('sport_id', sportId.toString());
+  return fetchJson<CLVHistoryResponse>(
+    `${API_BASE_URL}/api/bets/stats/clv-history?${params}`
+  );
+}
+
+export function useMarketPerformance(days: number = 30, sportId?: number) {
+  return useQuery({
+    queryKey: ['market-performance', days, sportId],
+    queryFn: () => fetchMarketPerformance(days, sportId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useBetStats(sportId?: number, daysBack?: number) {
+  return useQuery({
+    queryKey: ['bet-stats', sportId, daysBack],
+    queryFn: () => fetchBetStats(sportId, daysBack),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useCLVHistory(sportId?: number, daysBack: number = 30) {
+  return useQuery({
+    queryKey: ['clv-history', sportId, daysBack],
+    queryFn: () => fetchCLVHistory(sportId, daysBack),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// =============================================================================
+// Watchlist Types
+// =============================================================================
+
+export interface WatchlistFilters {
+  sport_id?: number;
+  stat_type?: string;
+  side?: string;
+  min_ev?: number;
+  min_confidence?: number;
+  risk_levels?: string;
+}
+
+export interface Watchlist {
+  id: number;
+  name: string;
+  filters: WatchlistFilters;
+  alert_enabled: boolean;
+  alert_discord_webhook: string | null;
+  alert_email: string | null;
+  sport_id: number | null;
+  last_check_at: string | null;
+  last_match_count: number;
+  created_at: string;
+  current_match_count: number;
+  new_matches_since_last_check: number;
+}
+
+export interface WatchlistListResponse {
+  items: Watchlist[];
+  total: number;
+}
+
+export interface WatchlistCreateRequest {
+  name: string;
+  filters: WatchlistFilters;
+  alert_enabled?: boolean;
+  alert_discord_webhook?: string;
+  alert_email?: string;
+}
+
+// =============================================================================
+// Watchlist API Functions
+// =============================================================================
+
+export async function fetchWatchlists(sportId?: number): Promise<WatchlistListResponse> {
+  const params = new URLSearchParams();
+  if (sportId) params.set('sport_id', sportId.toString());
+  const queryString = params.toString();
+  return fetchJson<WatchlistListResponse>(
+    `${API_BASE_URL}/api/watchlists${queryString ? `?${queryString}` : ''}`
+  );
+}
+
+export async function createWatchlist(data: WatchlistCreateRequest): Promise<Watchlist> {
+  const response = await fetch(`${API_BASE_URL}/api/watchlists`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to create watchlist: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function deleteWatchlist(watchlistId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/watchlists/${watchlistId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to delete watchlist: ${response.status}`);
+  }
+}
+
+export async function markWatchlistChecked(watchlistId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/watchlists/${watchlistId}/mark-checked`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to mark watchlist checked: ${response.status}`);
+  }
+}
+
+export function useWatchlists(sportId?: number) {
+  return useQuery({
+    queryKey: ['watchlists', sportId],
+    queryFn: () => fetchWatchlists(sportId),
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+// =============================================================================
+// Backtest Types
+// =============================================================================
+
+export interface ConfidenceBucket {
+  label: string;
+  count: number;
+  wins: number;
+  losses: number;
+  hit_rate: number;
+}
+
+export interface BacktestResult {
+  qualifying_bets: number;
+  wins: number;
+  losses: number;
+  hit_rate: number;
+  flat_stake_units: number;
+  flat_stake_profit: number;
+  flat_stake_roi: number;
+  kelly_stake_units: number;
+  kelly_stake_profit: number;
+  kelly_stake_roi: number;
+  avg_ev: number;
+  avg_clv_cents: number;
+  date_range: {
+    start: string;
+    end: string;
+  };
+  filters: {
+    sport_id: number | null;
+    stat_type: string | null;
+    side: string | null;
+    min_ev: number;
+    min_confidence: number;
+  };
+  confidence_buckets: ConfidenceBucket[];
+  sample_quality: 'high' | 'medium' | 'low' | 'insufficient';
+  error?: string;
+}
+
+export interface BacktestFilters {
+  sport_id?: number;
+  stat_type?: string;
+  side?: string;
+  min_ev?: number;
+  min_confidence?: number;
+  days_back?: number;
+}
+
+// =============================================================================
+// Backtest API Functions
+// =============================================================================
+
+export async function fetchBacktest(filters: BacktestFilters = {}): Promise<BacktestResult> {
+  const params = new URLSearchParams();
+  if (filters.sport_id) params.set('sport_id', filters.sport_id.toString());
+  if (filters.stat_type) params.set('stat_type', filters.stat_type);
+  if (filters.side) params.set('side', filters.side);
+  if (filters.min_ev !== undefined) params.set('min_ev', filters.min_ev.toString());
+  if (filters.min_confidence !== undefined) params.set('min_confidence', filters.min_confidence.toString());
+  if (filters.days_back) params.set('days_back', filters.days_back.toString());
+  
+  const queryString = params.toString();
+  return fetchJson<BacktestResult>(
+    `${API_BASE_URL}/api/analytics/backtest${queryString ? `?${queryString}` : ''}`
+  );
+}
+
+export function useBacktest(filters: BacktestFilters, enabled: boolean = false) {
+  return useQuery({
+    queryKey: ['backtest', filters],
+    queryFn: () => fetchBacktest(filters),
+    enabled,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// =============================================================================
+// Shared Cards Types
+// =============================================================================
+
+export interface CardLeg {
+  player_name: string;
+  team_abbr: string | null;
+  stat_type: string;
+  line: number;
+  side: string;
+  odds: number;
+  grade: string;
+  win_prob: number;
+  edge: number;
+}
+
+export interface SharedCard {
+  id: string;
+  url: string;
+  platform: string;
+  sport_id: number | null;
+  legs: CardLeg[];
+  leg_count: number;
+  total_odds: number;
+  decimal_odds: number;
+  parlay_probability: number;
+  parlay_ev: number;
+  overall_grade: string;
+  label: string;
+  kelly_suggested_units: number | null;
+  kelly_risk_level: string | null;
+  view_count: number;
+  created_at: string;
+  settled: boolean;
+  won: boolean | null;
+}
+
+export interface CreateCardRequest {
+  platform: string;
+  sport_id?: number;
+  legs: CardLeg[];
+  total_odds: number;
+  decimal_odds: number;
+  parlay_probability: number;
+  parlay_ev: number;
+  overall_grade: string;
+  label: string;
+  kelly_suggested_units?: number;
+  kelly_risk_level?: string;
+}
+
+// =============================================================================
+// Shared Cards API Functions
+// =============================================================================
+
+export async function createSharedCard(data: CreateCardRequest): Promise<SharedCard> {
+  const response = await fetch(`${API_BASE_URL}/api/cards`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to create card: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchSharedCard(cardId: string): Promise<SharedCard> {
+  return fetchJson<SharedCard>(`${API_BASE_URL}/api/cards/${cardId}`);
+}
+
+export function useSharedCard(cardId: string | null) {
+  return useQuery({
+    queryKey: ['shared-card', cardId],
+    queryFn: () => fetchSharedCard(cardId!),
+    enabled: cardId !== null,
+    staleTime: 60 * 1000, // 1 minute
   });
 }

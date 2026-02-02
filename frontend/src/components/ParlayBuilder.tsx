@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning } from '../api/public';
+import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning, fetchAutoGenerateSlips, AutoGenerateSlipsResponse, createSharedCard, CardLeg } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 
 // ============================================================================
@@ -249,6 +249,50 @@ interface ParlayCardProps {
 // Parlay card component
 function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSelect, isSelected }: ParlayCardProps) {
   const [isExpanded, setIsExpanded] = useState(index === 0); // First one expanded by default
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  
+  // Share parlay as a public card
+  const handleShare = async () => {
+    setIsSharing(true);
+    try {
+      const legs: CardLeg[] = parlay.legs.map(leg => ({
+        player_name: leg.player_name,
+        team_abbr: leg.team_abbr || null,
+        stat_type: leg.stat_type,
+        line: leg.line,
+        side: leg.side,
+        odds: leg.odds,
+        grade: leg.grade,
+        win_prob: leg.win_prob,
+        edge: leg.edge,
+      }));
+      
+      const card = await createSharedCard({
+        platform: siteMode,
+        legs,
+        total_odds: parlay.total_odds,
+        decimal_odds: parlay.decimal_odds,
+        parlay_probability: parlay.parlay_probability,
+        parlay_ev: parlay.parlay_ev,
+        overall_grade: parlay.overall_grade,
+        label: parlay.label,
+        kelly_suggested_units: parlay.kelly?.suggested_units,
+        kelly_risk_level: parlay.kelly?.risk_level,
+      });
+      
+      // Build full URL
+      const fullUrl = `${window.location.origin}/cards/${card.id}`;
+      setShareUrl(fullUrl);
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(fullUrl);
+    } catch (err) {
+      console.error('Failed to share card:', err);
+    } finally {
+      setIsSharing(false);
+    }
+  };
   
   // Calculate unique games for same-game vs multi-game indicator
   const uniqueGames = new Set(parlay.legs.map(l => l.game_id).filter(id => id != null)).size;
@@ -439,6 +483,18 @@ function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSele
               <span>Legs: </span>
               <span className="text-gray-300">{parlay.leg_count}</span>
             </div>
+            {/* Share Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleShare(); }}
+              disabled={isSharing}
+              className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                shareUrl
+                  ? 'bg-green-900/50 text-green-400 border border-green-700'
+                  : 'bg-purple-900/50 text-purple-400 border border-purple-700 hover:bg-purple-800/50'
+              }`}
+            >
+              {isSharing ? '...' : shareUrl ? '✓ Copied!' : '🔗 Share'}
+            </button>
           </div>
         </div>
       )}
@@ -464,6 +520,12 @@ export function ParlayBuilder() {
   
   // Session tracking
   const [selectedSlips, setSelectedSlips] = useState<Set<number>>(new Set());
+  
+  // Auto-generate state
+  const [autoGenOpen, setAutoGenOpen] = useState(false);
+  const [autoGenLoading, setAutoGenLoading] = useState(false);
+  const [autoGenResult, setAutoGenResult] = useState<AutoGenerateSlipsResponse | null>(null);
+  const [autoGenSlipCount, setAutoGenSlipCount] = useState(3);
   
   // Get current platform config
   const platformConfig = PLATFORM_CONFIGS[siteMode] || PLATFORM_CONFIGS.sportsbook;
@@ -668,8 +730,8 @@ export function ParlayBuilder() {
         </div>
       )}
       
-      {/* DFS-Tuned Presets */}
-      <div className="flex flex-wrap gap-2">
+      {/* DFS-Tuned Presets + Auto-Generate Button */}
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-gray-500 self-center mr-2">Presets:</span>
         {visiblePresets.map(([key, preset]) => (
           <button
@@ -695,7 +757,230 @@ export function ParlayBuilder() {
         >
           Custom
         </button>
+        
+        {/* Auto-Generate Button - prominent one-click action */}
+        <div className="ml-auto">
+          <button
+            onClick={() => setAutoGenOpen(true)}
+            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-semibold rounded-lg shadow-lg transition-all flex items-center gap-2"
+          >
+            <span>🚀</span>
+            <span>Auto-Generate</span>
+          </button>
+        </div>
       </div>
+      
+      {/* Auto-Generate Modal */}
+      {autoGenOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white">Auto-Generate Optimal Slips</h3>
+                <p className="text-sm text-gray-400">
+                  One-click: Generate {autoGenSlipCount} best {legCount}-leg slips for {platformConfig.name}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setAutoGenOpen(false);
+                  setAutoGenResult(null);
+                }}
+                className="text-gray-400 hover:text-white p-2"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-4 flex-1 overflow-y-auto">
+              {/* Config before generating */}
+              {!autoGenResult && !autoGenLoading && (
+                <div className="space-y-4">
+                  <div className="bg-gray-800/50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-300 mb-3">Generation Settings</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Number of Slips</label>
+                        <select
+                          value={autoGenSlipCount}
+                          onChange={(e) => setAutoGenSlipCount(Number(e.target.value))}
+                          className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                        >
+                          <option value={1}>1 slip</option>
+                          <option value={2}>2 slips</option>
+                          <option value={3}>3 slips</option>
+                          <option value={4}>4 slips</option>
+                          <option value={5}>5 slips</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Legs per Slip</label>
+                        <div className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
+                          {legCount} legs
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Platform</label>
+                        <div className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
+                          {platformConfig.name}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Entry Type</label>
+                        <div className="bg-gray-700 text-white rounded px-3 py-2 text-sm capitalize">
+                          {entryType}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-3">
+                    <div className="text-sm text-blue-300">
+                      <strong>What happens:</strong> We'll find the best {autoGenSlipCount} non-overlapping {legCount}-leg parlays 
+                      with 3%+ EV per leg and 55%+ model confidence. Each slip uses completely different legs.
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={async () => {
+                      if (!sportId) return;
+                      setAutoGenLoading(true);
+                      try {
+                        const result = await fetchAutoGenerateSlips(sportId, {
+                          platform: siteMode,
+                          leg_count: legCount,
+                          slip_count: autoGenSlipCount,
+                          min_leg_ev: 0.03,
+                          min_confidence: 0.55,
+                          allow_correlation: !blockCorrelated,
+                        });
+                        setAutoGenResult(result);
+                      } catch (err) {
+                        console.error('Auto-generate failed:', err);
+                      } finally {
+                        setAutoGenLoading(false);
+                      }
+                    }}
+                    className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold rounded-lg shadow-lg transition-all"
+                  >
+                    Generate {autoGenSlipCount} Best Slips
+                  </button>
+                </div>
+              )}
+              
+              {/* Loading state */}
+              {autoGenLoading && (
+                <div className="py-12 text-center">
+                  <div className="animate-spin inline-block w-8 h-8 border-4 border-green-400 border-t-transparent rounded-full mb-4" />
+                  <div className="text-gray-300">Generating optimal slips...</div>
+                  <div className="text-xs text-gray-500 mt-1">Finding non-overlapping high-EV combinations</div>
+                </div>
+              )}
+              
+              {/* Results */}
+              {autoGenResult && !autoGenLoading && (
+                <div className="space-y-4">
+                  {/* Quality indicator */}
+                  <div className={`rounded-lg p-3 flex items-center gap-3 ${
+                    autoGenResult.slate_quality === 'STRONG' ? 'bg-green-900/30 border border-green-700' :
+                    autoGenResult.slate_quality === 'GOOD' ? 'bg-blue-900/30 border border-blue-700' :
+                    autoGenResult.slate_quality === 'THIN' ? 'bg-yellow-900/30 border border-yellow-700' :
+                    'bg-red-900/30 border border-red-700'
+                  }`}>
+                    <span className="text-2xl">
+                      {autoGenResult.slate_quality === 'STRONG' ? '🔥' :
+                       autoGenResult.slate_quality === 'GOOD' ? '✅' :
+                       autoGenResult.slate_quality === 'THIN' ? '⚠️' : '❌'}
+                    </span>
+                    <div>
+                      <div className="font-medium text-white">
+                        Slate Quality: {autoGenResult.slate_quality}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {autoGenResult.slip_count} slips generated | Avg EV: {(autoGenResult.avg_slip_ev * 100).toFixed(1)}% | 
+                        Suggested: {autoGenResult.total_suggested_units}u total
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Generated slips */}
+                  {autoGenResult.slips.length > 0 ? (
+                    <div className="space-y-3">
+                      {autoGenResult.slips.map((slip, idx) => (
+                        <div key={idx} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold text-white">Slip {idx + 1}</span>
+                              <LabelBadge label={slip.label} />
+                              <GradeBadge grade={slip.overall_grade} />
+                            </div>
+                            <div className="text-right">
+                              <div className="text-green-400 font-medium">
+                                EV: {(slip.parlay_ev * 100).toFixed(1)}%
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {(slip.parlay_probability * 100).toFixed(1)}% hit rate
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Legs */}
+                          <div className="space-y-2">
+                            {slip.legs.map((leg, legIdx) => (
+                              <div key={legIdx} className="flex items-center justify-between py-1.5 px-2 bg-gray-700/50 rounded text-sm">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-500">{legIdx + 1}.</span>
+                                  <span className="text-white">{leg.player_name}</span>
+                                  <span className="text-gray-500">{leg.team_abbr}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className={`${leg.side === 'over' ? 'text-green-400' : 'text-red-400'}`}>
+                                    {leg.side.toUpperCase()} {leg.line}
+                                  </span>
+                                  <span className="text-gray-400">{leg.stat_type.replace('player_', '').toUpperCase()}</span>
+                                  <GradeBadge grade={leg.grade} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Kelly suggestion */}
+                          {slip.kelly && (
+                            <div className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-between text-xs">
+                              <span className="text-gray-400">Suggested stake:</span>
+                              <span className="text-yellow-400 font-medium">
+                                {slip.kelly.suggested_units}u ({slip.kelly.risk_level})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <div className="text-4xl mb-3">😬</div>
+                      <div className="text-gray-300">No qualifying slips found</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Try lowering leg count or passing on tonight's slate
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Reset button */}
+                  <button
+                    onClick={() => setAutoGenResult(null)}
+                    className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm"
+                  >
+                    Generate Again
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Filters */}
       <div className="bg-gray-800/50 rounded-lg p-4">
