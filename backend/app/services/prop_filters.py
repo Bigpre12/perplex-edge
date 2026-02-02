@@ -267,6 +267,67 @@ def dedupe_response_items(items: list) -> list:
     return result
 
 
+def dedupe_player_props(picks: list) -> list:
+    """
+    Deduplicate player prop picks, merging book_lines from duplicates.
+    
+    This is specifically for PlayerPropPick Pydantic models from the public API.
+    Uses (game_id, player_id, stat_type, line) as the canonical identity.
+    
+    - Merges book_lines from all duplicates into one list
+    - Keeps the best EV/Kelly values across all books
+    - Updates best_book to reflect the merged best option
+    
+    Args:
+        picks: List of PlayerPropPick Pydantic models
+    
+    Returns:
+        Deduplicated list with merged book_lines
+    """
+    if not picks:
+        return []
+    
+    grouped: dict = {}
+    
+    for pick in picks:
+        key = (pick.game_id, pick.player_id, pick.stat_type, pick.line)
+        
+        if key not in grouped:
+            grouped[key] = pick
+        else:
+            existing = grouped[key]
+            
+            # Merge book_lines from the duplicate into the existing pick
+            if pick.book_lines:
+                if existing.book_lines is None:
+                    existing.book_lines = list(pick.book_lines)
+                else:
+                    # Avoid duplicate books by checking sportsbook name
+                    existing_books = {bl.sportsbook for bl in existing.book_lines}
+                    for bl in pick.book_lines:
+                        if bl.sportsbook not in existing_books:
+                            existing.book_lines.append(bl)
+                            existing_books.add(bl.sportsbook)
+            
+            # Keep the higher EV version's stats
+            if pick.expected_value > existing.expected_value:
+                existing.expected_value = pick.expected_value
+                existing.model_probability = pick.model_probability
+                existing.implied_probability = pick.implied_probability
+                existing.kelly_units = pick.kelly_units
+                existing.kelly_edge_pct = pick.kelly_edge_pct
+                existing.kelly_risk_level = pick.kelly_risk_level
+                existing.best_book = pick.best_book
+                existing.odds = pick.odds
+    
+    result = list(grouped.values())
+    
+    if len(result) < len(picks):
+        logger.info(f"Deduped player props: {len(picks)} -> {len(result)} (merged book_lines)")
+    
+    return result
+
+
 # =============================================================================
 # Combined Filtering
 # =============================================================================

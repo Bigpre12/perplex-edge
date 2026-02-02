@@ -29,6 +29,7 @@ from app.schemas.public import (
     GameLinePickList,
     BookLine,
 )
+from app.services.prop_filters import dedupe_player_props
 
 router = APIRouter()
 
@@ -551,6 +552,9 @@ async def list_player_prop_picks(
             kelly_edge_pct=kelly["edge_pct"],
             kelly_risk_level=kelly["risk_level"],
         ))
+    
+    # Dedupe props - merge book_lines for same player/stat/line combos
+    picks = dedupe_player_props(picks)
     
     # Filter by Kelly risk levels (computed field, filter in-memory)
     if risk_levels:
