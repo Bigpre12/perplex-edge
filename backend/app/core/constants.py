@@ -50,6 +50,7 @@ SPORT_ID_TO_KEY = {
     41: "americanfootball_ncaaf",
     42: "tennis_atp",
     43: "tennis_wta",
+    44: "icehockey_nhl",
 }
 
 # Reverse mapping: sport key to database ID

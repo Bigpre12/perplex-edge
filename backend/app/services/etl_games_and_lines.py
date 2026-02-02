@@ -646,6 +646,13 @@ async def sync_games_and_lines(
             games_data = await active_provider.fetch_games(sport_key)
             logger.info(f"Fetched {len(games_data)} games for {sport_key}")
             
+            # Extra debug logging for tennis
+            if "tennis" in sport_key:
+                logger.info(f"[TENNIS DEBUG] Sport: {sport_key}, Sport ID: {sport.id}, Games: {len(games_data)}")
+                if games_data:
+                    for g in games_data[:2]:  # Log first 2 games
+                        logger.info(f"[TENNIS DEBUG] Game: {g.external_game_id}, {g.home_team} vs {g.away_team}")
+            
             for game_data in games_data:
                 try:
                     # Get or create teams
@@ -916,6 +923,13 @@ async def _sync_player_props(
             game.external_game_id,
         )
         logger.info(f"Got {len(props_data)} prop lines for game {game.external_game_id}")
+        
+        # Extra debug logging for tennis props
+        if "tennis" in sport_key:
+            logger.info(f"[TENNIS DEBUG] Props for {game.external_game_id}: {len(props_data)} lines")
+            if props_data:
+                for p in props_data[:3]:  # Log first 3 props
+                    logger.info(f"[TENNIS DEBUG] Prop: {p.player_name} - {p.stat_type} @ {p.line_value}")
         
         # Get home and away team names for player-team matching
         home_team_result = await db.execute(select(Team).where(Team.id == game.home_team_id))

@@ -640,6 +640,10 @@ async def generate_picks(
         )
         games = list(result.scalars().all())
         
+        # Extra debug logging for tennis
+        if "tennis" in sport_key:
+            logger.info(f"[TENNIS DEBUG] generate_picks: Sport {sport_key}, Sport ID: {sport.id}, Found {len(games)} games")
+        
         if not games:
             logger.info(f"No games found for {sport_key} today")
             return stats

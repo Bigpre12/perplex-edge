@@ -432,6 +432,18 @@ export const STAT_TYPES_BY_SPORT: Record<number, { value: string; label: string 
     { value: 'SETS', label: 'Sets Won' },
     { value: 'TOTAL_GAMES', label: 'Total Games' },
   ],
+  // NHL (44)
+  44: [
+    { value: 'GOALS', label: 'Goals' },
+    { value: 'ASSISTS', label: 'Assists' },
+    { value: 'POINTS', label: 'Points' },
+    { value: 'SHOTS', label: 'Shots on Goal' },
+    { value: 'SAVES', label: 'Saves' },
+    { value: 'BLOCKED', label: 'Blocked Shots' },
+    { value: 'HITS', label: 'Hits' },
+    { value: 'PIM', label: 'Penalty Minutes' },
+    { value: 'PPP', label: 'Power Play Points' },
+  ],
 };
 
 // Aliases for related sports
