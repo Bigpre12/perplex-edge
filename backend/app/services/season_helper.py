@@ -441,9 +441,8 @@ SPORT_ID_TO_KEY = {
     32: "basketball_ncaab",
     40: "baseball_mlb",
     41: "americanfootball_ncaaf",
-    # Tennis IDs will be assigned during ETL - update after first sync
-    # 33: "tennis_atp",  # Placeholder - update with actual ID
-    # 34: "tennis_wta",  # Placeholder - update with actual ID
+    42: "tennis_atp",   # Tennis ATP
+    43: "tennis_wta",   # Tennis WTA
 }
 
 
