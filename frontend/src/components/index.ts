@@ -10,6 +10,8 @@ export { StatsDashboard } from './StatsDashboard';
 export { MultiSportSlate } from './MultiSportSlate';
 export { AnalyticsDashboard } from './AnalyticsDashboard';
 export { BacktestTab } from './BacktestTab';
+export { TonightDashboard } from './TonightDashboard';
+export { LiveEVFeed } from './LiveEVFeed';
 
 // UI components
 export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';

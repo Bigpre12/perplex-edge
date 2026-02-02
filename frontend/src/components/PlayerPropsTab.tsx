@@ -63,6 +63,81 @@ function StaleBadge({ gameStartTime }: { gameStartTime: string }) {
 }
 
 // ============================================================================
+// Line Movement Badge - Shows opening vs current line movement
+// ============================================================================
+
+interface LineMovementBadgeProps {
+  pick: PlayerPropPick;
+}
+
+function LineMovementBadge({ pick }: LineMovementBadgeProps) {
+  const { opening_line, line_movement, movement_direction } = pick;
+  
+  // No movement data available
+  if (opening_line === null || line_movement === null || movement_direction === null) {
+    return null;
+  }
+  
+  // Stable = no significant movement
+  if (movement_direction === 'stable' || Math.abs(line_movement) < 0.5) {
+    return null;
+  }
+  
+  // Movement direction config
+  const config = {
+    sharp_up: {
+      icon: '↑',
+      bg: 'bg-red-900/40',
+      text: 'text-red-400',
+      border: 'border-red-700',
+      tooltip: 'Line moved UP (sharps on over)',
+    },
+    sharp_down: {
+      icon: '↓',
+      bg: 'bg-red-900/40',
+      text: 'text-red-400',
+      border: 'border-red-700',
+      tooltip: 'Line moved DOWN (sharps on under)',
+    },
+    reverse: {
+      icon: '✓',
+      bg: 'bg-green-900/40',
+      text: 'text-green-400',
+      border: 'border-green-700',
+      tooltip: 'Line moved in our favor',
+    },
+    steam: {
+      icon: '🔥',
+      bg: 'bg-yellow-900/40',
+      text: 'text-yellow-400',
+      border: 'border-yellow-700',
+      tooltip: 'Steam move on this prop',
+    },
+    stable: {
+      icon: '-',
+      bg: 'bg-gray-800',
+      text: 'text-gray-500',
+      border: 'border-gray-700',
+      tooltip: 'Line stable',
+    },
+  }[movement_direction];
+  
+  if (!config) return null;
+  
+  const movementStr = line_movement > 0 ? `+${line_movement}` : line_movement.toString();
+  
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded border ${config.bg} ${config.text} ${config.border}`}
+      title={`${config.tooltip}\nOpened: ${opening_line} → Now: ${pick.line}`}
+    >
+      <span>{config.icon}</span>
+      <span>{movementStr}</span>
+    </span>
+  );
+}
+
+// ============================================================================
 // Don't Bet List - Exclusion Filters
 // ============================================================================
 
@@ -922,8 +997,11 @@ export function PlayerPropsTab() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right text-white font-medium">
-                      {pick.line}
-                      <LineVarianceBadge variance={pick.line_variance} />
+                      <div className="flex items-center justify-end gap-1">
+                        <span>{pick.line}</span>
+                        <LineMovementBadge pick={pick} />
+                        <LineVarianceBadge variance={pick.line_variance} />
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">

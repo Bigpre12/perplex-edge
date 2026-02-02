@@ -150,6 +150,132 @@ async def list_sports(
 
 
 # =============================================================================
+# Tonight Summary Endpoint (What's On Tonight Dashboard)
+# =============================================================================
+
+@router.get("/tonight/summary", tags=["public"])
+async def get_tonight_summary(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get tonight's slate summary across all sports.
+    
+    Returns game counts, prop counts, and best EV for each sport,
+    plus an overall slate quality indicator.
+    
+    Use this to answer: "What should I focus on tonight?"
+    """
+    from app.schemas.public import SportTonightSummary, TonightSummaryResponse
+    from app.models import ModelPick
+    
+    # Calculate today's date range using US Eastern time
+    now_et = datetime.now(EASTERN_TZ)
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC (naive datetimes for PostgreSQL)
+    today_utc = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow_utc = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    
+    # Get all sports
+    sports_result = await db.execute(select(Sport).order_by(Sport.name))
+    all_sports = sports_result.scalars().all()
+    
+    sport_summaries = []
+    total_games = 0
+    total_props = 0
+    overall_best_ev = None
+    
+    for sport in all_sports:
+        # Count games for this sport today
+        games_count_result = await db.execute(
+            select(func.count(Game.id))
+            .where(
+                and_(
+                    Game.sport_id == sport.id,
+                    Game.start_time >= today_utc,
+                    Game.start_time < tomorrow_utc,
+                )
+            )
+        )
+        games_count = games_count_result.scalar() or 0
+        
+        # Count player props for this sport today
+        props_result = await db.execute(
+            select(
+                func.count(ModelPick.id),
+                func.max(ModelPick.expected_value),
+                func.avg(ModelPick.expected_value),
+            )
+            .join(Game, ModelPick.game_id == Game.id)
+            .where(
+                and_(
+                    Game.sport_id == sport.id,
+                    Game.start_time >= today_utc,
+                    Game.start_time < tomorrow_utc,
+                    ModelPick.player_id.isnot(None),  # Player props only
+                )
+            )
+        )
+        props_row = props_result.one()
+        props_count = props_row[0] or 0
+        best_ev = props_row[1]
+        avg_ev = props_row[2]
+        
+        # Determine slate quality for this sport
+        if games_count == 0:
+            slate_quality = "empty"
+        elif props_count >= 100:
+            slate_quality = "loaded"
+        elif props_count >= 30:
+            slate_quality = "normal"
+        else:
+            slate_quality = "thin"
+        
+        # Only include sports with games today
+        if games_count > 0:
+            sport_summaries.append(SportTonightSummary(
+                sport_id=sport.id,
+                sport_name=sport.name,
+                sport_key=sport.key,
+                games_count=games_count,
+                props_count=props_count,
+                best_ev=round(best_ev, 4) if best_ev else None,
+                avg_ev=round(avg_ev, 4) if avg_ev else None,
+                slate_quality=slate_quality,
+            ))
+            
+            total_games += games_count
+            total_props += props_count
+            
+            if best_ev and (overall_best_ev is None or best_ev > overall_best_ev):
+                overall_best_ev = best_ev
+    
+    # Sort by props count (most action first)
+    sport_summaries.sort(key=lambda s: s.props_count, reverse=True)
+    
+    # Overall slate quality
+    if total_props >= 200:
+        overall_quality = "loaded"
+    elif total_props >= 50:
+        overall_quality = "normal"
+    elif total_props > 0:
+        overall_quality = "thin"
+    else:
+        overall_quality = "empty"
+    
+    return TonightSummaryResponse(
+        date=now_et.strftime("%Y-%m-%d"),
+        timezone="US/Eastern",
+        sports=sport_summaries,
+        total_games=total_games,
+        total_props=total_props,
+        overall_best_ev=round(overall_best_ev, 4) if overall_best_ev else None,
+        slate_quality=overall_quality,
+    )
+
+
+# =============================================================================
 # Games Endpoints
 # =============================================================================
 
@@ -455,6 +581,59 @@ async def list_player_prop_picks(
                 book_lines_map[key] = []
             book_lines_map[key].append(line)
     
+    # ==========================================================================
+    # OPENING LINES: Fetch earliest line per prop for line movement tracking
+    # ==========================================================================
+    opening_lines_map: dict[tuple, Line] = {}
+    if line_keys:
+        # Subquery to find MIN fetched_at per (game_id, player_id, market_id, side)
+        from sqlalchemy import func as sqlfunc
+        earliest_subq = (
+            select(
+                Line.game_id,
+                Line.player_id,
+                Line.market_id,
+                Line.side,
+                sqlfunc.min(Line.fetched_at).label("earliest_fetch"),
+            )
+            .where(
+                or_(*[
+                    and_(
+                        Line.game_id == gid,
+                        Line.player_id == pid,
+                        Line.market_id == mid,
+                        Line.side == side,
+                    )
+                    for gid, pid, mid, side in line_keys
+                ])
+            )
+            .group_by(Line.game_id, Line.player_id, Line.market_id, Line.side)
+            .subquery()
+        )
+        
+        # Join to get the actual opening line records
+        opening_lines_result = await db.execute(
+            select(Line)
+            .join(
+                earliest_subq,
+                and_(
+                    Line.game_id == earliest_subq.c.game_id,
+                    Line.player_id == earliest_subq.c.player_id,
+                    Line.market_id == earliest_subq.c.market_id,
+                    Line.side == earliest_subq.c.side,
+                    Line.fetched_at == earliest_subq.c.earliest_fetch,
+                )
+            )
+        )
+        opening_lines = opening_lines_result.scalars().all()
+        
+        # Map by key
+        for line in opening_lines:
+            key = (line.game_id, line.player_id, line.market_id, line.side)
+            # Keep first (should be unique after join, but safety)
+            if key not in opening_lines_map:
+                opening_lines_map[key] = line
+    
     # Import Kelly calculation once outside loop
     from app.services.parlay_service import calculate_kelly_fraction
     
@@ -521,6 +700,46 @@ async def list_player_prop_picks(
             american_odds=int(pick.odds),
         )
         
+        # Calculate line movement from opening line
+        opening_line_data = opening_lines_map.get(line_key)
+        opening_line = None
+        opening_odds = None
+        line_movement = None
+        odds_movement = None
+        movement_direction = None
+        
+        if opening_line_data:
+            opening_line = opening_line_data.line_value
+            opening_odds = int(opening_line_data.odds) if opening_line_data.odds else None
+            
+            # Line movement = current - opening (positive = line moved up)
+            if opening_line is not None and pick.line_value is not None:
+                line_movement = round(pick.line_value - opening_line, 1)
+            
+            # Odds movement = current - opening (negative = sharpened/got worse for bettor)
+            if opening_odds is not None:
+                odds_movement = int(pick.odds) - opening_odds
+            
+            # Determine movement direction
+            # "sharp_up" = line moved up against public (sharps bet over)
+            # "sharp_down" = line moved down against public (sharps bet under)
+            # "steam" = significant odds movement but line stable
+            # "reverse" = line moved opposite to expected direction
+            # "stable" = no significant movement
+            if line_movement is not None:
+                if abs(line_movement) < 0.5:
+                    movement_direction = "stable"
+                elif line_movement > 0 and pick.side == "over":
+                    movement_direction = "sharp_up"  # Line moved up, betting over looks worse (sharps on over)
+                elif line_movement < 0 and pick.side == "under":
+                    movement_direction = "sharp_down"  # Line moved down, betting under looks worse (sharps on under)
+                elif line_movement > 0 and pick.side == "under":
+                    movement_direction = "reverse"  # Line moved up but we're betting under - good for us
+                elif line_movement < 0 and pick.side == "over":
+                    movement_direction = "reverse"  # Line moved down but we're betting over - good for us
+                else:
+                    movement_direction = "steam" if abs(odds_movement or 0) > 10 else "stable"
+        
         picks.append(PlayerPropPick(
             pick_id=pick.id,
             player_name=player.name,
@@ -551,6 +770,12 @@ async def list_player_prop_picks(
             kelly_units=kelly["suggested_units"],
             kelly_edge_pct=kelly["edge_pct"],
             kelly_risk_level=kelly["risk_level"],
+            # Line movement tracking
+            opening_line=opening_line,
+            opening_odds=opening_odds,
+            line_movement=line_movement,
+            odds_movement=odds_movement,
+            movement_direction=movement_direction,
         ))
     
     # Dedupe props - merge book_lines for same player/stat/line combos

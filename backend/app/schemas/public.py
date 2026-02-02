@@ -142,6 +142,13 @@ class PlayerPropPick(BaseModel):
     kelly_units: Optional[float] = None  # Suggested bet size in units (0-5)
     kelly_edge_pct: Optional[float] = None  # Edge percentage
     kelly_risk_level: Optional[str] = None  # "NO_BET", "SMALL", "STANDARD", "CONFIDENT", "STRONG", "MAX"
+    
+    # Line movement tracking
+    opening_line: Optional[float] = None  # Original line when first posted
+    opening_odds: Optional[int] = None  # Original odds
+    line_movement: Optional[float] = None  # current_line - opening_line (positive = moved up)
+    odds_movement: Optional[int] = None  # current_odds - opening_odds (negative = sharpened)
+    movement_direction: Optional[str] = None  # "sharp_up", "sharp_down", "steam", "reverse", "stable"
 
 
 class PlayerPropPickList(BaseModel):
@@ -397,3 +404,30 @@ class AltLineExplorerResponse(BaseModel):
     # Hit rate context
     hit_rate_5g: Optional[float]
     season_avg: Optional[float]
+
+
+# =============================================================================
+# Tonight Summary (What's On Tonight Dashboard)
+# =============================================================================
+
+class SportTonightSummary(BaseModel):
+    """Summary of a sport's slate for tonight."""
+    sport_id: int
+    sport_name: str
+    sport_key: str
+    games_count: int
+    props_count: int
+    best_ev: Optional[float] = None  # Best EV available in this sport
+    avg_ev: Optional[float] = None   # Average EV across all props
+    slate_quality: str  # "loaded", "normal", "thin", "empty"
+
+
+class TonightSummaryResponse(BaseModel):
+    """Response for tonight's slate summary across all sports."""
+    date: str  # Date in YYYY-MM-DD format
+    timezone: str  # "US/Eastern"
+    sports: list[SportTonightSummary]
+    total_games: int
+    total_props: int
+    overall_best_ev: Optional[float] = None
+    slate_quality: str  # Overall slate quality

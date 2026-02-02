@@ -463,3 +463,90 @@ async def process_picks_for_alerts(
         "high_ev_count": high_ev_count,
         "alerts_sent": alerts_sent,
     }
+
+
+# =============================================================================
+# Watchlist Alerts (Per-User Webhooks)
+# =============================================================================
+
+async def send_watchlist_alert(
+    webhook_url: str,
+    watchlist_name: str,
+    new_picks: list[dict],
+    total_matches: int,
+    sport_name: str = None,
+) -> bool:
+    """
+    Send alert to a user's custom Discord webhook for watchlist matches.
+    
+    Args:
+        webhook_url: The user's Discord webhook URL
+        watchlist_name: Name of the watchlist
+        new_picks: List of new matching picks (each with player_name, stat_type, line, side, ev)
+        total_matches: Total number of picks matching the watchlist
+        sport_name: Optional sport name for display
+    
+    Returns:
+        True if sent successfully
+    """
+    if not webhook_url:
+        logger.debug("No webhook URL provided for watchlist alert")
+        return False
+    
+    # Format picks as bulleted list (max 8 to avoid huge messages)
+    picks_to_show = new_picks[:8]
+    picks_text = "\n".join([
+        f"• **{p.get('player_name', 'Unknown')}** {p.get('side', 'over').upper()} {p.get('line', '')} {p.get('stat_type', '')} — +{p.get('ev', 0)*100:.1f}% EV"
+        for p in picks_to_show
+    ])
+    
+    if len(new_picks) > 8:
+        picks_text += f"\n_...and {len(new_picks) - 8} more_"
+    
+    # Build description
+    desc = f"**{len(new_picks)} new picks** match your filters"
+    if sport_name:
+        desc += f" for **{sport_name}**"
+    desc += f"\n\n{picks_text}"
+    
+    # Choose color based on pick count
+    if len(new_picks) >= 10:
+        color = 0x00FF00  # Green - lots of action
+    elif len(new_picks) >= 5:
+        color = 0x32CD32  # Lime
+    else:
+        color = 0x4ECDC4  # Teal
+    
+    embed = create_embed(
+        title=f"📋 Watchlist: {watchlist_name}",
+        description=desc,
+        color=color,
+        fields=[
+            {"name": "Total Matches", "value": str(total_matches), "inline": True},
+            {"name": "New Picks", "value": str(len(new_picks)), "inline": True},
+        ],
+        footer="Perplex Engine | Watchlist Alert",
+    )
+    
+    payload = {
+        "username": "Perplex Engine",
+        "embeds": [embed],
+    }
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                webhook_url,
+                json=payload,
+                timeout=10.0,
+            )
+            
+            if response.status_code in (200, 204):
+                logger.info(f"Watchlist alert sent for '{watchlist_name}'")
+                return True
+            else:
+                logger.warning(f"Watchlist webhook returned {response.status_code}: {response.text}")
+                return False
+    except Exception as e:
+        logger.error(f"Failed to send watchlist alert: {e}")
+        return False

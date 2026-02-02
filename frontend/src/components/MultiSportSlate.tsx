@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSports, fetchPlayerPropPicks, PlayerPropFilters } from '../api/public';
+import { TonightDashboard } from './TonightDashboard';
 
 // ============================================================================
 // Multi-Sport Slate View
@@ -149,10 +150,19 @@ export function MultiSportSlate() {
   
   const isLoading = sportsLoading || allSportsQuery.isLoading;
   
+  // Handle sport selection from TonightDashboard
+  const handleSelectSportFromDashboard = (sportId: number) => {
+    // Toggle this sport on (add to filter) 
+    setSelectedSports(new Set([sportId]));
+  };
+  
   return (
     <div className="space-y-4">
+      {/* Tonight's Dashboard */}
+      <TonightDashboard onSelectSport={handleSelectSportFromDashboard} />
+      
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-700">
         <div>
           <h2 className="text-xl font-bold text-white">Multi-Sport Slate</h2>
           <p className="text-sm text-gray-400">

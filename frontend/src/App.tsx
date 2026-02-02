@@ -9,6 +9,7 @@ import {
   MultiSportSlate,
   AnalyticsDashboard,
   BacktestTab,
+  LiveEVFeed,
 } from './components'
 import { HundredPercentTab } from './components/HundredPercentTab'
 import { ParlayBuilder } from './components/ParlayBuilder'
@@ -17,6 +18,7 @@ import { useAutoRefresh, formatTimeRemaining, formatLastUpdated } from './hooks/
 
 const TABS = [
   { id: 'multi-sport', label: '🎯 All Sports' },
+  { id: 'live-ev', label: '🔴 Live EV' },
   { id: 'player-props', label: 'Player Props' },
   { id: 'game-lines', label: 'Game Lines' },
   { id: '100pct-hits', label: '100% Hit Rate' },
@@ -83,6 +85,8 @@ function AppContent() {
     switch (activeTab) {
       case 'multi-sport':
         return <MultiSportSlate />;
+      case 'live-ev':
+        return <LiveEVFeed />;
       case 'player-props':
         return <PlayerPropsTab />;
       case 'game-lines':

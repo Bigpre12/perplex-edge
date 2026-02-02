@@ -100,6 +100,12 @@ export interface PlayerPropPick {
   kelly_units: number | null;  // Suggested bet size (0-5 units)
   kelly_edge_pct: number | null;  // Edge percentage
   kelly_risk_level: string | null;  // "NO_BET", "SMALL", "STANDARD", "CONFIDENT", "STRONG", "MAX"
+  // Line movement tracking
+  opening_line: number | null;  // Original line when first posted
+  opening_odds: number | null;  // Original odds
+  line_movement: number | null;  // current_line - opening_line (positive = moved up)
+  odds_movement: number | null;  // current_odds - opening_odds (negative = sharpened)
+  movement_direction: 'sharp_up' | 'sharp_down' | 'steam' | 'reverse' | 'stable' | null;
 }
 
 export interface PlayerPropPickList {
@@ -1446,5 +1452,47 @@ export function useSharedCard(cardId: string | null) {
     queryFn: () => fetchSharedCard(cardId!),
     enabled: cardId !== null,
     staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+// =============================================================================
+// Tonight Summary Types (What's On Tonight Dashboard)
+// =============================================================================
+
+export interface SportTonightSummary {
+  sport_id: number;
+  sport_name: string;
+  sport_key: string;
+  games_count: number;
+  props_count: number;
+  best_ev: number | null;
+  avg_ev: number | null;
+  slate_quality: 'loaded' | 'normal' | 'thin' | 'empty';
+}
+
+export interface TonightSummaryResponse {
+  date: string;
+  timezone: string;
+  sports: SportTonightSummary[];
+  total_games: number;
+  total_props: number;
+  overall_best_ev: number | null;
+  slate_quality: 'loaded' | 'normal' | 'thin' | 'empty';
+}
+
+// =============================================================================
+// Tonight Summary API Functions
+// =============================================================================
+
+export async function fetchTonightSummary(): Promise<TonightSummaryResponse> {
+  return fetchJson<TonightSummaryResponse>(`${API_BASE_URL}/api/tonight/summary`);
+}
+
+export function useTonightSummary() {
+  return useQuery({
+    queryKey: ['tonight-summary'],
+    queryFn: fetchTonightSummary,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
   });
 }

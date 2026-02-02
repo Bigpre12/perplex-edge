@@ -1317,6 +1317,49 @@ async def ncaab_snapshot_loop(snapshot_hour: int = 6, initial_delay: int = 135):
 
 
 # =============================================================================
+# Watchlist Alert Loop
+# =============================================================================
+
+async def watchlist_alert_loop(interval_minutes: int = 15, initial_delay: int = 60):
+    """
+    Background task that checks watchlists and sends Discord alerts for new matches.
+    
+    Args:
+        interval_minutes: Check interval in minutes (default: 15)
+        initial_delay: Initial delay in seconds before first check
+    """
+    from app.services.watchlist_alert_service import check_watchlists_and_alert
+    
+    if initial_delay > 0:
+        logger.info(f"Watchlist alert loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"Watchlist alert loop started (interval: {interval_minutes} min)")
+    
+    while True:
+        try:
+            logger.info("Checking watchlists for new matches...")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                result = await check_watchlists_and_alert(db)
+                if result.get("alerts_sent", 0) > 0:
+                    logger.info(
+                        f"Watchlist alerts: {result['alerts_sent']} sent, "
+                        f"{result['total_new_matches']} new matches"
+                    )
+            
+        except asyncio.CancelledError:
+            logger.info("Watchlist alert loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Watchlist alert loop error: {e}", exc_info=True)
+        
+        # Wait for next interval
+        await asyncio.sleep(interval_minutes * 60)
+
+
+# =============================================================================
 # Scheduler Control Functions
 # =============================================================================
 
@@ -1500,6 +1543,18 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task_ncaab_snapshot)
     logger.info(f"Created ncaab_snapshot_loop task (daily at {ncaab_snapshot_hour}:00 EST)")
+    
+    # Watchlist alert loop (checks every 15 minutes for new matches)
+    watchlist_interval = getattr(settings, 'watchlist_alert_interval_min', 15)
+    task_watchlist = asyncio.create_task(
+        watchlist_alert_loop(
+            interval_minutes=watchlist_interval,
+            initial_delay=60,  # Start after initial sync
+        ),
+        name="watchlist_alert_loop"
+    )
+    tasks.append(task_watchlist)
+    logger.info(f"Created watchlist_alert_loop task (every {watchlist_interval} min)")
 
     _background_tasks = tasks
     return tasks
