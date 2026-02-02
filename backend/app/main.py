@@ -1,15 +1,24 @@
 """Perplex Engine - Sports Betting Analytics API."""
-import logging
 import os
+import time
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException, Response
+from fastapi import FastAPI, Depends, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import get_settings
 from app.core.database import db_lifespan, get_db
+from app.core.logging import (
+    configure_logging,
+    get_logger,
+    get_correlation_id,
+    set_correlation_id,
+    request_metrics,
+)
 from app.models import Sport, Pick, HistoricalPerformance
 from app.services.stats_calculator import (
     get_all_hit_rates,
@@ -35,14 +44,79 @@ from app.api.ncaab import router as ncaab_router
 from app.api.bets import router as bets_router
 from app.api.data_v2 import router as data_v2_router
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
+# Configure structured logging
+# Use JSON logs in production (ENVIRONMENT != 'development')
+_env = os.getenv("ENVIRONMENT", "production")
+configure_logging(json_logs=(_env != "development"), log_level="INFO")
+logger = get_logger(__name__)
 
 settings = get_settings()
+
+
+# =============================================================================
+# Request Logging Middleware
+# =============================================================================
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to log all requests with correlation IDs and metrics.
+    
+    Logs: path, method, status_code, duration_ms, correlation_id
+    """
+    
+    async def dispatch(self, request: Request, call_next):
+        # Generate or extract correlation ID
+        correlation_id = request.headers.get("X-Correlation-ID")
+        if not correlation_id:
+            correlation_id = str(uuid.uuid4())[:8]
+        set_correlation_id(correlation_id)
+        
+        # Record start time
+        start_time = time.perf_counter()
+        
+        # Process request
+        response = None
+        status_code = 500
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+        except Exception as e:
+            logger.error(
+                "request_failed",
+                path=request.url.path,
+                method=request.method,
+                error=str(e)[:200],
+            )
+            raise
+        finally:
+            # Calculate duration
+            duration_ms = (time.perf_counter() - start_time) * 1000
+            
+            # Record metrics
+            request_metrics.record_request(
+                path=request.url.path,
+                method=request.method,
+                status_code=status_code,
+                duration_ms=duration_ms,
+            )
+            
+            # Log request (skip health checks for noise reduction)
+            if not request.url.path.startswith(("/health", "/ping")):
+                log_level = "warning" if status_code >= 400 else "info"
+                getattr(logger, log_level)(
+                    "request_completed",
+                    path=request.url.path,
+                    method=request.method,
+                    status_code=status_code,
+                    duration_ms=round(duration_ms, 2),
+                    query_params=str(request.query_params) if request.query_params else None,
+                )
+        
+        # Add correlation ID to response headers
+        if response:
+            response.headers["X-Correlation-ID"] = correlation_id
+        
+        return response
 
 
 # =============================================================================
@@ -52,7 +126,26 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan."""
-    logger.info("Starting Perplex Engine...")
+    logger.info("starting_perplex_engine", version="0.1.0")
+    
+    # Initialize Sentry for error monitoring (before anything else)
+    from app.core.sentry import init_sentry
+    sentry_enabled = init_sentry()
+    
+    # Validate configuration at startup
+    from app.core.config import validate_startup_config
+    config_status = validate_startup_config()
+    
+    if not config_status["valid"]:
+        logger.error(
+            "startup_config_invalid",
+            issues=config_status["issues"],
+        )
+        # Continue anyway - let individual services fail gracefully
+    
+    if config_status.get("warnings"):
+        for warning in config_status["warnings"]:
+            logger.warning("startup_config_warning", message=warning)
     
     # Initialize database
     async with db_lifespan(app):
@@ -61,25 +154,32 @@ async def lifespan(app: FastAPI):
         if settings.scheduler_enabled:
             try:
                 background_tasks = start_background_tasks()
-                logger.info(f"Started {len(background_tasks)} background tasks")
+                logger.info(
+                    "background_tasks_started",
+                    task_count=len(background_tasks),
+                )
             except Exception as e:
-                logger.error(f"Failed to start background tasks: {e}")
+                logger.error("background_tasks_failed", error=str(e))
         else:
-            logger.info("Scheduler disabled via SCHEDULER_ENABLED=false")
+            logger.info("scheduler_disabled")
         
-        logger.info("Perplex Engine started successfully")
+        logger.info(
+            "perplex_engine_ready",
+            environment=config_status.get("environment"),
+            scheduler_enabled=settings.scheduler_enabled,
+        )
         
         yield
         
         # Shutdown
-        logger.info("Perplex Engine shutting down...")
+        logger.info("perplex_engine_shutting_down")
         
         # Stop background tasks
         if background_tasks:
             await stop_background_tasks(background_tasks)
-            logger.info("Background tasks stopped")
+            logger.info("background_tasks_stopped")
     
-    logger.info("Perplex Engine shut down")
+    logger.info("perplex_engine_shutdown_complete")
 
 
 # =============================================================================
@@ -93,37 +193,40 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Get allowed origins from environment or use wildcard
-# In production, set: ALLOWED_ORIGINS=https://perplex-edge-production.up.railway.app,http://localhost:5173
-_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
-ALLOWED_ORIGINS = ["*"] if _origins_env == "*" else [o.strip() for o in _origins_env.split(",")]
+# CORS configuration - explicitly allow production frontend and dev origins
+# Railway production frontend + local dev servers
+ALLOWED_ORIGINS = [
+    "https://perplex-edge-production.up.railway.app",  # Production frontend
+    "http://localhost:5173",                            # Vite dev server
+    "http://localhost:3000",                            # Alternative dev port
+    "http://127.0.0.1:5173",                            # Vite dev server (127.0.0.1)
+    "http://127.0.0.1:3000",                            # Alternative dev port
+]
 
-# CORS middleware - allow cross-origin requests
-# Note: allow_credentials must be False when allow_origins=["*"] per CORS spec
+# Also check for additional origins from environment variable
+_extra_origins = os.getenv("ALLOWED_ORIGINS", "")
+if _extra_origins and _extra_origins != "*":
+    for origin in _extra_origins.split(","):
+        origin = origin.strip()
+        if origin and origin not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(origin)
+
+logger.info("cors_origins_configured", origins=ALLOWED_ORIGINS)
+
+# CORS middleware - allow cross-origin requests from specified origins
+# Must be added BEFORE other middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=False,
+    allow_credentials=True,  # Allow cookies/auth headers
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
-    expose_headers=["*"],
+    expose_headers=["X-Correlation-ID", "Content-Type", "Authorization"],
     max_age=600,  # Cache preflight for 10 minutes
 )
 
-
-# Explicit OPTIONS handler as fallback for CORS preflight
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    """Handle OPTIONS requests explicitly for CORS preflight."""
-    return Response(
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "600",
-        }
-    )
+# Request logging middleware - logs all requests with correlation IDs
+app.add_middleware(RequestLoggingMiddleware)
 
 # Include routers
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
@@ -158,7 +261,7 @@ async def root():
 
 @app.get("/health")
 async def health():
-    """Health check endpoint - no database access."""
+    """Health check endpoint - no database access (for liveness probes)."""
     return {"status": "ok"}
 
 
@@ -181,6 +284,36 @@ async def health_db():
         return {"status": "ok", "database": "connected"}
     except Exception as e:
         return {"status": "error", "database": str(e)[:200]}
+
+
+@app.get("/health/full")
+async def health_full(db: AsyncSession = Depends(get_db)):
+    """
+    Comprehensive health check endpoint.
+    
+    Checks all dependencies:
+    - Database connectivity
+    - Odds API quota
+    - Cache health
+    - Scheduler status
+    - Data freshness
+    - Circuit breakers
+    
+    Use /health for simple liveness checks, /health/full for readiness checks.
+    """
+    from app.core.health import run_all_health_checks
+    return await run_all_health_checks(db)
+
+
+@app.get("/health/ready")
+async def health_ready(db: AsyncSession = Depends(get_db)):
+    """
+    Readiness check endpoint - verifies service is ready to accept traffic.
+    
+    Checks database connectivity only (quick check).
+    """
+    from app.core.health import run_quick_health_check
+    return await run_quick_health_check(db)
 
 
 @app.get("/api/health")
