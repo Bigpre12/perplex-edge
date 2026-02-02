@@ -139,6 +139,10 @@ function LegCard({ leg, index }: { leg: ParlayLeg; index: number }) {
 function ParlayCard({ parlay, index }: { parlay: ParlayRecommendation; index: number }) {
   const [isExpanded, setIsExpanded] = useState(index === 0); // First one expanded by default
   
+  // Calculate unique games for same-game vs multi-game indicator
+  const uniqueGames = new Set(parlay.legs.map(l => l.game_id).filter(id => id != null)).size;
+  const isSameGame = uniqueGames === 1 && parlay.legs.length > 1;
+  
   return (
     <div className={`border rounded-lg overflow-hidden transition-all ${
       parlay.label === 'LOCK' 
@@ -161,6 +165,16 @@ function ParlayCard({ parlay, index }: { parlay: ParlayRecommendation; index: nu
               risk={parlay.correlation_risk} 
               label={parlay.correlation_risk_label} 
             />
+            {/* Same-game vs Multi-game indicator */}
+            {isSameGame ? (
+              <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-900/30 text-orange-400 border border-orange-700">
+                SGP
+              </span>
+            ) : uniqueGames > 1 ? (
+              <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-900/30 text-green-400 border border-green-700">
+                {uniqueGames} Games
+              </span>
+            ) : null}
           </div>
           
           <div className="flex items-center gap-6">
@@ -270,10 +284,25 @@ export function ParlayBuilder() {
   // Filter state
   const [legCount, setLegCount] = useState(3);
   const [include100Pct, setInclude100Pct] = useState(false);
-  const [minGrade, setMinGrade] = useState('C');
+  const [minGrade, setMinGrade] = useState('B');  // Default to B (3%+ edge) for EV-first
   const [maxResults, setMaxResults] = useState(5);
   const [blockCorrelated, setBlockCorrelated] = useState(true);
   const [maxCorrelationRisk, setMaxCorrelationRisk] = useState('MEDIUM');
+  const [activePreset, setActivePreset] = useState<string | null>('balanced');
+  
+  // Quick presets for different strategies
+  const PRESETS = {
+    maxEdge: { legCount: 2, minGrade: 'A', label: '2-Leg Max Edge', desc: 'Tightest filters, highest edge' },
+    balanced: { legCount: 3, minGrade: 'B', label: '3-4 Balanced', desc: 'Good balance of edge and volume' },
+    highVariance: { legCount: 5, minGrade: 'C', label: '5-6 High Var', desc: 'More legs, higher variance' },
+  };
+  
+  const applyPreset = (preset: keyof typeof PRESETS) => {
+    const p = PRESETS[preset];
+    setLegCount(p.legCount);
+    setMinGrade(p.minGrade);
+    setActivePreset(preset);
+  };
   
   // Build filters
   const filters: ParlayBuilderFilters = useMemo(() => ({
@@ -341,6 +370,34 @@ export function ParlayBuilder() {
             AI-optimized parlays with grading and LOCK/PLAY/SKIP recommendations
           </p>
         </div>
+      </div>
+      
+      {/* Quick Presets */}
+      <div className="flex flex-wrap gap-2">
+        {Object.entries(PRESETS).map(([key, preset]) => (
+          <button
+            key={key}
+            onClick={() => applyPreset(key as keyof typeof PRESETS)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activePreset === key
+                ? 'bg-blue-600 text-white border-2 border-blue-400'
+                : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-500'
+            }`}
+            title={preset.desc}
+          >
+            {preset.label}
+          </button>
+        ))}
+        <button
+          onClick={() => setActivePreset(null)}
+          className={`px-3 py-2 rounded-lg text-sm transition-all ${
+            activePreset === null
+              ? 'bg-gray-700 text-white border border-gray-500'
+              : 'bg-gray-800/50 text-gray-500 border border-gray-700 hover:text-gray-300'
+          }`}
+        >
+          Custom
+        </button>
       </div>
       
       {/* Filters */}
@@ -456,6 +513,19 @@ export function ParlayBuilder() {
           </div>
         </div>
       </div>
+      
+      {/* Thin Slate Warning - when not enough quality legs */}
+      {!isLoading && totalCandidates > 0 && totalCandidates < 10 && (
+        <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-3 flex items-center gap-3">
+          <span className="text-yellow-400 text-lg">⚠️</span>
+          <div>
+            <div className="text-sm font-medium text-yellow-400">Slate is thin</div>
+            <div className="text-xs text-yellow-500/80">
+              Only {totalCandidates} eligible legs available. Consider 2-3 leg parlays or passing this slate.
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Loading state - spinner during initial fetch */}
       {showSpinner && (
