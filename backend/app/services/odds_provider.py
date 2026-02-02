@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from app.core.config import get_settings
+from app.core.constants import LEAGUE_TO_SPORT_KEY_EXTENDED
 from app.core.rate_limiter import (
     get_odds_api_limiter,
     get_betstack_api_limiter,
@@ -441,17 +442,8 @@ class OddsProvider(ABC):
 # Concrete Implementation
 # =============================================================================
 
-# Sport key mappings
-SPORT_KEYS = {
-    "NBA": "basketball_nba",
-    "NFL": "americanfootball_nfl",
-    "MLB": "baseball_mlb",
-    "NHL": "icehockey_nhl",
-    "NCAAB": "basketball_ncaab",
-    "NCAAF": "americanfootball_ncaaf",
-    "TENNIS_ATP": "tennis_atp",
-    "TENNIS_WTA": "tennis_wta",
-}
+# Sport key mappings (use centralized constants)
+SPORT_KEYS = LEAGUE_TO_SPORT_KEY_EXTENDED
 
 # Market type mappings from API to internal
 MARKET_MAPPINGS = {

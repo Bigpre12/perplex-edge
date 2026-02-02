@@ -33,8 +33,16 @@ SPORT_KEY_TO_NAME = {
     "tennis_wta": ("Tennis WTA", "WTA"),
 }
 
-# Map league code back to sport key
+# Map league code back to sport key (base mapping)
 LEAGUE_TO_SPORT_KEY = {v: k for k, v in SPORT_KEY_TO_LEAGUE.items()}
+
+# Extended mapping that includes alternate league code formats
+# Used by providers that may use TENNIS_ATP instead of ATP, etc.
+LEAGUE_TO_SPORT_KEY_EXTENDED = {
+    **LEAGUE_TO_SPORT_KEY,
+    "TENNIS_ATP": "tennis_atp",
+    "TENNIS_WTA": "tennis_wta",
+}
 
 # =============================================================================
 # Sport ID Mappings (Database IDs)

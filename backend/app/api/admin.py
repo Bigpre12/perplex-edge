@@ -781,6 +781,86 @@ async def get_sport_health(
 
 
 # =============================================================================
+# Sport ID Verification Endpoint (for debugging NFL/NCAAF/Tennis mapping issues)
+# =============================================================================
+
+@router.get("/verify/sport-ids")
+async def verify_sport_id_counts(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Verify props/games/picks counts by sport_id.
+    
+    Use this endpoint to debug NFL/NCAAF bleed issues:
+    - NFL props should be under sport_id=31 (americanfootball_nfl)
+    - NCAAF props should be under sport_id=41 (americanfootball_ncaaf)
+    - ATP tennis under sport_id=42, WTA under sport_id=43
+    
+    Returns counts grouped by sport_id with the expected sport key.
+    """
+    from sqlalchemy import select, func
+    from app.models import Sport, Game, Line, ModelPick
+    from app.core.constants import SPORT_ID_TO_KEY
+    
+    # Get all sports from DB
+    sports_result = await db.execute(select(Sport))
+    sports = {s.id: s for s in sports_result.scalars().all()}
+    
+    results = []
+    for sport_id, sport_key in SPORT_ID_TO_KEY.items():
+        sport = sports.get(sport_id)
+        
+        # Count games
+        games_count = await db.scalar(
+            select(func.count()).select_from(Game).where(Game.sport_id == sport_id)
+        ) or 0
+        
+        # Count lines (props)
+        lines_count = await db.scalar(
+            select(func.count()).select_from(Line)
+            .join(Game, Line.game_id == Game.id)
+            .where(Game.sport_id == sport_id)
+        ) or 0
+        
+        # Count player props (lines with player_id)
+        props_count = await db.scalar(
+            select(func.count()).select_from(Line)
+            .join(Game, Line.game_id == Game.id)
+            .where(Game.sport_id == sport_id, Line.player_id.isnot(None))
+        ) or 0
+        
+        # Count picks
+        picks_count = await db.scalar(
+            select(func.count()).select_from(ModelPick).where(ModelPick.sport_id == sport_id)
+        ) or 0
+        
+        results.append({
+            "sport_id": sport_id,
+            "expected_key": sport_key,
+            "db_key": sport.key if sport else None,
+            "db_league_code": sport.league_code if sport else None,
+            "exists_in_db": sport is not None,
+            "counts": {
+                "games": games_count,
+                "lines": lines_count,
+                "player_props": props_count,
+                "picks": picks_count,
+            }
+        })
+    
+    return {
+        "status": "ok",
+        "sport_id_audit": results,
+        "verification_notes": [
+            "NFL should have sport_id=31 (americanfootball_nfl)",
+            "NCAAF should have sport_id=41 (americanfootball_ncaaf)",
+            "If NFL props appear under sport_id=41, there's a mapping issue",
+            "Tennis ATP=42, WTA=43 should have non-zero counts after sync",
+        ]
+    }
+
+
+# =============================================================================
 # API Monitoring Endpoints
 # =============================================================================
 

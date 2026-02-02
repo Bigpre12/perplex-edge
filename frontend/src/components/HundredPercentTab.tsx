@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { use100PercentProps, HundredPercentProp } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { DEFAULT_100PCT_FILTERS, METRIC_EXPLAINERS } from '../constants/presets';
 
 // Window selector buttons
 const WINDOW_OPTIONS = [
@@ -57,7 +58,12 @@ function HitRateBar({ rate, games }: { rate: number | null; games: number }) {
 
 export function HundredPercentTab() {
   const { sportId, isLoading: sportLoading } = useSportContext();
-  const [window, setWindow] = useState('last_5');
+  const [window, setWindow] = useState(DEFAULT_100PCT_FILTERS.window);
+  
+  // Reset to default filters
+  const resetToDefault = () => {
+    setWindow(DEFAULT_100PCT_FILTERS.window);
+  };
   
   // Fetch 100% hit rate props
   const queryResult = use100PercentProps(sportId, window, 50);
@@ -129,30 +135,48 @@ export function HundredPercentTab() {
       {/* Header with window selector */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white">High Hit Rate Props</h2>
+          <h2 className="text-xl font-bold text-white">
+            High Hit Rate Props
+            <span 
+              className="ml-2 text-sm text-gray-500 cursor-help" 
+              title={METRIC_EXPLAINERS.hitRate.long}
+            >
+              ⓘ
+            </span>
+          </h2>
           <p className="text-sm text-gray-400">
-            Props with the highest hit rates - 100% when available, 80%+ otherwise
+            Props with the highest hit rates - 100% when available, 80%+ otherwise.
+            <span className="text-gray-500 ml-1">({METRIC_EXPLAINERS.hitRate.example})</span>
           </p>
         </div>
         
-        {/* Window selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400">Window:</span>
-          <div className="flex bg-gray-800 rounded-lg p-1">
-            {WINDOW_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setWindow(opt.value)}
-                className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
-                  window === opt.value
-                    ? 'bg-green-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                {opt.short}
-              </button>
-            ))}
+        {/* Window selector + Reset */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-400">Window:</span>
+            <div className="flex bg-gray-800 rounded-lg p-1">
+              {WINDOW_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setWindow(opt.value)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                    window === opt.value
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {opt.short}
+                </button>
+              ))}
+            </div>
           </div>
+          <button
+            onClick={resetToDefault}
+            className="px-3 py-1.5 text-sm text-gray-400 hover:text-white border border-gray-600 rounded-lg hover:border-gray-500 transition-colors"
+            title="Reset to default (Last 5 games)"
+          >
+            ↺ Reset
+          </button>
         </div>
       </div>
       
@@ -182,14 +206,28 @@ export function HundredPercentTab() {
         </div>
       )}
       
-      {/* Empty state - no props found */}
+      {/* Empty state - distinguish "no props loaded" vs "no high hit rate props" */}
       {showEmpty && (
         <div className="p-8 text-center">
-          <div className="text-5xl mb-4">🎯</div>
-          <div className="text-gray-400 text-lg">No high hit rate props found</div>
-          <div className="text-gray-500 text-sm mt-2">
-            No props with 70%+ hit rates available. Try a different time window or check back later.
-          </div>
+          {total === 0 ? (
+            // No props loaded for this sport at all
+            <>
+              <div className="text-5xl mb-4">📭</div>
+              <div className="text-gray-400 text-lg">No props loaded for this sport</div>
+              <div className="text-gray-500 text-sm mt-2">
+                Check back closer to game time or try another sport
+              </div>
+            </>
+          ) : (
+            // Props exist but none meet the hit rate threshold
+            <>
+              <div className="text-5xl mb-4">🎯</div>
+              <div className="text-gray-400 text-lg">No high hit rate props found</div>
+              <div className="text-gray-500 text-sm mt-2">
+                No props with 70%+ hit rates available. Try a different time window or check back later.
+              </div>
+            </>
+          )}
         </div>
       )}
       

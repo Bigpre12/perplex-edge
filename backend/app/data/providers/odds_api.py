@@ -19,6 +19,7 @@ import logging
 from typing import Any, Optional
 from datetime import datetime, timezone
 
+from app.core.constants import LEAGUE_TO_SPORT_KEY
 from app.data.base import BaseProvider, ProviderError
 
 logger = logging.getLogger(__name__)
@@ -38,14 +39,9 @@ class OddsAPIProvider(BaseProvider):
     name = "oddsapi"
     base_url = "https://api.the-odds-api.com/v4"
     
-    # Sport keys for different leagues
-    SPORT_KEYS = {
-        "NBA": "basketball_nba",
-        "NCAAB": "basketball_ncaab",
-        "NFL": "americanfootball_nfl",
-        "MLB": "baseball_mlb",
-        "NHL": "icehockey_nhl",
-    }
+    # Sport keys for different leagues (use centralized constants)
+    # Includes all sports: NBA, NFL, MLB, NHL, NCAAB, NCAAF, ATP, WTA
+    SPORT_KEYS = LEAGUE_TO_SPORT_KEY
     
     def __init__(self, api_key: Optional[str] = None):
         super().__init__(api_key or os.getenv("ODDS_API_KEY"))

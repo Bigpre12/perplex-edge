@@ -6,6 +6,7 @@ from typing import Any, Optional
 import httpx
 
 from app.core.config import get_settings
+from app.core.constants import LEAGUE_TO_SPORT_KEY
 from app.core.logging import get_logger
 from app.core.resilience import (
     with_retry,
@@ -32,15 +33,9 @@ _odds_api_breaker = CircuitBreakerRegistry.get_or_create(
     reset_timeout=60,
 )
 
-# Sport keys for The Odds API
-SPORT_KEYS = {
-    "NBA": "basketball_nba",
-    "NFL": "americanfootball_nfl",
-    "MLB": "baseball_mlb",
-    "NHL": "icehockey_nhl",
-    "NCAAB": "basketball_ncaab",
-    "NCAAF": "americanfootball_ncaaf",
-}
+# Sport keys for The Odds API (use centralized constants)
+# Includes all sports: NBA, NFL, MLB, NHL, NCAAB, NCAAF, ATP, WTA
+SPORT_KEYS = LEAGUE_TO_SPORT_KEY
 
 # Market keys
 MARKETS = {

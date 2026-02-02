@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react';
-import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning, fetchAutoGenerateSlips, AutoGenerateSlipsResponse, createSharedCard, CardLeg } from '../api/public';
+import { useState, useMemo, useCallback } from 'react';
+import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning, fetchAutoGenerateSlips, AutoGenerateSlipsResponse, createSharedCard, CardLeg, quoteParlayLegs, QuoteResponse, OddsMovement, QuotedLeg, useOddsHealth } from '../api/public';
 import { useSportContext } from '../context/SportContext';
+import { DEFAULT_PARLAY_FILTERS } from '../constants/presets';
+import { formatParlayForClipboard, copyToClipboard } from '../utils/clipboard';
 
 // ============================================================================
 // DFS Platform Payout Tables
@@ -137,6 +139,69 @@ function LabelBadge({ label }: { label: string }) {
   );
 }
 
+// Odds movement badge - shows when odds changed
+function OddsMovementBadge({ movement }: { movement: OddsMovement | null }) {
+  if (!movement || movement.direction === 'stable') return null;
+  
+  const isUp = movement.direction === 'up';
+  const colorClass = movement.favorable 
+    ? 'bg-green-900/30 text-green-400 border-green-700' 
+    : 'bg-red-900/30 text-red-400 border-red-700';
+  
+  return (
+    <span 
+      className={`px-2 py-0.5 rounded text-xs font-medium border ${colorClass}`}
+      title={`Odds moved ${isUp ? 'up (better payout)' : 'down (worse payout)'}`}
+    >
+      {isUp ? '↑' : '↓'} {movement.display}
+    </span>
+  );
+}
+
+// Odds health banner - shows when odds may be stale
+function OddsHealthBanner({ sportId }: { sportId: number | null }) {
+  const { data: health } = useOddsHealth(sportId ?? undefined);
+  
+  if (!health || health.status === 'healthy') return null;
+  
+  const statusConfig = {
+    degraded: {
+      icon: '⚠️',
+      color: 'bg-yellow-900/20 border-yellow-700 text-yellow-400',
+      message: 'Some odds may be delayed',
+    },
+    stale: {
+      icon: '⏰',
+      color: 'bg-orange-900/20 border-orange-700 text-orange-400',
+      message: 'Live odds temporarily unavailable; using last known prices',
+    },
+    no_data: {
+      icon: '📭',
+      color: 'bg-gray-800 border-gray-600 text-gray-400',
+      message: 'No odds data available',
+    },
+    unknown: {
+      icon: '❓',
+      color: 'bg-gray-800 border-gray-600 text-gray-400',
+      message: 'Unable to verify odds freshness',
+    },
+  };
+  
+  const config = statusConfig[health.status] || statusConfig.unknown;
+  
+  return (
+    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${config.color}`}>
+      <span>{config.icon}</span>
+      <span>{config.message}</span>
+      {health.newest_update && (
+        <span className="text-xs opacity-70">
+          (Last update: {new Date(health.newest_update).toLocaleTimeString()})
+        </span>
+      )}
+    </div>
+  );
+}
+
 // Correlation risk badge
 const RISK_COLORS: Record<string, string> = {
   'LOW': 'bg-green-900/30 text-green-400 border-green-700',
@@ -198,7 +263,10 @@ function formatPercent(value: number): string {
 }
 
 // Individual leg component
-function LegCard({ leg, index }: { leg: ParlayLeg; index: number }) {
+function LegCard({ leg, index, liveLeg }: { leg: ParlayLeg; index: number; liveLeg?: QuotedLeg | null }) {
+  const displayOdds = liveLeg?.current_odds ?? leg.odds;
+  const displayProb = liveLeg?.model_prob ?? leg.win_prob;
+  
   return (
     <div className="flex items-center justify-between py-2 px-3 bg-gray-800/50 rounded-lg">
       <div className="flex items-center gap-3">
@@ -221,8 +289,11 @@ function LegCard({ leg, index }: { leg: ParlayLeg; index: number }) {
       
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <div className="text-white font-medium">{formatOdds(leg.odds)}</div>
-          <div className="text-xs text-gray-500">{formatPercent(leg.win_prob)} prob</div>
+          <div className="text-white font-medium">{formatOdds(displayOdds)}</div>
+          <div className="text-xs text-gray-500">{formatPercent(displayProb)} prob</div>
+          {liveLeg?.is_stale && (
+            <div className="text-[10px] text-orange-400">odds may be stale</div>
+          )}
         </div>
         <GradeBadge grade={leg.grade} />
         {leg.is_100_last_5 && (
@@ -230,6 +301,7 @@ function LegCard({ leg, index }: { leg: ParlayLeg; index: number }) {
             100% L5
           </span>
         )}
+        {liveLeg?.movement && <OddsMovementBadge movement={liveLeg.movement} />}
       </div>
     </div>
   );
@@ -251,6 +323,47 @@ function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSele
   const [isExpanded, setIsExpanded] = useState(index === 0); // First one expanded by default
   const [isSharing, setIsSharing] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  
+  // Live quote state
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [liveQuote, setLiveQuote] = useState<QuoteResponse | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  
+  // Fetch live odds quote for this parlay
+  const handleGetQuote = useCallback(async () => {
+    setQuoteLoading(true);
+    setQuoteError(null);
+    try {
+      const request = {
+        legs: parlay.legs.map(leg => ({
+          game_id: leg.game_id,
+          player_id: leg.player_id,
+          stat_type: leg.stat_type,
+          line_value: leg.line,
+          side: leg.side,
+          model_odds: leg.odds,
+          model_prob: leg.win_prob,
+        })),
+        use_cache: true,
+      };
+      const quote = await quoteParlayLegs(request);
+      setLiveQuote(quote);
+    } catch (err) {
+      console.error('Quote failed:', err);
+      setQuoteError('Failed to fetch live odds');
+    } finally {
+      setQuoteLoading(false);
+    }
+  }, [parlay.legs]);
+  
+  // Copy parlay to clipboard (simple text format)
+  const handleCopy = async () => {
+    const text = formatParlayForClipboard(parlay.legs, parlay.total_odds, parlay.parlay_ev);
+    const success = await copyToClipboard(text);
+    setCopyStatus(success ? 'copied' : 'error');
+    setTimeout(() => setCopyStatus('idle'), 2000);
+  };
   
   // Share parlay as a public card
   const handleShare = async () => {
@@ -451,12 +564,36 @@ function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSele
       {isExpanded && (
         <div className="border-t border-gray-700 p-4 space-y-2">
           {parlay.legs.map((leg, legIndex) => (
-            <LegCard key={leg.pick_id} leg={leg} index={legIndex} />
+            <LegCard
+              key={leg.pick_id}
+              leg={leg}
+              index={legIndex}
+              liveLeg={liveQuote?.legs?.[legIndex] ?? null}
+            />
           ))}
           
           {/* Correlation warnings */}
           {parlay.correlations && parlay.correlations.length > 0 && (
             <CorrelationWarningCard warnings={parlay.correlations} />
+          )}
+          
+          {/* Live quote summary */}
+          {liveQuote && (
+            <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-xs text-gray-400">
+              <span className="text-gray-300 font-medium">Live parlay:</span>{' '}
+              <span className="text-white">{formatOdds(liveQuote.parlay_odds)}</span>{' '}
+              <span className={liveQuote.parlay_ev >= 0 ? 'text-green-400' : 'text-red-400'}>
+                ({liveQuote.parlay_ev >= 0 ? '+' : ''}{formatPercent(liveQuote.parlay_ev)} EV)
+              </span>
+              {liveQuote.stale_legs > 0 && (
+                <span className="ml-2 text-orange-400">
+                  {liveQuote.stale_legs} stale leg{liveQuote.stale_legs > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          )}
+          {quoteError && (
+            <div className="text-xs text-red-400">{quoteError}</div>
           )}
           
           {/* Stats footer */}
@@ -483,6 +620,37 @@ function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSele
               <span>Legs: </span>
               <span className="text-gray-300">{parlay.leg_count}</span>
             </div>
+            {/* Live Quote Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleGetQuote(); }}
+              disabled={quoteLoading}
+              className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                liveQuote
+                  ? liveQuote.has_movement
+                    ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-700'
+                    : 'bg-green-900/50 text-green-400 border border-green-700'
+                  : quoteError
+                  ? 'bg-red-900/50 text-red-400 border border-red-700'
+                  : 'bg-blue-900/50 text-blue-400 border border-blue-700 hover:bg-blue-800/50'
+              }`}
+              title="Get real-time odds quote"
+            >
+              {quoteLoading ? '...' : liveQuote ? (liveQuote.has_movement ? '⚡ Updated' : '✓ Fresh') : '🔄 Live Quote'}
+            </button>
+            {/* Copy Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+              className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                copyStatus === 'copied'
+                  ? 'bg-green-900/50 text-green-400 border border-green-700'
+                  : copyStatus === 'error'
+                  ? 'bg-red-900/50 text-red-400 border border-red-700'
+                  : 'bg-gray-700 text-gray-400 border border-gray-600 hover:border-gray-500'
+              }`}
+              title="Copy parlay to clipboard"
+            >
+              {copyStatus === 'copied' ? '✓ Copied!' : copyStatus === 'error' ? '✗ Failed' : '📋 Copy'}
+            </button>
             {/* Share Button */}
             <button
               onClick={(e) => { e.stopPropagation(); handleShare(); }}
@@ -493,7 +661,7 @@ function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSele
                   : 'bg-purple-900/50 text-purple-400 border border-purple-700 hover:bg-purple-800/50'
               }`}
             >
-              {isSharing ? '...' : shareUrl ? '✓ Copied!' : '🔗 Share'}
+              {isSharing ? '...' : shareUrl ? '✓ Shared!' : '🔗 Share'}
             </button>
           </div>
         </div>
@@ -510,13 +678,26 @@ export function ParlayBuilder() {
   const [entryType, setEntryType] = useState<EntryType>('power');
   
   // Filter state
-  const [legCount, setLegCount] = useState(3);
-  const [include100Pct, setInclude100Pct] = useState(false);
-  const [minGrade, setMinGrade] = useState('B');  // Default to B (3%+ edge) for EV-first
-  const [maxResults, setMaxResults] = useState(5);
-  const [blockCorrelated, setBlockCorrelated] = useState(true);
-  const [maxCorrelationRisk, setMaxCorrelationRisk] = useState('MEDIUM');
+  const [legCount, setLegCount] = useState(DEFAULT_PARLAY_FILTERS.legCount);
+  const [include100Pct, setInclude100Pct] = useState(DEFAULT_PARLAY_FILTERS.include100Pct);
+  const [minGrade, setMinGrade] = useState(DEFAULT_PARLAY_FILTERS.minGrade);
+  const [maxResults, setMaxResults] = useState(DEFAULT_PARLAY_FILTERS.maxResults);
+  const [blockCorrelated, setBlockCorrelated] = useState(DEFAULT_PARLAY_FILTERS.blockCorrelated);
+  const [maxCorrelationRisk, setMaxCorrelationRisk] = useState(DEFAULT_PARLAY_FILTERS.maxCorrelationRisk);
   const [activePreset, setActivePreset] = useState<string | null>('pp3Power');
+  
+  // Reset all filters to default
+  const resetFiltersToDefault = () => {
+    setLegCount(DEFAULT_PARLAY_FILTERS.legCount);
+    setInclude100Pct(DEFAULT_PARLAY_FILTERS.include100Pct);
+    setMinGrade(DEFAULT_PARLAY_FILTERS.minGrade);
+    setMaxResults(DEFAULT_PARLAY_FILTERS.maxResults);
+    setBlockCorrelated(DEFAULT_PARLAY_FILTERS.blockCorrelated);
+    setMaxCorrelationRisk(DEFAULT_PARLAY_FILTERS.maxCorrelationRisk);
+    setActivePreset('pp3Power');
+    setSiteMode('prizepicks');
+    setEntryType('power');
+  };
   
   // Session tracking
   const [selectedSlips, setSelectedSlips] = useState<Set<number>>(new Set());
@@ -581,11 +762,9 @@ export function ParlayBuilder() {
   };
   
   // Filter presets by current site mode
-  const visiblePresets = useMemo(() => {
-    return Object.entries(DFS_PRESETS).filter(([_, preset]) => 
-      preset.site === siteMode || preset.site === 'sportsbook' && siteMode === 'sportsbook'
-    );
-  }, [siteMode]);
+  const visiblePresets = Object.entries(DFS_PRESETS).filter(([, preset]) => 
+    preset.site === siteMode || preset.site === 'sportsbook' && siteMode === 'sportsbook'
+  );
   
   const applyPreset = (presetKey: string) => {
     const preset = DFS_PRESETS[presetKey as keyof typeof DFS_PRESETS];
@@ -688,6 +867,9 @@ export function ParlayBuilder() {
         </div>
       </div>
       
+      {/* Live odds health banner */}
+      <OddsHealthBanner sportId={sportId} />
+      
       {/* Platform Info Bar */}
       {siteMode !== 'sportsbook' && (
         <div className="bg-purple-900/20 border border-purple-700/50 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3">
@@ -756,6 +938,13 @@ export function ParlayBuilder() {
           }`}
         >
           Custom
+        </button>
+        <button
+          onClick={resetFiltersToDefault}
+          className="px-3 py-1.5 text-sm text-gray-400 hover:text-white border border-gray-600 rounded-lg hover:border-gray-500 transition-colors"
+          title="Reset all filters to default"
+        >
+          ↺ Reset
         </button>
         
         {/* Auto-Generate Button - prominent one-click action */}
@@ -1164,14 +1353,28 @@ export function ParlayBuilder() {
         </div>
       )}
       
-      {/* Empty state - no parlays found */}
+      {/* Empty state - distinguish "no props loaded" vs "filters too strict" */}
       {showEmpty && (
         <div className="p-8 text-center">
-          <div className="text-5xl mb-4">🎰</div>
-          <div className="text-gray-400 text-lg">No qualifying parlays found</div>
-          <div className="text-gray-500 text-sm mt-2">
-            Try lowering the minimum grade or leg count
-          </div>
+          {totalCandidates === 0 ? (
+            // No props loaded for this sport at all
+            <>
+              <div className="text-5xl mb-4">📭</div>
+              <div className="text-gray-400 text-lg">No props loaded for this sport</div>
+              <div className="text-gray-500 text-sm mt-2">
+                Check back closer to game time or try another sport
+              </div>
+            </>
+          ) : (
+            // Props exist but filters are too strict
+            <>
+              <div className="text-5xl mb-4">🎰</div>
+              <div className="text-gray-400 text-lg">No qualifying parlays found</div>
+              <div className="text-gray-500 text-sm mt-2">
+                {totalCandidates} eligible legs available. Try lowering the minimum grade or leg count.
+              </div>
+            </>
+          )}
         </div>
       )}
       

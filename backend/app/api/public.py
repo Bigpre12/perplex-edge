@@ -29,6 +29,7 @@ from app.schemas.public import (
     GameLinePick,
     GameLinePickList,
     BookLine,
+    QuoteRequest,
 )
 from app.services.prop_filters import dedupe_player_props
 
@@ -1462,6 +1463,7 @@ async def auto_generate_slips(
     
     except Exception as e:
         logger.error(f"Auto-generate error for sport {sport_id}: {e}", exc_info=True)
+        from app.schemas.public import AutoGenerateSlipsResponse
         return AutoGenerateSlipsResponse(
             slips=[],
             slip_count=0,
@@ -1479,6 +1481,143 @@ async def auto_generate_slips(
             total_suggested_units=0.0,
             slate_quality="PASS",
         )
+
+
+# =============================================================================
+# Real-Time Parlay Quote Endpoint
+# =============================================================================
+
+@router.post("/parlays/quote", tags=["public"])
+async def quote_parlay(
+    request: "QuoteRequest",
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get real-time odds quote for parlay legs.
+    
+    This endpoint fetches the current market odds for each leg and calculates
+    updated parlay pricing. Use this to:
+    
+    1. **Track odds movement** - See if odds changed since you built the parlay
+    2. **Update parlay price** - Get accurate payout based on current odds
+    3. **Verify freshness** - Know which legs have stale odds
+    
+    Each leg in the request should include:
+    - `game_id`: Required game identifier
+    - `player_id`: Player ID for player props (null for game lines)
+    - `stat_type`: Stat type for player props (PTS, REB, AST, etc.)
+    - `line_value`: The betting line (24.5, -3.5, etc.)
+    - `side`: "over", "under", "home", "away"
+    - `model_odds`: Original odds from model pick (optional, for movement detection)
+    - `model_prob`: Model probability (optional, for EV calculation)
+    
+    Returns:
+    - `legs`: Each leg with current odds, edge, and movement info
+    - `parlay_odds`: Combined parlay odds (American)
+    - `parlay_ev`: Expected value based on model probabilities
+    - `has_movement`: True if any leg odds changed
+    - `stale_legs`: Count of legs with potentially stale odds
+    
+    Example request:
+    ```json
+    {
+        "legs": [
+            {
+                "game_id": 123,
+                "player_id": 456,
+                "stat_type": "PTS",
+                "line_value": 24.5,
+                "side": "over",
+                "model_odds": -115,
+                "model_prob": 0.58
+            },
+            {
+                "game_id": 124,
+                "player_id": 789,
+                "stat_type": "REB",
+                "line_value": 9.5,
+                "side": "over",
+                "model_odds": -110,
+                "model_prob": 0.55
+            }
+        ]
+    }
+    ```
+    """
+    from app.services.live_odds_service import quote_parlay_legs
+    from app.schemas.public import QuoteRequest, QuoteResponse
+    
+    try:
+        # Convert request to dict format for service
+        legs_data = [
+            {
+                "game_id": leg.game_id,
+                "player_id": leg.player_id,
+                "stat_type": leg.stat_type,
+                "line_value": leg.line_value,
+                "side": leg.side,
+                "model_odds": leg.model_odds,
+                "model_prob": leg.model_prob,
+            }
+            for leg in request.legs
+        ]
+        
+        result = await quote_parlay_legs(
+            db,
+            legs=legs_data,
+            use_cache=request.use_cache,
+        )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Quote parlay error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to quote parlay: {str(e)[:200]}")
+
+
+@router.get("/parlays/odds-health", tags=["public"])
+async def get_odds_health(
+    sport_id: Optional[int] = Query(None, description="Optional sport ID filter"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Check odds data freshness and health.
+    
+    Use this to determine if the odds data is fresh enough for live betting.
+    Shows a status banner in the UI when odds may be stale.
+    
+    Status levels:
+    - `healthy`: Most odds updated recently (>90% fresh)
+    - `degraded`: Some stale odds (50-90% fresh)
+    - `stale`: Mostly stale odds (<50% fresh)
+    - `no_data`: No odds data available
+    
+    Returns:
+    - `status`: Health status string
+    - `freshness_pct`: Percentage of fresh lines
+    - `newest_update`: Most recent odds update time
+    - `stale_threshold_minutes`: What qualifies as stale
+    """
+    from app.services.live_odds_service import check_odds_freshness
+    from app.schemas.public import OddsFreshnessResponse
+    
+    try:
+        result = await check_odds_freshness(db, sport_id=sport_id)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Odds health check error: {e}", exc_info=True)
+        return {
+            "status": "unknown",
+            "total_lines": 0,
+            "fresh_lines": 0,
+            "stale_lines": 0,
+            "freshness_pct": 0,
+            "oldest_update": None,
+            "newest_update": None,
+            "stale_threshold_minutes": 5,
+            "checked_at": datetime.utcnow().isoformat(),
+        }
 
 
 # =============================================================================

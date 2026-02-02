@@ -21,25 +21,13 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.constants import SPORT_KEY_TO_LEAGUE
 from app.models import Game, Line, ModelPick, Player, Sport
 
 logger = logging.getLogger(__name__)
 
 # Default snapshot directory
 DEFAULT_SNAPSHOT_DIR = Path(__file__).parent.parent.parent / "snapshots"
-
-
-# =============================================================================
-# Sport Key to League Code Mapping
-# =============================================================================
-
-SPORT_KEY_TO_LEAGUE = {
-    "basketball_nba": "NBA",
-    "basketball_ncaab": "NCAAB",
-    "americanfootball_nfl": "NFL",
-    "tennis_atp": "ATP",
-    "tennis_wta": "WTA",
-}
 
 
 # =============================================================================

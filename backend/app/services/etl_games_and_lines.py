@@ -741,6 +741,13 @@ async def sync_games_and_lines(
                     logger.error(f"Error processing game {game_data.external_game_id}: {e}", exc_info=True)
                     stats["errors"].append(f"Game {game_data.external_game_id}: {str(e)[:100]}")
         
+        # Diagnostic logging for sport_id verification (helps debug NFL/NCAAF bleed)
+        logger.info(
+            f"[SPORT_ID_AUDIT] sport_id={sport.id}, sport_key={sport_key}, "
+            f"league_code={sport.league_code}, games={stats['games_created']}, "
+            f"props={stats['props_added']}"
+        )
+        
         # Commit transaction
         await db.commit()
         logger.info(f"Sync completed for {sport_key}: {stats}")

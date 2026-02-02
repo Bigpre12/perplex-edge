@@ -1618,3 +1618,178 @@ export function useTonightSummary() {
     refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
   });
 }
+
+// =============================================================================
+// Model Performance Types
+// =============================================================================
+
+export interface CalibrationBucket {
+  bucket_name: string;
+  predicted_low: number;
+  predicted_high: number;
+  predicted_mid: number;
+  actual_hit_rate: number;
+  sample_size: number;
+  calibration_error: number;
+}
+
+export interface CalibrationReport {
+  sport: string;
+  days: number;
+  total_picks: number;
+  overall_hit_rate: number;
+  overall_roi: number;
+  brier_score: number;
+  expected_calibration_error: number;
+  buckets: CalibrationBucket[];
+}
+
+export interface ModelPerformanceSummary {
+  sport: string;
+  days: number;
+  total_picks: number;
+  hit_rate: number;
+  roi_percent: number;
+  avg_ev: number;
+  avg_clv: number;
+  win_count: number;
+  loss_count: number;
+  pending_count: number;
+}
+
+// =============================================================================
+// Model Performance API Functions
+// =============================================================================
+
+export async function fetchCalibrationReport(sport: string, days: number = 30): Promise<CalibrationReport> {
+  return fetchJson<CalibrationReport>(`${API_BASE_URL}/admin/calibration/${sport}?days=${days}`);
+}
+
+export function useCalibrationReport(sport: string | null, days: number = 30) {
+  return useQuery({
+    queryKey: ['calibration', sport, days],
+    queryFn: () => fetchCalibrationReport(sport!, days),
+    enabled: sport !== null,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export async function fetchAnalyticsDashboard(sport: string, days: number = 30): Promise<ModelPerformanceSummary> {
+  return fetchJson<ModelPerformanceSummary>(`${API_BASE_URL}/api/analytics/dashboard?sport=${sport}&days=${days}`);
+}
+
+export function useAnalyticsDashboard(sport: string | null, days: number = 30) {
+  return useQuery({
+    queryKey: ['analytics-dashboard', sport, days],
+    queryFn: () => fetchAnalyticsDashboard(sport!, days),
+    enabled: sport !== null,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// =============================================================================
+// Real-Time Parlay Quote Types
+// =============================================================================
+
+export interface QuoteLegRequest {
+  game_id: number;
+  player_id?: number | null;
+  stat_type?: string | null;
+  line_value?: number | null;
+  side: string;
+  model_odds?: number | null;
+  model_prob?: number | null;
+}
+
+export interface QuoteRequest {
+  legs: QuoteLegRequest[];
+  use_cache?: boolean;
+}
+
+export interface OddsMovement {
+  direction: 'up' | 'down' | 'stable';
+  magnitude: number;
+  old_odds: number;
+  new_odds: number;
+  display: string | null;
+  favorable: boolean;
+}
+
+export interface QuotedLeg {
+  index: number;
+  game_id: number;
+  player_id: number | null;
+  player_name: string | null;
+  stat_type: string | null;
+  line_value: number | null;
+  side: string;
+  sportsbook: string;
+  current_odds: number;
+  decimal_odds: number;
+  implied_prob: number;
+  model_odds: number | null;
+  model_prob: number;
+  edge: number;
+  movement: OddsMovement | null;
+  is_stale: boolean;
+  last_update: string | null;
+  found: boolean;
+}
+
+export interface QuoteResponse {
+  legs: QuotedLeg[];
+  leg_count: number;
+  parlay_odds: number;
+  parlay_decimal: number;
+  parlay_probability: number;
+  implied_probability: number;
+  parlay_ev: number;
+  has_movement: boolean;
+  stale_legs: number;
+  all_fresh: boolean;
+  quoted_at: string;
+}
+
+export interface OddsFreshnessResponse {
+  status: 'healthy' | 'degraded' | 'stale' | 'no_data' | 'unknown';
+  total_lines: number;
+  fresh_lines: number;
+  stale_lines: number;
+  freshness_pct: number;
+  oldest_update: string | null;
+  newest_update: string | null;
+  stale_threshold_minutes: number;
+  checked_at: string;
+}
+
+// =============================================================================
+// Real-Time Parlay Quote API Functions
+// =============================================================================
+
+export async function quoteParlayLegs(request: QuoteRequest): Promise<QuoteResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/parlays/quote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to quote parlay: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchOddsHealth(sportId?: number): Promise<OddsFreshnessResponse> {
+  const url = sportId 
+    ? `${API_BASE_URL}/api/parlays/odds-health?sport_id=${sportId}`
+    : `${API_BASE_URL}/api/parlays/odds-health`;
+  return fetchJson<OddsFreshnessResponse>(url);
+}
+
+export function useOddsHealth(sportId?: number) {
+  return useQuery({
+    queryKey: ['odds-health', sportId],
+    queryFn: () => fetchOddsHealth(sportId),
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // Refetch every minute
+  });
+}

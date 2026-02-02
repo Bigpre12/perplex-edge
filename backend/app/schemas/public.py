@@ -361,6 +361,93 @@ class AutoGenerateSlipsResponse(BaseModel):
 
 
 # =============================================================================
+# Real-Time Parlay Quote
+# =============================================================================
+
+class QuoteLegRequest(BaseModel):
+    """Single leg specification for quote request."""
+    
+    game_id: int
+    player_id: Optional[int] = None
+    stat_type: Optional[str] = None
+    line_value: Optional[float] = None
+    side: str  # "over", "under", "home", "away"
+    model_odds: Optional[int] = None  # Original odds from model pick
+    model_prob: Optional[float] = None  # Model probability
+
+
+class QuoteRequest(BaseModel):
+    """Request for real-time parlay quote."""
+    
+    legs: list[QuoteLegRequest]
+    use_cache: bool = True  # Use cached odds when available
+
+
+class OddsMovement(BaseModel):
+    """Odds movement information."""
+    
+    direction: str  # "up", "down", "stable"
+    magnitude: float  # Percentage change
+    old_odds: int
+    new_odds: int
+    display: Optional[str]  # "Odds: +140 → +130"
+    favorable: bool  # True if movement is favorable to bettor
+
+
+class QuotedLeg(BaseModel):
+    """Single leg with real-time odds."""
+    
+    index: int
+    game_id: int
+    player_id: Optional[int]
+    player_name: Optional[str]
+    stat_type: Optional[str]
+    line_value: Optional[float]
+    side: str
+    sportsbook: str
+    current_odds: int
+    decimal_odds: float
+    implied_prob: float
+    model_odds: Optional[int]
+    model_prob: float
+    edge: float
+    movement: Optional[OddsMovement]
+    is_stale: bool
+    last_update: Optional[str]
+    found: bool  # Whether odds were found in database
+
+
+class QuoteResponse(BaseModel):
+    """Real-time parlay quote response."""
+    
+    legs: list[QuotedLeg]
+    leg_count: int
+    parlay_odds: int  # American odds
+    parlay_decimal: float
+    parlay_probability: float  # Model probability
+    implied_probability: float  # Market implied probability
+    parlay_ev: float  # Expected value
+    has_movement: bool  # Whether any leg odds moved
+    stale_legs: int  # Count of stale legs
+    all_fresh: bool  # All legs have fresh odds
+    quoted_at: str  # ISO timestamp
+
+
+class OddsFreshnessResponse(BaseModel):
+    """Odds data freshness status."""
+    
+    status: str  # "healthy", "degraded", "stale", "no_data"
+    total_lines: int
+    fresh_lines: int
+    stale_lines: int
+    freshness_pct: float
+    oldest_update: Optional[str]
+    newest_update: Optional[str]
+    stale_threshold_minutes: int
+    checked_at: str
+
+
+# =============================================================================
 # Alt-Line Explorer
 # =============================================================================
 

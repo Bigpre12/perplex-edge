@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.constants import LEAGUE_TO_SPORT_KEY
 from app.core.logging import get_logger
 from app.core.rate_limiter import get_injury_api_limiter
 from app.core.resilience import (
@@ -123,19 +124,10 @@ class LineupData:
 
 
 # =============================================================================
-# Sport Key Mappings
+# Sport Key Mappings (use centralized constants)
 # =============================================================================
 
-SPORT_KEYS = {
-    "NBA": "basketball_nba",
-    "NFL": "americanfootball_nfl",
-    "MLB": "baseball_mlb",
-    "NHL": "icehockey_nhl",
-    "NCAAB": "basketball_ncaab",
-    "NCAAF": "americanfootball_ncaaf",
-    "ATP": "tennis_atp",
-    "WTA": "tennis_wta",
-}
+SPORT_KEYS = LEAGUE_TO_SPORT_KEY
 
 
 # =============================================================================

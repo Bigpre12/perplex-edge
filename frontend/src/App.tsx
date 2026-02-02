@@ -10,10 +10,12 @@ import {
   AnalyticsDashboard,
   BacktestTab,
   LiveEVFeed,
+  ModelPerformance,
 } from './components'
 import { HundredPercentTab } from './components/HundredPercentTab'
 import { ParlayBuilder } from './components/ParlayBuilder'
 import { MyBetsTab } from './components/MyBetsTab'
+import { FreshnessBanner } from './components/FreshnessBanner'
 import { useAutoRefresh, formatTimeRemaining, formatLastUpdated } from './hooks/useAutoRefresh'
 
 const TABS = [
@@ -24,6 +26,7 @@ const TABS = [
   { id: '100pct-hits', label: '100% Hit Rate' },
   { id: 'parlay-builder', label: 'Parlay Builder' },
   { id: 'my-bets', label: 'My Bets' },
+  { id: 'model-perf', label: '📈 Model Performance' },
   { id: 'analytics', label: '📊 Analytics' },
   { id: 'backtest', label: '🔬 Backtest' },
   { id: 'stats', label: 'Stats' },
@@ -97,6 +100,8 @@ function AppContent() {
         return <ParlayBuilder />;
       case 'my-bets':
         return <MyBetsTab />;
+      case 'model-perf':
+        return <ModelPerformance />;
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'backtest':
@@ -117,11 +122,14 @@ function AppContent() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
           
-          {/* Auto-Refresh Controls */}
+          {/* Auto-Refresh Controls + Freshness Banner */}
           <div className="flex items-center gap-4 text-sm">
+            {/* Data Freshness Banner */}
+            <FreshnessBanner />
+            
             {/* Last Updated */}
-            <div className="text-gray-400">
-              <span className="hidden sm:inline">Last updated: </span>
+            <div className="text-gray-400 hidden lg:block">
+              <span className="hidden sm:inline">Updated: </span>
               <span className="text-gray-300">{formatLastUpdated(lastUpdated)}</span>
             </div>
             

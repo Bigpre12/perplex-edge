@@ -4,6 +4,8 @@ import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { AltLineExplorer } from './AltLineExplorer';
 import { useQueryClient } from '@tanstack/react-query';
+import { QUICK_START_PRESETS, DEFAULT_PLAYER_PROPS_FILTERS, METRIC_EXPLAINERS, QuickStartPreset } from '../constants/presets';
+import { formatPicksForClipboard, copyToClipboard } from '../utils/clipboard';
 
 // ============================================================================
 // Confidence Tier Helpers
@@ -417,6 +419,18 @@ export function PlayerPropsTab() {
   const [watchlistName, setWatchlistName] = useState('');
   const [savingWatchlist, setSavingWatchlist] = useState(false);
   
+  // Copy to clipboard state
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  
+  // Copy all visible picks to clipboard
+  const handleCopyAllPicks = async () => {
+    if (!data?.items?.length) return;
+    const text = formatPicksForClipboard(data.items);
+    const success = await copyToClipboard(text);
+    setCopyStatus(success ? 'copied' : 'error');
+    setTimeout(() => setCopyStatus('idle'), 2000);
+  };
+  
   // Load watchlist filters
   const loadWatchlist = async (watchlist: Watchlist) => {
     if (watchlist.filters.stat_type) setStatType(watchlist.filters.stat_type);
@@ -491,17 +505,34 @@ export function PlayerPropsTab() {
     });
   };
   
-  // Reset all filters to show everything
+  // Active preset tracking
+  const [activePreset, setActivePreset] = useState<string | null>('balanced');
+  
+  // Apply a quick start preset
+  const applyPreset = (preset: QuickStartPreset) => {
+    setMinConfidence(preset.minConfidence);
+    setMinEv(preset.minEv);
+    setRiskLevels(preset.riskLevels);
+    setHideCoinFlips(preset.hideCoinFlips ?? true);
+    setHideStaleLines(preset.hideStaleLines ?? true);
+    if (preset.excludeStats) {
+      setExcludedStatTypes(new Set(preset.excludeStats));
+    }
+    setActivePreset(preset.id);
+  };
+  
+  // Reset all filters to balanced defaults
   const resetFiltersToDefault = () => {
-    setStatType('');
-    setMinConfidence(0);
-    setMinEv(0);
-    setRiskLevels(['SMALL', 'STANDARD', 'CONFIDENT', 'STRONG', 'MAX']);
-    setExcludedStatTypes(new Set());
+    setStatType(DEFAULT_PLAYER_PROPS_FILTERS.statType);
+    setMinConfidence(DEFAULT_PLAYER_PROPS_FILTERS.minConfidence);
+    setMinEv(DEFAULT_PLAYER_PROPS_FILTERS.minEv);
+    setRiskLevels(DEFAULT_PLAYER_PROPS_FILTERS.riskLevels);
+    setExcludedStatTypes(new Set(DEFAULT_PLAYER_PROPS_FILTERS.excludedStatTypes));
     setExcludedPlayers(new Set());
-    setOnlyGreenTier(false);
-    setHideCoinFlips(false);
-    setHideStaleLines(false);
+    setOnlyGreenTier(DEFAULT_PLAYER_PROPS_FILTERS.onlyGreenTier);
+    setHideCoinFlips(DEFAULT_PLAYER_PROPS_FILTERS.hideCoinFlips);
+    setHideStaleLines(DEFAULT_PLAYER_PROPS_FILTERS.hideStaleLines);
+    setActivePreset('balanced');
   };
 
   // Build filters object
@@ -607,6 +638,34 @@ export function PlayerPropsTab() {
 
   return (
     <div className="space-y-4">
+      {/* Quick Start Presets Bar */}
+      <div className="flex flex-wrap items-center gap-2 bg-gray-800/50 rounded-lg px-4 py-3 border border-gray-700">
+        <span className="text-sm text-gray-400 mr-2">Quick Start:</span>
+        {QUICK_START_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            onClick={() => applyPreset(preset)}
+            className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
+              activePreset === preset.id
+                ? 'bg-blue-600 border-blue-500 text-white'
+                : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white'
+            }`}
+            title={preset.description}
+          >
+            <span className="mr-1">{preset.icon}</span>
+            {preset.label}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <button
+          onClick={resetFiltersToDefault}
+          className="px-3 py-1.5 text-sm text-gray-400 hover:text-white border border-gray-600 rounded-lg hover:border-gray-500 transition-colors"
+          title="Reset all filters to default"
+        >
+          ↺ Reset
+        </button>
+      </div>
+      
       {/* Filters */}
       <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
         <div className="flex flex-wrap gap-6 items-end">
@@ -629,8 +688,9 @@ export function PlayerPropsTab() {
 
           {/* Min Confidence Slider */}
           <div className="flex-1 min-w-[200px] max-w-[300px]">
-            <label className="block text-sm text-gray-400 mb-1">
+            <label className="block text-sm text-gray-400 mb-1 group relative">
               Min Confidence: <span className="text-white font-medium">{(minConfidence * 100).toFixed(0)}%</span>
+              <span className="ml-1 text-gray-500 cursor-help" title={METRIC_EXPLAINERS.confidence.long}>ⓘ</span>
             </label>
             <input
               type="range"
@@ -653,6 +713,7 @@ export function PlayerPropsTab() {
           <div className="min-w-[140px]">
             <label className="block text-sm text-gray-400 mb-1">
               Min EV: <span className="text-white font-medium">{(minEv * 100).toFixed(0)}%</span>
+              <span className="ml-1 text-gray-500 cursor-help" title={METRIC_EXPLAINERS.ev.long}>ⓘ</span>
             </label>
             <input
               type="range"
@@ -695,7 +756,7 @@ export function PlayerPropsTab() {
             </div>
           </div>
 
-          {/* Results count + Watchlists + Don't Bet Toggle */}
+          {/* Results count + Copy + Watchlists + Don't Bet Toggle */}
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-400">
               {isFetching && <span className="animate-pulse">Updating...</span>}
@@ -710,6 +771,23 @@ export function PlayerPropsTab() {
                 </span>
               )}
             </div>
+            
+            {/* Copy All Button */}
+            {data && data.items.length > 0 && (
+              <button
+                onClick={handleCopyAllPicks}
+                className={`text-xs px-3 py-1 rounded-full border transition-colors flex items-center gap-1 ${
+                  copyStatus === 'copied'
+                    ? 'bg-green-900/30 border-green-600 text-green-400'
+                    : copyStatus === 'error'
+                    ? 'bg-red-900/30 border-red-600 text-red-400'
+                    : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
+                }`}
+                title="Copy all visible picks to clipboard"
+              >
+                {copyStatus === 'copied' ? '✓ Copied!' : copyStatus === 'error' ? '✗ Failed' : '📋 Copy All'}
+              </button>
+            )}
             
             {/* Watchlist Dropdown */}
             <div className="relative">

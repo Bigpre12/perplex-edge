@@ -18,6 +18,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Sport, ModelPick, PickResult, CalibrationMetrics
+from app.core.constants import SPORT_KEY_TO_LEAGUE
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +38,6 @@ PROBABILITY_BUCKETS = [
     ("85-90", 0.85, 0.90),
     ("90+", 0.90, 1.00),
 ]
-
-# Sport key to league code mapping
-SPORT_KEY_TO_LEAGUE = {
-    "basketball_nba": "NBA",
-    "basketball_ncaab": "NCAAB",
-    "americanfootball_nfl": "NFL",
-    "baseball_mlb": "MLB",
-    "tennis_atp": "ATP",
-    "tennis_wta": "WTA",
-}
 
 
 # =============================================================================

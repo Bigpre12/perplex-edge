@@ -12,12 +12,14 @@ export { AnalyticsDashboard } from './AnalyticsDashboard';
 export { BacktestTab } from './BacktestTab';
 export { TonightDashboard } from './TonightDashboard';
 export { LiveEVFeed } from './LiveEVFeed';
+export { ModelPerformance } from './ModelPerformance';
 
 // UI components
 export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';
 export { PickCard } from './PickCard';
 export { StatsTable } from './StatsTable';
 export { LastUpdated, LastUpdatedCompact } from './LastUpdated';
+export { FreshnessBanner, FreshnessStatus } from './FreshnessBanner';
 export { AltLineExplorer } from './AltLineExplorer';
 
 // Legacy components (kept for backwards compatibility)
