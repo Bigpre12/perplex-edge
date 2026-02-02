@@ -1,7 +1,5 @@
 """Stats provider for fetching player game logs and writing to PlayerGameStats."""
 
-import asyncio
-import time
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
@@ -9,8 +7,9 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings, get_rate_limit_delay
+from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.core.rate_limiter import get_stats_api_limiter
 from app.core.resilience import (
     with_retry,
     RetryConfig,
@@ -19,48 +18,6 @@ from app.core.resilience import (
 from app.models import Player, Game, PlayerGameStats
 
 logger = get_logger(__name__)
-
-
-# =============================================================================
-# Rate Limiter
-# =============================================================================
-
-class RateLimiter:
-    """
-    Async-friendly rate limiter that enforces minimum intervals between API calls.
-    
-    This prevents hitting rate limits on external APIs (like NBA stats API)
-    by ensuring at least `min_interval` seconds between consecutive calls.
-    """
-    
-    def __init__(self, min_interval: float = 1.0):
-        """
-        Initialize rate limiter.
-        
-        Args:
-            min_interval: Minimum seconds between API calls (default: 1.0)
-        """
-        self._last_call = 0.0
-        self._min_interval = min_interval
-        self._lock = asyncio.Lock()
-    
-    async def wait(self) -> None:
-        """
-        Wait if needed to respect rate limit.
-        
-        Thread-safe via asyncio lock to handle concurrent calls.
-        """
-        async with self._lock:
-            elapsed = time.time() - self._last_call
-            if elapsed < self._min_interval:
-                wait_time = self._min_interval - elapsed
-                logger.debug(f"Rate limiter: waiting {wait_time:.2f}s before next API call")
-                await asyncio.sleep(wait_time)
-            self._last_call = time.time()
-    
-    def reset(self) -> None:
-        """Reset the rate limiter (useful for testing)."""
-        self._last_call = 0.0
 
 # Retry config for Stats API
 STATS_API_RETRY_CONFIG = RetryConfig(
@@ -162,18 +119,12 @@ class StatsProvider:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         use_stubs: bool = False,
-        rate_limit_delay: Optional[float] = None,
     ):
         settings = get_settings()
         self.api_key = api_key or settings.stats_api_key
         self.base_url = base_url or settings.stats_api_base_url
         self.use_stubs = use_stubs
         self._client: Optional[httpx.AsyncClient] = None
-        
-        # Use config-based rate limit delay if not specified
-        if rate_limit_delay is None:
-            rate_limit_delay = get_rate_limit_delay()
-        self._rate_limiter = RateLimiter(min_interval=rate_limit_delay)
     
     async def __aenter__(self) -> "StatsProvider":
         self._client = httpx.AsyncClient(timeout=30.0)
@@ -199,8 +150,8 @@ class StatsProvider:
         if not self.api_key:
             raise ValueError("STATS_API_KEY not configured")
         
-        # Enforce rate limiting before making request
-        await self._rate_limiter.wait()
+        # Enforce rate limiting before making request (using shared limiter)
+        await get_stats_api_limiter().wait()
         
         url = f"{self.base_url}{endpoint}"
         headers = {"Authorization": f"Bearer {self.api_key}"}

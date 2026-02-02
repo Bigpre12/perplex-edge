@@ -7,6 +7,7 @@ from typing import Any, Optional
 import httpx
 
 from app.core.config import get_settings
+from app.core.rate_limiter import get_roster_api_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -173,6 +174,9 @@ class RosterProvider:
         params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """Make a request to the roster API."""
+        # Enforce rate limiting before making request
+        await get_roster_api_limiter().wait()
+        
         url = f"{self.base_url}{endpoint}"
         headers = {}
         

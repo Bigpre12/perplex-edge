@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.core.rate_limiter import get_injury_api_limiter
 from app.core.resilience import (
     with_retry,
     RetryConfig,
@@ -184,6 +185,9 @@ class InjuryProvider:
         """Make an authenticated request to the injury API with retry logic."""
         if not self.api_key:
             raise ValueError("INJURY_API_KEY not configured")
+        
+        # Enforce rate limiting before making request
+        await get_injury_api_limiter().wait()
         
         url = f"{self.base_url}{endpoint}"
         headers = {"Authorization": f"Bearer {self.api_key}"}

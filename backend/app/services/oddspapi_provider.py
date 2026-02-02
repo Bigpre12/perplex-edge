@@ -13,6 +13,7 @@ from typing import Any, Optional
 import httpx
 
 from app.core.config import get_settings
+from app.core.rate_limiter import get_oddspapi_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,9 @@ class OddsPapiProvider:
         """Make an authenticated request to OddsPapi API."""
         if not self.api_key:
             raise ValueError("ODDSPAPI_API_KEY not configured")
+        
+        # Enforce rate limiting before making request
+        await get_oddspapi_limiter().wait()
         
         url = f"{self.base_url}{endpoint}"
         params = params or {}

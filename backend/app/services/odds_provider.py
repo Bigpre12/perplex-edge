@@ -12,6 +12,11 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from app.core.config import get_settings
+from app.core.rate_limiter import (
+    get_odds_api_limiter,
+    get_betstack_api_limiter,
+    get_espn_api_limiter,
+)
 
 # Path to schedule data files
 SCHEDULES_DIR = Path(__file__).parent.parent.parent / "data" / "schedules"
@@ -541,6 +546,9 @@ class XYZOddsProvider(OddsProvider):
         
         if not self.api_key:
             raise ValueError("ODDS_API_KEY not configured")
+        
+        # Enforce rate limiting before making request
+        await get_odds_api_limiter().wait()
         
         url = f"{self.base_url}{endpoint}"
         params = params or {}
@@ -2890,6 +2898,9 @@ class BetStackProvider(XYZOddsProvider):
         if not self.api_key:
             raise ValueError("BETSTACK_API_KEY not configured")
         
+        # Enforce rate limiting before making request
+        await get_betstack_api_limiter().wait()
+        
         url = f"{self.base_url}{endpoint}"
         params = params or {}
         params["apiKey"] = self.api_key
@@ -3161,6 +3172,9 @@ class ESPNScheduleProvider:
             List of game dictionaries with teams, times, and generated odds
         """
         try:
+            # Enforce rate limiting before making request
+            await get_espn_api_limiter().wait()
+            
             # ESPN scoreboard endpoint (today's games)
             url = f"{self.base_url}/scoreboard"
             response = await self.client.get(url)
