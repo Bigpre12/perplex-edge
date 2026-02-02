@@ -41,14 +41,15 @@ LEAGUE_TO_SPORT_KEY = {v: k for k, v in SPORT_KEY_TO_LEAGUE.items()}
 # =============================================================================
 
 # Map database sport ID to sport key
+# Note: Tennis IDs are 42/43 in the database (not 50/51)
 SPORT_ID_TO_KEY = {
     30: "basketball_nba",
     31: "americanfootball_nfl",
     32: "basketball_ncaab",
     40: "baseball_mlb",
     41: "americanfootball_ncaaf",
-    50: "tennis_atp",
-    51: "tennis_wta",
+    42: "tennis_atp",
+    43: "tennis_wta",
 }
 
 # Reverse mapping: sport key to database ID

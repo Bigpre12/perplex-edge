@@ -424,8 +424,8 @@ export const STAT_TYPES_BY_SPORT: Record<number, { value: string; label: string 
     { value: 'HITS', label: 'Hits' },
     { value: 'RBI', label: 'RBIs' },
   ],
-  // Tennis ATP (50)
-  50: [
+  // Tennis ATP (42)
+  42: [
     { value: 'ACES', label: 'Aces' },
     { value: 'DF', label: 'Double Faults' },
     { value: 'GAMES', label: 'Games Won' },
@@ -437,7 +437,7 @@ export const STAT_TYPES_BY_SPORT: Record<number, { value: string; label: string 
 // Aliases for related sports
 STAT_TYPES_BY_SPORT[32] = STAT_TYPES_BY_SPORT[30]; // NCAAB uses NBA stats
 STAT_TYPES_BY_SPORT[41] = STAT_TYPES_BY_SPORT[31]; // NCAAF uses NFL stats
-STAT_TYPES_BY_SPORT[51] = STAT_TYPES_BY_SPORT[50]; // WTA uses ATP stats
+STAT_TYPES_BY_SPORT[43] = STAT_TYPES_BY_SPORT[42]; // WTA uses ATP stats
 
 /**
  * Get stat type options for a specific sport.

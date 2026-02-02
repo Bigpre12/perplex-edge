@@ -27,14 +27,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 # Expected sport ID mappings
+# Note: Tennis IDs are 42/43 in the actual database
 EXPECTED_IDS = {
     'NBA': 30,
     'NFL': 31,
     'NCAAB': 32,
     'MLB': 40,
     'NCAAF': 41,
-    'ATP': 50,
-    'WTA': 51,
+    'ATP': 42,
+    'WTA': 43,
 }
 
 # Tables with sport_id foreign key that need updating
