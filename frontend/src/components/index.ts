@@ -7,6 +7,7 @@ export { Tabs } from './Tabs';
 export { PlayerPropsTab } from './PlayerPropsTab';
 export { GameLinesTab } from './GameLinesTab';
 export { StatsDashboard } from './StatsDashboard';
+export { MultiSportSlate } from './MultiSportSlate';
 
 // UI components
 export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';

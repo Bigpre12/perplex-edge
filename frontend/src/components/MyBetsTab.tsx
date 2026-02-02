@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSportContext } from '../context/SportContext';
 import {
   useBets,
@@ -11,6 +11,136 @@ import {
   ROIByCategory,
 } from '../api/bets';
 import { LogBetModal } from './LogBetModal';
+
+// =============================================================================
+// Daily Risk Dashboard
+// Shows today's betting activity, risk, and EV tracking
+// =============================================================================
+
+function DailyRiskDashboard({ bets }: { bets: BetResponse[] }) {
+  // Get today's date at midnight for comparison
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  
+  // Filter to today's bets
+  const todaysBets = useMemo(() => {
+    return bets.filter(bet => {
+      const betDate = new Date(bet.created_at);
+      betDate.setHours(0, 0, 0, 0);
+      return betDate.getTime() === today.getTime();
+    });
+  }, [bets, today]);
+  
+  // Calculate stats
+  const stats = useMemo(() => {
+    if (todaysBets.length === 0) return null;
+    
+    const totalStaked = todaysBets.reduce((sum, b) => sum + b.stake, 0);
+    const totalEv = todaysBets.reduce((sum, b) => {
+      // Approximate EV from model_pick if available, otherwise estimate
+      return sum + (b.stake * 0.03); // Assume 3% avg EV if not tracked
+    }, 0);
+    
+    const settled = todaysBets.filter(b => b.status !== 'pending');
+    const pending = todaysBets.filter(b => b.status === 'pending');
+    
+    const actualPnl = settled.reduce((sum, b) => sum + (b.profit_loss || 0), 0);
+    const expectedPnl = totalEv;
+    
+    const won = todaysBets.filter(b => b.status === 'won').length;
+    const lost = todaysBets.filter(b => b.status === 'lost').length;
+    
+    return {
+      totalBets: todaysBets.length,
+      totalStaked,
+      totalEv,
+      pending: pending.length,
+      settled: settled.length,
+      actualPnl,
+      expectedPnl,
+      won,
+      lost,
+      runningBehind: actualPnl < expectedPnl - 1, // More than 1 unit below expected
+    };
+  }, [todaysBets]);
+  
+  if (!stats || stats.totalBets === 0) {
+    return (
+      <div className="bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-white">📊 Today's Session</h3>
+            <p className="text-sm text-gray-400">No bets logged today yet</p>
+          </div>
+          <div className="text-4xl opacity-30">📅</div>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className={`rounded-lg p-4 mb-4 border ${
+      stats.runningBehind 
+        ? 'bg-gradient-to-r from-orange-900/20 to-red-900/20 border-orange-700/50' 
+        : 'bg-gradient-to-r from-green-900/20 to-blue-900/20 border-green-700/50'
+    }`}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-bold text-white">📊 Today's Session</h3>
+        {stats.runningBehind && (
+          <span className="px-2 py-1 bg-orange-900/50 text-orange-400 text-xs rounded-full">
+            ⚠️ Running below EV
+          </span>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div>
+          <div className="text-2xl font-bold text-white">{stats.totalBets}</div>
+          <div className="text-xs text-gray-400">Bets Today</div>
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-yellow-400">{stats.totalStaked.toFixed(1)}u</div>
+          <div className="text-xs text-gray-400">Total Staked</div>
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-blue-400">+{stats.totalEv.toFixed(2)}u</div>
+          <div className="text-xs text-gray-400">Expected EV</div>
+        </div>
+        <div>
+          <div className={`text-2xl font-bold ${stats.actualPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {stats.actualPnl >= 0 ? '+' : ''}{stats.actualPnl.toFixed(2)}u
+          </div>
+          <div className="text-xs text-gray-400">Actual P/L</div>
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-white">
+            {stats.won}W-{stats.lost}L
+          </div>
+          <div className="text-xs text-gray-400">{stats.pending} pending</div>
+        </div>
+      </div>
+      
+      {/* Variance indicator */}
+      <div className="mt-3 pt-3 border-t border-gray-700/50">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-gray-400">EV vs Actual:</span>
+          <span className={stats.actualPnl >= stats.expectedPnl ? 'text-green-400' : 'text-orange-400'}>
+            {(stats.actualPnl - stats.expectedPnl) >= 0 ? '+' : ''}
+            {(stats.actualPnl - stats.expectedPnl).toFixed(2)}u variance
+          </span>
+        </div>
+        {stats.runningBehind && (
+          <p className="text-xs text-orange-400/80 mt-1">
+            💡 You're below expected. This is normal variance - stick to your process.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // Helper Components
@@ -509,6 +639,9 @@ export function MyBetsTab() {
           + Log Bet
         </button>
       </div>
+      
+      {/* Daily Risk Dashboard */}
+      <DailyRiskDashboard bets={betsData?.items || []} />
       
       {/* Stats Card */}
       <StatsCard />

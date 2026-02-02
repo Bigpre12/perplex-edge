@@ -6,6 +6,7 @@ import {
   PlayerPropsTab,
   GameLinesTab,
   StatsDashboard,
+  MultiSportSlate,
 } from './components'
 import { HundredPercentTab } from './components/HundredPercentTab'
 import { ParlayBuilder } from './components/ParlayBuilder'
@@ -13,6 +14,7 @@ import { MyBetsTab } from './components/MyBetsTab'
 import { useAutoRefresh, formatTimeRemaining, formatLastUpdated } from './hooks/useAutoRefresh'
 
 const TABS = [
+  { id: 'multi-sport', label: '🎯 All Sports' },
   { id: 'player-props', label: 'Player Props' },
   { id: 'game-lines', label: 'Game Lines' },
   { id: '100pct-hits', label: '100% Hit Rate' },
@@ -46,7 +48,7 @@ function ErrorDisplay({ message }: { message: string }) {
 
 // Inner app content that uses SportContext
 function AppContent() {
-  const [activeTab, setActiveTab] = useState('player-props')
+  const [activeTab, setActiveTab] = useState('multi-sport')
   const { sportId, isLoading: sportLoading, error: sportError } = useSportContext();
   
   // Auto-refresh hook (5 minute interval)
@@ -75,6 +77,8 @@ function AppContent() {
     
     // Render active tab
     switch (activeTab) {
+      case 'multi-sport':
+        return <MultiSportSlate />;
       case 'player-props':
         return <PlayerPropsTab />;
       case 'game-lines':
@@ -88,7 +92,7 @@ function AppContent() {
       case 'stats':
         return <StatsDashboard />;
       default:
-        return <PlayerPropsTab />;
+        return <MultiSportSlate />;
     }
   };
 

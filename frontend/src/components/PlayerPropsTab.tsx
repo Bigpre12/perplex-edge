@@ -74,6 +74,146 @@ const TRAP_STAT_TYPES = [
 
 const LOW_MINUTE_KEYWORDS = ['bench', 'backup', 'reserve'];
 
+// ============================================================================
+// Opposite Side Info - Shows model's view of both sides
+// ============================================================================
+
+interface OppositeSideInfo {
+  otherSide: 'over' | 'under';
+  otherProb: number;
+  otherEv: number;
+  isCoinFlip: boolean; // Both sides 49-51%
+  edgeDirection: 'strong' | 'weak' | 'none';
+}
+
+function getOppositeSideInfo(modelProb: number, side: string, impliedProb: number): OppositeSideInfo {
+  const otherSide = side === 'over' ? 'under' : 'over';
+  const otherProb = 1 - modelProb;
+  // Approximate other side EV (assumes similar juice)
+  const otherImplied = 1 - impliedProb;
+  const otherEv = otherProb - otherImplied;
+  
+  // Coin flip detection: both sides within 49-51%
+  const isCoinFlip = modelProb >= 0.49 && modelProb <= 0.51;
+  
+  // Edge direction
+  let edgeDirection: 'strong' | 'weak' | 'none' = 'none';
+  if (modelProb >= 0.55) edgeDirection = 'strong';
+  else if (modelProb >= 0.52) edgeDirection = 'weak';
+  
+  return { otherSide, otherProb, otherEv, isCoinFlip, edgeDirection };
+}
+
+function OppositeSidePopover({ pick }: { pick: PlayerPropPick }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const info = getOppositeSideInfo(pick.model_probability, pick.side, pick.implied_probability);
+  
+  const formatPercent = (v: number) => `${(v * 100).toFixed(1)}%`;
+  
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+        className={`text-xs px-1.5 py-0.5 rounded ${
+          info.isCoinFlip 
+            ? 'bg-gray-700 text-gray-400' 
+            : info.edgeDirection === 'strong'
+            ? 'bg-green-900/30 text-green-400'
+            : 'bg-yellow-900/30 text-yellow-400'
+        }`}
+        title={info.isCoinFlip ? 'Coin flip - skip' : `Model: ${formatPercent(pick.model_probability)} ${pick.side.toUpperCase()}`}
+      >
+        {info.isCoinFlip ? '50/50' : info.edgeDirection === 'strong' ? '↑' : '~'}
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-50 left-0 mt-1 bg-gray-900 border border-gray-600 rounded-lg shadow-xl p-3 min-w-[200px]">
+          <div className="text-xs text-gray-400 mb-2 font-medium">Model View (Both Sides)</div>
+          <div className="space-y-1 text-xs">
+            <div className={`flex justify-between ${pick.expected_value > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <span>{pick.side.toUpperCase()} {pick.line}:</span>
+              <span>{formatPercent(pick.model_probability)} ({pick.expected_value > 0 ? '+' : ''}{formatPercent(pick.expected_value)} EV)</span>
+            </div>
+            <div className={`flex justify-between ${info.otherEv > 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <span>{info.otherSide.toUpperCase()} {pick.line}:</span>
+              <span>{formatPercent(info.otherProb)} ({info.otherEv > 0 ? '+' : ''}{formatPercent(info.otherEv)} EV)</span>
+            </div>
+          </div>
+          {info.isCoinFlip && (
+            <div className="mt-2 pt-2 border-t border-gray-700 text-xs text-orange-400">
+              ⚠️ Coin flip - both sides ~50%, skip this prop
+            </div>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+            className="mt-2 text-xs text-gray-500 hover:text-gray-400"
+          >
+            Close
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Inline Quick Exclusion Controls
+// ============================================================================
+
+interface QuickExcludeProps {
+  playerName: string;
+  statType: string;
+  onExcludePlayer: (name: string) => void;
+  onExcludeStat: (stat: string) => void;
+}
+
+function QuickExcludeMenu({ playerName, statType, onExcludePlayer, onExcludeStat }: QuickExcludeProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+        className="text-gray-500 hover:text-gray-400 text-xs px-1"
+        title="Quick exclude options"
+      >
+        ⋮
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-50 right-0 mt-1 bg-gray-900 border border-gray-600 rounded-lg shadow-xl p-2 min-w-[160px]">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onExcludePlayer(playerName);
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-2 py-1.5 text-xs text-red-400 hover:bg-red-900/30 rounded"
+          >
+            🚫 Hide {playerName}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onExcludeStat(statType);
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-2 py-1.5 text-xs text-orange-400 hover:bg-orange-900/30 rounded"
+          >
+            🚫 Hide all {statType}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+            className="w-full text-left px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-800 rounded mt-1"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Component to show per-book line comparison
 function BookLinesPopover({ bookLines, bestBook }: { bookLines: BookLine[] | null; bestBook: string | null }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -171,8 +311,10 @@ export function PlayerPropsTab() {
   // Don't Bet List state
   const [showDontBetPanel, setShowDontBetPanel] = useState(false);
   const [excludedStatTypes, setExcludedStatTypes] = useState<Set<string>>(new Set(['player_steals', 'player_blocks']));
+  const [excludedPlayers, setExcludedPlayers] = useState<Set<string>>(new Set());
   const [onlyGreenTier, setOnlyGreenTier] = useState(false);
   const [hideStaleLines, setHideStaleLines] = useState(true);
+  const [hideCoinFlips, setHideCoinFlips] = useState(true); // Auto-hide 49-51% props
   
   // Alt-line explorer state
   const [exploringPickId, setExploringPickId] = useState<number | null>(null);
@@ -183,6 +325,20 @@ export function PlayerPropsTab() {
       const newSet = new Set(prev);
       if (newSet.has(stat)) newSet.delete(stat);
       else newSet.add(stat);
+      return newSet;
+    });
+  };
+  
+  // Add player to exclusion list
+  const excludePlayer = (name: string) => {
+    setExcludedPlayers(prev => new Set([...prev, name]));
+  };
+  
+  // Remove player from exclusion list
+  const unexcludePlayer = (name: string) => {
+    setExcludedPlayers(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(name);
       return newSet;
     });
   };
@@ -231,10 +387,22 @@ export function PlayerPropsTab() {
       filteredItems = filteredItems.filter(pick => !excludedStatTypes.has(pick.stat_type));
     }
     
+    // Filter out excluded players
+    if (excludedPlayers.size > 0) {
+      filteredItems = filteredItems.filter(pick => !excludedPlayers.has(pick.player_name));
+    }
+    
     // Filter to green tier only if enabled
     if (onlyGreenTier) {
       filteredItems = filteredItems.filter(pick => 
         getConfidenceTier(pick.model_probability, pick.expected_value) === 'green'
+      );
+    }
+    
+    // Hide coin flip props (49-51% model probability)
+    if (hideCoinFlips) {
+      filteredItems = filteredItems.filter(pick => 
+        pick.model_probability < 0.49 || pick.model_probability > 0.51
       );
     }
     
@@ -248,7 +416,7 @@ export function PlayerPropsTab() {
       items: filteredItems,
       total: filteredItems.length,
     };
-  }, [rawData, excludedStatTypes, onlyGreenTier, hideStaleLines]);
+  }, [rawData, excludedStatTypes, excludedPlayers, onlyGreenTier, hideCoinFlips, hideStaleLines]);
 
   // Debug logging
   useEffect(() => {
@@ -384,12 +552,12 @@ export function PlayerPropsTab() {
             <button
               onClick={() => setShowDontBetPanel(!showDontBetPanel)}
               className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                showDontBetPanel || excludedStatTypes.size > 0 || onlyGreenTier
+                showDontBetPanel || excludedStatTypes.size > 0 || excludedPlayers.size > 0 || onlyGreenTier
                   ? 'bg-orange-900/30 border-orange-600 text-orange-400'
                   : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
               }`}
             >
-              🚫 Don't Bet List {excludedStatTypes.size > 0 && `(${excludedStatTypes.size})`}
+              🚫 Don't Bet List {(excludedStatTypes.size + excludedPlayers.size) > 0 && `(${excludedStatTypes.size + excludedPlayers.size})`}
             </button>
           </div>
         </div>
@@ -419,6 +587,25 @@ export function PlayerPropsTab() {
                 </div>
               </div>
               
+              {/* Excluded Players (from inline hides) */}
+              {excludedPlayers.size > 0 && (
+                <div>
+                  <div className="text-xs text-gray-400 mb-2 font-medium">Excluded Players</div>
+                  <div className="flex flex-wrap gap-2">
+                    {Array.from(excludedPlayers).map(name => (
+                      <button
+                        key={name}
+                        onClick={() => unexcludePlayer(name)}
+                        className="px-2 py-1 text-xs rounded border bg-red-900/30 border-red-600 text-red-400 hover:bg-red-900/50"
+                        title="Click to remove from exclusion"
+                      >
+                        ✗ {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {/* Quality Filters */}
               <div>
                 <div className="text-xs text-gray-400 mb-2 font-medium">Quality Controls</div>
@@ -445,6 +632,17 @@ export function PlayerPropsTab() {
                   >
                     {hideStaleLines ? '✓' : '○'} Hide Stale Lines
                   </button>
+                  <button
+                    onClick={() => setHideCoinFlips(!hideCoinFlips)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      hideCoinFlips
+                        ? 'bg-purple-900/30 border-purple-600 text-purple-400'
+                        : 'bg-gray-700 border-gray-600 text-gray-400 hover:border-gray-500'
+                    }`}
+                    title="Hide props where model is 49-51% (coin flips with no edge)"
+                  >
+                    {hideCoinFlips ? '✓' : '○'} Hide Coin Flips
+                  </button>
                 </div>
               </div>
               
@@ -452,9 +650,11 @@ export function PlayerPropsTab() {
               <div className="flex items-end">
                 <button
                   onClick={() => {
-                    setExcludedStatTypes(new Set());
+                    setExcludedStatTypes(new Set(['player_steals', 'player_blocks']));
+                    setExcludedPlayers(new Set());
                     setOnlyGreenTier(false);
                     setHideStaleLines(true);
+                    setHideCoinFlips(true);
                   }}
                   className="text-xs text-gray-500 hover:text-gray-400 underline"
                 >
@@ -551,15 +751,18 @@ export function PlayerPropsTab() {
                       <LineVarianceBadge variance={pick.line_variance} />
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          pick.side === 'over'
-                            ? 'bg-green-900/50 text-green-400'
-                            : 'bg-red-900/50 text-red-400'
-                        }`}
-                      >
-                        {pick.side.toUpperCase()}
-                      </span>
+                      <div className="flex items-center justify-center gap-1">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            pick.side === 'over'
+                              ? 'bg-green-900/50 text-green-400'
+                              : 'bg-red-900/50 text-red-400'
+                          }`}
+                        >
+                          {pick.side.toUpperCase()}
+                        </span>
+                        <OppositeSidePopover pick={pick} />
+                      </div>
                     </td>
                     <td
                       className={`px-3 py-3 text-right font-medium ${
@@ -612,13 +815,21 @@ export function PlayerPropsTab() {
                       <StaleBadge gameStartTime={pick.game_start_time} />
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <button
-                        onClick={() => setExploringPickId(pick.pick_id)}
-                        className="text-blue-400 hover:text-blue-300 text-xs underline"
-                        title="Explore alternate lines"
-                      >
-                        Alt Lines
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => setExploringPickId(pick.pick_id)}
+                          className="text-blue-400 hover:text-blue-300 text-xs underline"
+                          title="Explore alternate lines"
+                        >
+                          Alt Lines
+                        </button>
+                        <QuickExcludeMenu
+                          playerName={pick.player_name}
+                          statType={pick.stat_type}
+                          onExcludePlayer={excludePlayer}
+                          onExcludeStat={toggleExcludedStat}
+                        />
+                      </div>
                     </td>
                   </tr>
                   );
