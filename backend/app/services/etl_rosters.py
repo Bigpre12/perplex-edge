@@ -7,24 +7,11 @@ from typing import Any, Optional
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.constants import SPORT_KEY_TO_LEAGUE
 from app.models import Sport, Team, Player
 from app.services.roster_provider import RosterProvider, RosterPlayerData, TeamData
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# Sport Key Mappings
-# =============================================================================
-
-SPORT_KEY_TO_LEAGUE = {
-    "basketball_nba": "NBA",
-    "americanfootball_nfl": "NFL",
-    "baseball_mlb": "MLB",
-    "icehockey_nhl": "NHL",
-    "tennis_atp": "ATP",
-    "tennis_wta": "WTA",
-}
 
 
 # =============================================================================

@@ -2,22 +2,12 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSports, fetchPlayerPropPicks, PlayerPropFilters } from '../api/public';
 import { TonightDashboard } from './TonightDashboard';
+import { SPORT_CONFIG } from '../constants/sports';
 
 // ============================================================================
 // Multi-Sport Slate View
 // Shows top picks across ALL sports sorted by EV for cross-sport DFS building
 // ============================================================================
-
-// Sport display names and icons
-const SPORT_CONFIG: Record<number, { name: string; icon: string; color: string }> = {
-  30: { name: 'NBA', icon: '🏀', color: 'bg-orange-900/30 text-orange-400' },
-  31: { name: 'NFL', icon: '🏈', color: 'bg-green-900/30 text-green-400' },
-  32: { name: 'NCAAB', icon: '🏀', color: 'bg-blue-900/30 text-blue-400' },
-  40: { name: 'MLB', icon: '⚾', color: 'bg-red-900/30 text-red-400' },
-  41: { name: 'NCAAF', icon: '🏈', color: 'bg-purple-900/30 text-purple-400' },
-  50: { name: 'ATP', icon: '🎾', color: 'bg-yellow-900/30 text-yellow-400' },
-  51: { name: 'WTA', icon: '🎾', color: 'bg-pink-900/30 text-pink-400' },
-};
 
 // Confidence tier helper
 type ConfidenceTier = 'green' | 'yellow' | 'red';

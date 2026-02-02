@@ -13,35 +13,20 @@ from sqlalchemy import select, update, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import (
-    Sport, Game, Line, Market, Player, Team,
-    PlayerGameStats, Injury, ModelPick,
-)
-from app.models.injury import EXCLUDED_INJURY_STATUSES
 from app.core.config import (
     get_games_window,
     get_ev_threshold,
     get_min_model_probability,
     get_sport_config,
 )
+from app.core.constants import SPORT_KEY_TO_LEAGUE
+from app.models import (
+    Sport, Game, Line, Market, Player, Team,
+    PlayerGameStats, Injury, ModelPick,
+)
+from app.models.injury import EXCLUDED_INJURY_STATUSES
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# Sport Key Mappings
-# =============================================================================
-
-SPORT_KEY_TO_LEAGUE = {
-    "basketball_nba": "NBA",
-    "americanfootball_nfl": "NFL",
-    "baseball_mlb": "MLB",
-    "icehockey_nhl": "NHL",
-    "basketball_ncaab": "NCAAB",
-    "americanfootball_ncaaf": "NCAAF",
-    "tennis_atp": "ATP",
-    "tennis_wta": "WTA",
-}
 
 
 # =============================================================================

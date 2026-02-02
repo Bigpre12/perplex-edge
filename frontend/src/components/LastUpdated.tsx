@@ -5,13 +5,7 @@
  */
 
 import { useDataFreshness, SportMetadata } from '../api/public';
-
-// Sport key to display name mapping
-const SPORT_NAMES: Record<string, string> = {
-  basketball_nba: 'NBA',
-  basketball_ncaab: 'NCAAB',
-  americanfootball_nfl: 'NFL',
-};
+import { SPORT_KEY_TO_NAME } from '../constants/sports';
 
 interface LastUpdatedBadgeProps {
   sportKey: string;
@@ -23,7 +17,7 @@ interface LastUpdatedBadgeProps {
  * Individual badge showing last updated status for one sport.
  */
 function LastUpdatedBadge({ sportKey, metadata, showCounts = false }: LastUpdatedBadgeProps) {
-  const sportName = SPORT_NAMES[sportKey] || sportKey.toUpperCase();
+  const sportName = SPORT_KEY_TO_NAME[sportKey] || sportKey.toUpperCase();
   
   // Determine status color based on freshness and health
   let statusColor = 'text-green-400';

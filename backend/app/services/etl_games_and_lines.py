@@ -7,26 +7,11 @@ from typing import Any, Optional
 from sqlalchemy import select, update, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.constants import SPORT_KEY_TO_NAME
 from app.models import Sport, Team, Game, Market, Line, Player, ModelPick, PlayerGameStats, PickResult, Pick
 from app.services.odds_provider import XYZOddsProvider, GameData, LineData, PropData
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# Sport Key Mappings
-# =============================================================================
-
-SPORT_KEY_TO_NAME = {
-    "basketball_nba": ("NBA", "NBA"),
-    "americanfootball_nfl": ("NFL", "NFL"),
-    "baseball_mlb": ("MLB", "MLB"),
-    "icehockey_nhl": ("NHL", "NHL"),
-    "basketball_ncaab": ("NCAA Basketball", "NCAAB"),
-    "americanfootball_ncaaf": ("NCAA Football", "NCAAF"),
-    "tennis_atp": ("Tennis ATP", "ATP"),
-    "tennis_wta": ("Tennis WTA", "WTA"),
-}
 
 # =============================================================================
 # Player-Team Mappings (January 2026 - Verified Current Rosters)

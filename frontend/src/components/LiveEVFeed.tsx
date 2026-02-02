@@ -1,22 +1,24 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSports, fetchPlayerPropPicks, PlayerPropFilters, PlayerPropPick } from '../api/public';
+import { SPORT_CONFIG as BASE_SPORT_CONFIG, getSportConfig } from '../constants/sports';
 
 // =============================================================================
 // Live EV Feed - Scrolling list of +EV props across ALL sports
 // Auto-refreshes every 30 seconds
 // =============================================================================
 
-// Sport display config
-const SPORT_CONFIG: Record<number, { name: string; icon: string; color: string }> = {
-  30: { name: 'NBA', icon: '🏀', color: 'bg-orange-900/40 border-orange-700 text-orange-400' },
-  31: { name: 'NFL', icon: '🏈', color: 'bg-green-900/40 border-green-700 text-green-400' },
-  32: { name: 'NCAAB', icon: '🏀', color: 'bg-blue-900/40 border-blue-700 text-blue-400' },
-  40: { name: 'MLB', icon: '⚾', color: 'bg-red-900/40 border-red-700 text-red-400' },
-  41: { name: 'NCAAF', icon: '🏈', color: 'bg-purple-900/40 border-purple-700 text-purple-400' },
-  50: { name: 'ATP', icon: '🎾', color: 'bg-yellow-900/40 border-yellow-700 text-yellow-400' },
-  51: { name: 'WTA', icon: '🎾', color: 'bg-pink-900/40 border-pink-700 text-pink-400' },
-};
+// Add border classes to sport config for this component
+const SPORT_CONFIG = Object.fromEntries(
+  Object.entries(BASE_SPORT_CONFIG).map(([id, config]) => [
+    id,
+    {
+      ...config,
+      // Override color to include border class for card styling
+      color: `${config.color.replace('/30', '/40')} ${config.borderColor || ''}`.trim(),
+    },
+  ])
+);
 
 // Format helpers
 const formatPercent = (v: number | null) => v !== null ? `${(v * 100).toFixed(1)}%` : '-';

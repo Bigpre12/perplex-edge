@@ -8,27 +8,12 @@ from typing import Any, Optional
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_batch_player_delay, get_games_window
+from app.core.constants import SPORT_KEY_TO_LEAGUE
 from app.models import Sport, Player, Game, Line, PlayerGameStats
 from app.services.stats_provider import StatsProvider, GameLog
-from app.core.config import get_batch_player_delay, get_games_window
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# Sport Key Mappings
-# =============================================================================
-
-SPORT_KEY_TO_LEAGUE = {
-    "basketball_nba": "NBA",
-    "americanfootball_nfl": "NFL",
-    "baseball_mlb": "MLB",
-    "icehockey_nhl": "NHL",
-    "basketball_ncaab": "NCAAB",
-    "americanfootball_ncaaf": "NCAAF",
-    "tennis_atp": "ATP",
-    "tennis_wta": "WTA",
-}
 
 
 # =============================================================================

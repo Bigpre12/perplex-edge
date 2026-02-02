@@ -9,6 +9,8 @@ from datetime import datetime, date
 from pathlib import Path
 from typing import Tuple
 
+from app.core.constants import SPORT_ID_TO_KEY
+
 
 # =============================================================================
 # NBA Season Helpers
@@ -432,18 +434,7 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
 # Sport ID to Season Mapping (for database sport_id values)
 # =============================================================================
 
-# Mapping of database sport_id to sport_key
-# Note: Tennis sport_ids will be auto-generated when first synced
-# After first sync, update this mapping with the actual IDs
-SPORT_ID_TO_KEY = {
-    30: "basketball_nba",
-    31: "americanfootball_nfl",
-    32: "basketball_ncaab",
-    40: "baseball_mlb",
-    41: "americanfootball_ncaaf",
-    50: "tennis_atp",   # Tennis ATP (matches migration ID)
-    51: "tennis_wta",   # Tennis WTA (matches migration ID)
-}
+# SPORT_ID_TO_KEY is imported from app.core.constants
 
 
 def get_sport_key_from_id(sport_id: int) -> str:

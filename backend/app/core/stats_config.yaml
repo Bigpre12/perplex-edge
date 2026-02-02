@@ -115,6 +115,67 @@ mlb:
     fuzzy_threshold: 0.85
 
 # =============================================================================
+# NHL Configuration
+# =============================================================================
+nhl:
+  season: "2025-26"
+  
+  games_windows:
+    short: 5
+    default: 10
+    medium: 20
+    long: 40
+  
+  thresholds:
+    goals: 0.05
+    assists: 0.05
+    points: 0.04
+    shots: 0.04
+    saves: 0.04
+    goals_against: 0.05
+    power_play_points: 0.06
+    blocked_shots: 0.06
+    hits: 0.06
+    penalty_minutes: 0.08
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.62
+    
+  matching:
+    fuzzy_threshold: 0.85
+
+# =============================================================================
+# NCAAF Configuration
+# =============================================================================
+ncaaf:
+  season: "2025"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 8
+    long: 12
+  
+  thresholds:
+    passing_yards: 0.05
+    passing_tds: 0.07
+    rushing_yards: 0.05
+    rushing_tds: 0.07
+    receiving_yards: 0.05
+    receptions: 0.06
+    receiving_tds: 0.07
+    interceptions: 0.08
+    completions: 0.06
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.62
+    
+  matching:
+    fuzzy_threshold: 0.80  # Lower threshold for college (more name variations)
+
+# =============================================================================
 # NCAAB Configuration
 # =============================================================================
 ncaab:
