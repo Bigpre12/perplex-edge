@@ -441,8 +441,8 @@ SPORT_ID_TO_KEY = {
     32: "basketball_ncaab",
     40: "baseball_mlb",
     41: "americanfootball_ncaaf",
-    42: "tennis_atp",   # Tennis ATP
-    43: "tennis_wta",   # Tennis WTA
+    50: "tennis_atp",   # Tennis ATP (matches migration ID)
+    51: "tennis_wta",   # Tennis WTA (matches migration ID)
 }
 
 

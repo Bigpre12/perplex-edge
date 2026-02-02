@@ -14,8 +14,8 @@ const SPORT_CONFIG: Record<number, { name: string; icon: string; color: string }
   32: { name: 'NCAAB', icon: '🏀', color: 'bg-blue-900/40 border-blue-700 text-blue-400' },
   40: { name: 'MLB', icon: '⚾', color: 'bg-red-900/40 border-red-700 text-red-400' },
   41: { name: 'NCAAF', icon: '🏈', color: 'bg-purple-900/40 border-purple-700 text-purple-400' },
-  42: { name: 'ATP', icon: '🎾', color: 'bg-yellow-900/40 border-yellow-700 text-yellow-400' },
-  43: { name: 'WTA', icon: '🎾', color: 'bg-pink-900/40 border-pink-700 text-pink-400' },
+  50: { name: 'ATP', icon: '🎾', color: 'bg-yellow-900/40 border-yellow-700 text-yellow-400' },
+  51: { name: 'WTA', icon: '🎾', color: 'bg-pink-900/40 border-pink-700 text-pink-400' },
 };
 
 // Format helpers
