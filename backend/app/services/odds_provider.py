@@ -995,6 +995,121 @@ class XYZOddsProvider(OddsProvider):
                 },
             ]
         
+        # Handle MLB (Spring Training preview - season starts March 25)
+        if "baseball" in sport_key:
+            times = _get_stub_game_times()
+            # Classic rivalry matchups for Spring Training preview
+            return [
+                {
+                    "id": f"mlb_nyy_bos_{today_str.replace('-', '')}",
+                    "sport_key": sport_key,
+                    "sport_title": "MLB",
+                    "commence_time": times["afternoon"],
+                    "home_team": "Boston Red Sox",
+                    "away_team": "New York Yankees",
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Boston Red Sox", "price": 105},
+                                {"name": "New York Yankees", "price": -125}
+                            ]}]
+                        }
+                    ],
+                },
+                {
+                    "id": f"mlb_lad_sd_{today_str.replace('-', '')}",
+                    "sport_key": sport_key,
+                    "sport_title": "MLB",
+                    "commence_time": times["night"],
+                    "home_team": "San Diego Padres",
+                    "away_team": "Los Angeles Dodgers",
+                    "bookmakers": [
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "San Diego Padres", "price": 120},
+                                {"name": "Los Angeles Dodgers", "price": -140}
+                            ]}]
+                        }
+                    ],
+                },
+                {
+                    "id": f"mlb_chc_stl_{today_str.replace('-', '')}",
+                    "sport_key": sport_key,
+                    "sport_title": "MLB",
+                    "commence_time": times["early"],
+                    "home_team": "St. Louis Cardinals",
+                    "away_team": "Chicago Cubs",
+                    "bookmakers": [
+                        {
+                            "key": "betmgm",
+                            "title": "BetMGM",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "St. Louis Cardinals", "price": -110},
+                                {"name": "Chicago Cubs", "price": -110}
+                            ]}]
+                        }
+                    ],
+                },
+                {
+                    "id": f"mlb_atl_nym_{today_str.replace('-', '')}",
+                    "sport_key": sport_key,
+                    "sport_title": "MLB",
+                    "commence_time": times["afternoon"],
+                    "home_team": "New York Mets",
+                    "away_team": "Atlanta Braves",
+                    "bookmakers": [
+                        {
+                            "key": "caesars",
+                            "title": "Caesars",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "New York Mets", "price": 100},
+                                {"name": "Atlanta Braves", "price": -120}
+                            ]}]
+                        }
+                    ],
+                },
+                {
+                    "id": f"mlb_hou_tex_{today_str.replace('-', '')}",
+                    "sport_key": sport_key,
+                    "sport_title": "MLB",
+                    "commence_time": times["night"],
+                    "home_team": "Texas Rangers",
+                    "away_team": "Houston Astros",
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Texas Rangers", "price": 115},
+                                {"name": "Houston Astros", "price": -135}
+                            ]}]
+                        }
+                    ],
+                },
+                {
+                    "id": f"mlb_sf_oak_{today_str.replace('-', '')}",
+                    "sport_key": sport_key,
+                    "sport_title": "MLB",
+                    "commence_time": times["afternoon"],
+                    "home_team": "Oakland Athletics",
+                    "away_team": "San Francisco Giants",
+                    "bookmakers": [
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": "Oakland Athletics", "price": 180},
+                                {"name": "San Francisco Giants", "price": -220}
+                            ]}]
+                        }
+                    ],
+                },
+            ]
+        
         # Handle Tennis (ATP and WTA) - generate dynamic matches
         if "tennis" in sport_key:
             times = _get_stub_game_times()
@@ -1859,6 +1974,8 @@ class XYZOddsProvider(OddsProvider):
                 return self._generate_dynamic_nfl_props(external_game_id, sport_key, times)
             elif "tennis" in sport_key:
                 return self._generate_dynamic_tennis_props(external_game_id, sport_key, times)
+            elif "baseball" in sport_key:
+                return self._generate_dynamic_mlb_props(external_game_id, sport_key, times)
             else:
                 # Unknown sport - return empty
                 return {
@@ -2565,6 +2682,174 @@ class XYZOddsProvider(OddsProvider):
                         {"key": "player_games_won", "outcomes": games_won_outcomes},
                         {"key": "player_sets_won", "outcomes": sets_won_outcomes},
                         {"key": "player_total_games", "outcomes": total_games_outcomes},
+                    ],
+                },
+            ],
+        }
+
+    def _generate_dynamic_mlb_props(
+        self,
+        external_game_id: str,
+        sport_key: str,
+        times: dict[str, str],
+    ) -> dict[str, Any]:
+        """Generate dynamic MLB player props for any game."""
+        import random
+        
+        # MLB team rosters with key players (2025-26 season)
+        MLB_ROSTERS = {
+            "New York Yankees": [
+                ("Aaron Judge", "OF", {"hits": 1.5, "total_bases": 2.5, "home_runs": 0.5, "rbis": 1.5, "runs": 1.0}),
+                ("Juan Soto", "OF", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 1.0}),
+                ("Gerrit Cole", "SP", {"strikeouts": 7.5, "earned_runs": 2.5, "hits_allowed": 5.5, "outs": 18.5}),
+            ],
+            "Boston Red Sox": [
+                ("Rafael Devers", "3B", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("Masataka Yoshida", "OF", {"hits": 1.5, "total_bases": 1.5, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("Brayan Bello", "SP", {"strikeouts": 5.5, "earned_runs": 3.0, "hits_allowed": 6.0, "outs": 17.5}),
+            ],
+            "Los Angeles Dodgers": [
+                ("Mookie Betts", "OF", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 1.0}),
+                ("Freddie Freeman", "1B", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.5, "runs": 1.0}),
+                ("Tyler Glasnow", "SP", {"strikeouts": 8.5, "earned_runs": 2.5, "hits_allowed": 5.0, "outs": 18.5}),
+            ],
+            "San Diego Padres": [
+                ("Fernando Tatis Jr.", "OF", {"hits": 1.5, "total_bases": 2.5, "home_runs": 0.5, "rbis": 1.0, "runs": 1.0}),
+                ("Manny Machado", "3B", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("Yu Darvish", "SP", {"strikeouts": 6.5, "earned_runs": 3.0, "hits_allowed": 6.0, "outs": 18.5}),
+            ],
+            "Chicago Cubs": [
+                ("Cody Bellinger", "OF", {"hits": 1.0, "total_bases": 1.5, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("Nico Hoerner", "SS", {"hits": 1.5, "total_bases": 1.5, "home_runs": 0.5, "rbis": 0.5, "runs": 0.5}),
+                ("Justin Steele", "SP", {"strikeouts": 6.5, "earned_runs": 3.0, "hits_allowed": 6.5, "outs": 17.5}),
+            ],
+            "St. Louis Cardinals": [
+                ("Nolan Arenado", "3B", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("Paul Goldschmidt", "1B", {"hits": 1.0, "total_bases": 1.5, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("Sonny Gray", "SP", {"strikeouts": 7.5, "earned_runs": 2.5, "hits_allowed": 5.5, "outs": 18.5}),
+            ],
+            "Atlanta Braves": [
+                ("Ronald Acuna Jr.", "OF", {"hits": 1.5, "total_bases": 2.5, "home_runs": 0.5, "rbis": 1.0, "runs": 1.0}),
+                ("Matt Olson", "1B", {"hits": 1.0, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.5, "runs": 0.5}),
+                ("Spencer Strider", "SP", {"strikeouts": 9.5, "earned_runs": 2.5, "hits_allowed": 5.0, "outs": 18.5}),
+            ],
+            "New York Mets": [
+                ("Francisco Lindor", "SS", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 1.0}),
+                ("Pete Alonso", "1B", {"hits": 1.0, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.5, "runs": 0.5}),
+                ("Kodai Senga", "SP", {"strikeouts": 8.5, "earned_runs": 2.5, "hits_allowed": 5.5, "outs": 18.5}),
+            ],
+            "Houston Astros": [
+                ("Jose Altuve", "2B", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 1.0}),
+                ("Yordan Alvarez", "DH", {"hits": 1.5, "total_bases": 2.5, "home_runs": 0.5, "rbis": 1.5, "runs": 0.5}),
+                ("Framber Valdez", "SP", {"strikeouts": 6.5, "earned_runs": 3.0, "hits_allowed": 7.0, "outs": 19.5}),
+            ],
+            "Texas Rangers": [
+                ("Corey Seager", "SS", {"hits": 1.5, "total_bases": 2.5, "home_runs": 0.5, "rbis": 1.5, "runs": 1.0}),
+                ("Marcus Semien", "2B", {"hits": 1.5, "total_bases": 2.0, "home_runs": 0.5, "rbis": 1.0, "runs": 1.0}),
+                ("Jacob deGrom", "SP", {"strikeouts": 9.5, "earned_runs": 2.0, "hits_allowed": 4.5, "outs": 18.5}),
+            ],
+            "San Francisco Giants": [
+                ("Matt Chapman", "3B", {"hits": 1.0, "total_bases": 1.5, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("Jung Hoo Lee", "OF", {"hits": 1.5, "total_bases": 1.5, "home_runs": 0.5, "rbis": 0.5, "runs": 0.5}),
+                ("Logan Webb", "SP", {"strikeouts": 6.5, "earned_runs": 3.0, "hits_allowed": 7.0, "outs": 19.5}),
+            ],
+            "Oakland Athletics": [
+                ("Brent Rooker", "DH", {"hits": 1.0, "total_bases": 1.5, "home_runs": 0.5, "rbis": 1.0, "runs": 0.5}),
+                ("JJ Bleday", "OF", {"hits": 1.0, "total_bases": 1.5, "home_runs": 0.5, "rbis": 0.5, "runs": 0.5}),
+                ("JP Sears", "SP", {"strikeouts": 5.5, "earned_runs": 3.5, "hits_allowed": 7.0, "outs": 17.5}),
+            ],
+        }
+        
+        # Parse team names from game ID (format: mlb_nyy_bos_20260201)
+        parts = external_game_id.replace("mlb_", "").split("_")
+        if len(parts) >= 2:
+            # Map abbreviations to team names
+            abbr_to_team = {
+                "nyy": "New York Yankees", "bos": "Boston Red Sox",
+                "lad": "Los Angeles Dodgers", "sd": "San Diego Padres",
+                "chc": "Chicago Cubs", "stl": "St. Louis Cardinals",
+                "atl": "Atlanta Braves", "nym": "New York Mets",
+                "hou": "Houston Astros", "tex": "Texas Rangers",
+                "sf": "San Francisco Giants", "oak": "Oakland Athletics",
+            }
+            away_abbr = parts[0].lower()
+            home_abbr = parts[1].lower()
+            away_team = abbr_to_team.get(away_abbr, "Away Team")
+            home_team = abbr_to_team.get(home_abbr, "Home Team")
+        else:
+            away_team = "Away Team"
+            home_team = "Home Team"
+        
+        # Get players for both teams
+        home_players = MLB_ROSTERS.get(home_team, MLB_ROSTERS["New York Yankees"])
+        away_players = MLB_ROSTERS.get(away_team, MLB_ROSTERS["Boston Red Sox"])
+        
+        # Generate props outcomes
+        batter_hits_outcomes = []
+        batter_total_bases_outcomes = []
+        batter_home_runs_outcomes = []
+        batter_rbis_outcomes = []
+        pitcher_strikeouts_outcomes = []
+        pitcher_outs_outcomes = []
+        
+        for team_players, team_name in [(home_players, home_team), (away_players, away_team)]:
+            for player_name, position, stats in team_players:
+                # Add slight randomness to lines
+                variance = random.uniform(-0.5, 0.5)
+                
+                if position == "SP":
+                    # Pitcher props
+                    ks = stats["strikeouts"] + variance
+                    outs = stats["outs"]
+                    pitcher_strikeouts_outcomes.extend([
+                        {"name": "Over", "description": f"{player_name} Strikeouts", "price": -115, "point": round(ks * 2) / 2},
+                        {"name": "Under", "description": f"{player_name} Strikeouts", "price": -105, "point": round(ks * 2) / 2},
+                    ])
+                    pitcher_outs_outcomes.extend([
+                        {"name": "Over", "description": f"{player_name} Outs Recorded", "price": -110, "point": outs},
+                        {"name": "Under", "description": f"{player_name} Outs Recorded", "price": -110, "point": outs},
+                    ])
+                else:
+                    # Batter props
+                    hits = stats["hits"]
+                    tb = stats["total_bases"] + variance * 0.5
+                    hr = stats["home_runs"]
+                    rbis = stats["rbis"]
+                    
+                    batter_hits_outcomes.extend([
+                        {"name": "Over", "description": f"{player_name} Hits", "price": -120, "point": hits},
+                        {"name": "Under", "description": f"{player_name} Hits", "price": 100, "point": hits},
+                    ])
+                    batter_total_bases_outcomes.extend([
+                        {"name": "Over", "description": f"{player_name} Total Bases", "price": -115, "point": round(tb * 2) / 2},
+                        {"name": "Under", "description": f"{player_name} Total Bases", "price": -105, "point": round(tb * 2) / 2},
+                    ])
+                    batter_home_runs_outcomes.extend([
+                        {"name": "Over", "description": f"{player_name} Home Runs", "price": 180, "point": hr},
+                        {"name": "Under", "description": f"{player_name} Home Runs", "price": -220, "point": hr},
+                    ])
+                    batter_rbis_outcomes.extend([
+                        {"name": "Over", "description": f"{player_name} RBIs", "price": -110, "point": rbis},
+                        {"name": "Under", "description": f"{player_name} RBIs", "price": -110, "point": rbis},
+                    ])
+        
+        return {
+            "id": external_game_id,
+            "sport_key": sport_key,
+            "home_team": home_team,
+            "away_team": away_team,
+            "commence_time": times["afternoon"],
+            "bookmakers": [
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [
+                        {"key": "batter_hits", "outcomes": batter_hits_outcomes},
+                        {"key": "batter_total_bases", "outcomes": batter_total_bases_outcomes},
+                        {"key": "batter_home_runs", "outcomes": batter_home_runs_outcomes},
+                        {"key": "batter_rbis", "outcomes": batter_rbis_outcomes},
+                        {"key": "pitcher_strikeouts", "outcomes": pitcher_strikeouts_outcomes},
+                        {"key": "pitcher_outs", "outcomes": pitcher_outs_outcomes},
                     ],
                 },
             ],
