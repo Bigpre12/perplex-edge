@@ -1001,8 +1001,11 @@ class XYZOddsProvider(OddsProvider):
             is_wta = "wta" in sport_key.lower()
             sport_title = "Tennis WTA" if is_wta else "Tennis ATP"
             
-            # Current top players for realistic stubs
+            # Current tournaments and players (Feb 2026)
+            # ATP: Open Occitanie - Montpellier (Jan 31 - Feb 8, 2026)
+            # WTA: Multiple events ongoing
             if is_wta:
+                tournament = "WTA 500"
                 players = [
                     ("Iga Swiatek", -180), ("Aryna Sabalenka", -150),
                     ("Coco Gauff", -130), ("Elena Rybakina", -120),
@@ -1010,31 +1013,41 @@ class XYZOddsProvider(OddsProvider):
                     ("Qinwen Zheng", +130), ("Jasmine Paolini", +140),
                 ]
             else:
+                # Open Occitanie - Montpellier (ATP 250)
+                # Realistic field for indoor hard court 250
+                tournament = "Open Occitanie - Montpellier"
                 players = [
-                    ("Jannik Sinner", -200), ("Carlos Alcaraz", -180),
-                    ("Novak Djokovic", -160), ("Daniil Medvedev", -140),
-                    ("Alexander Zverev", -120), ("Andrey Rublev", +100),
-                    ("Stefanos Tsitsipas", +110), ("Holger Rune", +130),
+                    ("Felix Auger-Aliassime", -200),  # Defending champion
+                    ("Ugo Humbert", -150),             # French #1, home favorite
+                    ("Adrian Mannarino", +110),        # French veteran
+                    ("Arthur Fils", +120),             # Rising French star
+                    ("Benjamin Bonzi", +140),          # French player
+                    ("Giovanni Mpetshi Perricard", +130),  # Big server
+                    ("Roman Safiullin", +150),         # Russian player
+                    ("Thanasi Kokkinakis", +160),      # Australian
                 ]
             
-            # Generate 4 matches for today
+            # Generate 4 matches for today (Quarter-finals)
             matches = []
             for i in range(0, min(len(players), 8), 2):
                 p1_name, p1_odds = players[i]
                 p2_name, p2_odds = players[i + 1] if i + 1 < len(players) else (players[0][0], players[0][1])
                 
-                # Adjust odds so they're complementary
+                # Adjust odds so they're complementary (proper vig)
                 if p1_odds < 0:
-                    p2_implied = 100 - abs(p1_odds)
+                    p2_implied = 100 - abs(p1_odds) + 20  # Add some vig
                     p2_odds = p2_implied if p2_implied > 0 else 100
                 
-                match_id = f"tennis_{p1_name.split()[1].lower()}_{p2_name.split()[1].lower()}_{today_str.replace('-', '')}"
+                # Create match ID with tournament context
+                p1_last = p1_name.split()[-1].lower().replace("-", "")
+                p2_last = p2_name.split()[-1].lower().replace("-", "")
+                match_id = f"tennis_{p1_last}_{p2_last}_{today_str.replace('-', '')}"
                 match_time = times["early"] if i < 4 else times["afternoon"]
                 
                 matches.append({
                     "id": match_id,
                     "sport_key": sport_key,
-                    "sport_title": sport_title,
+                    "sport_title": f"{sport_title} - {tournament}",
                     "commence_time": match_time,
                     "home_team": p1_name,
                     "away_team": p2_name,
@@ -1050,7 +1063,7 @@ class XYZOddsProvider(OddsProvider):
                     ],
                 })
             
-            logger.info(f"Generated {len(matches)} stub tennis matches for {sport_key}")
+            logger.info(f"Generated {len(matches)} stub tennis matches for {sport_key} ({tournament})")
             return matches
         
         # Load schedule for NBA/NCAAB
