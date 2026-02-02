@@ -1,12 +1,13 @@
 """Parlay builder service for creating optimized parlays from picks."""
 
-import logging
 from itertools import combinations
 from typing import Any, Optional
 
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
+from app.core.cache import cache, cached
 from app.models import ModelPick, Player, Game, Team, Market, PlayerGameStats
 from app.schemas.public import (
     ParlayLeg,
@@ -20,7 +21,7 @@ from app.services.picks_generator import (
     check_100_percent_window,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 # =============================================================================
@@ -575,11 +576,19 @@ async def build_parlay_legs(
         if grade_to_numeric(grade) < min_grade_numeric:
             continue
         
-        # Get hit rate data - use sport_id for correct season boundaries
         stat_type = market.stat_type or market.market_type
-        hr_data = await get_hit_rate_data(
-            db, player.id, stat_type, pick.line_value, pick.side, sport_id=sport_id
-        )
+        
+        # Use pre-calculated hit rates from ModelPick instead of slow DB queries
+        # This avoids calling get_hit_rate_data() for each pick (3800+ DB queries)
+        hr_5g = pick.hit_rate_5g or 0.0
+        hr_10g = pick.hit_rate_10g or 0.0
+        hr_30d = pick.hit_rate_30d or 0.0
+        hr_3g = pick.hit_rate_3g or 0.0
+        
+        # Determine 100% flags (hit rate >= 0.999 with minimum games)
+        is_100_5 = hr_5g >= 0.999
+        is_100_10 = hr_10g >= 0.999
+        is_100_season = hr_30d >= 0.999
         
         legs.append({
             "pick_id": pick.id,
@@ -597,7 +606,16 @@ async def build_parlay_legs(
             "confidence": pick.confidence_score,
             "game_id": game.id,
             "game_start_time": game.start_time,
-            **hr_data,
+            # Pre-calculated hit rate data from ModelPick
+            "hit_rate_season": hr_30d,
+            "games_season": 30 if hr_30d > 0 else 0,
+            "is_100_season": is_100_season,
+            "hit_rate_last_10": hr_10g,
+            "games_last_10": 10 if hr_10g > 0 else 0,
+            "is_100_last_10": is_100_10,
+            "hit_rate_last_5": hr_5g,
+            "games_last_5": 5 if hr_5g > 0 else 0,
+            "is_100_last_5": is_100_5,
         })
     
     return legs
@@ -741,6 +759,15 @@ async def build_parlays(
         legs = await build_parlay_legs(db, sport_id, min_leg_grade)
         logger.info(f"Found {len(legs)} eligible legs for sport {sport_id}")
         
+        # PERFORMANCE: Limit candidates to avoid combinatorial explosion
+        # With N legs and k=3, combinations are C(N,k). For N=3000, k=3 -> 4.5 billion!
+        # Take top 150 legs by EV to make computation tractable (~550k combinations for k=3)
+        MAX_CANDIDATES = 150
+        if len(legs) > MAX_CANDIDATES:
+            legs.sort(key=lambda x: x.get("ev", 0) or 0, reverse=True)
+            legs = legs[:MAX_CANDIDATES]
+            logger.info(f"Limited to top {MAX_CANDIDATES} legs by EV for performance")
+        
         # Find best parlays
         best_parlays = find_best_parlays(
             legs, 
@@ -855,7 +882,7 @@ async def get_100_percent_props(
     sport_id: int,
     window: str = "season",  # "season", "last_10", "last_5"
     limit: int = 50,
-    min_hit_rate: float = 0.80,  # Fallback threshold if no 100% props exist
+    min_hit_rate: float = 0.70,  # Fallback threshold if no 100% props exist
 ) -> list[HundredPercentProp]:
     """
     Get props with high hit rates over specified window.
@@ -868,7 +895,7 @@ async def get_100_percent_props(
         sport_id: Sport ID
         window: Time window - "season", "last_10", "last_5"
         limit: Maximum results
-        min_hit_rate: Minimum hit rate threshold for fallback (0.0-1.0, default 0.80 = 80%)
+        min_hit_rate: Minimum hit rate threshold for fallback (0.0-1.0, default 0.70 = 70%)
     
     Returns:
         List of HundredPercentProp sorted by hit rate (100% first, then by rate desc)
@@ -876,6 +903,8 @@ async def get_100_percent_props(
     from datetime import datetime, timezone
     
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    logger.info(f"[100pct] Querying props for sport_id={sport_id}, window={window}, limit={limit}")
     
     # Query player prop picks (removed is_active and start_time filters)
     result = await db.execute(
@@ -895,55 +924,73 @@ async def get_100_percent_props(
     )
     rows = result.all()
     
+    logger.info(f"[100pct] Query returned {len(rows)} total rows")
+    
     perfect_props = []  # 100% hit rate props
     high_hit_props = []  # Props meeting min_hit_rate threshold
+    all_props = []  # All props (fallback when no hit rate data)
+    skipped_no_line = 0  # Counter for debugging
+    
+    # Pre-load all teams for opponent lookup (single query instead of 2 per pick)
+    all_team_ids = set()
+    for pick, player, game, team, market in rows:
+        all_team_ids.add(game.home_team_id)
+        all_team_ids.add(game.away_team_id)
+    
+    teams_result = await db.execute(
+        select(Team).where(Team.id.in_(all_team_ids))
+    )
+    teams_by_id = {t.id: t for t in teams_result.scalars().all()}
     
     for pick, player, game, team, market in rows:
         # Skip picks with invalid line values
         if pick.line_value is None or pick.line_value == 0:
+            skipped_no_line += 1
             continue
         
         stat_type = market.stat_type or market.market_type
         
-        # Get hit rate data - use sport_id for correct season boundaries
-        hr_data = await get_hit_rate_data(
-            db, player.id, stat_type, pick.line_value, pick.side, sport_id=sport_id
-        )
+        # Use pre-calculated hit rates from ModelPick instead of slow DB queries
+        hr_5g = pick.hit_rate_5g or 0.0
+        hr_10g = pick.hit_rate_10g or 0.0
+        hr_30d = pick.hit_rate_30d or 0.0
+        
+        # Determine 100% flags (hit rate >= 0.999)
+        is_100_5 = hr_5g >= 0.999
+        is_100_10 = hr_10g >= 0.999
+        is_100_season = hr_30d >= 0.999
         
         # Determine hit rate and 100% flag for selected window
         if window == "season":
-            hit_rate = hr_data["hit_rate_season"]
-            is_100 = hr_data["is_100_season"]
-            games_count = hr_data["games_season"]
+            hit_rate = hr_30d
+            is_100 = is_100_season
+            games_count = 30 if hr_30d > 0 else 0
         elif window == "last_10":
-            hit_rate = hr_data["hit_rate_last_10"]
-            is_100 = hr_data["is_100_last_10"]
-            games_count = hr_data["games_last_10"]
+            hit_rate = hr_10g
+            is_100 = is_100_10
+            games_count = 10 if hr_10g > 0 else 0
         else:  # last_5
-            hit_rate = hr_data["hit_rate_last_5"]
-            is_100 = hr_data["is_100_last_5"]
-            games_count = hr_data["games_last_5"]
+            hit_rate = hr_5g
+            is_100 = is_100_5
+            games_count = 5 if hr_5g > 0 else 0
         
-        # Skip if no data or insufficient games
-        if hit_rate is None or games_count < 3:
-            continue
-        
-        # Get opponent team
-        home_team_result = await db.execute(
-            select(Team).where(Team.id == game.home_team_id)
-        )
-        home_team = home_team_result.scalar_one_or_none()
-        
-        away_team_result = await db.execute(
-            select(Team).where(Team.id == game.away_team_id)
-        )
-        away_team = away_team_result.scalar_one_or_none()
+        # Get opponent team from pre-loaded cache
+        home_team = teams_by_id.get(game.home_team_id)
+        away_team = teams_by_id.get(game.away_team_id)
         
         # Determine opponent
         if player.team_id == game.home_team_id:
             opponent = away_team
         else:
             opponent = home_team
+        
+        # Serialize game_start_time to ISO string (or None if missing)
+        game_start_iso = None
+        if game.start_time:
+            try:
+                game_start_iso = game.start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except Exception:
+                game_start_iso = str(game.start_time)
         
         prop = HundredPercentProp(
             pick_id=pick.id,
@@ -955,39 +1002,57 @@ async def get_100_percent_props(
             opponent_abbr=opponent.abbreviation if opponent else None,
             stat_type=stat_type,
             line=pick.line_value,
-            side=pick.side,
-            odds=pick.odds,
+            side=pick.side or "over",
+            odds=pick.odds or -110,
             sportsbook=None,
-            hit_rate_season=hr_data["hit_rate_season"],
-            games_season=hr_data["games_season"],
-            hit_rate_last_10=hr_data["hit_rate_last_10"],
-            games_last_10=hr_data["games_last_10"],
-            hit_rate_last_5=hr_data["hit_rate_last_5"],
-            games_last_5=hr_data["games_last_5"],
-            is_100_season=hr_data["is_100_season"],
-            is_100_last_10=hr_data["is_100_last_10"],
-            is_100_last_5=hr_data["is_100_last_5"],
-            model_probability=pick.model_probability,
-            expected_value=pick.expected_value,
-            confidence_score=pick.confidence_score,
+            hit_rate_season=hr_30d if hr_30d > 0 else None,
+            games_season=30 if hr_30d > 0 else 0,
+            hit_rate_last_10=hr_10g if hr_10g > 0 else None,
+            games_last_10=10 if hr_10g > 0 else 0,
+            hit_rate_last_5=hr_5g if hr_5g > 0 else None,
+            games_last_5=5 if hr_5g > 0 else 0,
+            is_100_season=is_100_season,
+            is_100_last_10=is_100_10,
+            is_100_last_5=is_100_5,
+            model_probability=pick.model_probability or 0.5,
+            expected_value=pick.expected_value or 0.0,
+            confidence_score=pick.confidence_score or 0.0,
             game_id=game.id,
-            game_start_time=game.start_time,
+            game_start_time=game_start_iso,
         )
         
-        # Categorize: 100% props vs high hit rate props
+        # Categorize: 100% props vs high hit rate vs all props
         if is_100:
             perfect_props.append((prop, hit_rate))
         elif hit_rate >= min_hit_rate:
             high_hit_props.append((prop, hit_rate))
+        
+        # Always add to all_props (used as fallback when no hit rate data)
+        # Sort by EV instead of hit rate for fallback
+        all_props.append((prop, pick.expected_value or 0, pick.confidence_score or 0))
     
-    # If we have 100% props, return those sorted by EV
+    logger.info(f"[100pct] Categorized: {len(perfect_props)} perfect, {len(high_hit_props)} high-hit, {len(all_props)} total, {skipped_no_line} skipped (no line)")
+    
+    # Priority 1: Return 100% props if available
     if perfect_props:
         perfect_props.sort(key=lambda x: (x[1], x[0].expected_value or 0), reverse=True)
-        return [p[0] for p in perfect_props[:limit]]
+        result = [p[0] for p in perfect_props[:limit]]
+        logger.info(f"[100pct] Returning {len(result)} perfect props")
+        return result
     
-    # Otherwise, return high hit rate props sorted by hit rate desc, then EV desc
-    high_hit_props.sort(key=lambda x: (x[1], x[0].expected_value or 0), reverse=True)
-    return [p[0] for p in high_hit_props[:limit]]
+    # Priority 2: Return high hit rate props if available
+    if high_hit_props:
+        high_hit_props.sort(key=lambda x: (x[1], x[0].expected_value or 0), reverse=True)
+        result = [p[0] for p in high_hit_props[:limit]]
+        logger.info(f"[100pct] Returning {len(result)} high-hit props (no perfect found)")
+        return result
+    
+    # Priority 3 (FALLBACK): Return best picks by EV/confidence when no hit rate data
+    # This ensures the UI always shows something instead of spinning forever
+    all_props.sort(key=lambda x: (x[1], x[2]), reverse=True)  # Sort by EV, then confidence
+    result = [p[0] for p in all_props[:limit]]
+    logger.info(f"[100pct] Returning {len(result)} all props as fallback (no hit rate data)")
+    return result
 
 
 # =============================================================================

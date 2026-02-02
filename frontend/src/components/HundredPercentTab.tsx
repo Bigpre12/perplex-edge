@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { use100PercentProps, HundredPercentProp } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
@@ -60,46 +60,61 @@ export function HundredPercentTab() {
   const [window, setWindow] = useState('last_5');
   
   // Fetch 100% hit rate props
-  const { data, isLoading, error } = use100PercentProps(sportId, window, 50);
+  const queryResult = use100PercentProps(sportId, window, 50);
+  const { data, isLoading, error, isFetching, status, fetchStatus } = queryResult;
+  
+  // CRITICAL: Derive display state with explicit null checks
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  
+  // Simple state machine:
+  // 1. isLoading=true → show spinner (initial fetch, no cache)
+  // 2. isLoading=false + error → show error
+  // 3. isLoading=false + no error + items.length=0 → show empty state
+  // 4. isLoading=false + no error + items.length>0 → show data
+  const showSpinner = isLoading;
+  const showError = !isLoading && !!error;
+  const showEmpty = !isLoading && !error && items.length === 0;
+  const showData = !isLoading && !error && items.length > 0;
+  
+  // Debug logging - log every render to help diagnose
+  console.log('[HundredPercentTab] Render:', {
+    sportId,
+    window,
+    status,
+    fetchStatus,
+    isLoading,
+    isFetching,
+    error: error?.message ?? null,
+    dataExists: !!data,
+    itemCount: items.length,
+    total,
+    // What we'll show
+    showSpinner,
+    showError,
+    showEmpty,
+    showData,
+  });
   
   // Format odds
   const formatOdds = (odds: number) => (odds > 0 ? `+${odds}` : odds.toString());
   
-  // Format time
-  const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      timeZoneName: 'short'
-    });
+  // Format time (handles null/undefined)
+  const formatTime = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'TBD';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return 'TBD';
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+    } catch {
+      return 'TBD';
+    }
   };
   
-  // Debug logging - only log on actual state changes, not every render
-  const prevStateRef = useRef<string | null>(null);
-  useEffect(() => {
-    const currentState = JSON.stringify({
-      sportId,
-      window,
-      dataTotal: data?.total,
-      itemCount: data?.items?.length,
-      isLoading,
-      hasError: !!error,
-    });
-    
-    // Only log if state actually changed
-    if (prevStateRef.current !== currentState) {
-      console.log('[HundredPercentTab] State changed:', {
-        sportId,
-        window,
-        dataTotal: data?.total,
-        itemCount: data?.items?.length,
-        isLoading,
-        error: error?.message,
-      });
-      prevStateRef.current = currentState;
-    }
-  }, [sportId, window, data?.total, data?.items?.length, isLoading, error]);
   
   if (sportLoading || !sportId) {
     return (
@@ -141,34 +156,45 @@ export function HundredPercentTab() {
         </div>
       </div>
       
-      {/* Loading state */}
-      {isLoading && (
+      {/* Loading state - spinner during initial fetch */}
+      {showSpinner && (
         <div className="p-8 text-center text-gray-400">
           <div className="animate-spin inline-block w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full mr-2" />
           Finding high hit rate props...
         </div>
       )}
       
-      {/* Error state */}
-      {error && (
-        <div className="p-8 text-center text-red-400">
-          Error loading props: {error.message}
+      {/* Refetching indicator - subtle indicator when refreshing with existing data */}
+      {isFetching && !isLoading && (
+        <div className="text-center text-sm text-gray-500 py-1">
+          <span className="animate-pulse">Refreshing...</span>
         </div>
       )}
       
-      {/* Empty state */}
-      {!isLoading && !error && data?.items?.length === 0 && (
-        <div className="p-8 text-center">
-          <div className="text-5xl mb-4">🎯</div>
-          <div className="text-gray-400 text-lg">No high hit rate props found</div>
-          <div className="text-gray-500 text-sm mt-2">
-            No props with 80%+ hit rates available. Try a different time window or check back later.
+      {/* Error state */}
+      {showError && (
+        <div className="p-8 text-center text-red-400">
+          <div className="text-2xl mb-2">⚠️</div>
+          <div>Error loading props: {error?.message ?? 'Unknown error'}</div>
+          <div className="text-sm text-gray-500 mt-2">
+            Check browser console for details
           </div>
         </div>
       )}
       
-      {/* Props table */}
-      {!isLoading && !error && data && data.items.length > 0 && (
+      {/* Empty state - no props found */}
+      {showEmpty && (
+        <div className="p-8 text-center">
+          <div className="text-5xl mb-4">🎯</div>
+          <div className="text-gray-400 text-lg">No high hit rate props found</div>
+          <div className="text-gray-500 text-sm mt-2">
+            No props with 70%+ hit rates available. Try a different time window or check back later.
+          </div>
+        </div>
+      )}
+      
+      {/* Props table - only show when we have actual data */}
+      {showData && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-800/50 text-gray-400 text-xs uppercase">
@@ -187,7 +213,7 @@ export function HundredPercentTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {data.items.map((prop: HundredPercentProp) => (
+              {items.map((prop: HundredPercentProp) => (
                 <tr 
                   key={prop.pick_id} 
                   className="hover:bg-gray-700/50 transition-colors"
@@ -273,9 +299,9 @@ export function HundredPercentTab() {
       )}
       
       {/* Summary */}
-      {!isLoading && !error && data && data.items.length > 0 && (
+      {showData && (
         <div className="text-center text-sm text-gray-500 py-2">
-          Showing {data.items.length} of {data.total} high hit rate props ({WINDOW_OPTIONS.find(o => o.value === window)?.label})
+          Showing {items.length} of {total || items.length} high hit rate props ({WINDOW_OPTIONS.find(o => o.value === window)?.label})
         </div>
       )}
     </div>

@@ -267,7 +267,7 @@ async def list_player_prop_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
-    fresh_only: bool = Query(False, description="Only show fresh picks (generated within 24h, games not started)"),
+    fresh_only: bool = Query(True, description="Filter out stale props (games started, old picks). Set to false to show all."),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -290,12 +290,18 @@ async def list_player_prop_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range using UTC (games stored with UTC midnight times)
-    utc_now_naive = datetime.utcnow()  # Naive UTC for DB comparison
+    # Calculate today's date range using US Eastern time (handles DST)
+    # This ensures picks show for today's US schedule even after midnight UTC
+    now_et = datetime.now(EASTERN_TZ)
+    utc_now_naive = datetime.now(timezone.utc).replace(tzinfo=None)  # Naive UTC for DB comparison
     
-    # Get today's date boundaries in UTC (midnight to midnight)
-    today = utc_now_naive.replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    # Get today's date boundaries in Eastern time
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC (naive datetimes for PostgreSQL)
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     
     # Freshness threshold - picks generated within last 24 hours
     # Increased from 12h to 24h to be more resilient to sync gaps
@@ -331,6 +337,8 @@ async def list_player_prop_picks(
             Game.start_time > utc_now_naive,
             # Only picks generated recently
             ModelPick.generated_at >= freshness_cutoff,
+            # Only scheduled/pregame games (not in_progress, final, postponed, etc.)
+            Game.status.in_(["scheduled", "pregame"]),
         ])
     
     # Build query with all necessary joins (outerjoin for PlayerTeam since team_id can be null)
@@ -369,11 +377,89 @@ async def list_player_prop_picks(
     query = query.limit(limit).offset(offset)
     
     result = await db.execute(query)
+    rows = result.all()
+    
+    # ==========================================================================
+    # STALE FILTER: Apply additional freshness checks at runtime
+    # ==========================================================================
+    from app.services.prop_filters import is_fresh_prop, dedupe_response_items
+    
+    if fresh_only:
+        filtered_rows = []
+        for row in rows:
+            pick, player, player_team, game, home_team, away_team, market = row
+            if is_fresh_prop(pick, game):
+                filtered_rows.append(row)
+        
+        if len(filtered_rows) < len(rows):
+            logger.info(f"[player-props] Stale filter removed {len(rows) - len(filtered_rows)} props")
+        rows = filtered_rows
+    
+    # ==========================================================================
+    # DEDUPE: Remove duplicate (player, stat, line) combinations
+    # ==========================================================================
+    # Build a mapping from dedupe key to best row (by EV)
+    seen_props: dict = {}
+    for row in rows:
+        pick, player, player_team, game, home_team, away_team, market = row
+        # Skip invalid line values
+        if pick.line_value is None or pick.line_value == 0:
+            continue
+        
+        key = (player.id, market.stat_type, pick.line_value)
+        ev = pick.expected_value or 0.0
+        
+        if key not in seen_props or ev > (seen_props[key][0].expected_value or 0.0):
+            seen_props[key] = row
+    
+    deduped_rows = list(seen_props.values())
+    if len(deduped_rows) < len(rows):
+        logger.info(f"[player-props] Dedupe reduced {len(rows)} -> {len(deduped_rows)} props")
+    rows = deduped_rows
+    
+    # PERFORMANCE FIX: Bulk fetch book lines instead of N+1 queries
+    # Collect all unique (game_id, player_id, market_id, side) combinations
+    line_keys = set()
+    for row in rows:
+        pick, player, player_team, game, home_team, away_team, market = row
+        if pick.line_value is not None and pick.line_value != 0:
+            line_keys.add((game.id, player.id, market.id, pick.side))
+    
+    # Bulk fetch all relevant lines in a single query
+    book_lines_map: dict[tuple, list] = {}
+    if line_keys:
+        # Build OR conditions for all key combinations
+        from sqlalchemy import or_, tuple_
+        line_conditions = [
+            and_(
+                Line.game_id == gid,
+                Line.player_id == pid,
+                Line.market_id == mid,
+                Line.side == side,
+                Line.is_current == True,
+            )
+            for gid, pid, mid, side in line_keys
+        ]
+        
+        lines_result = await db.execute(
+            select(Line).where(or_(*line_conditions))
+        )
+        all_lines = lines_result.scalars().all()
+        
+        # Group lines by key
+        for line in all_lines:
+            key = (line.game_id, line.player_id, line.market_id, line.side)
+            if key not in book_lines_map:
+                book_lines_map[key] = []
+            book_lines_map[key].append(line)
+    
+    # Import Kelly calculation once outside loop
+    from app.services.parlay_service import calculate_kelly_fraction
     
     # Build response
     picks = []
     skipped_count = 0
-    for row in result.all():
+    for row in rows:
         pick, player, player_team, game, home_team, away_team, market = row
         
         # Skip picks without valid line values (these are likely data issues)
@@ -399,18 +485,35 @@ async def list_player_prop_picks(
             opponent_team = f"{away_team.name} vs {home_team.name}"
             opponent_abbr = f"{away_team.abbreviation} vs {home_team.abbreviation}"
         
-        # Fetch per-book lines for this prop (enables sportsbook comparison)
-        book_lines, best_book, line_variance = await get_book_lines_for_pick(
-            db,
-            game_id=game.id,
-            player_id=player.id,
-            market_id=market.id,
-            side=pick.side,
-            model_prob=pick.model_probability,
-        )
+        # Get book lines from pre-fetched cache (no N+1 query!)
+        line_key = (game.id, player.id, market.id, pick.side)
+        cached_lines = book_lines_map.get(line_key, [])
+        
+        # Process book lines
+        book_lines = []
+        best_ev = float("-inf")
+        best_book = None
+        line_values = []
+        
+        for line in cached_lines:
+            ev = calculate_ev_for_odds(pick.model_probability, int(line.odds))
+            book_lines.append(BookLine(
+                sportsbook=line.sportsbook,
+                line=line.line_value,
+                odds=int(line.odds),
+                ev=ev,
+            ))
+            if ev > best_ev:
+                best_ev = ev
+                best_book = line.sportsbook
+            if line.line_value is not None:
+                line_values.append(line.line_value)
+        
+        line_variance = None
+        if len(line_values) >= 2:
+            line_variance = round(max(line_values) - min(line_values), 1)
         
         # Calculate Kelly sizing for this pick
-        from app.services.parlay_service import calculate_kelly_fraction
         kelly = calculate_kelly_fraction(
             win_prob=pick.model_probability,
             american_odds=int(pick.odds),
@@ -478,7 +581,7 @@ async def list_game_line_picks(
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
-    fresh_only: bool = Query(False, description="Only show fresh picks (generated within 24h, games not started)"),
+    fresh_only: bool = Query(True, description="Filter out stale picks (games started, old picks). Set to false to show all."),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -500,12 +603,18 @@ async def list_game_line_picks(
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    # Calculate today's date range using UTC (games stored with UTC midnight times)
-    utc_now_naive = datetime.utcnow()  # Naive UTC for DB comparison
+    # Calculate today's date range using US Eastern time (handles DST)
+    # This ensures picks show for today's US schedule even after midnight UTC
+    now_et = datetime.now(EASTERN_TZ)
+    utc_now_naive = datetime.now(timezone.utc).replace(tzinfo=None)  # Naive UTC for DB comparison
     
-    # Get today's date boundaries in UTC (midnight to midnight)
-    today = utc_now_naive.replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
+    # Get today's date boundaries in Eastern time
+    today_start_et = now_et.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_start_et = today_start_et + timedelta(days=1)
+    
+    # Convert to UTC (naive datetimes for PostgreSQL)
+    today = today_start_et.astimezone(timezone.utc).replace(tzinfo=None)
+    tomorrow = tomorrow_start_et.astimezone(timezone.utc).replace(tzinfo=None)
     
     # Freshness threshold - picks generated within last 24 hours
     # Increased from 12h to 24h to be more resilient to sync gaps
@@ -532,6 +641,8 @@ async def list_game_line_picks(
             Game.start_time > utc_now_naive,
             # Only picks generated recently
             ModelPick.generated_at >= freshness_cutoff,
+            # Only scheduled/pregame games (not in_progress, final, postponed, etc.)
+            Game.status.in_(["scheduled", "pregame"]),
         ])
     
     # Build query with all necessary joins
@@ -709,7 +820,7 @@ async def list_100_percent_props(
     sport_id: int,
     window: str = Query("last_5", description="Time window: season, last_10, last_5"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
-    min_hit_rate: float = Query(0.80, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.80 = 80%)"),
+    min_hit_rate: float = Query(0.70, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.70 = 70%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -723,7 +834,7 @@ async def list_100_percent_props(
         sport_id: Sport database ID
         window: Time window - "season", "last_10", "last_5"
         limit: Maximum results to return
-        min_hit_rate: Minimum hit rate for fallback (0.0-1.0, default 0.80)
+        min_hit_rate: Minimum hit rate for fallback (0.0-1.0, default 0.70)
     
     Returns:
         List of high hit rate props with hit rate stats and model outputs
@@ -731,9 +842,12 @@ async def list_100_percent_props(
     from app.services.parlay_service import get_100_percent_props
     from app.schemas.public import HundredPercentPropList
     
+    logger.info(f"[100pct-hits] Request: sport_id={sport_id}, window={window}, limit={limit}")
+    
     # Validate sport exists
     sport = await db.get(Sport, sport_id)
     if not sport:
+        logger.warning(f"[100pct-hits] Sport {sport_id} not found")
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
     # Validate window
@@ -744,13 +858,27 @@ async def list_100_percent_props(
             detail=f"Invalid window: {window}. Valid options: {valid_windows}",
         )
     
-    props = await get_100_percent_props(db, sport_id, window, limit, min_hit_rate)
-    
-    return HundredPercentPropList(
-        items=props,
-        total=len(props),
-        window=window,
-    )
+    # Wrap in try/except to fail gracefully instead of crashing
+    try:
+        props = await get_100_percent_props(db, sport_id, window, limit, min_hit_rate)
+        
+        logger.info(f"[100pct-hits] Returning {len(props)} props for sport {sport_id}")
+        
+        # ALWAYS return a valid JSON response with items array
+        response = HundredPercentPropList(
+            items=props if props else [],
+            total=len(props) if props else 0,
+            window=window,
+        )
+        return response
+    except Exception as e:
+        logger.error(f"[100pct-hits] Error for sport {sport_id}: {e}", exc_info=True)
+        # Return empty response instead of 500 error
+        return HundredPercentPropList(
+            items=[],
+            total=0,
+            window=window,
+        )
 
 
 # Convenience endpoint alias
@@ -759,7 +887,7 @@ async def hitrate_100_alias(
     sport: str = Query(..., description="Sport key (nba, ncaab, nfl) or sport_id"),
     window: str = Query("last_5", description="Time window: season, last_10, last_5"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
-    min_hit_rate: float = Query(0.80, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.80 = 80%)"),
+    min_hit_rate: float = Query(0.70, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.70 = 70%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -778,6 +906,10 @@ async def hitrate_100_alias(
         "nba": "basketball_nba",
         "ncaab": "basketball_ncaab",
         "nfl": "americanfootball_nfl",
+        "mlb": "baseball_mlb",
+        "atp": "tennis_atp",
+        "wta": "tennis_wta",
+        "tennis": "tennis_atp",  # Default to ATP
     }
     
     sport_key = sport_mapping.get(sport.lower(), sport.lower())
@@ -806,13 +938,23 @@ async def hitrate_100_alias(
             detail=f"Invalid window: {window}. Valid options: {valid_windows}",
         )
     
-    props = await get_100_percent_props(db, sport_obj.id, window, limit, min_hit_rate)
-    
-    return HundredPercentPropList(
-        items=props,
-        total=len(props),
-        window=window,
-    )
+    # Wrap in try/except to fail gracefully instead of crashing
+    try:
+        props = await get_100_percent_props(db, sport_obj.id, window, limit, min_hit_rate)
+        
+        return HundredPercentPropList(
+            items=props,
+            total=len(props),
+            window=window,
+        )
+    except Exception as e:
+        logger.error(f"100% hit rate alias error for sport {sport}: {e}", exc_info=True)
+        # Return empty response instead of 500 error
+        return HundredPercentPropList(
+            items=[],
+            total=0,
+            window=window,
+        )
 
 
 # =============================================================================
@@ -985,7 +1127,7 @@ async def get_sport_freshness(
     """
     from app.services.sync_metadata_service import get_sync_metadata
     
-    VALID_SPORTS = ["basketball_nba", "basketball_ncaab", "americanfootball_nfl"]
+    VALID_SPORTS = ["basketball_nba", "basketball_ncaab", "americanfootball_nfl", "baseball_mlb", "tennis_atp", "tennis_wta"]
     
     if sport_key not in VALID_SPORTS:
         raise HTTPException(
