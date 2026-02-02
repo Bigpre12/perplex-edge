@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { usePlayerPropPicks, STAT_TYPE_OPTIONS, PlayerPropFilters, BookLine, PlayerPropPick, useWatchlists, createWatchlist, deleteWatchlist, markWatchlistChecked, Watchlist, useSportAvailability } from '../api/public';
+import { usePlayerPropPicks, getStatTypesForSport, PlayerPropFilters, BookLine, PlayerPropPick, useWatchlists, createWatchlist, deleteWatchlist, markWatchlistChecked, Watchlist, useSportAvailability } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { ConfidenceBadge } from './ConfidenceBadge';
 import { AltLineExplorer } from './AltLineExplorer';
@@ -379,8 +379,22 @@ export function PlayerPropsTab() {
   // Check sport availability (off-season, etc.)
   const { data: availability } = useSportAvailability(sportId);
 
+  // Sport-specific stat type options
+  const statTypeOptions = useMemo(() => {
+    if (!sportId) return [{ value: '', label: 'All Stats' }];
+    return [
+      { value: '', label: 'All Stats' },
+      ...getStatTypesForSport(sportId),
+    ];
+  }, [sportId]);
+
   // Filter state - EV-first defaults for max profit
   const [statType, setStatType] = useState<string>('');
+  
+  // Reset stat type when sport changes (NFL stats don't apply to NBA, etc.)
+  useEffect(() => {
+    setStatType(''); // Reset to "All Stats"
+  }, [sportId]);
   const [minConfidence, setMinConfidence] = useState<number>(0.55); // 55%+ confidence (sweet spot)
   const [minEv, setMinEv] = useState<number>(0.03);                 // 3%+ EV only
   const [riskLevels, setRiskLevels] = useState<string[]>(['STANDARD', 'CONFIDENT', 'STRONG']);
@@ -596,7 +610,7 @@ export function PlayerPropsTab() {
       {/* Filters */}
       <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
         <div className="flex flex-wrap gap-6 items-end">
-          {/* Stat Type Dropdown */}
+          {/* Stat Type Dropdown (sport-specific) */}
           <div>
             <label className="block text-sm text-gray-400 mb-1">Stat Type</label>
             <select
@@ -605,7 +619,7 @@ export function PlayerPropsTab() {
               className="bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 
                        hover:border-gray-500 focus:border-blue-500 focus:outline-none min-w-[160px]"
             >
-              {STAT_TYPE_OPTIONS.map((opt) => (
+              {statTypeOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
