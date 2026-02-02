@@ -57,6 +57,15 @@ export function MultiSportSlate() {
   const [onlyGreenTier, setOnlyGreenTier] = useState(false);
   const [maxPicks, setMaxPicks] = useState(50);
   
+  // Reset all filters to show everything
+  const resetFiltersToDefault = () => {
+    setMinEv(0);
+    setMinConfidence(0);
+    setSelectedSports(new Set());
+    setOnlyGreenTier(false);
+    setMaxPicks(100);
+  };
+  
   // Get active sports (ones with data)
   const activeSports = useMemo(() => {
     if (!sportsData?.items) return [];
@@ -253,6 +262,21 @@ export function MultiSportSlate() {
         </div>
       </div>
       
+      {/* All Picks Hidden Warning */}
+      {!isLoading && sortedPicks.length === 0 && allSportsQuery.data && allSportsQuery.data.length > 0 && (
+        <div className="bg-orange-900/20 border border-orange-700 rounded-lg p-3 flex items-center justify-between">
+          <span className="text-sm text-orange-400">
+            All {allSportsQuery.data.length} picks are hidden by your current filters
+          </span>
+          <button 
+            onClick={resetFiltersToDefault}
+            className="text-sm text-orange-400 hover:text-orange-300 underline"
+          >
+            Show all picks
+          </button>
+        </div>
+      )}
+      
       {/* Stats Summary */}
       {stats && sortedPicks.length > 0 && (
         <div className="bg-gradient-to-r from-green-900/20 to-blue-900/20 border border-green-700/30 rounded-lg p-4">
@@ -361,11 +385,19 @@ export function MultiSportSlate() {
       {/* Empty State */}
       {!isLoading && sortedPicks.length === 0 && (
         <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
-          <div className="text-4xl mb-3">📊</div>
-          <p className="text-gray-400">No picks found across sports</p>
+          <div className="text-4xl mb-3">🔍</div>
+          <p className="text-gray-400 text-lg">No picks match your filters</p>
           <p className="text-sm text-gray-500 mt-2">
-            Try lowering your EV or confidence thresholds
+            {allSportsQuery.data && allSportsQuery.data.length > 0
+              ? `${allSportsQuery.data.length} picks available but hidden by filters (minEV: ${(minEv * 100).toFixed(0)}%, minConf: ${(minConfidence * 100).toFixed(0)}%)`
+              : 'No picks available across sports right now'}
           </p>
+          <button
+            onClick={resetFiltersToDefault}
+            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+          >
+            Reset All Filters
+          </button>
         </div>
       )}
     </div>

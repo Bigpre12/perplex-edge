@@ -342,6 +342,19 @@ export function PlayerPropsTab() {
       return newSet;
     });
   };
+  
+  // Reset all filters to show everything
+  const resetFiltersToDefault = () => {
+    setStatType('');
+    setMinConfidence(0);
+    setMinEv(0);
+    setRiskLevels(['SMALL', 'STANDARD', 'CONFIDENT', 'STRONG', 'MAX']);
+    setExcludedStatTypes(new Set());
+    setExcludedPlayers(new Set());
+    setOnlyGreenTier(false);
+    setHideCoinFlips(false);
+    setHideStaleLines(false);
+  };
 
   // Build filters object
   const filters: PlayerPropFilters = useMemo(
@@ -679,6 +692,21 @@ export function PlayerPropsTab() {
           </div>
         )}
       </div>
+      
+      {/* All Picks Hidden Warning */}
+      {!isLoading && data && data.items.length === 0 && rawData && rawData.total > 0 && (
+        <div className="bg-orange-900/20 border border-orange-700 rounded-lg p-3 flex items-center justify-between">
+          <span className="text-sm text-orange-400">
+            All {rawData.total} picks are hidden by your current filters
+          </span>
+          <button 
+            onClick={resetFiltersToDefault}
+            className="text-sm text-orange-400 hover:text-orange-300 underline"
+          >
+            Show all picks
+          </button>
+        </div>
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -851,10 +879,21 @@ export function PlayerPropsTab() {
       {/* Empty State */}
       {data && data.items.length === 0 && (
         <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
-          <p className="text-gray-400">No player prop picks found</p>
+          <div className="text-4xl mb-3">🔍</div>
+          <p className="text-gray-400 text-lg">No picks match your filters</p>
           <p className="text-sm text-gray-500 mt-2">
-            Try adjusting your filters or check back later for new picks
+            {rawData && rawData.total > 0 
+              ? `${rawData.total} picks available but hidden by current filters`
+              : 'No picks available for this sport right now'}
           </p>
+          {rawData && rawData.total > 0 && (
+            <button
+              onClick={resetFiltersToDefault}
+              className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+            >
+              Reset All Filters
+            </button>
+          )}
         </div>
       )}
     </div>
