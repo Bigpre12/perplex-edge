@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSports, PlayerPropPick, fetchPlayerPropPicks, PlayerPropFilters } from '../api/public';
+import { useSports, fetchPlayerPropPicks, PlayerPropFilters } from '../api/public';
 
 // ============================================================================
 // Multi-Sport Slate View
