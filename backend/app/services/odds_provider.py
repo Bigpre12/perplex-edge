@@ -995,6 +995,64 @@ class XYZOddsProvider(OddsProvider):
                 },
             ]
         
+        # Handle Tennis (ATP and WTA) - generate dynamic matches
+        if "tennis" in sport_key:
+            times = _get_stub_game_times()
+            is_wta = "wta" in sport_key.lower()
+            sport_title = "Tennis WTA" if is_wta else "Tennis ATP"
+            
+            # Current top players for realistic stubs
+            if is_wta:
+                players = [
+                    ("Iga Swiatek", -180), ("Aryna Sabalenka", -150),
+                    ("Coco Gauff", -130), ("Elena Rybakina", -120),
+                    ("Jessica Pegula", +110), ("Ons Jabeur", +120),
+                    ("Qinwen Zheng", +130), ("Jasmine Paolini", +140),
+                ]
+            else:
+                players = [
+                    ("Jannik Sinner", -200), ("Carlos Alcaraz", -180),
+                    ("Novak Djokovic", -160), ("Daniil Medvedev", -140),
+                    ("Alexander Zverev", -120), ("Andrey Rublev", +100),
+                    ("Stefanos Tsitsipas", +110), ("Holger Rune", +130),
+                ]
+            
+            # Generate 4 matches for today
+            matches = []
+            for i in range(0, min(len(players), 8), 2):
+                p1_name, p1_odds = players[i]
+                p2_name, p2_odds = players[i + 1] if i + 1 < len(players) else (players[0][0], players[0][1])
+                
+                # Adjust odds so they're complementary
+                if p1_odds < 0:
+                    p2_implied = 100 - abs(p1_odds)
+                    p2_odds = p2_implied if p2_implied > 0 else 100
+                
+                match_id = f"tennis_{p1_name.split()[1].lower()}_{p2_name.split()[1].lower()}_{today_str.replace('-', '')}"
+                match_time = times["early"] if i < 4 else times["afternoon"]
+                
+                matches.append({
+                    "id": match_id,
+                    "sport_key": sport_key,
+                    "sport_title": sport_title,
+                    "commence_time": match_time,
+                    "home_team": p1_name,
+                    "away_team": p2_name,
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": p1_name, "price": p1_odds},
+                                {"name": p2_name, "price": p2_odds}
+                            ]}]
+                        }
+                    ],
+                })
+            
+            logger.info(f"Generated {len(matches)} stub tennis matches for {sport_key}")
+            return matches
+        
         # Load schedule for NBA/NCAAB
         schedule = self._load_season_schedule(sport_key)
         
