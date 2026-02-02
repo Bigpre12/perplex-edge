@@ -979,7 +979,8 @@ class XYZOddsProvider(OddsProvider):
         today_str = today.isoformat()
         
         # Handle NFL separately (Super Bowl focus during playoffs)
-        if "football" in sport_key:
+        # NOTE: Must check exact sport_key to avoid matching NCAAF
+        if sport_key == "americanfootball_nfl":
             times = _get_stub_game_times()
             return [
                 # SUPER BOWL LX - February 8, 2026
@@ -1002,6 +1003,11 @@ class XYZOddsProvider(OddsProvider):
                     ],
                 },
             ]
+        
+        # Handle NCAAF (off-season: August-January, no games in February)
+        if sport_key == "americanfootball_ncaaf":
+            logger.info(f"[{sport_key}] College football is off-season (Feb-Aug). No stub games.")
+            return []
         
         # Handle MLB (Spring Training preview - season starts March 25)
         if "baseball" in sport_key:
@@ -1978,8 +1984,19 @@ class XYZOddsProvider(OddsProvider):
                 return self._generate_dynamic_nba_props(external_game_id, sport_key, times)
             elif "basketball_ncaab" in sport_key:
                 return self._generate_dynamic_ncaab_props(external_game_id, sport_key, times)
-            elif "football" in sport_key:
+            elif sport_key == "americanfootball_nfl":
                 return self._generate_dynamic_nfl_props(external_game_id, sport_key, times)
+            elif sport_key == "americanfootball_ncaaf":
+                # NCAAF is off-season (Feb-Aug), return empty props
+                logger.info(f"[{sport_key}] College football is off-season. No props.")
+                return {
+                    "id": external_game_id,
+                    "sport_key": sport_key,
+                    "home_team": "Off Season",
+                    "away_team": "Off Season",
+                    "commence_time": times["early"],
+                    "bookmakers": [],
+                }
             elif "tennis" in sport_key:
                 return self._generate_dynamic_tennis_props(external_game_id, sport_key, times)
             elif "baseball" in sport_key:
