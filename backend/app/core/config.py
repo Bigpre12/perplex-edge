@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator, model_validator
 from functools import lru_cache
+from typing import Optional, Any
+import logging
+import sys
 
 
 class Settings(BaseSettings):
@@ -50,6 +54,40 @@ class Settings(BaseSettings):
     # Scheduler (disabled by default - enable once DB is confirmed working)
     scheduler_enabled: bool = False
     scheduler_use_stubs: bool = True  # Use stub data for scheduled syncs (no API keys needed)
+    
+    # Sentry DSN for error monitoring (optional)
+    sentry_dsn: str = ""
+    
+    # Redis URL for caching (optional - falls back to in-memory)
+    redis_url: str = ""
+
+    @field_validator('database_url')
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        """Validate database URL is provided and not empty."""
+        if not v or v == "":
+            raise ValueError("DATABASE_URL is required")
+        return v
+    
+    @field_validator('environment')
+    @classmethod
+    def validate_environment(cls, v: str) -> str:
+        """Validate environment is a known value."""
+        valid_envs = ["development", "staging", "production", "test"]
+        if v.lower() not in valid_envs:
+            logging.warning(f"Unknown environment '{v}'. Expected one of: {valid_envs}")
+        return v.lower()
+    
+    @model_validator(mode='after')
+    def validate_api_keys_for_scheduler(self) -> 'Settings':
+        """Warn if scheduler is enabled but API keys are missing (when not using stubs)."""
+        if self.scheduler_enabled and not self.scheduler_use_stubs:
+            if not self.odds_api_key:
+                logging.warning(
+                    "SCHEDULER_ENABLED=true and SCHEDULER_USE_STUBS=false but ODDS_API_KEY is not set. "
+                    "Real API calls will fail. Set SCHEDULER_USE_STUBS=true or provide ODDS_API_KEY."
+                )
+        return self
     # Intervals optimized for Odds API free tier (500 requests/month)
     # Set to 60 min to stay within limits; reduce if you have paid plan
     sched_odds_interval_min: int = 60  # Hourly odds/injuries sync
@@ -87,6 +125,9 @@ class Settings(BaseSettings):
         # Already has asyncpg - use as-is
         if "+asyncpg://" in url:
             return url
+        # Convert postgresql+psycopg:// to postgresql+asyncpg://
+        if url.startswith("postgresql+psycopg://"):
+            return url.replace("postgresql+psycopg://", "postgresql+asyncpg://", 1)
         # Convert postgresql:// to postgresql+asyncpg://
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+asyncpg://", 1)
@@ -113,3 +154,82 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
+
+
+def validate_startup_config() -> dict[str, Any]:
+    """
+    Validate configuration at startup and return a summary.
+    
+    Called during application startup to:
+    1. Verify required settings are present
+    2. Log warnings for missing optional settings
+    3. Return a status summary
+    
+    Returns:
+        dict with validation results
+    """
+    issues: list[str] = []
+    warnings: list[str] = []
+    
+    try:
+        settings = get_settings()
+    except Exception as e:
+        logging.error(f"Failed to load settings: {e}")
+        return {
+            "valid": False,
+            "issues": [f"Settings load failed: {str(e)}"],
+            "warnings": [],
+        }
+    
+    # Check required settings
+    if not settings.database_url:
+        issues.append("DATABASE_URL is required but not set")
+    
+    # Check API keys and log warnings for missing ones
+    api_keys = {
+        "ODDS_API_KEY": settings.odds_api_key,
+        "STATS_API_KEY": settings.stats_api_key,
+        "INJURY_API_KEY": settings.injury_api_key,
+        "ROSTER_API_KEY": settings.roster_api_key,
+    }
+    
+    missing_keys = [name for name, value in api_keys.items() if not value]
+    if missing_keys:
+        if settings.scheduler_use_stubs:
+            warnings.append(
+                f"Using stub data (SCHEDULER_USE_STUBS=true). "
+                f"Missing API keys: {', '.join(missing_keys)}"
+            )
+        else:
+            warnings.append(
+                f"Missing API keys (real API calls may fail): {', '.join(missing_keys)}"
+            )
+    
+    # Check Sentry DSN in production
+    if settings.is_production and not settings.sentry_dsn:
+        warnings.append("SENTRY_DSN not set - error monitoring disabled in production")
+    
+    # Log results
+    if issues:
+        for issue in issues:
+            logging.error(f"Config Error: {issue}")
+    
+    if warnings:
+        for warning in warnings:
+            logging.warning(f"Config Warning: {warning}")
+    
+    # Log successful settings summary
+    logging.info(
+        f"Config loaded: environment={settings.environment}, "
+        f"scheduler_enabled={settings.scheduler_enabled}, "
+        f"scheduler_use_stubs={settings.scheduler_use_stubs}"
+    )
+    
+    return {
+        "valid": len(issues) == 0,
+        "issues": issues,
+        "warnings": warnings,
+        "environment": settings.environment,
+        "scheduler_enabled": settings.scheduler_enabled,
+        "scheduler_use_stubs": settings.scheduler_use_stubs,
+    }
