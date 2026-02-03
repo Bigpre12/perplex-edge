@@ -18,6 +18,12 @@ from app.core.rate_limiter import (
     get_betstack_api_limiter,
     get_espn_api_limiter,
 )
+from app.config.sports import (
+    SportKey,
+    StatType,
+    is_valid_stat_for_sport,
+    get_stat_type_from_api_market,
+)
 
 # Path to schedule data files
 SCHEDULES_DIR = Path(__file__).parent.parent.parent / "data" / "schedules"
@@ -725,7 +731,7 @@ class XYZOddsProvider(OddsProvider):
                 },
             )
         
-        return self._parse_player_props(raw_data)
+        return self._parse_player_props(raw_data, sport_key)
     
     # =========================================================================
     # Normalization Methods
@@ -787,10 +793,26 @@ class XYZOddsProvider(OddsProvider):
         
         return lines
     
-    def _parse_player_props(self, raw_data: dict[str, Any]) -> list[PropData]:
-        """Parse player props from API response."""
+    def _parse_player_props(
+        self,
+        raw_data: dict[str, Any],
+        sport_key: str | None = None,
+    ) -> list[PropData]:
+        """
+        Parse player props from API response.
+        
+        Args:
+            raw_data: Raw API response data
+            sport_key: Optional sport key for stat type validation.
+                       If provided, props with invalid stat types for the sport
+                       will be filtered out.
+        
+        Returns:
+            List of PropData objects
+        """
         props = []
         now = datetime.now(timezone.utc)
+        skipped_stats = set()  # Track skipped stat types for logging
         
         for bookmaker in raw_data.get("bookmakers", []):
             sportsbook = bookmaker["key"]
@@ -798,6 +820,14 @@ class XYZOddsProvider(OddsProvider):
             for market in bookmaker.get("markets", []):
                 market_key = market["key"]
                 stat_type = PROP_MAPPINGS.get(market_key, market_key.upper())
+                
+                # Validate stat type for sport if sport_key is provided
+                if sport_key is not None:
+                    if not is_valid_stat_for_sport(sport_key, stat_type):
+                        # Track for logging but don't spam
+                        if stat_type not in skipped_stats:
+                            skipped_stats.add(stat_type)
+                        continue
                 
                 # Group outcomes by player
                 player_outcomes: dict[str, dict] = {}
@@ -830,6 +860,12 @@ class XYZOddsProvider(OddsProvider):
                             under_odds=player_data["under_odds"],
                             fetched_at=now,
                         ))
+        
+        # Log skipped stat types if any
+        if skipped_stats and sport_key:
+            logger.debug(
+                f"[{sport_key}] Skipped {len(skipped_stats)} invalid stat types: {sorted(skipped_stats)}"
+            )
         
         return props
     

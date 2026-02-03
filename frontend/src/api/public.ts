@@ -389,83 +389,51 @@ export function useGameLinePicks(sportId: number | null, filters: GameLineFilter
 // Stat Type Options - Sport-Specific
 // =============================================================================
 
-// Per-sport stat type mappings (keyed by sport ID)
-export const STAT_TYPES_BY_SPORT: Record<number, { value: string; label: string }[]> = {
-  // NBA (30)
-  30: [
-    { value: 'PTS', label: 'Points' },
-    { value: 'REB', label: 'Rebounds' },
-    { value: 'AST', label: 'Assists' },
-    { value: '3PM', label: '3-Pointers Made' },
-    { value: 'PRA', label: 'Pts + Reb + Ast' },
-    { value: 'PR', label: 'Pts + Reb' },
-    { value: 'PA', label: 'Pts + Ast' },
-    { value: 'RA', label: 'Reb + Ast' },
-    { value: 'STL', label: 'Steals' },
-    { value: 'BLK', label: 'Blocks' },
-    { value: 'TO', label: 'Turnovers' },
-  ],
-  // NFL (31)
-  31: [
-    { value: 'PASS_YDS', label: 'Passing Yards' },
-    { value: 'PASS_TDS', label: 'Passing TDs' },
-    { value: 'PASS_ATT', label: 'Pass Attempts' },
-    { value: 'PASS_COMP', label: 'Completions' },
-    { value: 'INT', label: 'Interceptions' },
-    { value: 'RUSH_YDS', label: 'Rushing Yards' },
-    { value: 'RUSH_ATT', label: 'Rush Attempts' },
-    { value: 'RUSH_TDS', label: 'Rushing TDs' },
-    { value: 'REC_YDS', label: 'Receiving Yards' },
-    { value: 'REC', label: 'Receptions' },
-    { value: 'REC_TDS', label: 'Receiving TDs' },
-  ],
-  // MLB (40)
-  40: [
-    { value: 'TB', label: 'Total Bases' },
-    { value: 'K', label: 'Strikeouts (Pitcher)' },
-    { value: 'HITS', label: 'Hits' },
-    { value: 'RBI', label: 'RBIs' },
-  ],
-  // Tennis ATP (42)
-  42: [
-    { value: 'ACES', label: 'Aces' },
-    { value: 'DF', label: 'Double Faults' },
-    { value: 'GAMES', label: 'Games Won' },
-    { value: 'SETS', label: 'Sets Won' },
-    { value: 'TOTAL_GAMES', label: 'Total Games' },
-  ],
-  // NHL (44)
-  44: [
-    { value: 'GOALS', label: 'Goals' },
-    { value: 'ASSISTS', label: 'Assists' },
-    { value: 'POINTS', label: 'Points' },
-    { value: 'SHOTS', label: 'Shots on Goal' },
-    { value: 'SAVES', label: 'Saves' },
-    { value: 'BLOCKED', label: 'Blocked Shots' },
-    { value: 'HITS', label: 'Hits' },
-    { value: 'PIM', label: 'Penalty Minutes' },
-    { value: 'PPP', label: 'Power Play Points' },
-  ],
-};
-
-// Aliases for related sports
-STAT_TYPES_BY_SPORT[32] = STAT_TYPES_BY_SPORT[30]; // NCAAB uses NBA stats
-STAT_TYPES_BY_SPORT[41] = STAT_TYPES_BY_SPORT[31]; // NCAAF uses NFL stats
-STAT_TYPES_BY_SPORT[43] = STAT_TYPES_BY_SPORT[42]; // WTA uses ATP stats
+// Import from shared config (keep in sync with backend/app/config/sports.py)
+import { getStatTypeOptionsForSport, type StatType } from '../config/sports';
 
 /**
  * Get stat type options for a specific sport.
- * Returns sport-specific stat types, defaulting to NBA if sport not found.
+ * Returns sport-specific stat types as { value, label } objects for dropdowns.
+ * Defaults to NBA stats if sport not found.
  */
 export function getStatTypesForSport(sportId: number): { value: string; label: string }[] {
-  return STAT_TYPES_BY_SPORT[sportId] ?? STAT_TYPES_BY_SPORT[30];
+  const options = getStatTypeOptionsForSport(sportId);
+  if (options.length === 0) {
+    // Default to NBA
+    return getStatTypeOptionsForSport(30);
+  }
+  return options;
 }
+
+// Legacy export: STAT_TYPES_BY_SPORT as Record<number, { value: string; label: string }[]>
+// Built dynamically from the config for backward compatibility
+export const STAT_TYPES_BY_SPORT: Record<number, { value: string; label: string }[]> = {
+  30: getStatTypeOptionsForSport(30),
+  31: getStatTypeOptionsForSport(31),
+  32: getStatTypeOptionsForSport(32),
+  34: getStatTypeOptionsForSport(34),
+  40: getStatTypeOptionsForSport(40),
+  41: getStatTypeOptionsForSport(41),
+  42: getStatTypeOptionsForSport(42),
+  43: getStatTypeOptionsForSport(43),
+  44: getStatTypeOptionsForSport(53), // Legacy NHL ID
+  53: getStatTypeOptionsForSport(53),
+  60: getStatTypeOptionsForSport(60),
+  70: getStatTypeOptionsForSport(70),
+  71: getStatTypeOptionsForSport(71),
+  72: getStatTypeOptionsForSport(72),
+  80: getStatTypeOptionsForSport(80),
+};
 
 // Legacy export for backward compatibility (defaults to NBA)
 export const STAT_TYPE_OPTIONS = [
   { value: '', label: 'All Stats' },
-  ...STAT_TYPES_BY_SPORT[30],
+  ...getStatTypeOptionsForSport(30),
 ];
+
+// Re-export types for convenience
+export type { StatType };
 
 export const MARKET_TYPE_OPTIONS = [
   { value: '', label: 'All Markets' },

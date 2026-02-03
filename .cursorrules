@@ -115,6 +115,51 @@ backend/
 
 ---
 
+## Sport and Stat Type Configuration (KEEP IN SYNC)
+
+The project uses a **shared sport/stat model** across backend and frontend. When adding or modifying sports or stat types, you MUST update both files together.
+
+### Configuration Files
+
+| Backend | Frontend |
+|---------|----------|
+| `app/config/sports.py` | `src/config/sports.ts` |
+
+### Backend (`app/config/sports.py`)
+- `SportKey` enum - All supported sport keys
+- `StatType` enum - All supported stat types
+- `SPORT_ID_TO_KEY` - Maps database IDs to sport keys
+- `STAT_TYPES_BY_SPORT` - Defines valid stat types per sport
+- `API_MARKET_TO_STAT_TYPE` - Maps API market keys to stat types
+- `is_valid_stat_for_sport()` - Validates stat types
+
+### Frontend (`src/config/sports.ts`)
+- `SportKey` type - Union of sport key strings
+- `StatType` type - Union of stat type strings
+- `SPORT_ID_TO_KEY` - Maps database IDs to sport keys
+- `STAT_TYPES_BY_SPORT` - Defines valid stat types per sport
+- `STAT_TYPE_LABELS` - Human-readable labels for stat types
+- `getStatTypeOptionsForSport()` - Returns { value, label } arrays for dropdowns
+
+### Rules
+1. **Always update both files** when adding sports or stat types
+2. **ETL must validate** stat types against `STAT_TYPES_BY_SPORT` using `is_valid_stat_for_sport()`
+3. **UI must derive** stat options from `src/config/sports.ts`, not hardcode
+4. **Keep values consistent**: Sport keys and stat type values must match exactly between backend and frontend
+5. **Test after changes**: Verify both `python -c "from app.config.sports import ..."` and `npx tsc --noEmit` pass
+
+### Adding a New Sport
+1. Add to `SportKey` enum (backend) and type (frontend)
+2. Add to `SPORT_ID_TO_KEY` in both files
+3. Define stat types for the sport in `STAT_TYPES_BY_SPORT` in both files
+4. Add season windows in `app/core/sport_availability.py`
+5. Add stats config in `app/core/stats_config.yaml`
+6. Add to `AVAILABLE_SPORTS` in `app/api/admin.py`
+7. Add to `SPORT_KEYS` in `app/scheduler.py`
+8. Add stub data generator if using stubs
+
+---
+
 ## Remember
 
 Treat this project as a **living brain**: with every change, it should become more observable, more robust, and more accurate—minute by minute, day by day, month by month.

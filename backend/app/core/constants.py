@@ -3,7 +3,24 @@ Centralized constants for sport mappings and configurations.
 
 This module provides the single source of truth for sport-related mappings
 used throughout the application.
+
+Note: For type-safe enums and stat type validation, use app.config.sports:
+    - SportKey enum for sport keys
+    - StatType enum for stat types
+    - STAT_TYPES_BY_SPORT for sport-specific stat type validation
+    - is_valid_stat_for_sport() for validation checks
 """
+
+# Re-export enums and functions from app.config.sports for convenience
+from app.config.sports import (
+    SportKey,
+    StatType,
+    STAT_TYPES_BY_SPORT,
+    API_MARKET_TO_STAT_TYPE,
+    get_stat_types_for_sport,
+    is_valid_stat_for_sport,
+    get_stat_type_from_api_market,
+)
 
 # =============================================================================
 # Sport Key Mappings
