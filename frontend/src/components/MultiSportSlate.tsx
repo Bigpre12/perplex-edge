@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSports, fetchPlayerPropPicks, PlayerPropFilters } from '../api/public';
 import { TonightDashboard } from './TonightDashboard';
-import { SPORT_CONFIG } from '../constants/sports';
+import { SPORT_CONFIG, SPORT_KEY_TO_NAME } from '../constants/sports';
 
 // ============================================================================
 // Multi-Sport Slate View
@@ -79,8 +79,9 @@ export function MultiSportSlate() {
             const data = await fetchPlayerPropPicks(sport.id, filters);
             return data.items.map(pick => ({
               ...pick,
-              sport_id: sport.id,
-              sport_name: SPORT_CONFIG[sport.id]?.name || sport.name,
+              // Use sport_key for reliable label mapping (e.g., "americanfootball_nfl" -> "NFL")
+              // This ensures NFL picks show "NFL" even if DB sport_id differs from frontend config
+              sport_name: SPORT_KEY_TO_NAME[pick.sport_key] || SPORT_CONFIG[pick.sport_id ?? sport.id]?.name || sport.name,
             }));
           } catch (e) {
             console.warn(`Failed to fetch picks for sport ${sport.id}:`, e);

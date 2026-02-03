@@ -71,6 +71,8 @@ export interface BookLine {
 
 export interface PlayerPropPick {
   pick_id: number;
+  sport_id: number;  // Actual sport_id from the database
+  sport_key: string;  // Sport key (e.g., "americanfootball_nfl") for reliable label mapping
   player_name: string;
   player_id: number;
   team: string;

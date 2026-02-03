@@ -854,8 +854,14 @@ async def list_player_prop_picks(
                 else:
                     movement_direction = "steam" if abs(odds_movement or 0) > 10 else "stable"
         
+        # Get sport_key for reliable frontend label mapping
+        from app.core.constants import SPORT_ID_TO_KEY
+        pick_sport_key = SPORT_ID_TO_KEY.get(pick.sport_id, f"unknown_{pick.sport_id}")
+        
         picks.append(PlayerPropPick(
             pick_id=pick.id,
+            sport_id=pick.sport_id,  # Include actual sport_id from database
+            sport_key=pick_sport_key,  # Include sport_key for reliable label mapping
             player_name=player.name,
             player_id=player.id,
             team=team_name,

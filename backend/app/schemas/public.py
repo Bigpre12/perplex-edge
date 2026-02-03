@@ -103,6 +103,8 @@ class PlayerPropPick(BaseModel):
     
     # Pick identification
     pick_id: int
+    sport_id: int  # Actual sport_id from the database
+    sport_key: str  # Sport key (e.g., "americanfootball_nfl") for reliable label mapping
     
     # Player info
     player_name: str
