@@ -203,7 +203,7 @@ export function BacktestTab() {
               </div>
               <div className="text-xs text-gray-400">
                 Sample quality: {result.sample_quality} | 
-                {result.date_range.start} to {result.date_range.end}
+                {result.date_range?.start ?? 'N/A'} to {result.date_range?.end ?? 'N/A'}
               </div>
             </div>
           </div>
