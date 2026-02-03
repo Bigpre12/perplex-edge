@@ -1424,7 +1424,13 @@ async def sync_with_fallback(
             result["errors"].append(f"Primary API: {str(e)[:50]}")
     
     # Try ESPN free API as fallback (for supported sports)
-    if sport_key in ("basketball_nba", "basketball_ncaab", "americanfootball_nfl"):
+    # ESPN supports: NBA, NCAAB, NFL, NCAAF, MLB, NHL
+    espn_supported = (
+        "basketball_nba", "basketball_ncaab",
+        "americanfootball_nfl", "americanfootball_ncaaf",
+        "baseball_mlb", "icehockey_nhl",
+    )
+    if sport_key in espn_supported:
         try:
             logger.info(f"[{sport_key}] Trying ESPN free API...")
             espn_result = await sync_games_and_lines(

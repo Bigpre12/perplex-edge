@@ -559,8 +559,11 @@ async def list_player_prop_picks(
     )
     
     # Base filter conditions
+    # IMPORTANT: Filter by BOTH ModelPick.sport_id AND Game.sport_id to prevent data bleed
+    # between NFL (31) and NCAAF (41) or other sports with similar data structures
     base_conditions = [
         ModelPick.sport_id == sport_id,
+        Game.sport_id == sport_id,  # Double-check game also belongs to this sport
         # ModelPick.is_active == True,  # Disabled - show all picks regardless of active status
         ModelPick.player_id.isnot(None),
         ModelPick.player_id.notin_(injured_subquery),  # Exclude injured players
@@ -984,8 +987,10 @@ async def list_game_line_picks(
     AwayTeam = aliased(Team)
     
     # Base filter conditions
+    # IMPORTANT: Filter by BOTH ModelPick.sport_id AND Game.sport_id to prevent data bleed
     base_conditions = [
         ModelPick.sport_id == sport_id,
+        Game.sport_id == sport_id,  # Double-check game also belongs to this sport
         # ModelPick.is_active == True,  # Disabled - show all picks regardless of active status
         ModelPick.player_id.is_(None),  # Game lines only (no player)
         # Market.market_type.in_(["spread", "total", "moneyline"]),  # Disabled - player_id filter is sufficient

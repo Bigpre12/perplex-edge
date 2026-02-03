@@ -3144,20 +3144,27 @@ class ESPNScheduleProvider:
     """
     Free schedule provider using ESPN's public API.
     
-    Supports NCAAB and NFL - fetches real game schedules and generates 
+    Supports NBA, NCAAB, NFL, NCAAF, MLB, NHL - fetches real game schedules and generates 
     realistic odds/props based on team power ratings.
     """
     
     # ESPN API base URLs by sport
     ESPN_URLS = {
+        "basketball_nba": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba",
         "basketball_ncaab": "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball",
         "americanfootball_nfl": "https://site.api.espn.com/apis/site/v2/sports/football/nfl",
+        "americanfootball_ncaaf": "https://site.api.espn.com/apis/site/v2/sports/football/college-football",
+        "baseball_mlb": "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb",
+        "icehockey_nhl": "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl",
     }
     
     def __init__(self, sport_key: str = "basketball_ncaab"):
         self._client: Optional[httpx.AsyncClient] = None
         self.sport_key = sport_key
-        self.base_url = self.ESPN_URLS.get(sport_key, self.ESPN_URLS["basketball_ncaab"])
+        self.base_url = self.ESPN_URLS.get(sport_key)
+        if not self.base_url:
+            logger.warning(f"No ESPN URL for {sport_key}, defaulting to NCAAB")
+            self.base_url = self.ESPN_URLS["basketball_ncaab"]
     
     @property
     def client(self) -> httpx.AsyncClient:
