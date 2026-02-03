@@ -191,12 +191,28 @@ async def get_sport_availability(
     Get availability status for a specific sport.
     
     Returns whether the sport is in-season and why data might be empty.
+    For unknown sport IDs, returns a default "not configured" response instead of 404.
     """
     from app.core.constants import SPORT_ID_TO_KEY
     
     sport_key = SPORT_ID_TO_KEY.get(sport_id)
     if not sport_key:
-        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+        # Return graceful response for unknown sport IDs instead of 404
+        return {
+            "sport_id": sport_id,
+            "sport_key": None,
+            "status": {
+                "is_active": False,
+                "message": f"Sport {sport_id} not configured",
+                "next_action": "This sport may not be supported yet.",
+            },
+            "data_counts": {
+                "games_today": 0,
+                "total_picks": 0,
+            },
+            "data_reason": f"Sport ID {sport_id} is not mapped in the system.",
+            "tennis_note": None,
+        }
     
     status = get_sport_status(sport_key)
     

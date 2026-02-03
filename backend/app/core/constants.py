@@ -49,7 +49,8 @@ LEAGUE_TO_SPORT_KEY_EXTENDED = {
 # =============================================================================
 
 # Map database sport ID to sport key
-# Note: Tennis IDs are 42/43 in the database (not 50/51)
+# Note: Tennis IDs are 42/43 in the database
+# Note: NHL was added after migration and got auto-assigned ID 53
 SPORT_ID_TO_KEY = {
     30: "basketball_nba",
     31: "americanfootball_nfl",
@@ -58,7 +59,8 @@ SPORT_ID_TO_KEY = {
     41: "americanfootball_ncaaf",
     42: "tennis_atp",
     43: "tennis_wta",
-    44: "icehockey_nhl",
+    44: "icehockey_nhl",  # Legacy mapping (kept for compatibility)
+    53: "icehockey_nhl",  # Actual database ID
 }
 
 # Reverse mapping: sport key to database ID

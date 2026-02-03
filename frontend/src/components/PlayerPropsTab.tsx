@@ -15,12 +15,11 @@ const SPORT_EMPTY_MESSAGES: Record<number, { icon: string; title: string; subtit
   30: { icon: '🏀', title: 'No NBA picks available', subtitle: 'Check back closer to game time' },
   31: { icon: '🏈', title: 'No NFL slate today', subtitle: 'Games typically Thursday-Monday' },
   32: { icon: '🏀', title: 'No NCAAB picks available', subtitle: 'Check back closer to game time' },
-  33: { icon: '🏈', title: 'NCAAF off-season', subtitle: 'College football returns in August' },
   40: { icon: '⚾', title: 'No MLB picks available', subtitle: 'Check back closer to game time' },
   41: { icon: '🏈', title: 'NCAAF off-season', subtitle: 'College football returns in August' },
   42: { icon: '🎾', title: 'Awaiting ATP odds', subtitle: 'Tournament matches load closer to start' },
   43: { icon: '🎾', title: 'Awaiting WTA odds', subtitle: 'Tournament matches load closer to start' },
-  44: { icon: '🏒', title: 'No NHL picks available', subtitle: 'Check back closer to game time' },
+  53: { icon: '🏒', title: 'No NHL picks available', subtitle: 'Check back closer to game time' },
 };
 
 function getSportEmptyMessage(sportId: number | null): { icon: string; title: string; subtitle: string } {

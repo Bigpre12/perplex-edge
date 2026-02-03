@@ -22,7 +22,7 @@ export interface SportConfig {
  * - 41: NCAAF
  * - 42: Tennis ATP
  * - 43: Tennis WTA
- * - 44: NHL
+ * - 53: NHL (auto-assigned after migration)
  */
 export const SPORT_CONFIG: Record<number, SportConfig> = {
   30: { name: 'NBA', icon: '🏀', color: 'bg-orange-900/30 text-orange-400', borderColor: 'border-orange-700' },
@@ -32,7 +32,7 @@ export const SPORT_CONFIG: Record<number, SportConfig> = {
   41: { name: 'NCAAF', icon: '🏈', color: 'bg-purple-900/30 text-purple-400', borderColor: 'border-purple-700' },
   42: { name: 'ATP', icon: '🎾', color: 'bg-yellow-900/30 text-yellow-400', borderColor: 'border-yellow-700' },
   43: { name: 'WTA', icon: '🎾', color: 'bg-pink-900/30 text-pink-400', borderColor: 'border-pink-700' },
-  44: { name: 'NHL', icon: '🏒', color: 'bg-cyan-900/30 text-cyan-400', borderColor: 'border-cyan-700' },
+  53: { name: 'NHL', icon: '🏒', color: 'bg-cyan-900/30 text-cyan-400', borderColor: 'border-cyan-700' },
 };
 
 /**
