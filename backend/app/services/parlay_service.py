@@ -70,6 +70,102 @@ class CorrelationType:
     OPPOSING_SIDES = "opposing_sides"
 
 
+# =============================================================================
+# Platform-Specific Validation Rules
+# =============================================================================
+
+PLATFORM_RULES = {
+    "prizepicks": {
+        "max_props_per_player": 1,  # PrizePicks only allows 1 prop per player
+        "max_props_per_game": None,  # No game limit
+        "name": "PrizePicks",
+    },
+    "draftkings": {
+        "max_props_per_player": 2,  # DraftKings allows up to 2 props per player
+        "max_props_per_game": 4,     # Max 4 props from same game
+        "name": "DraftKings",
+    },
+    "fanduel": {
+        "max_props_per_player": 2,
+        "max_props_per_game": 4,
+        "name": "FanDuel",
+    },
+    "underdog": {
+        "max_props_per_player": 1,
+        "max_props_per_game": None,
+        "name": "Underdog Fantasy",
+    },
+    "sportsbook": {
+        "max_props_per_player": 3,  # Most sportsbooks are lenient
+        "max_props_per_game": None,
+        "name": "Sportsbook",
+    },
+}
+
+
+def validate_parlay_for_platform(legs: list[dict], platform: str = "prizepicks") -> dict:
+    """
+    Validate a parlay combination against platform-specific rules.
+    
+    Args:
+        legs: List of parlay leg dictionaries
+        platform: Platform to validate against
+    
+    Returns:
+        Dict with 'is_valid', 'violations', and 'platform_name'
+    """
+    rules = PLATFORM_RULES.get(platform.lower(), PLATFORM_RULES["prizepicks"])
+    violations = []
+    
+    # Check props per player
+    max_per_player = rules.get("max_props_per_player")
+    if max_per_player:
+        player_counts: dict[int, list[str]] = {}
+        for leg in legs:
+            pid = leg.get("player_id")
+            if pid:
+                if pid not in player_counts:
+                    player_counts[pid] = []
+                player_counts[pid].append(leg.get("player_name", "Unknown"))
+        
+        for pid, names in player_counts.items():
+            if len(names) > max_per_player:
+                violations.append({
+                    "type": "player_limit_exceeded",
+                    "severity": "CRITICAL",
+                    "message": f"Too many props for {names[0]}: {len(names)} (max {max_per_player} on {rules['name']})",
+                    "player_id": pid,
+                    "count": len(names),
+                    "max_allowed": max_per_player,
+                })
+    
+    # Check props per game
+    max_per_game = rules.get("max_props_per_game")
+    if max_per_game:
+        game_counts: dict[int, int] = {}
+        for leg in legs:
+            gid = leg.get("game_id")
+            if gid:
+                game_counts[gid] = game_counts.get(gid, 0) + 1
+        
+        for gid, count in game_counts.items():
+            if count > max_per_game:
+                violations.append({
+                    "type": "game_limit_exceeded",
+                    "severity": "HIGH",
+                    "message": f"Too many props from same game: {count} (max {max_per_game} on {rules['name']})",
+                    "game_id": gid,
+                    "count": count,
+                    "max_allowed": max_per_game,
+                })
+    
+    return {
+        "is_valid": len(violations) == 0,
+        "violations": violations,
+        "platform_name": rules["name"],
+    }
+
+
 def detect_correlations(legs: list[dict]) -> list[dict]:
     """
     Detect correlations between parlay legs.
@@ -527,6 +623,8 @@ async def build_parlay_legs(
     db: AsyncSession,
     sport_id: int,
     min_grade: str = "C",
+    active_games_only: bool = True,
+    max_props_per_player: int = 1,
 ) -> list[dict]:
     """
     Build list of eligible parlay legs from active player prop picks.
@@ -535,14 +633,35 @@ async def build_parlay_legs(
         db: Database session
         sport_id: Sport ID to filter picks
         min_grade: Minimum grade to include (default C)
+        active_games_only: If True, only include props for games starting in next 24 hours
+        max_props_per_player: Maximum props per player (1 for PrizePicks rules)
     
     Returns:
         List of leg dictionaries with all required data
     """
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone, timedelta
     
     min_grade_numeric = grade_to_numeric(min_grade)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    # Time window for active games: now to 24 hours from now
+    # This ensures we only get props for today's/tomorrow's slate
+    game_window_start = now - timedelta(hours=1)  # Allow games starting within the hour
+    game_window_end = now + timedelta(hours=24)
+    
+    # Build query conditions
+    conditions = [
+        Game.sport_id == sport_id,
+        ModelPick.player_id.isnot(None),  # Player props only
+    ]
+    
+    # Only include active games if enabled (games that haven't started yet)
+    if active_games_only:
+        conditions.extend([
+            Game.start_time > game_window_start,  # Game hasn't started yet (with 1hr buffer)
+            Game.start_time < game_window_end,    # Game is within next 24 hours
+        ])
+        logger.info(f"[parlay] Filtering for active games: {game_window_start} to {game_window_end}")
     
     # Query player prop picks for upcoming games
     result = await db.execute(
@@ -551,16 +670,11 @@ async def build_parlay_legs(
         .join(Game, ModelPick.game_id == Game.id)
         .outerjoin(Team, Player.team_id == Team.id)  # Outerjoin to include players without team
         .join(Market, ModelPick.market_id == Market.id)
-        .where(
-            and_(
-                Game.sport_id == sport_id,
-                # ModelPick.is_active == True,  # Disabled - show all picks
-                ModelPick.player_id.isnot(None),  # Player props only
-                # Game.start_time > now,  # Disabled - games stored at midnight UTC
-            )
-        )
+        .where(and_(*conditions))
     )
     rows = result.all()
+    
+    logger.info(f"[parlay] Query returned {len(rows)} raw props for sport {sport_id}")
     
     legs = []
     for pick, player, game, team, market in rows:
@@ -617,6 +731,26 @@ async def build_parlay_legs(
             "games_last_5": 5 if hr_5g > 0 else 0,
             "is_100_last_5": is_100_5,
         })
+    
+    # Enforce max props per player (PrizePicks = 1, DraftKings = 2)
+    # Sort by EV descending so we keep the best props for each player
+    if max_props_per_player > 0:
+        legs.sort(key=lambda x: (x.get("ev") or 0), reverse=True)
+        player_prop_count: dict[int, int] = {}
+        filtered_legs = []
+        for leg in legs:
+            pid = leg["player_id"]
+            if pid not in player_prop_count:
+                player_prop_count[pid] = 0
+            if player_prop_count[pid] < max_props_per_player:
+                filtered_legs.append(leg)
+                player_prop_count[pid] += 1
+        
+        logger.info(
+            f"[parlay] Filtered from {len(legs)} to {len(filtered_legs)} legs "
+            f"(max {max_props_per_player} props per player)"
+        )
+        legs = filtered_legs
     
     return legs
 
@@ -709,6 +843,23 @@ def find_best_parlays(
             if current_risk_level > max_risk_level:
                 continue  # Skip this parlay - too correlated
         
+        # Validate against all major platforms
+        platform_validity = {
+            "prizepicks": validate_parlay_for_platform(combo_list, "prizepicks"),
+            "draftkings": validate_parlay_for_platform(combo_list, "draftkings"),
+            "fanduel": validate_parlay_for_platform(combo_list, "fanduel"),
+            "underdog": validate_parlay_for_platform(combo_list, "underdog"),
+        }
+        
+        # Collect all violations
+        all_violations = []
+        valid_platforms = []
+        for platform, validation in platform_validity.items():
+            if validation["is_valid"]:
+                valid_platforms.append(validation["platform_name"])
+            else:
+                all_violations.extend(validation["violations"])
+        
         parlays.append({
             "legs": combo_list,
             "leg_count": leg_count,
@@ -723,6 +874,11 @@ def find_best_parlays(
             "correlations": correlations,
             "correlation_risk": correlation_risk,
             "correlation_risk_label": correlation_risk_label,
+            # Platform validation info
+            "platform_validity": platform_validity,
+            "valid_platforms": valid_platforms,
+            "platform_violations": all_violations,
+            "is_universally_valid": len(all_violations) == 0,
         })
     
     logger.info(f"Evaluated {combo_count} combinations, found {len(parlays)} valid parlays")
@@ -839,6 +995,21 @@ async def build_parlays(
                 risk_level=kelly_data["risk_level"],
             )
             
+            # Convert platform violations to schema
+            from app.schemas.public import PlatformViolation
+            platform_violations = [
+                PlatformViolation(
+                    type=v["type"],
+                    severity=v["severity"],
+                    message=v["message"],
+                    player_id=v.get("player_id"),
+                    game_id=v.get("game_id"),
+                    count=v.get("count", 0),
+                    max_allowed=v.get("max_allowed", 0),
+                )
+                for v in p.get("platform_violations", [])
+            ]
+            
             parlay_recommendations.append(
                 ParlayRecommendation(
                     legs=parlay_legs,
@@ -855,6 +1026,10 @@ async def build_parlays(
                     correlation_risk=p.get("correlation_risk", 0.0),
                     correlation_risk_label=p.get("correlation_risk_label", "LOW"),
                     kelly=kelly_sizing,
+                    # Platform validation
+                    valid_platforms=p.get("valid_platforms", []),
+                    platform_violations=platform_violations,
+                    is_universally_valid=p.get("is_universally_valid", True),
                 )
             )
     

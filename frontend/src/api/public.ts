@@ -881,6 +881,16 @@ export interface KellySizing {
   risk_level: string;  // "NO_BET", "SMALL", "STANDARD", "CONFIDENT", "STRONG", "MAX"
 }
 
+export interface PlatformViolation {
+  type: string;  // "player_limit_exceeded" or "game_limit_exceeded"
+  severity: string;  // "HIGH" or "CRITICAL"
+  message: string;
+  player_id?: number | null;
+  game_id?: number | null;
+  count: number;
+  max_allowed: number;
+}
+
 export interface ParlayRecommendation {
   legs: ParlayLeg[];
   leg_count: number;
@@ -898,6 +908,10 @@ export interface ParlayRecommendation {
   correlation_risk_label: string;  // "LOW", "MEDIUM", "HIGH", "CRITICAL"
   // Kelly sizing
   kelly: KellySizing | null;
+  // Platform validation
+  valid_platforms?: string[];  // Platforms where this parlay is valid
+  platform_violations?: PlatformViolation[];  // Rule violations
+  is_universally_valid?: boolean;  // True if valid on all platforms
 }
 
 export interface ParlayBuilderResponse {

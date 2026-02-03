@@ -297,6 +297,18 @@ class KellySizing(BaseModel):
     risk_level: str  # "NO_BET", "SMALL", "STANDARD", "CONFIDENT", "STRONG", "MAX"
 
 
+class PlatformViolation(BaseModel):
+    """A platform rule violation for a parlay."""
+    
+    type: str  # "player_limit_exceeded" or "game_limit_exceeded"
+    severity: str  # "HIGH" or "CRITICAL"
+    message: str  # Human-readable description
+    player_id: Optional[int] = None
+    game_id: Optional[int] = None
+    count: int  # How many props violated the rule
+    max_allowed: int  # Max allowed by the platform
+
+
 class ParlayRecommendation(BaseModel):
     """A recommended parlay with grading."""
     
@@ -324,6 +336,11 @@ class ParlayRecommendation(BaseModel):
     
     # Kelly sizing
     kelly: Optional[KellySizing] = None  # Kelly criterion recommendation
+    
+    # Platform-specific validity
+    valid_platforms: list[str] = []  # Platforms where this parlay is valid
+    platform_violations: list[PlatformViolation] = []  # Rule violations by platform
+    is_universally_valid: bool = True  # True if valid on all platforms
 
 
 class ParlayBuilderRequest(BaseModel):

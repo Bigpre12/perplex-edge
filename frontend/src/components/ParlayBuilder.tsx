@@ -588,6 +588,30 @@ function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSele
             <CorrelationWarningCard warnings={parlay.correlations} />
           )}
           
+          {/* Platform validity warnings */}
+          {parlay.platform_violations && parlay.platform_violations.length > 0 && (
+            <div className="bg-red-900/20 border border-red-700 rounded-lg p-3 mt-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-red-400 font-medium text-sm">Platform Restrictions</span>
+              </div>
+              <div className="space-y-1">
+                {parlay.platform_violations.map((violation, i) => (
+                  <div key={i} className="text-xs text-red-300 flex items-start gap-2">
+                    <span className={violation.severity === 'CRITICAL' ? 'text-red-400' : 'text-orange-400'}>
+                      {violation.severity === 'CRITICAL' ? '🚫' : '⚠️'}
+                    </span>
+                    <span>{violation.message}</span>
+                  </div>
+                ))}
+              </div>
+              {parlay.valid_platforms && parlay.valid_platforms.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-red-800 text-xs text-gray-400">
+                  Valid on: <span className="text-green-400">{parlay.valid_platforms.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          )}
+          
           {/* Live quote summary */}
           {liveQuote && (
             <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-2 text-xs text-gray-400">
@@ -1364,27 +1388,43 @@ export function ParlayBuilder() {
         </div>
       )}
       
-      {/* Empty state - distinguish "no props loaded" vs "filters too strict" */}
+      {/* Empty state - distinguish "no active slates" vs "filters too strict" */}
       {showEmpty && (
         <div className="p-8 text-center">
           {totalCandidates === 0 ? (
-            // No props loaded for this sport at all
-            <>
-              <div className="text-5xl mb-4">📭</div>
-              <div className="text-gray-400 text-lg">No props loaded for this sport</div>
-              <div className="text-gray-500 text-sm mt-2">
-                Check back closer to game time or try another sport
+            // No active games/props for this sport
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 max-w-md mx-auto">
+              <div className="text-5xl mb-4">🗓️</div>
+              <div className="text-gray-300 text-lg font-medium">No Active Slates</div>
+              <div className="text-gray-500 text-sm mt-2 space-y-2">
+                <p>There are no games starting within the next 24 hours for this sport.</p>
+                <p className="text-gray-600">
+                  Props are only available for upcoming games to ensure fresh odds.
+                </p>
               </div>
-            </>
+              <button
+                onClick={() => queryResult.refetch()}
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Refresh
+              </button>
+            </div>
           ) : (
             // Props exist but filters are too strict
-            <>
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 max-w-md mx-auto">
               <div className="text-5xl mb-4">🎰</div>
-              <div className="text-gray-400 text-lg">No qualifying parlays found</div>
+              <div className="text-gray-300 text-lg font-medium">No Qualifying Parlays</div>
               <div className="text-gray-500 text-sm mt-2">
-                {totalCandidates} eligible legs available. Try lowering the minimum grade or leg count.
+                <p><span className="text-white">{totalCandidates}</span> eligible legs available, but none meet your current filters.</p>
+                <p className="mt-2">Try lowering the minimum grade or leg count.</p>
               </div>
-            </>
+              <button
+                onClick={resetFiltersToDefault}
+                className="mt-4 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+              >
+                Reset Filters
+              </button>
+            </div>
           )}
         </div>
       )}
