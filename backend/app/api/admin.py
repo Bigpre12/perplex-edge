@@ -860,6 +860,77 @@ async def verify_sport_id_counts(
     }
 
 
+@router.get("/verify/sportsbooks")
+async def verify_sportsbooks(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Verify which sportsbooks have lines in the database.
+    
+    Use this to debug why only DraftKings (or one book) is showing:
+    - If only 1 sportsbook, data was synced before multi-book fix
+    - Trigger /admin/jobs/force-refresh to re-sync with multiple books
+    """
+    from sqlalchemy import select, func, distinct
+    from app.models import Line, Game
+    from app.core.constants import SPORT_ID_TO_KEY
+    
+    # Get unique sportsbooks and their counts
+    sportsbook_result = await db.execute(
+        select(
+            Line.sportsbook,
+            func.count(Line.id).label("line_count"),
+        )
+        .where(Line.is_current == True)
+        .group_by(Line.sportsbook)
+        .order_by(func.count(Line.id).desc())
+    )
+    sportsbooks = [
+        {"sportsbook": row[0], "line_count": row[1]}
+        for row in sportsbook_result.all()
+    ]
+    
+    # Get counts per sport
+    sport_books_result = await db.execute(
+        select(
+            Game.sport_id,
+            Line.sportsbook,
+            func.count(Line.id).label("count"),
+        )
+        .join(Game, Line.game_id == Game.id)
+        .where(Line.is_current == True)
+        .group_by(Game.sport_id, Line.sportsbook)
+        .order_by(Game.sport_id, func.count(Line.id).desc())
+    )
+    
+    by_sport = {}
+    for row in sport_books_result.all():
+        sport_id = row[0]
+        sport_key = SPORT_ID_TO_KEY.get(sport_id, f"unknown_{sport_id}")
+        if sport_key not in by_sport:
+            by_sport[sport_key] = {"sport_id": sport_id, "books": []}
+        by_sport[sport_key]["books"].append({
+            "sportsbook": row[1],
+            "line_count": row[2],
+        })
+    
+    total_books = len(sportsbooks)
+    
+    return {
+        "status": "ok" if total_books > 1 else "warning",
+        "total_unique_sportsbooks": total_books,
+        "sportsbooks": sportsbooks,
+        "by_sport": by_sport,
+        "notes": [
+            "Expected: 5+ sportsbooks (DraftKings, FanDuel, BetMGM, Caesars, PointsBet)",
+            "If only 1 sportsbook: data was synced before multi-book stub fix",
+            "Fix: Call /admin/jobs/force-refresh?sport=basketball_nba to re-sync",
+        ] if total_books <= 1 else [
+            f"Found {total_books} sportsbooks - multi-book data is working correctly",
+        ]
+    }
+
+
 @router.get("/verify/players-by-sport")
 async def verify_players_by_sport(
     db: AsyncSession = Depends(get_db),
