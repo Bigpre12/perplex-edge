@@ -13,6 +13,7 @@ export { BacktestTab } from './BacktestTab';
 export { TonightDashboard } from './TonightDashboard';
 export { LiveEVFeed } from './LiveEVFeed';
 export { ModelPerformance } from './ModelPerformance';
+export { AdminDashboard } from './AdminDashboard';
 
 // UI components
 export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';

@@ -1777,3 +1777,38 @@ export function useOddsHealth(sportId?: number) {
     refetchInterval: 60 * 1000, // Refetch every minute
   });
 }
+
+// =============================================================================
+// Admin Dashboard API
+// =============================================================================
+
+export type SportHealthStatus = 'ok' | 'warn' | 'error';
+
+export interface SportHealth {
+  sport_id: number;
+  sport_key: string;
+  game_count: number;
+  prop_count: number;
+  book_count: number;
+  last_update: string | null;
+  status: SportHealthStatus;
+  issues: string[];
+}
+
+export interface AdminDashboardResponse {
+  now: string;
+  sports: SportHealth[];
+}
+
+export async function fetchAdminDashboard(): Promise<AdminDashboardResponse> {
+  return fetchJson<AdminDashboardResponse>(`${API_BASE_URL}/admin/dashboard/summary`);
+}
+
+export function useAdminDashboard() {
+  return useQuery({
+    queryKey: ['admin-dashboard'],
+    queryFn: fetchAdminDashboard,
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // Auto-refresh every minute
+  });
+}

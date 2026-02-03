@@ -11,6 +11,7 @@ import {
   BacktestTab,
   LiveEVFeed,
   ModelPerformance,
+  AdminDashboard,
 } from './components'
 import { HundredPercentTab } from './components/HundredPercentTab'
 import { ParlayBuilder } from './components/ParlayBuilder'
@@ -30,6 +31,7 @@ const TABS = [
   { id: 'analytics', label: '📊 Analytics' },
   { id: 'backtest', label: '🔬 Backtest' },
   { id: 'stats', label: 'Stats' },
+  { id: 'admin', label: '⚙️ Admin' },
 ]
 
 // Loading spinner component
@@ -108,6 +110,8 @@ function AppContent() {
         return <BacktestTab />;
       case 'stats':
         return <StatsDashboard />;
+      case 'admin':
+        return <AdminDashboard />;
       default:
         return <MultiSportSlate />;
     }
