@@ -88,6 +88,23 @@ export const DEFAULT_PLAYER_PROPS_FILTERS = {
   hideStaleLines: true,
 };
 
+// Sport-specific filter overrides (looser thresholds for sports with less data or off-season)
+// These override DEFAULT_PLAYER_PROPS_FILTERS when the sport is selected
+export const SPORT_FILTER_OVERRIDES: Record<number, Partial<typeof DEFAULT_PLAYER_PROPS_FILTERS>> = {
+  42: { minConfidence: 0.50, minEv: 0.02 }, // ATP Tennis - less data available
+  43: { minConfidence: 0.50, minEv: 0.02 }, // WTA Tennis - less data available
+  41: { minConfidence: 0.50, minEv: 0.02 }, // NCAAF - off-season/limited slate
+  33: { minConfidence: 0.50, minEv: 0.02 }, // NCAAB - varies by season
+};
+
+// Helper to get effective filters for a sport
+export function getFiltersForSport(sportId: number | null): typeof DEFAULT_PLAYER_PROPS_FILTERS {
+  if (sportId === null) return DEFAULT_PLAYER_PROPS_FILTERS;
+  const overrides = SPORT_FILTER_OVERRIDES[sportId];
+  if (!overrides) return DEFAULT_PLAYER_PROPS_FILTERS;
+  return { ...DEFAULT_PLAYER_PROPS_FILTERS, ...overrides };
+}
+
 export const DEFAULT_100PCT_FILTERS = {
   window: 'last_5',
   limit: 50,

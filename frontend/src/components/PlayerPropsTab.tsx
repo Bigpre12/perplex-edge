@@ -8,6 +8,29 @@ import { QUICK_START_PRESETS, DEFAULT_PLAYER_PROPS_FILTERS, METRIC_EXPLAINERS, Q
 import { formatPicksForClipboard, copyToClipboard } from '../utils/clipboard';
 
 // ============================================================================
+// Sport-Specific Empty State Messages
+// ============================================================================
+
+const SPORT_EMPTY_MESSAGES: Record<number, { icon: string; title: string; subtitle: string }> = {
+  30: { icon: '🏀', title: 'No NBA picks available', subtitle: 'Check back closer to game time' },
+  31: { icon: '🏈', title: 'No NFL slate today', subtitle: 'Games typically Thursday-Monday' },
+  32: { icon: '🏀', title: 'No NCAAB picks available', subtitle: 'Check back closer to game time' },
+  33: { icon: '🏈', title: 'NCAAF off-season', subtitle: 'College football returns in August' },
+  40: { icon: '⚾', title: 'No MLB picks available', subtitle: 'Check back closer to game time' },
+  41: { icon: '🏈', title: 'NCAAF off-season', subtitle: 'College football returns in August' },
+  42: { icon: '🎾', title: 'Awaiting ATP odds', subtitle: 'Tournament matches load closer to start' },
+  43: { icon: '🎾', title: 'Awaiting WTA odds', subtitle: 'Tournament matches load closer to start' },
+  44: { icon: '🏒', title: 'No NHL picks available', subtitle: 'Check back closer to game time' },
+};
+
+function getSportEmptyMessage(sportId: number | null): { icon: string; title: string; subtitle: string } {
+  if (sportId === null) {
+    return { icon: '🔍', title: 'No picks match your filters', subtitle: 'Try adjusting filters or select a sport' };
+  }
+  return SPORT_EMPTY_MESSAGES[sportId] || { icon: '🔍', title: 'No picks available', subtitle: 'Check back closer to game time' };
+}
+
+// ============================================================================
 // Confidence Tier Helpers
 // ============================================================================
 
@@ -1196,50 +1219,61 @@ export function PlayerPropsTab() {
         </div>
       )}
 
-      {/* Empty State */}
-      {data && data.items.length === 0 && (
-        <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
-          <div className="text-4xl mb-3">
-            {availability?.status?.is_active === false ? '📅' : '🔍'}
-          </div>
-          <p className="text-gray-400 text-lg">
-            {availability?.status?.is_active === false
-              ? availability.status.message
-              : 'No picks match your filters'}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            {availability?.status?.is_active === false ? (
-              <>
-                {availability.status.next_action}
-                {availability.tennis_note && (
-                  <span className="block mt-1 text-yellow-500">{availability.tennis_note}</span>
-                )}
-              </>
-            ) : rawData && rawData.total > 0 ? (
-              `${rawData.total} picks available but hidden by current filters`
-            ) : availability?.data_reason ? (
-              availability.data_reason
-            ) : (
-              'No picks available for this sport right now'
-            )}
-          </p>
-          {rawData && rawData.total > 0 && (
-            <button
-              onClick={resetFiltersToDefault}
-              className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
-            >
-              Reset All Filters
-            </button>
-          )}
-          {/* Show data counts for debugging */}
-          {availability && (
-            <div className="mt-4 text-xs text-gray-600">
-              Games today: {availability.data_counts?.games_today ?? 0} | 
-              Total picks: {availability.data_counts?.total_picks ?? 0}
+      {/* Empty State - Sport-specific messages for better UX */}
+      {data && data.items.length === 0 && (() => {
+        const sportEmptyMsg = getSportEmptyMessage(sportId);
+        const hasFiltersApplied = rawData && rawData.total > 0;
+        
+        return (
+          <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
+            <div className="text-4xl mb-3">
+              {availability?.status?.is_active === false 
+                ? '📅' 
+                : hasFiltersApplied 
+                  ? '🔍' 
+                  : sportEmptyMsg.icon}
             </div>
-          )}
-        </div>
-      )}
+            <p className="text-gray-400 text-lg">
+              {availability?.status?.is_active === false
+                ? availability.status.message
+                : hasFiltersApplied
+                  ? 'No picks match your filters'
+                  : sportEmptyMsg.title}
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              {availability?.status?.is_active === false ? (
+                <>
+                  {availability.status.next_action}
+                  {availability.tennis_note && (
+                    <span className="block mt-1 text-yellow-500">{availability.tennis_note}</span>
+                  )}
+                </>
+              ) : hasFiltersApplied ? (
+                `${rawData.total} picks available but hidden by current filters`
+              ) : availability?.data_reason ? (
+                availability.data_reason
+              ) : (
+                sportEmptyMsg.subtitle
+              )}
+            </p>
+            {hasFiltersApplied && (
+              <button
+                onClick={resetFiltersToDefault}
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+              >
+                Reset All Filters
+              </button>
+            )}
+            {/* Show data counts for debugging */}
+            {availability && (
+              <div className="mt-4 text-xs text-gray-600">
+                Games today: {availability.data_counts?.games_today ?? 0} | 
+                Total picks: {availability.data_counts?.total_picks ?? 0}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

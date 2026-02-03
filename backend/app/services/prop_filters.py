@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 # Maximum age for odds to be considered fresh
-STALE_ODDS_MAX_AGE = timedelta(minutes=30)
+# Tightened from 30min to 5min to ensure users see fresh lines only
+STALE_ODDS_MAX_AGE = timedelta(minutes=5)
 
 # Maximum age for picks to be considered fresh
 STALE_PICK_MAX_AGE = timedelta(hours=24)
@@ -188,19 +189,24 @@ def _get_default_prop_key(prop) -> tuple:
     """
     Get the default deduplication key for a prop.
     
-    Key is (player_id, stat_type, line_value).
+    Key is (sport_id, game_id, player_id, stat_type, line_value).
+    Including sport_id and game_id ensures canonical uniqueness across sports.
     """
     # Handle both dict and object access
     if isinstance(prop, dict):
+        sport_id = prop.get("sport_id")
+        game_id = prop.get("game_id")
         player_id = prop.get("player_id")
         stat_type = prop.get("stat_type")
         line_value = prop.get("line_value") or prop.get("line")
     else:
+        sport_id = getattr(prop, "sport_id", None)
+        game_id = getattr(prop, "game_id", None)
         player_id = getattr(prop, "player_id", None)
         stat_type = getattr(prop, "stat_type", None)
         line_value = getattr(prop, "line_value", None) or getattr(prop, "line", None)
     
-    return (player_id, stat_type, line_value)
+    return (sport_id, game_id, player_id, stat_type, line_value)
 
 
 def _get_prop_ev(prop) -> float:

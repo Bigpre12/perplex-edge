@@ -326,6 +326,20 @@ async def api_health():
     return {"status": "ok", "api": True}
 
 
+@app.post("/api/admin/cache-bust")
+async def cache_bust():
+    """
+    Invalidate all caches on deploy.
+    
+    Call this endpoint from Railway deploy hooks to ensure
+    users see fresh data after each deployment.
+    """
+    from app.services.memory_cache import cache
+    count = cache.clear()
+    logger.info("cache_bust_triggered", entries_cleared=count)
+    return {"status": "ok", "message": "All caches cleared", "entries_cleared": count}
+
+
 @app.get("/api/scheduler/status")
 async def scheduler_status():
     """Get scheduler status and running tasks."""

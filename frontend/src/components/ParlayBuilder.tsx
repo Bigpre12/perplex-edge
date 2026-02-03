@@ -335,8 +335,19 @@ function ParlayCard({ parlay, index, siteMode, entryType, platformPayout, onSele
     setQuoteLoading(true);
     setQuoteError(null);
     try {
+      // Filter out legs with null IDs (shouldn't happen but handle gracefully)
+      const validLegs = parlay.legs.filter(
+        (leg): leg is typeof leg & { game_id: number; player_id: number } =>
+          leg.game_id !== null && leg.player_id !== null
+      );
+      
+      if (validLegs.length === 0) {
+        setQuoteError('No valid legs to quote');
+        return;
+      }
+      
       const request = {
-        legs: parlay.legs.map(leg => ({
+        legs: validLegs.map(leg => ({
           game_id: leg.game_id,
           player_id: leg.player_id,
           stat_type: leg.stat_type,
