@@ -64,6 +64,39 @@ SEASON_WINDOWS = {
         "us_open": (8, 9),
         "offseason": (11, 12),
     },
+    "basketball_wnba": {
+        "regular_season": (5, 9),   # May to September
+        "playoffs": (9, 10),        # September to October
+        "offseason": (11, 4),       # November to April
+    },
+    "golf_pga_tour": {
+        # Golf is year-round with majors spread throughout
+        "season_start": (1, 1),     # Sentry Tournament of Champions
+        "masters": (4, 4),          # Masters in April
+        "pga_championship": (5, 5), # PGA Championship in May
+        "us_open": (6, 6),          # US Open in June
+        "open_championship": (7, 7), # The Open in July
+        "fedex_cup": (8, 9),        # FedEx Cup playoffs Aug-Sept
+        "offseason": (12, 12),      # Brief offseason
+    },
+    "soccer_epl": {
+        "regular_season": (8, 5),   # August to May
+        "offseason": (6, 7),        # June to July
+    },
+    "soccer_uefa_champs_league": {
+        "group_stage": (9, 12),     # September to December
+        "knockout": (2, 6),         # February to June
+        "offseason": (7, 8),        # Summer break
+    },
+    "soccer_usa_mls": {
+        "regular_season": (2, 10),  # February to October
+        "playoffs": (10, 12),       # October to December
+        "offseason": (12, 2),       # Brief winter break
+    },
+    "mma_mixed_martial_arts": {
+        # UFC has events year-round, no true offseason
+        "active": (1, 12),          # Year-round events
+    },
 }
 
 
@@ -195,12 +228,18 @@ def _get_phase_message(sport_key: str, phase: str) -> str:
     sport_names = {
         "basketball_nba": "NBA",
         "basketball_ncaab": "College Basketball",
+        "basketball_wnba": "WNBA",
         "americanfootball_nfl": "NFL",
         "americanfootball_ncaaf": "College Football",
         "baseball_mlb": "MLB",
         "icehockey_nhl": "NHL",
         "tennis_atp": "ATP Tennis",
         "tennis_wta": "WTA Tennis",
+        "golf_pga_tour": "PGA Tour",
+        "soccer_epl": "English Premier League",
+        "soccer_uefa_champs_league": "UEFA Champions League",
+        "soccer_usa_mls": "MLS",
+        "mma_mixed_martial_arts": "UFC",
     }
     
     sport_name = sport_names.get(sport_key, sport_key)
@@ -216,6 +255,13 @@ def _get_phase_message(sport_key: str, phase: str) -> str:
         "clay_season": f"{sport_name} clay court season",
         "grass_season": f"{sport_name} grass court season",
         "us_open": f"{sport_name} US Open season",
+        "masters": f"{sport_name} Masters week",
+        "pga_championship": f"{sport_name} PGA Championship",
+        "open_championship": f"{sport_name} The Open Championship",
+        "fedex_cup": f"{sport_name} FedEx Cup playoffs",
+        "group_stage": f"{sport_name} group stage",
+        "knockout": f"{sport_name} knockout rounds",
+        "active": f"{sport_name} events ongoing",
     }
     
     return messages.get(phase, f"{sport_name} {phase}")
@@ -226,12 +272,18 @@ def _get_next_action(sport_key: str, phase: str, current_month: int) -> str:
     resumption = {
         "basketball_nba": "NBA season resumes in October",
         "basketball_ncaab": "College basketball resumes in November",
+        "basketball_wnba": "WNBA season begins in May",
         "americanfootball_nfl": "NFL preseason begins in August",
         "americanfootball_ncaaf": "College football resumes in August",
         "baseball_mlb": "MLB spring training begins in February",
         "icehockey_nhl": "NHL season resumes in October",
         "tennis_atp": "Check for upcoming tournaments",
         "tennis_wta": "Check for upcoming tournaments",
+        "golf_pga_tour": "PGA Tour events resume in January",
+        "soccer_epl": "EPL season begins in August",
+        "soccer_uefa_champs_league": "UCL group stage begins in September",
+        "soccer_usa_mls": "MLS season begins in February",
+        "mma_mixed_martial_arts": "UFC events happen year-round",
     }
     
     return resumption.get(sport_key, "Check back later for updates")
@@ -245,14 +297,28 @@ def is_sport_active(sport_key: str) -> bool:
 def get_all_sport_statuses() -> dict[str, dict]:
     """Get status for all supported sports."""
     sports = [
+        # Basketball
         "basketball_nba",
-        "basketball_ncaab", 
+        "basketball_ncaab",
+        "basketball_wnba",
+        # Football
         "americanfootball_nfl",
         "americanfootball_ncaaf",
+        # Baseball
         "baseball_mlb",
+        # Hockey
         "icehockey_nhl",
+        # Tennis
         "tennis_atp",
         "tennis_wta",
+        # Golf
+        "golf_pga_tour",
+        # Soccer
+        "soccer_epl",
+        "soccer_uefa_champs_league",
+        "soccer_usa_mls",
+        # MMA
+        "mma_mixed_martial_arts",
     ]
     
     return {sport: get_sport_status(sport) for sport in sports}

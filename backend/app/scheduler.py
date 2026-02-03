@@ -27,14 +27,28 @@ _background_tasks: List[asyncio.Task] = []
 # =============================================================================
 
 SPORT_KEYS = [
+    # Basketball
     "basketball_nba",
     "basketball_ncaab",
+    "basketball_wnba",
+    # Football
     "americanfootball_nfl",
     "americanfootball_ncaaf",
+    # Baseball
     "baseball_mlb",
+    # Hockey
     "icehockey_nhl",
+    # Tennis
     "tennis_atp",
     "tennis_wta",
+    # Golf
+    "golf_pga_tour",
+    # Soccer
+    "soccer_epl",
+    "soccer_uefa_champs_league",
+    "soccer_usa_mls",
+    # MMA/UFC
+    "mma_mixed_martial_arts",
 ]
 
 # =============================================================================

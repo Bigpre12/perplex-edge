@@ -242,3 +242,157 @@ tennis_wta:
   confidence:
     min_model_probability: 0.55
     high_confidence: 0.62
+
+# =============================================================================
+# WNBA Configuration
+# =============================================================================
+wnba:
+  season: "2026"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 10
+    long: 15
+  
+  thresholds:
+    points: 0.04
+    rebounds: 0.05
+    assists: 0.06
+    threes: 0.07
+    steals: 0.08
+    blocks: 0.08
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.62
+    
+  matching:
+    fuzzy_threshold: 0.85
+
+# =============================================================================
+# Golf Configuration (PGA Tour)
+# =============================================================================
+golf_pga_tour:
+  season: "2026"
+  
+  # Golf uses tournaments, not games windows
+  tournaments_windows:
+    short: 3   # Recent 3 tournaments
+    default: 5
+    medium: 10
+    long: 20
+  
+  thresholds:
+    make_cut: 0.04
+    top_20: 0.05
+    top_10: 0.06
+    top_5: 0.07
+    win: 0.10
+    first_round_leader: 0.08
+    matchup: 0.04
+  
+  confidence:
+    min_model_probability: 0.52
+    high_confidence: 0.60
+    
+  matching:
+    fuzzy_threshold: 0.90  # Golfer names are usually consistent
+
+# =============================================================================
+# Soccer Configuration (EPL, UCL, MLS)
+# =============================================================================
+soccer_epl:
+  season: "2025-26"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 10
+    long: 20
+  
+  thresholds:
+    anytime_goal: 0.05
+    shots: 0.04
+    shots_on_target: 0.05
+    fouls: 0.06
+    tackles: 0.06
+    passes: 0.05
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.62
+    
+  matching:
+    fuzzy_threshold: 0.85
+
+soccer_uefa_champs_league:
+  season: "2025-26"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 10
+    long: 20
+  
+  thresholds:
+    anytime_goal: 0.05
+    shots: 0.04
+    shots_on_target: 0.05
+    fouls: 0.06
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.60
+    
+  matching:
+    fuzzy_threshold: 0.85
+
+soccer_usa_mls:
+  season: "2026"
+  
+  games_windows:
+    short: 3
+    default: 5
+    medium: 10
+    long: 20
+  
+  thresholds:
+    anytime_goal: 0.05
+    shots: 0.04
+    shots_on_target: 0.05
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.60
+    
+  matching:
+    fuzzy_threshold: 0.85
+
+# =============================================================================
+# MMA/UFC Configuration
+# =============================================================================
+mma_mixed_martial_arts:
+  season: "2026"
+  
+  # MMA uses fight cards, not traditional seasons
+  fights_windows:
+    short: 3   # Recent 3 fights
+    default: 5
+    medium: 8
+    long: 12
+  
+  thresholds:
+    winner: 0.04
+    method: 0.06
+    total_rounds: 0.05
+    significant_strikes: 0.06
+    takedowns: 0.06
+    goes_distance: 0.05
+  
+  confidence:
+    min_model_probability: 0.55
+    high_confidence: 0.60
+    
+  matching:
+    fuzzy_threshold: 0.85

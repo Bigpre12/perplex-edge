@@ -496,6 +496,29 @@ PROP_MAPPINGS = {
     "player_blocked_shots": "BLK_SHOTS",
     "player_power_play_points": "PPP",
     "player_penalty_minutes": "PIM",
+    # Golf props
+    "golfer_finish_position": "FINISH_POS",
+    "golfer_make_cut": "MAKE_CUT",
+    "golfer_top_5": "TOP_5",
+    "golfer_top_10": "TOP_10",
+    "golfer_top_20": "TOP_20",
+    "golfer_first_round_leader": "FRL",
+    "golfer_matchup": "MATCHUP",
+    # Soccer props
+    "player_anytime_goalscorer": "ANYTIME_GOAL",
+    "player_shots": "SHOTS",
+    "player_shots_on_target": "SOT",
+    "player_fouls_committed": "FOULS",
+    "player_cards": "CARDS",
+    "player_tackles": "TACKLES",
+    "player_passes": "PASSES",
+    # MMA/UFC props
+    "fighter_to_win": "WINNER",
+    "fight_method": "METHOD",
+    "fight_total_rounds": "TOTAL_ROUNDS",
+    "fighter_significant_strikes": "SIG_STRIKES",
+    "fighter_takedowns": "TAKEDOWNS",
+    "fight_goes_distance": "GOES_DISTANCE",
 }
 
 
