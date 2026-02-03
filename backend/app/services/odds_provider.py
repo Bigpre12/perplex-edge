@@ -490,6 +490,12 @@ PROP_MAPPINGS = {
     "player_games_won": "GAMES",
     "player_sets_won": "SETS",
     "player_total_games": "TOTAL_GAMES",
+    # NHL props
+    "player_goals": "GOALS",
+    "player_shots_on_goal": "SOG",
+    "player_blocked_shots": "BLK_SHOTS",
+    "player_power_play_points": "PPP",
+    "player_penalty_minutes": "PIM",
 }
 
 
@@ -1186,12 +1192,113 @@ class XYZOddsProvider(OddsProvider):
                                 {"name": p1_name, "price": p1_odds},
                                 {"name": p2_name, "price": p2_odds}
                             ]}]
-                        }
+                        },
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": p1_name, "price": p1_odds - 5},
+                                {"name": p2_name, "price": p2_odds + 5}
+                            ]}]
+                        },
+                        {
+                            "key": "betmgm",
+                            "title": "BetMGM",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": p1_name, "price": p1_odds + 3},
+                                {"name": p2_name, "price": p2_odds - 3}
+                            ]}]
+                        },
                     ],
                 })
             
             logger.info(f"Generated {len(matches)} stub tennis matches for {sport_key} ({tournament})")
             return matches
+        
+        # Handle NHL - generate dynamic games
+        if sport_key == "icehockey_nhl":
+            times = _get_stub_game_times()
+            
+            # NHL teams with power ratings (2025-26 season)
+            # Top teams get negative odds when home, weaker teams get positive
+            nhl_matchups = [
+                # Game 1: Colorado at Minnesota
+                {
+                    "home": ("Minnesota Wild", -130),
+                    "away": ("Colorado Avalanche", +110),
+                    "time": times["early"],
+                },
+                # Game 2: Boston at Toronto
+                {
+                    "home": ("Toronto Maple Leafs", -145),
+                    "away": ("Boston Bruins", +125),
+                    "time": times["early"],
+                },
+                # Game 3: Vegas at Edmonton
+                {
+                    "home": ("Edmonton Oilers", -120),
+                    "away": ("Vegas Golden Knights", +100),
+                    "time": times["night"],
+                },
+                # Game 4: Rangers at Hurricanes
+                {
+                    "home": ("Carolina Hurricanes", -135),
+                    "away": ("New York Rangers", +115),
+                    "time": times["night"],
+                },
+                # Game 5: Tampa at Florida
+                {
+                    "home": ("Florida Panthers", -150),
+                    "away": ("Tampa Bay Lightning", +130),
+                    "time": times["late"],
+                },
+                # Game 6: Dallas at Winnipeg
+                {
+                    "home": ("Winnipeg Jets", -140),
+                    "away": ("Dallas Stars", +120),
+                    "time": times["late"],
+                },
+            ]
+            
+            games = []
+            for idx, matchup in enumerate(nhl_matchups):
+                home_team, home_ml = matchup["home"]
+                away_team, away_ml = matchup["away"]
+                
+                # Create game ID
+                home_abbr = home_team.split()[-1][:3].lower()
+                away_abbr = away_team.split()[-1][:3].lower()
+                game_id = f"nhl_{away_abbr}_{home_abbr}_{today_str.replace('-', '')}"
+                
+                games.append({
+                    "id": game_id,
+                    "sport_key": sport_key,
+                    "sport_title": "NHL",
+                    "commence_time": matchup["time"],
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": home_team, "price": home_ml},
+                                {"name": away_team, "price": away_ml}
+                            ]}]
+                        },
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": home_team, "price": home_ml - 5},
+                                {"name": away_team, "price": away_ml + 5}
+                            ]}]
+                        },
+                    ],
+                })
+            
+            logger.info(f"Generated {len(games)} stub NHL games for {sport_key}")
+            return games
         
         # Load schedule for NBA/NCAAB
         schedule = self._load_season_schedule(sport_key)
@@ -1993,6 +2100,8 @@ class XYZOddsProvider(OddsProvider):
                 return self._generate_dynamic_tennis_props(external_game_id, sport_key, times)
             elif "baseball" in sport_key:
                 return self._generate_dynamic_mlb_props(external_game_id, sport_key, times)
+            elif sport_key == "icehockey_nhl":
+                return self._generate_dynamic_nhl_props(external_game_id, sport_key, times)
             else:
                 # Unknown sport - return empty
                 return {
@@ -2972,6 +3081,182 @@ class XYZOddsProvider(OddsProvider):
             "home_team": home_team,
             "away_team": away_team,
             "commence_time": times["afternoon"],
+            "bookmakers": bookmakers,
+        }
+
+    def _generate_dynamic_nhl_props(
+        self,
+        external_game_id: str,
+        sport_key: str,
+        times: dict[str, str],
+    ) -> dict[str, Any]:
+        """Generate dynamic NHL player props for any game."""
+        import random
+        
+        # NHL team rosters (2025-26 season stars)
+        NHL_ROSTERS = {
+            "Colorado Avalanche": [
+                ("Nathan MacKinnon", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Cale Makar", "D", {"goals": 0.5, "assists": 1.5, "points": 1.5, "shots": 3.5, "blocked": 2.5}),
+                ("Mikko Rantanen", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+            ],
+            "Minnesota Wild": [
+                ("Kirill Kaprizov", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Matt Boldy", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Joel Eriksson Ek", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 1.5}),
+            ],
+            "Toronto Maple Leafs": [
+                ("Auston Matthews", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 5.5, "blocked": 0.5}),
+                ("Mitch Marner", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("William Nylander", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+            ],
+            "Boston Bruins": [
+                ("David Pastrnak", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Brad Marchand", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Charlie McAvoy", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+            ],
+            "Edmonton Oilers": [
+                ("Connor McDavid", "C", {"goals": 0.5, "assists": 2.5, "points": 3.5, "shots": 4.5, "blocked": 0.5}),
+                ("Leon Draisaitl", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Evan Bouchard", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 1.5}),
+            ],
+            "Vegas Golden Knights": [
+                ("Jack Eichel", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Mark Stone", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 1.5}),
+                ("Shea Theodore", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+            ],
+            "Florida Panthers": [
+                ("Matthew Tkachuk", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Aleksander Barkov", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Sam Reinhart", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+            ],
+            "Carolina Hurricanes": [
+                ("Sebastian Aho", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Andrei Svechnikov", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Martin Necas", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+            ],
+            "New York Rangers": [
+                ("Artemi Panarin", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Adam Fox", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Mika Zibanejad", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+            ],
+            "Tampa Bay Lightning": [
+                ("Nikita Kucherov", "RW", {"goals": 0.5, "assists": 2.5, "points": 3.5, "shots": 4.5, "blocked": 0.5}),
+                ("Brayden Point", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+                ("Victor Hedman", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+            ],
+            "Winnipeg Jets": [
+                ("Kyle Connor", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Mark Scheifele", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Josh Morrissey", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+            ],
+            "Dallas Stars": [
+                ("Jason Robertson", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Roope Hintz", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Miro Heiskanen", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 2.5}),
+            ],
+        }
+        
+        DEFAULT_NHL_ROSTER = [
+            ("Star Forward", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+            ("Top Winger", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+            ("Elite Defenseman", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+        ]
+        
+        # Parse game ID to get teams (format: nhl_away_home_date)
+        parts = external_game_id.split("_")
+        home_team = "Home Team"
+        away_team = "Away Team"
+        
+        # Try to match team abbreviations
+        team_abbr_map = {
+            "ava": "Colorado Avalanche", "wil": "Minnesota Wild", "min": "Minnesota Wild",
+            "lea": "Toronto Maple Leafs", "tor": "Toronto Maple Leafs", "bru": "Boston Bruins", "bos": "Boston Bruins",
+            "oil": "Edmonton Oilers", "edm": "Edmonton Oilers", "kni": "Vegas Golden Knights", "vgk": "Vegas Golden Knights",
+            "pan": "Florida Panthers", "fla": "Florida Panthers", "hur": "Carolina Hurricanes", "car": "Carolina Hurricanes",
+            "ran": "New York Rangers", "nyr": "New York Rangers", "lig": "Tampa Bay Lightning", "tbl": "Tampa Bay Lightning",
+            "jet": "Winnipeg Jets", "wpg": "Winnipeg Jets", "sta": "Dallas Stars", "dal": "Dallas Stars",
+        }
+        
+        if len(parts) >= 3:
+            away_abbr = parts[1].lower()
+            home_abbr = parts[2].lower()
+            away_team = team_abbr_map.get(away_abbr, "Away Team")
+            home_team = team_abbr_map.get(home_abbr, "Home Team")
+        
+        # Get rosters
+        home_roster = NHL_ROSTERS.get(home_team, DEFAULT_NHL_ROSTER)
+        away_roster = NHL_ROSTERS.get(away_team, DEFAULT_NHL_ROSTER)
+        
+        # Build outcomes for props
+        goals_outcomes = []
+        assists_outcomes = []
+        points_outcomes = []
+        shots_outcomes = []
+        blocked_outcomes = []
+        
+        for team_roster, team_name in [(home_roster, home_team), (away_roster, away_team)]:
+            for player_name, position, stats in team_roster:
+                # Add some variance
+                goals_line = stats.get("goals", 0.5)
+                assists_line = stats.get("assists", 0.5)
+                points_line = stats.get("points", 1.5)
+                shots_line = stats.get("shots", 3.5)
+                blocked_line = stats.get("blocked", 0.5)
+                
+                goals_outcomes.extend([
+                    {"name": "Over", "description": player_name, "price": -115, "point": goals_line},
+                    {"name": "Under", "description": player_name, "price": -105, "point": goals_line},
+                ])
+                assists_outcomes.extend([
+                    {"name": "Over", "description": player_name, "price": -110, "point": assists_line},
+                    {"name": "Under", "description": player_name, "price": -110, "point": assists_line},
+                ])
+                points_outcomes.extend([
+                    {"name": "Over", "description": player_name, "price": -115, "point": points_line},
+                    {"name": "Under", "description": player_name, "price": -105, "point": points_line},
+                ])
+                shots_outcomes.extend([
+                    {"name": "Over", "description": player_name, "price": -110, "point": shots_line},
+                    {"name": "Under", "description": player_name, "price": -110, "point": shots_line},
+                ])
+                blocked_outcomes.extend([
+                    {"name": "Over", "description": player_name, "price": -110, "point": blocked_line},
+                    {"name": "Under", "description": player_name, "price": -110, "point": blocked_line},
+                ])
+        
+        # Generate multi-bookmaker props with varied odds
+        def vary_outcomes(outcomes: list, odds_offset: int) -> list:
+            return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
+        
+        bookmaker_configs = [
+            ("draftkings", "DraftKings", 0),
+            ("fanduel", "FanDuel", -2),
+            ("betmgm", "BetMGM", 2),
+            ("caesars", "Caesars", 1),
+            ("pointsbetus", "PointsBet US", -1),
+        ]
+        
+        bookmakers = []
+        for book_key, book_title, odds_offset in bookmaker_configs:
+            bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [
+                    {"key": "player_goals", "outcomes": vary_outcomes(goals_outcomes, odds_offset)},
+                    {"key": "player_assists", "outcomes": vary_outcomes(assists_outcomes, odds_offset)},
+                    {"key": "player_points", "outcomes": vary_outcomes(points_outcomes, odds_offset)},
+                    {"key": "player_shots_on_goal", "outcomes": vary_outcomes(shots_outcomes, odds_offset)},
+                    {"key": "player_blocked_shots", "outcomes": vary_outcomes(blocked_outcomes, odds_offset)},
+                ],
+            })
+        
+        return {
+            "id": external_game_id,
+            "sport_key": sport_key,
+            "home_team": home_team,
+            "away_team": away_team,
+            "commence_time": times["early"],
             "bookmakers": bookmakers,
         }
 

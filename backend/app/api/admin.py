@@ -52,7 +52,9 @@ AVAILABLE_SPORTS = [
     "basketball_nba",
     "basketball_ncaab",
     "americanfootball_nfl",
+    "americanfootball_ncaaf",
     "baseball_mlb",
+    "icehockey_nhl",
     "tennis_atp",
     "tennis_wta",
 ]
