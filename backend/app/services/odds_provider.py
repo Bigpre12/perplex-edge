@@ -975,21 +975,21 @@ class XYZOddsProvider(OddsProvider):
         if sport_key == "americanfootball_nfl":
             times = _get_stub_game_times()
             return [
-                # SUPER BOWL LX - February 8, 2026
+                # SUPER BOWL LX - February 9, 2026 (Chiefs vs Eagles)
                 {
                     "id": "nfl_superbowl_lx",
                     "sport_key": sport_key,
                     "sport_title": "NFL",
                     "commence_time": times["night"],
-                    "home_team": "Seattle Seahawks",
-                    "away_team": "New England Patriots",
+                    "home_team": "Kansas City Chiefs",
+                    "away_team": "Philadelphia Eagles",
                     "bookmakers": [
                         {
                             "key": "draftkings",
                             "title": "DraftKings",
                             "markets": [{"key": "h2h", "outcomes": [
-                                {"name": "Seattle Seahawks", "price": -120},
-                                {"name": "New England Patriots", "price": 100}
+                                {"name": "Kansas City Chiefs", "price": -135},
+                                {"name": "Philadelphia Eagles", "price": 115}
                             ]}]
                         }
                     ],
@@ -1812,12 +1812,12 @@ class XYZOddsProvider(OddsProvider):
                 "away_team": "New England Patriots",
                 "commence_time": times["night"],
                 "players": [
-                    # Seattle Seahawks
+                    # Seattle Seahawks (DK Metcalf traded to Steelers)
                     {"name": "Geno Smith", "pass_yds": 265.5, "pass_tds": 2.5, "pass_att": 34.5, "pass_comp": 23.5, "int": 0.5, "rush_yds": 18.5, "rush_att": 4.5},
                     {"name": "Kenneth Walker III", "rush_yds": 78.5, "rush_att": 17.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 22.5},
-                    {"name": "DK Metcalf", "rec": 5.5, "rec_yds": 72.5, "rec_tds": 0.5, "targets": 8.5},
-                    {"name": "Tyler Lockett", "rec": 4.5, "rec_yds": 55.5, "rec_tds": 0.5, "targets": 6.5},
-                    {"name": "Jaxon Smith-Njigba", "rec": 5.5, "rec_yds": 58.5, "rec_tds": 0.5, "targets": 7.5},
+                    {"name": "Tyler Lockett", "rec": 5.5, "rec_yds": 65.5, "rec_tds": 0.5, "targets": 8.5},
+                    {"name": "Jaxon Smith-Njigba", "rec": 6.5, "rec_yds": 72.5, "rec_tds": 0.5, "targets": 9.5},
+                    {"name": "Noah Fant", "rec": 4.5, "rec_yds": 42.5, "rec_tds": 0.5, "targets": 6.5},
                     # New England Patriots
                     {"name": "Drake Maye", "pass_yds": 245.5, "pass_tds": 1.5, "pass_att": 32.5, "pass_comp": 20.5, "int": 1.0, "rush_yds": 22.5, "rush_att": 5.5},
                     {"name": "Rhamondre Stevenson", "rush_yds": 72.5, "rush_att": 16.5, "rush_tds": 0.5, "rec": 3.5, "rec_yds": 18.5},
@@ -2969,11 +2969,11 @@ NFL_ROSTERS = {
     "Miami Dolphins": ["Tua Tagovailoa", "Tyreek Hill", "Jaylen Waddle", "De'Von Achane", "Raheem Mostert"],
     "Cincinnati Bengals": ["Joe Burrow", "Ja'Marr Chase", "Tee Higgins", "Zack Moss", "Mike Gesicki"],
     "Green Bay Packers": ["Jordan Love", "Josh Jacobs", "Jayden Reed", "Christian Watson", "Romeo Doubs"],
-    "Seattle Seahawks": ["Geno Smith", "Kenneth Walker III", "DK Metcalf", "Tyler Lockett", "Jaxon Smith-Njigba"],
+    "Seattle Seahawks": ["Geno Smith", "Kenneth Walker III", "Tyler Lockett", "Jaxon Smith-Njigba", "Noah Fant"],
     "Los Angeles Rams": ["Matthew Stafford", "Kyren Williams", "Puka Nacua", "Cooper Kupp", "Tutu Atwell"],
     "Minnesota Vikings": ["Sam Darnold", "Aaron Jones", "Justin Jefferson", "Jordan Addison", "TJ Hockenson"],
     "Houston Texans": ["CJ Stroud", "Joe Mixon", "Nico Collins", "Tank Dell", "Stefon Diggs"],
-    "Pittsburgh Steelers": ["Russell Wilson", "Najee Harris", "George Pickens", "Pat Freiermuth", "Calvin Austin"],
+    "Pittsburgh Steelers": ["Russell Wilson", "Najee Harris", "George Pickens", "DK Metcalf", "Pat Freiermuth"],
     "Los Angeles Chargers": ["Justin Herbert", "JK Dobbins", "Keenan Allen", "Quentin Johnston", "Joshua Palmer"],
     "Tampa Bay Buccaneers": ["Baker Mayfield", "Rachaad White", "Mike Evans", "Chris Godwin", "Cade Otton"],
     "New Orleans Saints": ["Derek Carr", "Alvin Kamara", "Chris Olave", "Rashid Shaheed", "Juwan Johnson"],
