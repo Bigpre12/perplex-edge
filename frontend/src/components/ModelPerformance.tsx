@@ -10,7 +10,7 @@ import { useCalibrationReport, useAnalyticsDashboard, CalibrationBucket } from '
 import { useSportContext } from '../context/SportContext';
 import { METRIC_EXPLAINERS } from '../constants/presets';
 
-// Map sport IDs to API keys
+// Map sport IDs to API keys (full keys for calibration endpoint)
 const SPORT_API_KEYS: Record<number, string> = {
   30: 'basketball_nba',
   31: 'americanfootball_nfl',
@@ -19,9 +19,10 @@ const SPORT_API_KEYS: Record<number, string> = {
   41: 'americanfootball_ncaaf',
   42: 'tennis_atp',
   43: 'tennis_wta',
-  44: 'icehockey_nhl',
+  53: 'icehockey_nhl',  // NHL uses sport_id 53 in database
 };
 
+// Map sport IDs to short names (for analytics dashboard endpoint)
 const SPORT_SHORT_NAMES: Record<number, string> = {
   30: 'nba',
   31: 'nfl',
@@ -30,13 +31,14 @@ const SPORT_SHORT_NAMES: Record<number, string> = {
   41: 'ncaaf',
   42: 'atp',
   43: 'wta',
-  44: 'nhl',
+  53: 'nhl',  // NHL uses sport_id 53 in database
 };
 
 // Calibration bucket bar component
 function CalibrationBar({ bucket }: { bucket: CalibrationBucket }) {
-  const predictedPercent = bucket.predicted_mid * 100;
-  const actualPercent = bucket.actual_hit_rate * 100;
+  // Safely handle null/undefined values
+  const predictedPercent = (bucket.predicted_mid ?? 0) * 100;
+  const actualPercent = (bucket.actual_hit_rate ?? 0) * 100;
   const error = Math.abs(predictedPercent - actualPercent);
   
   // Color based on calibration error
@@ -44,7 +46,7 @@ function CalibrationBar({ bucket }: { bucket: CalibrationBucket }) {
   
   return (
     <div className="flex items-center gap-3 py-2">
-      <div className="w-20 text-xs text-gray-400">{bucket.bucket_name}</div>
+      <div className="w-20 text-xs text-gray-400">{bucket.bucket_name ?? '—'}</div>
       <div className="flex-1 relative">
         {/* Background bar */}
         <div className="h-6 bg-gray-700 rounded-full overflow-hidden relative">
@@ -67,7 +69,7 @@ function CalibrationBar({ bucket }: { bucket: CalibrationBucket }) {
         </span>
       </div>
       <div className="w-12 text-right text-xs text-gray-500">
-        n={bucket.sample_size}
+        n={bucket.sample_size ?? 0}
       </div>
     </div>
   );
@@ -111,9 +113,10 @@ export function ModelPerformance() {
   
   // Fetch data
   const { data: calibration, isLoading: calibrationLoading, error: calibrationError } = useCalibrationReport(sportApiKey, days);
-  const { data: analytics, isLoading: analyticsLoading } = useAnalyticsDashboard(sportKey, days);
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useAnalyticsDashboard(sportKey, days);
   
   const isLoading = sportLoading || calibrationLoading || analyticsLoading;
+  const hasError = calibrationError || analyticsError;
   
   if (sportLoading || !sportId) {
     return (
@@ -164,11 +167,13 @@ export function ModelPerformance() {
       )}
       
       {/* Error state */}
-      {calibrationError && !isLoading && (
+      {hasError && !isLoading && (
         <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4 text-yellow-400">
           <div className="font-medium mb-1">Limited data available</div>
           <div className="text-sm text-yellow-400/70">
-            Not enough settled picks yet to show calibration metrics. Keep betting!
+            {analyticsError 
+              ? 'No analytics data available for this sport yet.'
+              : 'Not enough settled picks yet to show calibration metrics. Keep betting!'}
           </div>
         </div>
       )}
@@ -180,39 +185,45 @@ export function ModelPerformance() {
             <>
               <MetricCard 
                 label="Total Picks"
-                value={calibration.total_picks}
+                value={calibration.total_picks ?? 0}
                 subtext={`Last ${days} days`}
               />
               <MetricCard 
                 label="Overall Hit Rate"
-                value={`${(calibration.overall_hit_rate * 100).toFixed(1)}%`}
-                color={calibration.overall_hit_rate >= 0.52 ? 'text-green-400' : 'text-red-400'}
+                value={calibration.overall_hit_rate != null 
+                  ? `${(calibration.overall_hit_rate * 100).toFixed(1)}%` 
+                  : '—'}
+                color={calibration.overall_hit_rate != null && calibration.overall_hit_rate >= 0.52 ? 'text-green-400' : 'text-red-400'}
                 tooltip="Percentage of picks that won"
               />
               <MetricCard 
                 label="ROI"
-                value={`${calibration.overall_roi > 0 ? '+' : ''}${calibration.overall_roi.toFixed(1)}%`}
-                color={calibration.overall_roi > 0 ? 'text-green-400' : 'text-red-400'}
+                value={calibration.overall_roi != null 
+                  ? `${calibration.overall_roi > 0 ? '+' : ''}${calibration.overall_roi.toFixed(1)}%` 
+                  : '—'}
+                color={calibration.overall_roi != null && calibration.overall_roi > 0 ? 'text-green-400' : 'text-red-400'}
                 tooltip="Return on investment from all picks"
               />
               <MetricCard 
                 label="Brier Score"
-                value={calibration.brier_score.toFixed(3)}
+                value={calibration.brier_score != null ? calibration.brier_score.toFixed(3) : '—'}
                 subtext="Lower is better"
-                color={calibration.brier_score < 0.25 ? 'text-green-400' : 'text-yellow-400'}
+                color={calibration.brier_score != null && calibration.brier_score < 0.25 ? 'text-green-400' : 'text-yellow-400'}
                 tooltip="Measures prediction accuracy (0 = perfect)"
               />
               <MetricCard 
                 label="Calibration Error"
-                value={`${(calibration.expected_calibration_error * 100).toFixed(1)}%`}
+                value={calibration.expected_calibration_error != null 
+                  ? `${(calibration.expected_calibration_error * 100).toFixed(1)}%` 
+                  : '—'}
                 subtext="ECE"
-                color={calibration.expected_calibration_error < 0.05 ? 'text-green-400' : 'text-yellow-400'}
+                color={calibration.expected_calibration_error != null && calibration.expected_calibration_error < 0.05 ? 'text-green-400' : 'text-yellow-400'}
                 tooltip="How well probabilities match reality"
               />
               <MetricCard 
                 label="Confidence"
-                value={calibration.buckets.length > 0 ? '✓' : '—'}
-                subtext={`${calibration.buckets.length} buckets`}
+                value={calibration.buckets && calibration.buckets.length > 0 ? '✓' : '—'}
+                subtext={`${calibration.buckets?.length ?? 0} buckets`}
                 color="text-blue-400"
               />
             </>
@@ -221,7 +232,7 @@ export function ModelPerformance() {
       )}
       
       {/* Calibration Chart */}
-      {!isLoading && calibration && calibration.buckets.length > 0 && (
+      {!isLoading && calibration && calibration.buckets && calibration.buckets.length > 0 && (
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <div>

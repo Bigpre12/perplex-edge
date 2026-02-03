@@ -280,7 +280,7 @@ async def get_market_performance(
 
 @router.get("/dashboard")
 async def get_dashboard(
-    sport: str = Query("nba", description="Sport: nba, nfl, mlb, nhl"),
+    sport: str = Query("nba", description="Sport: nba, ncaab, nfl, ncaaf, mlb, nhl, atp, wta"),
     days: int = Query(30, ge=1, le=365, description="Days of history"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -294,9 +294,13 @@ async def get_dashboard(
     """
     sport_key_map = {
         "nba": "basketball_nba",
+        "ncaab": "basketball_ncaab",
         "nfl": "americanfootball_nfl",
+        "ncaaf": "americanfootball_ncaaf",
         "mlb": "baseball_mlb",
         "nhl": "icehockey_nhl",
+        "atp": "tennis_atp",
+        "wta": "tennis_wta",
     }
     
     sport_key = sport_key_map.get(sport.lower())
