@@ -899,10 +899,21 @@ async def list_player_prop_picks(
         logger.info(f"[player-props] risk_levels filter applied: {allowed_levels}, {len(picks)} picks remaining")
     
     # Debug logging to track filtered/skipped picks
+    # Include sport_key for debugging NFL/NCAAF bleed issues
+    from app.core.constants import SPORT_ID_TO_KEY
+    sport_key_debug = SPORT_ID_TO_KEY.get(sport_id, "UNKNOWN")
     logger.info(
-        f"[player-props] sport_id={sport_id}, fresh_only={fresh_only}: "
+        f"[player-props] sport_id={sport_id} ({sport_key_debug}), fresh_only={fresh_only}: "
         f"returning {len(picks)} picks, skipped {skipped_count} with invalid line_value, total={total}"
     )
+    
+    # Extra validation: log warning if any picks have mismatched sport_id
+    mismatched = [p for p in picks if hasattr(p, 'sport_id') and p.sport_id != sport_id]
+    if mismatched:
+        logger.warning(
+            f"[SPORT_ID_MISMATCH] sport_id={sport_id} request returned {len(mismatched)} picks "
+            f"with different sport_ids: {set(getattr(p, 'sport_id', None) for p in mismatched)}"
+        )
     
     return PlayerPropPickList(
         items=picks,

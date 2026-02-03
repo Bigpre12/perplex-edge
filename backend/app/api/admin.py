@@ -860,6 +860,55 @@ async def verify_sport_id_counts(
     }
 
 
+@router.get("/verify/players-by-sport")
+async def verify_players_by_sport(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List sample players by sport_id to debug NFL/NCAAF data bleed.
+    
+    Shows first 10 players for each sport so you can verify:
+    - NFL (31) players are NFL players (Mahomes, Allen, etc.)
+    - NCAAF (41) players are college players (not NFL starters)
+    """
+    from sqlalchemy import select
+    from app.models import Player, Sport
+    from app.core.constants import SPORT_ID_TO_KEY
+    
+    results = {}
+    
+    # Check NFL (31) and NCAAF (41) specifically
+    for sport_id in [31, 41]:
+        sport_key = SPORT_ID_TO_KEY.get(sport_id, "UNKNOWN")
+        
+        # Get sample players
+        players_result = await db.execute(
+            select(Player.id, Player.name, Player.external_player_id)
+            .where(Player.sport_id == sport_id)
+            .limit(10)
+        )
+        players = [
+            {"id": p[0], "name": p[1], "external_id": p[2]}
+            for p in players_result.all()
+        ]
+        
+        results[f"sport_{sport_id}_{sport_key}"] = {
+            "sport_id": sport_id,
+            "sport_key": sport_key,
+            "player_count": len(players),
+            "sample_players": players,
+        }
+    
+    return {
+        "status": "ok",
+        "players_by_sport": results,
+        "notes": [
+            "If NFL players (Mahomes, Allen, etc.) appear under sport_id=41 (NCAAF), there's a data issue",
+            "NCAAF should have college player names or be empty (off-season)",
+        ]
+    }
+
+
 # =============================================================================
 # API Monitoring Endpoints
 # =============================================================================
