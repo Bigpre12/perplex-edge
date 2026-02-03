@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.model_pick import ModelPick
     from app.models.pick_result import PickResult
     from app.models.player_hit_rate import PlayerHitRate
+    from app.models.player_market_hit_rate import PlayerMarketHitRate
 
 
 class Player(Base, TimestampMixin):
@@ -39,6 +40,7 @@ class Player(Base, TimestampMixin):
     model_picks: Mapped[List["ModelPick"]] = relationship(back_populates="player")
     pick_results: Mapped[List["PickResult"]] = relationship(back_populates="player")
     hit_rate_stats: Mapped[Optional["PlayerHitRate"]] = relationship(back_populates="player", uselist=False)
+    market_hit_rates: Mapped[List["PlayerMarketHitRate"]] = relationship(back_populates="player")
 
     def __repr__(self) -> str:
         return f"<Player(id={self.id}, name='{self.name}', position='{self.position}')>"

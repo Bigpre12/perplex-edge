@@ -387,6 +387,89 @@ async def get_tonight_summary(
 
 
 # =============================================================================
+# Hot/Cold Players Endpoints
+# =============================================================================
+
+@router.get("/players/hot-cold", tags=["public"])
+async def get_hot_cold_players_endpoint(
+    sport_id: Optional[int] = Query(None, description="Filter by sport ID"),
+    min_picks: int = Query(3, ge=1, le=20, description="Minimum picks in 7 days to qualify"),
+    limit: int = Query(25, ge=1, le=100, description="Max results per category"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get hot and cold players based on recent performance.
+    
+    Hot players: 3+ win streak OR 70%+ hit rate in last 7 days
+    Cold players: 3+ loss streak OR below 40% hit rate in last 7 days
+    
+    Returns aggregated stats across all markets for each player.
+    """
+    from app.services.hot_cold_service import get_hot_cold_players
+    
+    result = await get_hot_cold_players(
+        db,
+        sport_id=sport_id,
+        min_picks=min_picks,
+        limit=limit,
+    )
+    
+    return {
+        "hot": result["hot"],
+        "cold": result["cold"],
+        "filters": {
+            "sport_id": sport_id,
+            "min_picks": min_picks,
+            "limit": limit,
+        },
+    }
+
+
+@router.get("/players/hot-cold/by-market", tags=["public"])
+async def get_hot_cold_players_by_market_endpoint(
+    sport_id: Optional[int] = Query(None, description="Filter by sport ID"),
+    market: Optional[str] = Query(None, description="Filter by market (PTS, REB, AST, 3PM, PRA)"),
+    side: Optional[str] = Query(None, description="Filter by side (over, under)"),
+    min_picks: int = Query(3, ge=1, le=20, description="Minimum picks in 7 days to qualify"),
+    limit: int = Query(25, ge=1, le=100, description="Max results per category"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get hot and cold players by specific market (stat type).
+    
+    Market-aware hot/cold tracking enables labels like:
+    "CJ McCollum – 6/6 on 3PM OVER (100% hit rate)"
+    
+    Hot players: 3+ win streak OR 70%+ hit rate in last 7 days
+    Cold players: 3+ loss streak OR below 40% hit rate in last 7 days
+    
+    Returns per-market stats (e.g., separate entries for PTS OVER vs PTS UNDER).
+    """
+    from app.services.hot_cold_service import get_hot_cold_players_by_market
+    
+    result = await get_hot_cold_players_by_market(
+        db,
+        sport_id=sport_id,
+        market=market,
+        side=side,
+        min_picks=min_picks,
+        limit=limit,
+    )
+    
+    return {
+        "hot": result["hot"],
+        "cold": result["cold"],
+        "filters": {
+            "sport_id": sport_id,
+            "market": market,
+            "side": side,
+            "min_picks": min_picks,
+            "limit": limit,
+        },
+    }
+
+
+# =============================================================================
 # Games Endpoints
 # =============================================================================
 
