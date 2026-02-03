@@ -9,6 +9,7 @@
     "install:all": "cd frontend && pnpm install"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-code": "^2.1.29",
     "concurrently": "^8.2.0"
   }
 }
