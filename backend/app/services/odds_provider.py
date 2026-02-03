@@ -2063,27 +2063,41 @@ class XYZOddsProvider(OddsProvider):
                         {"name": "Under", "description": player["name"], "price": -110, "point": player["rec_yds"]},
                     ])
             
+            # Generate multi-bookmaker props with varied odds
+            def vary_outcomes_nfl(outcomes: list, odds_offset: int) -> list:
+                return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
+            
+            bookmaker_configs_nfl = [
+                ("draftkings", "DraftKings", 0),
+                ("fanduel", "FanDuel", -2),
+                ("betmgm", "BetMGM", 2),
+                ("caesars", "Caesars", 1),
+                ("pointsbetus", "PointsBet US", -1),
+            ]
+            
+            bookmakers_nfl = []
+            for book_key, book_title, odds_offset in bookmaker_configs_nfl:
+                bookmakers_nfl.append({
+                    "key": book_key,
+                    "title": book_title,
+                    "markets": [
+                        {"key": "player_pass_yds", "outcomes": vary_outcomes_nfl(pass_yds_outcomes, odds_offset)},
+                        {"key": "player_pass_tds", "outcomes": vary_outcomes_nfl(pass_tds_outcomes, odds_offset)},
+                        {"key": "player_pass_attempts", "outcomes": vary_outcomes_nfl(pass_att_outcomes, odds_offset)},
+                        {"key": "player_rush_yds", "outcomes": vary_outcomes_nfl(rush_yds_outcomes, odds_offset)},
+                        {"key": "player_rush_attempts", "outcomes": vary_outcomes_nfl(rush_att_outcomes, odds_offset)},
+                        {"key": "player_receptions", "outcomes": vary_outcomes_nfl(rec_outcomes, odds_offset)},
+                        {"key": "player_reception_yds", "outcomes": vary_outcomes_nfl(rec_yds_outcomes, odds_offset)},
+                    ],
+                })
+            
             return {
                 "id": external_game_id,
                 "sport_key": sport_key,
                 "home_team": game["home_team"],
                 "away_team": game["away_team"],
                 "commence_time": game["commence_time"],
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": "DraftKings",
-                        "markets": [
-                            {"key": "player_pass_yds", "outcomes": pass_yds_outcomes},
-                            {"key": "player_pass_tds", "outcomes": pass_tds_outcomes},
-                            {"key": "player_pass_attempts", "outcomes": pass_att_outcomes},
-                            {"key": "player_rush_yds", "outcomes": rush_yds_outcomes},
-                            {"key": "player_rush_attempts", "outcomes": rush_att_outcomes},
-                            {"key": "player_receptions", "outcomes": rec_outcomes},
-                            {"key": "player_reception_yds", "outcomes": rec_yds_outcomes},
-                        ],
-                    },
-                ],
+                "bookmakers": bookmakers_nfl,
             }
         
         # Basketball prop markets (NBA/NCAAB)
@@ -2156,31 +2170,45 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Under", "description": player["name"], "price": -110, "point": player["to"]},
             ])
         
+        # Generate multi-bookmaker props with varied odds
+        def vary_outcomes(outcomes: list, odds_offset: int) -> list:
+            return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
+        
+        bookmaker_configs = [
+            ("draftkings", "DraftKings", 0),
+            ("fanduel", "FanDuel", -2),
+            ("betmgm", "BetMGM", 2),
+            ("caesars", "Caesars", 1),
+            ("pointsbetus", "PointsBet US", -1),
+        ]
+        
+        bookmakers = []
+        for book_key, book_title, odds_offset in bookmaker_configs:
+            bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [
+                    {"key": "player_points", "outcomes": vary_outcomes(points_outcomes, odds_offset)},
+                    {"key": "player_rebounds", "outcomes": vary_outcomes(rebounds_outcomes, odds_offset)},
+                    {"key": "player_assists", "outcomes": vary_outcomes(assists_outcomes, odds_offset)},
+                    {"key": "player_points_rebounds_assists", "outcomes": vary_outcomes(pra_outcomes, odds_offset)},
+                    {"key": "player_points_rebounds", "outcomes": vary_outcomes(pr_outcomes, odds_offset)},
+                    {"key": "player_points_assists", "outcomes": vary_outcomes(pa_outcomes, odds_offset)},
+                    {"key": "player_rebounds_assists", "outcomes": vary_outcomes(ra_outcomes, odds_offset)},
+                    {"key": "player_threes", "outcomes": vary_outcomes(threes_outcomes, odds_offset)},
+                    {"key": "player_steals", "outcomes": vary_outcomes(steals_outcomes, odds_offset)},
+                    {"key": "player_blocks", "outcomes": vary_outcomes(blocks_outcomes, odds_offset)},
+                    {"key": "player_turnovers", "outcomes": vary_outcomes(turnovers_outcomes, odds_offset)},
+                ],
+            })
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
             "home_team": game["home_team"],
             "away_team": game["away_team"],
             "commence_time": game["commence_time"],
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [
-                        {"key": "player_points", "outcomes": points_outcomes},
-                        {"key": "player_rebounds", "outcomes": rebounds_outcomes},
-                        {"key": "player_assists", "outcomes": assists_outcomes},
-                        {"key": "player_points_rebounds_assists", "outcomes": pra_outcomes},
-                        {"key": "player_points_rebounds", "outcomes": pr_outcomes},
-                        {"key": "player_points_assists", "outcomes": pa_outcomes},
-                        {"key": "player_rebounds_assists", "outcomes": ra_outcomes},
-                        {"key": "player_threes", "outcomes": threes_outcomes},
-                        {"key": "player_steals", "outcomes": steals_outcomes},
-                        {"key": "player_blocks", "outcomes": blocks_outcomes},
-                        {"key": "player_turnovers", "outcomes": turnovers_outcomes},
-                    ],
-                },
-            ],
+            "bookmakers": bookmakers,
         }
 
     def _generate_dynamic_nba_props(
@@ -2337,31 +2365,50 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Under", "description": player["name"], "price": -110, "point": player["to"]},
             ])
         
+        # Generate bookmakers with varied odds for realistic multi-book display
+        def vary_outcomes(outcomes: list, odds_offset: int) -> list:
+            """Create varied odds for different bookmakers."""
+            return [
+                {**o, "price": o["price"] + odds_offset} 
+                for o in outcomes
+            ]
+        
+        # Bookmaker configurations with odds offsets to simulate market variation
+        bookmaker_configs = [
+            ("draftkings", "DraftKings", 0),
+            ("fanduel", "FanDuel", -2),  # Slightly better odds
+            ("betmgm", "BetMGM", 2),
+            ("caesars", "Caesars", 1),
+            ("pointsbetus", "PointsBet US", -1),
+        ]
+        
+        bookmakers = []
+        for book_key, book_title, odds_offset in bookmaker_configs:
+            bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [
+                    {"key": "player_points", "outcomes": vary_outcomes(points_outcomes, odds_offset)},
+                    {"key": "player_rebounds", "outcomes": vary_outcomes(rebounds_outcomes, odds_offset)},
+                    {"key": "player_assists", "outcomes": vary_outcomes(assists_outcomes, odds_offset)},
+                    {"key": "player_points_rebounds_assists", "outcomes": vary_outcomes(pra_outcomes, odds_offset)},
+                    {"key": "player_points_rebounds", "outcomes": vary_outcomes(pr_outcomes, odds_offset)},
+                    {"key": "player_points_assists", "outcomes": vary_outcomes(pa_outcomes, odds_offset)},
+                    {"key": "player_rebounds_assists", "outcomes": vary_outcomes(ra_outcomes, odds_offset)},
+                    {"key": "player_threes", "outcomes": vary_outcomes(threes_outcomes, odds_offset)},
+                    {"key": "player_steals", "outcomes": vary_outcomes(steals_outcomes, odds_offset)},
+                    {"key": "player_blocks", "outcomes": vary_outcomes(blocks_outcomes, odds_offset)},
+                    {"key": "player_turnovers", "outcomes": vary_outcomes(turnovers_outcomes, odds_offset)},
+                ],
+            })
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
             "home_team": home_team,
             "away_team": away_team,
             "commence_time": times["early"],
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [
-                        {"key": "player_points", "outcomes": points_outcomes},
-                        {"key": "player_rebounds", "outcomes": rebounds_outcomes},
-                        {"key": "player_assists", "outcomes": assists_outcomes},
-                        {"key": "player_points_rebounds_assists", "outcomes": pra_outcomes},
-                        {"key": "player_points_rebounds", "outcomes": pr_outcomes},
-                        {"key": "player_points_assists", "outcomes": pa_outcomes},
-                        {"key": "player_rebounds_assists", "outcomes": ra_outcomes},
-                        {"key": "player_threes", "outcomes": threes_outcomes},
-                        {"key": "player_steals", "outcomes": steals_outcomes},
-                        {"key": "player_blocks", "outcomes": blocks_outcomes},
-                        {"key": "player_turnovers", "outcomes": turnovers_outcomes},
-                    ],
-                },
-            ],
+            "bookmakers": bookmakers,
         }
 
     def _generate_dynamic_ncaab_props(
@@ -2477,23 +2524,37 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Under", "description": player["name"], "price": -110, "point": player["ast"]},
             ])
         
+        # Generate multi-bookmaker props with varied odds
+        def vary_outcomes(outcomes: list, odds_offset: int) -> list:
+            return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
+        
+        bookmaker_configs = [
+            ("draftkings", "DraftKings", 0),
+            ("fanduel", "FanDuel", -2),
+            ("betmgm", "BetMGM", 2),
+            ("caesars", "Caesars", 1),
+            ("pointsbetus", "PointsBet US", -1),
+        ]
+        
+        bookmakers = []
+        for book_key, book_title, odds_offset in bookmaker_configs:
+            bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [
+                    {"key": "player_points", "outcomes": vary_outcomes(points_outcomes, odds_offset)},
+                    {"key": "player_rebounds", "outcomes": vary_outcomes(rebounds_outcomes, odds_offset)},
+                    {"key": "player_assists", "outcomes": vary_outcomes(assists_outcomes, odds_offset)},
+                ],
+            })
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
             "home_team": home_team,
             "away_team": away_team,
             "commence_time": times["early"],
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [
-                        {"key": "player_points", "outcomes": points_outcomes},
-                        {"key": "player_rebounds", "outcomes": rebounds_outcomes},
-                        {"key": "player_assists", "outcomes": assists_outcomes},
-                    ],
-                },
-            ],
+            "bookmakers": bookmakers,
         }
 
     def _generate_dynamic_nfl_props(
@@ -2564,23 +2625,37 @@ class XYZOddsProvider(OddsProvider):
                     {"name": "Under", "description": player["name"], "price": -110, "point": player["rec_yds"]},
                 ])
         
+        # Generate multi-bookmaker props with varied odds
+        def vary_outcomes(outcomes: list, odds_offset: int) -> list:
+            return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
+        
+        bookmaker_configs = [
+            ("draftkings", "DraftKings", 0),
+            ("fanduel", "FanDuel", -2),
+            ("betmgm", "BetMGM", 2),
+            ("caesars", "Caesars", 1),
+            ("pointsbetus", "PointsBet US", -1),
+        ]
+        
+        bookmakers = []
+        for book_key, book_title, odds_offset in bookmaker_configs:
+            bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [
+                    {"key": "player_pass_yds", "outcomes": vary_outcomes(pass_yds_outcomes, odds_offset)},
+                    {"key": "player_rush_yds", "outcomes": vary_outcomes(rush_yds_outcomes, odds_offset)},
+                    {"key": "player_reception_yds", "outcomes": vary_outcomes(rec_yds_outcomes, odds_offset)},
+                ],
+            })
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
             "home_team": "Home Team",
             "away_team": "Away Team",
             "commence_time": times["early"],
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [
-                        {"key": "player_pass_yds", "outcomes": pass_yds_outcomes},
-                        {"key": "player_rush_yds", "outcomes": rush_yds_outcomes},
-                        {"key": "player_reception_yds", "outcomes": rec_yds_outcomes},
-                    ],
-                },
-            ],
+            "bookmakers": bookmakers,
         }
 
     def _generate_dynamic_tennis_props(
@@ -2683,25 +2758,39 @@ class XYZOddsProvider(OddsProvider):
             {"name": "Under", "description": "Total Games", "price": -110, "point": total_games},
         ]
         
+        # Generate multi-bookmaker props with varied odds
+        def vary_outcomes(outcomes: list, odds_offset: int) -> list:
+            return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
+        
+        bookmaker_configs = [
+            ("draftkings", "DraftKings", 0),
+            ("fanduel", "FanDuel", -2),
+            ("betmgm", "BetMGM", 2),
+            ("caesars", "Caesars", 1),
+            ("pointsbetus", "PointsBet US", -1),
+        ]
+        
+        bookmakers = []
+        for book_key, book_title, odds_offset in bookmaker_configs:
+            bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [
+                    {"key": "player_aces", "outcomes": vary_outcomes(aces_outcomes, odds_offset)},
+                    {"key": "player_double_faults", "outcomes": vary_outcomes(double_faults_outcomes, odds_offset)},
+                    {"key": "player_games_won", "outcomes": vary_outcomes(games_won_outcomes, odds_offset)},
+                    {"key": "player_sets_won", "outcomes": vary_outcomes(sets_won_outcomes, odds_offset)},
+                    {"key": "player_total_games", "outcomes": vary_outcomes(total_games_outcomes, odds_offset)},
+                ],
+            })
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
             "home_team": player1_name,  # In tennis, home_team is player 1
             "away_team": player2_name,  # away_team is player 2
             "commence_time": times["early"],
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [
-                        {"key": "player_aces", "outcomes": aces_outcomes},
-                        {"key": "player_double_faults", "outcomes": double_faults_outcomes},
-                        {"key": "player_games_won", "outcomes": games_won_outcomes},
-                        {"key": "player_sets_won", "outcomes": sets_won_outcomes},
-                        {"key": "player_total_games", "outcomes": total_games_outcomes},
-                    ],
-                },
-            ],
+            "bookmakers": bookmakers,
         }
 
     def _generate_dynamic_mlb_props(
@@ -2850,26 +2939,40 @@ class XYZOddsProvider(OddsProvider):
                         {"name": "Under", "description": f"{player_name} RBIs", "price": -110, "point": rbis},
                     ])
         
+        # Generate multi-bookmaker props with varied odds
+        def vary_outcomes(outcomes: list, odds_offset: int) -> list:
+            return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
+        
+        bookmaker_configs = [
+            ("draftkings", "DraftKings", 0),
+            ("fanduel", "FanDuel", -2),
+            ("betmgm", "BetMGM", 2),
+            ("caesars", "Caesars", 1),
+            ("pointsbetus", "PointsBet US", -1),
+        ]
+        
+        bookmakers = []
+        for book_key, book_title, odds_offset in bookmaker_configs:
+            bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [
+                    {"key": "batter_hits", "outcomes": vary_outcomes(batter_hits_outcomes, odds_offset)},
+                    {"key": "batter_total_bases", "outcomes": vary_outcomes(batter_total_bases_outcomes, odds_offset)},
+                    {"key": "batter_home_runs", "outcomes": vary_outcomes(batter_home_runs_outcomes, odds_offset)},
+                    {"key": "batter_rbis", "outcomes": vary_outcomes(batter_rbis_outcomes, odds_offset)},
+                    {"key": "pitcher_strikeouts", "outcomes": vary_outcomes(pitcher_strikeouts_outcomes, odds_offset)},
+                    {"key": "pitcher_outs", "outcomes": vary_outcomes(pitcher_outs_outcomes, odds_offset)},
+                ],
+            })
+        
         return {
             "id": external_game_id,
             "sport_key": sport_key,
             "home_team": home_team,
             "away_team": away_team,
             "commence_time": times["afternoon"],
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [
-                        {"key": "batter_hits", "outcomes": batter_hits_outcomes},
-                        {"key": "batter_total_bases", "outcomes": batter_total_bases_outcomes},
-                        {"key": "batter_home_runs", "outcomes": batter_home_runs_outcomes},
-                        {"key": "batter_rbis", "outcomes": batter_rbis_outcomes},
-                        {"key": "pitcher_strikeouts", "outcomes": pitcher_strikeouts_outcomes},
-                        {"key": "pitcher_outs", "outcomes": pitcher_outs_outcomes},
-                    ],
-                },
-            ],
+            "bookmakers": bookmakers,
         }
 
 
