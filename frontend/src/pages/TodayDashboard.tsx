@@ -50,8 +50,6 @@ export function TodayDashboard() {
   const tomorrowDate = useMemo(() => getTomorrowDate(), []);
   const { data: slateData, isLoading: slateLoading, error: slateError } = useFullSlate(tomorrowDate, 0, 0, 20);
 
-  const today = new Date().toISOString().slice(0, 10);
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
