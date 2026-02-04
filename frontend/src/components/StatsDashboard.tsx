@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useSports, useHotPlayers, useColdPlayers, useStreaks, useRecentResults } from '../api/public';
 import { useSportContext } from '../context/SportContext';
+import { HotPlayersPanel } from './HotPlayersPanel';
 
 export function StatsDashboard() {
   const { sportId } = useSportContext();
+  const [showTableView, setShowTableView] = useState(false);
   const { data: sportsData } = useSports();
   
   // Use NBA as default if no sport selected
@@ -80,7 +83,19 @@ export function StatsDashboard() {
                     #{idx + 1}
                   </span>
                   <div>
-                    <p className="text-white font-medium">{player.player_name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-medium">{player.player_name}</p>
+                      {player.stat_type && player.side && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400 text-sm">{player.stat_type}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                            player.side === 'over' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                          }`}>
+                            {player.side === 'over' ? 'O' : 'U'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
                       <span>{player.hits_7d}/{player.total_7d} picks</span>
                       {renderLast5(player.last_5)}
@@ -95,6 +110,36 @@ export function StatsDashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Hot Players Table (Collapsible) */}
+      <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+        <button
+          onClick={() => setShowTableView(!showTableView)}
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-700/50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span className="text-white font-medium">Hot Players Table View</span>
+            <span className="text-xs text-gray-400">(detailed comparison)</span>
+          </div>
+          <svg
+            className={`w-5 h-5 text-gray-400 transition-transform ${showTableView ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {showTableView && (
+          <div className="border-t border-gray-700">
+            <HotPlayersPanel sportId={activeSportId} limit={15} />
           </div>
         )}
       </div>

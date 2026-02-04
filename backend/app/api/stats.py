@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.services.results_tracker import ResultsTracker
+from app.services.hot_cold_service import get_hot_players_with_best_market
 from app.models import Sport
 
 
@@ -38,6 +39,9 @@ class HotPlayer(BaseModel):
     hits_7d: int
     current_streak: int
     last_5: Optional[str] = None
+    # Market-specific fields (populated when include_market=true)
+    stat_type: Optional[str] = None  # e.g., "PTS", "REB", "3PM"
+    side: Optional[str] = None  # "over" or "under"
 
 
 class HotPlayerList(BaseModel):
@@ -129,6 +133,7 @@ async def get_hot_players(
     sport_id: int,
     min_picks: int = Query(5, ge=1, description="Minimum picks in last 7 days"),
     limit: int = Query(10, ge=1, le=50, description="Maximum players to return"),
+    include_market: bool = Query(False, description="Include best market (stat_type + side) per player"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -136,14 +141,24 @@ async def get_hot_players(
     
     Returns top performers by recent hit rate, useful for identifying
     hot players to follow.
+    
+    When include_market=true, returns each player's best-performing market
+    (stat_type like PTS, REB, 3PM and side like over/under).
     """
     # Verify sport exists
     sport = await db.get(Sport, sport_id)
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    tracker = ResultsTracker()
-    hot_players = await tracker.get_hot_players(db, sport_id, min_picks, limit)
+    if include_market:
+        # Use market-aware function that returns best market per player
+        hot_players = await get_hot_players_with_best_market(
+            db, sport_id, min_picks=min_picks, limit=limit
+        )
+    else:
+        # Use original aggregated function
+        tracker = ResultsTracker()
+        hot_players = await tracker.get_hot_players(db, sport_id, min_picks, limit)
     
     return HotPlayerList(
         items=[HotPlayer(**p) for p in hot_players],

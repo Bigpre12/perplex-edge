@@ -35,9 +35,10 @@ const formatOdds = (odds: number) => odds > 0 ? `+${odds}` : odds.toString();
 export function MultiSportSlate() {
   const { data: sportsData, isLoading: sportsLoading } = useSports();
   
-  // Filter state
-  const [minEv, setMinEv] = useState(0.03);
-  const [minConfidence, setMinConfidence] = useState(0.55);
+  // Filter state - start with loose defaults so picks are visible
+  // Users can tighten filters to find higher-quality picks
+  const [minEv, setMinEv] = useState(0);  // Show all EV (including negative)
+  const [minConfidence, setMinConfidence] = useState(0.5);  // 50% minimum (slightly better than coin flip)
   const [selectedSports, setSelectedSports] = useState<Set<number>>(new Set());
   const [onlyGreenTier, setOnlyGreenTier] = useState(false);
   const [maxPicks, setMaxPicks] = useState(50);
@@ -220,7 +221,7 @@ export function MultiSportSlate() {
             </label>
             <input
               type="range"
-              min="0.5"
+              min="0"
               max="0.8"
               step="0.05"
               value={minConfidence}
@@ -381,18 +382,42 @@ export function MultiSportSlate() {
       {!isLoading && sortedPicks.length === 0 && (
         <div className="bg-gray-800 rounded-lg p-8 text-center border border-gray-700">
           <div className="text-4xl mb-3">🔍</div>
-          <p className="text-gray-400 text-lg">No picks match your filters</p>
-          <p className="text-sm text-gray-500 mt-2">
-            {allSportsQuery.data && allSportsQuery.data.length > 0
-              ? `${allSportsQuery.data.length} picks available but hidden by filters (minEV: ${(minEv * 100).toFixed(0)}%, minConf: ${(minConfidence * 100).toFixed(0)}%)`
-              : 'No picks available across sports right now'}
-          </p>
-          <button
-            onClick={resetFiltersToDefault}
-            className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
-          >
-            Reset All Filters
-          </button>
+          {allSportsQuery.data && allSportsQuery.data.length > 0 ? (
+            <>
+              <p className="text-gray-400 text-lg">All picks hidden by filters</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {allSportsQuery.data.length} picks available but filtered out
+                {minEv > 0 && ` (minEV: ${(minEv * 100).toFixed(0)}%)`}
+                {minConfidence > 0.5 && ` (minConf: ${(minConfidence * 100).toFixed(0)}%)`}
+                {onlyGreenTier && ' (Green tier only)'}
+              </p>
+              <button
+                onClick={resetFiltersToDefault}
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+              >
+                Reset All Filters
+              </button>
+            </>
+          ) : activeSports.length === 0 ? (
+            <>
+              <p className="text-gray-400 text-lg">No sports loaded</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Waiting for sports data to load...
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-400 text-lg">No picks available</p>
+              <p className="text-sm text-gray-500 mt-2">
+                No player props found across {activeSports.length} sport{activeSports.length !== 1 ? 's' : ''}.
+                <br />
+                Lines may not be posted yet or games haven't started.
+              </p>
+              <div className="mt-4 text-xs text-gray-600">
+                Sports checked: {activeSports.map(s => s.name).join(', ')}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

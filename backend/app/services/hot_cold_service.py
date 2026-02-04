@@ -251,6 +251,89 @@ async def get_hot_cold_players_by_market(
     }
 
 
+async def get_hot_players_with_best_market(
+    db: AsyncSession,
+    sport_id: int,
+    min_picks: int = 3,
+    hot_rate_threshold: float = 0.70,
+    hot_streak_threshold: int = 3,
+    limit: int = 10,
+) -> list[dict]:
+    """
+    Get hot players with their best-performing market (stat_type + side).
+    
+    For each player, finds the market where they have the highest hit rate.
+    
+    Args:
+        db: Database session
+        sport_id: Sport ID to filter by
+        min_picks: Minimum picks in 7 days to qualify
+        hot_rate_threshold: Minimum 7-day hit rate to be "hot"
+        hot_streak_threshold: Minimum streak to be "hot"
+        limit: Maximum players to return
+    
+    Returns:
+        List of hot players with their best market info
+    """
+    # Query all market hit rates for players meeting hot criteria
+    query = (
+        select(
+            Player.id.label("player_id"),
+            Player.name.label("player_name"),
+            PlayerMarketHitRate.market,
+            PlayerMarketHitRate.side,
+            PlayerMarketHitRate.hit_rate_7d,
+            PlayerMarketHitRate.hits_7d,
+            PlayerMarketHitRate.total_7d,
+            PlayerMarketHitRate.current_streak,
+            PlayerMarketHitRate.last_5_results,
+        )
+        .join(Player, PlayerMarketHitRate.player_id == Player.id)
+        .where(
+            PlayerMarketHitRate.sport_id == sport_id,
+            PlayerMarketHitRate.total_7d >= min_picks,
+            or_(
+                PlayerMarketHitRate.hit_rate_7d >= hot_rate_threshold,
+                PlayerMarketHitRate.current_streak >= hot_streak_threshold,
+            ),
+        )
+        .order_by(
+            PlayerMarketHitRate.hit_rate_7d.desc(),
+            PlayerMarketHitRate.current_streak.desc(),
+        )
+    )
+    
+    result = await db.execute(query)
+    rows = result.all()
+    
+    # Group by player and keep best market per player
+    seen_players: dict[int, dict] = {}
+    
+    for row in rows:
+        player_id = row.player_id
+        
+        # Only keep the first (best) market for each player
+        if player_id in seen_players:
+            continue
+        
+        seen_players[player_id] = {
+            "player_id": player_id,
+            "player_name": row.player_name,
+            "stat_type": format_market_name(row.market),
+            "side": row.side,  # Keep as lowercase for frontend
+            "hit_rate_7d": row.hit_rate_7d,  # Keep as decimal (0-1)
+            "hits_7d": row.hits_7d,
+            "total_7d": row.total_7d,
+            "current_streak": row.current_streak,
+            "last_5": row.last_5_results,
+        }
+        
+        if len(seen_players) >= limit:
+            break
+    
+    return list(seen_players.values())
+
+
 async def update_player_market_hit_rate(
     db: AsyncSession,
     player_id: int,

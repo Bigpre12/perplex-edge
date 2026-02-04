@@ -536,6 +536,9 @@ export interface HotPlayer {
   hits_7d: number;
   current_streak: number;
   last_5: string | null;
+  // Market-specific fields (populated when include_market=true)
+  stat_type?: string;  // e.g., "PTS", "REB", "3PM"
+  side?: string;       // "over" or "under"
 }
 
 export interface HotPlayerList {
@@ -628,8 +631,8 @@ export async function fetchSchedulerStatus(): Promise<SchedulerStatus> {
 }
 
 // Hit Rate Tracking API Functions
-export async function fetchHotPlayers(sportId: number, minPicks: number = 5, limit: number = 10): Promise<HotPlayerList> {
-  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/hot-players?min_picks=${minPicks}&limit=${limit}`);
+export async function fetchHotPlayers(sportId: number, minPicks: number = 5, limit: number = 10, includeMarket: boolean = true): Promise<HotPlayerList> {
+  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/hot-players?min_picks=${minPicks}&limit=${limit}&include_market=${includeMarket}`);
 }
 
 export async function fetchColdPlayers(sportId: number, minPicks: number = 5, limit: number = 10): Promise<HotPlayerList> {
@@ -712,11 +715,12 @@ export function useSchedulerStatus() {
 
 /**
  * Fetch hot players by 7-day hit rate.
+ * When includeMarket=true (default), includes stat_type and side for each player's best market.
  */
-export function useHotPlayers(sportId: number | null, minPicks: number = 5, limit: number = 10) {
+export function useHotPlayers(sportId: number | null, minPicks: number = 5, limit: number = 10, includeMarket: boolean = true) {
   return useQuery({
-    queryKey: ['hot-players', sportId, minPicks, limit],
-    queryFn: () => fetchHotPlayers(sportId!, minPicks, limit),
+    queryKey: ['hot-players', sportId, minPicks, limit, includeMarket],
+    queryFn: () => fetchHotPlayers(sportId!, minPicks, limit, includeMarket),
     enabled: sportId !== null,
     staleTime: 60 * 1000,
     refetchInterval: 2 * 60 * 1000,
