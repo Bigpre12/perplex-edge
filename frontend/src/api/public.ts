@@ -152,6 +152,8 @@ export interface PlayerPropFilters {
   min_ev?: number;
   risk_levels?: string;  // Comma-separated: "STANDARD,CONFIDENT,STRONG,MAX"
   game_id?: number;
+  player_id?: number;    // Filter to specific player (for deep linking from Stats)
+  side?: string;         // Filter by side: "over" or "under"
   fresh_only?: boolean;  // Only show picks for games that haven't started
   limit?: number;
   offset?: number;
@@ -539,6 +541,8 @@ export interface HotPlayer {
   // Market-specific fields (populated when include_market=true)
   stat_type?: string;  // e.g., "PTS", "REB", "3PM"
   side?: string;       // "over" or "under"
+  // Trust tag for quality assessment
+  trust_tag?: string;  // "strong", "ok", "thin", "weak"
 }
 
 export interface HotPlayerList {
@@ -631,12 +635,38 @@ export async function fetchSchedulerStatus(): Promise<SchedulerStatus> {
 }
 
 // Hit Rate Tracking API Functions
-export async function fetchHotPlayers(sportId: number, minPicks: number = 5, limit: number = 10, includeMarket: boolean = true): Promise<HotPlayerList> {
-  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/hot-players?min_picks=${minPicks}&limit=${limit}&include_market=${includeMarket}`);
+export async function fetchHotPlayers(
+  sportId: number,
+  minPicks: number = 5,
+  limit: number = 10,
+  includeMarket: boolean = true,
+  market?: string,
+  side?: string
+): Promise<HotPlayerList> {
+  const params = new URLSearchParams({
+    min_picks: minPicks.toString(),
+    limit: limit.toString(),
+    include_market: includeMarket.toString(),
+  });
+  if (market) params.set('market', market);
+  if (side) params.set('side', side);
+  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/hot-players?${params}`);
 }
 
-export async function fetchColdPlayers(sportId: number, minPicks: number = 5, limit: number = 10): Promise<HotPlayerList> {
-  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/cold-players?min_picks=${minPicks}&limit=${limit}`);
+export async function fetchColdPlayers(
+  sportId: number,
+  minPicks: number = 5,
+  limit: number = 10,
+  market?: string,
+  side?: string
+): Promise<HotPlayerList> {
+  const params = new URLSearchParams({
+    min_picks: minPicks.toString(),
+    limit: limit.toString(),
+  });
+  if (market) params.set('market', market);
+  if (side) params.set('side', side);
+  return fetchJson<HotPlayerList>(`${API_BASE_URL}/api/stats/sports/${sportId}/cold-players?${params}`);
 }
 
 export async function fetchStreaks(sportId: number, minStreak: number = 3, limit: number = 20): Promise<StreaksList> {
@@ -717,10 +747,17 @@ export function useSchedulerStatus() {
  * Fetch hot players by 7-day hit rate.
  * When includeMarket=true (default), includes stat_type and side for each player's best market.
  */
-export function useHotPlayers(sportId: number | null, minPicks: number = 5, limit: number = 10, includeMarket: boolean = true) {
+export function useHotPlayers(
+  sportId: number | null,
+  minPicks: number = 5,
+  limit: number = 10,
+  includeMarket: boolean = true,
+  market?: string,
+  side?: string
+) {
   return useQuery({
-    queryKey: ['hot-players', sportId, minPicks, limit, includeMarket],
-    queryFn: () => fetchHotPlayers(sportId!, minPicks, limit, includeMarket),
+    queryKey: ['hot-players', sportId, minPicks, limit, includeMarket, market, side],
+    queryFn: () => fetchHotPlayers(sportId!, minPicks, limit, includeMarket, market, side),
     enabled: sportId !== null,
     staleTime: 60 * 1000,
     refetchInterval: 2 * 60 * 1000,
@@ -730,10 +767,16 @@ export function useHotPlayers(sportId: number | null, minPicks: number = 5, limi
 /**
  * Fetch cold players by 7-day hit rate.
  */
-export function useColdPlayers(sportId: number | null, minPicks: number = 5, limit: number = 10) {
+export function useColdPlayers(
+  sportId: number | null,
+  minPicks: number = 5,
+  limit: number = 10,
+  market?: string,
+  side?: string
+) {
   return useQuery({
-    queryKey: ['cold-players', sportId, minPicks, limit],
-    queryFn: () => fetchColdPlayers(sportId!, minPicks, limit),
+    queryKey: ['cold-players', sportId, minPicks, limit, market, side],
+    queryFn: () => fetchColdPlayers(sportId!, minPicks, limit, market, side),
     enabled: sportId !== null,
     staleTime: 60 * 1000,
     refetchInterval: 2 * 60 * 1000,

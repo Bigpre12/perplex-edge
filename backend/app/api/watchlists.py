@@ -86,6 +86,7 @@ async def count_matching_picks(
     
     sport_id = filters.get("sport_id")
     if sport_id:
+        conditions.append(ModelPick.sport_id == sport_id)  # Filter on ModelPick to prevent cross-sport bleed
         conditions.append(Game.sport_id == sport_id)
     
     stat_type = filters.get("stat_type")

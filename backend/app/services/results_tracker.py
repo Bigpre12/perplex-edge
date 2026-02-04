@@ -13,6 +13,7 @@ from app.models import (
     PickResult, PlayerHitRate, Sport
 )
 from app.services.calibration_service import calculate_clv, calculate_profit_loss
+from app.services.hot_cold_service import update_player_market_hit_rate
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +146,7 @@ class ResultsTracker:
         hits = 0
         misses = 0
         players_to_update = set()
+        market_updates = []  # Track (player_id, sport_id, stat_type, side, hit) for market hit rates
         
         for pick in picks:
             if not pick.player_id:
@@ -229,12 +231,24 @@ class ResultsTracker:
                 misses += 1
             
             players_to_update.add(pick.player_id)
+            market_updates.append((pick.player_id, pick.sport_id, stat_type, side, hit))
         
         await db.commit()
         
         # Update hit rates for affected players
         for player_id in players_to_update:
             await self.update_player_hit_rates(db, player_id)
+        
+        # Update market-specific hit rates (stat_type + side)
+        for player_id, sport_id, stat_type, side, hit in market_updates:
+            await update_player_market_hit_rate(
+                db=db,
+                player_id=player_id,
+                sport_id=sport_id,
+                market=stat_type,
+                side=side,
+                hit=hit,
+            )
         
         return {
             "game_id": game_id,

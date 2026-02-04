@@ -78,8 +78,8 @@ export const QUICK_START_PRESETS: QuickStartPreset[] = [
 
 export const DEFAULT_PLAYER_PROPS_FILTERS = {
   statType: '',
-  minConfidence: 0.55,
-  minEv: 0.03,
+  minConfidence: 0.50,  // 50% - shows more picks by default
+  minEv: 0.0,           // Show all EV - user can tighten
   riskLevels: ['STANDARD', 'CONFIDENT', 'STRONG'],
   excludedStatTypes: new Set(['player_steals', 'player_blocks']),
   excludedPlayers: new Set<string>(),
@@ -91,10 +91,11 @@ export const DEFAULT_PLAYER_PROPS_FILTERS = {
 // Sport-specific filter overrides (looser thresholds for sports with less data or off-season)
 // These override DEFAULT_PLAYER_PROPS_FILTERS when the sport is selected
 export const SPORT_FILTER_OVERRIDES: Record<number, Partial<typeof DEFAULT_PLAYER_PROPS_FILTERS>> = {
-  42: { minConfidence: 0.50, minEv: 0.02 }, // ATP Tennis - less data available
-  43: { minConfidence: 0.50, minEv: 0.02 }, // WTA Tennis - less data available
-  41: { minConfidence: 0.50, minEv: 0.02 }, // NCAAF - off-season/limited slate
-  33: { minConfidence: 0.50, minEv: 0.02 }, // NCAAB - varies by season
+  32: { minConfidence: 0.45, minEv: 0.0 }, // NCAAB - varies by season (fixed ID: was 33)
+  41: { minConfidence: 0.45, minEv: 0.0 }, // NCAAF - off-season/limited slate
+  42: { minConfidence: 0.45, minEv: 0.0 }, // ATP Tennis - less data available
+  43: { minConfidence: 0.45, minEv: 0.0 }, // WTA Tennis - less data available
+  53: { minConfidence: 0.45, minEv: 0.0 }, // NHL - added
 };
 
 // Helper to get effective filters for a sport

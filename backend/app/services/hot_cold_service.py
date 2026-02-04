@@ -170,6 +170,7 @@ async def get_hot_cold_players_by_market(
     """
     base_query = (
         select(
+            PlayerMarketHitRate.player_id,
             Player.name.label("player_name"),
             Team.name.label("team"),
             Sport.league_code.label("sport"),
@@ -232,16 +233,20 @@ async def get_hot_cold_players_by_market(
     
     def format_player(row) -> dict:
         return {
+            "player_id": row.player_id,
             "player_name": row.player_name,
             "team": row.team,
             "sport": row.sport,
             "market": format_market_name(row.market),
-            "side": row.side.upper(),
-            "display": f"{row.player_name} – {format_market_name(row.market)} {row.side.upper()}",
-            "hit_rate_7d": round(row.hit_rate_7d * 100, 1) if row.hit_rate_7d else None,
+            "side": row.side.upper() if row.side else None,
+            "display": f"{row.player_name} – {format_market_name(row.market)} {row.side.upper() if row.side else ''}",
+            "hit_rate_7d": row.hit_rate_7d,  # Raw value (0-1) for API compatibility
+            "hit_rate_7d_pct": round(row.hit_rate_7d * 100, 1) if row.hit_rate_7d else None,
+            "hits_7d": row.hits_7d,
+            "total_7d": row.total_7d,
             "picks_7d": f"{row.hits_7d}/{row.total_7d}",
-            "streak": row.current_streak,
-            "last_5": row.last_5_results,
+            "current_streak": row.current_streak,
+            "last_5_results": row.last_5_results,
             "hit_rate_all": round(row.hit_rate_all * 100, 1) if row.hit_rate_all else None,
         }
     

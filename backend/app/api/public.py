@@ -589,6 +589,8 @@ async def list_player_prop_picks(
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     risk_levels: Optional[str] = Query(None, description="Comma-separated Kelly risk levels: NO_BET,SMALL,STANDARD,CONFIDENT,STRONG,MAX"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
+    player_id: Optional[int] = Query(None, description="Filter by specific player"),
+    side: Optional[str] = Query(None, description="Filter by side (over/under)"),
     fresh_only: bool = Query(True, description="Filter out stale props (games started, old picks). Set to false to show all."),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
@@ -690,6 +692,12 @@ async def list_player_prop_picks(
     
     if game_id:
         query = query.where(ModelPick.game_id == game_id)
+    
+    if player_id:
+        query = query.where(ModelPick.player_id == player_id)
+    
+    if side:
+        query = query.where(ModelPick.side == side.lower())
     
     # Order by EV descending (best picks first)
     query = query.order_by(ModelPick.expected_value.desc())

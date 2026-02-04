@@ -5,8 +5,10 @@
  * columns for rank, player, market, record, hit rate, and streak.
  * 
  * Designed for "power users" who want to compare multiple players at once.
+ * Clicking a row navigates to Player Props tab with filters pre-applied.
  */
 
+import { useState } from 'react';
 import { useHotPlayers } from '../api/public';
 
 // Stat type display labels
@@ -24,13 +26,64 @@ const STAT_LABELS: Record<string, string> = {
   TO: 'Turnovers',
 };
 
+// Available markets for filter dropdown
+const MARKET_OPTIONS = [
+  { value: '', label: 'All Markets' },
+  { value: 'PTS', label: 'Points' },
+  { value: 'REB', label: 'Rebounds' },
+  { value: 'AST', label: 'Assists' },
+  { value: '3PM', label: '3-Pointers' },
+  { value: 'PRA', label: 'PRA' },
+  { value: 'STL', label: 'Steals' },
+  { value: 'BLK', label: 'Blocks' },
+];
+
+// Trust tag styling
+const TRUST_TAG_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  strong: { bg: 'bg-emerald-900/50', text: 'text-emerald-400', label: 'Strong' },
+  ok: { bg: 'bg-blue-900/50', text: 'text-blue-400', label: 'OK' },
+  thin: { bg: 'bg-amber-900/50', text: 'text-amber-400', label: 'Thin' },
+  weak: { bg: 'bg-gray-800', text: 'text-gray-400', label: 'Weak' },
+};
+
 interface HotPlayersPanelProps {
   sportId: number | null;
   limit?: number;
+  onViewProps?: (playerId: number, market?: string, side?: string) => void;
 }
 
-export function HotPlayersPanel({ sportId, limit = 15 }: HotPlayersPanelProps) {
-  const { data: hotPlayers, isLoading } = useHotPlayers(sportId, 3, limit);
+export function HotPlayersPanel({ sportId, limit = 15, onViewProps }: HotPlayersPanelProps) {
+  // Filter state
+  const [marketFilter, setMarketFilter] = useState<string>('');
+  const [sideFilter, setSideFilter] = useState<string>('');
+  const [minPicks, setMinPicks] = useState<number>(3);
+
+  // Pass filters to hook
+  const { data: hotPlayers, isLoading } = useHotPlayers(
+    sportId,
+    minPicks,
+    limit,
+    true,  // includeMarket
+    marketFilter || undefined,
+    sideFilter || undefined
+  );
+
+  // Navigate to Props tab with filters
+  const handleViewProps = (playerId: number, market?: string | null, side?: string | null) => {
+    if (onViewProps) {
+      onViewProps(playerId, market ?? undefined, side ?? undefined);
+    } else {
+      // Fallback: Update URL params to trigger navigation
+      const params = new URLSearchParams(window.location.search);
+      params.set('tab', 'props');
+      if (sportId) params.set('sportId', sportId.toString());
+      params.set('playerId', playerId.toString());
+      if (market) params.set('market', market);
+      if (side) params.set('side', side);
+      window.history.pushState({}, '', `?${params.toString()}`);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
 
   // Format hit rate percentage
   const formatHitRate = (rate: number) => {
@@ -74,10 +127,59 @@ export function HotPlayersPanel({ sportId, limit = 15 }: HotPlayersPanelProps) {
   return (
     <div className="bg-gray-800/30 rounded-lg overflow-hidden">
       <div className="p-4 border-b border-gray-700">
-        <h3 className="font-bold text-white">Hot Players Table</h3>
-        <p className="text-xs text-gray-400">
-          Best-performing market per player over the last 7 days
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-white">Hot Players Table</h3>
+            <p className="text-xs text-gray-400">
+              Best-performing market per player over the last 7 days
+            </p>
+          </div>
+          
+          {/* Filter controls */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Market dropdown */}
+            <select
+              value={marketFilter}
+              onChange={(e) => setMarketFilter(e.target.value)}
+              className="px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {MARKET_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            
+            {/* Side toggle */}
+            <div className="flex rounded overflow-hidden border border-gray-600">
+              {['', 'over', 'under'].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSideFilter(s)}
+                  className={`px-2 py-1 text-xs transition-colors ${
+                    sideFilter === s
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {s === '' ? 'All' : s === 'over' ? 'Over' : 'Under'}
+                </button>
+              ))}
+            </div>
+            
+            {/* Min picks */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-400">Min:</span>
+              <select
+                value={minPicks}
+                onChange={(e) => setMinPicks(parseInt(e.target.value, 10))}
+                className="px-1 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-white focus:outline-none"
+              >
+                <option value={3}>3+</option>
+                <option value={5}>5+</option>
+                <option value={10}>10+</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -90,6 +192,8 @@ export function HotPlayersPanel({ sportId, limit = 15 }: HotPlayersPanelProps) {
               <th className="text-center py-2 px-4 text-xs text-gray-400 font-medium">Record</th>
               <th className="text-center py-2 px-4 text-xs text-gray-400 font-medium">Hit %</th>
               <th className="text-center py-2 px-4 text-xs text-gray-400 font-medium">Streak</th>
+              <th className="text-center py-2 px-4 text-xs text-gray-400 font-medium">Trust</th>
+              <th className="text-center py-2 px-4 text-xs text-gray-400 font-medium w-20"></th>
             </tr>
           </thead>
           <tbody>
@@ -153,6 +257,31 @@ export function HotPlayersPanel({ sportId, limit = 15 }: HotPlayersPanelProps) {
                   >
                     {formatStreak(player.current_streak)}
                   </span>
+                </td>
+
+                {/* Trust Tag */}
+                <td className="py-3 px-4 text-center">
+                  {player.trust_tag && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        TRUST_TAG_STYLES[player.trust_tag]?.bg || 'bg-gray-800'
+                      } ${TRUST_TAG_STYLES[player.trust_tag]?.text || 'text-gray-400'}`}
+                      title={`Sample size: ${player.total_7d} picks`}
+                    >
+                      {TRUST_TAG_STYLES[player.trust_tag]?.label || player.trust_tag}
+                    </span>
+                  )}
+                </td>
+
+                {/* View Props Action */}
+                <td className="py-3 px-4 text-center">
+                  <button
+                    onClick={() => handleViewProps(player.player_id, player.stat_type, player.side)}
+                    className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+                    title="View live props for this player"
+                  >
+                    Props
+                  </button>
                 </td>
               </tr>
             ))}

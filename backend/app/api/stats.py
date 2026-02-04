@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.services.results_tracker import ResultsTracker
-from app.services.hot_cold_service import get_hot_players_with_best_market
+from app.services.hot_cold_service import get_hot_players_with_best_market, get_hot_cold_players_by_market
 from app.models import Sport
 
 
@@ -30,6 +30,25 @@ def serialize_datetime_utc(dt: datetime) -> str:
 UTCDatetime = Annotated[datetime, PlainSerializer(serialize_datetime_utc)]
 
 
+def compute_trust_tag(total_picks: int, hit_rate_7d: float, current_streak: int) -> str:
+    """
+    Compute a trust score tag based on sample size and performance.
+    
+    Tags:
+    - "strong": High hit rate + positive streak + good sample size
+    - "ok": Decent performance
+    - "thin": Small sample size
+    - "weak": Poor performance despite sample size
+    """
+    if total_picks < 5:
+        return "thin"
+    if hit_rate_7d >= 0.70 and current_streak >= 2:
+        return "strong"
+    if hit_rate_7d >= 0.55:
+        return "ok"
+    return "weak"
+
+
 class HotPlayer(BaseModel):
     """Hot player response."""
     player_id: int
@@ -42,6 +61,8 @@ class HotPlayer(BaseModel):
     # Market-specific fields (populated when include_market=true)
     stat_type: Optional[str] = None  # e.g., "PTS", "REB", "3PM"
     side: Optional[str] = None  # "over" or "under"
+    # Trust tag for quality assessment
+    trust_tag: Optional[str] = None  # "strong", "ok", "thin", "weak"
 
 
 class HotPlayerList(BaseModel):
@@ -134,6 +155,8 @@ async def get_hot_players(
     min_picks: int = Query(5, ge=1, description="Minimum picks in last 7 days"),
     limit: int = Query(10, ge=1, le=50, description="Maximum players to return"),
     include_market: bool = Query(False, description="Include best market (stat_type + side) per player"),
+    market: Optional[str] = Query(None, description="Filter by market (PTS, REB, AST, 3PM, etc.)"),
+    side: Optional[str] = Query(None, description="Filter by side (over/under)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -144,21 +167,54 @@ async def get_hot_players(
     
     When include_market=true, returns each player's best-performing market
     (stat_type like PTS, REB, 3PM and side like over/under).
+    
+    When market or side is specified, filters to that specific market/side
+    using PlayerMarketHitRate data.
     """
     # Verify sport exists
     sport = await db.get(Sport, sport_id)
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    if include_market:
+    # If market or side filter is specified, use market-specific query
+    if market or side:
+        result = await get_hot_cold_players_by_market(
+            db, sport_id=sport_id, market=market, side=side, min_picks=min_picks, limit=limit
+        )
+        hot_players = [
+            {
+                "player_id": p.get("player_id", 0),
+                "player_name": p.get("player_name", ""),
+                "hit_rate_7d": p.get("hit_rate_7d", 0.0),
+                "total_7d": p.get("total_7d", 0),
+                "hits_7d": p.get("hits_7d", 0),
+                "current_streak": p.get("current_streak", 0),
+                "last_5": p.get("last_5_results"),
+                "stat_type": p.get("market", ""),
+                "side": p.get("side"),
+                "trust_tag": compute_trust_tag(p.get("total_7d", 0), p.get("hit_rate_7d", 0.0), p.get("current_streak", 0)),
+            }
+            for p in result.get("hot", [])
+        ]
+    elif include_market:
         # Use market-aware function that returns best market per player
         hot_players = await get_hot_players_with_best_market(
             db, sport_id, min_picks=min_picks, limit=limit
         )
+        # Add trust_tag to each player
+        hot_players = [
+            {**p, "trust_tag": compute_trust_tag(p.get("total_7d", 0), p.get("hit_rate_7d", 0.0), p.get("current_streak", 0))}
+            for p in hot_players
+        ]
     else:
         # Use original aggregated function
         tracker = ResultsTracker()
         hot_players = await tracker.get_hot_players(db, sport_id, min_picks, limit)
+        # Add trust_tag to each player
+        hot_players = [
+            {**p, "trust_tag": compute_trust_tag(p.get("total_7d", 0), p.get("hit_rate_7d", 0.0), p.get("current_streak", 0))}
+            for p in hot_players
+        ]
     
     return HotPlayerList(
         items=[HotPlayer(**p) for p in hot_players],
@@ -171,20 +227,51 @@ async def get_cold_players(
     sport_id: int,
     min_picks: int = Query(5, ge=1, description="Minimum picks in last 7 days"),
     limit: int = Query(10, ge=1, le=50, description="Maximum players to return"),
+    market: Optional[str] = Query(None, description="Filter by market (PTS, REB, AST, 3PM, etc.)"),
+    side: Optional[str] = Query(None, description="Filter by side (over/under)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get players with the worst 7-day hit rates.
     
     Returns players who have been cold recently, useful for fading.
+    
+    When market or side is specified, filters to that specific market/side
+    using PlayerMarketHitRate data.
     """
     # Verify sport exists
     sport = await db.get(Sport, sport_id)
     if not sport:
         raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
     
-    tracker = ResultsTracker()
-    cold_players = await tracker.get_cold_players(db, sport_id, min_picks, limit)
+    # If market or side filter is specified, use market-specific query
+    if market or side:
+        result = await get_hot_cold_players_by_market(
+            db, sport_id=sport_id, market=market, side=side, min_picks=min_picks, limit=limit
+        )
+        cold_players = [
+            {
+                "player_id": p.get("player_id", 0),
+                "player_name": p.get("player_name", ""),
+                "hit_rate_7d": p.get("hit_rate_7d", 0.0),
+                "total_7d": p.get("total_7d", 0),
+                "hits_7d": p.get("hits_7d", 0),
+                "current_streak": p.get("current_streak", 0),
+                "last_5": p.get("last_5_results"),
+                "stat_type": p.get("market", ""),
+                "side": p.get("side"),
+                "trust_tag": compute_trust_tag(p.get("total_7d", 0), p.get("hit_rate_7d", 0.0), p.get("current_streak", 0)),
+            }
+            for p in result.get("cold", [])
+        ]
+    else:
+        tracker = ResultsTracker()
+        cold_players = await tracker.get_cold_players(db, sport_id, min_picks, limit)
+        # Add trust_tag to each player
+        cold_players = [
+            {**p, "trust_tag": compute_trust_tag(p.get("total_7d", 0), p.get("hit_rate_7d", 0.0), p.get("current_streak", 0))}
+            for p in cold_players
+        ]
     
     return HotPlayerList(
         items=[HotPlayer(**p) for p in cold_players],

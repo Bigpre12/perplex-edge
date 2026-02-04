@@ -414,13 +414,38 @@ export function PlayerPropsTab() {
 
   // Filter state - EV-first defaults for max profit
   const [statType, setStatType] = useState<string>('');
+  const [playerIdFilter, setPlayerIdFilter] = useState<number | null>(null);
+  const [sideFilter, setSideFilter] = useState<string | null>(null);
+  
+  // Read URL params for deep linking (from Stats tab, etc.)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlPlayerId = params.get('playerId');
+    const urlMarket = params.get('market');
+    const urlSide = params.get('side');
+    
+    if (urlPlayerId) setPlayerIdFilter(parseInt(urlPlayerId, 10));
+    if (urlMarket) setStatType(urlMarket.toUpperCase());
+    if (urlSide) setSideFilter(urlSide.toLowerCase());
+    
+    // Clear URL params after reading (optional - keeps URL clean)
+    if (urlPlayerId || urlMarket || urlSide) {
+      params.delete('playerId');
+      params.delete('market');
+      params.delete('side');
+      const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
   
   // Reset stat type when sport changes (NFL stats don't apply to NBA, etc.)
   useEffect(() => {
     setStatType(''); // Reset to "All Stats"
+    setPlayerIdFilter(null); // Clear player filter on sport change
+    setSideFilter(null); // Clear side filter on sport change
   }, [sportId]);
-  const [minConfidence, setMinConfidence] = useState<number>(0.55); // 55%+ confidence (sweet spot)
-  const [minEv, setMinEv] = useState<number>(0.03);                 // 3%+ EV only
+  const [minConfidence, setMinConfidence] = useState<number>(0.50); // 50%+ confidence (shows more picks)
+  const [minEv, setMinEv] = useState<number>(0.0);                  // Show all EV (user can tighten)
   const [riskLevels, setRiskLevels] = useState<string[]>(['STANDARD', 'CONFIDENT', 'STRONG']);
   
   // Don't Bet List state
@@ -564,10 +589,12 @@ export function PlayerPropsTab() {
       min_confidence: minConfidence > 0 ? minConfidence : undefined,
       min_ev: minEv > 0 ? minEv : undefined,
       risk_levels: riskLevels.length > 0 ? riskLevels.join(',') : undefined,
+      player_id: playerIdFilter ?? undefined,
+      side: sideFilter ?? undefined,
       fresh_only: false,  // Show all picks regardless of game start time
       limit: 100,
     }),
-    [statType, minConfidence, minEv, riskLevels]
+    [statType, minConfidence, minEv, riskLevels, playerIdFilter, sideFilter]
   );
 
   // Available Kelly risk levels
