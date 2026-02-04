@@ -1,0 +1,118 @@
+{
+  "season": "2025-26",
+  "sport": "UEFA Champions League",
+  "sport_key": "soccer_uefa_champs_league",
+  "last_updated": "2026-02-04",
+  "format": "36-team single league table (new format from 2024-25)",
+  "total_matchdays": 8,
+  "final_date": "2026-05-30",
+  "final_venue": "Puskas Arena",
+  "final_city": "Budapest, Hungary",
+  "notes": {
+    "format_change": "New 36-team league phase replaced traditional group stage from 2024-25",
+    "qualification": "Top 8 advance directly to R16, teams 9-24 play knockout playoffs",
+    "world_cup_impact": "Competition finishes before FIFA World Cup 2026 (Jun 11 - Jul 19)"
+  },
+  "phases": {
+    "qualifying": {
+      "name": "Qualifying Rounds",
+      "dates": "Jul 8 - Aug 28, 2025",
+      "rounds": ["First qualifying round", "Second qualifying round", "Third qualifying round", "Play-off round"]
+    },
+    "league_phase": {
+      "name": "League Phase",
+      "teams": 36,
+      "matchdays": 8,
+      "format": "Each team plays 8 matches (4 home, 4 away) against 8 different opponents",
+      "dates": [
+        {"matchday": 1, "dates": "Sep 16-17, 2025"},
+        {"matchday": 2, "dates": "Sep 30 - Oct 1, 2025"},
+        {"matchday": 3, "dates": "Oct 21-22, 2025"},
+        {"matchday": 4, "dates": "Nov 4-5, 2025"},
+        {"matchday": 5, "dates": "Nov 25-26, 2025"},
+        {"matchday": 6, "dates": "Dec 9-10, 2025"},
+        {"matchday": 7, "dates": "Jan 20-21, 2026"},
+        {"matchday": 8, "dates": "Jan 28, 2026"}
+      ]
+    },
+    "knockout_playoffs": {
+      "name": "Knockout Round Play-offs",
+      "teams": 16,
+      "format": "Teams ranked 9-24 in league phase play two-legged ties",
+      "dates": {
+        "first_leg": "Feb 17-18, 2026",
+        "second_leg": "Feb 24-25, 2026"
+      }
+    },
+    "round_of_16": {
+      "name": "Round of 16",
+      "teams": 16,
+      "format": "Top 8 from league phase + 8 playoff winners",
+      "dates": {
+        "first_leg": "Mar 10-11, 2026",
+        "second_leg": "Mar 17-18, 2026"
+      }
+    },
+    "quarter_finals": {
+      "name": "Quarter-finals",
+      "teams": 8,
+      "dates": {
+        "first_leg": "Apr 7-8, 2026",
+        "second_leg": "Apr 14-15, 2026"
+      }
+    },
+    "semi_finals": {
+      "name": "Semi-finals",
+      "teams": 4,
+      "dates": {
+        "first_leg": "Apr 28-29, 2026",
+        "second_leg": "May 5-6, 2026"
+      }
+    },
+    "final": {
+      "name": "Final",
+      "date": "2026-05-30",
+      "venue": "Puskas Arena",
+      "city": "Budapest",
+      "country": "Hungary",
+      "capacity": 67215
+    }
+  },
+  "key_dates_2026": [
+    {"date": "2026-01-20", "event": "League Phase Matchday 7 (Day 1)"},
+    {"date": "2026-01-21", "event": "League Phase Matchday 7 (Day 2)"},
+    {"date": "2026-01-28", "event": "League Phase Matchday 8 (Final matchday)"},
+    {"date": "2026-01-31", "event": "Knockout phase draw"},
+    {"date": "2026-02-17", "event": "Knockout playoffs first leg (Day 1)"},
+    {"date": "2026-02-18", "event": "Knockout playoffs first leg (Day 2)"},
+    {"date": "2026-02-24", "event": "Knockout playoffs second leg (Day 1)"},
+    {"date": "2026-02-25", "event": "Knockout playoffs second leg (Day 2)"},
+    {"date": "2026-03-10", "event": "Round of 16 first leg (Day 1)"},
+    {"date": "2026-03-11", "event": "Round of 16 first leg (Day 2)"},
+    {"date": "2026-03-17", "event": "Round of 16 second leg (Day 1)"},
+    {"date": "2026-03-18", "event": "Round of 16 second leg (Day 2)"},
+    {"date": "2026-03-20", "event": "Quarter-final and semi-final draw"},
+    {"date": "2026-04-07", "event": "Quarter-final first leg (Day 1)"},
+    {"date": "2026-04-08", "event": "Quarter-final first leg (Day 2)"},
+    {"date": "2026-04-14", "event": "Quarter-final second leg (Day 1)"},
+    {"date": "2026-04-15", "event": "Quarter-final second leg (Day 2)"},
+    {"date": "2026-04-28", "event": "Semi-final first leg (Day 1)"},
+    {"date": "2026-04-29", "event": "Semi-final first leg (Day 2)"},
+    {"date": "2026-05-05", "event": "Semi-final second leg (Day 1)"},
+    {"date": "2026-05-06", "event": "Semi-final second leg (Day 2)"},
+    {"date": "2026-05-30", "event": "FINAL - Puskas Arena, Budapest"}
+  ],
+  "participants_2025_26": {
+    "automatic_qualifiers": [
+      "Real Madrid (ESP) - Title holder",
+      "Manchester City (ENG)",
+      "Bayern Munich (GER)",
+      "Paris Saint-Germain (FRA)",
+      "Inter Milan (ITA)",
+      "Liverpool (ENG)",
+      "Barcelona (ESP)",
+      "Borussia Dortmund (GER)"
+    ],
+    "note": "Full 36-team list determined by qualifying rounds and domestic league positions"
+  }
+}

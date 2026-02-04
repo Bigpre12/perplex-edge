@@ -1,0 +1,102 @@
+{
+  "season": "2025-26",
+  "sport": "UEFA Europa League",
+  "sport_key": "soccer_uefa_europa",
+  "last_updated": "2026-02-04",
+  "format": "36-team single league table (new format from 2024-25)",
+  "total_matchdays": 8,
+  "final_date": "2026-05-27",
+  "final_venue": "San Mames",
+  "final_city": "Bilbao, Spain",
+  "notes": {
+    "format_change": "New 36-team league phase replaced traditional group stage from 2024-25",
+    "qualification": "Top 8 advance directly to R16, teams 9-24 play knockout playoffs",
+    "world_cup_impact": "Competition finishes before FIFA World Cup 2026 (Jun 11 - Jul 19)"
+  },
+  "phases": {
+    "qualifying": {
+      "name": "Qualifying Rounds",
+      "dates": "Jul 2025 - Aug 2025",
+      "rounds": ["Second qualifying round", "Third qualifying round", "Play-off round"]
+    },
+    "league_phase": {
+      "name": "League Phase",
+      "teams": 36,
+      "matchdays": 8,
+      "format": "Each team plays 8 matches (4 home, 4 away) against 8 different opponents",
+      "dates": [
+        {"matchday": 1, "dates": "Sep 18, 2025"},
+        {"matchday": 2, "dates": "Oct 2, 2025"},
+        {"matchday": 3, "dates": "Oct 23, 2025"},
+        {"matchday": 4, "dates": "Nov 6, 2025"},
+        {"matchday": 5, "dates": "Nov 27, 2025"},
+        {"matchday": 6, "dates": "Dec 11, 2025"},
+        {"matchday": 7, "dates": "Jan 22, 2026"},
+        {"matchday": 8, "dates": "Jan 29, 2026"}
+      ]
+    },
+    "knockout_playoffs": {
+      "name": "Knockout Round Play-offs",
+      "teams": 16,
+      "format": "Teams ranked 9-24 in league phase play two-legged ties",
+      "dates": {
+        "first_leg": "Feb 19, 2026",
+        "second_leg": "Feb 26, 2026"
+      }
+    },
+    "round_of_16": {
+      "name": "Round of 16",
+      "teams": 16,
+      "format": "Top 8 from league phase + 8 playoff winners",
+      "dates": {
+        "first_leg": "Mar 12, 2026",
+        "second_leg": "Mar 19, 2026"
+      }
+    },
+    "quarter_finals": {
+      "name": "Quarter-finals",
+      "teams": 8,
+      "dates": {
+        "first_leg": "Apr 9, 2026",
+        "second_leg": "Apr 16, 2026"
+      }
+    },
+    "semi_finals": {
+      "name": "Semi-finals",
+      "teams": 4,
+      "dates": {
+        "first_leg": "Apr 30, 2026",
+        "second_leg": "May 7, 2026"
+      }
+    },
+    "final": {
+      "name": "Final",
+      "date": "2026-05-27",
+      "venue": "San Mames",
+      "city": "Bilbao",
+      "country": "Spain",
+      "capacity": 53289
+    }
+  },
+  "key_dates_2026": [
+    {"date": "2026-01-22", "event": "League Phase Matchday 7"},
+    {"date": "2026-01-29", "event": "League Phase Matchday 8 (Final matchday)"},
+    {"date": "2026-01-31", "event": "Knockout phase draw"},
+    {"date": "2026-02-19", "event": "Knockout playoffs first leg"},
+    {"date": "2026-02-26", "event": "Knockout playoffs second leg"},
+    {"date": "2026-03-12", "event": "Round of 16 first leg"},
+    {"date": "2026-03-19", "event": "Round of 16 second leg"},
+    {"date": "2026-03-20", "event": "Quarter-final and semi-final draw"},
+    {"date": "2026-04-09", "event": "Quarter-final first leg"},
+    {"date": "2026-04-16", "event": "Quarter-final second leg"},
+    {"date": "2026-04-30", "event": "Semi-final first leg"},
+    {"date": "2026-05-07", "event": "Semi-final second leg"},
+    {"date": "2026-05-27", "event": "FINAL - San Mames, Bilbao"}
+  ],
+  "qualification_path": {
+    "domestic_league": "5th place finishers from top leagues",
+    "cup_winners": "Domestic cup winners not qualified for UCL",
+    "ucl_dropouts": "Teams dropping from UCL qualifying",
+    "note": "36-team list finalized after qualifying rounds"
+  }
+}

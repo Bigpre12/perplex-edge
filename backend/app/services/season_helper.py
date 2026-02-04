@@ -519,6 +519,127 @@ def get_pga_season_start() -> datetime:
 
 
 # =============================================================================
+# UEFA Competitions Season Helpers
+# =============================================================================
+
+def get_ucl_season_years() -> Tuple[int, int]:
+    """
+    Get the current UEFA Champions League season start and end years.
+    
+    UCL season runs July (qualifying) to May across two calendar years:
+    - Jul-Dec: First half of season (e.g., in Sep 2025, season is 2025-26)
+    - Jan-May: Second half of season (e.g., in Feb 2026, season is still 2025-26)
+    - Jun: Brief offseason before qualifying
+    
+    Returns:
+        Tuple of (start_year, end_year) - e.g., (2025, 2026)
+    """
+    today = datetime.utcnow().date()
+    year = today.year
+    month = today.month
+    
+    if month >= 7:  # Jul-Dec: new season
+        return (year, year + 1)
+    else:  # Jan-Jun: still in season that started last year
+        return (year - 1, year)
+
+
+def get_ucl_season_label() -> str:
+    """
+    Get the current UEFA Champions League season label in format "YYYY-YY".
+    
+    Examples:
+        - In September 2025: "2025-26"
+        - In February 2026: "2025-26"
+    
+    Returns:
+        Season label string like "2025-26"
+    """
+    start_year, end_year = get_ucl_season_years()
+    return f"{start_year}-{end_year % 100:02d}"
+
+
+def get_ucl_season_start() -> datetime:
+    """
+    Get the UCL season start date (league phase start in September).
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    start_year, _ = get_ucl_season_years()
+    # UCL league phase typically starts mid-September
+    return datetime(start_year, 9, 15)
+
+
+def get_uel_season_years() -> Tuple[int, int]:
+    """
+    Get the current UEFA Europa League season start and end years.
+    
+    UEL follows same calendar as UCL: July to May.
+    
+    Returns:
+        Tuple of (start_year, end_year) - e.g., (2025, 2026)
+    """
+    return get_ucl_season_years()
+
+
+def get_uel_season_label() -> str:
+    """
+    Get the current UEFA Europa League season label.
+    
+    Returns:
+        Season label string like "2025-26"
+    """
+    start_year, end_year = get_uel_season_years()
+    return f"{start_year}-{end_year % 100:02d}"
+
+
+def get_uel_season_start() -> datetime:
+    """
+    Get the UEL season start date (league phase start in September).
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    start_year, _ = get_uel_season_years()
+    return datetime(start_year, 9, 15)
+
+
+def get_uecl_season_years() -> Tuple[int, int]:
+    """
+    Get the current UEFA Conference League season start and end years.
+    
+    UECL follows same calendar as UCL/UEL: July to May.
+    
+    Returns:
+        Tuple of (start_year, end_year) - e.g., (2025, 2026)
+    """
+    return get_ucl_season_years()
+
+
+def get_uecl_season_label() -> str:
+    """
+    Get the current UEFA Conference League season label.
+    
+    Returns:
+        Season label string like "2025-26"
+    """
+    start_year, end_year = get_uecl_season_years()
+    return f"{start_year}-{end_year % 100:02d}"
+
+
+def get_uecl_season_start() -> datetime:
+    """
+    Get the UECL season start date (league phase start in September).
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    start_year, _ = get_uecl_season_years()
+    return datetime(start_year, 9, 15)
+
+
+# =============================================================================
 # Schedule File Helpers
 # =============================================================================
 
@@ -565,6 +686,15 @@ def get_schedule_filename(sport_key: str) -> str:
     elif sport_key == "golf_pga_tour":
         season_year = get_pga_season_year()
         return f"pga_{season_year}.json"
+    elif sport_key == "soccer_uefa_champs_league":
+        start_year, end_year = get_ucl_season_years()
+        return f"ucl_{start_year}_{end_year % 100:02d}.json"
+    elif sport_key == "soccer_uefa_europa":
+        start_year, end_year = get_uel_season_years()
+        return f"uel_{start_year}_{end_year % 100:02d}.json"
+    elif sport_key == "soccer_uefa_conference":
+        start_year, end_year = get_uecl_season_years()
+        return f"uecl_{start_year}_{end_year % 100:02d}.json"
     else:
         # Default to NBA format for unknown sports
         start_year, end_year = get_nba_season_years()
@@ -620,6 +750,12 @@ def get_current_season_start(sport_key: str = "basketball_nba") -> datetime:
         return get_epl_season_start()
     elif sport_key == "golf_pga_tour":
         return get_pga_season_start()
+    elif sport_key == "soccer_uefa_champs_league":
+        return get_ucl_season_start()
+    elif sport_key == "soccer_uefa_europa":
+        return get_uel_season_start()
+    elif sport_key == "soccer_uefa_conference":
+        return get_uecl_season_start()
     else:
         # Default to NBA for unknown
         return get_nba_season_start()
@@ -655,6 +791,12 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
         return get_epl_season_label()
     elif sport_key == "golf_pga_tour":
         return get_pga_season_label()
+    elif sport_key == "soccer_uefa_champs_league":
+        return get_ucl_season_label()
+    elif sport_key == "soccer_uefa_europa":
+        return get_uel_season_label()
+    elif sport_key == "soccer_uefa_conference":
+        return get_uecl_season_label()
     else:
         return get_nba_season_label()
 

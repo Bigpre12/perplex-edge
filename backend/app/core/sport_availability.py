@@ -85,9 +85,19 @@ SEASON_WINDOWS = {
         "offseason": (6, 7),        # June to July
     },
     "soccer_uefa_champs_league": {
-        "group_stage": (9, 12),     # September to December
-        "knockout": (2, 6),         # February to June
-        "offseason": (7, 8),        # Summer break
+        "league_phase": (9, 1),     # September to January (new format)
+        "knockout": (2, 5),         # February to May
+        "offseason": (6, 8),        # Summer break (World Cup 2026 in June-July)
+    },
+    "soccer_uefa_europa": {
+        "league_phase": (9, 1),     # September to January
+        "knockout": (2, 5),         # February to May
+        "offseason": (6, 8),        # Summer break
+    },
+    "soccer_uefa_conference": {
+        "league_phase": (9, 1),     # September to January
+        "knockout": (2, 5),         # February to May
+        "offseason": (6, 8),        # Summer break
     },
     "soccer_usa_mls": {
         "regular_season": (2, 10),  # February to October
@@ -384,6 +394,8 @@ def _get_phase_message(sport_key: str, phase: str) -> str:
         "golf_pga_tour": "PGA Tour",
         "soccer_epl": "English Premier League",
         "soccer_uefa_champs_league": "UEFA Champions League",
+        "soccer_uefa_europa": "UEFA Europa League",
+        "soccer_uefa_conference": "UEFA Conference League",
         "soccer_usa_mls": "MLS",
         "mma_mixed_martial_arts": "UFC",
     }
@@ -427,7 +439,9 @@ def _get_next_action(sport_key: str, phase: str, current_month: int) -> str:
         "tennis_wta": "Check for upcoming tournaments",
         "golf_pga_tour": "PGA Tour events resume in January",
         "soccer_epl": "EPL season begins in August",
-        "soccer_uefa_champs_league": "UCL group stage begins in September",
+        "soccer_uefa_champs_league": "UCL league phase begins in September",
+        "soccer_uefa_europa": "UEL league phase begins in September",
+        "soccer_uefa_conference": "UECL league phase begins in September",
         "soccer_usa_mls": "MLS season begins in February",
         "mma_mixed_martial_arts": "UFC events happen year-round",
     }
@@ -462,6 +476,8 @@ def get_all_sport_statuses() -> dict[str, dict]:
         # Soccer
         "soccer_epl",
         "soccer_uefa_champs_league",
+        "soccer_uefa_europa",
+        "soccer_uefa_conference",
         "soccer_usa_mls",
         # MMA
         "mma_mixed_martial_arts",

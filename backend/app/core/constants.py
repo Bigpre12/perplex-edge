@@ -47,6 +47,8 @@ SPORT_KEY_TO_LEAGUE = {
     # Soccer
     "soccer_epl": "EPL",
     "soccer_uefa_champs_league": "UCL",
+    "soccer_uefa_europa": "UEL",
+    "soccer_uefa_conference": "UECL",
     "soccer_usa_mls": "MLS",
     # MMA
     "mma_mixed_martial_arts": "UFC",
@@ -73,6 +75,8 @@ SPORT_KEY_TO_NAME = {
     # Soccer
     "soccer_epl": ("English Premier League", "EPL"),
     "soccer_uefa_champs_league": ("UEFA Champions League", "UCL"),
+    "soccer_uefa_europa": ("UEFA Europa League", "UEL"),
+    "soccer_uefa_conference": ("UEFA Conference League", "UECL"),
     "soccer_usa_mls": ("MLS", "MLS"),
     # MMA
     "mma_mixed_martial_arts": ("UFC", "UFC"),
@@ -123,6 +127,8 @@ SPORT_ID_TO_KEY = {
     70: "soccer_epl",
     71: "soccer_uefa_champs_league",
     72: "soccer_usa_mls",
+    73: "soccer_uefa_europa",
+    74: "soccer_uefa_conference",
     # MMA/UFC
     80: "mma_mixed_martial_arts",
 }
