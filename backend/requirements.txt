@@ -33,3 +33,6 @@ redis>=5.0.0
 # Resilience (retries, circuit breakers)
 tenacity>=8.2.0
 pybreaker>=1.0.0
+
+# Validation
+email-validator>=2.0.0
