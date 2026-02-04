@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { SportProvider } from './context/SportContext'
-import { LandingPage, TodayDashboard, MyEdgePage } from './pages'
+import { LandingPage, TodayDashboard, MyEdgePage, PricingPage } from './pages'
 import {
   TopNav,
   PlayerPropsTab,
@@ -155,6 +155,8 @@ function App() {
             <MyEdgePage />
           </AppLayout>
         } />
+        
+        <Route path="/pricing" element={<PricingPage />} />
         
         <Route path="/all-sports" element={
           <AppLayout>

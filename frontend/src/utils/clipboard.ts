@@ -47,6 +47,84 @@ export function formatParlayForClipboard(legs: Array<{
   return `${header}\n\n${legLines.join('\n')}${footer}`;
 }
 
+// =============================================================================
+// Discord-Formatted Clipboard Functions
+// =============================================================================
+
+// Format a single pick for Discord (with markdown)
+export function formatPickForDiscord(pick: {
+  player_name: string;
+  stat_type: string;
+  line: number;
+  side: string;
+  odds?: number;
+  model_probability?: number;
+  expected_value?: number;
+  team?: string;
+}): string {
+  const sideEmoji = pick.side === 'over' ? '⬆️' : '⬇️';
+  const prob = pick.model_probability ? `${(pick.model_probability * 100).toFixed(0)}%` : '';
+  const ev = pick.expected_value ? `+${(pick.expected_value * 100).toFixed(1)}% EV` : '';
+  const odds = pick.odds ? `@ ${pick.odds > 0 ? '+' : ''}${pick.odds}` : '';
+  
+  let line = `**${pick.player_name}**`;
+  if (pick.team) line += ` (${pick.team})`;
+  line += `\n${sideEmoji} ${pick.side.toUpperCase()} ${pick.line} ${pick.stat_type}`;
+  if (odds) line += ` ${odds}`;
+  if (prob || ev) {
+    line += `\n📊 ${prob}${prob && ev ? ' | ' : ''}${ev}`;
+  }
+  
+  return line;
+}
+
+// Format multiple picks for Discord
+export function formatPicksForDiscord(picks: Array<{
+  player_name: string;
+  stat_type: string;
+  line: number;
+  side: string;
+  odds?: number;
+  model_probability?: number;
+  expected_value?: number;
+  team?: string;
+}>): string {
+  const header = `🎯 **Perplex Engine Picks** - ${new Date().toLocaleDateString()}`;
+  const divider = '━━━━━━━━━━━━━━━━━━━━';
+  
+  const pickLines = picks.map((p, i) => {
+    const sideEmoji = p.side === 'over' ? '⬆️' : '⬇️';
+    const ev = p.expected_value ? `+${(p.expected_value * 100).toFixed(1)}%` : '';
+    return `**${i + 1}.** ${p.player_name} ${sideEmoji} ${p.side.toUpperCase()} ${p.line} ${p.stat_type}${ev ? ` (${ev})` : ''}`;
+  });
+  
+  const footer = `\n🔗 *via Perplex Engine*`;
+  
+  return `${header}\n${divider}\n\n${pickLines.join('\n')}\n${footer}`;
+}
+
+// Format a parlay for Discord
+export function formatParlayForDiscord(legs: Array<{
+  player_name: string;
+  stat_type: string;
+  line: number;
+  side: string;
+}>, totalOdds: number, parlayEv: number): string {
+  const header = `🎰 **Perplex Engine Parlay** - ${new Date().toLocaleDateString()}`;
+  const divider = '━━━━━━━━━━━━━━━━━━━━';
+  
+  const legLines = legs.map((leg, i) => {
+    const sideEmoji = leg.side === 'over' ? '⬆️' : '⬇️';
+    return `**${i + 1}.** ${leg.player_name} ${sideEmoji} ${leg.side.toUpperCase()} ${leg.line} ${leg.stat_type}`;
+  });
+  
+  const oddsStr = totalOdds > 0 ? `+${totalOdds}` : totalOdds.toString();
+  const evStr = parlayEv >= 0 ? `+${(parlayEv * 100).toFixed(1)}%` : `${(parlayEv * 100).toFixed(1)}%`;
+  const footer = `\n💰 **Odds:** ${oddsStr} | **EV:** ${evStr}\n🔗 *via Perplex Engine*`;
+  
+  return `${header}\n${divider}\n\n${legLines.join('\n')}\n${footer}`;
+}
+
 // Copy text to clipboard and return success status
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {

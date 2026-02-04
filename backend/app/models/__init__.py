@@ -23,6 +23,7 @@ from app.models.sync_metadata import SyncMetadata
 from app.models.user_bet import UserBet, BetStatus
 from app.models.watchlist import Watchlist
 from app.models.shared_card import SharedCard
+from app.models.user import User, UserPlan
 
 __all__ = [
     "Base",
@@ -53,4 +54,6 @@ __all__ = [
     "BetStatus",
     "Watchlist",
     "SharedCard",
+    "User",
+    "UserPlan",
 ]
