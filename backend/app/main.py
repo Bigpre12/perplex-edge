@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -253,6 +254,42 @@ app.include_router(cards_router, prefix="/api", tags=["cards"])
 app.include_router(slate_router, prefix="/api", tags=["slate"])
 app.include_router(users_router, prefix="/api", tags=["users"])
 app.include_router(webhooks_router, prefix="/api", tags=["webhooks"])
+
+
+# =============================================================================
+# Global Exception Handler (ensures CORS headers on 500 errors)
+# =============================================================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Handle unhandled exceptions and ensure CORS headers are sent.
+    
+    When FastAPI throws an unhandled exception, the error response might
+    bypass the CORS middleware. This handler ensures CORS headers are
+    always included, so the browser can read the error response.
+    """
+    # Log the error with context
+    logger.error(
+        "unhandled_exception",
+        error=str(exc),
+        error_type=type(exc).__name__,
+        path=request.url.path,
+        method=request.method,
+    )
+    
+    # Build CORS headers if origin is allowed
+    origin = request.headers.get("origin", "")
+    headers = {}
+    if origin in ALLOWED_ORIGINS:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
+        headers=headers,
+    )
 
 
 # =============================================================================

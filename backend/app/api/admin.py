@@ -1810,107 +1810,119 @@ async def get_dashboard_summary(
     - Books <= 1: Single-book data (DK-only)
     - last_update > 10 min: Stale odds data
     """
-    from datetime import timedelta
-    from sqlalchemy import select, func, distinct, and_
-    from app.models import Game, Line, Market
-    from app.config.sports import SPORT_ID_TO_KEY
+    try:
+        from datetime import timedelta
+        from sqlalchemy import select, func, distinct, and_
+        from app.models import Game, Line, Market
+        from app.config.sports import SPORT_ID_TO_KEY
+        
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(minutes=10)
+        next_24h = now + timedelta(hours=24)
+        
+        rows = []
+        
+        for sport_id, sport_key in SPORT_ID_TO_KEY.items():
+            sport_key_str = sport_key.value if hasattr(sport_key, 'value') else str(sport_key)
+            
+            # Count games in next 24 hours
+            game_count = await db.scalar(
+                select(func.count(Game.id)).where(
+                    and_(
+                        Game.sport_id == sport_id,
+                        Game.start_time >= now,
+                        Game.start_time <= next_24h,
+                    )
+                )
+            ) or 0
+            
+            # Count player props (lines where player_id is not null)
+            # Need to join through Game to filter by sport_id
+            prop_count = await db.scalar(
+                select(func.count(distinct(Line.id)))
+                .select_from(Line)
+                .join(Game, Line.game_id == Game.id)
+                .where(
+                    and_(
+                        Game.sport_id == sport_id,
+                        Line.player_id.isnot(None),
+                        Line.is_current == True,
+                    )
+                )
+            ) or 0
+            
+            # Count unique sportsbooks
+            book_count = await db.scalar(
+                select(func.count(distinct(Line.sportsbook)))
+                .select_from(Line)
+                .join(Game, Line.game_id == Game.id)
+                .where(
+                    and_(
+                        Game.sport_id == sport_id,
+                        Line.is_current == True,
+                    )
+                )
+            ) or 0
+            
+            # Get most recent line update
+            last_update_result = await db.scalar(
+                select(func.max(Line.fetched_at))
+                .select_from(Line)
+                .join(Game, Line.game_id == Game.id)
+                .where(
+                    and_(
+                        Game.sport_id == sport_id,
+                        Line.is_current == True,
+                    )
+                )
+            )
+            
+            # Determine status and issues
+            status = "ok"
+            issues = []
+            
+            if game_count > 0 and prop_count == 0:
+                status = "error"
+                issues.append("Games today but no props")
+            
+            if book_count == 0 and game_count > 0:
+                status = "error" if status != "error" else status
+                issues.append("No sportsbook data")
+            elif book_count == 1:
+                status = "warn" if status == "ok" else status
+                issues.append("Single-book market (DK-only?)")
+            
+            if last_update_result and last_update_result < cutoff:
+                status = "warn" if status == "ok" else status
+                minutes_stale = int((now - last_update_result).total_seconds() / 60)
+                issues.append(f"Odds stale ({minutes_stale} min)")
+            
+            rows.append({
+                "sport_id": sport_id,
+                "sport_key": sport_key_str,
+                "game_count": game_count,
+                "prop_count": prop_count,
+                "book_count": book_count,
+                "last_update": last_update_result.isoformat() if last_update_result else None,
+                "status": status,
+                "issues": issues,
+            })
+        
+        # Sort by sport_id for consistent ordering
+        rows.sort(key=lambda x: x["sport_id"])
+        
+        return {
+            "now": now.isoformat(),
+            "sports": rows,
+        }
     
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(minutes=10)
-    next_24h = now + timedelta(hours=24)
-    
-    rows = []
-    
-    for sport_id, sport_key in SPORT_ID_TO_KEY.items():
-        sport_key_str = sport_key.value if hasattr(sport_key, 'value') else str(sport_key)
-        
-        # Count games in next 24 hours
-        game_count = await db.scalar(
-            select(func.count(Game.id)).where(
-                and_(
-                    Game.sport_id == sport_id,
-                    Game.start_time >= now,
-                    Game.start_time <= next_24h,
-                )
-            )
-        ) or 0
-        
-        # Count player props (lines where player_id is not null)
-        # Need to join through Game to filter by sport_id
-        prop_count = await db.scalar(
-            select(func.count(distinct(Line.id)))
-            .select_from(Line)
-            .join(Game, Line.game_id == Game.id)
-            .where(
-                and_(
-                    Game.sport_id == sport_id,
-                    Line.player_id.isnot(None),
-                    Line.is_current == True,
-                )
-            )
-        ) or 0
-        
-        # Count unique sportsbooks
-        book_count = await db.scalar(
-            select(func.count(distinct(Line.sportsbook)))
-            .select_from(Line)
-            .join(Game, Line.game_id == Game.id)
-            .where(
-                and_(
-                    Game.sport_id == sport_id,
-                    Line.is_current == True,
-                )
-            )
-        ) or 0
-        
-        # Get most recent line update
-        last_update_result = await db.scalar(
-            select(func.max(Line.fetched_at))
-            .select_from(Line)
-            .join(Game, Line.game_id == Game.id)
-            .where(
-                and_(
-                    Game.sport_id == sport_id,
-                    Line.is_current == True,
-                )
-            )
+    except Exception as e:
+        logger.error(
+            "dashboard_summary_error",
+            error=str(e),
+            error_type=type(e).__name__,
         )
-        
-        # Determine status and issues
-        status = "ok"
-        issues = []
-        
-        if game_count > 0 and prop_count == 0:
-            status = "error"
-            issues.append("Games today but no props")
-        
-        if book_count == 0 and game_count > 0:
-            status = "error" if status != "error" else status
-            issues.append("No sportsbook data")
-        elif book_count == 1:
-            status = "warn" if status == "ok" else status
-            issues.append("Single-book market (DK-only?)")
-        
-        if last_update_result and last_update_result < cutoff:
-            status = "warn" if status == "ok" else status
-            minutes_stale = int((now - last_update_result).total_seconds() / 60)
-            issues.append(f"Odds stale ({minutes_stale} min)")
-        
-        rows.append({
-            "sport_id": sport_id,
-            "sport_key": sport_key_str,
-            "game_count": game_count,
-            "prop_count": prop_count,
-            "book_count": book_count,
-            "last_update": last_update_result.isoformat() if last_update_result else None,
-            "status": status,
-            "issues": issues,
-        })
-    
-    # Sort by sport_id for consistent ordering
-    rows.sort(key=lambda x: x["sport_id"])
-    
-    return {
-        "now": now.isoformat(),
-        "sports": rows,
-    }
+        raise HTTPException(
+            status_code=500,
+            detail=f"Dashboard query failed: {type(e).__name__}: {str(e)}"
+        )
