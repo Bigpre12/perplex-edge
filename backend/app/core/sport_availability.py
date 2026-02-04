@@ -47,6 +47,7 @@ SEASON_WINDOWS = {
         "regular_season": (10, 4),  # October to April
         "playoffs": (4, 6),         # April to June
         "offseason": (7, 9),        # July to September
+        # Note: Olympic break Feb 6-22, 2026 (Milano Cortina) - NHL pauses
     },
     "tennis_atp": {
         # Tennis is year-round with different tournaments
