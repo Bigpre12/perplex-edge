@@ -1,0 +1,95 @@
+{
+  "season": "2026",
+  "sport": "WNBA",
+  "sport_key": "basketball_wnba",
+  "last_updated": "2026-02-04",
+  "total_games_per_team": 44,
+  "teams": 13,
+  "notes": {
+    "format": "13 teams (Portland expansion), 44-game regular season",
+    "expansion": "Portland franchise begins play in 2026",
+    "playoffs": "8 teams qualify for playoffs",
+    "finals": "Best-of-5 WNBA Finals"
+  },
+  "key_dates": {
+    "training_camp": "2026-04-26",
+    "preseason_start": "2026-05-01",
+    "regular_season_start": "2026-05-15",
+    "olympic_break_start": null,
+    "olympic_break_end": null,
+    "regular_season_end": "2026-09-11",
+    "playoffs_start": "2026-09-15",
+    "finals_start": "2026-10-01",
+    "finals_end": "2026-10-15"
+  },
+  "season_phases": [
+    {
+      "phase": "Preseason",
+      "start_date": "2026-05-01",
+      "end_date": "2026-05-13",
+      "games_per_team": 3
+    },
+    {
+      "phase": "Regular Season",
+      "start_date": "2026-05-15",
+      "end_date": "2026-09-11",
+      "games_per_team": 44,
+      "total_games": 286
+    },
+    {
+      "phase": "First Round",
+      "start_date": "2026-09-15",
+      "end_date": "2026-09-19",
+      "format": "Best-of-3",
+      "matchups": "5 vs 8, 6 vs 7"
+    },
+    {
+      "phase": "Second Round",
+      "start_date": "2026-09-21",
+      "end_date": "2026-09-27",
+      "format": "Best-of-5",
+      "matchups": "1 vs 8/5, 2 vs 7/6, 3 vs 6/7, 4 vs 5/8"
+    },
+    {
+      "phase": "Semifinals",
+      "start_date": "2026-09-29",
+      "end_date": "2026-10-05",
+      "format": "Best-of-5"
+    },
+    {
+      "phase": "WNBA Finals",
+      "start_date": "2026-10-08",
+      "end_date": "2026-10-18",
+      "format": "Best-of-5"
+    }
+  ],
+  "teams_by_conference": {
+    "Eastern_Conference": [
+      {"name": "Atlanta Dream", "abbr": "ATL", "arena": "Gateway Center Arena"},
+      {"name": "Chicago Sky", "abbr": "CHI", "arena": "Wintrust Arena"},
+      {"name": "Connecticut Sun", "abbr": "CON", "arena": "Mohegan Sun Arena"},
+      {"name": "Indiana Fever", "abbr": "IND", "arena": "Gainbridge Fieldhouse"},
+      {"name": "New York Liberty", "abbr": "NYL", "arena": "Barclays Center"},
+      {"name": "Washington Mystics", "abbr": "WAS", "arena": "Entertainment & Sports Arena"}
+    ],
+    "Western_Conference": [
+      {"name": "Dallas Wings", "abbr": "DAL", "arena": "College Park Center"},
+      {"name": "Las Vegas Aces", "abbr": "LVA", "arena": "Michelob Ultra Arena"},
+      {"name": "Los Angeles Sparks", "abbr": "LAS", "arena": "Crypto.com Arena"},
+      {"name": "Minnesota Lynx", "abbr": "MIN", "arena": "Target Center"},
+      {"name": "Phoenix Mercury", "abbr": "PHX", "arena": "Footprint Center"},
+      {"name": "Seattle Storm", "abbr": "SEA", "arena": "Climate Pledge Arena"},
+      {"name": "Portland Expansion", "abbr": "POR", "arena": "Moda Center", "expansion_year": 2026}
+    ]
+  },
+  "all_star": {
+    "date": "2026-07-18",
+    "location": "TBD",
+    "format": "Team USA vs Team WNBA (or traditional East vs West)"
+  },
+  "commissioners_cup": {
+    "in_season_tournament": true,
+    "final_date": "2026-07-21",
+    "prize_pool": "$500,000"
+  }
+}

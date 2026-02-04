@@ -1,0 +1,118 @@
+{
+  "season": "2026",
+  "sport": "NCAA Football",
+  "sport_key": "americanfootball_ncaaf",
+  "last_updated": "2026-02-04",
+  "total_weeks": 15,
+  "fbs_teams": 134,
+  "notes": {
+    "format": "12-team College Football Playoff",
+    "conference_realignment": "Big Ten and SEC at 16+ teams each",
+    "playoff_expansion": "12-team playoff with first-round byes for top 4 seeds"
+  },
+  "key_dates": {
+    "fall_camp_start": "2026-08-01",
+    "week_0": "2026-08-22",
+    "week_1": "2026-08-29",
+    "regular_season_end": "2026-11-28",
+    "conference_championship_week": "2026-12-05",
+    "cfp_selection": "2026-12-06",
+    "cfp_first_round": "2026-12-20",
+    "cfp_quarterfinals": "2026-12-31",
+    "cfp_semifinals": "2027-01-09",
+    "cfp_national_championship": "2027-01-18"
+  },
+  "weeks": [
+    {"week": 0, "dates": "Aug 22-23, 2026", "description": "Week 0 (limited games)"},
+    {"week": 1, "dates": "Aug 29 - Sep 1, 2026", "description": "Opening Weekend"},
+    {"week": 2, "dates": "Sep 5-7, 2026", "description": "Week 2"},
+    {"week": 3, "dates": "Sep 12-14, 2026", "description": "Week 3"},
+    {"week": 4, "dates": "Sep 19-21, 2026", "description": "Week 4"},
+    {"week": 5, "dates": "Sep 26-28, 2026", "description": "Week 5"},
+    {"week": 6, "dates": "Oct 3-5, 2026", "description": "Week 6"},
+    {"week": 7, "dates": "Oct 10-12, 2026", "description": "Week 7"},
+    {"week": 8, "dates": "Oct 17-19, 2026", "description": "Week 8"},
+    {"week": 9, "dates": "Oct 24-26, 2026", "description": "Week 9"},
+    {"week": 10, "dates": "Oct 31 - Nov 2, 2026", "description": "Week 10"},
+    {"week": 11, "dates": "Nov 7-9, 2026", "description": "Week 11"},
+    {"week": 12, "dates": "Nov 14-16, 2026", "description": "Week 12"},
+    {"week": 13, "dates": "Nov 21-23, 2026", "description": "Week 13"},
+    {"week": 14, "dates": "Nov 26-28, 2026", "description": "Rivalry Week / Thanksgiving"}
+  ],
+  "conference_championships": {
+    "date": "2026-12-05",
+    "games": [
+      {"conference": "SEC", "venue": "Mercedes-Benz Stadium", "city": "Atlanta, GA"},
+      {"conference": "Big Ten", "venue": "Lucas Oil Stadium", "city": "Indianapolis, IN"},
+      {"conference": "Big 12", "venue": "AT&T Stadium", "city": "Arlington, TX"},
+      {"conference": "ACC", "venue": "Bank of America Stadium", "city": "Charlotte, NC"},
+      {"conference": "Pac-12", "venue": "Allegiant Stadium", "city": "Las Vegas, NV"},
+      {"conference": "Mountain West", "venue": "Rotating"},
+      {"conference": "American", "venue": "Rotating"},
+      {"conference": "Sun Belt", "venue": "Rotating"},
+      {"conference": "MAC", "venue": "Ford Field", "city": "Detroit, MI"},
+      {"conference": "Conference USA", "venue": "Rotating"}
+    ]
+  },
+  "college_football_playoff": {
+    "teams": 12,
+    "format": {
+      "first_round": {
+        "date": "2026-12-20",
+        "matchups": "5 vs 12, 6 vs 11, 7 vs 10, 8 vs 9",
+        "location": "Higher seed campus",
+        "note": "Seeds 1-4 receive first-round bye"
+      },
+      "quarterfinals": {
+        "date": "2026-12-31",
+        "bowls": ["Fiesta Bowl", "Peach Bowl", "Rose Bowl", "Sugar Bowl"],
+        "note": "New Year's Six rotation"
+      },
+      "semifinals": {
+        "date": "2027-01-09",
+        "bowls": ["Orange Bowl", "Cotton Bowl"],
+        "note": "New Year's Six rotation"
+      },
+      "national_championship": {
+        "date": "2027-01-18",
+        "venue": "Hard Rock Stadium",
+        "city": "Miami Gardens, FL"
+      }
+    }
+  },
+  "major_conferences": {
+    "SEC": {
+      "teams": 16,
+      "members": ["Alabama", "Arkansas", "Auburn", "Florida", "Georgia", "Kentucky", "LSU", "Mississippi State", "Missouri", "Oklahoma", "Ole Miss", "South Carolina", "Tennessee", "Texas", "Texas A&M", "Vanderbilt"]
+    },
+    "Big_Ten": {
+      "teams": 18,
+      "members": ["Illinois", "Indiana", "Iowa", "Maryland", "Michigan", "Michigan State", "Minnesota", "Nebraska", "Northwestern", "Ohio State", "Oregon", "Penn State", "Purdue", "Rutgers", "UCLA", "USC", "Washington", "Wisconsin"]
+    },
+    "Big_12": {
+      "teams": 16,
+      "members": ["Arizona", "Arizona State", "Baylor", "BYU", "Cincinnati", "Colorado", "Houston", "Iowa State", "Kansas", "Kansas State", "Oklahoma State", "TCU", "Texas Tech", "UCF", "Utah", "West Virginia"]
+    },
+    "ACC": {
+      "teams": 17,
+      "members": ["Boston College", "California", "Clemson", "Duke", "Florida State", "Georgia Tech", "Louisville", "Miami", "NC State", "North Carolina", "Notre Dame (partial)", "Pitt", "SMU", "Stanford", "Syracuse", "Virginia", "Virginia Tech", "Wake Forest"]
+    }
+  },
+  "major_bowl_games": [
+    {"name": "Rose Bowl", "date": "2027-01-01", "location": "Pasadena, CA"},
+    {"name": "Sugar Bowl", "date": "2027-01-01", "location": "New Orleans, LA"},
+    {"name": "Orange Bowl", "date": "2027-01-02", "location": "Miami Gardens, FL"},
+    {"name": "Cotton Bowl", "date": "2027-01-02", "location": "Arlington, TX"},
+    {"name": "Fiesta Bowl", "date": "2026-12-31", "location": "Glendale, AZ"},
+    {"name": "Peach Bowl", "date": "2026-12-31", "location": "Atlanta, GA"}
+  ],
+  "rivalry_games": [
+    {"name": "The Game", "teams": ["Michigan", "Ohio State"], "week": 14},
+    {"name": "Iron Bowl", "teams": ["Alabama", "Auburn"], "week": 14},
+    {"name": "The Egg Bowl", "teams": ["Ole Miss", "Mississippi State"], "week": 14},
+    {"name": "Clean Old-Fashioned Hate", "teams": ["Georgia", "Georgia Tech"], "week": 14},
+    {"name": "Bedlam", "teams": ["Oklahoma", "Oklahoma State"], "week": 14},
+    {"name": "Red River Rivalry", "teams": ["Texas", "Oklahoma"], "week": 6},
+    {"name": "Army-Navy", "teams": ["Army", "Navy"], "date": "2026-12-12"}
+  ]
+}

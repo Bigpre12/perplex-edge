@@ -1,0 +1,152 @@
+{
+  "season": "2026",
+  "sport": "MLS",
+  "sport_key": "soccer_usa_mls",
+  "last_updated": "2026-02-04",
+  "total_teams": 30,
+  "games_per_team": 34,
+  "notes": {
+    "format": "30 teams, 34-game regular season",
+    "world_cup_break": "Season breaks for FIFA World Cup 2026 (Jun 11 - Jul 19)",
+    "playoffs": "9 teams per conference qualify for MLS Cup Playoffs",
+    "expansion": "San Diego FC joins as 30th team in 2025"
+  },
+  "key_dates": {
+    "preseason_start": "2026-01-15",
+    "regular_season_start": "2026-02-21",
+    "world_cup_break_start": "2026-06-08",
+    "world_cup_break_end": "2026-07-22",
+    "regular_season_end": "2026-10-17",
+    "decision_day": "2026-10-17",
+    "playoffs_round_1": "2026-10-24",
+    "conference_semifinals": "2026-11-07",
+    "conference_finals": "2026-11-22",
+    "mls_cup": "2026-12-05"
+  },
+  "season_phases": [
+    {
+      "phase": "Preseason",
+      "start_date": "2026-01-15",
+      "end_date": "2026-02-20"
+    },
+    {
+      "phase": "Regular Season Part 1",
+      "start_date": "2026-02-21",
+      "end_date": "2026-06-07",
+      "note": "Pre-World Cup matches"
+    },
+    {
+      "phase": "World Cup Break",
+      "start_date": "2026-06-08",
+      "end_date": "2026-07-22",
+      "note": "FIFA World Cup 2026 in USA/Canada/Mexico"
+    },
+    {
+      "phase": "Regular Season Part 2",
+      "start_date": "2026-07-25",
+      "end_date": "2026-10-17",
+      "note": "Post-World Cup matches"
+    },
+    {
+      "phase": "MLS Cup Playoffs",
+      "start_date": "2026-10-24",
+      "end_date": "2026-12-05"
+    }
+  ],
+  "playoffs": {
+    "format": "9 teams per conference (18 total)",
+    "rounds": [
+      {
+        "round": "Wild Card",
+        "format": "Single match at higher seed",
+        "dates": "Oct 24-25, 2026",
+        "matchups": "4 vs 9, 5 vs 8, 6 vs 7 in each conference"
+      },
+      {
+        "round": "Conference Quarterfinals",
+        "format": "Single match at higher seed",
+        "dates": "Oct 31 - Nov 1, 2026"
+      },
+      {
+        "round": "Conference Semifinals",
+        "format": "Best-of-3",
+        "dates": "Nov 7-15, 2026"
+      },
+      {
+        "round": "Conference Finals",
+        "format": "Single match at higher seed",
+        "dates": "Nov 22 or Nov 29, 2026"
+      },
+      {
+        "round": "MLS Cup",
+        "format": "Single match",
+        "date": "2026-12-05",
+        "venue": "Higher seed or neutral site"
+      }
+    ]
+  },
+  "teams_by_conference": {
+    "Eastern_Conference": [
+      {"name": "Atlanta United FC", "abbr": "ATL", "stadium": "Mercedes-Benz Stadium", "city": "Atlanta, GA"},
+      {"name": "Charlotte FC", "abbr": "CLT", "stadium": "Bank of America Stadium", "city": "Charlotte, NC"},
+      {"name": "Chicago Fire FC", "abbr": "CHI", "stadium": "Soldier Field", "city": "Chicago, IL"},
+      {"name": "FC Cincinnati", "abbr": "CIN", "stadium": "TQL Stadium", "city": "Cincinnati, OH"},
+      {"name": "Columbus Crew", "abbr": "CLB", "stadium": "Lower.com Field", "city": "Columbus, OH"},
+      {"name": "D.C. United", "abbr": "DC", "stadium": "Audi Field", "city": "Washington, DC"},
+      {"name": "Inter Miami CF", "abbr": "MIA", "stadium": "Chase Stadium", "city": "Fort Lauderdale, FL"},
+      {"name": "CF Montréal", "abbr": "MTL", "stadium": "Stade Saputo", "city": "Montréal, QC"},
+      {"name": "Nashville SC", "abbr": "NSH", "stadium": "GEODIS Park", "city": "Nashville, TN"},
+      {"name": "New England Revolution", "abbr": "NE", "stadium": "Gillette Stadium", "city": "Foxborough, MA"},
+      {"name": "New York City FC", "abbr": "NYC", "stadium": "Yankee Stadium", "city": "New York, NY"},
+      {"name": "New York Red Bulls", "abbr": "RBNY", "stadium": "Red Bull Arena", "city": "Harrison, NJ"},
+      {"name": "Orlando City SC", "abbr": "ORL", "stadium": "Exploria Stadium", "city": "Orlando, FL"},
+      {"name": "Philadelphia Union", "abbr": "PHI", "stadium": "Subaru Park", "city": "Chester, PA"},
+      {"name": "Toronto FC", "abbr": "TOR", "stadium": "BMO Field", "city": "Toronto, ON"}
+    ],
+    "Western_Conference": [
+      {"name": "Austin FC", "abbr": "ATX", "stadium": "Q2 Stadium", "city": "Austin, TX"},
+      {"name": "Colorado Rapids", "abbr": "COL", "stadium": "Dick's Sporting Goods Park", "city": "Commerce City, CO"},
+      {"name": "FC Dallas", "abbr": "DAL", "stadium": "Toyota Stadium", "city": "Frisco, TX"},
+      {"name": "Houston Dynamo FC", "abbr": "HOU", "stadium": "Shell Energy Stadium", "city": "Houston, TX"},
+      {"name": "LA Galaxy", "abbr": "LA", "stadium": "Dignity Health Sports Park", "city": "Carson, CA"},
+      {"name": "Los Angeles FC", "abbr": "LAFC", "stadium": "BMO Stadium", "city": "Los Angeles, CA"},
+      {"name": "Minnesota United FC", "abbr": "MIN", "stadium": "Allianz Field", "city": "Saint Paul, MN"},
+      {"name": "Portland Timbers", "abbr": "POR", "stadium": "Providence Park", "city": "Portland, OR"},
+      {"name": "Real Salt Lake", "abbr": "RSL", "stadium": "America First Field", "city": "Sandy, UT"},
+      {"name": "San Diego FC", "abbr": "SD", "stadium": "Snapdragon Stadium", "city": "San Diego, CA", "expansion_year": 2025},
+      {"name": "San Jose Earthquakes", "abbr": "SJ", "stadium": "PayPal Park", "city": "San Jose, CA"},
+      {"name": "Seattle Sounders FC", "abbr": "SEA", "stadium": "Lumen Field", "city": "Seattle, WA"},
+      {"name": "Sporting Kansas City", "abbr": "SKC", "stadium": "Children's Mercy Park", "city": "Kansas City, KS"},
+      {"name": "St. Louis CITY SC", "abbr": "STL", "stadium": "CITYPARK", "city": "St. Louis, MO"},
+      {"name": "Vancouver Whitecaps FC", "abbr": "VAN", "stadium": "BC Place", "city": "Vancouver, BC"}
+    ]
+  },
+  "competitions": {
+    "mls_cup": {
+      "description": "League championship determined by playoffs",
+      "format": "Best regular season record hosts MLS Cup if they reach final"
+    },
+    "supporters_shield": {
+      "description": "Best regular season record",
+      "points_system": "3 for win, 1 for draw, 0 for loss"
+    },
+    "leagues_cup": {
+      "dates": "Jul 2026",
+      "format": "MLS vs Liga MX tournament (suspended for World Cup year)",
+      "note": "May be adjusted or cancelled due to World Cup 2026"
+    },
+    "us_open_cup": {
+      "description": "National knockout tournament",
+      "participants": "MLS, USL, amateur teams",
+      "mls_entry": "Round of 32 (typically)"
+    },
+    "concacaf_champions_cup": {
+      "description": "Regional club championship",
+      "qualification": "MLS Cup winner, Supporters' Shield, plus additional berths"
+    }
+  },
+  "broadcast_partners": {
+    "national": ["Apple TV (MLS Season Pass)", "FOX", "FS1"],
+    "spanish": ["Univision", "TUDN"]
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "season": "2026",
+  "sport": "ATP Tour",
+  "sport_key": "tennis_atp",
+  "last_updated": "2026-02-04",
+  "total_events": 65,
+  "notes": {
+    "format": "ATP Tour with Grand Slams, Masters 1000, ATP 500, ATP 250 events",
+    "rankings": "52-week rolling ranking system",
+    "finals": "ATP Finals in Turin (top 8 singles, top 8 doubles)"
+  },
+  "grand_slams": [
+    {
+      "name": "Australian Open",
+      "start_date": "2026-01-19",
+      "end_date": "2026-02-01",
+      "location": "Melbourne, Australia",
+      "surface": "Hard",
+      "points": 2000,
+      "prize_money": "$86,500,000"
+    },
+    {
+      "name": "Roland Garros",
+      "start_date": "2026-05-24",
+      "end_date": "2026-06-07",
+      "location": "Paris, France",
+      "surface": "Clay",
+      "points": 2000,
+      "prize_money": "$53,000,000"
+    },
+    {
+      "name": "Wimbledon",
+      "start_date": "2026-06-29",
+      "end_date": "2026-07-12",
+      "location": "London, England",
+      "surface": "Grass",
+      "points": 2000,
+      "prize_money": "$57,000,000"
+    },
+    {
+      "name": "US Open",
+      "start_date": "2026-08-31",
+      "end_date": "2026-09-13",
+      "location": "New York, USA",
+      "surface": "Hard",
+      "points": 2000,
+      "prize_money": "$65,000,000"
+    }
+  ],
+  "masters_1000": [
+    {"name": "Indian Wells", "start_date": "2026-03-09", "end_date": "2026-03-22", "location": "Indian Wells, CA", "surface": "Hard", "points": 1000},
+    {"name": "Miami Open", "start_date": "2026-03-23", "end_date": "2026-04-05", "location": "Miami, FL", "surface": "Hard", "points": 1000},
+    {"name": "Monte-Carlo Masters", "start_date": "2026-04-13", "end_date": "2026-04-19", "location": "Monte-Carlo, Monaco", "surface": "Clay", "points": 1000},
+    {"name": "Madrid Open", "start_date": "2026-04-26", "end_date": "2026-05-03", "location": "Madrid, Spain", "surface": "Clay", "points": 1000},
+    {"name": "Italian Open", "start_date": "2026-05-10", "end_date": "2026-05-17", "location": "Rome, Italy", "surface": "Clay", "points": 1000},
+    {"name": "Canadian Open", "start_date": "2026-08-10", "end_date": "2026-08-16", "location": "Toronto/Montreal", "surface": "Hard", "points": 1000},
+    {"name": "Cincinnati Masters", "start_date": "2026-08-17", "end_date": "2026-08-23", "location": "Cincinnati, OH", "surface": "Hard", "points": 1000},
+    {"name": "Shanghai Masters", "start_date": "2026-10-05", "end_date": "2026-10-18", "location": "Shanghai, China", "surface": "Hard", "points": 1000},
+    {"name": "Paris Masters", "start_date": "2026-11-02", "end_date": "2026-11-08", "location": "Paris, France", "surface": "Hard (Indoor)", "points": 1000}
+  ],
+  "atp_500": [
+    {"name": "Rotterdam", "start_date": "2026-02-09", "end_date": "2026-02-15", "location": "Rotterdam, Netherlands", "surface": "Hard (Indoor)", "points": 500},
+    {"name": "Rio Open", "start_date": "2026-02-16", "end_date": "2026-02-22", "location": "Rio de Janeiro, Brazil", "surface": "Clay", "points": 500},
+    {"name": "Dubai Championships", "start_date": "2026-02-23", "end_date": "2026-02-28", "location": "Dubai, UAE", "surface": "Hard", "points": 500},
+    {"name": "Acapulco", "start_date": "2026-02-23", "end_date": "2026-02-28", "location": "Acapulco, Mexico", "surface": "Hard", "points": 500},
+    {"name": "Barcelona Open", "start_date": "2026-04-20", "end_date": "2026-04-26", "location": "Barcelona, Spain", "surface": "Clay", "points": 500},
+    {"name": "Queen's Club", "start_date": "2026-06-15", "end_date": "2026-06-21", "location": "London, England", "surface": "Grass", "points": 500},
+    {"name": "Halle Open", "start_date": "2026-06-15", "end_date": "2026-06-21", "location": "Halle, Germany", "surface": "Grass", "points": 500},
+    {"name": "Hamburg Open", "start_date": "2026-07-20", "end_date": "2026-07-26", "location": "Hamburg, Germany", "surface": "Clay", "points": 500},
+    {"name": "Washington Open", "start_date": "2026-08-03", "end_date": "2026-08-09", "location": "Washington, DC", "surface": "Hard", "points": 500},
+    {"name": "Tokyo Open", "start_date": "2026-09-28", "end_date": "2026-10-04", "location": "Tokyo, Japan", "surface": "Hard", "points": 500},
+    {"name": "Beijing Open", "start_date": "2026-09-28", "end_date": "2026-10-04", "location": "Beijing, China", "surface": "Hard", "points": 500},
+    {"name": "Vienna Open", "start_date": "2026-10-26", "end_date": "2026-11-01", "location": "Vienna, Austria", "surface": "Hard (Indoor)", "points": 500},
+    {"name": "Basel Open", "start_date": "2026-10-26", "end_date": "2026-11-01", "location": "Basel, Switzerland", "surface": "Hard (Indoor)", "points": 500}
+  ],
+  "season_ending": {
+    "name": "ATP Finals",
+    "start_date": "2026-11-15",
+    "end_date": "2026-11-22",
+    "location": "Turin, Italy",
+    "venue": "Pala Alpitour",
+    "surface": "Hard (Indoor)",
+    "format": "Round-robin groups + semifinals + final",
+    "qualification": "Top 8 in ATP Race",
+    "points": 1500,
+    "prize_money": "$15,000,000"
+  },
+  "davis_cup": {
+    "finals": {
+      "dates": "Nov 24-29, 2026",
+      "location": "Malaga, Spain",
+      "format": "Finals Week (8 teams)"
+    }
+  },
+  "surfaces": {
+    "hard": {"events": 40, "percentage": "62%"},
+    "clay": {"events": 18, "percentage": "28%"},
+    "grass": {"events": 5, "percentage": "8%"},
+    "carpet": {"events": 2, "percentage": "2%"}
+  },
+  "calendar_by_month": {
+    "january": ["Australian Open", "Auckland", "Adelaide", "Brisbane"],
+    "february": ["Rotterdam", "Rio", "Dubai", "Acapulco", "Doha"],
+    "march": ["Indian Wells", "Miami"],
+    "april": ["Monte-Carlo", "Barcelona", "Madrid"],
+    "may": ["Rome", "Roland Garros (starts late May)"],
+    "june": ["Roland Garros (ends)", "Queen's", "Halle", "Wimbledon (starts late June)"],
+    "july": ["Wimbledon (ends)", "Hamburg", "Bastad", "Gstaad", "Umag"],
+    "august": ["Washington", "Canadian Open", "Cincinnati", "US Open (starts late Aug)"],
+    "september": ["US Open (ends)", "Laver Cup"],
+    "october": ["Beijing", "Tokyo", "Shanghai", "Vienna", "Basel"],
+    "november": ["Paris Masters", "ATP Finals", "Davis Cup Finals"]
+  }
+}

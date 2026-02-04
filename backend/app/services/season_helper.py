@@ -519,6 +519,86 @@ def get_pga_season_start() -> datetime:
 
 
 # =============================================================================
+# WNBA Season Helpers
+# =============================================================================
+
+def get_wnba_season_year() -> int:
+    """
+    Get the current WNBA season year.
+    
+    WNBA season runs May to October within a single calendar year.
+    
+    Returns:
+        Current calendar year for the season
+    """
+    today = datetime.utcnow().date()
+    return today.year
+
+
+def get_wnba_season_label() -> str:
+    """
+    Get the current WNBA season label.
+    
+    Returns:
+        Season label string like "2026"
+    """
+    return str(get_wnba_season_year())
+
+
+def get_wnba_season_start() -> datetime:
+    """
+    Get the WNBA season start date for the current season.
+    
+    WNBA season typically starts in mid-May.
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    season_year = get_wnba_season_year()
+    return datetime(season_year, 5, 15)
+
+
+# =============================================================================
+# MLS Season Helpers
+# =============================================================================
+
+def get_mls_season_year() -> int:
+    """
+    Get the current MLS season year.
+    
+    MLS season runs February to December within a single calendar year.
+    
+    Returns:
+        Current calendar year for the season
+    """
+    today = datetime.utcnow().date()
+    return today.year
+
+
+def get_mls_season_label() -> str:
+    """
+    Get the current MLS season label.
+    
+    Returns:
+        Season label string like "2026"
+    """
+    return str(get_mls_season_year())
+
+
+def get_mls_season_start() -> datetime:
+    """
+    Get the MLS season start date for the current season.
+    
+    MLS season typically starts in late February.
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    season_year = get_mls_season_year()
+    return datetime(season_year, 2, 21)
+
+
+# =============================================================================
 # UEFA Competitions Season Helpers
 # =============================================================================
 
@@ -695,6 +775,12 @@ def get_schedule_filename(sport_key: str) -> str:
     elif sport_key == "soccer_uefa_conference":
         start_year, end_year = get_uecl_season_years()
         return f"uecl_{start_year}_{end_year % 100:02d}.json"
+    elif sport_key == "basketball_wnba":
+        season_year = get_wnba_season_year()
+        return f"wnba_{season_year}.json"
+    elif sport_key == "soccer_usa_mls":
+        season_year = get_mls_season_year()
+        return f"mls_{season_year}.json"
     else:
         # Default to NBA format for unknown sports
         start_year, end_year = get_nba_season_years()
@@ -756,6 +842,10 @@ def get_current_season_start(sport_key: str = "basketball_nba") -> datetime:
         return get_uel_season_start()
     elif sport_key == "soccer_uefa_conference":
         return get_uecl_season_start()
+    elif sport_key == "basketball_wnba":
+        return get_wnba_season_start()
+    elif sport_key == "soccer_usa_mls":
+        return get_mls_season_start()
     else:
         # Default to NBA for unknown
         return get_nba_season_start()
@@ -797,6 +887,10 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
         return get_uel_season_label()
     elif sport_key == "soccer_uefa_conference":
         return get_uecl_season_label()
+    elif sport_key == "basketball_wnba":
+        return get_wnba_season_label()
+    elif sport_key == "soccer_usa_mls":
+        return get_mls_season_label()
     else:
         return get_nba_season_label()
 

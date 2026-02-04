@@ -1,0 +1,86 @@
+{
+  "season": "2026",
+  "sport": "NFL",
+  "sport_key": "americanfootball_nfl",
+  "last_updated": "2026-02-04",
+  "total_weeks": 18,
+  "total_games": 272,
+  "teams": 32,
+  "notes": {
+    "format": "32 teams, 17-game regular season, 18 weeks with bye weeks",
+    "playoffs": "7 teams per conference qualify for playoffs",
+    "super_bowl": "Super Bowl LXI in Santa Clara, CA"
+  },
+  "key_dates": {
+    "hall_of_fame_game": "2026-08-06",
+    "preseason_start": "2026-08-08",
+    "preseason_end": "2026-08-30",
+    "regular_season_start": "2026-09-10",
+    "regular_season_end": "2027-01-03",
+    "wild_card_round": "2027-01-09",
+    "divisional_round": "2027-01-16",
+    "conference_championships": "2027-01-24",
+    "super_bowl": "2027-02-07"
+  },
+  "weeks": [
+    {"week": 1, "dates": "Sep 10-14, 2026", "games": 16, "thursday_night": true, "monday_night": true},
+    {"week": 2, "dates": "Sep 17-21, 2026", "games": 16, "thursday_night": true, "monday_night": true},
+    {"week": 3, "dates": "Sep 24-28, 2026", "games": 16, "thursday_night": true, "monday_night": true},
+    {"week": 4, "dates": "Oct 1-5, 2026", "games": 16, "thursday_night": true, "monday_night": true},
+    {"week": 5, "dates": "Oct 8-12, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 6, "dates": "Oct 15-19, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 7, "dates": "Oct 22-26, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 8, "dates": "Oct 29 - Nov 2, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 9, "dates": "Nov 5-9, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 10, "dates": "Nov 12-16, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 11, "dates": "Nov 19-23, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 12, "dates": "Nov 26-30, 2026", "games": 16, "thanksgiving": true, "thursday_night": true, "monday_night": true},
+    {"week": 13, "dates": "Dec 3-7, 2026", "games": 14, "bye_teams": 4, "thursday_night": true, "monday_night": true},
+    {"week": 14, "dates": "Dec 10-14, 2026", "games": 16, "thursday_night": true, "monday_night": true},
+    {"week": 15, "dates": "Dec 17-21, 2026", "games": 16, "thursday_night": true, "saturday_games": true, "monday_night": true},
+    {"week": 16, "dates": "Dec 24-28, 2026", "games": 16, "christmas_games": true, "thursday_night": true, "monday_night": true},
+    {"week": 17, "dates": "Dec 31, 2026 - Jan 4, 2027", "games": 16, "thursday_night": true, "monday_night": true},
+    {"week": 18, "dates": "Jan 3, 2027", "games": 16, "all_divisional": true, "sunday_only": true}
+  ],
+  "playoffs": {
+    "wild_card": {
+      "dates": "Jan 9-10, 2027",
+      "games": 6,
+      "format": "2 vs 7, 3 vs 6, 4 vs 5 in each conference"
+    },
+    "divisional": {
+      "dates": "Jan 16-17, 2027",
+      "games": 4,
+      "format": "1 seed vs lowest remaining, 2 remaining teams"
+    },
+    "conference_championships": {
+      "date": "Jan 24, 2027",
+      "games": 2,
+      "format": "AFC Championship and NFC Championship"
+    },
+    "super_bowl": {
+      "name": "Super Bowl LXI",
+      "date": "2027-02-07",
+      "venue": "Levi's Stadium",
+      "city": "Santa Clara, CA",
+      "kickoff": "18:30 ET"
+    }
+  },
+  "teams_by_division": {
+    "AFC_East": ["Buffalo Bills", "Miami Dolphins", "New England Patriots", "New York Jets"],
+    "AFC_North": ["Baltimore Ravens", "Cincinnati Bengals", "Cleveland Browns", "Pittsburgh Steelers"],
+    "AFC_South": ["Houston Texans", "Indianapolis Colts", "Jacksonville Jaguars", "Tennessee Titans"],
+    "AFC_West": ["Denver Broncos", "Kansas City Chiefs", "Las Vegas Raiders", "Los Angeles Chargers"],
+    "NFC_East": ["Dallas Cowboys", "New York Giants", "Philadelphia Eagles", "Washington Commanders"],
+    "NFC_North": ["Chicago Bears", "Detroit Lions", "Green Bay Packers", "Minnesota Vikings"],
+    "NFC_South": ["Atlanta Falcons", "Carolina Panthers", "New Orleans Saints", "Tampa Bay Buccaneers"],
+    "NFC_West": ["Arizona Cardinals", "Los Angeles Rams", "San Francisco 49ers", "Seattle Seahawks"]
+  },
+  "broadcast_partners": {
+    "sunday_afternoon": ["CBS", "FOX"],
+    "sunday_night": "NBC",
+    "monday_night": "ESPN/ABC",
+    "thursday_night": "Amazon Prime Video",
+    "christmas": "Netflix"
+  }
+}
