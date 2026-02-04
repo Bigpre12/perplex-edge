@@ -318,6 +318,64 @@ def get_tennis_season_start() -> datetime:
 
 
 # =============================================================================
+# NHL Season Helpers
+# =============================================================================
+
+def get_nhl_season_years() -> Tuple[int, int]:
+    """
+    Get the current NHL season start and end years.
+    
+    NHL season typically runs October to June:
+    - Oct-Dec: New season (e.g., in Oct 2025, season is 2025-26)
+    - Jan-Jun: Previous season (e.g., in Jan 2026, season is still 2025-26)
+    - Jul-Sep: Offseason, use upcoming season
+    
+    Returns:
+        Tuple of (start_year, end_year) - e.g., (2025, 2026)
+    """
+    today = datetime.utcnow().date()
+    year = today.year
+    month = today.month
+    
+    if month >= 10:  # Oct-Dec: new season starts
+        return (year, year + 1)
+    elif month <= 6:  # Jan-Jun: still in season that started last year
+        return (year - 1, year)
+    else:  # Jul-Sep: offseason, use upcoming season
+        return (year, year + 1)
+
+
+def get_nhl_season_label() -> str:
+    """
+    Get the current NHL season label in format "YYYY-YY".
+    
+    Examples:
+        - In October 2025: "2025-26"
+        - In January 2026: "2025-26"
+        - In October 2026: "2026-27"
+    
+    Returns:
+        Season label string like "2025-26"
+    """
+    start_year, end_year = get_nhl_season_years()
+    return f"{start_year}-{end_year % 100:02d}"
+
+
+def get_nhl_season_start() -> datetime:
+    """
+    Get the approximate NHL season start date for the current season.
+    
+    NHL regular season typically starts around October 7-10.
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    start_year, _ = get_nhl_season_years()
+    # NHL typically starts around October 7
+    return datetime(start_year, 10, 7)
+
+
+# =============================================================================
 # Schedule File Helpers
 # =============================================================================
 
@@ -352,6 +410,9 @@ def get_schedule_filename(sport_key: str) -> str:
     elif sport_key == "tennis_wta":
         season_year = get_tennis_season_year()
         return f"tennis_wta_{season_year}.json"
+    elif sport_key == "icehockey_nhl":
+        start_year, end_year = get_nhl_season_years()
+        return f"nhl_{start_year}_{end_year % 100:02d}.json"
     else:
         # Default to NBA format for unknown sports
         start_year, end_year = get_nba_season_years()
@@ -399,6 +460,8 @@ def get_current_season_start(sport_key: str = "basketball_nba") -> datetime:
         return get_ncaaf_season_start()
     elif sport_key in ("tennis_atp", "tennis_wta"):
         return get_tennis_season_start()
+    elif sport_key == "icehockey_nhl":
+        return get_nhl_season_start()
     else:
         # Default to NBA for unknown
         return get_nba_season_start()
@@ -426,6 +489,8 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
         return get_ncaaf_season_label()
     elif sport_key in ("tennis_atp", "tennis_wta"):
         return get_tennis_season_label()
+    elif sport_key == "icehockey_nhl":
+        return get_nhl_season_label()
     else:
         return get_nba_season_label()
 
