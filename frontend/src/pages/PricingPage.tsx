@@ -282,7 +282,7 @@ export function PricingPage() {
           <p className="text-gray-400">
             Have questions? Join our{' '}
             <a 
-              href="https://discord.gg/your-invite" 
+              href="https://discord.gg/qRMrfn9d" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-blue-400 hover:text-blue-300"

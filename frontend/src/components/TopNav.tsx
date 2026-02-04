@@ -4,7 +4,7 @@ import { useSports } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 
 // Discord invite link (set in environment)
-const DISCORD_INVITE_URL = import.meta.env.VITE_DISCORD_INVITE_URL || 'https://discord.gg/your-invite';
+const DISCORD_INVITE_URL = import.meta.env.VITE_DISCORD_INVITE_URL || 'https://discord.gg/qRMrfn9d';
 
 // Navigation links
 const NAV_LINKS = [

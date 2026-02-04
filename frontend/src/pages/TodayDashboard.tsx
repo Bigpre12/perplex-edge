@@ -315,7 +315,7 @@ export function TodayDashboard() {
               </div>
             </div>
             <a
-              href={import.meta.env.VITE_DISCORD_INVITE_URL || 'https://discord.gg/your-invite'}
+              href={import.meta.env.VITE_DISCORD_INVITE_URL || 'https://discord.gg/qRMrfn9d'}
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors whitespace-nowrap"
