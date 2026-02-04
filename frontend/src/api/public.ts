@@ -1816,3 +1816,60 @@ export function useAdminDashboard() {
     refetchInterval: 60 * 1000, // Auto-refresh every minute
   });
 }
+
+// =============================================================================
+// Full Slate Types (Multi-Sport Prop Review)
+// =============================================================================
+
+export interface SportSlate {
+  sport_id: number;
+  sport_key: string;
+  sport_name: string;
+  date: string;
+  count: number;
+  props: PlayerPropPick[];
+}
+
+export interface FullSlateResponse {
+  date: string;
+  total_props: number;
+  sports: SportSlate[];
+}
+
+// =============================================================================
+// Full Slate API Functions
+// =============================================================================
+
+export async function fetchFullSlate(
+  date: string,
+  minEv: number = 0,
+  minConfidence: number = 0,
+  limitPerSport: number = 50
+): Promise<FullSlateResponse> {
+  const params = new URLSearchParams({
+    date,
+    min_ev: minEv.toString(),
+    min_confidence: minConfidence.toString(),
+    limit_per_sport: limitPerSport.toString(),
+  });
+  return fetchJson<FullSlateResponse>(`${API_BASE_URL}/api/slate/full?${params}`);
+}
+
+/**
+ * Hook to fetch full slate of player props across all sports for a specific date.
+ * Useful for reviewing tomorrow's entire slate.
+ */
+export function useFullSlate(
+  date: string,
+  minEv: number = 0,
+  minConfidence: number = 0,
+  limitPerSport: number = 50
+) {
+  return useQuery({
+    queryKey: ['full-slate', date, minEv, minConfidence, limitPerSport],
+    queryFn: () => fetchFullSlate(date, minEv, minConfidence, limitPerSport),
+    enabled: !!date,
+    staleTime: 60 * 1000, // 1 minute
+    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
+  });
+}

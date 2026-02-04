@@ -1,12 +1,21 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSports, useHotPlayers, useColdPlayers, useStreaks, useRecentResults } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { HotPlayersPanel } from './HotPlayersPanel';
+import { FullSlateReview } from './FullSlateReview';
 
 export function StatsDashboard() {
   const { sportId } = useSportContext();
   const [showTableView, setShowTableView] = useState(false);
+  const [showSlateReview, setShowSlateReview] = useState(false);
   const { data: sportsData } = useSports();
+  
+  // Calculate tomorrow's date for slate review
+  const tomorrowDate = useMemo(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }, []);
   
   // Use NBA as default if no sport selected
   const activeSportId = sportId || sportsData?.items?.[0]?.id || null;
@@ -320,6 +329,36 @@ export function StatsDashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tomorrow's Full Slate Review (Collapsible) */}
+      <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+        <button
+          onClick={() => setShowSlateReview(!showSlateReview)}
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-700/50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-white font-medium">Tomorrow's Slate Review</span>
+            <span className="text-xs text-gray-400">({tomorrowDate})</span>
+          </div>
+          <svg
+            className={`w-5 h-5 text-gray-400 transition-transform ${showSlateReview ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {showSlateReview && (
+          <div className="border-t border-gray-700 p-4">
+            <FullSlateReview date={tomorrowDate} />
           </div>
         )}
       </div>

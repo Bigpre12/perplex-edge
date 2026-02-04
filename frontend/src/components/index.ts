@@ -20,6 +20,7 @@ export { ConfidenceBadge, ConfidenceBar } from './ConfidenceBadge';
 export { PickCard } from './PickCard';
 export { StatsTable } from './StatsTable';
 export { HotPlayersPanel } from './HotPlayersPanel';
+export { FullSlateReview } from './FullSlateReview';
 export { LastUpdated, LastUpdatedCompact } from './LastUpdated';
 export { FreshnessBanner, FreshnessStatus } from './FreshnessBanner';
 export { AltLineExplorer } from './AltLineExplorer';
