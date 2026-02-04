@@ -198,79 +198,101 @@ async def get_market_performance(
     
     Use this to identify which markets the model performs best in.
     """
-    from datetime import datetime, timedelta, timezone
-    from sqlalchemy import select, func, case, and_
-    from app.models import UserBet, PickResult, BetStatus
-    
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-    
-    # Base filter
-    conditions = [UserBet.created_at >= cutoff]
-    if sport_id:
-        conditions.append(UserBet.sport_id == sport_id)
-    base_filter = and_(*conditions)
-    
-    # Get ROI/CLV by market type
-    settled_filter = and_(base_filter, UserBet.status != BetStatus.PENDING)
-    
-    result = await db.execute(
-        select(
-            UserBet.market_type,
-            func.count(UserBet.id).label('total_bets'),
-            func.sum(case((UserBet.status == BetStatus.WON, 1), else_=0)).label('won'),
-            func.sum(case((UserBet.status == BetStatus.LOST, 1), else_=0)).label('lost'),
-            func.sum(UserBet.stake).label('total_stake'),
-            func.sum(UserBet.profit_loss).label('total_pl'),
-            func.avg(UserBet.clv_cents).label('avg_clv'),
-            func.sum(case((UserBet.clv_cents > 0, 1), else_=0)).label('positive_clv_count'),
-            func.count(UserBet.clv_cents).label('clv_count'),
+    try:
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import select, func, case, and_
+        from app.models import UserBet, PickResult, BetStatus
+        
+        cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+        
+        # Base filter
+        conditions = [UserBet.created_at >= cutoff]
+        if sport_id:
+            conditions.append(UserBet.sport_id == sport_id)
+        base_filter = and_(*conditions)
+        
+        # Get ROI/CLV by market type
+        settled_filter = and_(base_filter, UserBet.status != BetStatus.PENDING)
+        
+        result = await db.execute(
+            select(
+                UserBet.market_type,
+                func.count(UserBet.id).label('total_bets'),
+                func.sum(case((UserBet.status == BetStatus.WON, 1), else_=0)).label('won'),
+                func.sum(case((UserBet.status == BetStatus.LOST, 1), else_=0)).label('lost'),
+                func.sum(UserBet.stake).label('total_stake'),
+                func.sum(UserBet.profit_loss).label('total_pl'),
+                func.avg(UserBet.clv_cents).label('avg_clv'),
+                func.sum(case((UserBet.clv_cents > 0, 1), else_=0)).label('positive_clv_count'),
+                func.count(UserBet.clv_cents).label('clv_count'),
+            )
+            .where(settled_filter)
+            .group_by(UserBet.market_type)
+            .order_by(func.sum(UserBet.profit_loss).desc())
         )
-        .where(settled_filter)
-        .group_by(UserBet.market_type)
-        .order_by(func.sum(UserBet.profit_loss).desc())
-    )
-    
-    markets = []
-    for row in result.all():
-        market_type, total, won, lost, stake, pl, avg_clv, pos_clv, clv_count = row
         
-        win_rate = won / (won + lost) if (won + lost) > 0 else 0.0
-        roi = (pl / stake * 100) if stake and stake > 0 else 0.0
-        beat_close_pct = (pos_clv / clv_count * 100) if clv_count and clv_count > 0 else 0.0
+        markets = []
+        for row in result.all():
+            market_type, total, won, lost, stake, pl, avg_clv, pos_clv, clv_count = row
+            
+            # Safe division with null handling
+            won = won or 0
+            lost = lost or 0
+            stake = stake or 0
+            pl = pl or 0
+            avg_clv = avg_clv or 0
+            pos_clv = pos_clv or 0
+            clv_count = clv_count or 0
+            
+            win_rate = won / (won + lost) if (won + lost) > 0 else 0.0
+            roi = (pl / stake * 100) if stake > 0 else 0.0
+            beat_close_pct = (pos_clv / clv_count * 100) if clv_count > 0 else 0.0
+            
+            markets.append({
+                "market_type": market_type or "unknown",
+                "total_bets": total or 0,
+                "won": won,
+                "lost": lost,
+                "win_rate": round(win_rate * 100, 1),
+                "total_stake": round(stake, 2),
+                "total_profit_loss": round(pl, 2),
+                "roi": round(roi, 2),
+                "avg_clv_cents": round(avg_clv, 2),
+                "beat_close_pct": round(beat_close_pct, 1),
+                "sample_quality": "high" if (total or 0) >= 50 else "medium" if (total or 0) >= 20 else "low",
+            })
         
-        markets.append({
-            "market_type": market_type or "unknown",
-            "total_bets": total,
-            "won": won or 0,
-            "lost": lost or 0,
-            "win_rate": round(win_rate * 100, 1),
-            "total_stake": round(stake or 0, 2),
-            "total_profit_loss": round(pl or 0, 2),
-            "roi": round(roi, 2),
-            "avg_clv_cents": round(avg_clv or 0, 2),
-            "beat_close_pct": round(beat_close_pct, 1),
-            "sample_quality": "high" if total >= 50 else "medium" if total >= 20 else "low",
-        })
-    
-    # Calculate totals
-    total_bets = sum(m["total_bets"] for m in markets)
-    total_pl = sum(m["total_profit_loss"] for m in markets)
-    total_stake = sum(m["total_stake"] for m in markets)
-    
-    return {
-        "markets": markets,
-        "summary": {
-            "total_bets": total_bets,
-            "total_profit_loss": round(total_pl, 2),
-            "overall_roi": round((total_pl / total_stake * 100) if total_stake > 0 else 0, 2),
-            "best_market": markets[0]["market_type"] if markets else None,
-            "worst_market": markets[-1]["market_type"] if markets else None,
-        },
-        "filters": {
-            "days": days,
-            "sport_id": sport_id,
-        },
-    }
+        # Calculate totals
+        total_bets = sum(m["total_bets"] for m in markets)
+        total_pl = sum(m["total_profit_loss"] for m in markets)
+        total_stake = sum(m["total_stake"] for m in markets)
+        
+        return {
+            "markets": markets,
+            "summary": {
+                "total_bets": total_bets,
+                "total_profit_loss": round(total_pl, 2),
+                "overall_roi": round((total_pl / total_stake * 100) if total_stake > 0 else 0, 2),
+                "best_market": markets[0]["market_type"] if markets else None,
+                "worst_market": markets[-1]["market_type"] if markets else None,
+            },
+            "filters": {
+                "days": days,
+                "sport_id": sport_id,
+            },
+        }
+    except Exception as e:
+        logger.error(
+            "market_performance_error",
+            error=str(e),
+            error_type=type(e).__name__,
+            days=days,
+            sport_id=sport_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Market performance query failed: {type(e).__name__}"
+        )
 
 
 # =============================================================================

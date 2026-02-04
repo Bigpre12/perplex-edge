@@ -2103,10 +2103,15 @@ async def get_dashboard_summary(
                 status = "warn" if status == "ok" else status
                 issues.append("Single-book market (DK-only?)")
             
-            if last_update_result and last_update_result < cutoff:
-                status = "warn" if status == "ok" else status
-                minutes_stale = int((now - last_update_result).total_seconds() / 60)
-                issues.append(f"Odds stale ({minutes_stale} min)")
+            if last_update_result:
+                # Make timezone-aware comparison safe
+                last_update_tz = last_update_result
+                if last_update_result.tzinfo is None:
+                    last_update_tz = last_update_result.replace(tzinfo=timezone.utc)
+                if last_update_tz < cutoff:
+                    status = "warn" if status == "ok" else status
+                    minutes_stale = int((now - last_update_tz).total_seconds() / 60)
+                    issues.append(f"Odds stale ({minutes_stale} min)")
             
             rows.append({
                 "sport_id": sport_id,

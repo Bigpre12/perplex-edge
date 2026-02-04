@@ -26,6 +26,23 @@ export { LastUpdated, LastUpdatedCompact } from './LastUpdated';
 export { FreshnessBanner, FreshnessStatus } from './FreshnessBanner';
 export { AltLineExplorer } from './AltLineExplorer';
 
+// State display components
+export {
+  LoadingState,
+  ErrorState,
+  EmptyState,
+  FilteredEmptyState,
+  InlineLoading,
+  InlineError,
+  InlineEmpty,
+  CardSkeleton,
+  TableRowSkeleton,
+} from './StateDisplay';
+
+// Onboarding and upgrade components
+export { OnboardingTour, useOnboarding, hasCompletedOnboarding } from './OnboardingTour';
+export { UpgradeModal, useUpgradeModal } from './UpgradeModal';
+
 // Legacy components (kept for backwards compatibility)
 export { Dashboard } from './Dashboard';
 export { LinesTable } from './LinesTable';

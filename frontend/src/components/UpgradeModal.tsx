@@ -148,7 +148,7 @@ export function UpgradeModal({ isOpen, onClose, reason, sportName }: UpgradeModa
             <ul className="space-y-2 text-sm text-gray-400">
               <li className="flex items-center gap-2">
                 <span className="text-green-400">+</span>
-                All 8 sports (NBA, NFL, MLB, NHL, NCAAB, NCAAF, ATP, WTA)
+                All 16 sports (NBA, NFL, MLB, NHL, NCAAB, NCAAF, WNBA, ATP, WTA, EPL, UCL, UEL, UECL, MLS, PGA, UFC)
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-green-400">+</span>

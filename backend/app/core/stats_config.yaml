@@ -192,6 +192,13 @@ ncaab:
     rebounds: 0.05
     assists: 0.06
     threes: 0.07
+    steals: 0.08       # Steals (higher variance)
+    blocks: 0.08       # Blocks (higher variance)
+    turnovers: 0.06    # Turnovers
+    pra: 0.04          # Points+Rebounds+Assists combo
+    pr: 0.05           # Points+Rebounds
+    pa: 0.05           # Points+Assists
+    ra: 0.06           # Rebounds+Assists
   
   confidence:
     min_model_probability: 0.55
@@ -262,6 +269,11 @@ wnba:
     threes: 0.07
     steals: 0.08
     blocks: 0.08
+    turnovers: 0.06    # Turnovers
+    pra: 0.04          # Points+Rebounds+Assists combo
+    pr: 0.05           # Points+Rebounds
+    pa: 0.05           # Points+Assists
+    ra: 0.06           # Rebounds+Assists
   
   confidence:
     min_model_probability: 0.55
