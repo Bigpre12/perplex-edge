@@ -786,10 +786,10 @@ export function useColdPlayers(
 /**
  * Fetch players on streaks.
  */
-export function useStreaks(sportId: number | null, minStreak: number = 3) {
+export function useStreaks(sportId: number | null, minStreak: number = 3, limit: number = 20) {
   return useQuery({
-    queryKey: ['streaks', sportId, minStreak],
-    queryFn: () => fetchStreaks(sportId!, minStreak),
+    queryKey: ['streaks', sportId, minStreak, limit],
+    queryFn: () => fetchStreaks(sportId!, minStreak, limit),
     enabled: sportId !== null,
     staleTime: 60 * 1000,
     refetchInterval: 2 * 60 * 1000,
