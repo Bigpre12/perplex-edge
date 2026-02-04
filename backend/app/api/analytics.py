@@ -200,8 +200,7 @@ async def get_market_performance(
     """
     from datetime import datetime, timedelta, timezone
     from sqlalchemy import select, func, case, and_
-    from app.models import UserBet, PickResult
-    from app.models.bet import BetStatus
+    from app.models import UserBet, PickResult, BetStatus
     
     cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
     
