@@ -997,6 +997,217 @@ async def verify_players_by_sport(
 
 
 # =============================================================================
+# Data Freshness Diagnostic Endpoint
+# =============================================================================
+
+@router.get("/debug/data-freshness")
+async def debug_data_freshness(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Comprehensive data freshness diagnostic for troubleshooting.
+    
+    Shows per-sport:
+    - Last sync time
+    - Games count (today vs total)
+    - Props/lines count
+    - Picks count
+    - Staleness status
+    - Data source (API vs stubs)
+    
+    Use this to diagnose:
+    - Why a sport isn't showing data
+    - If data is stale
+    - If syncs are failing silently
+    """
+    from sqlalchemy import select, func, and_
+    from datetime import datetime, timezone, timedelta
+    from app.models import Sport, Game, Line, ModelPick, SyncMetadata
+    from app.core.constants import SPORT_ID_TO_KEY
+    from app.core.sport_availability import get_sport_status
+    
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow = today_start + timedelta(days=1)
+    
+    results = []
+    
+    # Check each sport in our mapping
+    for sport_id, sport_key in SPORT_ID_TO_KEY.items():
+        # Get sport from DB
+        sport_result = await db.execute(
+            select(Sport).where(Sport.id == sport_id)
+        )
+        sport = sport_result.scalar_one_or_none()
+        
+        # Get sync metadata
+        sync_result = await db.execute(
+            select(SyncMetadata)
+            .where(
+                and_(
+                    SyncMetadata.sport_key == sport_key,
+                    SyncMetadata.data_type == "games",
+                )
+            )
+            .order_by(SyncMetadata.last_updated.desc())
+            .limit(1)
+        )
+        sync_meta = sync_result.scalar_one_or_none()
+        
+        # Count games (total and today)
+        total_games = await db.scalar(
+            select(func.count())
+            .select_from(Game)
+            .where(Game.sport_id == sport_id)
+        ) or 0
+        
+        today_games = await db.scalar(
+            select(func.count())
+            .select_from(Game)
+            .where(
+                and_(
+                    Game.sport_id == sport_id,
+                    Game.start_time >= today_start,
+                    Game.start_time < tomorrow,
+                )
+            )
+        ) or 0
+        
+        upcoming_games = await db.scalar(
+            select(func.count())
+            .select_from(Game)
+            .where(
+                and_(
+                    Game.sport_id == sport_id,
+                    Game.start_time >= now.replace(tzinfo=None),
+                    Game.start_time < (now + timedelta(days=7)).replace(tzinfo=None),
+                )
+            )
+        ) or 0
+        
+        # Count props/lines
+        props_count = await db.scalar(
+            select(func.count())
+            .select_from(Line)
+            .join(Game, Line.game_id == Game.id)
+            .where(
+                and_(
+                    Game.sport_id == sport_id,
+                    Line.is_current == True,
+                    Line.player_id.isnot(None),
+                )
+            )
+        ) or 0
+        
+        # Count picks
+        picks_count = await db.scalar(
+            select(func.count())
+            .select_from(ModelPick)
+            .where(
+                and_(
+                    ModelPick.sport_id == sport_id,
+                    ModelPick.is_active == True,
+                )
+            )
+        ) or 0
+        
+        # Calculate staleness
+        last_sync = None
+        staleness = "unknown"
+        data_source = None
+        
+        if sync_meta:
+            last_sync = sync_meta.last_updated.isoformat() if sync_meta.last_updated else None
+            data_source = sync_meta.source
+            
+            if sync_meta.last_updated:
+                age_hours = (now.replace(tzinfo=None) - sync_meta.last_updated).total_seconds() / 3600
+                if age_hours < 1:
+                    staleness = "fresh"
+                elif age_hours < 4:
+                    staleness = "recent"
+                elif age_hours < 12:
+                    staleness = "stale"
+                else:
+                    staleness = "very_stale"
+        
+        # Get sport availability status
+        sport_status = get_sport_status(sport_key)
+        
+        results.append({
+            "sport_id": sport_id,
+            "sport_key": sport_key,
+            "exists_in_db": sport is not None,
+            "db_name": sport.name if sport else None,
+            "season_status": sport_status["status"],
+            "is_active_season": sport_status["is_active"],
+            "counts": {
+                "total_games": total_games,
+                "today_games": today_games,
+                "upcoming_games": upcoming_games,
+                "active_props": props_count,
+                "active_picks": picks_count,
+            },
+            "sync": {
+                "last_sync": last_sync,
+                "staleness": staleness,
+                "data_source": data_source,
+            },
+            "alerts": _get_sport_alerts(
+                sport_key, sport_status, today_games, props_count, picks_count, staleness
+            ),
+        })
+    
+    # Sort by alert severity
+    results.sort(key=lambda x: len(x["alerts"]), reverse=True)
+    
+    return {
+        "timestamp": now.isoformat(),
+        "sports": results,
+        "summary": {
+            "total_sports": len(results),
+            "sports_with_alerts": sum(1 for r in results if r["alerts"]),
+            "sports_with_data": sum(1 for r in results if r["counts"]["today_games"] > 0),
+            "stale_sports": sum(1 for r in results if r["sync"]["staleness"] in ("stale", "very_stale")),
+        },
+    }
+
+
+def _get_sport_alerts(
+    sport_key: str,
+    sport_status: dict,
+    today_games: int,
+    props_count: int,
+    picks_count: int,
+    staleness: str,
+) -> list[str]:
+    """Generate alerts for a sport based on data health."""
+    alerts = []
+    
+    # Active season but no games
+    if sport_status["is_active"] and today_games == 0:
+        alerts.append(f"Sport is in-season but has 0 games for today")
+    
+    # Has games but no props
+    if today_games > 0 and props_count == 0:
+        alerts.append(f"Has {today_games} games but 0 props - sync may have failed")
+    
+    # Has props but no picks
+    if props_count > 0 and picks_count == 0:
+        alerts.append(f"Has {props_count} props but 0 picks - picks generation may have failed")
+    
+    # Stale data
+    if staleness in ("stale", "very_stale"):
+        alerts.append(f"Data is {staleness} - needs refresh")
+    
+    # Unknown staleness
+    if staleness == "unknown":
+        alerts.append("Never synced or no sync metadata")
+    
+    return alerts
+
+
+# =============================================================================
 # API Monitoring Endpoints
 # =============================================================================
 

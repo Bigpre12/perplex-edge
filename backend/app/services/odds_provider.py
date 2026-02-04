@@ -1359,6 +1359,186 @@ class XYZOddsProvider(OddsProvider):
             logger.info(f"Generated {len(games)} stub NHL games for {sport_key}")
             return games
         
+        # Handle Soccer (EPL, UCL, MLS) - generate dynamic matches
+        if "soccer" in sport_key:
+            times = _get_stub_game_times()
+            
+            if sport_key == "soccer_epl":
+                # English Premier League matchups (2025-26 season)
+                soccer_matchups = [
+                    {"home": ("Manchester City", -180), "away": ("Arsenal", +145), "time": times["early"]},
+                    {"home": ("Liverpool", -150), "away": ("Chelsea", +120), "time": times["afternoon"]},
+                    {"home": ("Manchester United", +100), "away": ("Tottenham Hotspur", +105), "time": times["late"]},
+                    {"home": ("Newcastle United", -130), "away": ("Aston Villa", +110), "time": times["late"]},
+                ]
+                sport_title = "English Premier League"
+            elif sport_key == "soccer_uefa_champs_league":
+                # UEFA Champions League matchups
+                soccer_matchups = [
+                    {"home": ("Real Madrid", -160), "away": ("Bayern Munich", +130), "time": times["afternoon"]},
+                    {"home": ("Manchester City", -140), "away": ("Paris Saint-Germain", +115), "time": times["afternoon"]},
+                    {"home": ("Barcelona", -120), "away": ("Inter Milan", +100), "time": times["late"]},
+                    {"home": ("Borussia Dortmund", +110), "away": ("Atletico Madrid", +105), "time": times["late"]},
+                ]
+                sport_title = "UEFA Champions League"
+            else:  # MLS
+                # Major League Soccer matchups
+                soccer_matchups = [
+                    {"home": ("Inter Miami CF", -150), "away": ("LA Galaxy", +125), "time": times["afternoon"]},
+                    {"home": ("LAFC", -130), "away": ("Atlanta United", +110), "time": times["late"]},
+                    {"home": ("Seattle Sounders", -120), "away": ("FC Cincinnati", +100), "time": times["late"]},
+                    {"home": ("New York Red Bulls", +100), "away": ("Columbus Crew", +105), "time": times["night"]},
+                ]
+                sport_title = "MLS"
+            
+            games = []
+            for idx, matchup in enumerate(soccer_matchups):
+                home_team, home_ml = matchup["home"]
+                away_team, away_ml = matchup["away"]
+                
+                # Create game ID
+                home_abbr = home_team.split()[0][:3].lower()
+                away_abbr = away_team.split()[0][:3].lower()
+                game_id = f"soccer_{away_abbr}_{home_abbr}_{today_str.replace('-', '')}"
+                
+                games.append({
+                    "id": game_id,
+                    "sport_key": sport_key,
+                    "sport_title": sport_title,
+                    "commence_time": matchup["time"],
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": home_team, "price": home_ml},
+                                {"name": away_team, "price": away_ml},
+                                {"name": "Draw", "price": 250}  # Soccer has draw option
+                            ]}]
+                        },
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": home_team, "price": home_ml - 5},
+                                {"name": away_team, "price": away_ml + 5},
+                                {"name": "Draw", "price": 245}
+                            ]}]
+                        },
+                    ],
+                })
+            
+            logger.info(f"Generated {len(games)} stub soccer matches for {sport_key}")
+            return games
+        
+        # Handle Golf (PGA Tour) - tournament leaderboard style
+        if sport_key == "golf_pga_tour":
+            times = _get_stub_game_times()
+            
+            # PGA Tour tournament with outright winner odds
+            tournament = "WM Phoenix Open"  # February tournament
+            golfers = [
+                ("Scottie Scheffler", +600),
+                ("Rory McIlroy", +900),
+                ("Jon Rahm", +1000),
+                ("Viktor Hovland", +1400),
+                ("Xander Schauffele", +1600),
+                ("Patrick Cantlay", +1800),
+                ("Collin Morikawa", +2000),
+                ("Tony Finau", +2200),
+            ]
+            
+            # Golf is structured differently - return tournament as single "event"
+            games = [{
+                "id": f"golf_pga_{today_str.replace('-', '')}",
+                "sport_key": sport_key,
+                "sport_title": f"PGA Tour - {tournament}",
+                "commence_time": times["early"],
+                "home_team": tournament,
+                "away_team": "Field",
+                "bookmakers": [
+                    {
+                        "key": "draftkings",
+                        "title": "DraftKings",
+                        "markets": [{"key": "outrights", "outcomes": [
+                            {"name": name, "price": odds} for name, odds in golfers
+                        ]}]
+                    },
+                    {
+                        "key": "fanduel",
+                        "title": "FanDuel",
+                        "markets": [{"key": "outrights", "outcomes": [
+                            {"name": name, "price": odds + 50} for name, odds in golfers
+                        ]}]
+                    },
+                ],
+            }]
+            
+            logger.info(f"Generated stub PGA tournament for {sport_key} ({tournament})")
+            return games
+        
+        # Handle UFC/MMA - generate fight card
+        if sport_key == "mma_mixed_martial_arts":
+            times = _get_stub_game_times()
+            
+            # UFC Fight Night card (typical February event)
+            fights = [
+                {"red": ("Alex Pereira", -200), "blue": ("Jamahal Hill", +170), "time": times["night"]},
+                {"red": ("Sean Strickland", -150), "blue": ("Paulo Costa", +130), "time": times["late"]},
+                {"red": ("Paddy Pimblett", -180), "blue": ("Tony Ferguson", +155), "time": times["late"]},
+                {"red": ("Sean O'Malley", -220), "blue": ("Merab Dvalishvili", +185), "time": times["afternoon"]},
+            ]
+            
+            games = []
+            for idx, fight in enumerate(fights):
+                red_fighter, red_ml = fight["red"]
+                blue_fighter, blue_ml = fight["blue"]
+                
+                # Create fight ID
+                red_last = red_fighter.split()[-1].lower()
+                blue_last = blue_fighter.split()[-1].lower()
+                fight_id = f"ufc_{red_last}_{blue_last}_{today_str.replace('-', '')}"
+                
+                games.append({
+                    "id": fight_id,
+                    "sport_key": sport_key,
+                    "sport_title": "UFC",
+                    "commence_time": fight["time"],
+                    "home_team": red_fighter,  # Red corner
+                    "away_team": blue_fighter,  # Blue corner
+                    "bookmakers": [
+                        {
+                            "key": "draftkings",
+                            "title": "DraftKings",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": red_fighter, "price": red_ml},
+                                {"name": blue_fighter, "price": blue_ml}
+                            ]}]
+                        },
+                        {
+                            "key": "fanduel",
+                            "title": "FanDuel",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": red_fighter, "price": red_ml - 10},
+                                {"name": blue_fighter, "price": blue_ml + 10}
+                            ]}]
+                        },
+                        {
+                            "key": "betmgm",
+                            "title": "BetMGM",
+                            "markets": [{"key": "h2h", "outcomes": [
+                                {"name": red_fighter, "price": red_ml + 5},
+                                {"name": blue_fighter, "price": blue_ml - 5}
+                            ]}]
+                        },
+                    ],
+                })
+            
+            logger.info(f"Generated {len(games)} stub UFC fights for {sport_key}")
+            return games
+        
         # Load schedule for NBA/NCAAB
         schedule = self._load_season_schedule(sport_key)
         

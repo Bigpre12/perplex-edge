@@ -269,13 +269,47 @@ async def get_or_create_sport(
     db: AsyncSession,
     sport_key: str,
 ) -> Sport:
-    """Get or create a sport record by sport_key."""
+    """
+    Get or create a sport record by sport_key.
+    
+    IMPORTANT: This function now validates that the returned sport's key matches
+    the input sport_key to prevent data bleed between sports (e.g., NFL/NCAAF).
+    """
     sport_name, league_code = SPORT_KEY_TO_NAME.get(sport_key, (sport_key, sport_key.upper()))
     
+    # First, try to find by sport_key (most reliable)
+    result = await db.execute(
+        select(Sport).where(Sport.key == sport_key)
+    )
+    sport = result.scalar_one_or_none()
+    
+    if sport:
+        # Validate key matches (should always match when found by key)
+        if sport.key != sport_key:
+            logger.error(
+                f"CRITICAL: Sport key mismatch! Expected {sport_key}, "
+                f"got {sport.key} for league_code {league_code}. "
+                "This could cause data bleed between sports."
+            )
+        return sport
+    
+    # Fallback: try by league_code (for backwards compatibility)
     result = await db.execute(
         select(Sport).where(Sport.league_code == league_code)
     )
     sport = result.scalar_one_or_none()
+    
+    if sport:
+        # CRITICAL: Validate the sport key matches to prevent data bleed
+        if sport.key != sport_key:
+            logger.warning(
+                f"Sport found by league_code {league_code} but key mismatch: "
+                f"expected {sport_key}, got {sport.key}. "
+                "Creating new sport with correct key."
+            )
+            # Don't use this sport - it's the wrong one
+            # Check if we can update the key or need to create new
+            sport = None
     
     if not sport:
         sport = Sport(name=sport_name, league_code=league_code, key=sport_key)
@@ -1373,16 +1407,60 @@ async def sync_with_fallback(
         result["sport_status"] = sport_status
         # Still try to sync - might have some data like futures or preseason
     
-    # Special handling for tennis - check active tournaments
+    # Special handling for tennis - sync each active tournament
     if "tennis" in sport_key:
         active_tournaments = get_current_tennis_tournaments()
         tour_key = sport_key  # tennis_atp or tennis_wta
-        if not active_tournaments.get(tour_key):
+        tournament_keys = active_tournaments.get(tour_key, [])
+        
+        if not tournament_keys:
             logger.warning(
                 f"[{sport_key}] No active tennis tournaments for this tour. "
                 "Tennis uses tournament-specific APIs (e.g., tennis_atp_australian_open)."
             )
             result["tennis_note"] = "No active tournaments. Tennis data requires active tournaments."
+            # Fall through to try generic key anyway (might have some data)
+        else:
+            # Sync each active tournament using tournament-specific API keys
+            logger.info(f"[{sport_key}] Found {len(tournament_keys)} active tournaments: {tournament_keys}")
+            combined_result = {
+                "sport": sport_key,
+                "data_source": "odds_api",
+                "games_created": 0,
+                "games_updated": 0,
+                "lines_added": 0,
+                "props_added": 0,
+                "tournaments_synced": [],
+                "errors": [],
+            }
+            
+            for tournament_key in tournament_keys:
+                try:
+                    logger.info(f"[{sport_key}] Syncing tournament: {tournament_key}")
+                    # The Odds API uses tournament-specific keys for tennis
+                    tournament_result = await sync_games_and_lines(
+                        db, tournament_key, include_props=include_props, use_stubs=False, provider="odds_api"
+                    )
+                    
+                    # Aggregate results
+                    combined_result["games_created"] += tournament_result.get("games_created", 0)
+                    combined_result["games_updated"] += tournament_result.get("games_updated", 0)
+                    combined_result["lines_added"] += tournament_result.get("lines_added", 0)
+                    combined_result["props_added"] += tournament_result.get("props_added", 0)
+                    combined_result["tournaments_synced"].append(tournament_key)
+                    
+                    logger.info(
+                        f"[{tournament_key}] Synced: {tournament_result.get('games_created', 0)} games, "
+                        f"{tournament_result.get('props_added', 0)} props"
+                    )
+                except Exception as e:
+                    logger.warning(f"[{tournament_key}] Tournament sync failed: {e}")
+                    combined_result["errors"].append(f"{tournament_key}: {str(e)[:50]}")
+            
+            # Return combined results if we synced any tournaments
+            if combined_result["tournaments_synced"]:
+                return combined_result
+            # Otherwise fall through to try generic key
     
     # Check quota before trying primary API
     quota = get_quota_status()

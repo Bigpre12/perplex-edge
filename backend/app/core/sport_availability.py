@@ -128,22 +128,48 @@ def get_current_tennis_tournaments(month: Optional[int] = None) -> dict[str, lis
     """
     Get active tennis tournaments for the current or given month.
     
+    Tennis has year-round events. This returns tournament-specific API keys
+    that The Odds API uses for tennis.
+    
     Returns:
         Dict mapping generic key to list of active tournament keys
     """
     if month is None:
         month = datetime.now(EASTERN_TZ).month
     
-    # Tournament windows (month ranges)
+    # Tournament windows (month ranges) - expanded to cover more of the year
+    # Grand Slams plus major ATP/WTA tour events
     tournament_windows = {
-        "tennis_atp_australian_open": (1, 2),   # January
-        "tennis_atp_french_open": (5, 6),       # May-June
-        "tennis_atp_wimbledon": (6, 7),         # June-July
-        "tennis_atp_us_open": (8, 9),           # Aug-Sept
+        # Grand Slams
+        "tennis_atp_australian_open": (1, 2),    # Mid-Jan to late Jan
+        "tennis_atp_french_open": (5, 6),        # Late May to early June
+        "tennis_atp_wimbledon": (6, 7),          # Late June to mid-July
+        "tennis_atp_us_open": (8, 9),            # Late Aug to early Sept
         "tennis_wta_australian_open": (1, 2),
         "tennis_wta_french_open": (5, 6),
         "tennis_wta_wimbledon": (6, 7),
         "tennis_wta_us_open": (8, 9),
+        
+        # Additional ATP events to fill gaps
+        "tennis_atp_indian_wells": (3, 3),       # March (Indian Wells/BNP Paribas)
+        "tennis_atp_miami": (3, 4),              # Late March to early April
+        "tennis_atp_monte_carlo": (4, 4),        # April (Monte Carlo Masters)
+        "tennis_atp_madrid": (4, 5),             # Late April to early May
+        "tennis_atp_rome": (5, 5),               # May (Italian Open)
+        "tennis_atp_canadian_open": (8, 8),      # August
+        "tennis_atp_cincinnati": (8, 8),         # August
+        "tennis_atp_shanghai": (10, 10),         # October (Shanghai Masters)
+        "tennis_atp_paris": (10, 11),            # Late Oct to early Nov (Paris Masters)
+        "tennis_atp_finals": (11, 11),           # November (ATP Finals)
+        
+        # Additional WTA events
+        "tennis_wta_indian_wells": (3, 3),
+        "tennis_wta_miami": (3, 4),
+        "tennis_wta_madrid": (4, 5),
+        "tennis_wta_rome": (5, 5),
+        "tennis_wta_canadian_open": (8, 8),
+        "tennis_wta_cincinnati": (8, 8),
+        "tennis_wta_finals": (10, 11),           # WTA Finals
     }
     
     active = {"tennis_atp": [], "tennis_wta": []}
@@ -154,6 +180,13 @@ def get_current_tennis_tournaments(month: Optional[int] = None) -> dict[str, lis
                 active["tennis_atp"].append(tournament)
             else:
                 active["tennis_wta"].append(tournament)
+    
+    # If no specific tournaments active, try generic keys as fallback
+    # (The Odds API might aggregate active events under generic key)
+    if not active["tennis_atp"]:
+        active["tennis_atp"] = ["tennis_atp"]
+    if not active["tennis_wta"]:
+        active["tennis_wta"] = ["tennis_wta"]
     
     return active
 
