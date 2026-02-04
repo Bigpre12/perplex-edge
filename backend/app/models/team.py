@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from app.models.sport import Sport
     from app.models.player import Player
     from app.models.game import Game
+    from app.models.season_roster import SeasonRoster
 
 
 class Team(Base, TimestampMixin):
@@ -35,6 +36,7 @@ class Team(Base, TimestampMixin):
         back_populates="away_team",
         foreign_keys="Game.away_team_id",
     )
+    season_rosters: Mapped[List["SeasonRoster"]] = relationship(back_populates="team")
 
     def __repr__(self) -> str:
         return f"<Team(id={self.id}, name='{self.name}', abbreviation='{self.abbreviation}')>"

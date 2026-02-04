@@ -24,6 +24,8 @@ from app.models.user_bet import UserBet, BetStatus
 from app.models.watchlist import Watchlist
 from app.models.shared_card import SharedCard
 from app.models.user import User, UserPlan
+from app.models.season import Season
+from app.models.season_roster import SeasonRoster
 
 __all__ = [
     "Base",
@@ -56,4 +58,6 @@ __all__ = [
     "SharedCard",
     "User",
     "UserPlan",
+    "Season",
+    "SeasonRoster",
 ]

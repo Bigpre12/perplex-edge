@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.models.player_game_stats import PlayerGameStats
     from app.models.model_pick import ModelPick
     from app.models.pick_result import PickResult
+    from app.models.season import Season
 
 
 class Game(Base, TimestampMixin):
@@ -25,6 +26,11 @@ class Game(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     sport_id: Mapped[int] = mapped_column(ForeignKey("sports.id"), nullable=False)
+    season_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("seasons.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     external_game_id: Mapped[str] = mapped_column(String(100), nullable=False)
     home_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"), nullable=False)
     away_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"), nullable=False)
@@ -34,6 +40,7 @@ class Game(Base, TimestampMixin):
 
     # Relationships
     sport: Mapped["Sport"] = relationship(back_populates="games")
+    season: Mapped[Optional["Season"]] = relationship(back_populates="games")
     home_team: Mapped["Team"] = relationship(
         back_populates="home_games",
         foreign_keys=[home_team_id],
