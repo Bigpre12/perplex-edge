@@ -26,6 +26,7 @@ from app.models.shared_card import SharedCard
 from app.models.user import User, UserPlan
 from app.models.season import Season
 from app.models.season_roster import SeasonRoster
+from app.models.trade import Trade, TradeDetail
 
 __all__ = [
     "Base",
@@ -60,4 +61,6 @@ __all__ = [
     "UserPlan",
     "Season",
     "SeasonRoster",
+    "Trade",
+    "TradeDetail",
 ]

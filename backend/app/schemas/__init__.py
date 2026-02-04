@@ -12,6 +12,12 @@ from app.schemas.season import (
     TeamInfo, PlayerInfo, RosterPlayerOut,
     GameOut, GamePlayerStats, GamePlayerOut,
 )
+from app.schemas.trade import (
+    TradeCreate, TradeRead, TradeList, TradeWithDetails,
+    TradeDetailCreate, TradeDetailRead, TradeDetailWithTeams,
+    TradeApplyRequest, TradeApplyResult,
+    BulkTradeCreate, BulkTradeResult,
+)
 
 __all__ = [
     "SportCreate", "SportRead", "SportList",
@@ -26,4 +32,8 @@ __all__ = [
     "SeasonRosterCreate", "SeasonRosterRead",
     "TeamInfo", "PlayerInfo", "RosterPlayerOut",
     "GameOut", "GamePlayerStats", "GamePlayerOut",
+    "TradeCreate", "TradeRead", "TradeList", "TradeWithDetails",
+    "TradeDetailCreate", "TradeDetailRead", "TradeDetailWithTeams",
+    "TradeApplyRequest", "TradeApplyResult",
+    "BulkTradeCreate", "BulkTradeResult",
 ]

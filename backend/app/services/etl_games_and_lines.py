@@ -79,8 +79,9 @@ PLAYER_TEAMS = {
     "Brandin Podziemski": "Golden State Warriors",
     
     # Los Angeles Clippers (21-24, 10th West)
+    # TRADE: Harden to Cavaliers, Garland to Clippers (Feb 2026)
     "Kawhi Leonard": "Los Angeles Clippers",
-    "James Harden": "Los Angeles Clippers",
+    "Darius Garland": "Los Angeles Clippers",  # Traded from Cavaliers (Feb 2026)
     "Bradley Beal": "Los Angeles Clippers",
     "Ivica Zubac": "Los Angeles Clippers",
     "Brook Lopez": "Los Angeles Clippers",
@@ -103,19 +104,23 @@ PLAYER_TEAMS = {
     "Royce O'Neale": "Phoenix Suns",
     
     # Memphis Grizzlies (18-26, 12th West)
+    # TRADE: JJJ to Jazz for multiple players and picks (Feb 2026)
     "Ja Morant": "Memphis Grizzlies",
-    "Jaren Jackson Jr.": "Memphis Grizzlies",
     "Kentavious Caldwell-Pope": "Memphis Grizzlies",
     "Santi Aldama": "Memphis Grizzlies",
     "Zach Edey": "Memphis Grizzlies",
+    "Kyle Anderson": "Memphis Grizzlies",  # From Jazz trade (Feb 2026)
+    "Taylor Hendricks": "Memphis Grizzlies",  # From Jazz trade (Feb 2026)
+    "Georges Niang": "Memphis Grizzlies",  # From Jazz trade (Feb 2026)
     
     # Sacramento Kings (12-35, 14th West)
+    # TRADE: Schröder to Cavaliers, De'Andre Hunter from Cavaliers (Jan 2026)
     "Domantas Sabonis": "Sacramento Kings",
     "Zach LaVine": "Sacramento Kings",
     "DeMar DeRozan": "Sacramento Kings",
     "Malik Monk": "Sacramento Kings",
     "Keegan Murray": "Sacramento Kings",
-    "Kevin Huerter": "Sacramento Kings",
+    "De'Andre Hunter": "Sacramento Kings",  # From Cavaliers trade (Jan 2026)
     
     # New Orleans Pelicans (12-36, 15th West)
     "Zion Williamson": "New Orleans Pelicans",
@@ -135,10 +140,12 @@ PLAYER_TEAMS = {
     "Deni Avdija": "Portland Trail Blazers",
     
     # Utah Jazz (15-31)
+    # TRADE: JJJ from Memphis (Feb 2026)
     "Lauri Markkanen": "Utah Jazz",
-    "Jusuf Nurkic": "Utah Jazz",
+    "Jaren Jackson Jr.": "Utah Jazz",  # Traded from Grizzlies (Feb 2026)
     "Keyonte George": "Utah Jazz",
     "Walker Kessler": "Utah Jazz",
+    "John Konchar": "Utah Jazz",  # From Grizzlies trade (Feb 2026)
     "Kyle Anderson": "Utah Jazz",
     
     # ==========================================================================
@@ -153,11 +160,11 @@ PLAYER_TEAMS = {
     "Tobias Harris": "Detroit Pistons",
     
     # Boston Celtics (29-17, 2nd East)
+    # TRADE: Vucevic from Bulls (Feb 2026)
     "Jayson Tatum": "Boston Celtics",
     "Jaylen Brown": "Boston Celtics",
     "Derrick White": "Boston Celtics",
-    "Anfernee Simons": "Boston Celtics",
-    "Georges Niang": "Boston Celtics",
+    "Nikola Vucevic": "Boston Celtics",  # Traded from Bulls (Feb 2026)
     "Sam Hauser": "Boston Celtics",
     
     # Toronto Raptors (29-19, 3rd East)
@@ -177,11 +184,13 @@ PLAYER_TEAMS = {
     "Miles McBride": "New York Knicks",
     
     # Cleveland Cavaliers (28-20, 5th East)
+    # TRADE: Garland to Clippers, Harden from Clippers (Feb 2026)
     "Donovan Mitchell": "Cleveland Cavaliers",
-    "Darius Garland": "Cleveland Cavaliers",
+    "James Harden": "Cleveland Cavaliers",  # Traded from Clippers (Feb 2026)
     "Evan Mobley": "Cleveland Cavaliers",
     "Jarrett Allen": "Cleveland Cavaliers",
     "Max Strus": "Cleveland Cavaliers",
+    "Dennis Schröder": "Cleveland Cavaliers",  # Traded from Kings (Jan 2026)
     
     # Philadelphia 76ers (24-21, 6th East)
     "Joel Embiid": "Philadelphia 76ers",
@@ -208,12 +217,14 @@ PLAYER_TEAMS = {
     "Tyus Jones": "Orlando Magic",
     
     # Chicago Bulls (23-23, 9th East)
+    # TRADE: Vucevic to Celtics, Simons from Trail Blazers (Feb 2026)
     "Coby White": "Chicago Bulls",
     "Josh Giddey": "Chicago Bulls",
-    "Nikola Vucevic": "Chicago Bulls",
+    "Anfernee Simons": "Chicago Bulls",  # Traded from Trail Blazers (Feb 2026)
     "Ayo Dosunmu": "Chicago Bulls",
     "Zach Collins": "Chicago Bulls",
     "Tre Jones": "Chicago Bulls",
+    "Dario Šarić": "Chicago Bulls",  # From 3-team trade (Jan 2026)
     
     # Atlanta Hawks
     "CJ McCollum": "Atlanta Hawks",
