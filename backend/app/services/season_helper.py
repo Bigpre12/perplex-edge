@@ -376,6 +376,45 @@ def get_nhl_season_start() -> datetime:
 
 
 # =============================================================================
+# UFC/MMA Season Helpers
+# =============================================================================
+
+def get_ufc_season_year() -> int:
+    """
+    Get the current UFC season year.
+    
+    UFC runs on calendar year with events throughout the year.
+    
+    Returns:
+        Current calendar year
+    """
+    return datetime.utcnow().year
+
+
+def get_ufc_season_label() -> str:
+    """
+    Get the current UFC season label.
+    
+    Returns:
+        Year as string (e.g., "2026")
+    """
+    return str(get_ufc_season_year())
+
+
+def get_ufc_season_start() -> datetime:
+    """
+    Get the UFC season start date for the current season.
+    
+    UFC runs year-round, so season starts January 1.
+    
+    Returns:
+        datetime of January 1 of current year (naive UTC)
+    """
+    season_year = get_ufc_season_year()
+    return datetime(season_year, 1, 1)
+
+
+# =============================================================================
 # Schedule File Helpers
 # =============================================================================
 
@@ -413,6 +452,9 @@ def get_schedule_filename(sport_key: str) -> str:
     elif sport_key == "icehockey_nhl":
         start_year, end_year = get_nhl_season_years()
         return f"nhl_{start_year}_{end_year % 100:02d}.json"
+    elif sport_key == "mma_mixed_martial_arts":
+        season_year = get_ufc_season_year()
+        return f"ufc_{season_year}.json"
     else:
         # Default to NBA format for unknown sports
         start_year, end_year = get_nba_season_years()
@@ -462,6 +504,8 @@ def get_current_season_start(sport_key: str = "basketball_nba") -> datetime:
         return get_tennis_season_start()
     elif sport_key == "icehockey_nhl":
         return get_nhl_season_start()
+    elif sport_key == "mma_mixed_martial_arts":
+        return get_ufc_season_start()
     else:
         # Default to NBA for unknown
         return get_nba_season_start()
@@ -491,6 +535,8 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
         return get_tennis_season_label()
     elif sport_key == "icehockey_nhl":
         return get_nhl_season_label()
+    elif sport_key == "mma_mixed_martial_arts":
+        return get_ufc_season_label()
     else:
         return get_nba_season_label()
 

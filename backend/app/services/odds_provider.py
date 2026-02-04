@@ -1479,20 +1479,111 @@ class XYZOddsProvider(OddsProvider):
             logger.info(f"Generated stub PGA tournament for {sport_key} ({tournament})")
             return games
         
-        # Handle UFC/MMA - generate fight card
+        # Handle UFC/MMA - load from schedule or generate fallback
         if sport_key == "mma_mixed_martial_arts":
             times = _get_stub_game_times()
+            games = []
             
-            # UFC Fight Night card (typical February event)
-            fights = [
+            # Try to load from UFC schedule file
+            schedule = self._load_season_schedule(sport_key)
+            
+            if schedule.get("events"):
+                # Find today's event or nearest upcoming event
+                todays_event = None
+                upcoming_event = None
+                
+                for event in schedule["events"]:
+                    event_date = event.get("date", "")
+                    if event_date == today_str:
+                        todays_event = event
+                        break
+                    elif event_date > today_str and not upcoming_event:
+                        upcoming_event = event
+                
+                # Use today's event, or upcoming event for preview, or last event
+                event = todays_event or upcoming_event
+                
+                if event and event.get("fights"):
+                    event_name = event.get("name", "UFC Event")
+                    event_type = event.get("event_type", "Fight Night")
+                    event_time = event.get("time_et", "22:00")
+                    
+                    # Parse event time
+                    hour, minute = map(int, event_time.split(":"))
+                    base_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                    
+                    for idx, fight in enumerate(event["fights"]):
+                        red_fighter = fight.get("red_corner", "Fighter A")
+                        blue_fighter = fight.get("blue_corner", "Fighter B")
+                        weight_class = fight.get("weight_class", "")
+                        is_main = fight.get("is_main_event", False)
+                        is_title = fight.get("is_title_fight", False)
+                        
+                        # Create fight ID
+                        red_last = red_fighter.split()[-1].lower()
+                        blue_last = blue_fighter.split()[-1].lower()
+                        fight_id = f"ufc_{red_last}_{blue_last}_{today_str.replace('-', '')}"
+                        
+                        # Generate odds based on fight position
+                        if is_main:
+                            red_ml, blue_ml = -150, +130  # Close main event
+                        else:
+                            red_ml, blue_ml = -180 + (idx * 20), +155 - (idx * 15)
+                        
+                        # Calculate fight time (main event last)
+                        fight_time = (base_time + timedelta(minutes=30 * (len(event["fights"]) - idx - 1)))
+                        fight_time_str = fight_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                        
+                        games.append({
+                            "id": fight_id,
+                            "sport_key": sport_key,
+                            "sport_title": "UFC",
+                            "commence_time": fight_time_str,
+                            "home_team": red_fighter,  # Red corner
+                            "away_team": blue_fighter,  # Blue corner
+                            "event_name": event_name,
+                            "weight_class": weight_class,
+                            "is_title_fight": is_title,
+                            "bookmakers": [
+                                {
+                                    "key": "draftkings",
+                                    "title": "DraftKings",
+                                    "markets": [{"key": "h2h", "outcomes": [
+                                        {"name": red_fighter, "price": red_ml},
+                                        {"name": blue_fighter, "price": blue_ml}
+                                    ]}]
+                                },
+                                {
+                                    "key": "fanduel",
+                                    "title": "FanDuel",
+                                    "markets": [{"key": "h2h", "outcomes": [
+                                        {"name": red_fighter, "price": red_ml - 10},
+                                        {"name": blue_fighter, "price": blue_ml + 10}
+                                    ]}]
+                                },
+                                {
+                                    "key": "betmgm",
+                                    "title": "BetMGM",
+                                    "markets": [{"key": "h2h", "outcomes": [
+                                        {"name": red_fighter, "price": red_ml + 5},
+                                        {"name": blue_fighter, "price": blue_ml - 5}
+                                    ]}]
+                                },
+                            ],
+                        })
+                    
+                    logger.info(f"Loaded {len(games)} UFC fights from schedule ({event_name})")
+                    return games
+            
+            # Fallback: Generate default UFC card
+            fallback_fights = [
                 {"red": ("Alex Pereira", -200), "blue": ("Jamahal Hill", +170), "time": times["night"]},
                 {"red": ("Sean Strickland", -150), "blue": ("Paulo Costa", +130), "time": times["late"]},
                 {"red": ("Paddy Pimblett", -180), "blue": ("Tony Ferguson", +155), "time": times["late"]},
                 {"red": ("Sean O'Malley", -220), "blue": ("Merab Dvalishvili", +185), "time": times["afternoon"]},
             ]
             
-            games = []
-            for idx, fight in enumerate(fights):
+            for idx, fight in enumerate(fallback_fights):
                 red_fighter, red_ml = fight["red"]
                 blue_fighter, blue_ml = fight["blue"]
                 
@@ -1536,7 +1627,7 @@ class XYZOddsProvider(OddsProvider):
                     ],
                 })
             
-            logger.info(f"Generated {len(games)} stub UFC fights for {sport_key}")
+            logger.info(f"Generated {len(games)} fallback UFC fights for {sport_key}")
             return games
         
         # Load schedule for NBA/NCAAB

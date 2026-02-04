@@ -1,0 +1,362 @@
+{
+  "season": "2026",
+  "sport": "UFC",
+  "sport_key": "mma_mixed_martial_arts",
+  "last_updated": "2026-02-04",
+  "total_events": 43,
+  "notes": {
+    "ppv_events": 13,
+    "fight_nights": 30,
+    "status": "Progressive schedule - Q1/Q2 confirmed, rest TBA"
+  },
+  "events": [
+    {
+      "name": "UFC 324: Gaethje vs. Pimblett",
+      "date": "2026-01-24",
+      "time_et": "22:00",
+      "venue": "T-Mobile Arena",
+      "location": "Las Vegas, NV, USA",
+      "event_type": "PPV",
+      "broadcast": "ESPN+ PPV",
+      "api_key": "ufc_324",
+      "fights": [
+        {
+          "red_corner": "Justin Gaethje",
+          "blue_corner": "Paddy Pimblett",
+          "weight_class": "Lightweight",
+          "is_main_event": true,
+          "is_title_fight": false,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Ciryl Gane",
+          "blue_corner": "Sergei Pavlovich",
+          "weight_class": "Heavyweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        },
+        {
+          "red_corner": "Aljamain Sterling",
+          "blue_corner": "Umar Nurmagomedov",
+          "weight_class": "Bantamweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC 325: Volkanovski vs. Lopes 2",
+      "date": "2026-01-31",
+      "time_et": "22:00",
+      "venue": "Qudos Bank Arena",
+      "location": "Sydney, Australia",
+      "event_type": "PPV",
+      "broadcast": "ESPN+ PPV",
+      "api_key": "ufc_325",
+      "fights": [
+        {
+          "red_corner": "Alexander Volkanovski",
+          "blue_corner": "Diego Lopes",
+          "weight_class": "Featherweight",
+          "is_main_event": true,
+          "is_title_fight": true,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Robert Whittaker",
+          "blue_corner": "Dricus Du Plessis",
+          "weight_class": "Middleweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        },
+        {
+          "red_corner": "Tai Tuivasa",
+          "blue_corner": "Jailton Almeida",
+          "weight_class": "Heavyweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC Fight Night: Bautista vs. Oliveira",
+      "date": "2026-02-07",
+      "time_et": "19:00",
+      "venue": "UFC APEX",
+      "location": "Las Vegas, NV, USA",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN+",
+      "api_key": "ufc_fn_feb7",
+      "fights": [
+        {
+          "red_corner": "Ricky Simon",
+          "blue_corner": "Charles Oliveira",
+          "weight_class": "Bantamweight",
+          "is_main_event": true,
+          "is_title_fight": false,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Maycee Barber",
+          "blue_corner": "Amanda Ribas",
+          "weight_class": "Strawweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC Fight Night: Strickland vs. Hernandez",
+      "date": "2026-02-21",
+      "time_et": "20:00",
+      "venue": "Toyota Center",
+      "location": "Houston, TX, USA",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN",
+      "api_key": "ufc_fn_feb21",
+      "fights": [
+        {
+          "red_corner": "Sean Strickland",
+          "blue_corner": "Kevin Hernandez",
+          "weight_class": "Middleweight",
+          "is_main_event": true,
+          "is_title_fight": false,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Derrick Lewis",
+          "blue_corner": "Marcos Rogerio de Lima",
+          "weight_class": "Heavyweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC Fight Night: Moreno vs. Almabayev",
+      "date": "2026-02-28",
+      "time_et": "20:00",
+      "venue": "Arena CDMX",
+      "location": "Mexico City, Mexico",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN+",
+      "api_key": "ufc_fn_feb28",
+      "fights": [
+        {
+          "red_corner": "Brandon Moreno",
+          "blue_corner": "Amir Albazi",
+          "weight_class": "Flyweight",
+          "is_main_event": true,
+          "is_title_fight": false,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Yair Rodriguez",
+          "blue_corner": "Movsar Evloev",
+          "weight_class": "Featherweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC 326: Holloway vs. Oliveira 2",
+      "date": "2026-03-07",
+      "time_et": "22:00",
+      "venue": "T-Mobile Arena",
+      "location": "Las Vegas, NV, USA",
+      "event_type": "PPV",
+      "broadcast": "ESPN+ PPV",
+      "api_key": "ufc_326",
+      "fights": [
+        {
+          "red_corner": "Max Holloway",
+          "blue_corner": "Charles Oliveira",
+          "weight_class": "Lightweight",
+          "is_main_event": true,
+          "is_title_fight": true,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Alex Pereira",
+          "blue_corner": "Magomed Ankalaev",
+          "weight_class": "Light Heavyweight",
+          "is_main_event": false,
+          "is_title_fight": true,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Islam Makhachev",
+          "blue_corner": "Arman Tsarukyan",
+          "weight_class": "Lightweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC Fight Night: Emmett vs. Vallejos",
+      "date": "2026-03-14",
+      "time_et": "19:00",
+      "venue": "UFC APEX",
+      "location": "Las Vegas, NV, USA",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN+",
+      "api_key": "ufc_fn_mar14",
+      "fights": [
+        {
+          "red_corner": "Josh Emmett",
+          "blue_corner": "Diego Vallejos",
+          "weight_class": "Featherweight",
+          "is_main_event": true,
+          "is_title_fight": false,
+          "rounds": 5
+        }
+      ]
+    },
+    {
+      "name": "UFC Fight Night: Evloev vs. Murphy",
+      "date": "2026-03-21",
+      "time_et": "16:00",
+      "venue": "O2 Arena",
+      "location": "London, UK",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN+",
+      "api_key": "ufc_fn_mar21",
+      "fights": [
+        {
+          "red_corner": "Movsar Evloev",
+          "blue_corner": "Lerone Murphy",
+          "weight_class": "Featherweight",
+          "is_main_event": true,
+          "is_title_fight": false,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Tom Aspinall",
+          "blue_corner": "Curtis Blaydes",
+          "weight_class": "Heavyweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        },
+        {
+          "red_corner": "Leon Edwards",
+          "blue_corner": "Belal Muhammad",
+          "weight_class": "Welterweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC Fight Night: Adesanya vs. Pyfer",
+      "date": "2026-03-28",
+      "time_et": "22:00",
+      "venue": "Climate Pledge Arena",
+      "location": "Seattle, WA, USA",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN",
+      "api_key": "ufc_fn_mar28",
+      "fights": [
+        {
+          "red_corner": "Israel Adesanya",
+          "blue_corner": "Joe Pyfer",
+          "weight_class": "Middleweight",
+          "is_main_event": true,
+          "is_title_fight": false,
+          "rounds": 5
+        },
+        {
+          "red_corner": "Khamzat Chimaev",
+          "blue_corner": "Robert Whittaker",
+          "weight_class": "Middleweight",
+          "is_main_event": false,
+          "is_title_fight": false,
+          "rounds": 3
+        }
+      ]
+    },
+    {
+      "name": "UFC Fight Night 272",
+      "date": "2026-04-04",
+      "time_et": "19:00",
+      "venue": "UFC APEX",
+      "location": "Las Vegas, NV, USA",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN+",
+      "api_key": "ufc_fn_272",
+      "fights": []
+    },
+    {
+      "name": "UFC 327",
+      "date": "2026-04-11",
+      "time_et": "22:00",
+      "venue": "Kaseya Center",
+      "location": "Miami, FL, USA",
+      "event_type": "PPV",
+      "broadcast": "ESPN+ PPV",
+      "api_key": "ufc_327",
+      "fights": []
+    },
+    {
+      "name": "UFC Fight Night 273",
+      "date": "2026-05-30",
+      "time_et": "08:00",
+      "venue": "Galaxy Arena",
+      "location": "Macau, China",
+      "event_type": "Fight Night",
+      "broadcast": "ESPN+",
+      "api_key": "ufc_fn_273",
+      "fights": []
+    }
+  ],
+  "fighters": [
+    {"name": "Justin Gaethje", "nickname": "The Highlight", "weight_class": "Lightweight", "ranking": 2},
+    {"name": "Paddy Pimblett", "nickname": "The Baddy", "weight_class": "Lightweight", "ranking": 12},
+    {"name": "Alexander Volkanovski", "nickname": "The Great", "weight_class": "Featherweight", "ranking": "C"},
+    {"name": "Diego Lopes", "nickname": "", "weight_class": "Featherweight", "ranking": 5},
+    {"name": "Max Holloway", "nickname": "Blessed", "weight_class": "Lightweight", "ranking": 1},
+    {"name": "Charles Oliveira", "nickname": "Do Bronx", "weight_class": "Lightweight", "ranking": 3},
+    {"name": "Islam Makhachev", "nickname": "", "weight_class": "Lightweight", "ranking": "C"},
+    {"name": "Alex Pereira", "nickname": "Poatan", "weight_class": "Light Heavyweight", "ranking": "C"},
+    {"name": "Israel Adesanya", "nickname": "The Last Stylebender", "weight_class": "Middleweight", "ranking": 3},
+    {"name": "Sean Strickland", "nickname": "", "weight_class": "Middleweight", "ranking": 2},
+    {"name": "Dricus Du Plessis", "nickname": "Stillknocks", "weight_class": "Middleweight", "ranking": "C"},
+    {"name": "Robert Whittaker", "nickname": "The Reaper", "weight_class": "Middleweight", "ranking": 4},
+    {"name": "Khamzat Chimaev", "nickname": "Borz", "weight_class": "Middleweight", "ranking": 5},
+    {"name": "Leon Edwards", "nickname": "Rocky", "weight_class": "Welterweight", "ranking": 2},
+    {"name": "Belal Muhammad", "nickname": "Remember The Name", "weight_class": "Welterweight", "ranking": "C"},
+    {"name": "Tom Aspinall", "nickname": "", "weight_class": "Heavyweight", "ranking": "IC"},
+    {"name": "Jon Jones", "nickname": "Bones", "weight_class": "Heavyweight", "ranking": "C"},
+    {"name": "Ciryl Gane", "nickname": "Bon Gamin", "weight_class": "Heavyweight", "ranking": 2},
+    {"name": "Brandon Moreno", "nickname": "The Assassin Baby", "weight_class": "Flyweight", "ranking": 2},
+    {"name": "Alexandre Pantoja", "nickname": "The Cannibal", "weight_class": "Flyweight", "ranking": "C"},
+    {"name": "Aljamain Sterling", "nickname": "Funk Master", "weight_class": "Bantamweight", "ranking": 3},
+    {"name": "Sean O'Malley", "nickname": "Sugar", "weight_class": "Bantamweight", "ranking": "C"},
+    {"name": "Merab Dvalishvili", "nickname": "The Machine", "weight_class": "Bantamweight", "ranking": 1},
+    {"name": "Valentina Shevchenko", "nickname": "Bullet", "weight_class": "Women's Flyweight", "ranking": 1},
+    {"name": "Amanda Nunes", "nickname": "The Lioness", "weight_class": "Women's Bantamweight", "ranking": "Retired"},
+    {"name": "Zhang Weili", "nickname": "Magnum", "weight_class": "Women's Strawweight", "ranking": "C"}
+  ],
+  "weight_classes": [
+    {"name": "Strawweight", "limit_lbs": 115, "gender": "Women"},
+    {"name": "Flyweight", "limit_lbs": 125, "gender": "Men/Women"},
+    {"name": "Bantamweight", "limit_lbs": 135, "gender": "Men/Women"},
+    {"name": "Featherweight", "limit_lbs": 145, "gender": "Men/Women"},
+    {"name": "Lightweight", "limit_lbs": 155, "gender": "Men"},
+    {"name": "Welterweight", "limit_lbs": 170, "gender": "Men"},
+    {"name": "Middleweight", "limit_lbs": 185, "gender": "Men"},
+    {"name": "Light Heavyweight", "limit_lbs": 205, "gender": "Men"},
+    {"name": "Heavyweight", "limit_lbs": 265, "gender": "Men"}
+  ]
+}
