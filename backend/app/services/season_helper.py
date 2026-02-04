@@ -473,6 +473,52 @@ def get_epl_season_start() -> datetime:
 
 
 # =============================================================================
+# Golf/PGA Season Helpers
+# =============================================================================
+
+def get_pga_season_year() -> int:
+    """
+    Get the current PGA Tour season year.
+    
+    PGA Tour FedEx Cup season runs calendar year (Jan-Aug) with fall events
+    continuing through November for next season points.
+    
+    Returns:
+        Current calendar year
+    """
+    return datetime.utcnow().year
+
+
+def get_pga_season_label() -> str:
+    """
+    Get the current PGA Tour season label.
+    
+    Examples:
+        - In January 2026: "2026"
+        - In August 2026: "2026"
+        - In November 2026: "2026" (fall events count toward 2027 season)
+    
+    Returns:
+        Season label string like "2026"
+    """
+    return str(get_pga_season_year())
+
+
+def get_pga_season_start() -> datetime:
+    """
+    Get the PGA Tour season start date for the current season.
+    
+    PGA Tour season typically starts in early January (Sony Open in Hawaii).
+    
+    Returns:
+        datetime of season start (naive UTC)
+    """
+    season_year = get_pga_season_year()
+    # PGA Tour typically starts around January 12 (Sony Open)
+    return datetime(season_year, 1, 12)
+
+
+# =============================================================================
 # Schedule File Helpers
 # =============================================================================
 
@@ -516,6 +562,9 @@ def get_schedule_filename(sport_key: str) -> str:
     elif sport_key == "soccer_epl":
         start_year, end_year = get_epl_season_years()
         return f"epl_{start_year}_{end_year % 100:02d}.json"
+    elif sport_key == "golf_pga_tour":
+        season_year = get_pga_season_year()
+        return f"pga_{season_year}.json"
     else:
         # Default to NBA format for unknown sports
         start_year, end_year = get_nba_season_years()
@@ -569,6 +618,8 @@ def get_current_season_start(sport_key: str = "basketball_nba") -> datetime:
         return get_ufc_season_start()
     elif sport_key == "soccer_epl":
         return get_epl_season_start()
+    elif sport_key == "golf_pga_tour":
+        return get_pga_season_start()
     else:
         # Default to NBA for unknown
         return get_nba_season_start()
@@ -602,6 +653,8 @@ def get_current_season_label(sport_key: str = "basketball_nba") -> str:
         return get_ufc_season_label()
     elif sport_key == "soccer_epl":
         return get_epl_season_label()
+    elif sport_key == "golf_pga_tour":
+        return get_pga_season_label()
     else:
         return get_nba_season_label()
 
