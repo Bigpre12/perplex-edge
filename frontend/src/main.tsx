@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
@@ -20,16 +20,27 @@ const queryClient = new QueryClient({
   },
 })
 
+// Wrapper that only uses Clerk if configured
+function AuthWrapper({ children }: { children: ReactNode }) {
+  if (CLERK_PUBLISHABLE_KEY) {
+    return (
+      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+        <AuthProvider clerkEnabled>{children}</AuthProvider>
+      </ClerkProvider>
+    )
+  }
+  // No Clerk key - run without auth
+  return <AuthProvider clerkEnabled={false}>{children}</AuthProvider>
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </QueryClientProvider>
-      </AuthProvider>
-    </ClerkProvider>
+    <AuthWrapper>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </AuthWrapper>
   </StrictMode>,
 )

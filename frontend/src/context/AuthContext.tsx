@@ -5,6 +5,9 @@
  * - User plan info (free/trial/pro)
  * - Trial days remaining
  * - Sync user to backend on login
+ * 
+ * When Clerk is not configured (no VITE_CLERK_PUBLISHABLE_KEY),
+ * provides default "not authenticated" values so the app still works.
  */
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -39,6 +42,9 @@ interface AuthContextValue {
   isFree: boolean;
   trialDaysLeft: number | null;
   
+  // Auth availability
+  clerkEnabled: boolean;
+  
   // Actions
   signOut: () => Promise<void>;
   syncUser: () => Promise<void>;
@@ -55,16 +61,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // =============================================================================
-// Provider
+// Provider (with Clerk)
 // =============================================================================
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+function AuthProviderWithClerk({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
   const { signOut: clerkSignOut, getToken } = useClerkAuth();
   
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  // Track sync errors for debugging (not displayed to user currently)
-  const [_syncError, setSyncError] = useState<string | null>(null);
 
   // Sync user to backend when Clerk user changes
   useEffect(() => {
@@ -106,7 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           trialEndsAt: data.trial_ends_at ? new Date(data.trial_ends_at) : null,
           createdAt: new Date(data.created_at),
         });
-        setSyncError(null);
       } else {
         // If backend sync fails, still set basic user info
         console.warn('Failed to sync user to backend:', response.status);
@@ -122,7 +125,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (err) {
       console.error('Error syncing user:', err);
-      setSyncError(err instanceof Error ? err.message : 'Sync failed');
       // Set basic user info even on error
       setUserInfo({
         id: clerkUser.id,
@@ -156,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isTrial,
     isFree,
     trialDaysLeft,
+    clerkEnabled: true,
     signOut: async () => {
       await clerkSignOut();
       setUserInfo(null);
@@ -169,6 +172,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+// =============================================================================
+// Provider (without Clerk - fallback)
+// =============================================================================
+
+function AuthProviderWithoutClerk({ children }: { children: ReactNode }) {
+  // Default "not authenticated" state
+  const value: AuthContextValue = {
+    isLoaded: true,
+    isSignedIn: false,
+    user: null,
+    plan: 'free',
+    isPro: false,
+    isTrial: false,
+    isFree: true,
+    trialDaysLeft: null,
+    clerkEnabled: false,
+    signOut: async () => {
+      console.warn('Auth not configured - signOut is a no-op');
+    },
+    syncUser: async () => {
+      console.warn('Auth not configured - syncUser is a no-op');
+    },
+    getToken: async () => null,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// =============================================================================
+// Main Provider (chooses based on clerkEnabled prop)
+// =============================================================================
+
+interface AuthProviderProps {
+  children: ReactNode;
+  clerkEnabled: boolean;
+}
+
+export function AuthProvider({ children, clerkEnabled }: AuthProviderProps) {
+  if (clerkEnabled) {
+    return <AuthProviderWithClerk>{children}</AuthProviderWithClerk>;
+  }
+  return <AuthProviderWithoutClerk>{children}</AuthProviderWithoutClerk>;
 }
 
 // =============================================================================
