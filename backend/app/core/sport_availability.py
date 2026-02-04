@@ -113,14 +113,72 @@ TENNIS_TOURNAMENTS = {
         "tennis_atp_french_open",
         "tennis_atp_wimbledon",
         "tennis_atp_us_open",
-        # Add more tournaments as needed
+        "tennis_atp_indian_wells",
+        "tennis_atp_miami",
+        "tennis_atp_monte_carlo",
+        "tennis_atp_madrid",
+        "tennis_atp_rome",
+        "tennis_atp_canadian_open",
+        "tennis_atp_cincinnati",
+        "tennis_atp_shanghai",
+        "tennis_atp_paris",
+        "tennis_atp_finals",
     ],
     "tennis_wta": [
+        # Grand Slams
         "tennis_wta_australian_open",
         "tennis_wta_french_open",
         "tennis_wta_wimbledon",
         "tennis_wta_us_open",
-        # Add more tournaments as needed
+        # WTA 1000
+        "tennis_wta_doha",
+        "tennis_wta_dubai",
+        "tennis_wta_indian_wells",
+        "tennis_wta_miami",
+        "tennis_wta_madrid",
+        "tennis_wta_rome",
+        "tennis_wta_canadian_open",
+        "tennis_wta_cincinnati",
+        "tennis_wta_guadalajara",
+        "tennis_wta_beijing",
+        "tennis_wta_wuhan",
+        # WTA 500
+        "tennis_wta_brisbane",
+        "tennis_wta_adelaide",
+        "tennis_wta_abu_dhabi",
+        "tennis_wta_charleston",
+        "tennis_wta_stuttgart",
+        "tennis_wta_linz",
+        "tennis_wta_berlin",
+        "tennis_wta_eastbourne",
+        "tennis_wta_washington",
+        "tennis_wta_san_diego",
+        "tennis_wta_tokyo",
+        "tennis_wta_ningbo",
+        "tennis_wta_zhuhai",
+        # WTA 250
+        "tennis_wta_auckland",
+        "tennis_wta_hobart",
+        "tennis_wta_cluj",
+        "tennis_wta_merida",
+        "tennis_wta_austin",
+        "tennis_wta_strasbourg",
+        "tennis_wta_rabat",
+        "tennis_wta_s_hertogenbosch",
+        "tennis_wta_nottingham",
+        "tennis_wta_birmingham",
+        "tennis_wta_bad_homburg",
+        "tennis_wta_hamburg",
+        "tennis_wta_prague",
+        "tennis_wta_iasi",
+        "tennis_wta_warsaw",
+        "tennis_wta_cleveland",
+        "tennis_wta_seoul",
+        "tennis_wta_guangzhou",
+        "tennis_wta_hong_kong",
+        "tennis_wta_jiangxi",
+        # WTA Finals
+        "tennis_wta_finals",
     ],
 }
 
@@ -141,36 +199,90 @@ def get_current_tennis_tournaments(month: Optional[int] = None) -> dict[str, lis
     # Tournament windows (month ranges) - expanded to cover more of the year
     # Grand Slams plus major ATP/WTA tour events
     tournament_windows = {
-        # Grand Slams
+        # =================================================================
+        # ATP Grand Slams and Masters
+        # =================================================================
         "tennis_atp_australian_open": (1, 2),    # Mid-Jan to late Jan
-        "tennis_atp_french_open": (5, 6),        # Late May to early June
-        "tennis_atp_wimbledon": (6, 7),          # Late June to mid-July
-        "tennis_atp_us_open": (8, 9),            # Late Aug to early Sept
-        "tennis_wta_australian_open": (1, 2),
-        "tennis_wta_french_open": (5, 6),
-        "tennis_wta_wimbledon": (6, 7),
-        "tennis_wta_us_open": (8, 9),
-        
-        # Additional ATP events to fill gaps
         "tennis_atp_indian_wells": (3, 3),       # March (Indian Wells/BNP Paribas)
         "tennis_atp_miami": (3, 4),              # Late March to early April
         "tennis_atp_monte_carlo": (4, 4),        # April (Monte Carlo Masters)
         "tennis_atp_madrid": (4, 5),             # Late April to early May
         "tennis_atp_rome": (5, 5),               # May (Italian Open)
+        "tennis_atp_french_open": (5, 6),        # Late May to early June
+        "tennis_atp_wimbledon": (6, 7),          # Late June to mid-July
         "tennis_atp_canadian_open": (8, 8),      # August
         "tennis_atp_cincinnati": (8, 8),         # August
+        "tennis_atp_us_open": (8, 9),            # Late Aug to early Sept
         "tennis_atp_shanghai": (10, 10),         # October (Shanghai Masters)
         "tennis_atp_paris": (10, 11),            # Late Oct to early Nov (Paris Masters)
         "tennis_atp_finals": (11, 11),           # November (ATP Finals)
         
-        # Additional WTA events
-        "tennis_wta_indian_wells": (3, 3),
-        "tennis_wta_miami": (3, 4),
-        "tennis_wta_madrid": (4, 5),
-        "tennis_wta_rome": (5, 5),
-        "tennis_wta_canadian_open": (8, 8),
-        "tennis_wta_cincinnati": (8, 8),
-        "tennis_wta_finals": (10, 11),           # WTA Finals
+        # =================================================================
+        # WTA Grand Slams
+        # =================================================================
+        "tennis_wta_australian_open": (1, 2),
+        "tennis_wta_french_open": (5, 6),
+        "tennis_wta_wimbledon": (6, 7),
+        "tennis_wta_us_open": (8, 9),
+        
+        # =================================================================
+        # WTA 1000 Events
+        # =================================================================
+        "tennis_wta_doha": (2, 2),               # February (Qatar Open)
+        "tennis_wta_dubai": (2, 2),              # February
+        "tennis_wta_indian_wells": (3, 3),       # March
+        "tennis_wta_miami": (3, 4),              # Late March to early April
+        "tennis_wta_madrid": (4, 5),             # Late April to early May
+        "tennis_wta_rome": (5, 5),               # May
+        "tennis_wta_canadian_open": (8, 8),      # August
+        "tennis_wta_cincinnati": (8, 8),         # August
+        "tennis_wta_guadalajara": (9, 9),        # September
+        "tennis_wta_beijing": (9, 10),           # Late Sept to early Oct
+        "tennis_wta_wuhan": (10, 10),            # October
+        
+        # =================================================================
+        # WTA 500 Events
+        # =================================================================
+        "tennis_wta_brisbane": (1, 1),           # January
+        "tennis_wta_adelaide": (1, 1),           # January
+        "tennis_wta_abu_dhabi": (2, 2),          # February
+        "tennis_wta_charleston": (4, 4),         # April (clay)
+        "tennis_wta_stuttgart": (4, 4),          # April (clay)
+        "tennis_wta_linz": (4, 4),               # April (clay)
+        "tennis_wta_berlin": (6, 6),             # June (grass)
+        "tennis_wta_eastbourne": (6, 6),         # June (grass)
+        "tennis_wta_washington": (7, 8),         # Late July to early Aug
+        "tennis_wta_san_diego": (8, 8),          # August
+        "tennis_wta_tokyo": (9, 9),              # September
+        "tennis_wta_ningbo": (10, 10),           # October
+        "tennis_wta_zhuhai": (10, 10),           # October
+        
+        # =================================================================
+        # WTA 250 Events (by month)
+        # =================================================================
+        "tennis_wta_auckland": (1, 1),           # January
+        "tennis_wta_hobart": (1, 1),             # January
+        "tennis_wta_cluj": (2, 2),               # February
+        "tennis_wta_merida": (2, 3),             # Late Feb to early Mar
+        "tennis_wta_austin": (2, 3),             # Late Feb to early Mar
+        "tennis_wta_strasbourg": (5, 5),         # May (clay)
+        "tennis_wta_rabat": (5, 5),              # May (clay)
+        "tennis_wta_s_hertogenbosch": (6, 6),    # June (grass)
+        "tennis_wta_nottingham": (6, 6),         # June (grass)
+        "tennis_wta_birmingham": (6, 6),         # June (grass)
+        "tennis_wta_bad_homburg": (6, 6),        # June (grass)
+        "tennis_wta_hamburg": (7, 7),            # July (clay)
+        "tennis_wta_prague": (7, 7),             # July (clay)
+        "tennis_wta_iasi": (7, 7),               # July (clay)
+        "tennis_wta_warsaw": (7, 7),             # July (clay)
+        "tennis_wta_cleveland": (8, 8),          # August
+        "tennis_wta_seoul": (9, 9),              # September
+        "tennis_wta_guangzhou": (10, 10),        # October
+        "tennis_wta_hong_kong": (10, 11),        # Late Oct to early Nov
+        "tennis_wta_jiangxi": (10, 11),          # Late Oct to early Nov
+        
+        # WTA Finals
+        "tennis_wta_finals": (11, 11),           # November (Riyadh)
     }
     
     active = {"tennis_atp": [], "tennis_wta": []}

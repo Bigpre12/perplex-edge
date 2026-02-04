@@ -1,0 +1,479 @@
+{
+  "season": "2026",
+  "sport": "WTA",
+  "sport_key": "tennis_wta",
+  "last_updated": "2026-02-04",
+  "season_start": "2026-01-01",
+  "season_end": "2026-11-15",
+  "total_events": 53,
+  "notes": {
+    "wta_1000": 10,
+    "wta_500": 17,
+    "wta_250": 22,
+    "grand_slams": 4,
+    "wta_finals": "Riyadh (Nov 1-8)"
+  },
+  "events": [
+    {
+      "name": "United Cup",
+      "location": "Sydney & Perth, Australia",
+      "category": "Team",
+      "surface": "hard",
+      "start_date": "2026-01-01",
+      "end_date": "2026-01-05",
+      "api_key": "tennis_wta_united_cup"
+    },
+    {
+      "name": "ASB Classic",
+      "location": "Auckland, New Zealand",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-01-05",
+      "end_date": "2026-01-11",
+      "api_key": "tennis_wta_auckland"
+    },
+    {
+      "name": "Brisbane International",
+      "location": "Brisbane, Australia",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-01-05",
+      "end_date": "2026-01-11",
+      "api_key": "tennis_wta_brisbane"
+    },
+    {
+      "name": "Adelaide International",
+      "location": "Adelaide, Australia",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-01-06",
+      "end_date": "2026-01-11",
+      "api_key": "tennis_wta_adelaide"
+    },
+    {
+      "name": "Hobart International",
+      "location": "Hobart, Australia",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-01-12",
+      "end_date": "2026-01-17",
+      "api_key": "tennis_wta_hobart"
+    },
+    {
+      "name": "Australian Open",
+      "location": "Melbourne, Australia",
+      "category": "Grand Slam",
+      "surface": "hard",
+      "start_date": "2026-01-19",
+      "end_date": "2026-02-01",
+      "api_key": "tennis_wta_australian_open"
+    },
+    {
+      "name": "Mubadala Abu Dhabi Open",
+      "location": "Abu Dhabi, UAE",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-02-02",
+      "end_date": "2026-02-08",
+      "api_key": "tennis_wta_abu_dhabi"
+    },
+    {
+      "name": "Transylvania Open",
+      "location": "Cluj-Napoca, Romania",
+      "category": "WTA 250",
+      "surface": "hard (indoor)",
+      "start_date": "2026-02-09",
+      "end_date": "2026-02-15",
+      "api_key": "tennis_wta_cluj"
+    },
+    {
+      "name": "Qatar TotalEnergies Open",
+      "location": "Doha, Qatar",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-02-09",
+      "end_date": "2026-02-15",
+      "api_key": "tennis_wta_doha"
+    },
+    {
+      "name": "Dubai Duty Free Tennis Championships",
+      "location": "Dubai, UAE",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-02-16",
+      "end_date": "2026-02-22",
+      "api_key": "tennis_wta_dubai"
+    },
+    {
+      "name": "Merida Open Akron",
+      "location": "Merida, Mexico",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-02-23",
+      "end_date": "2026-03-01",
+      "api_key": "tennis_wta_merida"
+    },
+    {
+      "name": "ATX Open",
+      "location": "Austin, USA",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-02-23",
+      "end_date": "2026-03-01",
+      "api_key": "tennis_wta_austin"
+    },
+    {
+      "name": "BNP Paribas Open",
+      "location": "Indian Wells, USA",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-03-05",
+      "end_date": "2026-03-16",
+      "api_key": "tennis_wta_indian_wells"
+    },
+    {
+      "name": "Miami Open",
+      "location": "Miami Gardens, USA",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-03-19",
+      "end_date": "2026-03-30",
+      "api_key": "tennis_wta_miami"
+    },
+    {
+      "name": "Charleston Open",
+      "location": "Charleston, USA",
+      "category": "WTA 500",
+      "surface": "clay",
+      "start_date": "2026-04-06",
+      "end_date": "2026-04-12",
+      "api_key": "tennis_wta_charleston"
+    },
+    {
+      "name": "Porsche Tennis Grand Prix",
+      "location": "Stuttgart, Germany",
+      "category": "WTA 500",
+      "surface": "clay (indoor)",
+      "start_date": "2026-04-13",
+      "end_date": "2026-04-19",
+      "api_key": "tennis_wta_stuttgart"
+    },
+    {
+      "name": "Upper Austria Ladies Linz",
+      "location": "Linz, Austria",
+      "category": "WTA 500",
+      "surface": "clay (indoor)",
+      "start_date": "2026-04-20",
+      "end_date": "2026-04-26",
+      "api_key": "tennis_wta_linz"
+    },
+    {
+      "name": "Mutua Madrid Open",
+      "location": "Madrid, Spain",
+      "category": "WTA 1000",
+      "surface": "clay",
+      "start_date": "2026-04-27",
+      "end_date": "2026-05-10",
+      "api_key": "tennis_wta_madrid"
+    },
+    {
+      "name": "Internazionali BNL d'Italia",
+      "location": "Rome, Italy",
+      "category": "WTA 1000",
+      "surface": "clay",
+      "start_date": "2026-05-11",
+      "end_date": "2026-05-17",
+      "api_key": "tennis_wta_rome"
+    },
+    {
+      "name": "Strasbourg International",
+      "location": "Strasbourg, France",
+      "category": "WTA 250",
+      "surface": "clay",
+      "start_date": "2026-05-18",
+      "end_date": "2026-05-24",
+      "api_key": "tennis_wta_strasbourg"
+    },
+    {
+      "name": "Rabat Open",
+      "location": "Rabat, Morocco",
+      "category": "WTA 250",
+      "surface": "clay",
+      "start_date": "2026-05-18",
+      "end_date": "2026-05-24",
+      "api_key": "tennis_wta_rabat"
+    },
+    {
+      "name": "Roland-Garros",
+      "location": "Paris, France",
+      "category": "Grand Slam",
+      "surface": "clay",
+      "start_date": "2026-05-24",
+      "end_date": "2026-06-07",
+      "api_key": "tennis_wta_french_open"
+    },
+    {
+      "name": "Libema Open",
+      "location": "'s-Hertogenbosch, Netherlands",
+      "category": "WTA 250",
+      "surface": "grass",
+      "start_date": "2026-06-08",
+      "end_date": "2026-06-14",
+      "api_key": "tennis_wta_s_hertogenbosch"
+    },
+    {
+      "name": "Nottingham Open",
+      "location": "Nottingham, England",
+      "category": "WTA 250",
+      "surface": "grass",
+      "start_date": "2026-06-08",
+      "end_date": "2026-06-14",
+      "api_key": "tennis_wta_nottingham"
+    },
+    {
+      "name": "Berlin Ladies Open",
+      "location": "Berlin, Germany",
+      "category": "WTA 500",
+      "surface": "grass",
+      "start_date": "2026-06-15",
+      "end_date": "2026-06-21",
+      "api_key": "tennis_wta_berlin"
+    },
+    {
+      "name": "Birmingham Classic",
+      "location": "Birmingham, England",
+      "category": "WTA 250",
+      "surface": "grass",
+      "start_date": "2026-06-15",
+      "end_date": "2026-06-21",
+      "api_key": "tennis_wta_birmingham"
+    },
+    {
+      "name": "Bad Homburg Open",
+      "location": "Bad Homburg, Germany",
+      "category": "WTA 250",
+      "surface": "grass",
+      "start_date": "2026-06-22",
+      "end_date": "2026-06-28",
+      "api_key": "tennis_wta_bad_homburg"
+    },
+    {
+      "name": "Eastbourne International",
+      "location": "Eastbourne, England",
+      "category": "WTA 500",
+      "surface": "grass",
+      "start_date": "2026-06-22",
+      "end_date": "2026-06-28",
+      "api_key": "tennis_wta_eastbourne"
+    },
+    {
+      "name": "Wimbledon",
+      "location": "London, England",
+      "category": "Grand Slam",
+      "surface": "grass",
+      "start_date": "2026-06-29",
+      "end_date": "2026-07-12",
+      "api_key": "tennis_wta_wimbledon"
+    },
+    {
+      "name": "Hamburg European Open",
+      "location": "Hamburg, Germany",
+      "category": "WTA 250",
+      "surface": "clay",
+      "start_date": "2026-07-13",
+      "end_date": "2026-07-19",
+      "api_key": "tennis_wta_hamburg"
+    },
+    {
+      "name": "Prague Open",
+      "location": "Prague, Czech Republic",
+      "category": "WTA 250",
+      "surface": "clay",
+      "start_date": "2026-07-13",
+      "end_date": "2026-07-19",
+      "api_key": "tennis_wta_prague"
+    },
+    {
+      "name": "Iasi Open",
+      "location": "Iasi, Romania",
+      "category": "WTA 250",
+      "surface": "clay",
+      "start_date": "2026-07-20",
+      "end_date": "2026-07-26",
+      "api_key": "tennis_wta_iasi"
+    },
+    {
+      "name": "Polish Open",
+      "location": "Warsaw, Poland",
+      "category": "WTA 250",
+      "surface": "clay",
+      "start_date": "2026-07-20",
+      "end_date": "2026-07-26",
+      "api_key": "tennis_wta_warsaw"
+    },
+    {
+      "name": "Mubadala DC Open",
+      "location": "Washington D.C., USA",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-07-27",
+      "end_date": "2026-08-02",
+      "api_key": "tennis_wta_washington"
+    },
+    {
+      "name": "San Diego Open",
+      "location": "San Diego, USA",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-08-03",
+      "end_date": "2026-08-09",
+      "api_key": "tennis_wta_san_diego"
+    },
+    {
+      "name": "National Bank Open",
+      "location": "Toronto/Montreal, Canada",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-08-10",
+      "end_date": "2026-08-16",
+      "api_key": "tennis_wta_canadian_open"
+    },
+    {
+      "name": "Cincinnati Open",
+      "location": "Cincinnati, USA",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-08-17",
+      "end_date": "2026-08-23",
+      "api_key": "tennis_wta_cincinnati"
+    },
+    {
+      "name": "Cleveland Championships",
+      "location": "Cleveland, USA",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-08-24",
+      "end_date": "2026-08-30",
+      "api_key": "tennis_wta_cleveland"
+    },
+    {
+      "name": "US Open",
+      "location": "New York, USA",
+      "category": "Grand Slam",
+      "surface": "hard",
+      "start_date": "2026-08-31",
+      "end_date": "2026-09-13",
+      "api_key": "tennis_wta_us_open"
+    },
+    {
+      "name": "Guadalajara Open",
+      "location": "Guadalajara, Mexico",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-09-14",
+      "end_date": "2026-09-20",
+      "api_key": "tennis_wta_guadalajara"
+    },
+    {
+      "name": "Korea Open",
+      "location": "Seoul, South Korea",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-09-21",
+      "end_date": "2026-09-27",
+      "api_key": "tennis_wta_seoul"
+    },
+    {
+      "name": "Toray Pan Pacific Open",
+      "location": "Tokyo, Japan",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-09-21",
+      "end_date": "2026-09-27",
+      "api_key": "tennis_wta_tokyo"
+    },
+    {
+      "name": "China Open",
+      "location": "Beijing, China",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-09-28",
+      "end_date": "2026-10-04",
+      "api_key": "tennis_wta_beijing"
+    },
+    {
+      "name": "Wuhan Open",
+      "location": "Wuhan, China",
+      "category": "WTA 1000",
+      "surface": "hard",
+      "start_date": "2026-10-05",
+      "end_date": "2026-10-11",
+      "api_key": "tennis_wta_wuhan"
+    },
+    {
+      "name": "Ningbo Open",
+      "location": "Ningbo, China",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-18",
+      "api_key": "tennis_wta_ningbo"
+    },
+    {
+      "name": "Guangzhou Open",
+      "location": "Guangzhou, China",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-10-12",
+      "end_date": "2026-10-18",
+      "api_key": "tennis_wta_guangzhou"
+    },
+    {
+      "name": "WTA Elite Trophy Zhuhai",
+      "location": "Zhuhai, China",
+      "category": "WTA 500",
+      "surface": "hard",
+      "start_date": "2026-10-19",
+      "end_date": "2026-10-25",
+      "api_key": "tennis_wta_zhuhai"
+    },
+    {
+      "name": "Hong Kong Tennis Open",
+      "location": "Hong Kong, China",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-10-26",
+      "end_date": "2026-11-01",
+      "api_key": "tennis_wta_hong_kong"
+    },
+    {
+      "name": "Jiangxi Open",
+      "location": "Nanchang, China",
+      "category": "WTA 250",
+      "surface": "hard",
+      "start_date": "2026-10-26",
+      "end_date": "2026-11-01",
+      "api_key": "tennis_wta_jiangxi"
+    },
+    {
+      "name": "WTA Finals",
+      "location": "Riyadh, Saudi Arabia",
+      "category": "WTA Finals",
+      "surface": "hard (indoor)",
+      "start_date": "2026-11-01",
+      "end_date": "2026-11-08",
+      "api_key": "tennis_wta_finals"
+    }
+  ],
+  "surfaces": {
+    "hard": 35,
+    "clay": 12,
+    "grass": 6
+  },
+  "categories": {
+    "Grand Slam": 4,
+    "WTA 1000": 10,
+    "WTA 500": 17,
+    "WTA 250": 22
+  }
+}
