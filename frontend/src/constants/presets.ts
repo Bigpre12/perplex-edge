@@ -81,7 +81,7 @@ export const DEFAULT_PLAYER_PROPS_FILTERS = {
   minConfidence: 0.50,  // 50% - shows more picks by default
   minEv: 0.0,           // Show all EV - user can tighten
   riskLevels: ['STANDARD', 'CONFIDENT', 'STRONG'],
-  excludedStatTypes: new Set(['player_steals', 'player_blocks']),
+  excludedStatTypes: new Set<string>(),
   excludedPlayers: new Set<string>(),
   onlyGreenTier: false,
   hideCoinFlips: true,

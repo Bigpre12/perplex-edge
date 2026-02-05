@@ -257,6 +257,11 @@ export const SPORT_ID_TO_KEY: Record<number, SportKey> = {
 /**
  * Defines which stat types are valid for each sport.
  */
+/**
+ * Stat types hidden from the UI but still tracked in the engine.
+ */
+export const HIDDEN_STATS: Set<StatType> = new Set(['STL', 'BLK']);
+
 export const STAT_TYPES_BY_SPORT: Record<SportKey, StatType[]> = {
   // Basketball
   basketball_nba: [
@@ -268,14 +273,12 @@ export const STAT_TYPES_BY_SPORT: Record<SportKey, StatType[]> = {
     'PR',
     'PA',
     'RA',
-    'STL',
-    'BLK',
     'TO',
     'DD',
     'TD',
   ],
   basketball_ncaab: ['PTS', 'REB', 'AST', '3PM', 'PRA'],
-  basketball_wnba: ['PTS', 'REB', 'AST', '3PM', 'PRA', 'STL', 'BLK'],
+  basketball_wnba: ['PTS', 'REB', 'AST', '3PM', 'PRA'],
 
   // Football
   americanfootball_nfl: [

@@ -21,8 +21,6 @@ const STAT_LABELS: Record<string, string> = {
   'P+R': 'Pts+Reb',
   'P+A': 'Pts+Ast',
   'R+A': 'Reb+Ast',
-  STL: 'Steals',
-  BLK: 'Blocks',
   TO: 'Turnovers',
 };
 
@@ -34,8 +32,6 @@ const MARKET_OPTIONS = [
   { value: 'AST', label: 'Assists' },
   { value: '3PM', label: '3-Pointers' },
   { value: 'PRA', label: 'PRA' },
-  { value: 'STL', label: 'Steals' },
-  { value: 'BLK', label: 'Blocks' },
 ];
 
 // Trust tag styling

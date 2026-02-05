@@ -644,6 +644,9 @@ async def list_player_prop_picks(
         .scalar_subquery()
     )
     
+    # Stat types hidden from the UI (still tracked in the engine)
+    HIDDEN_STAT_TYPES = {"STL", "BLK"}
+
     # Base filter conditions
     # IMPORTANT: Filter by BOTH ModelPick.sport_id AND Game.sport_id to prevent data bleed
     # between NFL (31) and NCAAF (41) or other sports with similar data structures
@@ -653,6 +656,7 @@ async def list_player_prop_picks(
         # ModelPick.is_active == True,  # Disabled - show all picks regardless of active status
         ModelPick.player_id.isnot(None),
         ModelPick.player_id.notin_(injured_subquery),  # Exclude injured players
+        Market.stat_type.notin_(HIDDEN_STAT_TYPES),  # Hide blocks/steals from UI
         # Market.market_type == "player_prop",  # Disabled - player_id filter is sufficient
         Game.start_time >= today,
         Game.start_time < tomorrow + timedelta(days=7),  # Include upcoming week

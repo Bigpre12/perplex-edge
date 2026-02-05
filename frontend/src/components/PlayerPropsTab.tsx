@@ -167,8 +167,6 @@ function LineMovementBadge({ pick }: LineMovementBadgeProps) {
 
 const TRAP_STAT_TYPES = [
   { value: 'player_threes', label: '3PT Made', reason: 'High variance' },
-  { value: 'player_steals', label: 'Steals', reason: 'Very random' },
-  { value: 'player_blocks', label: 'Blocks', reason: 'Very random' },
   { value: 'player_turnovers', label: 'Turnovers', reason: 'Hard to model' },
 ];
 
@@ -450,7 +448,7 @@ export function PlayerPropsTab() {
   
   // Don't Bet List state
   const [showDontBetPanel, setShowDontBetPanel] = useState(false);
-  const [excludedStatTypes, setExcludedStatTypes] = useState<Set<string>>(new Set(['player_steals', 'player_blocks']));
+  const [excludedStatTypes, setExcludedStatTypes] = useState<Set<string>>(new Set());
   const [excludedPlayers, setExcludedPlayers] = useState<Set<string>>(new Set());
   const [onlyGreenTier, setOnlyGreenTier] = useState(false);
   const [hideStaleLines, setHideStaleLines] = useState(true);
@@ -1029,7 +1027,7 @@ export function PlayerPropsTab() {
               <div className="flex items-end">
                 <button
                   onClick={() => {
-                    setExcludedStatTypes(new Set(['player_steals', 'player_blocks']));
+                    setExcludedStatTypes(new Set());
                     setExcludedPlayers(new Set());
                     setOnlyGreenTier(false);
                     setHideStaleLines(true);
