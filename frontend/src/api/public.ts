@@ -491,6 +491,8 @@ export interface StreakPlayer {
   player_id: number;
   player_name: string;
   streak: number;
+  stat_type: string | null;
+  direction: string | null;
   hit_rate_7d: number | null;
   last_5: string | null;
 }

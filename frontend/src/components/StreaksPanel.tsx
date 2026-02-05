@@ -7,6 +7,8 @@
 
 import { useState } from 'react';
 import { useStreaks, StreakPlayer } from '../api/public';
+import { STAT_TYPE_LABELS } from '../config/sports';
+import type { StatType } from '../config/sports';
 
 interface StreaksPanelProps {
   sportId: number | null;
@@ -15,20 +17,34 @@ interface StreaksPanelProps {
 }
 
 // Streak row component
+function formatStatLabel(statType: string | null): string {
+  if (!statType) return '';
+  return STAT_TYPE_LABELS[statType as StatType] ?? statType.toUpperCase();
+}
+
 function StreakRow({ player, type }: { player: StreakPlayer; type: 'hot' | 'cold' }) {
   const isHot = type === 'hot';
+  const statLabel = formatStatLabel(player.stat_type);
+  const dirLabel = player.direction ? player.direction.toUpperCase() : '';
   
   return (
     <div className="flex items-center justify-between py-2 px-3 bg-gray-900/30 rounded hover:bg-gray-900/50 transition-colors">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-white text-sm truncate">{player.player_name}</span>
-        {player.last_5 && (
-          <span className="text-[10px] text-gray-500 hidden sm:inline">
-            {player.last_5}
-          </span>
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-white text-sm truncate">{player.player_name}</span>
+          {player.last_5 && (
+            <span className="text-[10px] text-gray-500 hidden sm:inline">
+              {player.last_5}
+            </span>
+          )}
+        </div>
+        {(statLabel || dirLabel) && (
+          <div className="text-xs text-gray-400 mt-0.5">
+            {statLabel}{dirLabel ? ` ${dirLabel}` : ''}
+          </div>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {player.hit_rate_7d !== null && (
           <span className={`text-xs ${isHot ? 'text-green-400/70' : 'text-red-400/70'}`}>
             {(player.hit_rate_7d * 100).toFixed(0)}%
@@ -72,7 +88,7 @@ function StreakSection({
       ) : (
         <div className="space-y-1">
           {players.slice(0, 5).map((player) => (
-            <StreakRow key={player.player_id} player={player} type={type} />
+            <StreakRow key={`${player.player_id}-${player.stat_type}-${player.direction}`} player={player} type={type} />
           ))}
         </div>
       )}

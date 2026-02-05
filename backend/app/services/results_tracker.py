@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models import (
     Game, ModelPick, Player, PlayerGameStats, Market, Line,
-    PickResult, PlayerHitRate, Sport
+    PickResult, PlayerHitRate, PlayerMarketHitRate, Sport
 )
 from app.services.calibration_service import calculate_clv, calculate_profit_loss
 from app.services.hot_cold_service import update_player_market_hit_rate
@@ -521,7 +521,10 @@ class ResultsTracker:
         limit: int = 20,
     ) -> dict[str, list[dict[str, Any]]]:
         """
-        Get players on hot and cold streaks.
+        Get players on hot and cold streaks per market (stat_type + side).
+        
+        Uses PlayerMarketHitRate so each streak is tied to a specific
+        stat type and direction (e.g., "PTS OVER +7").
         
         Args:
             db: Database session
@@ -530,19 +533,20 @@ class ResultsTracker:
             limit: Maximum players per category
         
         Returns:
-            Dict with 'hot' and 'cold' player lists
+            Dict with 'hot' and 'cold' player lists including stat_type and direction
         """
-        # Hot streaks (positive)
+        # Hot streaks (positive) — per market
         hot_result = await db.execute(
-            select(PlayerHitRate, Player)
-            .join(Player, PlayerHitRate.player_id == Player.id)
+            select(PlayerMarketHitRate, Player)
+            .join(Player, PlayerMarketHitRate.player_id == Player.id)
             .where(
                 and_(
-                    PlayerHitRate.sport_id == sport_id,
-                    PlayerHitRate.current_streak >= min_streak,
+                    PlayerMarketHitRate.sport_id == sport_id,
+                    PlayerMarketHitRate.current_streak >= min_streak,
+                    PlayerMarketHitRate.total_7d >= 3,  # Require minimum sample
                 )
             )
-            .order_by(PlayerHitRate.current_streak.desc())
+            .order_by(PlayerMarketHitRate.current_streak.desc())
             .limit(limit)
         )
         
@@ -552,21 +556,24 @@ class ResultsTracker:
                 "player_id": player.id,
                 "player_name": player.name,
                 "streak": hit_rate.current_streak,
+                "stat_type": hit_rate.market,
+                "direction": hit_rate.side,
                 "hit_rate_7d": hit_rate.hit_rate_7d,
                 "last_5": hit_rate.last_5_results,
             })
         
-        # Cold streaks (negative)
+        # Cold streaks (negative) — per market
         cold_result = await db.execute(
-            select(PlayerHitRate, Player)
-            .join(Player, PlayerHitRate.player_id == Player.id)
+            select(PlayerMarketHitRate, Player)
+            .join(Player, PlayerMarketHitRate.player_id == Player.id)
             .where(
                 and_(
-                    PlayerHitRate.sport_id == sport_id,
-                    PlayerHitRate.current_streak <= -min_streak,
+                    PlayerMarketHitRate.sport_id == sport_id,
+                    PlayerMarketHitRate.current_streak <= -min_streak,
+                    PlayerMarketHitRate.total_7d >= 3,  # Require minimum sample
                 )
             )
-            .order_by(PlayerHitRate.current_streak.asc())
+            .order_by(PlayerMarketHitRate.current_streak.asc())
             .limit(limit)
         )
         
@@ -576,6 +583,8 @@ class ResultsTracker:
                 "player_id": player.id,
                 "player_name": player.name,
                 "streak": hit_rate.current_streak,
+                "stat_type": hit_rate.market,
+                "direction": hit_rate.side,
                 "hit_rate_7d": hit_rate.hit_rate_7d,
                 "last_5": hit_rate.last_5_results,
             })

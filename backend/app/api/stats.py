@@ -72,10 +72,12 @@ class HotPlayerList(BaseModel):
 
 
 class StreakPlayer(BaseModel):
-    """Player on a streak."""
+    """Player on a streak, tied to a specific stat type and direction."""
     player_id: int
     player_name: str
     streak: int
+    stat_type: Optional[str] = None
+    direction: Optional[str] = None
     hit_rate_7d: Optional[float] = None
     last_5: Optional[str] = None
 
