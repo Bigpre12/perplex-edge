@@ -6,6 +6,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query, HTTPException
+from app.core.endpoint_rate_limiter import picks_rate_limit, parlays_rate_limit
 
 logger = logging.getLogger(__name__)
 from sqlalchemy import select, func, and_
@@ -581,7 +582,7 @@ async def list_markets(
 # Player Prop Picks Endpoints
 # =============================================================================
 
-@router.get("/sports/{sport_id}/picks/player-props", response_model=PlayerPropPickList, tags=["public"])
+@router.get("/sports/{sport_id}/picks/player-props", response_model=PlayerPropPickList, tags=["public"], dependencies=[Depends(picks_rate_limit)])
 async def list_player_prop_picks(
     sport_id: int,
     stat_type: Optional[str] = Query(None, description="Filter by stat type (PTS, REB, AST, 3PM, PRA, etc.)"),
@@ -1033,7 +1034,7 @@ async def list_player_prop_picks(
 # Game Line Picks Endpoints
 # =============================================================================
 
-@router.get("/sports/{sport_id}/picks/game-lines", response_model=GameLinePickList, tags=["public"])
+@router.get("/sports/{sport_id}/picks/game-lines", response_model=GameLinePickList, tags=["public"], dependencies=[Depends(picks_rate_limit)])
 async def list_game_line_picks(
     sport_id: int,
     market_type: Optional[str] = Query(None, description="Filter by market type (spread, total, moneyline)"),
@@ -1422,7 +1423,7 @@ async def hitrate_100_alias(
 # Parlay Builder Endpoint
 # =============================================================================
 
-@router.get("/sports/{sport_id}/parlays/builder", tags=["public"])
+@router.get("/sports/{sport_id}/parlays/builder", tags=["public"], dependencies=[Depends(parlays_rate_limit)])
 async def build_parlay(
     sport_id: int,
     leg_count: int = Query(3, ge=2, le=15, description="Number of legs (2-15)"),
@@ -1517,7 +1518,7 @@ async def build_parlay(
 # Auto-Generate Optimal Slips Endpoint
 # =============================================================================
 
-@router.get("/sports/{sport_id}/parlays/auto-generate", tags=["public"])
+@router.get("/sports/{sport_id}/parlays/auto-generate", tags=["public"], dependencies=[Depends(parlays_rate_limit)])
 async def auto_generate_slips(
     sport_id: int,
     platform: str = Query("prizepicks", description="Platform: prizepicks, fliff, underdog, sportsbook"),
@@ -1616,7 +1617,7 @@ async def auto_generate_slips(
 # Real-Time Parlay Quote Endpoint
 # =============================================================================
 
-@router.post("/parlays/quote", tags=["public"])
+@router.post("/parlays/quote", tags=["public"], dependencies=[Depends(parlays_rate_limit)])
 async def quote_parlay(
     request: "QuoteRequest",
     db: AsyncSession = Depends(get_db),

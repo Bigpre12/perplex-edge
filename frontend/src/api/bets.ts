@@ -3,11 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-// Use same base URL logic as public.ts
-const API_BASE_URL = import.meta.env.DEV 
-  ? 'http://localhost:8000' 
-  : (import.meta.env.VITE_API_BASE_URL || 'https://railway-engine-production.up.railway.app');
+import { API_BASE_URL, fetchJson, buildQueryString } from './client';
 
 // =============================================================================
 // Types
@@ -149,34 +145,6 @@ export interface BetFilters {
 // =============================================================================
 // API Functions
 // =============================================================================
-
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-  
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`HTTP ${response.status}: ${error}`);
-  }
-  
-  return response.json();
-}
-
-function buildQueryString(params: Record<string, unknown>): string {
-  const searchParams = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      searchParams.append(key, String(value));
-    }
-  });
-  const qs = searchParams.toString();
-  return qs ? `?${qs}` : '';
-}
 
 // List bets
 export async function fetchBets(filters: BetFilters = {}): Promise<BetList> {

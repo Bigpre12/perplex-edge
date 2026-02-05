@@ -36,11 +36,11 @@ export function SportProvider({ children }: SportProviderProps) {
 
   // Set default sport when sports are loaded
   useEffect(() => {
-    console.log('[SportContext] Sports updated:', sports.length, 'sportId:', sportId);
+    if (import.meta.env.DEV) console.log('[SportContext] Sports updated:', sports.length, 'sportId:', sportId);
     
     if (sports.length > 0 && sportId === null) {
       const defaultSport = sports[0];
-      console.log('[SportContext] Setting default sport:', defaultSport);
+      if (import.meta.env.DEV) console.log('[SportContext] Setting default sport:', defaultSport);
       setSportId(defaultSport.id);
       setSportName(defaultSport.name);
       setLeagueCode(defaultSport.league_code);
@@ -50,14 +50,14 @@ export function SportProvider({ children }: SportProviderProps) {
   }, [sports, sportId]);
 
   const setSport = (id: number, name: string, code: string) => {
-    console.log('[SportContext] setSport called:', id, name, code);
+    if (import.meta.env.DEV) console.log('[SportContext] setSport called:', id, name, code);
     setSportId(id);
     setSportName(name);
     setLeagueCode(code);
   };
 
   const setSports = (newSports: Sport[]) => {
-    console.log('[SportContext] setSports called with:', newSports.length, 'sports');
+    if (import.meta.env.DEV) console.log('[SportContext] setSports called with:', newSports.length, 'sports');
     setSportsState(newSports);
     // Don't set isLoading=false here - wait for useEffect to set default sport
   };

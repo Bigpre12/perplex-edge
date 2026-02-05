@@ -1,8 +1,101 @@
+// =============================================================================
+// Shared API Client — single source of truth for API_BASE_URL, fetchJson,
+// fetchWithTimeout, buildQueryString, and auth token injection.
+// =============================================================================
+
 // Production URL is hardcoded for reliability; localhost is only for development
-const API_BASE_URL = import.meta.env.DEV 
+export const API_BASE_URL = import.meta.env.DEV 
   ? 'http://localhost:8000' 
   : (import.meta.env.VITE_API_BASE_URL || 'https://railway-engine-production.up.railway.app');
 
+// =============================================================================
+// Auth Token Provider
+// =============================================================================
+
+let _authTokenProvider: (() => Promise<string | null>) | null = null;
+
+/**
+ * Register an auth token provider (e.g. Clerk's getToken).
+ * Once set, fetchJson will attach Authorization headers automatically.
+ */
+export function setAuthTokenProvider(fn: () => Promise<string | null>) {
+  _authTokenProvider = fn;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!_authTokenProvider) return {};
+  try {
+    const token = await _authTokenProvider();
+    if (token) return { Authorization: `Bearer ${token}` };
+  } catch {
+    // Silently fail — unauthenticated request is fine
+  }
+  return {};
+}
+
+// =============================================================================
+// Shared Utilities
+// =============================================================================
+
+export function buildQueryString(params: Record<string, unknown>): string {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.append(key, String(value));
+    }
+  });
+  const qs = searchParams.toString();
+  return qs ? `?${qs}` : '';
+}
+
+export async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = 30000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timeoutId));
+}
+
+export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  if (import.meta.env.DEV) console.log('[API] Fetching:', url);
+
+  const authHeaders = await getAuthHeaders();
+
+  try {
+    const response = await fetchWithTimeout(url, {
+      cache: 'no-store',
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        ...authHeaders,
+        ...options?.headers,
+      },
+    }, 30000);
+
+    if (!response.ok) {
+      if (import.meta.env.DEV) console.error('[API] Error response:', response.status, response.statusText, url);
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    if (import.meta.env.DEV) console.log('[API] Success:', url, { itemCount: data?.items?.length ?? data?.total ?? 'N/A' });
+    return data;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      if (import.meta.env.DEV) console.error('[API] Request timed out after 30s:', url);
+      throw new Error('Request timed out - server may be slow or unavailable');
+    }
+    if (import.meta.env.DEV) console.error('[API] Fetch failed:', url, error);
+    throw error;
+  }
+}
+
+// Legacy request() function used by the api object below
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
@@ -27,19 +120,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     }
   }
 
-  const response = await fetch(url, {
+  return fetchJson<T>(url, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: body ? JSON.stringify(body) : undefined,
   });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 // Types

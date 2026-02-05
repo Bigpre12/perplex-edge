@@ -20,11 +20,7 @@ from app.core.logging import (
     set_correlation_id,
     request_metrics,
 )
-from app.models import Sport, Pick, HistoricalPerformance
-from app.services.stats_calculator import (
-    get_all_hit_rates,
-    get_player_summary,
-)
+from app.models import Sport
 from app.scheduler import (
     start_background_tasks,
     stop_background_tasks,
@@ -417,63 +413,4 @@ async def list_sports_db(db: AsyncSession = Depends(get_db)):
 # NOTE: /api/sports is handled by public_router (queries database)
 # NOTE: /api/picks is handled by picks_router (uses ModelPick table)
 # NOTE: /api/picks/refresh is handled by picks_router
-
-
-# =============================================================================
-# Stats Endpoints (legacy - uses Pick/HistoricalPerformance tables)
-# =============================================================================
-
-@app.get("/api/stats")
-async def get_stats(db: AsyncSession = Depends(get_db)):
-    """Get overall stats summary."""
-    try:
-        # Get total picks
-        picks_result = await db.execute(select(Pick))
-        picks = picks_result.scalars().all()
-        
-        # Get historical performance
-        perf_result = await db.execute(select(HistoricalPerformance))
-        performances = perf_result.scalars().all()
-        
-        # Calculate averages
-        total_picks = len(picks)
-        avg_hit_rate = 0.0
-        avg_ev = 0.0
-        
-        if performances:
-            avg_hit_rate = sum(p.hit_rate_percentage for p in performances) / len(performances)
-            avg_ev = sum(p.avg_ev for p in performances) / len(performances)
-        
-        return {
-            "total_picks": total_picks,
-            "hit_rate": round(avg_hit_rate, 2),
-            "avg_ev": round(avg_ev, 2),
-            "players_tracked": len(performances)
-        }
-    except Exception as e:
-        return {"total_picks": 0, "hit_rate": 0, "avg_ev": 0, "error": str(e)[:200]}
-
-
-@app.get("/api/stats/player/{player_name}")
-async def get_player_stats(player_name: str, db: AsyncSession = Depends(get_db)):
-    """Get comprehensive stats for a specific player."""
-    try:
-        summary = await get_player_summary(db, player_name)
-        return summary
-    except Exception as e:
-        logger.error(f"Error getting player stats for {player_name}: {e}")
-        raise HTTPException(status_code=500, detail=str(e)[:200])
-
-
-@app.get("/api/stats/hit-rates")
-async def get_hit_rates(db: AsyncSession = Depends(get_db)):
-    """Get hit rates for all tracked players."""
-    try:
-        hit_rates = await get_all_hit_rates(db)
-        return {
-            "items": hit_rates,
-            "total": len(hit_rates),
-        }
-    except Exception as e:
-        logger.error(f"Error getting hit rates: {e}")
-        return {"items": [], "total": 0, "error": str(e)[:200]}
+# NOTE: /api/stats/* is handled by stats_router (mounted at /api/stats)

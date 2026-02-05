@@ -12,6 +12,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
+import { setAuthTokenProvider } from '../api/client';
 
 // =============================================================================
 // Types
@@ -58,7 +59,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 // API base URL from environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.DEV 
+  ? 'http://localhost:8000' 
+  : (import.meta.env.VITE_API_BASE_URL || 'https://railway-engine-production.up.railway.app');
 
 // =============================================================================
 // Provider (with Clerk)
@@ -69,6 +72,13 @@ function AuthProviderWithClerk({ children }: { children: ReactNode }) {
   const { signOut: clerkSignOut, getToken } = useClerkAuth();
   
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+
+  // Register auth token provider for API client
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      setAuthTokenProvider(() => getToken());
+    }
+  }, [isLoaded, isSignedIn, getToken]);
 
   // Sync user to backend when Clerk user changes
   useEffect(() => {

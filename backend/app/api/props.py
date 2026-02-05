@@ -370,7 +370,7 @@ async def list_props(
     player_id: Optional[int] = Query(None, description="Filter by player"),
     stat_type: Optional[str] = Query(None, description="Filter by stat type (PTS, REB, AST)"),
     sportsbook: Optional[str] = Query(None, description="Filter by sportsbook"),
-    limit: int = Query(100, le=500),
+    limit: int = Query(100, ge=1, le=200),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db),
 ):

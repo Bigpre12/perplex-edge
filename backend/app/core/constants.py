@@ -11,6 +11,19 @@ Note: For type-safe enums and stat type validation, use app.config.sports:
     - is_valid_stat_for_sport() for validation checks
 """
 
+# =============================================================================
+# Pagination
+# =============================================================================
+
+MAX_LIMIT = 200
+
+
+def clamp_limit(limit: int, default: int = 50) -> int:
+    """Clamp a pagination limit to [1, MAX_LIMIT]. Returns default if limit <= 0."""
+    if limit <= 0:
+        return default
+    return min(limit, MAX_LIMIT)
+
 # Re-export enums and functions from app.config.sports for convenience
 from app.config.sports import (
     SportKey,

@@ -4,18 +4,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-
-// Production URL is hardcoded for reliability; localhost is only for development
-const API_BASE_URL = import.meta.env.DEV 
-  ? 'http://localhost:8000' 
-  : (import.meta.env.VITE_API_BASE_URL || 'https://railway-engine-production.up.railway.app');
-
-// Log API URL on load for debugging
-console.log('[API] Configuration:', {
-  DEV: import.meta.env.DEV,
-  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-  API_BASE_URL,
-});
+import { API_BASE_URL, fetchJson, buildQueryString } from './client';
 
 // =============================================================================
 // Types (matching backend schemas/public.py)
@@ -171,60 +160,8 @@ export interface GameLineFilters {
 }
 
 // =============================================================================
-// API Functions
+// API Functions (using shared client utilities)
 // =============================================================================
-
-// Timeout helper - abort fetch after X ms
-function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = 30000): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  
-  return fetch(url, {
-    ...options,
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timeoutId));
-}
-
-async function fetchJson<T>(url: string): Promise<T> {
-  console.log('[API] Fetching:', url);
-  
-  try {
-    const response = await fetchWithTimeout(url, {
-      // Prevent browser caching to ensure fresh data
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache',
-      },
-    }, 30000); // 30 second timeout
-    
-    if (!response.ok) {
-      console.error('[API] Error response:', response.status, response.statusText, url);
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('[API] Success:', url, { itemCount: data?.items?.length ?? data?.total ?? 'N/A' });
-    return data;
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.error('[API] Request timed out after 30s:', url);
-      throw new Error('Request timed out - server may be slow or unavailable');
-    }
-    console.error('[API] Fetch failed:', url, error);
-    throw error;
-  }
-}
-
-function buildQueryString(params: Record<string, unknown>): string {
-  const searchParams = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      searchParams.append(key, String(value));
-    }
-  });
-  const qs = searchParams.toString();
-  return qs ? `?${qs}` : '';
-}
 
 // Sports
 export async function fetchSports(): Promise<PublicSportList> {

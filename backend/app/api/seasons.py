@@ -369,7 +369,7 @@ async def list_players_for_sport(
     sport_id: int,
     team_id: Optional[int] = Query(None, description="Filter by team"),
     season_year: Optional[int] = Query(None, description="Filter by season roster"),
-    limit: int = Query(100, ge=1, le=500, description="Max results"),
+    limit: int = Query(100, ge=1, le=200, description="Max results"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
 ):

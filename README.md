@@ -84,6 +84,17 @@ Once the backend is running, visit:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
+### Auto-Generate TypeScript Types
+
+With the backend running locally, generate TS types from the OpenAPI schema:
+
+```bash
+cd frontend
+npm run types:generate
+```
+
+This outputs `src/api/generated.ts` with all request/response types.
+
 ## Environment Variables
 
 | Variable | Description | Default |

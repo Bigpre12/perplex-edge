@@ -1,4 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { ToastProvider } from './context/ToastContext'
 import { SportProvider } from './context/SportContext'
 import { LandingPage, TodayDashboard, MyEdgePage, PricingPage } from './pages'
 import {
@@ -108,6 +110,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 // Main App with Routes
 function App() {
   return (
+    <ErrorBoundary>
+    <ToastProvider>
     <SportProvider>
       <Routes>
         {/* Landing page - no nav */}
@@ -204,6 +208,8 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </SportProvider>
+    </ToastProvider>
+    </ErrorBoundary>
   )
 }
 

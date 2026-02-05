@@ -20,7 +20,7 @@ async def list_lines(
     market_type: Optional[str] = Query(None, description="Filter by market type"),
     sportsbook: Optional[str] = Query(None, description="Filter by sportsbook"),
     current_only: bool = Query(True, description="Only show current lines"),
-    limit: int = Query(100, le=500),
+    limit: int = Query(100, ge=1, le=200),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db),
 ):

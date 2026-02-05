@@ -8,14 +8,14 @@ import { Link } from 'react-router-dom';
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-gray-100">
+    <div className="min-h-screen bg-gray-950 text-gray-100">
       {/* Top nav */}
-      <header className="border-b border-slate-800">
+      <header className="border-b border-gray-800">
         <div className="flex items-center justify-between max-w-6xl px-4 py-3 mx-auto">
-          <Link to="/" className="text-sm font-semibold">
-            Perplex Engine
+          <Link to="/" className="text-lg font-bold flex items-center gap-2">
+            <span className="text-blue-400">⚡</span> Perplex Engine
           </Link>
-          <nav className="flex items-center gap-4 text-xs">
+          <nav className="hidden sm:flex items-center gap-4 text-sm">
             <Link to="/today" className="hover:text-emerald-300">
               Today&apos;s Board
             </Link>
@@ -39,22 +39,22 @@ export function LandingPage() {
         {/* Hero */}
         <section className="grid items-center gap-8 mb-12 md:grid-cols-2">
           <div>
-            <h1 className="mb-3 text-2xl font-semibold md:text-3xl">
+            <h1 className="mb-4 text-3xl font-bold md:text-5xl leading-tight">
               Multi-sport player prop engine built for serious bettors.
             </h1>
-            <p className="mb-4 text-sm text-gray-300">
+            <p className="mb-6 text-base text-gray-300">
               One dashboard for EV, hit-rates, parlay building, and full slates across NBA, NFL, MLB, NHL, NCAAB, NCAAF, tennis, soccer, golf, UFC and more.
             </p>
-            <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-3 text-sm">
               <Link
                 to="/today"
-                className="px-4 py-2 font-semibold text-slate-950 bg-emerald-400 rounded hover:bg-emerald-300"
+                className="px-6 py-3 font-semibold text-gray-950 bg-emerald-400 rounded-lg hover:bg-emerald-300 transition-colors"
               >
                 See today&apos;s board
               </Link>
               <Link
                 to="/pricing"
-                className="px-4 py-2 border border-slate-600 rounded hover:border-emerald-300"
+                className="px-6 py-3 border border-gray-600 rounded-lg hover:border-emerald-300 transition-colors"
               >
                 View pricing
               </Link>
@@ -65,28 +65,28 @@ export function LandingPage() {
           </div>
 
           {/* Simple product preview blocks */}
-          <div className="grid gap-3 text-xs">
-            <div className="p-3 rounded bg-slate-900/70 border border-slate-800">
-              <div className="mb-1 text-[11px] font-semibold text-emerald-300">
+          <div className="grid gap-3 text-sm">
+            <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800 animate-fade-in">
+              <div className="mb-1 text-xs font-semibold text-emerald-300">
                 Player Props
               </div>
-              <p className="text-gray-300">
+              <p className="text-sm text-gray-300">
                 Ranked EV board with model win% and Kelly sizing across 16 sports, plus multi-book line shopping.
               </p>
             </div>
-            <div className="p-3 rounded bg-slate-900/70 border border-slate-800">
-              <div className="mb-1 text-[11px] font-semibold text-sky-300">
+            <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <div className="mb-1 text-xs font-semibold text-sky-300">
                 Stats &amp; Trends
               </div>
-              <p className="text-gray-300">
+              <p className="text-sm text-gray-300">
                 Hot/Cold players, streaks, and market-level hit rates so you know exactly which props each player is crushing.
               </p>
             </div>
-            <div className="p-3 rounded bg-slate-900/70 border border-slate-800">
-              <div className="mb-1 text-[11px] font-semibold text-amber-300">
+            <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <div className="mb-1 text-xs font-semibold text-amber-300">
                 Parlay Builder
               </div>
-              <p className="text-gray-300">
+              <p className="text-sm text-gray-300">
                 Multi-sport and same-game parlays with correlation checks and leg grades, built directly from your prop board.
               </p>
             </div>
@@ -94,24 +94,44 @@ export function LandingPage() {
         </section>
 
         {/* Features */}
+        {/* Stats Ticker */}
+        <section className="mb-10 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800">
+            <div className="text-2xl font-bold text-emerald-400">16</div>
+            <div className="text-xs text-gray-400 mt-1">Sports Covered</div>
+          </div>
+          <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800">
+            <div className="text-2xl font-bold text-sky-400">500+</div>
+            <div className="text-xs text-gray-400 mt-1">Daily Props</div>
+          </div>
+          <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800">
+            <div className="text-2xl font-bold text-amber-400">6</div>
+            <div className="text-xs text-gray-400 mt-1">Sportsbooks</div>
+          </div>
+          <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-800">
+            <div className="text-2xl font-bold text-purple-400">24/7</div>
+            <div className="text-xs text-gray-400 mt-1">Auto-Refresh</div>
+          </div>
+        </section>
+
         <section className="mb-10">
-          <h2 className="mb-3 text-sm font-semibold">What you get</h2>
-          <div className="grid gap-4 text-xs md:grid-cols-3">
-            <div className="p-3 rounded bg-slate-900/70 border border-slate-800">
+          <h2 className="mb-4 text-lg font-bold">What you get</h2>
+          <div className="grid gap-4 text-sm md:grid-cols-3">
+            <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800">
               <h3 className="mb-1 font-semibold">Full multi-sport coverage</h3>
-              <p className="text-gray-300">
+              <p className="text-sm text-gray-300">
                 16 sports wired end-to-end: schedules, props, stats, and slates from NBA and NFL to EPL, UCL, PGA, UFC and tennis.
               </p>
             </div>
-            <div className="p-3 rounded bg-slate-900/70 border border-slate-800">
+            <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800">
               <h3 className="mb-1 font-semibold">Model-driven edges</h3>
-              <p className="text-gray-300">
+              <p className="text-sm text-gray-300">
                 EV, model win probability, hit-rate windows, and Kelly risk levels on every prop, plus 100%-hit trend panels.
               </p>
             </div>
-            <div className="p-3 rounded bg-slate-900/70 border border-slate-800">
+            <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800">
               <h3 className="mb-1 font-semibold">Your daily workflow</h3>
-              <p className="text-gray-300">
+              <p className="text-sm text-gray-300">
                 One Today page to scan top EV, check hot players, review streaks, and see tomorrow&apos;s slate in minutes.
               </p>
             </div>
@@ -119,8 +139,8 @@ export function LandingPage() {
         </section>
 
         {/* Sports Supported */}
-        <section className="mb-10 py-6 border-y border-slate-800">
-          <h2 className="mb-3 text-sm font-semibold text-center">Sports Covered</h2>
+        <section className="mb-10 py-6 border-y border-gray-800">
+          <h2 className="mb-4 text-lg font-bold text-center">Sports Covered</h2>
           <div className="flex flex-wrap justify-center gap-2">
             {[
               'NBA', 'NFL', 'MLB', 'NHL', 'NCAAB', 'NCAAF', 'WNBA',
@@ -128,7 +148,7 @@ export function LandingPage() {
             ].map((sport) => (
               <span
                 key={sport}
-                className="px-3 py-1 text-xs bg-slate-800 rounded text-gray-300"
+                className="px-3 py-1.5 text-sm bg-gray-800 rounded-lg text-gray-300"
               >
                 {sport}
               </span>
@@ -137,23 +157,23 @@ export function LandingPage() {
         </section>
 
         {/* CTA + social proof placeholder */}
-        <section className="flex flex-col items-start gap-3 mb-8 text-xs md:flex-row md:items-center md:justify-between">
+        <section className="flex flex-col items-start gap-4 mb-8 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="mb-1 text-sm font-semibold">Ready to plug this into your process?</h2>
-            <p className="text-gray-300">
+            <h2 className="mb-1 text-lg font-bold">Ready to plug this into your process?</h2>
+            <p className="text-sm text-gray-300">
               Start on the free tier with NBA and NFL, upgrade to Pro when you&apos;re ready to go fully multi-sport.
             </p>
           </div>
           <div className="flex gap-3">
             <Link
               to="/today"
-              className="px-4 py-2 font-semibold text-slate-950 bg-emerald-400 rounded hover:bg-emerald-300"
+              className="px-6 py-3 font-semibold text-gray-950 bg-emerald-400 rounded-lg hover:bg-emerald-300 transition-colors"
             >
               Open Today&apos;s Board
             </Link>
             <Link
               to="/pricing"
-              className="px-4 py-2 border border-slate-600 rounded hover:border-emerald-300"
+              className="px-6 py-3 border border-gray-600 rounded-lg hover:border-emerald-300 transition-colors"
             >
               See plans
             </Link>
@@ -161,9 +181,9 @@ export function LandingPage() {
         </section>
 
         {/* Simple FAQ stub */}
-        <section className="pb-10 border-t border-slate-800 pt-7">
-          <h2 className="mb-3 text-sm font-semibold">FAQ</h2>
-          <div className="space-y-3 text-xs text-gray-300">
+        <section className="pb-10 border-t border-gray-800 pt-7">
+          <h2 className="mb-4 text-lg font-bold">FAQ</h2>
+          <div className="space-y-4 text-sm text-gray-300">
             <div>
               <p className="font-semibold text-gray-100">
                 Do you sell picks?
@@ -193,7 +213,7 @@ export function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 py-6">
+      <footer className="border-t border-gray-800 py-6">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
             <p>Perplex Engine - Sports Betting Analytics</p>
