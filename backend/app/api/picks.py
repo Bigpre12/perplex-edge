@@ -35,11 +35,29 @@ async def debug_config():
 
 # Sport key mappings for refresh endpoint
 SPORT_KEY_MAP = {
+    # Basketball
     "nba": "basketball_nba",
     "ncaab": "basketball_ncaab",
+    "wnba": "basketball_wnba",
+    # Football
     "nfl": "americanfootball_nfl",
+    "ncaaf": "americanfootball_ncaaf",
+    # Baseball
     "mlb": "baseball_mlb",
+    # Hockey
     "nhl": "icehockey_nhl",
+    # Tennis
+    "atp": "tennis_atp",
+    "wta": "tennis_wta",
+    # Golf
+    "pga": "golf_pga_tour",
+    # Soccer
+    "epl": "soccer_epl",
+    "ucl": "soccer_uefa_champs_league",
+    "mls": "soccer_usa_mls",
+    # MMA/UFC
+    "ufc": "mma_mixed_martial_arts",
+    "mma": "mma_mixed_martial_arts",
 }
 
 

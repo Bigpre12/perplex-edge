@@ -86,15 +86,73 @@ NFL_PROP_RANGES = {
     "rec_tds": PropRanges(0.5, 3.0, "Receiving TDs"),
 }
 
+# MLB prop ranges
+MLB_PROP_RANGES = {
+    "batter_hits": PropRanges(0.5, 5.0, "Hits"),
+    "batter_runs": PropRanges(0.5, 4.0, "Runs"),
+    "batter_rbis": PropRanges(0.5, 5.0, "RBIs"),
+    "batter_total_bases": PropRanges(0.5, 12.0, "Total Bases"),
+    "batter_home_runs": PropRanges(0.5, 3.0, "Home Runs"),
+    "pitcher_strikeouts": PropRanges(1.5, 15.0, "Strikeouts"),
+    "pitcher_outs": PropRanges(6.0, 24.0, "Outs Recorded"),
+}
+
+# NHL prop ranges
+NHL_PROP_RANGES = {
+    "player_goals": PropRanges(0.5, 5.0, "Goals"),
+    "player_assists": PropRanges(0.5, 5.0, "Assists"),
+    "player_points": PropRanges(0.5, 6.0, "Points"),
+    "player_shots_on_goal": PropRanges(0.5, 10.0, "Shots on Goal"),
+    "player_blocked_shots": PropRanges(0.5, 6.0, "Blocked Shots"),
+    "player_saves": PropRanges(15.0, 50.0, "Saves"),
+    "player_power_play_points": PropRanges(0.5, 3.0, "Power Play Points"),
+}
+
+# Tennis prop ranges
+TENNIS_PROP_RANGES = {
+    "player_aces": PropRanges(0.5, 30.0, "Aces"),
+    "player_double_faults": PropRanges(0.5, 12.0, "Double Faults"),
+    "player_games_won": PropRanges(3.0, 20.0, "Games Won"),
+    "player_sets_won": PropRanges(0.5, 3.0, "Sets Won"),
+    "player_total_games": PropRanges(15.0, 50.0, "Total Games"),
+}
+
+# Golf prop ranges
+GOLF_PROP_RANGES = {
+    "golfer_finish_position": PropRanges(1.0, 80.0, "Finish Position"),
+    "golfer_top_5": PropRanges(0.0, 1.0, "Top 5"),
+    "golfer_top_10": PropRanges(0.0, 1.0, "Top 10"),
+    "golfer_top_20": PropRanges(0.0, 1.0, "Top 20"),
+    "golfer_make_cut": PropRanges(0.0, 1.0, "Make Cut"),
+}
+
+# Soccer prop ranges
+SOCCER_PROP_RANGES = {
+    "player_anytime_goalscorer": PropRanges(0.0, 1.0, "Anytime Goal"),
+    "player_shots": PropRanges(0.5, 8.0, "Shots"),
+    "player_shots_on_target": PropRanges(0.5, 5.0, "Shots on Target"),
+    "player_fouls_committed": PropRanges(0.5, 5.0, "Fouls"),
+    "player_tackles": PropRanges(0.5, 8.0, "Tackles"),
+    "player_passes": PropRanges(10.0, 120.0, "Passes"),
+}
+
+# MMA/UFC prop ranges
+MMA_PROP_RANGES = {
+    "fighter_significant_strikes": PropRanges(5.0, 200.0, "Significant Strikes"),
+    "fighter_takedowns": PropRanges(0.5, 10.0, "Takedowns"),
+    "fight_total_rounds": PropRanges(1.5, 5.5, "Total Rounds"),
+}
+
 # Sport-specific configurations
 SPORT_CONFIG = {
+    # Basketball
     "basketball_nba": {
         "prop_ranges": BASKETBALL_PROP_RANGES,
         "min_games_weekday": 2,
         "min_games_weekend": 4,
         "max_games_per_day": 15,
-        "game_time_window_hours": 12,  # Games should start within 12h window
-        "expected_props_per_game": 30,  # ~6 players × 5 props each
+        "game_time_window_hours": 12,
+        "expected_props_per_game": 30,
     },
     "basketball_ncaab": {
         "prop_ranges": BASKETBALL_PROP_RANGES,
@@ -104,13 +162,108 @@ SPORT_CONFIG = {
         "game_time_window_hours": 14,
         "expected_props_per_game": 20,
     },
+    "basketball_wnba": {
+        "prop_ranges": BASKETBALL_PROP_RANGES,
+        "min_games_weekday": 1,
+        "min_games_weekend": 2,
+        "max_games_per_day": 6,
+        "game_time_window_hours": 8,
+        "expected_props_per_game": 25,
+    },
+    # Football
     "americanfootball_nfl": {
         "prop_ranges": NFL_PROP_RANGES,
-        "min_games_weekday": 0,  # NFL mostly weekends
+        "min_games_weekday": 0,
         "min_games_weekend": 3,
         "max_games_per_day": 16,
         "game_time_window_hours": 10,
         "expected_props_per_game": 40,
+    },
+    "americanfootball_ncaaf": {
+        "prop_ranges": NFL_PROP_RANGES,
+        "min_games_weekday": 0,
+        "min_games_weekend": 10,
+        "max_games_per_day": 60,
+        "game_time_window_hours": 12,
+        "expected_props_per_game": 20,
+    },
+    # Baseball
+    "baseball_mlb": {
+        "prop_ranges": MLB_PROP_RANGES,
+        "min_games_weekday": 4,
+        "min_games_weekend": 8,
+        "max_games_per_day": 16,
+        "game_time_window_hours": 10,
+        "expected_props_per_game": 20,
+    },
+    # Hockey
+    "icehockey_nhl": {
+        "prop_ranges": NHL_PROP_RANGES,
+        "min_games_weekday": 2,
+        "min_games_weekend": 4,
+        "max_games_per_day": 16,
+        "game_time_window_hours": 8,
+        "expected_props_per_game": 20,
+    },
+    # Tennis
+    "tennis_atp": {
+        "prop_ranges": TENNIS_PROP_RANGES,
+        "min_games_weekday": 1,
+        "min_games_weekend": 1,
+        "max_games_per_day": 30,
+        "game_time_window_hours": 14,
+        "expected_props_per_game": 5,
+    },
+    "tennis_wta": {
+        "prop_ranges": TENNIS_PROP_RANGES,
+        "min_games_weekday": 1,
+        "min_games_weekend": 1,
+        "max_games_per_day": 30,
+        "game_time_window_hours": 14,
+        "expected_props_per_game": 5,
+    },
+    # Golf
+    "golf_pga_tour": {
+        "prop_ranges": GOLF_PROP_RANGES,
+        "min_games_weekday": 0,
+        "min_games_weekend": 0,
+        "max_games_per_day": 1,
+        "game_time_window_hours": 10,
+        "expected_props_per_game": 50,
+    },
+    # Soccer
+    "soccer_epl": {
+        "prop_ranges": SOCCER_PROP_RANGES,
+        "min_games_weekday": 0,
+        "min_games_weekend": 3,
+        "max_games_per_day": 10,
+        "game_time_window_hours": 8,
+        "expected_props_per_game": 15,
+    },
+    "soccer_uefa_champs_league": {
+        "prop_ranges": SOCCER_PROP_RANGES,
+        "min_games_weekday": 2,
+        "min_games_weekend": 0,
+        "max_games_per_day": 8,
+        "game_time_window_hours": 4,
+        "expected_props_per_game": 10,
+    },
+    "soccer_usa_mls": {
+        "prop_ranges": SOCCER_PROP_RANGES,
+        "min_games_weekday": 0,
+        "min_games_weekend": 4,
+        "max_games_per_day": 14,
+        "game_time_window_hours": 8,
+        "expected_props_per_game": 10,
+    },
+    # MMA/UFC
+    "mma_mixed_martial_arts": {
+        "prop_ranges": MMA_PROP_RANGES,
+        "min_games_weekday": 0,
+        "min_games_weekend": 3,
+        "max_games_per_day": 15,
+        "game_time_window_hours": 6,
+        "expected_props_per_game": 5,
     },
 }
 
