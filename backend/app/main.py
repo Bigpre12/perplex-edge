@@ -209,28 +209,34 @@ ALLOWED_ORIGINS = [
 
 # Also check for additional origins from environment variable
 _extra_origins = os.getenv("ALLOWED_ORIGINS", "")
-if _extra_origins and _extra_origins != "*":
-    for origin in _extra_origins.split(","):
-        origin = origin.strip()
-        if origin and origin not in ALLOWED_ORIGINS:
-            ALLOWED_ORIGINS.append(origin)
+if _extra_origins:
+    if _extra_origins.strip() == "*":
+        ALLOWED_ORIGINS = ["*"]
+    else:
+        for origin in _extra_origins.split(","):
+            origin = origin.strip()
+            if origin and origin not in ALLOWED_ORIGINS:
+                ALLOWED_ORIGINS.append(origin)
 
 logger.info("cors_origins_configured", origins=ALLOWED_ORIGINS)
 
-# CORS middleware - allow cross-origin requests from specified origins
-# Must be added BEFORE other middleware
+# Middleware ordering: Starlette executes middleware in REVERSE order of addition.
+# We add RequestLoggingMiddleware FIRST so it runs INSIDE CORSMiddleware,
+# ensuring CORS headers are always present even if the logging layer errors.
+
+# 1) Request logging middleware (inner — runs after CORS headers are set)
+app.add_middleware(RequestLoggingMiddleware)
+
+# 2) CORS middleware (outer — always adds Access-Control-* headers)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,  # Allow cookies/auth headers
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["X-Correlation-ID", "Content-Type", "Authorization"],
     max_age=600,  # Cache preflight for 10 minutes
 )
-
-# Request logging middleware - logs all requests with correlation IDs
-app.add_middleware(RequestLoggingMiddleware)
 
 # Include routers
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
