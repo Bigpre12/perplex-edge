@@ -223,8 +223,8 @@ export function TodayDashboard() {
           to="/parlay"
           className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-colors group"
         >
-          <div className="font-medium text-white group-hover:text-blue-400 transition-colors">Parlay Builder</div>
-          <div className="text-sm text-gray-400">Build multi-leg bets</div>
+          <div className="font-medium text-white group-hover:text-blue-400 transition-colors">Smart Parlay Builder</div>
+          <div className="text-sm text-gray-400">AI-optimized entries for DFS &amp; sportsbooks</div>
         </Link>
         <Link
           to="/my-bets"

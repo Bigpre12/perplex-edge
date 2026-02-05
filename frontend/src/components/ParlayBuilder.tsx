@@ -1551,7 +1551,7 @@ export function ParlayBuilder() {
       
       {/* Legend */}
       <div className="bg-gray-800/30 rounded-lg p-4 text-xs text-gray-500">
-        <div className="font-medium text-gray-400 mb-2">How it works:</div>
+        <div className="font-medium text-gray-400 mb-2">How the Smart Parlay Builder works:</div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div>
             <span className="text-green-400">LOCK</span>: All legs 2%+ edge, parlay EV 3%+

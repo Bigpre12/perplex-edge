@@ -27,7 +27,7 @@ export function formatPicksForClipboard(picks: Array<{
   model_probability?: number;
   expected_value?: number;
 }>): string {
-  const header = `🎯 Perplex Engine Picks (${new Date().toLocaleDateString()})`;
+  const header = `🎯 Perplex Edge Picks (${new Date().toLocaleDateString()})`;
   const lines = picks.map((p, i) => `${i + 1}. ${formatPickForClipboard(p)}`);
   return `${header}\n\n${lines.join('\n')}`;
 }
@@ -39,7 +39,7 @@ export function formatParlayForClipboard(legs: Array<{
   line: number;
   side: string;
 }>, totalOdds: number, parlayEv: number): string {
-  const header = `🎰 Perplex Engine Parlay (${new Date().toLocaleDateString()})`;
+  const header = `🎰 Perplex Edge Parlay (${new Date().toLocaleDateString()})`;
   const legLines = legs.map((leg, i) => 
     `${i + 1}. ${leg.player_name} ${leg.side.toUpperCase()} ${leg.line} ${leg.stat_type}`
   );
@@ -89,7 +89,7 @@ export function formatPicksForDiscord(picks: Array<{
   expected_value?: number;
   team?: string;
 }>): string {
-  const header = `🎯 **Perplex Engine Picks** - ${new Date().toLocaleDateString()}`;
+  const header = `🎯 **Perplex Edge Picks** - ${new Date().toLocaleDateString()}`;
   const divider = '━━━━━━━━━━━━━━━━━━━━';
   
   const pickLines = picks.map((p, i) => {
@@ -98,7 +98,7 @@ export function formatPicksForDiscord(picks: Array<{
     return `**${i + 1}.** ${p.player_name} ${sideEmoji} ${p.side.toUpperCase()} ${p.line} ${p.stat_type}${ev ? ` (${ev})` : ''}`;
   });
   
-  const footer = `\n🔗 *via Perplex Engine*`;
+  const footer = `\n🔗 *via Perplex Edge*`;
   
   return `${header}\n${divider}\n\n${pickLines.join('\n')}\n${footer}`;
 }
@@ -110,7 +110,7 @@ export function formatParlayForDiscord(legs: Array<{
   line: number;
   side: string;
 }>, totalOdds: number, parlayEv: number): string {
-  const header = `🎰 **Perplex Engine Parlay** - ${new Date().toLocaleDateString()}`;
+  const header = `🎰 **Perplex Edge Parlay** - ${new Date().toLocaleDateString()}`;
   const divider = '━━━━━━━━━━━━━━━━━━━━';
   
   const legLines = legs.map((leg, i) => {
@@ -120,7 +120,7 @@ export function formatParlayForDiscord(legs: Array<{
   
   const oddsStr = totalOdds > 0 ? `+${totalOdds}` : totalOdds.toString();
   const evStr = parlayEv >= 0 ? `+${(parlayEv * 100).toFixed(1)}%` : `${(parlayEv * 100).toFixed(1)}%`;
-  const footer = `\n💰 **Odds:** ${oddsStr} | **EV:** ${evStr}\n🔗 *via Perplex Engine*`;
+  const footer = `\n💰 **Odds:** ${oddsStr} | **EV:** ${evStr}\n🔗 *via Perplex Edge*`;
   
   return `${header}\n${divider}\n\n${legLines.join('\n')}\n${footer}`;
 }

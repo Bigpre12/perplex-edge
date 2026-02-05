@@ -93,7 +93,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-gray-800 mt-12">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-            <p>Perplex Engine - Sports Betting Analytics</p>
+            <p>Smart Parlay Builder by Perplex Edge</p>
             <div className="flex items-center gap-4">
               <span className={`flex items-center gap-1 ${autoRefreshEnabled ? 'text-green-400' : 'text-gray-500'}`}>
                 <span className={`w-2 h-2 rounded-full ${autoRefreshEnabled ? 'bg-green-400' : 'bg-gray-600'}`}></span>

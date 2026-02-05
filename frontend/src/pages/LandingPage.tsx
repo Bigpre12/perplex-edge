@@ -13,7 +13,7 @@ export function LandingPage() {
       <header className="border-b border-gray-800">
         <div className="flex items-center justify-between max-w-6xl px-4 py-3 mx-auto">
           <Link to="/" className="text-lg font-bold flex items-center gap-2">
-            <span className="text-blue-400">⚡</span> Perplex Engine
+            <span className="text-blue-400">⚡</span> Perplex Edge
           </Link>
           <nav className="hidden sm:flex items-center gap-4 text-sm">
             <Link to="/today" className="hover:text-emerald-300">
@@ -84,10 +84,10 @@ export function LandingPage() {
             </div>
             <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800 animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <div className="mb-1 text-xs font-semibold text-amber-300">
-                Parlay Builder
+                Smart Parlay Builder
               </div>
               <p className="text-sm text-gray-300">
-                Multi-sport and same-game parlays with correlation checks and leg grades, built directly from your prop board.
+                AI-optimized entries for DFS pick'em and sportsbooks with correlation checks and leg grades.
               </p>
             </div>
           </div>
@@ -216,7 +216,7 @@ export function LandingPage() {
       <footer className="border-t border-gray-800 py-6">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-            <p>Perplex Engine - Sports Betting Analytics</p>
+            <p>Smart Parlay Builder by Perplex Edge</p>
             <div className="flex gap-6">
               <Link to="/today" className="hover:text-white transition-colors">Today</Link>
               <Link to="/props" className="hover:text-white transition-colors">Props</Link>
