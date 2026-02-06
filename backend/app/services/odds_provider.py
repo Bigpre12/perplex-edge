@@ -2039,11 +2039,13 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Tyrese Maxey", "pts": 27.5, "reb": 4.5, "ast": 7.5, "pra": 39.5, "pr": 32.0, "pa": 35.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Paul George", "pts": 22.5, "reb": 6.5, "ast": 5.5, "pra": 34.5, "pr": 29.0, "pa": 28.0, "ra": 12.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
             ],
-            # Phoenix Suns - D. Booker, J. Green, D. Brooks, R. O'Neale, M. Williams
+            # Phoenix Suns - D. Booker, J. Green, K. Durant, R. O'Neale, D. Ayton (2026 Post-Trades)
             "PHX": [
-                {"name": "Devin Booker", "pts": 27.5, "reb": 4.5, "ast": 6.5, "pra": 38.5, "pr": 32.0, "pa": 34.0, "ra": 11.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Dillon Brooks", "pts": 14.5, "reb": 3.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 17.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Mark Williams", "pts": 12.5, "reb": 9.5, "ast": 1.5, "pra": 23.5, "pr": 22.0, "pa": 14.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Devin Booker", "pts": 28.5, "reb": 4.5, "ast": 6.5, "pra": 39.5, "pr": 33.0, "pa": 35.0, "ra": 11.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Jalen Green", "pts": 24.5, "reb": 5.5, "ast": 4.5, "pra": 34.5, "pr": 30.0, "pa": 29.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Kevin Durant", "pts": 26.5, "reb": 6.5, "ast": 5.5, "pra": 38.5, "pr": 33.0, "pa": 32.0, "ra": 12.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Royce O'Neale", "pts": 11.5, "reb": 5.5, "ast": 3.5, "pra": 20.5, "pr": 17.0, "pa": 15.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Deandre Ayton", "pts": 16.5, "reb": 11.5, "ast": 2.5, "pra": 30.5, "pr": 28.0, "pa": 19.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
             # Portland Trail Blazers - J. Holiday, S. Sharpe, T. Camara, D. Avdija, D. Clingan
             "POR": [
@@ -2075,13 +2077,13 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Keyonte George", "pts": 18.5, "reb": 3.5, "ast": 6.5, "pra": 28.5, "pr": 22.0, "pa": 25.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jusuf Nurkic", "pts": 11.5, "reb": 10.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 15.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
             ],
-            # Washington Wizards - A. Davis, J. Green, K. Jones, B. Coulibaly, A. Sarr (2026 Post-Trade Deadline)
+            # Washington Wizards - A. Davis, K. Jones, B. Coulibaly, A. Sarr, C. Cunningham (2026 Post-Trade Deadline)
             "WAS": [
                 {"name": "Anthony Davis", "pts": 26.5, "reb": 12.5, "ast": 3.5, "pra": 42.5, "pr": 39.0, "pa": 30.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 2.5},
-                {"name": "Jalen Green", "pts": 23.5, "reb": 4.5, "ast": 4.5, "pra": 32.5, "pr": 28.0, "pa": 28.0, "ra": 9.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Kobe Bufkin", "pts": 15.5, "reb": 3.5, "ast": 5.5, "pra": 24.5, "pr": 19.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Bilal Coulibaly", "pts": 14.5, "reb": 5.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Alex Sarr", "pts": 12.5, "reb": 8.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                {"name": "Kobe Bufkin", "pts": 16.5, "reb": 4.5, "ast": 6.5, "pra": 27.5, "pr": 21.0, "pa": 23.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Bilal Coulibaly", "pts": 15.5, "reb": 6.5, "ast": 5.5, "pra": 27.5, "pr": 22.0, "pa": 21.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Alex Sarr", "pts": 13.5, "reb": 9.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 17.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                {"name": "Cade Cunningham", "pts": 22.5, "reb": 5.5, "ast": 7.5, "pra": 35.5, "pr": 28.0, "pa": 30.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
             ],
         }
         
