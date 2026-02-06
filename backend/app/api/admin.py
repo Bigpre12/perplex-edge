@@ -726,7 +726,103 @@ async def get_snapshot(
 # Brain (Autonomous System) Endpoints
 # =============================================================================
 
-@router.get("/brain")
+@router.get("/verification", response_model=dict)
+async def get_verification_status():
+    """Get comprehensive verification status and go-live checklist."""
+    try:
+        from app.services.verification_engine import run_complete_verification
+        
+        # Run complete verification suite
+        verification_results = await run_complete_verification()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "verification": verification_results
+        }
+        
+    except Exception as e:
+        logger.error(f"Verification status failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
+
+
+@router.get("/verification/stress-test", response_model=dict)
+async def run_stress_test():
+    """Run brain loop stress test on historical data."""
+    try:
+        from app.services.verification_engine import stress_test_brain_loop
+        
+        result = await stress_test_brain_loop()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "stress_test": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Stress test failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Stress test failed: {str(e)}")
+
+
+@router.get("/verification/backtest", response_model=dict)
+async def run_ev_backtest():
+    """Run EV and Kelly backtest with historical data."""
+    try:
+        from app.services.verification_engine import backtest_ev_kelly_outputs
+        
+        result = await backtest_ev_kelly_outputs()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "backtest": result
+        }
+        
+    except Exception as e:
+        logger.error(f"EV backtest failed: {e}")
+        raise HTTPException(status_code=500, detail=f"EV backtest failed: {str(e)}")
+
+
+@router.get("/verification/performance", response_model=dict)
+async def run_performance_benchmark():
+    """Run Hobby tier performance benchmark."""
+    try:
+        from app.services.verification_engine import benchmark_hobby_performance
+        
+        result = await benchmark_hobby_performance()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "benchmark": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Performance benchmark failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Performance benchmark failed: {str(e)}")
+
+
+@router.get("/verification/checklist", response_model=dict)
+async def get_go_live_checklist():
+    """Get comprehensive go-live checklist."""
+    try:
+        from app.services.verification_engine import generate_go_live_checklist
+        
+        checklist = await generate_go_live_checklist()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "checklist": checklist
+        }
+        
+    except Exception as e:
+        logger.error(f"Go-live checklist failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Go-live checklist failed: {str(e)}")
+
+
+@router.get("/brain", response_model=dict)
 async def get_brain_status():
     """
     Get full autonomous brain status.
