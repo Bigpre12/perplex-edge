@@ -1896,12 +1896,13 @@ class XYZOddsProvider(OddsProvider):
         # Updated: 2025-26 Season Depth Charts
         # Stats: pts, reb, ast, pra, pr, pa, ra, 3pm, stl, blk, to
         NBA_TEAM_ROSTERS = {
-            # Atlanta Hawks - T. Young, D. Daniels, J. Johnson, O. Okongwu, C. Capela
+            # Atlanta Hawks - D. Daniels, N. Alexander-Walker, Z. Risacher, J. Johnson, O. Okongwu (IL)
             "ATL": [
-                {"name": "Trae Young", "pts": 24.5, "reb": 3.5, "ast": 10.5, "pra": 38.5, "pr": 28.0, "pa": 35.0, "ra": 14.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
                 {"name": "Dyson Daniels", "pts": 14.5, "reb": 4.5, "ast": 5.5, "pra": 24.5, "pr": 19.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 2.5},
+                {"name": "Nickeil Alexander-Walker", "pts": 15.5, "reb": 4.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Zac Risacher", "pts": 16.5, "reb": 6.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 20.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jalen Johnson", "pts": 20.5, "reb": 9.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 26.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Clint Capela", "pts": 11.5, "reb": 10.5, "ast": 1.5, "pra": 23.5, "pr": 22.0, "pa": 13.0, "ra": 12.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Onyeka Okongwu", "pts": 12.5, "reb": 8.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
             # Boston Celtics - J. Tatum, J. Brown, D. White, P. Pritchard, K. Porzingis
             "BOS": [
@@ -3802,10 +3803,10 @@ NBA_TEAM_RATINGS = {
     "Atlanta Hawks": 77, "Chicago Bulls": 76, "Houston Rockets": 75,
     "Brooklyn Nets": 74, "Memphis Grizzlies": 73, "Toronto Raptors": 72,
     "Utah Jazz": 71, "San Antonio Spurs": 70, "Portland Trail Blazers": 69,
-    "Charlotte Hornets": 68, "Washington Wizards": 67, "Detroit Pistons": 66,
+    "Washington Wizards": 67, "Detroit Pistons": 66,
 }
 
-# NBA Rosters (key players for props)
+# NBA Rosters (key players for props) - 2026 Season Depth Charts
 NBA_ROSTERS = {
     "Boston Celtics": ["Jayson Tatum", "Jaylen Brown", "Derrick White", "Jrue Holiday", "Kristaps Porzingis"],
     "Oklahoma City Thunder": ["Shai Gilgeous-Alexander", "Chet Holmgren", "Jalen Williams", "Josh Giddey", "Luguentz Dort"],
@@ -3831,18 +3832,40 @@ NBA_ROSTERS = {
     "Brooklyn Nets": ["Mikal Bridges", "Cam Thomas", "Spencer Dinwiddie", "Nic Claxton", "Dorian Finney-Smith"],
     "Memphis Grizzlies": ["Ja Morant", "Desmond Bane", "Jaren Jackson Jr.", "Marcus Smart", "Luke Kennard"],
     "Toronto Raptors": ["Scottie Barnes", "RJ Barrett", "Jakob Poeltl", "Immanuel Quickley", "Gary Trent Jr."],
-    "Utah Jazz": ["Lauri Markkanen", "Collin Sexton", "Jordan Clarkson", "John Collins", "Walker Kessler"],
-    "San Antonio Spurs": ["Victor Wembanyama", "Devin Vassell", "Keldon Johnson", "Tre Jones", "Zach Collins"],
-    "Portland Trail Blazers": ["Anfernee Simons", "Scoot Henderson", "Jerami Grant", "Deandre Ayton", "Malcolm Brogdon"],
-    "Charlotte Hornets": ["LaMelo Ball", "Terry Rozier", "Brandon Miller", "P.J. Washington", "Mark Williams"],
-    "Washington Wizards": ["Anthony Davis", "Jalen Green", "Kobe Bufkin", "Bilal Coulibaly", "Alex Sarr"],
-    "Detroit Pistons": ["Cade Cunningham", "Jaden Ivey", "Jalen Duren", "Ausar Thompson", "Bojan Bogdanovic"],
+    "Atlanta Hawks": ["Dyson Daniels", "Nickeil Alexander-Walker", "Zac Risacher", "Jalen Johnson", "Onyeka Okongwu"],
+    "Boston Celtics": ["Payton Pritchard", "Derrick White", "Jaylen Brown", "Sam Hauser", "Nikola Vucevic"],
+    "Brooklyn Nets": ["Noah Traore", "Eric Demin", "Michael Porter Jr.", "Nic Clowney", "Nic Claxton"],
+    "Charlotte Hornets": ["LaMelo Ball", "Kris Knueppel", "Brandon Miller", "Miles Bridges", "Makur Diabate"],
+    "Chicago Bulls": ["Josh Giddey", "Jalen Ivey", "Isaac Okoro", "Matas Buzelis", "Jon Smith"],
+    "Cleveland Cavaliers": ["James Harden", "Donovan Mitchell", "Darius Wade", "Evan Mobley", "Jarrett Allen"],
+    "Dallas Mavericks": ["Cooper Flagg", "Max Christie", "Nickeil Marshall", "PJ Washington", "Daniel Gafford"],
+    "Denver Nuggets": ["Jamal Murray", "Christian Braun", "Porter Watson (IL)", "Aaron Jones", "Nikola Jokic"],
+    "Detroit Pistons": ["Cade Cunningham", "Dyson Robinson", "Ausar Thompson", "Taj Harris (IL)", "Jalen Duren"],
+    "Golden State Warriors": ["Stephen Curry", "Brandin Podziemski", "Moses Moody", "Draymond Green", "Kristaps Porzingis (IL)"],
+    "Houston Rockets": ["Amen Thompson", "Tari Eason (IL)", "Kevin Durant", "Jabari Smith Jr.", "Alperen Sengun"],
+    "Indiana Pacers": ["Andrew Nembhard", "Bennedict Mathurin", "Aaron Nesmith", "Pascal Siakam", "Isaiah Hartenstein (IL)"],
+    "LA Clippers": ["D'Angelo Russell (IL)", "Bennedict Mathurin (IL)", "Kawhi Leonard", "John Collins", "Brook Lopez"],
+    "LA Lakers": ["Luka Doncic", "Austin Reaves", "Marcus Smart", "LeBron James", "Deandre Ayton"],
+    "Memphis Grizzlies": ["Cam Spencer (IL)", "Cameron Coward", "Jordan Wells", "Gabe Jackson", "Santi Aldama (IL)"],
+    "Miami Heat": ["Donovan Mitchell", "Tyler Herro (IL)", "Norman Powell", "Andrew Wiggins", "Bam Adebayo"],
+    "Milwaukee Bucks": ["Kyle Kuzma", "Adrian Griffin", "Gary Harris", "Kris Middleton", "Myles Turner"],
+    "Minnesota Timberwolves": ["Donte DiVincenzo", "Anthony Edwards", "Jalen McDaniels", "Julius Randle", "Rudy Gobert"],
+    "New Orleans Pelicans": ["Trey Murphy III", "Herbert Jones", "Saddiq Bey", "Zion Williamson", "Dereck Queen"],
+    "New York Knicks": ["Jalen Brunson", "Josh Hart", "Mikal Bridges", "OG Anunoby", "Karl-Anthony Towns"],
+    "Oklahoma City Thunder": ["Shai Gilgeous-Alexander", "Luguentz Dort", "Jalen Williams", "Chet Holmgren", "Isaiah Hartenstein"],
+    "Orlando Magic": ["Jalen Suggs", "Desmond Bane", "Franz Wagner", "Paolo Banchero", "Wendell Carter Jr."],
+    "Philadelphia 76ers": ["Tyrese Maxey", "Vernon Edgecombe", "Kelly Oubre Jr.", "Dylan Barlow", "Joel Embiid"],
+    "Phoenix Suns": ["Devin Booker", "Jalen Green (IL)", "Dillon Brooks", "Royce O'Neale", "Mark Williams"],
+    "Portland Trail Blazers": ["Jordan Holiday", "Scoot Sharpe", "Tristan Camara", "Deni Avdija", "Donovan Clingan"],
+    "Sacramento Kings": ["Russell Westbrook", "Zach LaVine", "Doug McDermott", "DeMar DeRozan", "Domantas Sabonis"],
+    "San Antonio Spurs": ["De'Aaron Fox", "Stephon Castle", "Devin Vassell", "Jalen Champagnie", "Victor Wembanyama"],
+    "Toronto Raptors": ["Immanuel Quickley", "Brandon Ingram", "RJ Barrett (IL)", "Scottie Barnes", "Chris Murray-Boyles"],
+    "Utah Jazz": ["Keyonte George", "Collin Williams", "Aaron Bailey", "Lauri Markkanen", "Walker Kessler"],
+    "Washington Wizards": ["Tyus Johnson", "Kevin George", "Bilal Coulibaly", "Alex Sarr", "Daniel Gafford"]
 }
 
 # Default NBA roster
 DEFAULT_NBA_ROSTER = ["Guard One", "Guard Two", "Forward One", "Forward Two", "Center"]
-
-
 class ESPNScheduleProvider:
     """
     Free schedule provider using ESPN's public API.
