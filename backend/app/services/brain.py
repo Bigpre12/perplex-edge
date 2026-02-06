@@ -2854,6 +2854,215 @@ async def _analyze_betting_markets() -> HealthCheck:
 
 
 # =============================================================================
+# CORS Health Check
+# =============================================================================
+
+async def check_cors_health(db: AsyncSession) -> dict:
+    """Check CORS configuration and frontend accessibility."""
+    try:
+        import httpx
+        import os
+        
+        # Get frontend and backend URLs
+        frontend_url = os.getenv("FRONTEND_URL", "https://perplex-edge-production.up.railway.app")
+        backend_url = os.getenv("BACKEND_URL", "https://railway-engine-production.up.railway.app")
+        
+        cors_details = {
+            "frontend_url": frontend_url,
+            "backend_url": backend_url,
+            "is_railway": os.getenv("RAILWAY_ENVIRONMENT") is not None,
+            "cors_origins": os.getenv("CORS_ORIGINS"),
+            "allowed_origins": None
+        }
+        
+        # Test backend API accessibility
+        test_endpoints = [
+            "/api/meta",
+            "/api/sports",
+            "/api/cors-debug"
+        ]
+        
+        endpoint_results = {}
+        failed_tests = 0
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for endpoint in test_endpoints:
+                try:
+                    # Test with Origin header to simulate frontend request
+                    response = await client.get(
+                        f"{backend_url}{endpoint}",
+                        headers={"Origin": frontend_url}
+                    )
+                    
+                    # Check CORS headers
+                    cors_headers = {
+                        "access_control_allow_origin": response.headers.get("access-control-allow-origin"),
+                        "access_control_allow_methods": response.headers.get("access-control-allow-methods"),
+                        "access_control_allow_headers": response.headers.get("access-control-allow-headers"),
+                        "access_control_allow_credentials": response.headers.get("access-control-allow-credentials"),
+                    }
+                    
+                    endpoint_results[endpoint] = {
+                        "status_code": response.status_code,
+                        "cors_headers": cors_headers,
+                        "cors_working": (
+                            response.headers.get("access-control-allow-origin") is not None and
+                            (response.headers.get("access-control-allow-origin") == "*" or
+                             frontend_url in response.headers.get("access-control-allow-origin", ""))
+                        )
+                    }
+                    
+                    if not endpoint_results[endpoint]["cors_working"]:
+                        failed_tests += 1
+                        
+                except Exception as e:
+                    endpoint_results[endpoint] = {
+                        "status_code": None,
+                        "cors_headers": {},
+                        "cors_working": False,
+                        "error": str(e)
+                    }
+                    failed_tests += 1
+        
+        cors_details["endpoint_tests"] = endpoint_results
+        cors_details["failed_tests"] = failed_tests
+        cors_details["total_tests"] = len(test_endpoints)
+        
+        # Get current CORS configuration
+        try:
+            from app.core.config import get_settings
+            settings = get_settings()
+            cors_details["allowed_origins"] = settings.allowed_origins
+        except Exception as e:
+            cors_details["config_error"] = str(e)
+        
+        # Determine health status
+        if failed_tests == 0:
+            return HealthCheck(
+                component="cors",
+                status="healthy",
+                message=f"All CORS tests passed ({len(test_endpoints)} endpoints)",
+                details=cors_details
+            )
+        elif failed_tests < len(test_endpoints):
+            return HealthCheck(
+                component="cors",
+                status="degraded",
+                message=f"CORS issues detected ({failed_tests}/{len(test_endpoints)} endpoints failing)",
+                details=cors_details
+            )
+        else:
+            return HealthCheck(
+                component="cors",
+                status="critical",
+                message=f"CORS completely broken ({failed_tests}/{len(test_endpoints)} endpoints failing)",
+                details=cors_details
+            )
+            
+    except Exception as e:
+        logger.error(f"CORS health check failed: {e}")
+        return HealthCheck(
+            component="cors",
+            status="critical",
+            message=f"CORS health check failed: {str(e)}",
+            details={"error": str(e)}
+        )
+
+
+async def heal_cors_issues(db: AsyncSession) -> dict:
+    """Attempt to heal CORS issues by updating configuration."""
+    try:
+        import os
+        
+        heal_result = {
+            "attempted_fixes": 0,
+            "successful_fixes": 0,
+            "fixes_applied": [],
+            "errors": []
+        }
+        
+        # Check if we're in Railway environment
+        is_railway = os.getenv("RAILWAY_ENVIRONMENT") is not None
+        
+        if is_railway:
+            heal_result["attempted_fixes"] += 1
+            
+            # Force wildcard CORS for Railway
+            try:
+                # Update environment variables (if possible)
+                os.environ["CORS_ORIGINS"] = "*"
+                
+                # Log the fix attempt
+                logger.warning("[BRAIN] CORS HEAL: Forcing wildcard CORS for Railway environment")
+                
+                heal_result["successful_fixes"] += 1
+                heal_result["fixes_applied"].append("Forced wildcard CORS for Railway")
+                
+                _brain.log_decision(
+                    "heal",
+                    "cors_fix",
+                    "Applied wildcard CORS fix for Railway environment",
+                    "success",
+                    {"environment": "railway", "cors_origins": "*"}
+                )
+                
+            except Exception as e:
+                heal_result["errors"].append(f"Failed to set CORS origins: {str(e)}")
+                logger.error(f"Failed to apply CORS fix: {e}")
+        
+        # Check if frontend URL is included
+        frontend_url = os.getenv("FRONTEND_URL")
+        cors_origins = os.getenv("CORS_ORIGINS")
+        
+        if frontend_url and cors_origins and frontend_url not in cors_origins:
+            heal_result["attempted_fixes"] += 1
+            
+            try:
+                # Add frontend URL to CORS origins
+                updated_origins = f"{cors_origins},{frontend_url}"
+                os.environ["CORS_ORIGINS"] = updated_origins
+                
+                logger.warning(f"[BRAIN] CORS HEAL: Added frontend URL to CORS origins: {frontend_url}")
+                
+                heal_result["successful_fixes"] += 1
+                heal_result["fixes_applied"].append(f"Added frontend URL to CORS origins")
+                
+                _brain.log_decision(
+                    "heal",
+                    "cors_fix",
+                    f"Added frontend URL to CORS origins: {frontend_url}",
+                    "success",
+                    {"frontend_url": frontend_url, "updated_origins": updated_origins}
+                )
+                
+            except Exception as e:
+                heal_result["errors"].append(f"Failed to add frontend URL to CORS: {str(e)}")
+                logger.error(f"Failed to add frontend URL to CORS: {e}")
+        
+        # Return heal result
+        if heal_result["successful_fixes"] > 0:
+            return {
+                "result": "success",
+                "message": f"Applied {heal_result['successful_fixes']} CORS fixes",
+                "details": heal_result
+            }
+        else:
+            return {
+                "result": "failed",
+                "message": "No CORS fixes could be applied",
+                "details": heal_result
+            }
+            
+    except Exception as e:
+        logger.error(f"CORS healing failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"CORS healing failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+# =============================================================================
 # Sport Mapping Health Check
 # =============================================================================
 
@@ -3008,6 +3217,18 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 "status": sport_mapping_check.status,
                 "duration_ms": sport_mapping_duration,
                 "component": "sport_mapping"
+            })
+
+            # CORS configuration and frontend accessibility
+            cors_start = time.time()
+            cors_check = await check_cors_health(db)
+            cors_duration = (time.time() - cors_start) * 1000
+            all_checks.append(cors_check)
+            
+            _brain_debugger.log_debug("brain_loop", "cors_health_check", {
+                "status": cors_check.status,
+                "duration_ms": cors_duration,
+                "component": "cors"
             })
 
             # Scheduler tasks
@@ -3277,6 +3498,32 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                         "heal",
                         "sport_mapping_fix",
                         f"Sport mapping auto-heal failed: {str(e)}",
+                        "failed",
+                        {"error": str(e)}
+                    )
+            
+            # Auto-heal CORS issues if critical
+            if cors_check.status in ("degraded", "critical"):
+                try:
+                    cors_heal = await heal_cors_issues(db)
+                    
+                    if cors_heal.get('result') == 'success':
+                        changes_made.append(f"Applied CORS fixes: {cors_heal['message']}")
+                        commit_type = "repair"
+                        _brain.log_decision(
+                            "heal",
+                            "cors_fix",
+                            f"Auto-healed CORS issues: {cors_heal['message']}",
+                            "success",
+                            cors_heal
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to auto-heal CORS: {e}")
+                    _brain.log_decision(
+                        "heal",
+                        "cors_fix",
+                        f"CORS auto-heal failed: {str(e)}",
                         "failed",
                         {"error": str(e)}
                     )
