@@ -200,8 +200,26 @@ async def get_market_performance(
     """
     try:
         from datetime import datetime, timedelta, timezone
-        from sqlalchemy import select, func, case, and_
-        from app.models import UserBet, PickResult, BetStatus
+        from sqlalchemy import select, func, case, and_, String
+        from app.models import UserBet, BetStatus
+        
+        # Check if table has any data first to avoid complex query on empty table
+        row_check = await db.scalar(select(func.count(UserBet.id)))
+        if not row_check:
+            return {
+                "markets": [],
+                "summary": {
+                    "total_bets": 0,
+                    "total_profit_loss": 0.0,
+                    "overall_roi": 0.0,
+                    "best_market": None,
+                    "worst_market": None,
+                },
+                "filters": {
+                    "days": days,
+                    "sport_id": sport_id,
+                },
+            }
         
         cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
         
@@ -211,15 +229,18 @@ async def get_market_performance(
             conditions.append(UserBet.sport_id == sport_id)
         base_filter = and_(*conditions)
         
-        # Get ROI/CLV by market type
-        settled_filter = and_(base_filter, UserBet.status != BetStatus.PENDING)
+        # Get ROI/CLV by market type — use cast to text for enum comparison safety
+        settled_filter = and_(
+            base_filter,
+            UserBet.status.cast(String) != BetStatus.PENDING.value,
+        )
         
         result = await db.execute(
             select(
                 UserBet.market_type,
                 func.count(UserBet.id).label('total_bets'),
-                func.sum(case((UserBet.status == BetStatus.WON, 1), else_=0)).label('won'),
-                func.sum(case((UserBet.status == BetStatus.LOST, 1), else_=0)).label('lost'),
+                func.sum(case((UserBet.status.cast(String) == BetStatus.WON.value, 1), else_=0)).label('won'),
+                func.sum(case((UserBet.status.cast(String) == BetStatus.LOST.value, 1), else_=0)).label('lost'),
                 func.sum(UserBet.stake).label('total_stake'),
                 func.sum(UserBet.profit_loss).label('total_pl'),
                 func.avg(UserBet.clv_cents).label('avg_clv'),
@@ -228,7 +249,7 @@ async def get_market_performance(
             )
             .where(settled_filter)
             .group_by(UserBet.market_type)
-            .order_by(func.sum(UserBet.profit_loss).desc())
+            .order_by(func.sum(UserBet.profit_loss).desc().nulls_last())
         )
         
         markets = []
@@ -254,10 +275,10 @@ async def get_market_performance(
                 "won": won,
                 "lost": lost,
                 "win_rate": round(win_rate * 100, 1),
-                "total_stake": round(stake, 2),
-                "total_profit_loss": round(pl, 2),
+                "total_stake": round(float(stake), 2),
+                "total_profit_loss": round(float(pl), 2),
                 "roi": round(roi, 2),
-                "avg_clv_cents": round(avg_clv, 2),
+                "avg_clv_cents": round(float(avg_clv), 2),
                 "beat_close_pct": round(beat_close_pct, 1),
                 "sample_quality": "high" if (total or 0) >= 50 else "medium" if (total or 0) >= 20 else "low",
             })
