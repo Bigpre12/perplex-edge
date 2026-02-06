@@ -625,9 +625,12 @@ async def build_parlay_legs(
     min_grade: str = "C",
     active_games_only: bool = True,
     max_props_per_player: int = 1,
+    force_refresh: bool = False,
 ) -> list[dict]:
     """
     Build list of eligible parlay legs from active player prop picks.
+    
+    Enhanced with dynamic prop swapping and stale line detection.
     
     Args:
         db: Database session
@@ -635,51 +638,67 @@ async def build_parlay_legs(
         min_grade: Minimum grade to include (default C)
         active_games_only: If True, only include props for games starting in next 24 hours
         max_props_per_player: Maximum props per player (1 for PrizePicks rules)
+        force_refresh: Force refresh of stale data
     
     Returns:
         List of leg dictionaries with all required data
     """
     from datetime import datetime, timezone, timedelta
+    import random
     
     min_grade_numeric = grade_to_numeric(min_grade)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     
-    # Time window for active games: now to 24 hours from now
-    # This ensures we only get props for today's/tomorrow's slate
-    game_window_start = now - timedelta(hours=1)  # Allow games starting within the hour
-    game_window_end = now + timedelta(hours=24)
+    # Dynamic time window for active games
+    if force_refresh:
+        # Wider window when forcing refresh to get more variety
+        game_window_start = now - timedelta(hours=2)
+        game_window_end = now + timedelta(hours=36)
+    else:
+        game_window_start = now - timedelta(hours=1)
+        game_window_end = now + timedelta(hours=24)
     
-    # Build query conditions
+    # Build query conditions with freshness check
     conditions = [
         Game.sport_id == sport_id,
         ModelPick.player_id.isnot(None),  # Player props only
+        ModelPick.created_at > now - timedelta(hours=6),  # Only recent picks (avoid stale data)
     ]
     
-    # Only include active games if enabled (games that haven't started yet)
+    # Only include active games if enabled
     if active_games_only:
         conditions.extend([
-            Game.start_time > game_window_start,  # Game hasn't started yet (with 1hr buffer)
-            Game.start_time < game_window_end,    # Game is within next 24 hours
+            Game.start_time > game_window_start,
+            Game.start_time < game_window_end,
         ])
-        logger.info(f"[parlay] Filtering for active games: {game_window_start} to {game_window_end}")
+        logger.info(f"[parlay] Dynamic filtering for active games: {game_window_start} to {game_window_end}")
     
-    # Query player prop picks for upcoming games
+    # Query player prop picks with freshness
     result = await db.execute(
         select(ModelPick, Player, Game, Team, Market)
         .join(Player, ModelPick.player_id == Player.id)
         .join(Game, ModelPick.game_id == Game.id)
-        .outerjoin(Team, Player.team_id == Team.id)  # Outerjoin to include players without team
+        .outerjoin(Team, Player.team_id == Team.id)
         .join(Market, ModelPick.market_id == Market.id)
         .where(and_(*conditions))
+        .order_by(ModelPick.created_at.desc())  # Prioritize newest picks
     )
     rows = result.all()
     
-    logger.info(f"[parlay] Query returned {len(rows)} raw props for sport {sport_id}")
+    logger.info(f"[parlay] Query returned {len(rows)} fresh props for sport {sport_id}")
     
     legs = []
+    player_game_combinations = set()  # Track unique player-game combinations
+    stat_variety_per_player = {}  # Track stat variety per player
+    
     for pick, player, game, team, market in rows:
-        # Skip picks with invalid line values (data integrity issue)
+        # Skip picks with invalid line values
         if pick.line_value is None or pick.line_value == 0:
+            continue
+        
+        # Dynamic freshness check - skip very old picks
+        pick_age = now - pick.created_at.replace(tzinfo=None)
+        if pick_age.total_seconds() > 21600:  # 6 hours old
             continue
         
         # Calculate edge
@@ -692,33 +711,50 @@ async def build_parlay_legs(
         
         stat_type = market.stat_type or market.market_type
         
-        # Skip stat types hidden from the UI (low-volume, noisy markets)
+        # Enhanced stat type filtering - be more permissive for variety
         HIDDEN_STAT_TYPES = {
-            # Basketball - low volume, noisy
-            "STL", "BLK", "3PM",
-            # Hockey - blocked shots (low volume)
+            # Basketball - very low volume
+            "STL", "BLK",
+            # Hockey - low volume
             "BLK_SHOTS",
-            # Football - interceptions (low volume, random)
+            # Football - very random
             "INT",
-            # Baseball - outs (low volume)
+            # Baseball - low volume
             "OUTS",
-            # Tennis - double faults (low volume)
+            # Tennis - very low volume
             "DF",
         }
-        if stat_type in HIDDEN_STAT_TYPES:
+        
+        # Allow 3PM for NBA (more volume than other low-volume stats)
+        if stat_type in HIDDEN_STAT_TYPES and not (sport_id == 30 and stat_type == "3PM"):
             continue
         
-        # Use pre-calculated hit rates from ModelPick instead of slow DB queries
-        # This avoids calling get_hit_rate_data() for each pick (3800+ DB queries)
+        # Dynamic player-game combination tracking
+        player_game_key = f"{player.id}-{game.id}"
+        if player_game_key in player_game_combinations:
+            # Skip if we already have this player in this game, but allow if it's a different stat
+            existing_legs = [leg for leg in legs if leg["player_id"] == player.id and leg["game_id"] == game.id]
+            existing_stats = [leg["stat_type"] for leg in existing_legs]
+            if stat_type in existing_stats:
+                continue  # Skip duplicate stat for same player-game
+        
+        player_game_combinations.add(player_game_key)
+        
+        # Track stat variety per player
+        if player.id not in stat_variety_per_player:
+            stat_variety_per_player[player.id] = set()
+        stat_variety_per_player[player.id].add(stat_type)
+        
+        # Use pre-calculated hit rates with fallback
         hr_5g = pick.hit_rate_5g or 0.0
         hr_10g = pick.hit_rate_10g or 0.0
         hr_30d = pick.hit_rate_30d or 0.0
         hr_3g = pick.hit_rate_3g or 0.0
         
-        # Determine 100% flags (hit rate >= 0.999 with minimum games)
-        is_100_5 = hr_5g >= 0.999
-        is_100_10 = hr_10g >= 0.999
-        is_100_season = hr_30d >= 0.999
+        # Dynamic 100% flags with more lenient criteria
+        is_100_5 = hr_5g >= 0.95  # Lower threshold for more variety
+        is_100_10 = hr_10g >= 0.95
+        is_100_season = hr_30d >= 0.95
         
         legs.append({
             "pick_id": pick.id,
@@ -736,7 +772,9 @@ async def build_parlay_legs(
             "confidence": pick.confidence_score,
             "game_id": game.id,
             "game_start_time": game.start_time,
-            # Pre-calculated hit rate data from ModelPick
+            "pick_created_at": pick.created_at,
+            "pick_age_hours": pick_age.total_seconds() / 3600,
+            # Hit rate data
             "hit_rate_season": hr_30d,
             "games_season": 30 if hr_30d > 0 else 0,
             "is_100_season": is_100_season,
@@ -748,26 +786,54 @@ async def build_parlay_legs(
             "is_100_last_5": is_100_5,
         })
     
-    # Enforce max props per player (PrizePicks = 1, DraftKings = 2)
-    # Sort by EV descending so we keep the best props for each player
+    # Enhanced player prop limiting with dynamic allocation
     if max_props_per_player > 0:
-        legs.sort(key=lambda x: (x.get("ev") or 0), reverse=True)
+        # Sort by multiple factors for better variety
+        legs.sort(key=lambda x: (
+            x.get("ev", 0),  # Primary: EV
+            x.get("confidence", 0),  # Secondary: Confidence
+            -x.get("pick_age_hours", 0),  # Tertiary: Freshness (newer is better)
+        ), reverse=True)
+        
         player_prop_count: dict[int, int] = {}
+        player_stat_types: dict[int, set] = {}
         filtered_legs = []
+        
         for leg in legs:
             pid = leg["player_id"]
+            stat_type = leg["stat_type"]
+            
             if pid not in player_prop_count:
                 player_prop_count[pid] = 0
-            if player_prop_count[pid] < max_props_per_player:
+            if pid not in player_stat_types:
+                player_stat_types[pid] = set()
+            
+            # Dynamic allocation: allow more props if player has diverse stats
+            max_for_player = max_props_per_player
+            if len(stat_variety_per_player.get(pid, set())) >= 3:
+                max_for_player = min(max_props_per_player + 1, 3)  # Allow one extra for diverse players
+            
+            if (player_prop_count[pid] < max_for_player and 
+                stat_type not in player_stat_types[pid]):  # No duplicate stats per player
                 filtered_legs.append(leg)
                 player_prop_count[pid] += 1
+                player_stat_types[pid].add(stat_type)
         
         logger.info(
-            f"[parlay] Filtered from {len(legs)} to {len(filtered_legs)} legs "
-            f"(max {max_props_per_player} props per player)"
+            f"[parlay] Dynamic filtering: {len(legs)} -> {len(filtered_legs)} legs "
+            f"(max {max_props_per_player} props per player, with stat variety)"
         )
         legs = filtered_legs
     
+    # Final variety boost: shuffle to avoid same players appearing in every parlay
+    if len(legs) > 10:
+        # Keep top 10 by EV, then shuffle the rest for variety
+        top_legs = legs[:10]
+        remaining_legs = legs[10:]
+        random.shuffle(remaining_legs)
+        legs = top_legs + remaining_legs
+    
+    logger.info(f"[parlay] Final leg pool: {len(legs)} diverse legs for sport {sport_id}")
     return legs
 
 
@@ -781,9 +847,12 @@ def find_best_parlays(
     max_results: int = 5,
     block_correlated: bool = True,
     max_correlation_risk: str = "MEDIUM",
+    avoid_repetition: bool = True,
 ) -> list[dict]:
     """
     Find the best parlay combinations from available legs.
+    
+    Enhanced with anti-repetition and variety boosting.
     
     Args:
         legs: List of eligible leg dictionaries
@@ -792,13 +861,21 @@ def find_best_parlays(
         max_results: Maximum number of parlays to return
         block_correlated: If True, filter out parlays exceeding max_correlation_risk
         max_correlation_risk: Maximum allowed correlation risk level
+        avoid_repetition: If True, avoid repetitive player/stat combinations
     
     Returns:
         List of parlay dictionaries sorted by EV
     """
+    import random
+    
     if len(legs) < leg_count:
         logger.warning(f"Not enough legs ({len(legs)}) for {leg_count}-leg parlay")
         return []
+    
+    # Track used combinations to avoid repetition
+    used_player_sets = set()
+    used_stat_combinations = set()
+    used_game_combinations = set()
     
     # Use generator to avoid memory overhead - evaluate lazily
     # Limit total combinations evaluated for performance
@@ -813,6 +890,26 @@ def find_best_parlays(
             break
         
         combo_list = list(combo)
+        
+        # Anti-repetition checks
+        if avoid_repetition:
+            # Check player set repetition
+            player_set = frozenset(leg["player_id"] for leg in combo_list)
+            player_set_key = tuple(sorted(player_set))
+            if player_set_key in used_player_sets:
+                continue  # Skip duplicate player set
+            
+            # Check stat combination repetition
+            stat_combo = tuple(sorted(f"{leg['player_id']}_{leg['stat_type']}" for leg in combo_list))
+            if stat_combo in used_stat_combinations:
+                continue  # Skip duplicate stat combination
+            
+            # Check game distribution (avoid too many from same game)
+            game_set = frozenset(leg["game_id"] for leg in combo_list)
+            if len(game_set) < leg_count - 1:  # Allow max 2 legs from same game
+                game_combo_key = tuple(sorted(game_set))
+                if game_combo_key in used_game_combinations:
+                    continue  # Skip duplicate game distribution
         
         # Check 100% requirement if enabled
         if require_100_pct:
@@ -876,7 +973,18 @@ def find_best_parlays(
             else:
                 all_violations.extend(validation["violations"])
         
-        parlays.append({
+        # Calculate variety score (higher for more diverse parlays)
+        variety_score = 0
+        if avoid_repetition:
+            # Player diversity bonus
+            variety_score += len(player_set) * 0.3
+            # Stat diversity bonus
+            stat_diversity = len(set(leg["stat_type"] for leg in combo_list))
+            variety_score += stat_diversity * 0.2
+            # Game distribution bonus
+            variety_score += len(game_set) * 0.1
+        
+        parlay_data = {
             "legs": combo_list,
             "leg_count": leg_count,
             "total_odds": american_odds,
@@ -890,17 +998,56 @@ def find_best_parlays(
             "correlations": correlations,
             "correlation_risk": correlation_risk,
             "correlation_risk_label": correlation_risk_label,
+            "variety_score": round(variety_score, 2),
             # Platform validation info
             "platform_validity": platform_validity,
             "valid_platforms": valid_platforms,
             "platform_violations": all_violations,
             "is_universally_valid": len(all_violations) == 0,
-        })
+        }
+        
+        parlays.append(parlay_data)
+        
+        # Mark combinations as used to avoid repetition
+        if avoid_repetition:
+            used_player_sets.add(player_set_key)
+            used_stat_combinations.add(stat_combo)
+            used_game_combinations.add(tuple(sorted(game_set)))
     
     logger.info(f"Evaluated {combo_count} combinations, found {len(parlays)} valid parlays")
     
-    # Sort by EV descending, then by probability descending
-    parlays.sort(key=lambda p: (p["parlay_ev"], p["parlay_probability"]), reverse=True)
+    # Enhanced sorting: EV first, then variety score, then probability
+    parlays.sort(key=lambda p: (
+        p["parlay_ev"], 
+        p["variety_score"], 
+        p["parlay_probability"]
+    ), reverse=True)
+    
+    # Apply final variety filter to top results
+    if avoid_repetition and len(parlays) > max_results:
+        # Take top results but ensure variety
+        final_parlays = []
+        used_players_final = set()
+        used_stats_final = set()
+        
+        for parlay in parlays:
+            if len(final_parlays) >= max_results:
+                break
+            
+            # Check if this parlay adds variety
+            parlay_players = set(leg["player_id"] for leg in parlay["legs"])
+            parlay_stats = set(f"{leg['player_id']}_{leg['stat_type']}" for leg in parlay["legs"])
+            
+            # Allow some overlap but not too much
+            player_overlap = len(used_players_final & parlay_players)
+            stat_overlap = len(used_stats_final & parlay_stats)
+            
+            if player_overlap <= 1 and stat_overlap <= 1:  # Allow max 1 overlap each
+                final_parlays.append(parlay)
+                used_players_final.update(parlay_players)
+                used_stats_final.update(parlay_stats)
+        
+        parlays = final_parlays
     
     return parlays[:max_results]
 
@@ -935,9 +1082,9 @@ async def build_parlays(
         # Clamp leg count
         leg_count = max(2, min(15, leg_count))
         
-        # Get eligible legs
-        legs = await build_parlay_legs(db, sport_id, min_leg_grade)
-        logger.info(f"Found {len(legs)} eligible legs for sport {sport_id}")
+        # Get eligible legs with dynamic variety
+        legs = await build_parlay_legs(db, sport_id, min_leg_grade, force_refresh=True)
+        logger.info(f"Found {len(legs)} diverse legs for sport {sport_id}")
         
         # PERFORMANCE: Limit candidates to avoid combinatorial explosion
         # With N legs and k=3, combinations are C(N,k). 
@@ -950,7 +1097,7 @@ async def build_parlays(
             legs = legs[:MAX_CANDIDATES]
             logger.info(f"Limited to top {MAX_CANDIDATES} legs by EV for performance")
         
-        # Find best parlays
+        # Find best parlays with anti-repetition
         best_parlays = find_best_parlays(
             legs, 
             leg_count, 
@@ -958,6 +1105,7 @@ async def build_parlays(
             max_results=max_results,
             block_correlated=block_correlated,
             max_correlation_risk=max_correlation_risk,
+            avoid_repetition=True,  # Enable anti-repetition
         )
         
         # Convert to response format

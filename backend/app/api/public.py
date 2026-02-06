@@ -1450,13 +1450,13 @@ async def build_parlay(
     max_results: int = Query(5, ge=1, le=10, description="Number of parlays to return"),
     block_correlated: bool = Query(True, description="Block high-correlation parlays"),
     max_correlation_risk: str = Query("MEDIUM", description="Max allowed: LOW, MEDIUM, HIGH, CRITICAL"),
+    force_refresh: bool = Query(False, description="Force refresh to avoid stale data"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Build optimized parlays from today's player prop picks.
     
-    Grades each leg (A-F based on edge), calculates combined odds and EV,
-    and returns LOCK/PLAY/SKIP recommendations.
+    Enhanced with dynamic prop swapping and anti-repetition to avoid stale lines.
     
     Grading:
     - A: Edge >= 5%
@@ -1470,12 +1470,22 @@ async def build_parlay(
     - PLAY: Moderate confidence (parlay EV >= 1%)
     - SKIP: Not recommended (negative edge or low probability)
     
+    Anti-Repetition Features:
+    - Dynamic player prop swapping for variety
+    - Stale line detection (6-hour freshness window)
+    - Avoids repetitive player/stat combinations
+    - Enhanced stat variety per player
+    - Game distribution optimization
+    
     Args:
         sport_id: Sport database ID
         leg_count: Number of legs per parlay (2-15)
         include_100_pct: Require at least one 100% hit rate leg
-        min_leg_grade: Minimum grade for each leg
+        min_leg_grade: Minimum grade for each leg (A, B, C, D)
         max_results: Number of parlays to return
+        block_correlated: Block high-correlation parlays
+        max_correlation_risk: Max allowed correlation risk level
+        force_refresh: Force refresh to avoid stale data
     
     Returns:
         ParlayBuilderResponse with recommended parlays
@@ -1516,6 +1526,7 @@ async def build_parlay(
             max_results=max_results,
             block_correlated=block_correlated,
             max_correlation_risk=max_correlation_risk.upper(),
+            force_refresh=force_refresh,
         )
     except Exception as e:
         logger.error(f"Parlay builder error for sport {sport_id}: {e}", exc_info=True)
