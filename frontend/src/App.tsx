@@ -17,6 +17,7 @@ import {
 } from './components'
 import { HundredPercentTab } from './components/HundredPercentTab'
 import { ParlayBuilder } from './components/ParlayBuilder'
+import { AIEdgeTab } from './components/AIEdgeTab'
 import { MyBetsTab } from './components/MyBetsTab'
 import { FreshnessBanner } from './components/FreshnessBanner'
 import { useAutoRefresh, formatTimeRemaining, formatLastUpdated } from './hooks/useAutoRefresh'
@@ -145,6 +146,12 @@ function App() {
         <Route path="/parlay" element={
           <AppLayout>
             <ParlayBuilder />
+          </AppLayout>
+        } />
+        
+        <Route path="/ai-edge" element={
+          <AppLayout>
+            <AIEdgeTab />
           </AppLayout>
         } />
         

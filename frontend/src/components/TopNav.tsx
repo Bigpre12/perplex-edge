@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { to: '/props', label: 'Props' },
   { to: '/stats', label: 'Stats' },
   { to: '/parlay', label: 'Parlay' },
+  { to: '/ai-edge', label: 'AI Edge' },
   { to: '/my-edge', label: 'My Edge' },
   { to: '/my-bets', label: 'My Bets' },
 ];

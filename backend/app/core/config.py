@@ -64,6 +64,14 @@ class Settings(BaseSettings):
     # Redis URL for caching (optional - falls back to in-memory)
     redis_url: str = ""
 
+    # AI Integration (optional - disabled by default)
+    ai_enabled: bool = False
+    ai_api_base_url: str = "https://api.perplexity.ai"
+    ai_api_key: str = ""
+    ai_model: str = "llama-3.1-sonar-large-128k-online"
+    ai_timeout_seconds: int = 30
+    ai_max_retries: int = 2
+
     @field_validator('database_url')
     @classmethod
     def validate_database_url(cls, v: str) -> str:
@@ -208,6 +216,12 @@ def validate_startup_config() -> dict[str, Any]:
                 f"Missing API keys (real API calls may fail): {', '.join(missing_keys)}"
             )
     
+    # Check AI integration config
+    if settings.ai_enabled and not settings.ai_api_key:
+        issues.append("AI_ENABLED=true but AI_API_KEY is not set")
+    elif not settings.ai_enabled:
+        warnings.append("AI integration disabled (AI_ENABLED=false)")
+
     # Check Sentry DSN in production
     if settings.is_production and not settings.sentry_dsn:
         warnings.append("SENTRY_DSN not set - error monitoring disabled in production")

@@ -47,6 +47,7 @@ from app.api.users import router as users_router
 from app.api.webhooks import router as webhooks_router
 from app.api.seasons import router as seasons_router
 from app.api.trades import router as trades_router
+from app.api.ai_recommendations import router as ai_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -260,6 +261,7 @@ app.include_router(users_router, prefix="/api", tags=["users"])
 app.include_router(webhooks_router, prefix="/api", tags=["webhooks"])
 app.include_router(seasons_router, prefix="/api", tags=["seasons"])
 app.include_router(trades_router, prefix="/api", tags=["trades"])
+app.include_router(ai_router, prefix="/api/v1/ai", tags=["ai"])
 
 
 # =============================================================================
