@@ -835,6 +835,193 @@ async def get_analysis_summary():
         raise HTTPException(status_code=500, detail=f"Analysis summary failed: {str(e)}")
 
 
+@router.post("/fix-model-picks-sport-mappings", response_model=dict)
+async def fix_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
+    """Fix ModelPicks sport mappings to match their players - CRITICAL FIX."""
+    try:
+        logger.info("[ADMIN] Starting ModelPicks sport mapping fix...")
+        
+        from app.models import ModelPick, Player
+        from sqlalchemy import select, update, func
+        
+        # Track changes
+        changes_made = {
+            "model_picks_fixed": 0,
+            "nba_picks_moved": 0,
+            "nhl_picks_moved": 0,
+            "other_picks_moved": 0,
+            "errors": []
+        }
+        
+        try:
+            # Step 1: Find all ModelPicks with wrong sport mappings
+            logger.info("[ADMIN] Finding ModelPicks with wrong sport mappings...")
+            
+            incorrect_picks_result = await db.execute(
+                select(ModelPick, Player)
+                .join(Player, ModelPick.player_id == Player.id)
+                .where(ModelPick.sport_id != Player.sport_id)
+            )
+            incorrect_picks = incorrect_picks_result.all()
+            
+            logger.info(f"[ADMIN] Found {len(incorrect_picks)} ModelPicks with wrong sport mappings")
+            
+            # Step 2: Fix each ModelPick to match its player's sport_id
+            for model_pick, player in incorrect_picks:
+                old_sport_id = model_pick.sport_id
+                new_sport_id = player.sport_id
+                
+                await db.execute(
+                    update(ModelPick)
+                    .where(ModelPick.id == model_pick.id)
+                    .values(sport_id=new_sport_id)
+                )
+                
+                changes_made["model_picks_fixed"] += 1
+                
+                # Track specific sport changes
+                if old_sport_id == 53 and new_sport_id == 30:
+                    changes_made["nba_picks_moved"] += 1
+                    logger.info(f"[ADMIN] Fixed NBA ModelPick: {player.name} (ID: {model_pick.id}) - NHL→NBA")
+                elif old_sport_id == 30 and new_sport_id == 53:
+                    changes_made["nhl_picks_moved"] += 1
+                    logger.info(f"[ADMIN] Fixed NHL ModelPick: {player.name} (ID: {model_pick.id}) - NBA→NHL")
+                else:
+                    changes_made["other_picks_moved"] += 1
+                    logger.info(f"[ADMIN] Fixed ModelPick: {player.name} (ID: {model_pick.id}) - sport_id {old_sport_id}→{new_sport_id}")
+            
+            # Commit all changes
+            await db.commit()
+            
+            logger.info("[ADMIN] ✅ ModelPicks sport mapping fix completed!")
+            logger.info(f"[ADMIN] 📊 Summary: {changes_made}")
+            
+            return {
+                "status": "success",
+                "message": "ModelPicks sport mapping fix completed successfully",
+                "changes_made": changes_made,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"[ADMIN] ❌ Error fixing ModelPicks sport mappings: {e}")
+            await db.rollback()
+            changes_made["errors"].append(str(e))
+            return {
+                "status": "error",
+                "message": "ModelPicks sport mapping fix failed",
+                "changes_made": changes_made,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+    except Exception as e:
+        logger.error(f"[ADMIN] Critical error in ModelPicks sport mapping fix: {e}")
+        raise HTTPException(status_code=500, detail=f"ModelPicks sport mapping fix failed: {str(e)}")
+
+
+@router.post("/verify-model-picks-sport-mappings", response_model=dict)
+async def verify_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
+    """Verify ModelPicks sport mappings are correct."""
+    try:
+        logger.info("[ADMIN] Verifying ModelPicks sport mappings...")
+        
+        from app.models import ModelPick, Player
+        from sqlalchemy import select, func
+        
+        verification_results = {
+            "total_model_picks": 0,
+            "correct_mappings": 0,
+            "incorrect_mappings": 0,
+            "nba_picks_in_nba": 0,
+            "nba_picks_in_nhl": 0,
+            "nhl_picks_in_nhl": 0,
+            "nhl_picks_in_nba": 0,
+            "status": "unknown"
+        }
+        
+        try:
+            # Total ModelPicks
+            total_picks_result = await db.execute(select(func.count(ModelPick.id)))
+            verification_results["total_model_picks"] = total_picks_result.scalar() or 0
+            
+            # Correct mappings
+            correct_mappings_result = await db.execute(
+                select(func.count(ModelPick.id))
+                .join(Player, ModelPick.player_id == Player.id)
+                .where(ModelPick.sport_id == Player.sport_id)
+            )
+            verification_results["correct_mappings"] = correct_mappings_result.scalar() or 0
+            
+            # Incorrect mappings
+            incorrect_mappings_result = await db.execute(
+                select(func.count(ModelPick.id))
+                .join(Player, ModelPick.player_id == Player.id)
+                .where(ModelPick.sport_id != Player.sport_id)
+            )
+            verification_results["incorrect_mappings"] = incorrect_mappings_result.scalar() or 0
+            
+            # NBA-specific mappings
+            nba_picks_in_nba_result = await db.execute(
+                select(func.count(ModelPick.id))
+                .join(Player, ModelPick.player_id == Player.id)
+                .where(Player.sport_id == 30, ModelPick.sport_id == 30)
+            )
+            verification_results["nba_picks_in_nba"] = nba_picks_in_nba_result.scalar() or 0
+            
+            nba_picks_in_nhl_result = await db.execute(
+                select(func.count(ModelPick.id))
+                .join(Player, ModelPick.player_id == Player.id)
+                .where(Player.sport_id == 30, ModelPick.sport_id == 53)
+            )
+            verification_results["nba_picks_in_nhl"] = nba_picks_in_nhl_result.scalar() or 0
+            
+            # NHL-specific mappings
+            nhl_picks_in_nhl_result = await db.execute(
+                select(func.count(ModelPick.id))
+                .join(Player, ModelPick.player_id == Player.id)
+                .where(Player.sport_id == 53, ModelPick.sport_id == 53)
+            )
+            verification_results["nhl_picks_in_nhl"] = nhl_picks_in_nhl_result.scalar() or 0
+            
+            nhl_picks_in_nba_result = await db.execute(
+                select(func.count(ModelPick.id))
+                .join(Player, ModelPick.player_id == Player.id)
+                .where(Player.sport_id == 53, ModelPick.sport_id == 30)
+            )
+            verification_results["nhl_picks_in_nba"] = nhl_picks_in_nba_result.scalar() or 0
+            
+            # Determine status
+            if verification_results["incorrect_mappings"] == 0:
+                verification_results["status"] = "perfect"
+            elif verification_results["nba_picks_in_nhl"] == 0 and verification_results["nhl_picks_in_nba"] == 0:
+                verification_results["status"] = "good"
+            else:
+                verification_results["status"] = "needs_fix"
+            
+            logger.info("[ADMIN] ✅ ModelPicks sport mapping verification completed!")
+            logger.info(f"[ADMIN] 📊 Results: {verification_results}")
+            
+            return {
+                "status": "success",
+                "verification": verification_results,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"[ADMIN] ❌ Error verifying ModelPicks sport mappings: {e}")
+            return {
+                "status": "error",
+                "verification": verification_results,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+    except Exception as e:
+        logger.error(f"[ADMIN] Critical error in ModelPicks sport mapping verification: {e}")
+        raise HTTPException(status_code=500, detail=f"ModelPicks sport mapping verification failed: {str(e)}")
+
+
 @router.post("/fix-sport-mappings", response_model=dict)
 async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
     """Fix sport mappings in production database - CRITICAL FIX."""
