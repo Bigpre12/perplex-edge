@@ -56,6 +56,7 @@ from app.api.health import router as health_router
 from app.api.brain_persistence import router as brain_persistence_router
 from app.api.debug import router as debug_router
 from app.api.debug_parlay import router as debug_parlay_router
+from app.api.debug_simple import router as debug_simple_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -428,6 +429,7 @@ app.include_router(health_router, prefix="/api/health", tags=["health"])
 app.include_router(brain_persistence_router, tags=["brain-persistence"])
 app.include_router(debug_router, tags=["debug"])
 app.include_router(debug_parlay_router, tags=["debug-parlay"])
+app.include_router(debug_simple_router, tags=["debug-simple"])
 
 
 # =============================================================================
