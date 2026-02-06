@@ -544,6 +544,22 @@ SPORT_PROP_OVERRIDES: dict[str, dict[str, str]] = {
 }
 
 
+# Shared bookmaker configs for all stub generators.
+# Each tuple: (api_key, display_title, odds_offset_from_base)
+STUB_BOOKMAKER_CONFIGS = [
+    ("draftkings", "DraftKings", 0),
+    ("fanduel", "FanDuel", -2),
+    ("betmgm", "BetMGM", 2),
+    ("caesars", "Caesars", 1),
+    ("betrivers", "BetRivers", -1),
+    ("fanatics", "Fanatics", 3),
+    ("hardrock", "Hard Rock Bet", -3),
+    ("espnbet", "ESPN BET", 1),
+    ("fliff", "Fliff", -2),
+    ("prizepicks", "PrizePicks", 0),
+]
+
+
 def _resolve_stat_type(market_key: str, sport_key: str | None) -> str:
     """Resolve API market key to internal stat type, with sport-specific overrides."""
     if sport_key:
@@ -983,16 +999,20 @@ class XYZOddsProvider(OddsProvider):
         }
         sport_title = sport_titles.get(sport_key, sport_key.upper())
         
-        # Pick a sportsbook (rotate through them)
-        sportsbooks = ["draftkings", "fanduel", "betmgm", "caesars"]
-        sportsbook_idx = hash(game_id) % len(sportsbooks)
-        sportsbook = sportsbooks[sportsbook_idx]
-        sportsbook_titles = {
-            "draftkings": "DraftKings",
-            "fanduel": "FanDuel",
-            "betmgm": "BetMGM",
-            "caesars": "Caesars",
-        }
+        # Generate bookmakers with slight odds variation per book
+        stub_bookmakers = []
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
+            stub_bookmakers.append({
+                "key": book_key,
+                "title": book_title,
+                "markets": [{
+                    "key": "h2h",
+                    "outcomes": [
+                        {"name": game["home_team"], "price": home_ml + odds_offset},
+                        {"name": game["away_team"], "price": away_ml - odds_offset},
+                    ]
+                }]
+            })
         
         return {
             "id": game_id,
@@ -1001,19 +1021,7 @@ class XYZOddsProvider(OddsProvider):
             "commence_time": commence_time,
             "home_team": game["home_team"],
             "away_team": game["away_team"],
-            "bookmakers": [
-                {
-                    "key": sportsbook,
-                    "title": sportsbook_titles[sportsbook],
-                    "markets": [{
-                        "key": "h2h",
-                        "outcomes": [
-                            {"name": game["home_team"], "price": home_ml},
-                            {"name": game["away_team"], "price": away_ml},
-                        ]
-                    }]
-                }
-            ],
+            "bookmakers": stub_bookmakers,
         }
     
     def _generate_moneyline_from_ratings(
@@ -2540,16 +2548,8 @@ class XYZOddsProvider(OddsProvider):
             def vary_outcomes_nfl(outcomes: list, odds_offset: int) -> list:
                 return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
             
-            bookmaker_configs_nfl = [
-                ("draftkings", "DraftKings", 0),
-                ("fanduel", "FanDuel", -2),
-                ("betmgm", "BetMGM", 2),
-                ("caesars", "Caesars", 1),
-                ("pointsbetus", "PointsBet US", -1),
-            ]
-            
             bookmakers_nfl = []
-            for book_key, book_title, odds_offset in bookmaker_configs_nfl:
+            for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
                 bookmakers_nfl.append({
                     "key": book_key,
                     "title": book_title,
@@ -2647,16 +2647,8 @@ class XYZOddsProvider(OddsProvider):
         def vary_outcomes(outcomes: list, odds_offset: int) -> list:
             return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
         
-        bookmaker_configs = [
-            ("draftkings", "DraftKings", 0),
-            ("fanduel", "FanDuel", -2),
-            ("betmgm", "BetMGM", 2),
-            ("caesars", "Caesars", 1),
-            ("pointsbetus", "PointsBet US", -1),
-        ]
-        
         bookmakers = []
-        for book_key, book_title, odds_offset in bookmaker_configs:
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
             bookmakers.append({
                 "key": book_key,
                 "title": book_title,
@@ -2846,17 +2838,8 @@ class XYZOddsProvider(OddsProvider):
                 for o in outcomes
             ]
         
-        # Bookmaker configurations with odds offsets to simulate market variation
-        bookmaker_configs = [
-            ("draftkings", "DraftKings", 0),
-            ("fanduel", "FanDuel", -2),  # Slightly better odds
-            ("betmgm", "BetMGM", 2),
-            ("caesars", "Caesars", 1),
-            ("pointsbetus", "PointsBet US", -1),
-        ]
-        
         bookmakers = []
-        for book_key, book_title, odds_offset in bookmaker_configs:
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
             bookmakers.append({
                 "key": book_key,
                 "title": book_title,
@@ -3001,16 +2984,8 @@ class XYZOddsProvider(OddsProvider):
         def vary_outcomes(outcomes: list, odds_offset: int) -> list:
             return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
         
-        bookmaker_configs = [
-            ("draftkings", "DraftKings", 0),
-            ("fanduel", "FanDuel", -2),
-            ("betmgm", "BetMGM", 2),
-            ("caesars", "Caesars", 1),
-            ("pointsbetus", "PointsBet US", -1),
-        ]
-        
         bookmakers = []
-        for book_key, book_title, odds_offset in bookmaker_configs:
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
             bookmakers.append({
                 "key": book_key,
                 "title": book_title,
@@ -3102,16 +3077,8 @@ class XYZOddsProvider(OddsProvider):
         def vary_outcomes(outcomes: list, odds_offset: int) -> list:
             return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
         
-        bookmaker_configs = [
-            ("draftkings", "DraftKings", 0),
-            ("fanduel", "FanDuel", -2),
-            ("betmgm", "BetMGM", 2),
-            ("caesars", "Caesars", 1),
-            ("pointsbetus", "PointsBet US", -1),
-        ]
-        
         bookmakers = []
-        for book_key, book_title, odds_offset in bookmaker_configs:
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
             bookmakers.append({
                 "key": book_key,
                 "title": book_title,
@@ -3235,16 +3202,8 @@ class XYZOddsProvider(OddsProvider):
         def vary_outcomes(outcomes: list, odds_offset: int) -> list:
             return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
         
-        bookmaker_configs = [
-            ("draftkings", "DraftKings", 0),
-            ("fanduel", "FanDuel", -2),
-            ("betmgm", "BetMGM", 2),
-            ("caesars", "Caesars", 1),
-            ("pointsbetus", "PointsBet US", -1),
-        ]
-        
         bookmakers = []
-        for book_key, book_title, odds_offset in bookmaker_configs:
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
             bookmakers.append({
                 "key": book_key,
                 "title": book_title,
@@ -3416,16 +3375,8 @@ class XYZOddsProvider(OddsProvider):
         def vary_outcomes(outcomes: list, odds_offset: int) -> list:
             return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
         
-        bookmaker_configs = [
-            ("draftkings", "DraftKings", 0),
-            ("fanduel", "FanDuel", -2),
-            ("betmgm", "BetMGM", 2),
-            ("caesars", "Caesars", 1),
-            ("pointsbetus", "PointsBet US", -1),
-        ]
-        
         bookmakers = []
-        for book_key, book_title, odds_offset in bookmaker_configs:
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
             bookmakers.append({
                 "key": book_key,
                 "title": book_title,
@@ -3593,16 +3544,8 @@ class XYZOddsProvider(OddsProvider):
         def vary_outcomes(outcomes: list, odds_offset: int) -> list:
             return [{**o, "price": o["price"] + odds_offset} for o in outcomes]
         
-        bookmaker_configs = [
-            ("draftkings", "DraftKings", 0),
-            ("fanduel", "FanDuel", -2),
-            ("betmgm", "BetMGM", 2),
-            ("caesars", "Caesars", 1),
-            ("pointsbetus", "PointsBet US", -1),
-        ]
-        
         bookmakers = []
-        for book_key, book_title, odds_offset in bookmaker_configs:
+        for book_key, book_title, odds_offset in STUB_BOOKMAKER_CONFIGS:
             bookmakers.append({
                 "key": book_key,
                 "title": book_title,
