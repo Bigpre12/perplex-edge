@@ -549,6 +549,9 @@ async def brain_status():
             _brain, _brain_debugger, _correlation_tracker, 
             _anomaly_detector, _data_validator, _business_metrics
         )
+        from app.core.production_config import production_config
+        from app.core.dryrun_evaluation import dry_run_manager, evaluation_framework
+        from app.core.brain_config import brain_config
         
         # Check if brain is running
         brain_task = getattr(app.state, 'brain_task', None)
@@ -579,7 +582,26 @@ async def brain_status():
                 "current_metrics": _business_metrics.current_metrics,
                 "history_size": len(_business_metrics.metrics_history),
                 "trend_analysis": _business_metrics.get_trend_analysis()
-            }
+            },
+            # Production components
+            "production_config": {
+                "alert_rules_count": len(production_config.alert_rules),
+                "runbooks_count": len(production_config.runbooks),
+                "guardrails_count": len(production_config.guardrails),
+                "metrics_count": len(production_config.metrics),
+                "policies_count": len(production_config.policies)
+            },
+            "dry_run": {
+                "mode": dry_run_manager.mode.value,
+                "safe_mode": dry_run_manager.safe_mode,
+                "action_history_count": len(dry_run_manager.action_history),
+                "current_cycle_actions": len(dry_run_manager.current_cycle_actions)
+            },
+            "evaluation": {
+                "experiments_count": len(evaluation_framework.experiments),
+                "current_experiment": evaluation_framework.current_experiment.get("id") if evaluation_framework.current_experiment else None
+            },
+            "config": brain_config.get_config_summary()
         }
         
         if hasattr(_brain, 'started_at') and _brain.started_at:
@@ -604,6 +626,196 @@ async def brain_status():
             "error": str(e),
             "message": "Brain service not available"
         }
+
+
+@app.get("/api/brain/production/config")
+async def get_production_config():
+    """Get production configuration for brain service."""
+    try:
+        from app.core.production_config import production_config
+        
+        return {
+            "alert_rules": [
+                {
+                    "name": rule.name,
+                    "category": rule.category.value,
+                    "severity": rule.severity.value,
+                    "condition": rule.condition,
+                    "threshold": rule.threshold,
+                    "description": rule.description,
+                    "runbook_id": rule.runbook_id,
+                    "quiet_hours": rule.quiet_hours
+                }
+                for rule in production_config.alert_rules
+            ],
+            "runbooks": [
+                {
+                    "id": rb.id,
+                    "title": rb.title,
+                    "category": rb.category.value,
+                    "severity": rb.severity.value,
+                    "estimated_time_minutes": rb.estimated_time_minutes,
+                    "required_permissions": rb.required_permissions
+                }
+                for rb in production_config.runbooks
+            ],
+            "guardrails": [
+                {
+                    "name": gr.name,
+                    "max_data_deletion_per_cycle_mb": gr.max_data_deletion_per_cycle_mb,
+                    "max_api_calls_per_hour": gr.max_api_calls_per_hour,
+                    "max_config_changes_per_day": gr.max_config_changes_per_day,
+                    "safe_mode_enabled": gr.safe_mode_enabled,
+                    "requires_approval_for": gr.requires_approval_for
+                }
+                for gr in production_config.guardrails
+            ],
+            "metrics": [
+                {
+                    "name": m.name,
+                    "description": m.description,
+                    "unit": m.unit,
+                    "target_value": m.target_value,
+                    "warning_threshold": m.warning_threshold,
+                    "critical_threshold": m.critical_threshold,
+                    "category": m.category,
+                    "sli": m.sli
+                }
+                for m in production_config.metrics
+            ],
+            "policies": production_config.policies,
+            "deployment_checklist": production_config.deployment_checklist
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "message": "Failed to get production config"}
+
+
+@app.post("/api/brain/dry-run/mode")
+async def set_dry_run_mode(mode: str):
+    """Set dry-run mode for brain operations."""
+    try:
+        from app.core.dryrun_evaluation import DryRunMode, dry_run_manager
+        
+        if mode not in [m.value for m in DryRunMode]:
+            return {"error": f"Invalid mode. Valid options: {[m.value for m in DryRunMode]}"}
+        
+        dry_run_manager.mode = DryRunMode(mode)
+        
+        return {
+            "mode": dry_run_manager.mode.value,
+            "safe_mode": dry_run_manager.safe_mode,
+            "message": f"Dry-run mode set to {mode}"
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "message": "Failed to set dry-run mode"}
+
+
+@app.get("/api/brain/dry-run/history")
+async def get_dry_run_history(limit: int = 10):
+    """Get history of dry-run evaluations."""
+    try:
+        from app.core.dryrun_evaluation import dry_run_manager
+        
+        history = dry_run_manager.action_history[-limit:] if limit > 0 else dry_run_manager.action_history
+        
+        return {
+            "total_cycles": len(dry_run_manager.action_history),
+            "current_mode": dry_run_manager.mode.value,
+            "safe_mode": dry_run_manager.safe_mode,
+            "cycles": [
+                {
+                    "cycle_id": cycle.cycle_id,
+                    "timestamp": cycle.timestamp.isoformat(),
+                    "proposed_actions": len(cycle.proposed_actions),
+                    "executed_actions": len(cycle.executed_actions),
+                    "prevented_actions": len(cycle.prevented_actions),
+                    "impact_assessment": cycle.impact_assessment,
+                    "recommendations": cycle.recommendations
+                }
+                for cycle in reversed(history)
+            ]
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "message": "Failed to get dry-run history"}
+
+
+@app.post("/api/brain/experiments/start")
+async def start_experiment(name: str, description: str, duration_days: int = 7):
+    """Start a new brain evaluation experiment."""
+    try:
+        from app.core.dryrun_evaluation import evaluation_framework
+        
+        experiment_id = evaluation_framework.start_experiment(name, description, duration_days)
+        
+        return {
+            "experiment_id": experiment_id,
+            "name": name,
+            "description": description,
+            "duration_days": duration_days,
+            "status": "started",
+            "message": f"Experiment {name} started"
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "message": "Failed to start experiment"}
+
+
+@app.get("/api/brain/experiments")
+async def get_experiments():
+    """Get all brain evaluation experiments."""
+    try:
+        from app.core.dryrun_evaluation import evaluation_framework
+        
+        return {
+            "total_experiments": len(evaluation_framework.experiments),
+            "current_experiment": evaluation_framework.current_experiment,
+            "experiments": [
+                {
+                    "id": exp["id"],
+                    "name": exp["name"],
+                    "description": exp["description"],
+                    "status": exp["status"],
+                    "start_date": exp["start_date"].isoformat(),
+                    "end_date": exp["end_date"].isoformat(),
+                    "results": exp.get("results"),
+                    "analysis": exp.get("analysis")
+                }
+                for exp in evaluation_framework.experiments
+            ]
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "message": "Failed to get experiments"}
+
+
+@app.get("/api/brain/config/strategies")
+async def get_brain_strategies():
+    """Get brain strategy configurations."""
+    try:
+        from app.core.brain_config import brain_config
+        
+        strategies = brain_config.get_enabled_strategies()
+        
+        return {
+            "enabled_strategies": [
+                {
+                    "name": s.name,
+                    "description": s.description,
+                    "priority": s.priority,
+                    "parameters": s.parameters,
+                    "conditions": s.conditions,
+                    "limits": s.limits
+                }
+                for s in strategies
+            ],
+            "config_summary": brain_config.get_config_summary()
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "message": "Failed to get brain strategies"}
 
 
 # =============================================================================
