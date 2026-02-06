@@ -46,6 +46,8 @@ class SportKey(str, Enum):
     # Soccer
     SOCCER_EPL = "soccer_epl"
     SOCCER_UEFA_CHAMPS_LEAGUE = "soccer_uefa_champs_league"
+    SOCCER_UEFA_EUROPA = "soccer_uefa_europa"
+    SOCCER_UEFA_CONFERENCE = "soccer_uefa_conference"
     SOCCER_USA_MLS = "soccer_usa_mls"
     
     # MMA
@@ -198,6 +200,8 @@ SPORT_ID_TO_KEY: Dict[int, SportKey] = {
     70: SportKey.SOCCER_EPL,
     71: SportKey.SOCCER_UEFA_CHAMPS_LEAGUE,
     72: SportKey.SOCCER_USA_MLS,
+    73: SportKey.SOCCER_UEFA_EUROPA,
+    74: SportKey.SOCCER_UEFA_CONFERENCE,
     
     # MMA/UFC
     80: SportKey.MMA_MIXED_MARTIAL_ARTS,
@@ -218,6 +222,8 @@ SPORT_KEY_TO_ID: Dict[SportKey, int] = {
     SportKey.SOCCER_EPL: 70,
     SportKey.SOCCER_UEFA_CHAMPS_LEAGUE: 71,
     SportKey.SOCCER_USA_MLS: 72,
+    SportKey.SOCCER_UEFA_EUROPA: 73,
+    SportKey.SOCCER_UEFA_CONFERENCE: 74,
     SportKey.MMA_MIXED_MARTIAL_ARTS: 80,
 }
 
@@ -372,6 +378,18 @@ STAT_TYPES_BY_SPORT: Dict[SportKey, List[StatType]] = {
         StatType.SHOTS_ON_TARGET,
     ],
     SportKey.SOCCER_USA_MLS: [
+        StatType.GOALS,
+        StatType.ANYTIME_GOAL,
+        StatType.SHOTS,
+        StatType.SHOTS_ON_TARGET,
+    ],
+    SportKey.SOCCER_UEFA_EUROPA: [
+        StatType.GOALS,
+        StatType.ANYTIME_GOAL,
+        StatType.SHOTS,
+        StatType.SHOTS_ON_TARGET,
+    ],
+    SportKey.SOCCER_UEFA_CONFERENCE: [
         StatType.GOALS,
         StatType.ANYTIME_GOAL,
         StatType.SHOTS,

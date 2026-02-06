@@ -146,8 +146,26 @@ SPORT_ID_TO_KEY = {
     80: "mma_mixed_martial_arts",
 }
 
-# Reverse mapping: sport key to database ID
-SPORT_KEY_TO_ID = {v: k for k, v in SPORT_ID_TO_KEY.items()}
+# Reverse mapping: sport key to PRIMARY database ID
+# Explicit to ensure NHL maps to 53 (not legacy 44)
+SPORT_KEY_TO_ID = {
+    "basketball_nba": 30,
+    "basketball_ncaab": 32,
+    "basketball_wnba": 34,
+    "americanfootball_nfl": 31,
+    "americanfootball_ncaaf": 41,
+    "baseball_mlb": 40,
+    "icehockey_nhl": 53,
+    "tennis_atp": 42,
+    "tennis_wta": 43,
+    "golf_pga_tour": 60,
+    "soccer_epl": 70,
+    "soccer_uefa_champs_league": 71,
+    "soccer_usa_mls": 72,
+    "soccer_uefa_europa": 73,
+    "soccer_uefa_conference": 74,
+    "mma_mixed_martial_arts": 80,
+}
 
 # =============================================================================
 # All Sport Keys (for iteration)

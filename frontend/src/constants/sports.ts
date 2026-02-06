@@ -44,6 +44,8 @@ export const SPORT_CONFIG: Record<number, SportConfig> = {
   70: { name: 'EPL', icon: '⚽', color: 'bg-indigo-900/30 text-indigo-400', borderColor: 'border-indigo-700' },
   71: { name: 'UCL', icon: '⚽', color: 'bg-blue-900/30 text-blue-300', borderColor: 'border-blue-600' },
   72: { name: 'MLS', icon: '⚽', color: 'bg-red-900/30 text-red-300', borderColor: 'border-red-600' },
+  73: { name: 'UEL', icon: '⚽', color: 'bg-orange-900/30 text-orange-400', borderColor: 'border-orange-700' },
+  74: { name: 'UECL', icon: '⚽', color: 'bg-green-900/30 text-green-400', borderColor: 'border-green-700' },
   // MMA/UFC
   80: { name: 'UFC', icon: '🥊', color: 'bg-red-900/30 text-red-500', borderColor: 'border-red-800' },
 };
@@ -76,6 +78,8 @@ export const SPORT_KEY_TO_NAME: Record<string, string> = {
   // Soccer
   soccer_epl: 'EPL',
   soccer_uefa_champs_league: 'UCL',
+  soccer_uefa_europa: 'UEL',
+  soccer_uefa_conference: 'UECL',
   soccer_usa_mls: 'MLS',
   // MMA
   mma_mixed_martial_arts: 'UFC',
@@ -100,6 +104,8 @@ export const SPORT_ID_TO_TYPE: Record<number, SportType> = {
   70: 'soccer',
   71: 'soccer',
   72: 'soccer',
+  73: 'soccer',
+  74: 'soccer',
   80: 'mma',
 };
 
@@ -120,6 +126,8 @@ export const ENABLED_SPORTS = [
   { id: 70, key: 'EPL', type: 'soccer' as SportType },
   { id: 71, key: 'UCL', type: 'soccer' as SportType },
   { id: 72, key: 'MLS', type: 'soccer' as SportType },
+  { id: 73, key: 'UEL', type: 'soccer' as SportType },
+  { id: 74, key: 'UECL', type: 'soccer' as SportType },
   { id: 80, key: 'UFC', type: 'mma' as SportType },
 ];
 

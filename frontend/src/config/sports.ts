@@ -35,6 +35,8 @@ export type SportKey =
   // Soccer
   | 'soccer_epl'
   | 'soccer_uefa_champs_league'
+  | 'soccer_uefa_europa'
+  | 'soccer_uefa_conference'
   | 'soccer_usa_mls'
   // MMA
   | 'mma_mixed_martial_arts';
@@ -246,6 +248,8 @@ export const SPORT_ID_TO_KEY: Record<number, SportKey> = {
   70: 'soccer_epl',
   71: 'soccer_uefa_champs_league',
   72: 'soccer_usa_mls',
+  73: 'soccer_uefa_europa',
+  74: 'soccer_uefa_conference',
   // MMA
   80: 'mma_mixed_martial_arts',
 };
@@ -334,6 +338,8 @@ export const STAT_TYPES_BY_SPORT: Record<SportKey, StatType[]> = {
   soccer_epl: ['GOALS', 'ANYTIME_GOAL', 'SHOTS', 'SOT', 'FOULS', 'CARDS', 'TACKLES', 'PASSES'],
   soccer_uefa_champs_league: ['GOALS', 'ANYTIME_GOAL', 'SHOTS', 'SOT'],
   soccer_usa_mls: ['GOALS', 'ANYTIME_GOAL', 'SHOTS', 'SOT'],
+  soccer_uefa_europa: ['GOALS', 'ANYTIME_GOAL', 'SHOTS', 'SOT'],
+  soccer_uefa_conference: ['GOALS', 'ANYTIME_GOAL', 'SHOTS', 'SOT'],
 
   // MMA
   mma_mixed_martial_arts: [

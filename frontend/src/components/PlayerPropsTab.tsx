@@ -15,11 +15,19 @@ const SPORT_EMPTY_MESSAGES: Record<number, { icon: string; title: string; subtit
   30: { icon: '🏀', title: 'No NBA picks available', subtitle: 'Check back closer to game time' },
   31: { icon: '🏈', title: 'No NFL slate today', subtitle: 'Games typically Thursday-Monday' },
   32: { icon: '🏀', title: 'No NCAAB picks available', subtitle: 'Check back closer to game time' },
+  34: { icon: '🏀', title: 'No WNBA picks available', subtitle: 'Check back closer to game time' },
   40: { icon: '⚾', title: 'No MLB picks available', subtitle: 'Check back closer to game time' },
   41: { icon: '🏈', title: 'NCAAF off-season', subtitle: 'College football returns in August' },
   42: { icon: '🎾', title: 'Awaiting ATP odds', subtitle: 'Tournament matches load closer to start' },
   43: { icon: '🎾', title: 'Awaiting WTA odds', subtitle: 'Tournament matches load closer to start' },
   53: { icon: '🏒', title: 'No NHL picks available', subtitle: 'Check back closer to game time' },
+  60: { icon: '⛳', title: 'No PGA picks available', subtitle: 'Check back closer to tournament time' },
+  70: { icon: '⚽', title: 'No EPL picks available', subtitle: 'Check back closer to match time' },
+  71: { icon: '⚽', title: 'No UCL picks available', subtitle: 'Check back closer to match time' },
+  72: { icon: '⚽', title: 'No MLS picks available', subtitle: 'Check back closer to match time' },
+  73: { icon: '⚽', title: 'No Europa League picks available', subtitle: 'Check back closer to match time' },
+  74: { icon: '⚽', title: 'No Conference League picks available', subtitle: 'Check back closer to match time' },
+  80: { icon: '🥊', title: 'No UFC picks available', subtitle: 'Check back closer to fight night' },
 };
 
 function getSportEmptyMessage(sportId: number | null): { icon: string; title: string; subtitle: string } {
