@@ -815,3 +815,256 @@ class ResultsTracker:
         
         # Now settle the picks
         return await self.settle_picks_for_game(db, game_id)
+
+
+# =============================================================================
+# Stub Data Seeder
+# =============================================================================
+
+async def seed_stub_hit_rates(db: AsyncSession, sport_id: int = 30) -> dict[str, Any]:
+    """
+    Seed PlayerHitRate and PlayerMarketHitRate tables with realistic data
+    so the Stats tab (hot players, streaks, recent results) is populated
+    immediately in stub/demo mode.
+
+    Only seeds if the tables are empty for the given sport.
+
+    Args:
+        db: Database session
+        sport_id: Sport ID to seed (default 30 = NBA)
+
+    Returns:
+        Dict with counts of seeded records
+    """
+    import random
+
+    # Check if already seeded
+    existing = await db.execute(
+        select(func.count(PlayerHitRate.id)).where(PlayerHitRate.sport_id == sport_id)
+    )
+    count = existing.scalar() or 0
+    if count >= 20:
+        logger.info(f"[seed] PlayerHitRate already has {count} records for sport {sport_id}, skipping seed")
+        return {"seeded": False, "existing": count}
+
+    # Get players with picks for this sport
+    players_result = await db.execute(
+        select(Player.id, Player.name, Player.sport_id)
+        .join(ModelPick, ModelPick.player_id == Player.id)
+        .where(ModelPick.sport_id == sport_id)
+        .group_by(Player.id, Player.name, Player.sport_id)
+        .limit(80)
+    )
+    players = players_result.all()
+
+    if not players:
+        logger.warning(f"[seed] No players with picks found for sport {sport_id}")
+        return {"seeded": False, "reason": "no_players"}
+
+    logger.info(f"[seed] Seeding hit rates for {len(players)} players in sport {sport_id}")
+
+    stat_types = ["PTS", "REB", "AST", "PRA", "PR", "PA", "RA", "TO"]
+    sides = ["over", "under"]
+    hit_rates_created = 0
+    market_rates_created = 0
+
+    for player_id, player_name, p_sport_id in players:
+        sid = p_sport_id or sport_id
+
+        # Generate realistic overall hit rate data
+        total_7d = random.randint(5, 18)
+        # Create a distribution: some hot, some cold, most average
+        r = random.random()
+        if r < 0.15:
+            # Hot player (70-95% hit rate)
+            hit_rate_7d = random.uniform(0.70, 0.95)
+        elif r < 0.30:
+            # Cold player (20-40% hit rate)
+            hit_rate_7d = random.uniform(0.20, 0.40)
+        else:
+            # Average player (45-65% hit rate)
+            hit_rate_7d = random.uniform(0.45, 0.65)
+
+        hits_7d = round(total_7d * hit_rate_7d)
+        hits_7d = max(0, min(total_7d, hits_7d))
+        actual_rate = hits_7d / total_7d if total_7d > 0 else 0
+
+        total_all = total_7d + random.randint(10, 60)
+        hits_all = round(total_all * random.uniform(0.45, 0.60))
+
+        # Streak: hot players get positive, cold get negative
+        if actual_rate >= 0.70:
+            streak = random.randint(3, 8)
+        elif actual_rate <= 0.40:
+            streak = random.randint(-6, -2)
+        else:
+            streak = random.randint(-2, 3)
+
+        # Last 5 results
+        last_5 = "".join(random.choices(["W", "L"], weights=[actual_rate, 1 - actual_rate], k=5))
+
+        # Upsert PlayerHitRate
+        existing_hr = await db.execute(
+            select(PlayerHitRate).where(PlayerHitRate.player_id == player_id)
+        )
+        hr = existing_hr.scalar_one_or_none()
+        if hr:
+            hr.hits_7d = hits_7d
+            hr.total_7d = total_7d
+            hr.hit_rate_7d = actual_rate
+            hr.hits_all = hits_all
+            hr.total_all = total_all
+            hr.hit_rate_all = hits_all / total_all if total_all > 0 else None
+            hr.current_streak = streak
+            hr.last_5_results = last_5
+            hr.best_streak = max(streak, hr.best_streak or 0)
+            hr.worst_streak = min(streak, hr.worst_streak or 0)
+            hr.last_pick_at = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=random.randint(1, 48))
+        else:
+            hr = PlayerHitRate(
+                player_id=player_id,
+                sport_id=sid,
+                hits_7d=hits_7d,
+                total_7d=total_7d,
+                hit_rate_7d=actual_rate,
+                hits_all=hits_all,
+                total_all=total_all,
+                hit_rate_all=hits_all / total_all if total_all > 0 else None,
+                current_streak=streak,
+                best_streak=max(streak, 0),
+                worst_streak=min(streak, 0),
+                last_5_results=last_5,
+                last_pick_at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=random.randint(1, 48)),
+            )
+            db.add(hr)
+        hit_rates_created += 1
+
+        # Seed 2-3 market-specific hit rates per player
+        player_markets = random.sample(stat_types, k=min(3, len(stat_types)))
+        for market in player_markets:
+            side = random.choice(sides)
+
+            m_total = random.randint(3, 10)
+            # Some markets are hot streaks, some cold
+            m_r = random.random()
+            if m_r < 0.20:
+                m_rate = random.uniform(0.80, 1.0)
+                m_streak = random.randint(3, 7)
+            elif m_r < 0.35:
+                m_rate = random.uniform(0.15, 0.35)
+                m_streak = random.randint(-5, -3)
+            else:
+                m_rate = random.uniform(0.40, 0.65)
+                m_streak = random.randint(-2, 2)
+
+            m_hits = round(m_total * m_rate)
+            m_hits = max(0, min(m_total, m_hits))
+            m_actual_rate = m_hits / m_total if m_total > 0 else 0
+            m_last5 = "".join(random.choices(["W", "L"], weights=[max(m_actual_rate, 0.1), max(1 - m_actual_rate, 0.1)], k=min(5, m_total)))
+
+            m_total_all = m_total + random.randint(5, 30)
+            m_hits_all = round(m_total_all * random.uniform(0.45, 0.60))
+
+            existing_mhr = await db.execute(
+                select(PlayerMarketHitRate).where(
+                    and_(
+                        PlayerMarketHitRate.player_id == player_id,
+                        PlayerMarketHitRate.market == market.lower(),
+                        PlayerMarketHitRate.side == side,
+                    )
+                )
+            )
+            mhr = existing_mhr.scalar_one_or_none()
+            if mhr:
+                mhr.hits_7d = m_hits
+                mhr.total_7d = m_total
+                mhr.hit_rate_7d = m_actual_rate
+                mhr.hits_all = m_hits_all
+                mhr.total_all = m_total_all
+                mhr.hit_rate_all = m_hits_all / m_total_all if m_total_all > 0 else None
+                mhr.current_streak = m_streak
+                mhr.last_5_results = m_last5
+            else:
+                mhr = PlayerMarketHitRate(
+                    player_id=player_id,
+                    sport_id=sid,
+                    market=market.lower(),
+                    side=side,
+                    hits_7d=m_hits,
+                    total_7d=m_total,
+                    hit_rate_7d=m_actual_rate,
+                    hits_all=m_hits_all,
+                    total_all=m_total_all,
+                    hit_rate_all=m_hits_all / m_total_all if m_total_all > 0 else None,
+                    current_streak=m_streak,
+                    best_streak=max(m_streak, 0),
+                    worst_streak=min(m_streak, 0),
+                    last_5_results=m_last5,
+                    last_pick_at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=random.randint(1, 48)),
+                )
+                db.add(mhr)
+            market_rates_created += 1
+
+    # Seed PickResult records for the recent results feed
+    # Use existing ModelPick records and create results for them
+    picks_result = await db.execute(
+        select(ModelPick)
+        .where(
+            and_(
+                ModelPick.sport_id == sport_id,
+                ModelPick.player_id.isnot(None),
+                ModelPick.line_value.isnot(None),
+            )
+        )
+        .limit(40)
+    )
+    picks = picks_result.scalars().all()
+
+    results_created = 0
+    for pick in picks:
+        # Check if already has a result
+        existing_pr = await db.execute(
+            select(PickResult.id).where(PickResult.pick_id == pick.id).limit(1)
+        )
+        if existing_pr.scalar():
+            continue
+
+        line_val = pick.line_value or 10.0
+        side = (pick.side or "over").lower()
+        hit = random.random() < 0.55  # 55% hit rate
+
+        if side == "over":
+            actual = line_val + random.uniform(-3, 5) if hit else line_val - random.uniform(0.5, 5)
+        else:
+            actual = line_val - random.uniform(-3, 5) if hit else line_val + random.uniform(0.5, 5)
+        actual = max(0, round(actual, 1))
+
+        pr = PickResult(
+            pick_id=pick.id,
+            player_id=pick.player_id,
+            game_id=pick.game_id,
+            actual_value=actual,
+            line_value=line_val,
+            side=side,
+            hit=hit,
+            settled_at=datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+                hours=random.randint(1, 72),
+                minutes=random.randint(0, 59),
+            ),
+            profit_loss=round(random.uniform(80, 120), 2) if hit else -100.0,
+        )
+        db.add(pr)
+        results_created += 1
+
+    await db.commit()
+    logger.info(
+        f"[seed] Seeded {hit_rates_created} PlayerHitRate, "
+        f"{market_rates_created} PlayerMarketHitRate, "
+        f"{results_created} PickResult records for sport {sport_id}"
+    )
+    return {
+        "seeded": True,
+        "hit_rates": hit_rates_created,
+        "market_rates": market_rates_created,
+        "pick_results": results_created,
+    }

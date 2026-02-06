@@ -1112,6 +1112,32 @@ async def results_settlement_loop(interval_minutes: int = 30, initial_delay: int
         await asyncio.sleep(interval_minutes * 60)
 
 
+async def _seed_stub_hit_rates_once(initial_delay: int = 90):
+    """
+    One-shot task: wait for initial sync to populate players/picks,
+    then seed PlayerHitRate and PlayerMarketHitRate tables so the
+    Stats tab has data immediately in stub mode.
+    """
+    from app.services.results_tracker import seed_stub_hit_rates
+    from app.core.constants import SPORT_ID_TO_KEY
+
+    if initial_delay > 0:
+        logger.info(f"Stub hit rate seeder starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+
+    try:
+        session_maker = get_session_maker()
+        async with session_maker() as db:
+            # Seed for all sports that have picks
+            for sport_id in SPORT_ID_TO_KEY:
+                result = await seed_stub_hit_rates(db, sport_id=sport_id)
+                if result.get("seeded"):
+                    logger.info(f"Seeded hit rates for sport {sport_id}: {result}")
+        logger.info("Stub hit rate seeding complete")
+    except Exception as e:
+        logger.error(f"Stub hit rate seeding failed: {e}", exc_info=True)
+
+
 # =============================================================================
 # NFL Scheduler Loops
 # =============================================================================
@@ -1488,6 +1514,15 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task5)
     logger.info(f"Created results_settlement_loop task (every {settlement_interval} min, use_stubs={use_stubs})")
+
+    # Seed stub hit rates (one-shot, runs after initial sync populates players/picks)
+    if use_stubs:
+        task_seed = asyncio.create_task(
+            _seed_stub_hit_rates_once(initial_delay=90),
+            name="seed_stub_hit_rates"
+        )
+        tasks.append(task_seed)
+        logger.info("Created seed_stub_hit_rates one-shot task (90s delay)")
 
     # Daily calibration task (runs at 10 AM EST, after settlement has time to process)
     calibration_hour = getattr(settings, 'calibration_hour', 10)
