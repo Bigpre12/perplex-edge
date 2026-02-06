@@ -896,6 +896,28 @@ async def fix_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
             logger.info("[ADMIN] ✅ ModelPicks sport mapping fix completed!")
             logger.info(f"[ADMIN] 📊 Summary: {changes_made}")
             
+            # Step 3: Trigger brain analysis after fix
+            try:
+                logger.info("[ADMIN] Triggering brain analysis after sport mapping fix...")
+                from app.services.brain_analyzer import brain_analyzer
+                
+                # Run brain analysis to verify fix and update recommendations
+                brain_result = brain_analyzer.analyze_system_health()
+                
+                logger.info(f"[ADMIN] 🧠 Brain analysis completed: {brain_result.get('status', 'unknown')}")
+                changes_made["brain_analysis"] = {
+                    "status": brain_result.get('status', 'unknown'),
+                    "issues_found": brain_result.get('issues_found', 0),
+                    "recommendations": brain_result.get('recommendations', [])
+                }
+                
+            except Exception as brain_error:
+                logger.warning(f"[ADMIN] ⚠️ Brain analysis failed: {brain_error}")
+                changes_made["brain_analysis"] = {
+                    "status": "failed",
+                    "error": str(brain_error)
+                }
+            
             return {
                 "status": "success",
                 "message": "ModelPicks sport mapping fix completed successfully",
@@ -1001,6 +1023,28 @@ async def verify_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
             
             logger.info("[ADMIN] ✅ ModelPicks sport mapping verification completed!")
             logger.info(f"[ADMIN] 📊 Results: {verification_results}")
+            
+            # Step 3: Trigger brain analysis after verification
+            try:
+                logger.info("[ADMIN] Triggering brain analysis after verification...")
+                from app.services.brain_analyzer import brain_analyzer
+                
+                # Run brain analysis to verify system health
+                brain_result = brain_analyzer.analyze_system_health()
+                
+                logger.info(f"[ADMIN] 🧠 Brain analysis completed: {brain_result.get('status', 'unknown')}")
+                verification_results["brain_analysis"] = {
+                    "status": brain_result.get('status', 'unknown'),
+                    "issues_found": brain_result.get('issues_found', 0),
+                    "recommendations": brain_result.get('recommendations', [])
+                }
+                
+            except Exception as brain_error:
+                logger.warning(f"[ADMIN] ⚠️ Brain analysis failed: {brain_error}")
+                verification_results["brain_analysis"] = {
+                    "status": "failed",
+                    "error": str(brain_error)
+                }
             
             return {
                 "status": "success",
