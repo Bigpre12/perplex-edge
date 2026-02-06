@@ -307,6 +307,310 @@ async def get_streaks(
     )
 
 
+class AllPlayerStats(BaseModel):
+    """Comprehensive player stats for all players."""
+    player_id: int
+    player_name: str
+    team_abbr: Optional[str] = None
+    hit_rate_7d: Optional[float] = None
+    total_7d: int = 0
+    hits_7d: int = 0
+    current_streak: int = 0
+    best_streak: int = 0
+    worst_streak: int = 0
+    last_5: Optional[str] = None
+    hit_rate_all: Optional[float] = None
+    total_all: int = 0
+    hits_all: int = 0
+    trust_tag: Optional[str] = None
+
+
+class AllPlayerStatsList(BaseModel):
+    """List of all player stats."""
+    items: list[AllPlayerStats]
+    total: int
+    hot_count: int
+    cold_count: int
+    neutral_count: int
+
+
+@router.get("/sports/{sport_id}/all-player-stats", response_model=AllPlayerStatsList, tags=["stats"])
+async def get_all_player_stats(
+    sport_id: int,
+    min_picks: int = Query(1, ge=0, description="Minimum picks to include (0 for all)"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum players to return"),
+    sort_by: str = Query("hit_rate_7d", description="Sort by: hit_rate_7d, total_7d, current_streak, player_name"),
+    order: str = Query("desc", description="Order: asc, desc"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get comprehensive stats for ALL players in a sport.
+    
+    Returns complete player statistics including hot, cold, and neutral players.
+    This endpoint provides the full dataset that the stats tab should display.
+    
+    Args:
+        sport_id: Sport database ID
+        min_picks: Minimum picks in last 7 days (0 to include all players)
+        limit: Maximum players to return
+        sort_by: Field to sort by (hit_rate_7d, total_7d, current_streak, player_name)
+        order: Sort order (asc, desc)
+    
+    Returns:
+        Complete list of all player stats with hot/cold/neutral counts
+    """
+    # Verify sport exists
+    sport = await db.get(Sport, sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+    
+    # Validate sort field
+    valid_sort_fields = {"hit_rate_7d", "total_7d", "current_streak", "player_name"}
+    if sort_by not in valid_sort_fields:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid sort_by: {sort_by}. Valid options: {valid_sort_fields}"
+        )
+    
+    # Validate order
+    if order not in {"asc", "desc"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid order: {order}. Valid options: asc, desc"
+        )
+    
+    from sqlalchemy import asc, desc
+    
+    # Build query for all players with stats
+    query = select(PlayerHitRate, Player, Team).outerjoin(
+        Team, Player.team_id == Team.id
+    ).join(
+        PlayerHitRate, Player.id == PlayerHitRate.player_id
+    ).where(
+        PlayerHitRate.sport_id == sport_id
+    )
+    
+    # Apply minimum picks filter if specified
+    if min_picks > 0:
+        query = query.where(PlayerHitRate.total_7d >= min_picks)
+    
+    # Apply sorting
+    if sort_by == "player_name":
+        sort_column = Player.name
+    elif sort_by == "hit_rate_7d":
+        sort_column = PlayerHitRate.hit_rate_7d
+    elif sort_by == "total_7d":
+        sort_column = PlayerHitRate.total_7d
+    elif sort_by == "current_streak":
+        sort_column = PlayerHitRate.current_streak
+    else:
+        sort_column = PlayerHitRate.hit_rate_7d  # default
+    
+    query = query.order_by(desc(sort_column) if order == "desc" else asc(sort_column))
+    query = query.limit(limit)
+    
+    result = await db.execute(query)
+    
+    all_players = []
+    hot_count = 0
+    cold_count = 0
+    neutral_count = 0
+    
+    for hit_rate, player, team in result.all():
+        # Determine trust tag
+        trust_tag = compute_trust_tag(
+            hit_rate.total_7d or 0, 
+            hit_rate.hit_rate_7d or 0.0, 
+            hit_rate.current_streak or 0
+        )
+        
+        # Classify as hot/cold/neutral
+        if hit_rate.hit_rate_7d and hit_rate.total_7d >= 5:
+            if hit_rate.hit_rate_7d >= 0.60:
+                hot_count += 1
+            elif hit_rate.hit_rate_7d <= 0.40:
+                cold_count += 1
+            else:
+                neutral_count += 1
+        else:
+            neutral_count += 1
+        
+        all_players.append({
+            "player_id": player.id,
+            "player_name": player.name,
+            "team_abbr": team.abbreviation if team else None,
+            "hit_rate_7d": hit_rate.hit_rate_7d,
+            "total_7d": hit_rate.total_7d,
+            "hits_7d": hit_rate.hits_7d,
+            "current_streak": hit_rate.current_streak,
+            "best_streak": hit_rate.best_streak,
+            "worst_streak": hit_rate.worst_streak,
+            "last_5": hit_rate.last_5_results,
+            "hit_rate_all": hit_rate.hit_rate_all,
+            "total_all": hit_rate.total_all,
+            "hits_all": hit_rate.hits_all,
+            "trust_tag": trust_tag,
+        })
+    
+    return AllPlayerStatsList(
+        items=[AllPlayerStats(**p) for p in all_players],
+        total=len(all_players),
+        hot_count=hot_count,
+        cold_count=cold_count,
+        neutral_count=neutral_count,
+    )
+
+
+class MarketPlayerStats(BaseModel):
+    """Market-specific player stats."""
+    player_id: int
+    player_name: str
+    team_abbr: Optional[str] = None
+    stat_type: str
+    side: str
+    hit_rate_7d: Optional[float] = None
+    total_7d: int = 0
+    hits_7d: int = 0
+    current_streak: int = 0
+    last_5: Optional[str] = None
+    trust_tag: Optional[str] = None
+
+
+class MarketPlayerStatsList(BaseModel):
+    """List of market-specific player stats."""
+    items: list[MarketPlayerStats]
+    total: int
+    market: str
+    side_filter: Optional[str] = None
+
+
+@router.get("/sports/{sport_id}/market-stats", response_model=MarketPlayerStatsList, tags=["stats"])
+async def get_market_stats(
+    sport_id: int,
+    market: str = Query(..., description="Market type (PTS, REB, AST, 3PM, etc.)"),
+    side: Optional[str] = Query(None, description="Filter by side (over/under)"),
+    min_picks: int = Query(1, ge=0, description="Minimum picks to include (0 for all)"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum players to return"),
+    sort_by: str = Query("hit_rate_7d", description="Sort by: hit_rate_7d, total_7d, current_streak, player_name"),
+    order: str = Query("desc", description="Order: asc, desc"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get comprehensive market-specific stats for all players.
+    
+    Returns complete player statistics for a specific market (PTS, REB, AST, etc.)
+    with optional side filtering. This provides detailed breakdowns by market.
+    
+    Args:
+        sport_id: Sport database ID
+        market: Market type (PTS, REB, AST, 3PM, etc.)
+        side: Optional side filter (over/under)
+        min_picks: Minimum picks in last 7 days (0 to include all)
+        limit: Maximum players to return
+        sort_by: Field to sort by
+        order: Sort order
+    
+    Returns:
+        Complete list of market-specific player stats
+    """
+    # Verify sport exists
+    sport = await db.get(Sport, sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+    
+    # Validate sort field
+    valid_sort_fields = {"hit_rate_7d", "total_7d", "current_streak", "player_name"}
+    if sort_by not in valid_sort_fields:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid sort_by: {sort_by}. Valid options: {valid_sort_fields}"
+        )
+    
+    # Validate order
+    if order not in {"asc", "desc"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid order: {order}. Valid options: asc, desc"
+        )
+    
+    # Validate side if provided
+    if side and side not in {"over", "under"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid side: {side}. Valid options: over, under"
+        )
+    
+    from sqlalchemy import asc, desc
+    
+    # Build query for market-specific stats
+    query = select(PlayerMarketHitRate, Player, Team).outerjoin(
+        Team, Player.team_id == Team.id
+    ).join(
+        PlayerMarketHitRate, Player.id == PlayerMarketHitRate.player_id
+    ).where(
+        and_(
+            PlayerMarketHitRate.sport_id == sport_id,
+            PlayerMarketHitRate.market == market,
+        )
+    )
+    
+    # Apply side filter if specified
+    if side:
+        query = query.where(PlayerMarketHitRate.side == side)
+    
+    # Apply minimum picks filter if specified
+    if min_picks > 0:
+        query = query.where(PlayerMarketHitRate.total_7d >= min_picks)
+    
+    # Apply sorting
+    if sort_by == "player_name":
+        sort_column = Player.name
+    elif sort_by == "hit_rate_7d":
+        sort_column = PlayerMarketHitRate.hit_rate_7d
+    elif sort_by == "total_7d":
+        sort_column = PlayerMarketHitRate.total_7d
+    elif sort_by == "current_streak":
+        sort_column = PlayerMarketHitRate.current_streak
+    else:
+        sort_column = PlayerMarketHitRate.hit_rate_7d  # default
+    
+    query = query.order_by(desc(sort_column) if order == "desc" else asc(sort_column))
+    query = query.limit(limit)
+    
+    result = await db.execute(query)
+    
+    market_players = []
+    
+    for market_hit_rate, player, team in result.all():
+        # Determine trust tag
+        trust_tag = compute_trust_tag(
+            market_hit_rate.total_7d or 0, 
+            market_hit_rate.hit_rate_7d or 0.0, 
+            market_hit_rate.current_streak or 0
+        )
+        
+        market_players.append({
+            "player_id": player.id,
+            "player_name": player.name,
+            "team_abbr": team.abbreviation if team else None,
+            "stat_type": market_hit_rate.market,
+            "side": market_hit_rate.side,
+            "hit_rate_7d": market_hit_rate.hit_rate_7d,
+            "total_7d": market_hit_rate.total_7d,
+            "hits_7d": market_hit_rate.hits_7d,
+            "current_streak": market_hit_rate.current_streak,
+            "last_5": market_hit_rate.last_5_results,
+            "trust_tag": trust_tag,
+        })
+    
+    return MarketPlayerStatsList(
+        items=[MarketPlayerStats(**p) for p in market_players],
+        total=len(market_players),
+        market=market,
+        side_filter=side,
+    )
+
+
 @router.get("/sports/{sport_id}/recent-results", response_model=RecentResultList, tags=["stats"])
 async def get_recent_results(
     sport_id: int,
