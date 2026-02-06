@@ -938,24 +938,9 @@ async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
                 changes_made["other_sports_fixed"] += 1
                 logger.info(f"[ADMIN] Fixed {player.name} from sport_id={player.sport_id} to sport_id={team.sport_id} ({team.name})")
             
-            # Step 4: Update related data (Lines)
-            logger.info("[ADMIN] Updating Lines to match their game's sport...")
-            
-            lines_to_fix_result = await db.execute(
-                select(Line, Game)
-                .join(Game, Line.game_id == Game.id)
-                .where(Line.sport_id != Game.sport_id)
-            )
-            lines_to_fix = lines_to_fix_result.all()
-            
-            for line, game in lines_to_fix:
-                await db.execute(
-                    update(Line)
-                    .where(Line.id == line.id)
-                    .values(sport_id=game.sport_id)
-                )
-                changes_made["lines_fixed"] += 1
-                logger.info(f"[ADMIN] Fixed Line {line.id} to sport_id={game.sport_id}")
+            # Step 4: Update related data (Lines) - Lines don't have sport_id, get from game
+            logger.info("[ADMIN] Lines don't have sport_id - skipping Lines fix (they get sport from game)")
+            changes_made["lines_fixed"] = 0
             
             # Step 5: Update related data (ModelPicks)
             logger.info("[ADMIN] Updating ModelPicks to match their game's sport...")
