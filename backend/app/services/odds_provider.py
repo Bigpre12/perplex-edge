@@ -240,26 +240,36 @@ def _spread_to_moneyline(spread: float) -> tuple[int, int]:
 
 def _get_stub_game_times() -> dict[str, str]:
     """
-    Generate game times for today's date.
+    Generate game times for today and tomorrow.
     
-    Uses proper timezone handling to set games in the evening ET
-    for the current day in Eastern time.
+    Uses proper timezone handling to set games in the evening ET.
+    Includes both today and tomorrow so the "Tomorrow's Slate Review"
+    also has data in stub/demo mode.
     
     Returns:
-        Dictionary mapping time slots to ISO datetime strings (UTC)
+        Dictionary mapping time slots to ISO datetime strings (UTC).
+        Today slots: early, mid, late, night, west
+        Tomorrow slots: tmrw_early, tmrw_mid, tmrw_late, tmrw_night, tmrw_west
     """
     # Get current time in Eastern timezone (handles DST automatically)
     now_et = datetime.now(EASTERN_TZ)
     today_et = now_et.date()
+    tomorrow_et = today_et + timedelta(days=1)
     
     # Create game times for evening Eastern time (7 PM - 10 PM ET range)
-    # These are typical NBA game start times
     game_times = {
+        # Today's games
         "early": datetime(today_et.year, today_et.month, today_et.day, 19, 0, tzinfo=EASTERN_TZ),    # 7:00 PM ET
         "mid": datetime(today_et.year, today_et.month, today_et.day, 19, 30, tzinfo=EASTERN_TZ),    # 7:30 PM ET
         "late": datetime(today_et.year, today_et.month, today_et.day, 20, 0, tzinfo=EASTERN_TZ),    # 8:00 PM ET
         "night": datetime(today_et.year, today_et.month, today_et.day, 21, 0, tzinfo=EASTERN_TZ),   # 9:00 PM ET
         "west": datetime(today_et.year, today_et.month, today_et.day, 22, 0, tzinfo=EASTERN_TZ),    # 10:00 PM ET
+        # Tomorrow's games (for slate preview)
+        "tmrw_early": datetime(tomorrow_et.year, tomorrow_et.month, tomorrow_et.day, 19, 0, tzinfo=EASTERN_TZ),
+        "tmrw_mid": datetime(tomorrow_et.year, tomorrow_et.month, tomorrow_et.day, 19, 30, tzinfo=EASTERN_TZ),
+        "tmrw_late": datetime(tomorrow_et.year, tomorrow_et.month, tomorrow_et.day, 20, 0, tzinfo=EASTERN_TZ),
+        "tmrw_night": datetime(tomorrow_et.year, tomorrow_et.month, tomorrow_et.day, 21, 0, tzinfo=EASTERN_TZ),
+        "tmrw_west": datetime(tomorrow_et.year, tomorrow_et.month, tomorrow_et.day, 22, 0, tzinfo=EASTERN_TZ),
     }
     
     # Convert to UTC ISO strings
@@ -1679,36 +1689,30 @@ class XYZOddsProvider(OddsProvider):
             logger.warning(f"No games in schedule for {sport_key}")
             return []
         
-        # Filter to today's games
-        todays_games = [
+        # Filter to today's and tomorrow's games (tomorrow for slate preview)
+        tomorrow = (today + timedelta(days=1)).isoformat()
+        upcoming_games = [
             g for g in schedule["games"] 
-            if g.get("date") == today_str
+            if g.get("date") in (today_str, tomorrow)
         ]
         
-        if not todays_games:
-            logger.warning(f"No games found for {sport_key} on {today_str}")
-            # Fall back to showing tomorrow's games if today has none
-            tomorrow = (today + timedelta(days=1)).isoformat()
-            todays_games = [
-                g for g in schedule["games"]
-                if g.get("date") == tomorrow
-            ]
-            if todays_games:
-                logger.info(f"Showing {len(todays_games)} games for tomorrow ({tomorrow})")
+        if not upcoming_games:
+            logger.warning(f"No games found for {sport_key} on {today_str} or {tomorrow}")
+            # Sanity check: warn if zero games on a weekday
+            if today.weekday() < 5:  # Mon-Fri
+                logger.error(
+                    f"ALERT: Zero games found for {sport_key} on {today_str} (weekday) - "
+                    "check schedule file or date range"
+                )
         
-        # Sanity check: warn if zero games on a weekday
-        if not todays_games and today.weekday() < 5:  # Mon-Fri
-            logger.error(
-                f"ALERT: Zero games found for {sport_key} on {today_str} (weekday) - "
-                "check schedule file or date range"
-            )
-        
-        logger.info(f"Found {len(todays_games)} games for {sport_key} on {today_str}")
+        today_count = sum(1 for g in upcoming_games if g.get("date") == today_str)
+        tmrw_count = sum(1 for g in upcoming_games if g.get("date") == tomorrow)
+        logger.info(f"Found {today_count} today + {tmrw_count} tomorrow games for {sport_key}")
         
         # Convert to API format
         return [
-            self._schedule_game_to_api_format(g, sport_key, today_str)
-            for g in todays_games
+            self._schedule_game_to_api_format(g, sport_key, g.get("date", today_str))
+            for g in upcoming_games
         ]
     
     def _stub_lines_response(
@@ -1721,23 +1725,24 @@ class XYZOddsProvider(OddsProvider):
         Dynamically generates lines based on the current schedule.
         Uses lines from the schedule JSON if available, otherwise generates from power ratings.
         """
-        # Get today's date for matching game IDs
+        # Get today's and tomorrow's dates for matching game IDs
         today = datetime.now(EASTERN_TZ).date()
         today_str = today.isoformat()
-        date_suffix = today_str.replace("-", "")
+        tomorrow_str = (today + timedelta(days=1)).isoformat()
         
-        # Load schedule to get today's games with their lines
+        # Load schedule to get games with their lines
         schedule = self._load_season_schedule(sport_key)
-        todays_games = [
+        upcoming_games = [
             g for g in schedule.get("games", [])
-            if g.get("date") == today_str
+            if g.get("date") in (today_str, tomorrow_str)
         ]
         
         # Build game_lines dict dynamically from schedule
         game_lines = {}
-        for game in todays_games:
+        for game in upcoming_games:
             home_abbr = game.get("home_abbr", game["home_team"][:3].upper())
             away_abbr = game.get("away_abbr", game["away_team"][:3].upper())
+            date_suffix = game.get("date", today_str).replace("-", "")
             game_id = f"game_{away_abbr.lower()}_{home_abbr.lower()}_{date_suffix}"
             
             # Parse spread if available (format: "TEAM -X.X")
