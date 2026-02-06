@@ -6,10 +6,9 @@ particularly around the trade deadline that reshaped several teams.
 
 Major Trades Summary:
 1. Lakers acquire Luka Doncic from Mavericks
-2. Wizards acquire Anthony Davis from Lakers  
+2. Wizards acquire Anthony Davis from Lakers, Trae Young from Hawks
 3. Suns acquire Jalen Green from Rockets
-4. Wizards acquire Cade Cunningham from Pistons
-5. Lakers acquire Deandre Ayton from Suns
+4. Lakers acquire Deandre Ayton from Suns
 
 These moves significantly impact prop lines and team dynamics.
 """
@@ -33,17 +32,17 @@ NBA_ROSTER_UPDATES_2026 = {
                 "team_impact": "Superstar centerpiece, transforms Wizards into playoff contender"
             },
             {
-                "player": "Cade Cunningham", 
-                "from": "Detroit Pistons",
+                "player": "Trae Young",
+                "from": "Atlanta Hawks", 
                 "position": "PG",
                 "prop_impact": {
-                    "pts": 22.5,
-                    "reb": 5.5,
-                    "ast": 7.5,
-                    "pra": 35.5
+                    "pts": 28.5,
+                    "reb": 3.5,
+                    "ast": 10.5,
+                    "pra": 42.5
                 },
-                "usage_increase": 0.20,  # 20% higher usage as primary ballhandler
-                "team_impact": "Elite playmaker, takes over primary PG duties"
+                "usage_increase": 0.25,  # 25% higher usage as primary star (but injured)
+                "team_impact": "Elite PG, currently injured but will be franchise player when healthy"
             }
         ],
         "departures": [
@@ -60,10 +59,10 @@ NBA_ROSTER_UPDATES_2026 = {
         ],
         "new_starting_five": [
             "Anthony Davis (C)",
-            "Cade Cunningham (PG)", 
-            "Kobe Bufkin (SG)",
+            "Kobe Bufkin (PG)", 
             "Bilal Coulibaly (SF)",
-            "Alex Sarr (PF)"
+            "Alex Sarr (PF)",
+            "Trae Young (PG) - INJURED"
         ],
         "team_rating_change": "+25",  # Significant improvement
         "playoff_odds": "85%"  # Now playoff contenders
@@ -197,18 +196,20 @@ NBA_ROSTER_UPDATES_2026 = {
     "Detroit Pistons": {
         "departures": [
             {
-                "player": "Cade Cunningham",
-                "to": "Washington Wizards",
-                "impact": "Franchise PG lost"
+                "player": "Tobias Harris",
+                "to": "Free Agency",
+                "impact": "Veteran forward lost"
             }
         ],
-        "rebuilding_core": [
-            "Jaden Ivey (SG)",
+        "core_retained": [
+            "Cade Cunningham (PG) - Franchise player",
             "Jalen Duren (C)",
-            "Ausar Thompson (SF)"
+            "Ausar Thompson (SF)",
+            "Dyson Robinson (SG)",
+            "Taj Harris (IL) - Injured"
         ],
-        "team_rating_change": "-20",  # Major decline
-        "playoff_odds": "5%"  # Full rebuild mode
+        "team_rating_change": "-5",  # Minor decline with Harris departure
+        "playoff_odds": "15%"  # Still building around Cade
     }
 }
 
@@ -220,10 +221,11 @@ PROP_LINE_ADJUSTMENTS = {
         "blocks": "+0.5",
         "points": "+3.0"
     },
-    "Cade Cunningham": {
-        "assists": "+2.0",  # Primary ballhandler
-        "points": "+3.0",
-        "rebounds": "+1.0"
+    "Trae Young": {
+        "assists": "+3.0",  # Primary ballhandler when healthy
+        "points": "+4.0",
+        "rebounds": "+0.5",
+        "3pm": "+1.0"
     },
     
     # Lakers players adjust to new roles
@@ -257,6 +259,11 @@ PROP_LINE_ADJUSTMENTS = {
         "points": "+4.0",  # Now primary option
         "rebounds": "+2.0",
         "assists": "+1.0"
+    },
+    "Cade Cunningham": {
+        "points": "+2.0",  # Still #1 option but with less help
+        "assists": "+1.0",
+        "rebounds": "+0.5"
     }
 }
 
@@ -275,6 +282,7 @@ PLAYER_CATEGORIES = {
     "Luka Doncic": "star_player", 
     "LeBron James": "star_player",
     "Kevin Durant": "star_player",
+    "Trae Young": "star_player",
     
     # Starter tier
     "Cade Cunningham": "starter",

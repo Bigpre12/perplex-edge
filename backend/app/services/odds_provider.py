@@ -1948,11 +1948,12 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Jamal Murray", "pts": 21.5, "reb": 4.5, "ast": 6.5, "pra": 32.5, "pr": 26.0, "pa": 28.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Christian Braun", "pts": 16.5, "reb": 5.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
-            # Detroit Pistons - C. Cunningham, D. Robinson, A. Thompson, T. Harris, J. Duren
+            # Detroit Pistons - C. Cunningham, D. Robinson, A. Thompson, T. Harris (IL), J. Duren
             "DET": [
                 {"name": "Cade Cunningham", "pts": 24.5, "reb": 5.5, "ast": 9.5, "pra": 39.5, "pr": 30.0, "pa": 34.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
                 {"name": "Jalen Duren", "pts": 13.5, "reb": 11.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 16.0, "ra": 14.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
-                {"name": "Tobias Harris", "pts": 15.5, "reb": 6.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+                {"name": "Dyson Robinson", "pts": 12.5, "reb": 4.5, "ast": 3.5, "pra": 20.5, "pr": 17.0, "pa": 16.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Ausar Thompson", "pts": 10.5, "reb": 6.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
             ],
             # Golden State Warriors - S. Curry, B. Podziemski, M. Moody, D. Green, A. Horford
             "GSW": [
@@ -2078,13 +2079,13 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Keyonte George", "pts": 18.5, "reb": 3.5, "ast": 6.5, "pra": 28.5, "pr": 22.0, "pa": 25.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jusuf Nurkic", "pts": 11.5, "reb": 10.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 15.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
             ],
-            # Washington Wizards - A. Davis, K. Jones, B. Coulibaly, A. Sarr, C. Cunningham (2026 Post-Trade Deadline)
+            # Washington Wizards - T. Young (IL), A. Davis, K. Jones, B. Coulibaly, A. Sarr (2026 Post-Trade Deadline)
             "WAS": [
+                {"name": "Trae Young", "pts": 28.5, "reb": 3.5, "ast": 10.5, "pra": 42.5, "pr": 32.0, "pa": 39.0, "ra": 14.0, "3pm": 4.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
                 {"name": "Anthony Davis", "pts": 26.5, "reb": 12.5, "ast": 3.5, "pra": 42.5, "pr": 39.0, "pa": 30.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 2.5},
                 {"name": "Kobe Bufkin", "pts": 16.5, "reb": 4.5, "ast": 6.5, "pra": 27.5, "pr": 21.0, "pa": 23.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Bilal Coulibaly", "pts": 15.5, "reb": 6.5, "ast": 5.5, "pra": 27.5, "pr": 22.0, "pa": 21.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Alex Sarr", "pts": 13.5, "reb": 9.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 17.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
-                {"name": "Cade Cunningham", "pts": 22.5, "reb": 5.5, "ast": 7.5, "pra": 35.5, "pr": 28.0, "pa": 30.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
             ],
         }
         
@@ -3861,7 +3862,8 @@ NBA_ROSTERS = {
     "San Antonio Spurs": ["De'Aaron Fox", "Stephon Castle", "Devin Vassell", "Jalen Champagnie", "Victor Wembanyama"],
     "Toronto Raptors": ["Immanuel Quickley", "Brandon Ingram", "RJ Barrett (IL)", "Scottie Barnes", "Chris Murray-Boyles"],
     "Utah Jazz": ["Keyonte George", "Collin Williams", "Aaron Bailey", "Lauri Markkanen", "Walker Kessler"],
-    "Washington Wizards": ["Tyus Johnson", "Kevin George", "Bilal Coulibaly", "Alex Sarr", "Daniel Gafford"]
+    "Washington Wizards": ["Trae Young (IL)", "Anthony Davis", "Kobe Bufkin", "Bilal Coulibaly", "Alex Sarr"],
+    "Detroit Pistons": ["Cade Cunningham", "Dyson Robinson", "Ausar Thompson", "Taj Harris (IL)", "Jalen Duren"],
 }
 
 # Default NBA roster
