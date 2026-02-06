@@ -220,6 +220,17 @@ if _extra_origins:
             if origin and origin not in ALLOWED_ORIGINS:
                 ALLOWED_ORIGINS.append(origin)
 
+# Temporary fix for Railway CORS issues - allow all origins in production
+if os.getenv("RAILWAY_ENVIRONMENT") == "production":
+    logger.warning("CORS: Allowing all origins in Railway production for debugging")
+    ALLOWED_ORIGINS = ["*"]
+
+# Also check config settings for additional origins
+if hasattr(settings, 'allowed_origins') and settings.allowed_origins:
+    for origin in settings.allowed_origins:
+        if origin and origin not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(origin)
+
 logger.info("cors_origins_configured", origins=ALLOWED_ORIGINS)
 
 # Middleware ordering: Starlette executes middleware in REVERSE order of addition.
@@ -239,6 +250,43 @@ app.add_middleware(
     expose_headers=["X-Correlation-ID", "Content-Type", "Authorization"],
     max_age=600,  # Cache preflight for 10 minutes
 )
+
+# Add CORS debugging middleware
+class CORSDebuggingMiddleware(BaseHTTPMiddleware):
+    """Debug CORS issues by logging request details."""
+    
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin")
+        method = request.headers.get("access-control-request-method")
+        headers = request.headers.get("access-control-request-headers")
+        
+        # Log preflight requests for debugging
+        if request.method == "OPTIONS":
+            logger.info(
+                "cors_preflight_request",
+                origin=origin,
+                method=method,
+                headers=headers,
+                path=request.url.path,
+                allowed_origins=ALLOWED_ORIGINS
+            )
+        
+        response = await call_next(request)
+        
+        # Log CORS headers in response
+        if request.method == "OPTIONS":
+            logger.info(
+                "cors_preflight_response",
+                access_control_allow_origin=response.headers.get("access-control-allow-origin"),
+                access_control_allow_methods=response.headers.get("access-control-allow-methods"),
+                access_control_allow_headers=response.headers.get("access-control-allow-headers"),
+                status_code=response.status_code
+            )
+        
+        return response
+
+# Add CORS debugging middleware
+app.add_middleware(CORSDebuggingMiddleware)
 
 # Include routers
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
