@@ -2024,69 +2024,58 @@ async def get_dashboard_summary(
     try:
         from datetime import timedelta
         from sqlalchemy import select, func, distinct, and_
-        from app.models import Game, Line, Market
+        from app.models import Game, Line
         from app.config.sports import SPORT_ID_TO_KEY
         
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(minutes=10)
         next_24h = now + timedelta(hours=24)
         
-        rows = []
+        sport_ids = list(SPORT_ID_TO_KEY.keys())
         
+        # --- Bulk query 1: game counts per sport (next 24h) ---
+        game_rows = await db.execute(
+            select(Game.sport_id, func.count(Game.id))
+            .where(
+                and_(
+                    Game.sport_id.in_(sport_ids),
+                    Game.start_time >= now,
+                    Game.start_time <= next_24h,
+                )
+            )
+            .group_by(Game.sport_id)
+        )
+        game_counts: dict[int, int] = {row[0]: row[1] for row in game_rows.all()}
+        
+        # --- Bulk query 2: prop counts, book counts, last_update per sport (current lines) ---
+        line_rows = await db.execute(
+            select(
+                Game.sport_id,
+                func.count(distinct(Line.id)).filter(Line.player_id.isnot(None)),
+                func.count(distinct(Line.sportsbook)),
+                func.max(Line.fetched_at),
+            )
+            .select_from(Line)
+            .join(Game, Line.game_id == Game.id)
+            .where(
+                and_(
+                    Game.sport_id.in_(sport_ids),
+                    Line.is_current == True,
+                )
+            )
+            .group_by(Game.sport_id)
+        )
+        line_data: dict[int, tuple] = {
+            row[0]: (row[1], row[2], row[3]) for row in line_rows.all()
+        }
+        
+        # --- Build response rows ---
+        rows = []
         for sport_id, sport_key in SPORT_ID_TO_KEY.items():
             sport_key_str = sport_key.value if hasattr(sport_key, 'value') else str(sport_key)
             
-            # Count games in next 24 hours
-            game_count = await db.scalar(
-                select(func.count(Game.id)).where(
-                    and_(
-                        Game.sport_id == sport_id,
-                        Game.start_time >= now,
-                        Game.start_time <= next_24h,
-                    )
-                )
-            ) or 0
-            
-            # Count player props (lines where player_id is not null)
-            # Need to join through Game to filter by sport_id
-            prop_count = await db.scalar(
-                select(func.count(distinct(Line.id)))
-                .select_from(Line)
-                .join(Game, Line.game_id == Game.id)
-                .where(
-                    and_(
-                        Game.sport_id == sport_id,
-                        Line.player_id.isnot(None),
-                        Line.is_current == True,
-                    )
-                )
-            ) or 0
-            
-            # Count unique sportsbooks
-            book_count = await db.scalar(
-                select(func.count(distinct(Line.sportsbook)))
-                .select_from(Line)
-                .join(Game, Line.game_id == Game.id)
-                .where(
-                    and_(
-                        Game.sport_id == sport_id,
-                        Line.is_current == True,
-                    )
-                )
-            ) or 0
-            
-            # Get most recent line update
-            last_update_result = await db.scalar(
-                select(func.max(Line.fetched_at))
-                .select_from(Line)
-                .join(Game, Line.game_id == Game.id)
-                .where(
-                    and_(
-                        Game.sport_id == sport_id,
-                        Line.is_current == True,
-                    )
-                )
-            )
+            game_count = game_counts.get(sport_id, 0)
+            prop_count, book_count, last_update_result = line_data.get(sport_id, (0, 0, None))
             
             # Determine status and issues
             status = "ok"
