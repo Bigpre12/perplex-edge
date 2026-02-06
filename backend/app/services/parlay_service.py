@@ -646,7 +646,7 @@ async def build_parlay_legs(
     from datetime import datetime, timezone, timedelta
     import random
     
-    min_grade_numeric = grade_to_numeric(min_grade)
+    min_grade_numeric = {"A": 5, "B": 4, "C": 3, "D": 2, "F": 1}[min_grade]
     now = datetime.now(timezone.utc)
     
     # Dynamic time window for active games
