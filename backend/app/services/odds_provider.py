@@ -1977,11 +1977,13 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "James Harden", "pts": 18.5, "reb": 5.5, "ast": 9.5, "pra": 33.5, "pr": 24.0, "pa": 28.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
                 {"name": "Ivica Zubac", "pts": 12.5, "reb": 10.5, "ast": 2.5, "pra": 25.5, "pr": 23.0, "pa": 15.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
-            # LA Lakers - L. Doncic, A. Reaves, R. Hachimura, L. James, D. Ayton
+            # LA Lakers - L. Doncic, L. James, D. Ayton, A. Reaves, R. Hachimura (2026 Post-AD Trade)
             "LAL": [
                 {"name": "Luka Doncic", "pts": 33.5, "reb": 9.5, "ast": 9.5, "pra": 52.5, "pr": 43.0, "pa": 43.0, "ra": 19.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
                 {"name": "LeBron James", "pts": 25.5, "reb": 7.5, "ast": 8.5, "pra": 41.5, "pr": 33.0, "pa": 34.0, "ra": 16.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Deandre Ayton", "pts": 16.5, "reb": 10.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 19.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Deandre Ayton", "pts": 18.5, "reb": 12.5, "ast": 2.5, "pra": 33.5, "pr": 31.0, "pa": 21.0, "ra": 15.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Austin Reaves", "pts": 16.5, "reb": 4.5, "ast": 5.5, "pra": 26.5, "pr": 21.0, "pa": 22.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Rui Hachimura", "pts": 13.5, "reb": 5.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 16.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
             # Memphis Grizzlies - C. Spencer, C. Coward, J. Wells, S. Aldama, J. Jackson Jr.
             "MEM": [
@@ -2073,9 +2075,11 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Keyonte George", "pts": 18.5, "reb": 3.5, "ast": 6.5, "pra": 28.5, "pr": 22.0, "pa": 25.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jusuf Nurkic", "pts": 11.5, "reb": 10.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 15.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
             ],
-            # Washington Wizards - T. Johnson, K. George, B. Coulibaly, K. Middleton, A. Sarr
+            # Washington Wizards - A. Davis, J. Green, K. Jones, B. Coulibaly, A. Sarr (2026 Post-Trade Deadline)
             "WAS": [
-                {"name": "Khris Middleton", "pts": 16.5, "reb": 5.5, "ast": 5.5, "pra": 27.5, "pr": 22.0, "pa": 22.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Anthony Davis", "pts": 26.5, "reb": 12.5, "ast": 3.5, "pra": 42.5, "pr": 39.0, "pa": 30.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 2.5},
+                {"name": "Jalen Green", "pts": 23.5, "reb": 4.5, "ast": 4.5, "pra": 32.5, "pr": 28.0, "pa": 28.0, "ra": 9.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Kobe Bufkin", "pts": 15.5, "reb": 3.5, "ast": 5.5, "pra": 24.5, "pr": 19.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Bilal Coulibaly", "pts": 14.5, "reb": 5.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 19.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Alex Sarr", "pts": 12.5, "reb": 8.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
             ],
@@ -3811,8 +3815,8 @@ NBA_ROSTERS = {
     "New York Knicks": ["Jalen Brunson", "Julius Randle", "OG Anunoby", "Donte DiVincenzo", "Isaiah Hartenstein"],
     "Philadelphia 76ers": ["Joel Embiid", "Tyrese Maxey", "Tobias Harris", "Buddy Hield", "Kelly Oubre Jr."],
     "Miami Heat": ["Jimmy Butler", "Bam Adebayo", "Tyler Herro", "Terry Rozier", "Caleb Martin"],
-    "Dallas Mavericks": ["Luka Doncic", "Kyrie Irving", "PJ Washington", "Dereck Lively II", "Daniel Gafford"],
-    "Los Angeles Lakers": ["LeBron James", "Anthony Davis", "Austin Reaves", "D'Angelo Russell", "Rui Hachimura"],
+    "Dallas Mavericks": ["Kyrie Irving", "PJ Washington", "Dereck Lively II", "Daniel Gafford", "Klay Thompson"],
+    "Los Angeles Lakers": ["LeBron James", "Luka Doncic", "Deandre Ayton", "Austin Reaves", "Rui Hachimura"],
     "Golden State Warriors": ["Stephen Curry", "Klay Thompson", "Andrew Wiggins", "Draymond Green", "Chris Paul"],
     "Sacramento Kings": ["De'Aaron Fox", "Domantas Sabonis", "Keegan Murray", "Malik Monk", "Harrison Barnes"],
     "Los Angeles Clippers": ["Kawhi Leonard", "Paul George", "James Harden", "Ivica Zubac", "Norman Powell"],
@@ -3821,7 +3825,7 @@ NBA_ROSTERS = {
     "Orlando Magic": ["Paolo Banchero", "Franz Wagner", "Wendell Carter Jr.", "Jalen Suggs", "Cole Anthony"],
     "Atlanta Hawks": ["Trae Young", "Dejounte Murray", "Jalen Johnson", "De'Andre Hunter", "Clint Capela"],
     "Chicago Bulls": ["DeMar DeRozan", "Zach LaVine", "Nikola Vucevic", "Coby White", "Alex Caruso"],
-    "Houston Rockets": ["Jalen Green", "Alperen Sengun", "Fred VanVleet", "Jabari Smith Jr.", "Dillon Brooks"],
+    "Houston Rockets": ["Alperen Sengun", "Fred VanVleet", "Jabari Smith Jr.", "Dillon Brooks", "Amen Thompson"],
     "Brooklyn Nets": ["Mikal Bridges", "Cam Thomas", "Spencer Dinwiddie", "Nic Claxton", "Dorian Finney-Smith"],
     "Memphis Grizzlies": ["Ja Morant", "Desmond Bane", "Jaren Jackson Jr.", "Marcus Smart", "Luke Kennard"],
     "Toronto Raptors": ["Scottie Barnes", "RJ Barrett", "Jakob Poeltl", "Immanuel Quickley", "Gary Trent Jr."],
@@ -3829,7 +3833,7 @@ NBA_ROSTERS = {
     "San Antonio Spurs": ["Victor Wembanyama", "Devin Vassell", "Keldon Johnson", "Tre Jones", "Zach Collins"],
     "Portland Trail Blazers": ["Anfernee Simons", "Scoot Henderson", "Jerami Grant", "Deandre Ayton", "Malcolm Brogdon"],
     "Charlotte Hornets": ["LaMelo Ball", "Terry Rozier", "Brandon Miller", "P.J. Washington", "Mark Williams"],
-    "Washington Wizards": ["Kyle Kuzma", "Jordan Poole", "Deni Avdija", "Tyus Jones", "Daniel Gafford"],
+    "Washington Wizards": ["Anthony Davis", "Jalen Green", "Kobe Bufkin", "Bilal Coulibaly", "Alex Sarr"],
     "Detroit Pistons": ["Cade Cunningham", "Jaden Ivey", "Jalen Duren", "Ausar Thompson", "Bojan Bogdanovic"],
 }
 
