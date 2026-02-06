@@ -2854,6 +2854,67 @@ async def _analyze_betting_markets() -> HealthCheck:
 
 
 # =============================================================================
+# Frontend Brain Integration
+# =============================================================================
+
+async def check_frontend_brain_health(db: AsyncSession) -> dict:
+    """Check frontend health and suggest improvements."""
+    try:
+        from app.services.frontend_brain import check_frontend_health
+        return await check_frontend_health()
+    except Exception as e:
+        logger.error(f"Frontend brain health check failed: {e}")
+        return HealthCheck(
+            component="frontend",
+            status="critical",
+            message=f"Frontend health check failed: {str(e)}",
+            details={"error": str(e)}
+        )
+
+
+async def heal_frontend_issues(db: AsyncSession) -> dict:
+    """Automatically fix frontend issues."""
+    try:
+        from app.services.frontend_brain import fix_frontend_issues
+        return await fix_frontend_issues()
+    except Exception as e:
+        logger.error(f"Frontend healing failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"Frontend healing failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+async def improve_frontend_performance(db: AsyncSession) -> dict:
+    """Automatically improve frontend performance."""
+    try:
+        from app.services.frontend_brain import improve_frontend_performance
+        return await improve_frontend_performance()
+    except Exception as e:
+        logger.error(f"Frontend performance improvement failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"Frontend performance improvement failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+async def expand_frontend_features(db: AsyncSession) -> dict:
+    """Automatically expand frontend with new features."""
+    try:
+        from app.services.frontend_brain import expand_frontend_features
+        return await expand_frontend_features()
+    except Exception as e:
+        logger.error(f"Frontend expansion failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"Frontend expansion failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+# =============================================================================
 # CORS Health Check
 # =============================================================================
 
@@ -3231,6 +3292,18 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 "component": "cors"
             })
 
+            # Frontend health and performance
+            frontend_start = time.time()
+            frontend_check = await check_frontend_brain_health(db)
+            frontend_duration = (time.time() - frontend_start) * 1000
+            all_checks.append(frontend_check)
+            
+            _brain_debugger.log_debug("brain_loop", "frontend_health_check", {
+                "status": frontend_check.status,
+                "duration_ms": frontend_duration,
+                "component": "frontend"
+            })
+
             # Scheduler tasks
             scheduler_start = time.time()
             scheduler_check = await _check_scheduler_health()
@@ -3502,6 +3575,84 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                         {"error": str(e)}
                     )
             
+            # Auto-heal frontend issues if critical
+            if frontend_check.status in ("degraded", "critical"):
+                try:
+                    frontend_heal = await heal_frontend_issues(db)
+                    
+                    if frontend_heal.get('fixes_successful', 0) > 0:
+                        changes_made.append(f"Fixed {frontend_heal['fixes_successful']} frontend issues")
+                        commit_type = "repair"
+                        _brain.log_decision(
+                            "heal",
+                            "frontend_fix",
+                            f"Auto-fixed frontend issues: {frontend_heal['fixes_successful']} fixes applied",
+                            "success",
+                            frontend_heal
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to auto-heal frontend: {e}")
+                    _brain.log_decision(
+                        "heal",
+                        "frontend_fix",
+                        f"Frontend auto-heal failed: {str(e)}",
+                        "failed",
+                        {"error": str(e)}
+                    )
+            
+            # Auto-improve frontend performance if degraded
+            if frontend_check.status == "degraded":
+                try:
+                    frontend_improve = await improve_frontend_performance(db)
+                    
+                    if frontend_improve.get('improvements_successful', 0) > 0:
+                        changes_made.append(f"Improved frontend performance: {frontend_improve['improvements_successful']} improvements")
+                        commit_type = "upgrade"
+                        _brain.log_decision(
+                            "improve",
+                            "frontend_performance",
+                            f"Auto-improved frontend performance: {frontend_improve['improvements_successful']} improvements",
+                            "success",
+                            frontend_improve
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to auto-improve frontend: {e}")
+                    _brain.log_decision(
+                        "improve",
+                        "frontend_performance",
+                        f"Frontend performance improvement failed: {str(e)}",
+                        "failed",
+                        {"error": str(e)}
+                    )
+            
+            # Auto-expand frontend features if healthy (every 10 cycles)
+            if frontend_check.status == "healthy" and _brain.cycle_count % 10 == 0:
+                try:
+                    frontend_expand = await expand_frontend_features(db)
+                    
+                    if frontend_expand.get('expansions_successful', 0) > 0:
+                        changes_made.append(f"Expanded frontend features: {frontend_expand['expansions_successful']} new features")
+                        commit_type = "expansion"
+                        _brain.log_decision(
+                            "expand",
+                            "frontend_features",
+                            f"Auto-expanded frontend: {frontend_expand['expansions_successful']} new features",
+                            "success",
+                            frontend_expand
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to auto-expand frontend: {e}")
+                    _brain.log_decision(
+                        "expand",
+                        "frontend_features",
+                        f"Frontend expansion failed: {str(e)}",
+                        "failed",
+                        {"error": str(e)}
+                    )
+            
             # Auto-heal CORS issues if critical
             if cors_check.status in ("degraded", "critical"):
                 try:
@@ -3540,6 +3691,24 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                         "success",
                         {"changes": changes_made, "commit_type": commit_type, "total_commits": _brain.git_commits_made}
                     )
+                    
+                    # Also commit frontend changes separately if they exist
+                    frontend_changes = [change for change in changes_made if "frontend" in change.lower()]
+                    if frontend_changes:
+                        try:
+                            from app.services.frontend_brain import auto_commit_frontend_changes
+                            frontend_git_success = await auto_commit_frontend_changes(frontend_changes, f"frontend-{commit_type}")
+                            if frontend_git_success:
+                                _brain.log_decision(
+                                    "git",
+                                    "frontend_auto_commit",
+                                    f"Auto-committed frontend changes: {len(frontend_changes)} changes",
+                                    "success",
+                                    {"frontend_changes": frontend_changes, "commit_type": f"frontend-{commit_type}"}
+                                )
+                        except Exception as e:
+                            logger.error(f"Frontend auto-commit failed: {e}")
+                            
                 else:
                     _brain.log_decision(
                         "git",
