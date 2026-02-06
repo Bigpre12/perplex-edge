@@ -2854,6 +2854,81 @@ async def _analyze_betting_markets() -> HealthCheck:
 
 
 # =============================================================================
+# Memory Brain Integration
+# =============================================================================
+
+async def check_memory_brain_health(db: AsyncSession) -> dict:
+    """Check memory health and detect issues."""
+    try:
+        from app.services.memory_brain import check_memory_health
+        return await check_memory_health()
+    except Exception as e:
+        logger.error(f"Memory brain health check failed: {e}")
+        return HealthCheck(
+            component="memory",
+            status="critical",
+            message=f"Memory health check failed: {str(e)}",
+            details={"error": str(e)}
+        )
+
+
+async def heal_memory_issues(db: AsyncSession) -> dict:
+    """Automatically heal memory issues."""
+    try:
+        from app.services.memory_brain import heal_memory_issues
+        return await heal_memory_issues()
+    except Exception as e:
+        logger.error(f"Memory healing failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"Memory healing failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+async def optimize_memory_allocation(db: AsyncSession) -> dict:
+    """Automatically optimize memory allocation."""
+    try:
+        from app.services.memory_brain import optimize_memory_allocation
+        return await optimize_memory_allocation()
+    except Exception as e:
+        logger.error(f"Memory optimization failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"Memory optimization failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+async def check_memory_leaks(db: AsyncSession) -> dict:
+    """Check for memory leaks."""
+    try:
+        from app.services.memory_brain import check_for_memory_leaks
+        return await check_for_memory_leaks()
+    except Exception as e:
+        logger.error(f"Memory leak check failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"Memory leak check failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+async def trigger_memory_restart_if_needed(db: AsyncSession) -> dict:
+    """Trigger service restart if memory is critically low."""
+    try:
+        from app.services.memory_brain import trigger_service_restart_if_needed
+        return await trigger_service_restart_if_needed()
+    except Exception as e:
+        logger.error(f"Memory restart check failed: {e}")
+        return {
+            "result": "failed",
+            "message": f"Memory restart check failed: {str(e)}",
+            "details": {"error": str(e)}
+        }
+
+
+# =============================================================================
 # Frontend Brain Integration
 # =============================================================================
 
@@ -3363,6 +3438,20 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 "component": "frontend"
             })
 
+            # Memory health and optimization
+            memory_start = time.time()
+            memory_check = await check_memory_brain_health(db)
+            memory_duration = (time.time() - memory_start) * 1000
+            all_checks.append(memory_check)
+            
+            _brain_debugger.log_debug("brain_loop", "memory_health_check", {
+                "status": memory_check.status,
+                "duration_ms": memory_duration,
+                "component": "memory",
+                "memory_usage_mb": memory_check.get("memory_usage_mb", 0),
+                "memory_pressure": memory_check.get("memory_pressure", "unknown")
+            })
+
             # Scheduler tasks
             scheduler_start = time.time()
             scheduler_check = await _check_scheduler_health()
@@ -3634,6 +3723,97 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                         {"error": str(e)}
                     )
             
+            # Auto-heal memory issues if critical or degraded
+            if memory_check.status in ("degraded", "critical"):
+                try:
+                    memory_heal = await heal_memory_issues(db)
+                    
+                    if memory_heal.get('heals_successful', 0) > 0:
+                        memory_freed = memory_heal.get('memory_freed_mb', 0)
+                        changes_made.append(f"Healed memory issues: {memory_heal['heals_successful']} fixes, freed {memory_freed:.1f}MB")
+                        commit_type = "repair"
+                        _brain.log_decision(
+                            "heal",
+                            "memory_fix",
+                            f"Auto-healed memory issues: {memory_heal['heals_successful']} fixes applied, freed {memory_freed:.1f}MB",
+                            "success",
+                            memory_heal
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to auto-heal memory: {e}")
+                    _brain.log_decision(
+                        "heal",
+                        "memory_fix",
+                        f"Memory auto-heal failed: {str(e)}",
+                        "failed",
+                        {"error": str(e)}
+                    )
+            
+            # Auto-optimize memory if degraded
+            if memory_check.status == "degraded":
+                try:
+                    memory_optimize = await optimize_memory_allocation(db)
+                    
+                    if memory_optimize.get('optimizations_successful', 0) > 0:
+                        changes_made.append(f"Optimized memory allocation: {memory_optimize['optimizations_successful']} optimizations")
+                        commit_type = "upgrade"
+                        _brain.log_decision(
+                            "optimize",
+                            "memory_allocation",
+                            f"Auto-optimized memory allocation: {memory_optimize['optimizations_successful']} optimizations",
+                            "success",
+                            memory_optimize
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to auto-optimize memory: {e}")
+                    _brain.log_decision(
+                        "optimize",
+                        "memory_allocation",
+                        f"Memory optimization failed: {str(e)}",
+                        "failed",
+                        {"error": str(e)}
+                    )
+            
+            # Check for memory leaks if healthy (every 5 cycles)
+            if memory_check.status == "healthy" and _brain.cycle_count % 5 == 0:
+                try:
+                    leak_check = await check_memory_leaks(db)
+                    
+                    if leak_check.get('leaks_detected', 0) > 0:
+                        changes_made.append(f"Memory leaks detected: {leak_check['leaks_detected']} potential leaks")
+                        commit_type = "repair"
+                        _brain.log_decision(
+                            "monitor",
+                            "memory_leaks",
+                            f"Memory leaks detected: {leak_check['leaks_detected']} potential leaks found",
+                            "warning",
+                            leak_check
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to check memory leaks: {e}")
+            
+            # Trigger restart if memory is critically low
+            if memory_check.status == "critical":
+                try:
+                    restart_check = await trigger_memory_restart_if_needed(db)
+                    
+                    if restart_check.get('restart_triggered', False):
+                        changes_made.append(f"Service restart triggered: {restart_check['reason']}")
+                        commit_type = "critical"
+                        _brain.log_decision(
+                            "critical",
+                            "memory_restart",
+                            f"Service restart triggered: {restart_check['reason']}",
+                            "critical",
+                            restart_check
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to trigger memory restart: {e}")
+            
             # Auto-heal frontend issues if critical
             if frontend_check.status in ("degraded", "critical"):
                 try:
@@ -3767,6 +3947,23 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                                 )
                         except Exception as e:
                             logger.error(f"Frontend auto-commit failed: {e}")
+                    
+                    # Also commit memory changes separately if they exist
+                    memory_changes = [change for change in changes_made if "memory" in change.lower()]
+                    if memory_changes:
+                        try:
+                            from app.services.memory_brain import auto_commit_memory_changes
+                            memory_git_success = await auto_commit_memory_changes(memory_changes, f"memory-{commit_type}")
+                            if memory_git_success:
+                                _brain.log_decision(
+                                    "git",
+                                    "memory_auto_commit",
+                                    f"Auto-committed memory changes: {len(memory_changes)} changes",
+                                    "success",
+                                    {"memory_changes": memory_changes, "commit_type": f"memory-{commit_type}"}
+                                )
+                        except Exception as e:
+                            logger.error(f"Memory auto-commit failed: {e}")
                             
                 else:
                     _brain.log_decision(
