@@ -648,22 +648,22 @@ async def build_parlay_legs(
     
     min_grade_numeric = grade_to_numeric(min_grade)
     now = datetime.now(timezone.utc)
-    now_naive = now.replace(tzinfo=None)  # Convert to naive for comparison
     
     # Dynamic time window for active games
     if force_refresh:
         # Wider window when forcing refresh to get more variety
-        game_window_start = now_naive - timedelta(hours=2)
-        game_window_end = now_naive + timedelta(hours=36)
+        game_window_start = now - timedelta(hours=2)
+        game_window_end = now + timedelta(hours=36)
     else:
-        game_window_start = now_naive - timedelta(hours=1)
-        game_window_end = now_naive + timedelta(hours=24)
+        game_window_start = now - timedelta(hours=1)
+        game_window_end = now + timedelta(hours=24)
     
     # Build query conditions with freshness check
+    six_hours_ago = now - timedelta(hours=6)
     conditions = [
         Game.sport_id == sport_id,
         ModelPick.player_id.isnot(None),  # Player props only
-        ModelPick.generated_at > now_naive - timedelta(hours=6),  # Only recent picks (avoid stale data)
+        ModelPick.generated_at > six_hours_ago,  # Only recent picks (avoid stale data)
     ]
     
     # Only include active games if enabled
@@ -698,7 +698,8 @@ async def build_parlay_legs(
             continue
         
         # Dynamic freshness check - skip very old picks
-        pick_age = now_naive - pick.generated_at.replace(tzinfo=None)
+        six_hours_ago = now - timedelta(hours=6)
+        pick_age = now - pick.generated_at
         if pick_age.total_seconds() > 21600:  # 6 hours old
             continue
         

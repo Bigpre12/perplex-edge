@@ -22,7 +22,6 @@ async def debug_model_picks_count(
     """Debug ModelPick counts with different time filters."""
     try:
         now = datetime.now(timezone.utc)
-        now_naive = now.replace(tzinfo=None)  # Convert to naive for comparison
         
         # Count all ModelPicks for sport
         total_picks_result = await db.execute(
@@ -33,34 +32,37 @@ async def debug_model_picks_count(
         total_picks = total_picks_result.scalar() or 0
         
         # Count recent ModelPicks (last 6 hours)
+        six_hours_ago = now - timedelta(hours=6)
         recent_picks_result = await db.execute(
             select(func.count(ModelPick.id))
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now_naive - timedelta(hours=6)
+                ModelPick.generated_at > six_hours_ago
             ))
         )
         recent_picks = recent_picks_result.scalar() or 0
         
         # Count ModelPicks (last 24 hours)
+        twenty_four_hours_ago = now - timedelta(hours=24)
         day_picks_result = await db.execute(
             select(func.count(ModelPick.id))
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now_naive - timedelta(hours=24)
+                ModelPick.generated_at > twenty_four_hours_ago
             ))
         )
         day_picks = day_picks_result.scalar() or 0
         
         # Count ModelPicks (last 72 hours)
+        seventy_two_hours_ago = now - timedelta(hours=72)
         three_day_picks_result = await db.execute(
             select(func.count(ModelPick.id))
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now_naive - timedelta(hours=72)
+                ModelPick.generated_at > seventy_two_hours_ago
             ))
         )
         three_day_picks = three_day_picks_result.scalar() or 0
@@ -72,7 +74,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now_naive - timedelta(hours=24)
+                ModelPick.generated_at > twenty_four_hours_ago
             ))
             .order_by(ModelPick.generated_at.desc())
             .limit(5)
