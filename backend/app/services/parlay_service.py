@@ -693,7 +693,19 @@ async def build_parlay_legs(
         stat_type = market.stat_type or market.market_type
         
         # Skip stat types hidden from the UI (low-volume, noisy markets)
-        if stat_type in ("STL", "BLK", "3PM"):
+        HIDDEN_STAT_TYPES = {
+            # Basketball - low volume, noisy
+            "STL", "BLK", "3PM",
+            # Hockey - blocked shots (low volume)
+            "BLK_SHOTS",
+            # Football - interceptions (low volume, random)
+            "INT",
+            # Baseball - outs (low volume)
+            "OUTS",
+            # Tennis - double faults (low volume)
+            "DF",
+        }
+        if stat_type in HIDDEN_STAT_TYPES:
             continue
         
         # Use pre-calculated hit rates from ModelPick instead of slow DB queries
@@ -1355,7 +1367,19 @@ async def get_100_percent_props(
         stat_type = market.stat_type or market.market_type
         
         # Skip stat types hidden from the UI (low-volume, noisy markets)
-        if stat_type in ("STL", "BLK", "3PM"):
+        HIDDEN_STAT_TYPES = {
+            # Basketball - low volume, noisy
+            "STL", "BLK", "3PM",
+            # Hockey - blocked shots (low volume)
+            "BLK_SHOTS",
+            # Football - interceptions (low volume, random)
+            "INT",
+            # Baseball - outs (low volume)
+            "OUTS",
+            # Tennis - double faults (low volume)
+            "DF",
+        }
+        if stat_type in HIDDEN_STAT_TYPES:
             continue
         
         # Use pre-calculated hit rates from ModelPick instead of slow DB queries

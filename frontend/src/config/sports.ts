@@ -262,8 +262,20 @@ export const SPORT_ID_TO_KEY: Record<number, SportKey> = {
  */
 /**
  * Stat types hidden from the UI but still tracked in the engine.
+ * These are typically low-volume, high-variance, or noisy markets.
  */
-export const HIDDEN_STATS: Set<StatType> = new Set(['STL', 'BLK', '3PM']);
+export const HIDDEN_STATS: Set<StatType> = new Set([
+  // Basketball - low volume, noisy
+  'STL', 'BLK', '3PM',
+  // Hockey - blocked shots (low volume)
+  'BLK_SHOTS',
+  // Football - interceptions (low volume, random)
+  'INT',
+  // Baseball - outs (low volume)
+  'OUTS',
+  // Tennis - double faults (low volume)
+  'DF',
+]);
 
 export const STAT_TYPES_BY_SPORT: Record<SportKey, StatType[]> = {
   // Basketball

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Market display names for UI
 MARKET_DISPLAY_NAMES = {
+    # Basketball
     "player_points": "PTS",
     "player_rebounds": "REB",
     "player_assists": "AST",
@@ -27,12 +28,63 @@ MARKET_DISPLAY_NAMES = {
     "player_turnovers": "TO",
     "player_double_double": "DD",
     "player_triple_double": "TD",
+    
+    # Hockey
+    "goals": "GOALS",
+    "assists_hockey": "AST_H",
+    "points_hockey": "PTS_H",
+    "shots_on_goal": "SOG",
+    "blocked_shots": "BLK_SHOTS",
+    "saves": "SAVES",
+    "power_play_points": "PPP",
+    "penalty_minutes": "PIM",
+    
+    # Football
+    "pass_yards": "PASS_YDS",
+    "pass_tds": "PASS_TDS",
+    "pass_attempts": "PASS_ATT",
+    "pass_completions": "PASS_COMP",
+    "interceptions": "INT",
+    "rush_yards": "RUSH_YDS",
+    "rush_attempts": "RUSH_ATT",
+    "rush_tds": "RUSH_TDS",
+    "receiving_yards": "REC_YDS",
+    "receptions": "REC",
+    "receiving_tds": "REC_TDS",
+    "rush_rec_yards": "RUSH_REC_YDS",
+    "anytime_td": "ANYTIME_TD",
+    
+    # Baseball
+    "hits": "H",
+    "runs": "R",
+    "runs_batted_in": "RBI",
+    "total_bases": "TB",
+    "home_runs": "HR",
+    "strikeouts": "K",
+    "outs": "OUTS",
+    
+    # Tennis
+    "aces": "ACES",
+    "double_faults": "DF",
+    "games": "GAMES",
+    "sets": "SETS",
+    "total_games": "TOTAL_GAMES",
+    
     # Short forms map to themselves
     "PTS": "PTS",
     "REB": "REB",
     "AST": "AST",
     "3PM": "3PM",
     "PRA": "PRA",
+    "STL": "STL",
+    "BLK": "BLK",
+    "TO": "TO",
+    "DD": "DD",
+    "TD": "TD",
+    "BLK_SHOTS": "BLK_SHOTS",
+    "INT": "INT",
+    "OUTS": "OUTS",
+    "DF": "DF",
 }
 
 

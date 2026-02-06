@@ -863,7 +863,20 @@ async def seed_stub_hit_rates(db: AsyncSession, sport_id: int = 30) -> dict[str,
 
     logger.info(f"[seed] Seeding hit rates for {len(players)} players in sport {sport_id}")
 
-    stat_types = ["PTS", "REB", "AST", "PRA", "PR", "PA", "RA", "TO"]
+    # Stat types to generate (excluding hidden low-volume markets)
+    HIDDEN_STAT_TYPES = {
+        # Basketball - low volume, noisy
+        "STL", "BLK", "3PM",
+        # Hockey - blocked shots (low volume)
+        "BLK_SHOTS",
+        # Football - interceptions (low volume, random)
+        "INT",
+        # Baseball - outs (low volume)
+        "OUTS",
+        # Tennis - double faults (low volume)
+        "DF",
+    }
+    stat_types = ["PTS", "REB", "AST", "PRA", "PR", "PA", "RA", "TO"]  # Basketball only for now
     sides = ["over", "under"]
     hit_rates_created = 0
     market_rates_created = 0
