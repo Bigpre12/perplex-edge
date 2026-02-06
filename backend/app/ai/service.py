@@ -59,12 +59,12 @@ async def get_ai_recommendations(
     """
     settings = get_settings()
 
-    if not settings.ai_enabled:
+    if not settings.ai_enabled and not settings.ai_api_key:
         return AIRecommendationsResponse(
             sport="",
             league="",
             date=date or "",
-            warnings=["AI integration is disabled. Set AI_ENABLED=true to enable."],
+            warnings=["AI integration is disabled. Set AI_ENABLED=true and AI_API_KEY to enable."],
         )
 
     # Resolve sport
