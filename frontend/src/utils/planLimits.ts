@@ -238,11 +238,13 @@ export function isSportLocked(sportId: number): boolean {
 /**
  * Get Whop checkout URL for upgrading plan.
  */
-export function getWhopCheckoutUrl(plan: 'free' | 'pro' = 'free'): string {
+export function getWhopCheckoutUrl(plan: 'free' | 'pro_monthly' | 'pro_yearly' = 'free'): string {
   if (plan === 'free') {
     return 'https://whop.com/checkout/plan_WxHa3UGwMmjdd';
-  } else if (plan === 'pro') {
+  } else if (plan === 'pro_monthly') {
     return 'https://whop.com/checkout/plan_8Qztt62kvlW8y';
+  } else if (plan === 'pro_yearly') {
+    return 'https://whop.com/checkout/plan_eeIAyl9zqIhfb';
   }
   return 'https://whop.com/checkout/plan_WxHa3UGwMmjdd'; // Fallback to free
 }
@@ -250,9 +252,19 @@ export function getWhopCheckoutUrl(plan: 'free' | 'pro' = 'free'): string {
 /**
  * Open Whop checkout in new tab.
  */
-export function openWhopCheckout(plan: 'free' | 'pro' = 'free'): void {
+export function openWhopCheckout(plan: 'free' | 'pro_monthly' | 'pro_yearly' = 'free'): void {
   const url = getWhopCheckoutUrl(plan);
   if (url) {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
+}
+
+/**
+ * Get all Pro checkout URLs.
+ */
+export function getProCheckoutUrls(): { monthly: string; yearly: string } {
+  return {
+    monthly: 'https://whop.com/checkout/plan_8Qztt62kvlW8y',
+    yearly: 'https://whop.com/checkout/plan_eeIAyl9zqIhfb',
+  };
 }

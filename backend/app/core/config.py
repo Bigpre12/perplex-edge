@@ -74,7 +74,8 @@ class Settings(BaseSettings):
 
     # Whop Integration
     whop_free_checkout_url: str = "https://whop.com/checkout/plan_WxHa3UGwMmjdd"
-    whop_pro_checkout_url: str = "https://whop.com/checkout/plan_8Qztt62kvlW8y"
+    whop_pro_monthly_checkout_url: str = "https://whop.com/checkout/plan_8Qztt62kvlW8y"
+    whop_pro_yearly_checkout_url: str = "https://whop.com/checkout/plan_eeIAyl9zqIhfb"
 
     @field_validator('database_url')
     @classmethod

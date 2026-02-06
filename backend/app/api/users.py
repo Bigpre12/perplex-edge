@@ -51,7 +51,8 @@ class UserPlanUpdate(BaseModel):
 class WhopCheckoutResponse(BaseModel):
     """Response with Whop checkout URLs."""
     free_checkout_url: str
-    pro_checkout_url: Optional[str] = None
+    pro_monthly_checkout_url: Optional[str] = None
+    pro_yearly_checkout_url: Optional[str] = None
 
 
 # =============================================================================
@@ -223,12 +224,13 @@ async def get_whop_checkout_urls():
     """
     Get Whop checkout URLs for subscription plans.
     
-    Returns checkout URLs for free and pro plans.
+    Returns checkout URLs for free, pro monthly, and pro yearly plans.
     """
     from app.core.config import get_settings
     settings = get_settings()
     
     return WhopCheckoutResponse(
         free_checkout_url=settings.whop_free_checkout_url,
-        pro_checkout_url=settings.whop_pro_checkout_url or None
+        pro_monthly_checkout_url=settings.whop_pro_monthly_checkout_url or None,
+        pro_yearly_checkout_url=settings.whop_pro_yearly_checkout_url or None
     )
