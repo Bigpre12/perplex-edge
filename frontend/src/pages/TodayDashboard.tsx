@@ -227,6 +227,13 @@ export function TodayDashboard() {
           <div className="text-sm text-gray-400">AI-optimized entries for DFS &amp; sportsbooks</div>
         </Link>
         <Link
+          to="/ai-edge"
+          className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-purple-500 transition-colors group"
+        >
+          <div className="font-medium text-white group-hover:text-purple-400 transition-colors">AI Edge</div>
+          <div className="text-sm text-gray-400">AI-assisted prop recommendations</div>
+        </Link>
+        <Link
           to="/my-bets"
           className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-colors group"
         >

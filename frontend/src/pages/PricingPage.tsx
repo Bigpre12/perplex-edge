@@ -35,6 +35,7 @@ const FEATURES: PlanFeature[] = [
   { name: 'Hot/Cold players', free: 'Summary only', pro: 'Full with filters' },
   { name: 'Stats market filters', free: false, pro: true },
   { name: 'Smart Parlay Builder', free: '3 legs max', pro: 'Unlimited legs' },
+  { name: 'AI Edge', free: false, pro: true },
   { name: 'Live EV Feed', free: false, pro: true },
   { name: 'Alt Line Explorer', free: false, pro: true },
   { name: 'Watchlists', free: false, pro: true },

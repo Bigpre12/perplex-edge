@@ -90,6 +90,14 @@ export function LandingPage() {
                 AI-optimized entries for DFS pick'em and sportsbooks with correlation checks and leg grades.
               </p>
             </div>
+            <div className="p-4 rounded-lg bg-gray-900/70 border border-gray-800 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <div className="mb-1 text-xs font-semibold text-purple-300">
+                AI Edge
+              </div>
+              <p className="text-sm text-gray-300">
+                AI-assisted prop analysis that surfaces hidden edges, ranks by confidence, and explains the reasoning.
+              </p>
+            </div>
           </div>
         </section>
 
