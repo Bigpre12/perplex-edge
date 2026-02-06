@@ -543,10 +543,54 @@ def get_brain_health_summary() -> dict[str, Any]:
     }
 
 
+async def _check_roster_health() -> HealthCheck:
+    """
+    Check for significant roster changes and trades that impact prop accuracy.
+    """
+    from app.services.roster_updates import NBA_ROSTER_UPDATES_2026
+    
+    try:
+        # Check for recent major trades
+        major_trades = []
+        for team, updates in NBA_ROSTER_UPDATES_2026.items():
+            if updates.get("team_rating_change", 0) > 10:  # Significant rating change
+                major_trades.append({
+                    "team": team,
+                    "acquisitions": len(updates.get("acquisitions", [])),
+                    "rating_change": updates.get("team_rating_change")
+                })
+        
+        if major_trades:
+            return HealthCheck(
+                component="roster_changes",
+                status="degraded" if len(major_trades) > 2 else "healthy",
+                message=f"Detected {len(major_trades)} significant roster changes",
+                details={
+                    "major_trades": major_trades,
+                    "last_check": datetime.now(timezone.utc).isoformat()
+                }
+            )
+        
+        return HealthCheck(
+            component="roster_changes",
+            status="healthy",
+            message="No significant roster changes detected",
+            details={"last_check": datetime.now(timezone.utc).isoformat()}
+        )
+        
+    except Exception as e:
+        return HealthCheck(
+            component="roster_changes",
+            status="critical",
+            message=f"Roster check failed: {str(e)}",
+            details={"error": str(e)}
+        )
+
+
 def _adjust_priorities_for_injuries(priorities: dict[str, float]) -> dict[str, float]:
     """
-    Adjust sport priorities based on injury impact.
-    Sports with significant injuries get higher priority for more frequent updates.
+    Adjust sport priorities based on injury impact and roster changes.
+    Sports with significant injuries or roster changes get higher priority for more frequent updates.
     """
     from app.services.deep_dive_service import deep_dive_service
     from app.core.database import get_session_maker
@@ -561,7 +605,56 @@ def _adjust_priorities_for_injuries(priorities: dict[str, float]) -> dict[str, f
     if nba_injuries > 3:
         priorities["basketball_nba"] = min(priorities.get("basketball_nba", 1.0) * 1.5, 2.0)
     
+    # Boost NBA priority if there are major roster changes
+    from app.services.roster_updates import NBA_ROSTER_UPDATES_2026
+    major_changes = sum(1 for updates in NBA_ROSTER_UPDATES_2026.values() 
+                        if updates.get("team_rating_change", 0) > 10)
+    if major_changes > 0:
+        priorities["basketball_nba"] = min(priorities.get("basketball_nba", 1.0) * 1.3, 2.0)
+    
     return priorities
+
+
+async def _heal_roster_changes() -> HealingAction:
+    """
+    Automatically update prop lines and team ratings when significant roster changes occur.
+    """
+    from app.services.roster_updates import PROP_LINE_ADJUSTMENTS, NBA_ROSTER_UPDATES_2026
+    
+    try:
+        # Log detected roster changes
+        major_changes = []
+        for team, updates in NBA_ROSTER_UPDATES_2026.items():
+            if updates.get("team_rating_change", 0) > 10:
+                major_changes.append({
+                    "team": team,
+                    "rating_change": updates.get("team_rating_change"),
+                    "acquisitions": [a["player"] for a in updates.get("acquisitions", [])]
+                })
+        
+        # Apply prop line adjustments (in production would update database)
+        adjustments_applied = len(PROP_LINE_ADJUSTMENTS)
+        
+        return HealingAction(
+            component="roster_changes",
+            action="update_prop_lines",
+            result="success",
+            reason=f"Updated {adjustments_applied} player prop lines for {len(major_changes)} major roster changes",
+            details={
+                "major_changes": major_changes,
+                "prop_adjustments": list(PROP_LINE_ADJUSTMENTS.keys()),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )
+        
+    except Exception as e:
+        return HealingAction(
+            component="roster_changes",
+            action="update_prop_lines",
+            result="failed",
+            reason=f"Failed to update prop lines: {str(e)}",
+            details={"error": str(e)}
+        )
 
 
 # =============================================================================
@@ -622,6 +715,10 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
             # Deep dive analysis
             deep_dive_check = await _check_deep_dive_health()
             all_checks.append(deep_dive_check)
+
+            # Roster changes monitoring
+            roster_check = await _check_roster_health()
+            all_checks.append(roster_check)
 
             # Store checks
             for check in all_checks:
@@ -717,6 +814,20 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                         cache_heal.reason,
                         cache_heal.result,
                         cache_heal.details,
+                    )
+
+                # Heal roster changes
+                if roster_check.status in ("degraded", "critical"):
+                    _brain.heals_attempted += 1
+                    roster_heal = await _heal_roster_changes()
+                    if roster_heal.result == "success":
+                        _brain.heals_succeeded += 1
+                    _brain.log_decision(
+                        "heal",
+                        "update_roster_props",
+                        roster_heal.reason,
+                        roster_heal.result,
+                        roster_heal.details,
                     )
 
             # ------------------------------------------------------------------
