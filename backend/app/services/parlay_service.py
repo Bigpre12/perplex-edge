@@ -692,6 +692,10 @@ async def build_parlay_legs(
         
         stat_type = market.stat_type or market.market_type
         
+        # Skip stat types hidden from the UI (low-volume, noisy markets)
+        if stat_type in ("STL", "BLK", "3PM"):
+            continue
+        
         # Use pre-calculated hit rates from ModelPick instead of slow DB queries
         # This avoids calling get_hit_rate_data() for each pick (3800+ DB queries)
         hr_5g = pick.hit_rate_5g or 0.0
@@ -1349,6 +1353,10 @@ async def get_100_percent_props(
             continue
         
         stat_type = market.stat_type or market.market_type
+        
+        # Skip stat types hidden from the UI (low-volume, noisy markets)
+        if stat_type in ("STL", "BLK", "3PM"):
+            continue
         
         # Use pre-calculated hit rates from ModelPick instead of slow DB queries
         hr_5g = pick.hit_rate_5g or 0.0

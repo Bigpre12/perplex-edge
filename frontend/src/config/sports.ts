@@ -263,7 +263,7 @@ export const SPORT_ID_TO_KEY: Record<number, SportKey> = {
 /**
  * Stat types hidden from the UI but still tracked in the engine.
  */
-export const HIDDEN_STATS: Set<StatType> = new Set(['STL', 'BLK']);
+export const HIDDEN_STATS: Set<StatType> = new Set(['STL', 'BLK', '3PM']);
 
 export const STAT_TYPES_BY_SPORT: Record<SportKey, StatType[]> = {
   // Basketball
@@ -271,7 +271,6 @@ export const STAT_TYPES_BY_SPORT: Record<SportKey, StatType[]> = {
     'PTS',
     'REB',
     'AST',
-    '3PM',
     'PRA',
     'PR',
     'PA',
@@ -280,8 +279,8 @@ export const STAT_TYPES_BY_SPORT: Record<SportKey, StatType[]> = {
     'DD',
     'TD',
   ],
-  basketball_ncaab: ['PTS', 'REB', 'AST', '3PM', 'PRA'],
-  basketball_wnba: ['PTS', 'REB', 'AST', '3PM', 'PRA'],
+  basketball_ncaab: ['PTS', 'REB', 'AST', 'PRA'],
+  basketball_wnba: ['PTS', 'REB', 'AST', 'PRA'],
 
   // Football
   americanfootball_nfl: [
@@ -378,10 +377,12 @@ export function getStatTypesForSportId(sportId: number): StatType[] {
  */
 export function getStatTypeOptionsForSport(sportId: number): { value: StatType; label: string }[] {
   const statTypes = getStatTypesForSportId(sportId);
-  return statTypes.map((statType) => ({
-    value: statType,
-    label: STAT_TYPE_LABELS[statType] ?? statType,
-  }));
+  return statTypes
+    .filter((st) => !HIDDEN_STATS.has(st))
+    .map((statType) => ({
+      value: statType,
+      label: STAT_TYPE_LABELS[statType] ?? statType,
+    }));
 }
 
 /**

@@ -647,7 +647,7 @@ async def list_player_prop_picks(
     )
     
     # Stat types hidden from the UI (still tracked in the engine)
-    HIDDEN_STAT_TYPES = {"STL", "BLK"}
+    HIDDEN_STAT_TYPES = {"STL", "BLK", "3PM"}
 
     # Base filter conditions
     # IMPORTANT: Filter by BOTH ModelPick.sport_id AND Game.sport_id to prevent data bleed

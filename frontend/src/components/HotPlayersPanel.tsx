@@ -17,7 +17,6 @@ const STAT_LABELS: Record<string, string> = {
   REB: 'Rebounds',
   AST: 'Assists',
   PRA: 'PRA',
-  '3PM': '3PM',
   'P+R': 'Pts+Reb',
   'P+A': 'Pts+Ast',
   'R+A': 'Reb+Ast',
@@ -30,7 +29,6 @@ const MARKET_OPTIONS = [
   { value: 'PTS', label: 'Points' },
   { value: 'REB', label: 'Rebounds' },
   { value: 'AST', label: 'Assists' },
-  { value: '3PM', label: '3-Pointers' },
   { value: 'PRA', label: 'PRA' },
 ];
 

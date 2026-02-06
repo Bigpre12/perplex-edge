@@ -192,7 +192,7 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 <div>
                   <h4 className="text-xs text-gray-400 uppercase mb-2">Basketball Stats</h4>
                   <div className="flex flex-wrap gap-2">
-                    {['PTS', 'REB', 'AST', '3PM', 'PRA'].map((market) => (
+                    {['PTS', 'REB', 'AST', 'PRA', 'PR', 'PA', 'RA'].map((market) => (
                       <button
                         key={market}
                         onClick={() => toggleMarket(market)}
