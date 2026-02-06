@@ -399,7 +399,7 @@ async def build_parlays(
         sql = text(f"""
             SELECT 
                 mp.id, mp.expected_value, mp.line_value, mp.generated_at,
-                p.name as player_name, g.start_time as game_start,
+                p.name as player_name, p.id as player_id, g.start_time as game_start,
                 m.stat_type as stat_type
             FROM model_picks mp
             JOIN players p ON mp.player_id = p.id
@@ -425,7 +425,7 @@ async def build_parlays(
         
         for row in rows:
             # Extract row data
-            pick_id, expected_value, line_value, generated_at, player_name, game_start, stat_type = row
+            pick_id, expected_value, line_value, generated_at, player_name, player_id, game_start, stat_type = row
             
             # Calculate grade
             edge = expected_value
