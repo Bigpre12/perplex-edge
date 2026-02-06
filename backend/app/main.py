@@ -237,6 +237,11 @@ elif not ALLOWED_ORIGINS or ("perplex-edge-production.up.railway.app" not in str
     logger.warning("CORS: No valid origins found, allowing all origins for Railway compatibility")
     ALLOWED_ORIGINS = ["*"]
 
+# Additional safety: Always include wildcard for Railway production
+if os.getenv("RAILWAY_ENVIRONMENT") == "production":
+    logger.warning("CORS: Railway production environment, ensuring wildcard CORS")
+    ALLOWED_ORIGINS = ["*"]
+
 logger.info("cors_origins_configured", origins=ALLOWED_ORIGINS)
 
 # Middleware ordering: Starlette executes middleware in REVERSE order of addition.
@@ -256,6 +261,32 @@ app.add_middleware(
     expose_headers=["X-Correlation-ID", "Content-Type", "Authorization"],
     max_age=600,  # Cache preflight for 10 minutes
 )
+
+# Add additional CORS middleware as backup for Railway
+class RailwayCORSMiddleware(BaseHTTPMiddleware):
+    """Backup CORS middleware specifically for Railway environments."""
+    
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        # Force CORS headers for Railway if not present
+        origin = request.headers.get("origin")
+        if origin and not response.headers.get("access-control-allow-origin"):
+            response.headers["access-control-allow-origin"] = "*"
+            response.headers["access-control-allow-methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["access-control-allow-headers"] = "*"
+            response.headers["access-control-allow-credentials"] = "true"
+            
+            logger.info(
+                "cors_backup_headers_added",
+                origin=origin,
+                path=request.url.path
+            )
+        
+        return response
+
+# Add Railway CORS backup middleware
+app.add_middleware(RailwayCORSMiddleware)
 
 # Add CORS debugging middleware
 class CORSDebuggingMiddleware(BaseHTTPMiddleware):
