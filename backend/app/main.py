@@ -221,8 +221,18 @@ if _extra_origins:
                 ALLOWED_ORIGINS.append(origin)
 
 # Temporary fix for Railway CORS issues - allow all origins in production
-if os.getenv("RAILWAY_ENVIRONMENT") == "production":
+if os.getenv("RAILWAY_ENVIRONMENT") == "production" or os.getenv("RAILWAY_ENVIRONMENT") is not None:
     logger.warning("CORS: Allowing all origins in Railway production for debugging")
+    ALLOWED_ORIGINS = ["*"]
+
+# Also check for Railway service name
+if os.getenv("RAILWAY_SERVICE_NAME") or os.getenv("RAILWAY_PROJECT_NAME"):
+    logger.warning("CORS: Railway environment detected, allowing all origins")
+    ALLOWED_ORIGINS = ["*"]
+
+# Force wildcard CORS for Railway domains
+if "railway" in os.getenv("RAILWAY_ENVIRONMENT", "").lower() or "railway" in os.getenv("RAILWAY_SERVICE_NAME", "").lower():
+    logger.warning("CORS: Railway domain detected, forcing wildcard CORS")
     ALLOWED_ORIGINS = ["*"]
 
 # Also check config settings for additional origins
@@ -287,6 +297,56 @@ class CORSDebuggingMiddleware(BaseHTTPMiddleware):
 
 # Add CORS debugging middleware
 app.add_middleware(CORSDebuggingMiddleware)
+
+
+# =============================================================================
+# CORS Health Check Endpoint
+# =============================================================================
+
+@app.get("/cors-health")
+async def cors_health_check():
+    """Health check that explicitly sets CORS headers for debugging."""
+    response = JSONResponse({
+        "status": "ok",
+        "cors_enabled": True,
+        "allowed_origins": ALLOWED_ORIGINS,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "environment": os.getenv("RAILWAY_ENVIRONMENT", "unknown"),
+        "service_name": os.getenv("RAILWAY_SERVICE_NAME", "unknown")
+    })
+    
+    # Explicitly set CORS headers
+    origin = request.headers.get("origin")
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+    
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "600"
+    
+    return response
+
+
+@app.options("/cors-health")
+async def cors_health_options():
+    """OPTIONS preflight handler for CORS health check."""
+    response = Response(status_code=200)
+    
+    origin = request.headers.get("origin")
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+    
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "600"
+    
+    return response
 
 # Include routers
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
