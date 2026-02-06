@@ -180,7 +180,7 @@ class AIClient:
         try:
             content = raw["choices"][0]["message"]["content"]
         except (KeyError, IndexError):
-            logger.warning("ai_response_unexpected_shape", raw_keys=list(raw.keys()))
+            logger.warning("ai_response_unexpected_shape raw_keys=%s", list(raw.keys()))
             return AIRecommendationsResponse(
                 sport=payload.context.sport,
                 league=payload.context.league,
@@ -201,7 +201,7 @@ class AIClient:
         try:
             data = json.loads(content)
         except json.JSONDecodeError as e:
-            logger.warning("ai_response_json_parse_error", error=str(e)[:200])
+            logger.warning("ai_response_json_parse_error error=%s", str(e)[:200])
             return AIRecommendationsResponse(
                 sport=payload.context.sport,
                 league=payload.context.league,
@@ -288,10 +288,10 @@ class AIClient:
         body = self._build_request_body(prompt)
 
         logger.info(
-            "ai_request_start",
-            model=self.model,
-            props_count=len(payload.props),
-            sport=payload.context.sport,
+            "ai_request_start model=%s props_count=%d sport=%s",
+            self.model,
+            len(payload.props),
+            payload.context.sport,
         )
 
         last_error: Optional[Exception] = None
@@ -310,11 +310,11 @@ class AIClient:
                 if response.status_code == 401:
                     raise AIAuthError("Invalid AI API key", status_code=401)
                 if response.status_code == 429:
-                    logger.warning("ai_rate_limited", attempt=attempt)
+                    logger.warning("ai_rate_limited attempt=%d", attempt)
                     last_error = AIClientError("Rate limited", status_code=429)
                     continue
                 if response.status_code >= 500:
-                    logger.warning("ai_server_error", status=response.status_code, attempt=attempt)
+                    logger.warning("ai_server_error status=%d attempt=%d", response.status_code, attempt)
                     last_error = AIClientError(f"AI server error: {response.status_code}", status_code=response.status_code)
                     continue
 
@@ -323,23 +323,23 @@ class AIClient:
 
                 result = self._parse_response(raw, payload)
                 logger.info(
-                    "ai_request_complete",
-                    recommendations=result.total_recommendations,
-                    warnings=len(result.warnings),
+                    "ai_request_complete recommendations=%d warnings=%d",
+                    result.total_recommendations,
+                    len(result.warnings),
                 )
                 return result
 
             except httpx.TimeoutException:
-                logger.warning("ai_request_timeout", attempt=attempt, timeout=self.timeout)
+                logger.warning("ai_request_timeout attempt=%d timeout=%d", attempt, self.timeout)
                 last_error = AITimeoutError(f"AI request timed out after {self.timeout}s")
             except (AIAuthError, AIClientError):
                 raise
             except httpx.HTTPStatusError as e:
                 last_error = AIClientError(f"HTTP error: {e.response.status_code}", status_code=e.response.status_code)
-                logger.warning("ai_http_error", status=e.response.status_code, attempt=attempt)
+                logger.warning("ai_http_error status=%d attempt=%d", e.response.status_code, attempt)
             except Exception as e:
                 last_error = AIClientError(f"Unexpected error: {str(e)[:200]}")
-                logger.error("ai_unexpected_error", error=str(e)[:200], attempt=attempt)
+                logger.error("ai_unexpected_error error=%s attempt=%d", str(e)[:200], attempt)
 
         # All retries exhausted
         if last_error:

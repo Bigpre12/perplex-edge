@@ -184,7 +184,7 @@ async def get_ai_recommendations(
         response.generated_at = datetime.now(timezone.utc).isoformat()
         return response
     except AIClientError as e:
-        logger.error("ai_service_error", error=str(e), sport=sport_name)
+        logger.error("ai_service_error error=%s sport=%s", str(e), sport_name)
         return AIRecommendationsResponse(
             sport=sport_name,
             league=league_code,
