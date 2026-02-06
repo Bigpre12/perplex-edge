@@ -726,6 +726,115 @@ async def get_snapshot(
 # Brain (Autonomous System) Endpoints
 # =============================================================================
 
+@router.get("/brain/analyze", response_model=dict)
+async def analyze_system():
+    """Run comprehensive brain analyzer to understand and improve the system."""
+    try:
+        from app.services.brain_analyzer import brain_analyzer
+        
+        # Run comprehensive analysis
+        analysis = await brain_analyzer.analyze_all_endpoints()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "analysis": brain_analyzer.get_analysis_summary()
+        }
+        
+    except Exception as e:
+        logger.error(f"Brain analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Brain analysis failed: {str(e)}")
+
+
+@router.post("/brain/analyze/auto-fix", response_model=dict)
+async def generate_auto_fixes():
+    """Generate automatic fixes for system issues."""
+    try:
+        from app.services.brain_analyzer import brain_analyzer
+        
+        # Generate auto-fixes
+        fixes = await brain_analyzer.generate_auto_fixes()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "auto_fixes": fixes
+        }
+        
+    except Exception as e:
+        logger.error(f"Auto-fix generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Auto-fix generation failed: {str(e)}")
+
+
+@router.post("/brain/analyze/expand", response_model=dict)
+async def generate_expansions():
+    """Generate system expansions and new features."""
+    try:
+        from app.services.brain_analyzer import brain_analyzer
+        
+        # Generate expansions
+        expansions = await brain_analyzer.generate_expansions()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "expansions": expansions
+        }
+        
+    except Exception as e:
+        logger.error(f"Expansion generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Expansion generation failed: {str(e)}")
+
+
+@router.post("/brain/analyze/commit", response_model=dict)
+async def commit_improvements():
+    """Commit improvements to git."""
+    try:
+        from app.services.brain_analyzer import brain_analyzer
+        
+        # Generate fixes and expansions
+        fixes = await brain_analyzer.generate_auto_fixes()
+        expansions = await brain_analyzer.generate_expansions()
+        
+        improvements = {
+            "fixes": fixes.get("fixes", []),
+            "expansions": expansions.get("expansions", [])
+        }
+        
+        # Commit improvements
+        result = await brain_analyzer.commit_improvements(improvements)
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "improvements": improvements,
+            "commit_result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Improvement commit failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Improvement commit failed: {str(e)}")
+
+
+@router.get("/brain/analyze/summary", response_model=dict)
+async def get_analysis_summary():
+    """Get comprehensive brain analysis summary."""
+    try:
+        from app.services.brain_analyzer import brain_analyzer
+        
+        summary = brain_analyzer.get_analysis_summary()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "summary": summary
+        }
+        
+    except Exception as e:
+        logger.error(f"Analysis summary failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis summary failed: {str(e)}")
+
+
 @router.get("/resources", response_model=dict)
 async def get_resource_status():
     """Get current resource usage and credit monitoring."""

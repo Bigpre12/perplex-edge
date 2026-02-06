@@ -3438,6 +3438,66 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 "component": "frontend"
             })
 
+            # Brain system analysis and improvement
+            try:
+                from app.services.brain_analyzer import brain_analyzer
+                
+                # Run comprehensive analysis every 10 cycles
+                if _brain.cycle_count % 10 == 0:
+                    logger.info("[BRAIN] Running comprehensive system analysis")
+                    analysis_start = time.time()
+                    
+                    # Analyze all endpoints and system
+                    system_analysis = await brain_analyzer.analyze_all_endpoints()
+                    
+                    analysis_duration = (time.time() - analysis_start) * 1000
+                    logger.info(f"[BRAIN] System analysis completed in {analysis_duration:.1f}ms")
+                    
+                    # Log key findings
+                    if system_analysis.analyzed_endpoints > 0:
+                        logger.info(f"[BRAIN] Analyzed {system_analysis.analyzed_endpoints} endpoints")
+                        logger.info(f"[BRAIN] System complexity: {system_analysis.system_complexity:.1f}")
+                        logger.info(f"[BRAIN] System performance: {system_analysis.system_performance:.1f}")
+                        logger.info(f"[BRAIN] Code quality: {system_analysis.code_quality_score:.1f}")
+                        logger.info(f"[BRAIN] Security score: {system_analysis.security_score:.1f}")
+                        
+                        # Generate improvements if needed
+                        if system_analysis.system_complexity > 70 or system_analysis.system_performance < 60:
+                            logger.info("[BRAIN] Generating system improvements")
+                            
+                            # Generate auto-fixes
+                            fixes = await brain_analyzer.generate_auto_fixes()
+                            if fixes.get("fixes_generated", 0) > 0:
+                                logger.info(f"[BRAIN] Generated {fixes['fixes_generated']} auto-fixes")
+                            
+                            # Generate expansions
+                            expansions = await brain_analyzer.generate_expansions()
+                            if expansions.get("expansions_generated", 0) > 0:
+                                logger.info(f"[BRAIN] Generated {expansions['expansions_generated']} expansions")
+                            
+                            # Commit improvements if significant
+                            total_improvements = fixes.get("fixes_generated", 0) + expansions.get("expansions_generated", 0)
+                            if total_improvements >= 5:
+                                logger.info(f"[BRAIN] Committing {total_improvements} improvements to git")
+                                commit_result = await brain_analyzer.commit_improvements({
+                                    "fixes": fixes.get("fixes", []),
+                                    "expansions": expansions.get("expansions", [])
+                                })
+                                
+                                if commit_result.get("commits_made", 0) > 0:
+                                    logger.info(f"[BRAIN] Committed {commit_result['commits_made']} improvements")
+                                    _brain.git_commits_made += commit_result['commits_made']
+                    
+                    _brain_debugger.log_debug("brain_loop", "system_analysis", {
+                        "endpoints_analyzed": system_analysis.analyzed_endpoints,
+                        "complexity_score": system_analysis.system_complexity,
+                        "performance_score": system_analysis.system_performance,
+                        "duration_ms": analysis_duration
+                    })
+                    
+            except Exception as e:
+                logger.error(f"[BRAIN] System analysis failed: {e}")
+
             # Start resource monitoring if enabled
             try:
                 from app.services.resource_monitor import resource_monitor
