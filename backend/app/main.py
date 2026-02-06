@@ -320,6 +320,18 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/health/ai")
+async def health_ai():
+    """Check AI integration config status."""
+    s = get_settings()
+    return {
+        "ai_enabled": s.ai_enabled,
+        "ai_api_base_url": s.ai_api_base_url,
+        "ai_model": s.ai_model,
+        "ai_api_key_set": bool(s.ai_api_key),
+    }
+
+
 @app.get("/ping")
 async def ping():
     """Simple ping endpoint - no database access."""
