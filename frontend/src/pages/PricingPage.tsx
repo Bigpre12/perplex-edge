@@ -12,8 +12,8 @@ import { Link } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 
 // Whop product URLs (set these in environment)
-const WHOP_MONTHLY_URL = import.meta.env.VITE_WHOP_MONTHLY_URL || 'https://whop.com/checkout/your-monthly-plan';
-const WHOP_YEARLY_URL = import.meta.env.VITE_WHOP_YEARLY_URL || 'https://whop.com/checkout/your-yearly-plan';
+const WHOP_MONTHLY_URL = import.meta.env.VITE_WHOP_MONTHLY_URL || 'https://whop.com/dashboard/biz_7sFNOXiqmItFsq/products/';
+const WHOP_YEARLY_URL = import.meta.env.VITE_WHOP_YEARLY_URL || 'https://whop.com/dashboard/biz_7sFNOXiqmItFsq/products/';
 
 // Pricing
 const MONTHLY_PRICE = 29;
