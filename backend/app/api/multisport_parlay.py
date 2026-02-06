@@ -51,6 +51,7 @@ async def build_multisport_parlay(
         from datetime import datetime, timezone, timedelta
         from sqlalchemy import text
         from app.schemas.public import ParlayBuilderResponse
+        from app.services.team_service import get_player_team_data, calculate_odds_from_line, calculate_win_probability
         
         now = datetime.now(timezone.utc)
         six_hours_ago = now - timedelta(hours=6)
@@ -105,19 +106,26 @@ async def build_multisport_parlay(
             if grade_numeric < min_grade_numeric:
                 continue
             
+            # Get team data
+            team_data = await get_player_team_data(db, player_id)
+            
+            # Calculate derived values
+            odds = await calculate_odds_from_line(line_value)
+            win_prob = await calculate_win_probability(edge)
+            
             # Create leg with all required fields
             leg = {
                 "pick_id": pick_id,
                 "player_name": player_name,
                 "player_id": player_id,
-                "team_abbr": "UNK",  # Would be calculated from team data
-                "game_id": None,     # Would be extracted from game data
+                "team_abbr": team_data.get("team_abbr", "UNK"),
+                "game_id": team_data.get("game_id"),
                 "stat_type": stat_type,
-                "line": line_value,  # Use line_value for line field
-                "side": "OVER",       # Would be calculated from pick data
-                "odds": -110,         # Would be calculated from line
+                "line": line_value,
+                "side": "OVER",  # Would be calculated from pick data
+                "odds": odds,
                 "grade": grade,
-                "win_prob": 0.5,     # Would be calculated from edge
+                "win_prob": win_prob,
                 "edge": edge,
                 "hit_rate_5g": 0.0,   # Would be calculated
                 "is_100_last_5": False,  # Would be calculated
