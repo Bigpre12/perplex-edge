@@ -329,6 +329,7 @@ async def health_ai():
         "ai_api_base_url": s.ai_api_base_url,
         "ai_model": s.ai_model,
         "ai_api_key_set": bool(s.ai_api_key),
+        "raw_env_ai_enabled": os.getenv("AI_ENABLED", "NOT_SET"),
     }
 
 
