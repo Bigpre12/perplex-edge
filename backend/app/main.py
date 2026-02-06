@@ -50,6 +50,9 @@ from app.api.seasons import router as seasons_router
 from app.api.trades import router as trades_router
 from app.api.ai_recommendations import router as ai_router
 from app.api.deep_dive import router as deep_dive_router
+from app.api.sports import router as sports_router
+from app.api.meta import router as meta_router
+from app.api.health import router as health_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -416,6 +419,9 @@ app.include_router(seasons_router, prefix="/api", tags=["seasons"])
 app.include_router(trades_router, prefix="/api", tags=["trades"])
 app.include_router(ai_router, prefix="/api/v1/ai", tags=["ai"])
 app.include_router(deep_dive_router, prefix="/api/deep-dive", tags=["deep-dive"])
+app.include_router(sports_router, prefix="/api/sports", tags=["sports"])
+app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
+app.include_router(health_router, prefix="/api/health", tags=["health"])
 
 
 # =============================================================================

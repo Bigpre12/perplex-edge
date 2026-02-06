@@ -17,8 +17,21 @@ class SportRead(SportBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    active: bool
+
+
+class SportResponse(BaseModel):
+    """Sport response model for API endpoints."""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    name: str
+    league_code: str
+    active: bool
+    created_at: datetime
+    updated_at: datetime
 
 
 class SportList(BaseModel):
-    items: list[SportRead]
+    items: list[SportResponse]
     total: int
