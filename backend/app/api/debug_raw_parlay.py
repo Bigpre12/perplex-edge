@@ -34,6 +34,7 @@ async def test_raw_sql_parlay(
             FROM model_picks mp
             JOIN players p ON mp.player_id = p.id
             JOIN games g ON mp.game_id = g.id
+            JOIN markets m ON mp.market_id = m.id
             WHERE g.sport_id = {sport_id}
             AND mp.generated_at > '{six_hours_ago.isoformat()}'
             AND mp.line_value IS NOT NULL AND mp.line_value > 0
