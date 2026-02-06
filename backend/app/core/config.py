@@ -66,9 +66,9 @@ class Settings(BaseSettings):
 
     # AI Integration (optional - disabled by default)
     ai_enabled: bool = False
-    ai_api_base_url: str = "https://api.perplexity.ai"
+    ai_api_base_url: str = "https://api.groq.com/openai/v1"
     ai_api_key: str = ""
-    ai_model: str = "llama-3.1-sonar-large-128k-online"
+    ai_model: str = "llama-3.3-70b-versatile"
     ai_timeout_seconds: int = 30
     ai_max_retries: int = 2
 
