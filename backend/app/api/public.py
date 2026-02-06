@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload, aliased
 
 from app.core.database import get_db
 from app.core.sport_availability import get_sport_status, get_all_sport_statuses, get_current_tennis_tournaments
+from app.core.constants import SPORT_ID_TO_KEY
 from app.models import Sport, Team, Game, Market, Player, ModelPick, Line, Injury
 from app.models.injury import EXCLUDED_INJURY_STATUSES
 from app.services.memory_cache import cache, CacheKey
@@ -135,9 +136,10 @@ async def list_sports(
     if cached is not None:
         return cached
     
-    # Fetch from database
+    # Fetch from database — only return sports that have a valid config mapping
+    valid_sport_ids = set(SPORT_ID_TO_KEY.keys())
     result = await db.execute(
-        select(Sport).order_by(Sport.name)
+        select(Sport).where(Sport.id.in_(valid_sport_ids)).order_by(Sport.name)
     )
     sports = result.scalars().all()
     
