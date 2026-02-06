@@ -1,0 +1,49 @@
+# Railway Production Configuration
+# Optimized for production workloads with proper resource limits
+
+[build]
+builder = "dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+# Production resource limits
+[scale]
+minInstances = 1
+maxInstances = 2
+
+# Production memory and CPU allocation
+[resources]
+memory = "1024MB"  # 1GB RAM for production workloads
+cpu = "0.5"        # Half CPU core
+
+# Environment variables for production
+[variables]
+ENVIRONMENT = "production"
+SCHEDULER_ENABLED = "true"
+BRAIN_INTERVAL_MIN = "5"
+LOG_LEVEL = "INFO"
+
+# Production-specific optimizations
+[variables]
+ENABLE_WILDCARD_CORS = "true"
+CORS_ORIGINS = "*"
+API_RATE_LIMIT = "1000"
+CACHE_TTL = "300"
+DB_POOL_SIZE = "10"
+DB_MAX_OVERFLOW = "20"
+
+# Monitoring and observability
+[variables]
+SENTRY_ENABLED = "true"
+METRICS_ENABLED = "true"
+HEALTH_CHECK_INTERVAL = "30"
+
+# Performance tuning
+[variables]
+GC_THRESHOLD = "500"
+MEMORY_MONITORING = "true"
+PERFORMANCE_LOGGING = "true"

@@ -3438,6 +3438,18 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 "component": "frontend"
             })
 
+            # Start resource monitoring if enabled
+            try:
+                from app.services.resource_monitor import resource_monitor
+                
+                if not resource_monitor.monitoring_active:
+                    # Start resource monitoring in background
+                    asyncio.create_task(resource_monitor.start_monitoring(interval_seconds=60))
+                    logger.info("[BRAIN] Started resource monitoring")
+                    
+            except Exception as e:
+                logger.error(f"[BRAIN] Failed to start resource monitoring: {e}")
+
             # Memory health and optimization
             memory_start = time.time()
             memory_check = await check_memory_brain_health(db)

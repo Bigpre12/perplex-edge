@@ -1,0 +1,50 @@
+# Railway Hobby Tier Configuration
+# Optimized for $5/month credit usage with proper resource limits
+
+[build]
+builder = "dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+
+# Hobby tier resource limits (optimized for $5 credit)
+[scale]
+minInstances = 1
+maxInstances = 1
+
+# Hobby tier memory and CPU allocation
+[resources]
+memory = "512MB"  # 512MB RAM for hobby tier
+cpu = "0.25"       # Quarter CPU core
+
+# Hobby tier environment variables
+[variables]
+ENVIRONMENT = "production"
+SCHEDULER_ENABLED = "true"
+BRAIN_INTERVAL_MIN = "10"  # Longer interval for hobby tier
+LOG_LEVEL = "INFO"
+
+# Hobby tier optimizations (conservative resource usage)
+[variables]
+ENABLE_WILDCARD_CORS = "true"
+CORS_ORIGINS = "*"
+API_RATE_LIMIT = "100"     # Lower rate limit for hobby
+CACHE_TTL = "600"         # Longer cache TTL
+DB_POOL_SIZE = "5"        # Smaller connection pool
+DB_MAX_OVERFLOW = "10"
+
+# Memory optimization for hobby tier
+[variables]
+GC_THRESHOLD = "300"      # More aggressive GC
+MEMORY_MONITORING = "true"
+PERFORMANCE_LOGGING = "false"  # Reduce logging overhead
+FRONTEND_OPTIMIZATION = "false"  # Disable frontend brain on hobby
+
+# Cost control
+[variables]
+SCHEDULER_USE_STUBS = "true"  # Use stubs to save API calls
+API_QUOTA_MONITORING = "true"
+CREDIT_MONITORING = "true"

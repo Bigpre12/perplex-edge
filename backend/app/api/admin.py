@@ -726,6 +726,111 @@ async def get_snapshot(
 # Brain (Autonomous System) Endpoints
 # =============================================================================
 
+@router.get("/resources", response_model=dict)
+async def get_resource_status():
+    """Get current resource usage and credit monitoring."""
+    try:
+        from app.services.resource_monitor import resource_monitor
+        
+        # Get current metrics and optimization recommendations
+        optimization = resource_monitor.optimize_resource_usage()
+        baseline = resource_monitor.get_performance_baseline()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "resource_monitoring": optimization,
+            "performance_baseline": baseline,
+            "monitoring_active": resource_monitor.monitoring_active
+        }
+        
+    except Exception as e:
+        logger.error(f"Resource status failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Resource monitoring failed: {str(e)}")
+
+
+@router.post("/resources/monitoring/start")
+async def start_resource_monitoring(interval_seconds: int = 60):
+    """Start continuous resource monitoring."""
+    try:
+        from app.services.resource_monitor import resource_monitor
+        
+        if resource_monitor.monitoring_active:
+            return {
+                "status": "already_active",
+                "message": "Resource monitoring is already active"
+            }
+        
+        # Start monitoring in background
+        asyncio.create_task(resource_monitor.start_monitoring(interval_seconds))
+        
+        return {
+            "status": "started",
+            "message": f"Resource monitoring started with {interval_seconds}s interval",
+            "interval_seconds": interval_seconds
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to start resource monitoring: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start monitoring: {str(e)}")
+
+
+@router.post("/resources/monitoring/stop")
+async def stop_resource_monitoring():
+    """Stop continuous resource monitoring."""
+    try:
+        from app.services.resource_monitor import resource_monitor
+        
+        resource_monitor.stop_monitoring()
+        
+        return {
+            "status": "stopped",
+            "message": "Resource monitoring stopped"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to stop resource monitoring: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to stop monitoring: {str(e)}")
+
+
+@router.get("/resources/baseline", response_model=dict)
+async def get_performance_baseline():
+    """Get performance baseline statistics."""
+    try:
+        from app.services.resource_monitor import resource_monitor
+        
+        baseline = resource_monitor.get_performance_baseline()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "baseline": baseline
+        }
+        
+    except Exception as e:
+        logger.error(f"Performance baseline failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Baseline failed: {str(e)}")
+
+
+@router.get("/resources/export", response_model=dict)
+async def export_resource_metrics():
+    """Export resource metrics history."""
+    try:
+        from app.services.resource_monitor import resource_monitor
+        
+        export_data = resource_monitor.export_metrics()
+        
+        return {
+            "status": "success",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "export_data": json.loads(export_data)
+        }
+        
+    except Exception as e:
+        logger.error(f"Resource export failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+
 @router.get("/verification", response_model=dict)
 async def get_verification_status():
     """Get comprehensive verification status and go-live checklist."""
