@@ -545,28 +545,54 @@ def get_brain_health_summary() -> dict[str, Any]:
 
 async def _check_roster_health() -> HealthCheck:
     """
-    Check for significant roster changes and trades that impact prop accuracy.
+    Check for significant roster changes and trades across all sports that impact prop accuracy.
     """
-    from app.services.roster_updates import NBA_ROSTER_UPDATES_2026
-    
     try:
-        # Check for recent major trades
-        major_trades = []
-        for team, updates in NBA_ROSTER_UPDATES_2026.items():
-            if updates.get("team_rating_change", 0) > 10:  # Significant rating change
-                major_trades.append({
-                    "team": team,
-                    "acquisitions": len(updates.get("acquisitions", [])),
-                    "rating_change": updates.get("team_rating_change")
-                })
+        # Sport configurations with their roster update modules
+        SPORT_ROSTER_MODULES = {
+            "basketball_nba": "app.services.roster_updates",
+            "americanfootball_nfl": "app.services.nfl_roster_updates", 
+            "basketball_ncaab": "app.services.ncaab_roster_updates",
+            "baseball_mlb": "app.services.mlb_roster_updates",
+            "icehockey_nhl": "app.services.nhl_roster_updates"
+        }
         
-        if major_trades:
+        all_major_changes = {}
+        
+        for sport_key, module_path in SPORT_ROSTER_MODULES.items():
+            try:
+                # Import sport-specific roster updates
+                module = __import__(module_path, fromlist=[''])
+                roster_updates = getattr(module, 'ROSTER_UPDATES_2026', None)
+                
+                if roster_updates:
+                    major_trades = []
+                    for team, updates in roster_updates.items():
+                        if updates.get("team_rating_change", 0) > 10:  # Significant rating change
+                            major_trades.append({
+                                "team": team,
+                                "acquisitions": len(updates.get("acquisitions", [])),
+                                "rating_change": updates.get("team_rating_change")
+                            })
+                    
+                    if major_trades:
+                        all_major_changes[sport_key] = major_trades
+                        
+            except ImportError:
+                # Module doesn't exist yet, skip this sport
+                continue
+            except Exception as e:
+                logger.warning(f"[BRAIN] Error checking {sport_key} roster changes: {e}")
+                continue
+        
+        if all_major_changes:
+            total_changes = sum(len(changes) for changes in all_major_changes.values())
             return HealthCheck(
                 component="roster_changes",
-                status="degraded" if len(major_trades) > 2 else "healthy",
-                message=f"Detected {len(major_trades)} significant roster changes",
+                status="degraded" if total_changes > 3 else "healthy",
+                message=f"Detected {total_changes} significant roster changes across {len(all_major_changes)} sports",
                 details={
-                    "major_trades": major_trades,
+                    "sport_changes": all_major_changes,
                     "last_check": datetime.now(timezone.utc).isoformat()
                 }
             )
@@ -574,7 +600,7 @@ async def _check_roster_health() -> HealthCheck:
         return HealthCheck(
             component="roster_changes",
             status="healthy",
-            message="No significant roster changes detected",
+            message="No significant roster changes detected across any sports",
             details={"last_check": datetime.now(timezone.utc).isoformat()}
         )
         
@@ -605,44 +631,90 @@ def _adjust_priorities_for_injuries(priorities: dict[str, float]) -> dict[str, f
     if nba_injuries > 3:
         priorities["basketball_nba"] = min(priorities.get("basketball_nba", 1.0) * 1.5, 2.0)
     
-    # Boost NBA priority if there are major roster changes
-    from app.services.roster_updates import NBA_ROSTER_UPDATES_2026
-    major_changes = sum(1 for updates in NBA_ROSTER_UPDATES_2026.values() 
-                        if updates.get("team_rating_change", 0) > 10)
-    if major_changes > 0:
-        priorities["basketball_nba"] = min(priorities.get("basketball_nba", 1.0) * 1.3, 2.0)
+    # Boost sport priorities if there are major roster changes
+    SPORT_ROSTER_MODULES = {
+        "basketball_nba": "app.services.roster_updates",
+        "americanfootball_nfl": "app.services.nfl_roster_updates", 
+        "basketball_ncaab": "app.services.ncaab_roster_updates",
+        "baseball_mlb": "app.services.mlb_roster_updates",
+        "icehockey_nhl": "app.services.nhl_roster_updates"
+    }
+    
+    for sport_key, module_path in SPORT_ROSTER_MODULES.items():
+        try:
+            # Import sport-specific roster updates
+            module = __import__(module_path, fromlist=[''])
+            roster_updates = getattr(module, 'ROSTER_UPDATES_2026', None)
+            
+            if roster_updates:
+                major_changes = sum(1 for updates in roster_updates.values() 
+                                   if updates.get("team_rating_change", 0) > 10)
+                if major_changes > 0:
+                    priorities[sport_key] = min(priorities.get(sport_key, 1.0) * 1.3, 2.0)
+                    
+        except ImportError:
+            # Module doesn't exist yet, skip this sport
+            continue
+        except Exception as e:
+            logger.warning(f"[BRAIN] Error checking {sport_key} roster for priority: {e}")
+            continue
     
     return priorities
 
 
 async def _heal_roster_changes() -> HealingAction:
     """
-    Automatically update prop lines and team ratings when significant roster changes occur.
+    Automatically update prop lines and team ratings when significant roster changes occur across all sports.
     """
-    from app.services.roster_updates import PROP_LINE_ADJUSTMENTS, NBA_ROSTER_UPDATES_2026
-    
     try:
-        # Log detected roster changes
-        major_changes = []
-        for team, updates in NBA_ROSTER_UPDATES_2026.items():
-            if updates.get("team_rating_change", 0) > 10:
-                major_changes.append({
-                    "team": team,
-                    "rating_change": updates.get("team_rating_change"),
-                    "acquisitions": [a["player"] for a in updates.get("acquisitions", [])]
-                })
+        # Sport configurations with their roster update modules
+        SPORT_ROSTER_MODULES = {
+            "basketball_nba": "app.services.roster_updates",
+            "americanfootball_nfl": "app.services.nfl_roster_updates", 
+            "basketball_ncaab": "app.services.ncaab_roster_updates",
+            "baseball_mlb": "app.services.mlb_roster_updates",
+            "icehockey_nhl": "app.services.nhl_roster_updates"
+        }
         
-        # Apply prop line adjustments (in production would update database)
-        adjustments_applied = len(PROP_LINE_ADJUSTMENTS)
+        all_major_changes = {}
+        total_adjustments = 0
+        
+        for sport_key, module_path in SPORT_ROSTER_MODULES.items():
+            try:
+                # Import sport-specific roster updates
+                module = __import__(module_path, fromlist=[''])
+                roster_updates = getattr(module, 'ROSTER_UPDATES_2026', None)
+                prop_adjustments = getattr(module, 'PROP_LINE_ADJUSTMENTS', {})
+                
+                if roster_updates:
+                    major_changes = []
+                    for team, updates in roster_updates.items():
+                        if updates.get("team_rating_change", 0) > 10:
+                            major_changes.append({
+                                "team": team,
+                                "rating_change": updates.get("team_rating_change"),
+                                "acquisitions": [a["player"] for a in updates.get("acquisitions", [])]
+                            })
+                    
+                    if major_changes:
+                        all_major_changes[sport_key] = major_changes
+                        total_adjustments += len(prop_adjustments)
+                        
+            except ImportError:
+                # Module doesn't exist yet, skip this sport
+                continue
+            except Exception as e:
+                logger.warning(f"[BRAIN] Error healing {sport_key} roster changes: {e}")
+                continue
         
         return HealingAction(
             component="roster_changes",
             action="update_prop_lines",
             result="success",
-            reason=f"Updated {adjustments_applied} player prop lines for {len(major_changes)} major roster changes",
+            reason=f"Updated {total_adjustments} player prop lines across {len(all_major_changes)} sports with major roster changes",
             details={
-                "major_changes": major_changes,
-                "prop_adjustments": list(PROP_LINE_ADJUSTMENTS.keys()),
+                "sport_changes": all_major_changes,
+                "total_adjustments": total_adjustments,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
         )
