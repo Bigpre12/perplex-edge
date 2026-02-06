@@ -53,6 +53,7 @@ from app.api.deep_dive import router as deep_dive_router
 from app.api.sports import router as sports_router
 from app.api.meta import router as meta_router
 from app.api.health import router as health_router
+from app.api.brain_persistence import router as brain_persistence_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -422,6 +423,7 @@ app.include_router(deep_dive_router, prefix="/api/deep-dive", tags=["deep-dive"]
 app.include_router(sports_router, prefix="/api/sports", tags=["sports"])
 app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
 app.include_router(health_router, prefix="/api/health", tags=["health"])
+app.include_router(brain_persistence_router, tags=["brain-persistence"])
 
 
 # =============================================================================

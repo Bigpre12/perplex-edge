@@ -24,6 +24,7 @@ from datetime import datetime, timezone, timedelta, date
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 from app.core.state import BrainState  # Add Optional import for brain state
+from app.services.brain_persistence import brain_persistence
 
 from app.core.config import get_settings
 from app.core.database import get_session_maker
@@ -131,6 +132,20 @@ class BrainState:
         )
         self.decisions.append(decision)
         logger.info(f"[BRAIN:{category.upper()}] {action} — {reasoning} → {outcome}")
+        
+        # Persist to PostgreSQL asynchronously
+        try:
+            asyncio.create_task(
+                brain_persistence.log_decision(
+                    category=category,
+                    action=action,
+                    reasoning=reasoning,
+                    outcome=outcome,
+                    details=details or {}
+                )
+            )
+        except Exception as e:
+            logger.warning(f"[BRAIN:PERSIST] Failed to persist decision: {e}")
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize state for the /admin/brain endpoint."""
@@ -436,6 +451,18 @@ class CorrelationTracker:
             "events": []
         }
         
+        # Persist correlation start to PostgreSQL
+        try:
+            asyncio.create_task(
+                brain_persistence.start_correlation(
+                    correlation_id=correlation_id,
+                    operation_type=operation_type,
+                    details={"started_via": "brain_correlation_tracker"}
+                )
+            )
+        except Exception as e:
+            logger.warning(f"[BRAIN:PERSIST] Failed to persist correlation start: {e}")
+        
         return correlation_id
     
     def add_event(self, correlation_id: str, event: str, data: dict = None):
@@ -446,6 +473,18 @@ class CorrelationTracker:
                 "event": event,
                 "data": data or {}
             })
+            
+            # Persist event to PostgreSQL
+            try:
+                asyncio.create_task(
+                    brain_persistence.add_correlation_event(
+                        correlation_id=correlation_id,
+                        event=event,
+                        data=data or {}
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"[BRAIN:PERSIST] Failed to persist correlation event: {e}")
     
     def complete_operation(self, correlation_id: str, status: str, result: dict = None):
         """Mark an operation as completed."""
@@ -465,6 +504,19 @@ class CorrelationTracker:
             # Keep only last 1000 operations
             if len(self.operation_history) > 1000:
                 self.operation_history = self.operation_history[-1000:]
+            
+            # Persist completion to PostgreSQL
+            try:
+                asyncio.create_task(
+                    brain_persistence.complete_correlation(
+                        correlation_id=correlation_id,
+                        status=status,
+                        result=result or {},
+                        error_message=None if status == "completed" else f"Operation {status}"
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"[BRAIN:PERSIST] Failed to persist correlation completion: {e}")
     
     def get_operation_summary(self) -> dict:
         """Get summary of all operations."""
