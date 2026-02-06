@@ -3,6 +3,7 @@ import os
 import time
 import uuid
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Depends, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -155,6 +156,26 @@ async def lifespan(app: FastAPI):
     
     # Initialize database
     async with db_lifespan(app):
+        # Database is now initialized and ready
+        
+        # Start the autonomous brain loop
+        try:
+            from app.services.brain import brain_loop
+            import asyncio
+            
+            # Start brain loop in background
+            brain_task = asyncio.create_task(brain_loop(interval_minutes=5, initial_delay=90))
+            logger.info("[STARTUP] Autonomous brain loop started (5min cycles, 90s delay)")
+            
+            # Store task reference for cleanup
+            app.state.brain_task = brain_task
+            
+        except Exception as e:
+            logger.error(f"[STARTUP] Failed to start brain loop: {e}", exc_info=True)
+            # Continue without brain - system can still function
+        
+        logger.info("Application startup complete")
+        
         # Start background tasks if scheduler is enabled
         background_tasks = []
         if settings.scheduler_enabled:
@@ -518,6 +539,53 @@ async def cache_bust():
 async def scheduler_status():
     """Get scheduler status and running tasks."""
     return get_scheduler_status()
+
+
+@app.get("/api/brain/status")
+async def brain_status():
+    """Get autonomous brain status and health."""
+    try:
+        from app.services.brain import _brain, _brain_debugger
+        
+        # Check if brain is running
+        brain_task = getattr(app.state, 'brain_task', None)
+        is_running = brain_task and not brain_task.done()
+        
+        # Get brain state
+        brain_info = {
+            "is_active": is_running,
+            "started_at": _brain.started_at.isoformat() if hasattr(_brain, 'started_at') else None,
+            "cycle_count": _brain.cycle_count,
+            "overall_status": _brain.overall_status,
+            "uptime_hours": None,
+            "debug_enabled": _brain_debugger.debug_enabled,
+            "debug_log_size": len(_brain_debugger.debug_log),
+            "error_log_size": len(_brain_debugger.error_log),
+            "last_cycle": None,
+        }
+        
+        if hasattr(_brain, 'started_at') and _brain.started_at:
+            brain_info["uptime_hours"] = (datetime.now(timezone.utc) - _brain.started_at).total_seconds() / 3600
+        
+        # Get last cycle info if available
+        if _brain_debugger.debug_log:
+            last_cycle = next((log for log in reversed(_brain_debugger.debug_log) 
+                             if log.get("component") == "brain_loop" and "cycle_" in log.get("operation", "")), None)
+            if last_cycle:
+                brain_info["last_cycle"] = {
+                    "timestamp": last_cycle.get("timestamp"),
+                    "operation": last_cycle.get("operation"),
+                    "data": last_cycle.get("data", {}),
+                }
+        
+        return brain_info
+        
+    except Exception as e:
+        return {
+            "is_active": False,
+            "error": str(e),
+            "message": "Brain service not available"
+        }
 
 
 # =============================================================================
