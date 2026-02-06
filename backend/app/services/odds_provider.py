@@ -2079,12 +2079,12 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Keyonte George", "pts": 18.5, "reb": 3.5, "ast": 6.5, "pra": 28.5, "pr": 22.0, "pa": 25.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jusuf Nurkic", "pts": 11.5, "reb": 10.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 15.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
             ],
-            # Washington Wizards - T. Young (IL), A. Davis, K. Jones, B. Coulibaly, A. Sarr (2026 Post-Trade Deadline)
+            # Washington Wizards - T. Johnson, K. George, B. Coulibaly, J. Champagnie, A. Sarr (Current Starters)
             "WAS": [
-                {"name": "Trae Young", "pts": 28.5, "reb": 3.5, "ast": 10.5, "pra": 42.5, "pr": 32.0, "pa": 39.0, "ra": 14.0, "3pm": 4.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
-                {"name": "Anthony Davis", "pts": 26.5, "reb": 12.5, "ast": 3.5, "pra": 42.5, "pr": 39.0, "pa": 30.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 2.5},
-                {"name": "Kobe Bufkin", "pts": 16.5, "reb": 4.5, "ast": 6.5, "pra": 27.5, "pr": 21.0, "pa": 23.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Tyus Johnson", "pts": 12.5, "reb": 4.5, "ast": 6.5, "pra": 23.5, "pr": 17.0, "pa": 19.0, "ra": 11.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Kevin George", "pts": 14.5, "reb": 5.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 19.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Bilal Coulibaly", "pts": 15.5, "reb": 6.5, "ast": 5.5, "pra": 27.5, "pr": 22.0, "pa": 21.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Jalen Champagnie", "pts": 13.5, "reb": 6.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 18.0, "ra": 11.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Alex Sarr", "pts": 13.5, "reb": 9.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 17.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
             ],
         }
@@ -3862,7 +3862,7 @@ NBA_ROSTERS = {
     "San Antonio Spurs": ["De'Aaron Fox", "Stephon Castle", "Devin Vassell", "Jalen Champagnie", "Victor Wembanyama"],
     "Toronto Raptors": ["Immanuel Quickley", "Brandon Ingram", "RJ Barrett (IL)", "Scottie Barnes", "Chris Murray-Boyles"],
     "Utah Jazz": ["Keyonte George", "Collin Williams", "Aaron Bailey", "Lauri Markkanen", "Walker Kessler"],
-    "Washington Wizards": ["Trae Young (IL)", "Anthony Davis", "Kobe Bufkin", "Bilal Coulibaly", "Alex Sarr"],
+    "Washington Wizards": ["Tyus Johnson", "Kevin George", "Bilal Coulibaly", "Jalen Champagnie", "Alex Sarr"],
     "Detroit Pistons": ["Cade Cunningham", "Dyson Robinson", "Ausar Thompson", "Taj Harris (IL)", "Jalen Duren"],
 }
 
