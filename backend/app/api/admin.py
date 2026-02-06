@@ -723,6 +723,33 @@ async def get_snapshot(
 
 
 # =============================================================================
+# Brain (Autonomous System) Endpoints
+# =============================================================================
+
+@router.get("/brain")
+async def get_brain_status():
+    """
+    Get full autonomous brain status.
+    
+    Shows self-monitoring health checks, healing history,
+    optimization state, and recent decisions.
+    """
+    from app.services.brain import get_brain_status as _get_brain_status
+    return _get_brain_status()
+
+
+@router.get("/brain/health")
+async def get_brain_health():
+    """
+    Get compact brain health summary.
+    
+    Quick check: how many components are healthy/degraded/critical.
+    """
+    from app.services.brain import get_brain_health_summary
+    return get_brain_health_summary()
+
+
+# =============================================================================
 # Sync Status Endpoints
 # =============================================================================
 

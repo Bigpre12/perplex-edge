@@ -1378,6 +1378,16 @@ async def watchlist_alert_loop(interval_minutes: int = 15, initial_delay: int = 
 
 
 # =============================================================================
+# Autonomous Brain Loop
+# =============================================================================
+
+async def _brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
+    """Wrapper that lazily imports and runs the brain loop."""
+    from app.services.brain import brain_loop
+    await brain_loop(interval_minutes=interval_minutes, initial_delay=initial_delay)
+
+
+# =============================================================================
 # Scheduler Control Functions
 # =============================================================================
 
@@ -1573,6 +1583,15 @@ def start_background_tasks() -> List[asyncio.Task]:
     )
     tasks.append(task_watchlist)
     logger.info(f"Created watchlist_alert_loop task (every {watchlist_interval} min)")
+
+    # Autonomous brain loop (self-monitoring, self-healing, self-optimizing)
+    brain_interval = getattr(settings, 'brain_interval_min', 5)
+    task_brain = asyncio.create_task(
+        _brain_loop(interval_minutes=brain_interval, initial_delay=90),
+        name="brain_loop"
+    )
+    tasks.append(task_brain)
+    logger.info(f"Created brain_loop task (every {brain_interval} min)")
 
     _background_tasks = tasks
     return tasks
