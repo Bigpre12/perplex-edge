@@ -40,9 +40,6 @@ async def debug_parlay_step_by_step(
         
         step1_data = []
         for pick, player, game in model_picks:
-            # Convert generated_at to naive for comparison
-            generated_at_naive = pick.generated_at.replace(tzinfo=None) if pick.generated_at.tzinfo else pick.generated_at
-            
             step1_data.append({
                 "pick_id": pick.id,
                 "player_name": player.name,
@@ -81,9 +78,8 @@ async def debug_parlay_step_by_step(
         # Step 4: Check freshness filtering
         step4_data = []
         for data in step3_data:
-            # Convert generated_at to naive for comparison
-            generated_at_naive = datetime.fromisoformat(data["generated_at"].replace('Z', '+00:00'))
-            pick_age = now - generated_at_naive
+            # Use timezone-aware datetime comparison
+            pick_age = now - data["generated_at"]
             is_fresh = pick_age.total_seconds() <= 21600  # 6 hours
             step4_data.append({
                 **data,
