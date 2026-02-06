@@ -34,6 +34,9 @@ async def fix_all_sport_mappings(db: AsyncSession):
     }
     
     try:
+        # Import models here to avoid circular imports
+        from app.models import Player, Team, Line, ModelPick, Game
+        
         # Step 1: Fix NBA players incorrectly in NHL
         logger.info("🏀 Fixing NBA players incorrectly assigned to NHL...")
         
@@ -187,6 +190,9 @@ async def verify_sport_mappings(db: AsyncSession):
     }
     
     try:
+        # Import models here to avoid circular imports
+        from app.models import Player, Team
+        
         # Count NBA players
         nba_teams_result = await db.execute(
             select(Team).where(Team.sport_id == 30)
@@ -270,12 +276,19 @@ async def verify_sport_mappings(db: AsyncSession):
 async def main():
     """Main function to run the fix."""
     
+    # Add backend to path
+    import sys
+    import os
+    backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, backend_path)
+    
     # Import here to avoid circular imports
-    from app.core.database import get_db_session
+    from app.core.database import get_session_maker
     from app.models import Player, Team, Line, ModelPick, Game
     
     # Get database session
-    async with get_db_session() as db:
+    session_maker = get_session_maker()
+    async with session_maker() as db:
         # Step 1: Fix mappings
         fix_results = await fix_all_sport_mappings(db)
         

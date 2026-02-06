@@ -835,6 +835,306 @@ async def get_analysis_summary():
         raise HTTPException(status_code=500, detail=f"Analysis summary failed: {str(e)}")
 
 
+@router.post("/fix-sport-mappings", response_model=dict)
+async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
+    """Fix sport mappings in production database - CRITICAL FIX."""
+    try:
+        logger.info("[ADMIN] Starting PRODUCTION sport mapping fix...")
+        
+        from app.models import Player, Team, Line, ModelPick, Game
+        from sqlalchemy import select, update, func
+        
+        # Track changes
+        changes_made = {
+            "nba_players_fixed": 0,
+            "nhl_players_fixed": 0,
+            "other_sports_fixed": 0,
+            "total_players_fixed": 0,
+            "lines_fixed": 0,
+            "picks_fixed": 0,
+            "errors": []
+        }
+        
+        try:
+            # Step 1: Fix NBA players incorrectly in NHL (sport_id=53)
+            logger.info("[ADMIN] Fixing NBA players incorrectly assigned to NHL...")
+            
+            # Get NBA teams
+            nba_teams_result = await db.execute(
+                select(Team).where(Team.sport_id == 30)  # NBA sport_id
+            )
+            nba_teams = nba_teams_result.scalars().all()
+            nba_team_ids = [team.id for team in nba_teams]
+            
+            if nba_team_ids:
+                # Find NBA players incorrectly assigned to NHL
+                nba_players_in_nhl_result = await db.execute(
+                    select(Player)
+                    .where(
+                        Player.team_id.in_(nba_team_ids),
+                        Player.sport_id == 53  # Incorrectly assigned to NHL
+                    )
+                )
+                nba_players_in_nhl = nba_players_in_nhl_result.scalars().all()
+                
+                # Fix NBA players
+                for player in nba_players_in_nhl:
+                    await db.execute(
+                        update(Player)
+                        .where(Player.id == player.id)
+                        .values(sport_id=30)  # Correct NBA sport_id
+                    )
+                    changes_made["nba_players_fixed"] += 1
+                    logger.info(f"[ADMIN] Fixed NBA player: {player.name} (ID: {player.id})")
+            
+            # Step 2: Fix NHL players incorrectly in NBA (sport_id=30)
+            logger.info("[ADMIN] Fixing NHL players incorrectly assigned to NBA...")
+            
+            # Get NHL teams
+            nhl_teams_result = await db.execute(
+                select(Team).where(Team.sport_id == 53)  # NHL sport_id
+            )
+            nhl_teams = nhl_teams_result.scalars().all()
+            nhl_team_ids = [team.id for team in nhl_teams]
+            
+            if nhl_team_ids:
+                # Find NHL players incorrectly assigned to NBA
+                nhl_players_in_nba_result = await db.execute(
+                    select(Player)
+                    .where(
+                        Player.team_id.in_(nhl_team_ids),
+                        Player.sport_id == 30  # Incorrectly assigned to NBA
+                    )
+                )
+                nhl_players_in_nba = nhl_players_in_nba_result.scalars().all()
+                
+                # Fix NHL players
+                for player in nhl_players_in_nba:
+                    await db.execute(
+                        update(Player)
+                        .where(Player.id == player.id)
+                        .values(sport_id=53)  # Correct NHL sport_id
+                    )
+                    changes_made["nhl_players_fixed"] += 1
+                    logger.info(f"[ADMIN] Fixed NHL player: {player.name} (ID: {player.id})")
+            
+            # Step 3: Fix ALL players to match their team's sport
+            logger.info("[ADMIN] Fixing ALL players to match their team's sport...")
+            
+            # Get all players with incorrect sport mappings
+            incorrect_mappings_result = await db.execute(
+                select(Player, Team)
+                .join(Team, Player.team_id == Team.id)
+                .where(Player.sport_id != Team.sport_id)
+            )
+            incorrect_mappings = incorrect_mappings_result.all()
+            
+            for player, team in incorrect_mappings:
+                await db.execute(
+                    update(Player)
+                    .where(Player.id == player.id)
+                    .values(sport_id=team.sport_id)
+                )
+                changes_made["other_sports_fixed"] += 1
+                logger.info(f"[ADMIN] Fixed {player.name} from sport_id={player.sport_id} to sport_id={team.sport_id} ({team.name})")
+            
+            # Step 4: Update related data (Lines)
+            logger.info("[ADMIN] Updating Lines to match their game's sport...")
+            
+            lines_to_fix_result = await db.execute(
+                select(Line, Game)
+                .join(Game, Line.game_id == Game.id)
+                .where(Line.sport_id != Game.sport_id)
+            )
+            lines_to_fix = lines_to_fix_result.all()
+            
+            for line, game in lines_to_fix:
+                await db.execute(
+                    update(Line)
+                    .where(Line.id == line.id)
+                    .values(sport_id=game.sport_id)
+                )
+                changes_made["lines_fixed"] += 1
+                logger.info(f"[ADMIN] Fixed Line {line.id} to sport_id={game.sport_id}")
+            
+            # Step 5: Update related data (ModelPicks)
+            logger.info("[ADMIN] Updating ModelPicks to match their game's sport...")
+            
+            picks_to_fix_result = await db.execute(
+                select(ModelPick, Game)
+                .join(Game, ModelPick.game_id == Game.id)
+                .where(ModelPick.sport_id != Game.sport_id)
+            )
+            picks_to_fix = picks_to_fix_result.all()
+            
+            for pick, game in picks_to_fix:
+                await db.execute(
+                    update(ModelPick)
+                    .where(ModelPick.id == pick.id)
+                    .values(sport_id=game.sport_id)
+                )
+                changes_made["picks_fixed"] += 1
+                logger.info(f"[ADMIN] Fixed ModelPick {pick.id} to sport_id={game.sport_id}")
+            
+            # Commit all changes
+            await db.commit()
+            
+            # Calculate totals
+            changes_made["total_players_fixed"] = (
+                changes_made["nba_players_fixed"] + 
+                changes_made["nhl_players_fixed"] + 
+                changes_made["other_sports_fixed"]
+            )
+            
+            logger.info("[ADMIN] ✅ Sport mapping fix completed!")
+            logger.info(f"[ADMIN] 📊 Summary: {changes_made}")
+            
+            return {
+                "status": "success",
+                "message": "Sport mapping fix completed successfully",
+                "changes_made": changes_made,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"[ADMIN] ❌ Error fixing sport mappings: {e}")
+            await db.rollback()
+            changes_made["errors"].append(str(e))
+            return {
+                "status": "error",
+                "message": "Sport mapping fix failed",
+                "changes_made": changes_made,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+    except Exception as e:
+        logger.error(f"[ADMIN] Critical error in sport mapping fix: {e}")
+        raise HTTPException(status_code=500, detail=f"Sport mapping fix failed: {str(e)}")
+
+
+@router.post("/verify-sport-mappings", response_model=dict)
+async def verify_sport_mappings_production(db: AsyncSession = Depends(get_db)):
+    """Verify sport mappings are correct in production."""
+    try:
+        logger.info("[ADMIN] Verifying sport mappings...")
+        
+        from app.models import Player, Team
+        from sqlalchemy import select, func
+        
+        verification_results = {
+            "nba_players_in_nba": 0,
+            "nba_players_in_nhl": 0,
+            "nhl_players_in_nhl": 0,
+            "nhl_players_in_nba": 0,
+            "total_players": 0,
+            "incorrect_mappings": 0,
+            "status": "unknown"
+        }
+        
+        try:
+            # Count NBA players
+            nba_teams_result = await db.execute(
+                select(Team).where(Team.sport_id == 30)
+            )
+            nba_teams = nba_teams_result.scalars().all()
+            nba_team_ids = [team.id for team in nba_teams]
+            
+            if nba_team_ids:
+                # NBA players correctly in NBA
+                nba_players_in_nba_result = await db.execute(
+                    select(func.count(Player.id))
+                    .where(
+                        Player.team_id.in_(nba_team_ids),
+                        Player.sport_id == 30
+                    )
+                )
+                verification_results["nba_players_in_nba"] = nba_players_in_nba_result.scalar() or 0
+                
+                # NBA players incorrectly in NHL
+                nba_players_in_nhl_result = await db.execute(
+                    select(func.count(Player.id))
+                    .where(
+                        Player.team_id.in_(nba_team_ids),
+                        Player.sport_id == 53
+                    )
+                )
+                verification_results["nba_players_in_nhl"] = nba_players_in_nhl_result.scalar() or 0
+            
+            # Count NHL players
+            nhl_teams_result = await db.execute(
+                select(Team).where(Team.sport_id == 53)
+            )
+            nhl_teams = nhl_teams_result.scalars().all()
+            nhl_team_ids = [team.id for team in nhl_teams]
+            
+            if nhl_team_ids:
+                # NHL players correctly in NHL
+                nhl_players_in_nhl_result = await db.execute(
+                    select(func.count(Player.id))
+                    .where(
+                        Player.team_id.in_(nhl_team_ids),
+                        Player.sport_id == 53
+                    )
+                )
+                verification_results["nhl_players_in_nhl"] = nhl_players_in_nhl_result.scalar() or 0
+                
+                # NHL players incorrectly in NBA
+                nhl_players_in_nba_result = await db.execute(
+                    select(func.count(Player.id))
+                    .where(
+                        Player.team_id.in_(nhl_team_ids),
+                        Player.sport_id == 30
+                    )
+                )
+                verification_results["nhl_players_in_nba"] = nhl_players_in_nba_result.scalar() or 0
+            
+            # Total players and incorrect mappings
+            total_players_result = await db.execute(select(func.count(Player.id)))
+            verification_results["total_players"] = total_players_result.scalar() or 0
+            
+            incorrect_mappings_result = await db.execute(
+                select(func.count(Player.id))
+                .select_from(
+                    select(Player.id)
+                    .join(Team, Player.team_id == Team.id)
+                    .where(Player.sport_id != Team.sport_id)
+                    .subquery()
+                )
+            )
+            verification_results["incorrect_mappings"] = incorrect_mappings_result.scalar() or 0
+            
+            # Determine status
+            if verification_results["incorrect_mappings"] == 0:
+                verification_results["status"] = "perfect"
+            elif verification_results["nba_players_in_nhl"] == 0 and verification_results["nhl_players_in_nba"] == 0:
+                verification_results["status"] = "good"
+            else:
+                verification_results["status"] = "needs_fix"
+            
+            logger.info("[ADMIN] ✅ Sport mapping verification completed!")
+            logger.info(f"[ADMIN] 📊 Results: {verification_results}")
+            
+            return {
+                "status": "success",
+                "verification": verification_results,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"[ADMIN] ❌ Error verifying sport mappings: {e}")
+            return {
+                "status": "error",
+                "verification": verification_results,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+    except Exception as e:
+        logger.error(f"[ADMIN] Critical error in sport mapping verification: {e}")
+        raise HTTPException(status_code=500, detail=f"Sport mapping verification failed: {str(e)}")
+
+
 @router.get("/resources", response_model=dict)
 async def get_resource_status():
     """Get current resource usage and credit monitoring."""
