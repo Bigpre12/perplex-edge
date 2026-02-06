@@ -2936,23 +2936,28 @@ async def check_cors_health(db: AsyncSession) -> dict:
             "allowed_origins": None
         }
         
-        # Test backend API accessibility
+        # Test backend API accessibility with more aggressive testing
         test_endpoints = [
             "/api/meta",
-            "/api/sports",
+            "/api/sports", 
             "/api/cors-debug"
         ]
         
         endpoint_results = {}
         failed_tests = 0
+        critical_failures = 0
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             for endpoint in test_endpoints:
                 try:
                     # Test with Origin header to simulate frontend request
                     response = await client.get(
                         f"{backend_url}{endpoint}",
-                        headers={"Origin": frontend_url}
+                        headers={
+                            "Origin": frontend_url,
+                            "Access-Control-Request-Method": "GET",
+                            "Access-Control-Request-Headers": "Content-Type"
+                        }
                     )
                     
                     # Check CORS headers
@@ -2963,17 +2968,35 @@ async def check_cors_health(db: AsyncSession) -> dict:
                         "access_control_allow_credentials": response.headers.get("access-control-allow-credentials"),
                     }
                     
+                    # More aggressive CORS checking
+                    cors_working = (
+                        response.headers.get("access-control-allow-origin") is not None and
+                        (
+                            response.headers.get("access-control-allow-origin") == "*" or
+                            frontend_url in response.headers.get("access-control-allow-origin", "")
+                        )
+                    )
+                    
+                    # Check for missing CORS headers completely
+                    missing_cors_headers = not any([
+                        response.headers.get("access-control-allow-origin"),
+                        response.headers.get("access-control-allow-methods"),
+                        response.headers.get("access-control-allow-headers")
+                    ])
+                    
+                    if missing_cors_headers:
+                        critical_failures += 1
+                        cors_working = False
+                    
                     endpoint_results[endpoint] = {
                         "status_code": response.status_code,
                         "cors_headers": cors_headers,
-                        "cors_working": (
-                            response.headers.get("access-control-allow-origin") is not None and
-                            (response.headers.get("access-control-allow-origin") == "*" or
-                             frontend_url in response.headers.get("access-control-allow-origin", ""))
-                        )
+                        "cors_working": cors_working,
+                        "missing_cors_headers": missing_cors_headers,
+                        "critical_failure": missing_cors_headers
                     }
                     
-                    if not endpoint_results[endpoint]["cors_working"]:
+                    if not cors_working:
                         failed_tests += 1
                         
                 except Exception as e:
@@ -2981,12 +3004,15 @@ async def check_cors_health(db: AsyncSession) -> dict:
                         "status_code": None,
                         "cors_headers": {},
                         "cors_working": False,
-                        "error": str(e)
+                        "error": str(e),
+                        "critical_failure": True
                     }
                     failed_tests += 1
+                    critical_failures += 1
         
         cors_details["endpoint_tests"] = endpoint_results
         cors_details["failed_tests"] = failed_tests
+        cors_details["critical_failures"] = critical_failures
         cors_details["total_tests"] = len(test_endpoints)
         
         # Get current CORS configuration
@@ -2997,8 +3023,15 @@ async def check_cors_health(db: AsyncSession) -> dict:
         except Exception as e:
             cors_details["config_error"] = str(e)
         
-        # Determine health status
-        if failed_tests == 0:
+        # More aggressive health status determination
+        if critical_failures > 0:
+            return HealthCheck(
+                component="cors",
+                status="critical",
+                message=f"CORS completely broken ({critical_failures} critical failures)",
+                details=cors_details
+            )
+        elif failed_tests == 0:
             return HealthCheck(
                 component="cors",
                 status="healthy",
@@ -3031,7 +3064,7 @@ async def check_cors_health(db: AsyncSession) -> dict:
 
 
 async def heal_cors_issues(db: AsyncSession) -> dict:
-    """Attempt to heal CORS issues by updating configuration."""
+    """Attempt to heal CORS issues by updating configuration with emergency fixes."""
     try:
         import os
         
@@ -3041,6 +3074,30 @@ async def heal_cors_issues(db: AsyncSession) -> dict:
             "fixes_applied": [],
             "errors": []
         }
+        
+        # Apply emergency CORS fix immediately
+        try:
+            from app.services.emergency_cors_fix import apply_emergency_cors_fix
+            emergency_result = apply_emergency_cors_fix()
+            
+            if emergency_result.get("success"):
+                heal_result["successful_fixes"] += len(emergency_result.get("fixes_applied", []))
+                heal_result["fixes_applied"].extend(emergency_result.get("fixes_applied", []))
+                
+                _brain.log_decision(
+                    "heal",
+                    "emergency_cors_fix",
+                    f"Applied emergency CORS fix: {emergency_result.get('message')}",
+                    "success",
+                    emergency_result
+                )
+            else:
+                heal_result["errors"].append(f"Emergency CORS fix failed: {emergency_result.get('error')}")
+                
+        except Exception as e:
+            heal_result["errors"].append(f"Emergency CORS fix error: {str(e)}")
+        
+        heal_result["attempted_fixes"] += 1
         
         # Check if we're in Railway environment
         is_railway = os.getenv("RAILWAY_ENVIRONMENT") is not None
@@ -3052,6 +3109,8 @@ async def heal_cors_issues(db: AsyncSession) -> dict:
             try:
                 # Update environment variables (if possible)
                 os.environ["CORS_ORIGINS"] = "*"
+                os.environ["ALLOW_ALL_ORIGINS"] = "true"
+                os.environ["ENABLE_WILDCARD_CORS"] = "true"
                 
                 # Log the fix attempt
                 logger.warning("[BRAIN] CORS HEAL: Forcing wildcard CORS for Railway environment")
