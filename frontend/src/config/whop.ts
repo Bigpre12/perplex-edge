@@ -4,7 +4,7 @@
 
 export const WHOP_CHECKOUT_URLS = {
   free: 'https://whop.com/checkout/plan_WxHa3UGwMmjdd',
-  pro: '', // Add when available
+  pro: 'https://whop.com/checkout/plan_8Qztt62kvlW8y',
 };
 
 /**

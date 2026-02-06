@@ -241,8 +241,10 @@ export function isSportLocked(sportId: number): boolean {
 export function getWhopCheckoutUrl(plan: 'free' | 'pro' = 'free'): string {
   if (plan === 'free') {
     return 'https://whop.com/checkout/plan_WxHa3UGwMmjdd';
+  } else if (plan === 'pro') {
+    return 'https://whop.com/checkout/plan_8Qztt62kvlW8y';
   }
-  return ''; // Add pro URL when available
+  return 'https://whop.com/checkout/plan_WxHa3UGwMmjdd'; // Fallback to free
 }
 
 /**
