@@ -117,9 +117,6 @@ async def get_ai_recommendations(
     if markets:
         conditions.append(Market.stat_type.in_([m.upper() for m in markets]))
 
-    if min_ev > 0:
-        conditions.append(ModelPick.expected_value >= min_ev)
-
     query = (
         select(ModelPick, Player, PlayerTeam, Game, HomeTeam, AwayTeam, Market)
         .join(Player, ModelPick.player_id == Player.id)
