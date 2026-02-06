@@ -561,6 +561,97 @@ def get_brain_health_summary() -> dict[str, Any]:
     }
 
 
+async def _check_storage_health() -> HealthCheck:
+    """
+    Check Railway storage usage and implement cleanup if needed.
+    """
+    try:
+        import os
+        import shutil
+        from pathlib import Path
+        
+        # Get storage usage information
+        storage_info = {}
+        total_size = 0
+        cleanup_candidates = []
+        
+        # Check common storage-heavy directories
+        directories_to_check = [
+            "/tmp",
+            "/app/logs", 
+            "/app/cache",
+            "/app/.pytest_cache",
+            "/app/__pycache__",
+        ]
+        
+        for dir_path in directories_to_check:
+            if os.path.exists(dir_path):
+                try:
+                    size = sum(f.stat().st_size for f in Path(dir_path).rglob('*') if f.is_file())
+                    storage_info[dir_path] = {
+                        "size_bytes": size,
+                        "size_mb": round(size / (1024 * 1024), 2),
+                        "file_count": len(list(Path(dir_path).rglob('*')))
+                    }
+                    total_size += size
+                    
+                    # Mark for cleanup if > 100MB
+                    if size > 100 * 1024 * 1024:  # 100MB
+                        cleanup_candidates.append(dir_path)
+                        
+                except Exception as e:
+                    storage_info[dir_path] = {"error": str(e)}
+        
+        # Check disk space usage
+        stat = os.statvfs('/')
+        free_space_gb = (stat.f_bavail * stat.f_frsize) / (1024**3)
+        total_space_gb = (stat.f_blocks * stat.f_frsize) / (1024**3)
+        used_space_gb = total_space_gb - free_space_gb
+        usage_percentage = (used_space_gb / total_space_gb) * 100
+        
+        storage_info["disk_space"] = {
+            "total_gb": round(total_space_gb, 2),
+            "used_gb": round(used_space_gb, 2),
+            "free_gb": round(free_space_gb, 2),
+            "usage_percentage": round(usage_percentage, 2)
+        }
+        
+        # Determine health status
+        if free_space_gb < 0.5:  # Less than 500MB free
+            status = "critical"
+            message = f"Critical: Only {free_space_gb:.1f}GB free storage"
+        elif free_space_gb < 1.0:  # Less than 1GB free
+            status = "degraded"
+            message = f"Warning: Only {free_space_gb:.1f}GB free storage"
+        elif usage_percentage > 85:
+            status = "degraded"
+            message = f"Warning: {usage_percentage:.1f}% storage used"
+        else:
+            status = "healthy"
+            message = f"Storage OK: {free_space_gb:.1f}GB free ({usage_percentage:.1f}% used)"
+        
+        return HealthCheck(
+            component="storage",
+            status=status,
+            message=message,
+            details={
+                "storage_info": storage_info,
+                "total_app_size_mb": round(total_size / (1024 * 1024), 2),
+                "cleanup_candidates": cleanup_candidates,
+                "free_space_gb": round(free_space_gb, 2),
+                "usage_percentage": round(usage_percentage, 2)
+            }
+        )
+        
+    except Exception as e:
+        return HealthCheck(
+            component="storage",
+            status="critical",
+            message=f"Storage check failed: {str(e)[:200]}",
+            details={"error": str(e)[:200]}
+        )
+
+
 async def _check_roster_health() -> HealthCheck:
     """
     Check for significant roster changes and trades across all sports that impact prop accuracy.
@@ -675,9 +766,120 @@ def _adjust_priorities_for_injuries(priorities: dict[str, float]) -> dict[str, f
             continue
         except Exception as e:
             logger.warning(f"[BRAIN] Error checking {sport_key} roster for priority: {e}")
-            continue
     
-    return priorities
+    return action
+
+
+async def _heal_storage_issues() -> HealingAction:
+    """
+    Heal storage issues by cleaning up temporary files and caches.
+    """
+    action = HealingAction(
+        component="storage",
+        action="cleanup_storage",
+        reasoning="Free up disk space by removing temporary files and caches",
+        result="pending",
+        details={}
+    )
+    
+    try:
+        import os
+        import shutil
+        import glob
+        from pathlib import Path
+        
+        cleaned_space_mb = 0
+        files_deleted = 0
+        dirs_cleaned = []
+        
+        # Cleanup patterns
+        cleanup_patterns = [
+            "/tmp/*",
+            "/app/logs/*.log",
+            "/app/.pytest_cache/*",
+            "/app/__pycache__/*",
+            "/app/**/__pycache__/*",
+            "/app/**/.*.pyc",
+            "/app/**/.*.pyo",
+            "/app/.coverage",
+            "/app/htmlcov/*"
+        ]
+        
+        for pattern in cleanup_patterns:
+            try:
+                files = glob.glob(pattern, recursive=True)
+                for file_path in files:
+                    try:
+                        if os.path.isfile(file_path):
+                            file_size = os.path.getsize(file_path)
+                            os.remove(file_path)
+                            cleaned_space_mb += file_size / (1024 * 1024)
+                            files_deleted += 1
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                            files_deleted += 1
+                    except Exception as e:
+                        logger.warning(f"[BRAIN:HEAL] Could not delete {file_path}: {e}")
+                
+                if files:
+                    dirs_cleaned.append(pattern)
+                    
+            except Exception as e:
+                logger.warning(f"[BRAIN:HEAL] Error with pattern {pattern}: {e}")
+        
+        # Clear application caches
+        try:
+            from app.services.memory_cache import cache
+            cache_stats_before = cache.get_stats()
+            cache.clear()
+            cache_stats_after = cache.get_stats()
+            
+            action.details["cache_cleared"] = {
+                "before": cache_stats_before,
+                "after": cache_stats_after
+            }
+        except Exception as e:
+            logger.warning(f"[BRAIN:HEAL] Cache clear error: {e}")
+        
+        # Rotate logs if they're too large
+        try:
+            log_files = glob.glob("/app/logs/*.log")
+            for log_file in log_files:
+                try:
+                    file_size_mb = os.path.getsize(log_file) / (1024 * 1024)
+                    if file_size_mb > 50:  # Rotate logs > 50MB
+                        # Keep last 1000 lines
+                        with open(log_file, 'r') as f:
+                            lines = f.readlines()
+                        with open(log_file, 'w') as f:
+                            f.writelines(lines[-1000:])
+                        
+                        saved_space = file_size_mb - (len(''.join(lines[-1000:])) / (1024 * 1024))
+                        cleaned_space_mb += saved_space
+                        files_deleted += 1
+                        
+                except Exception as e:
+                    logger.warning(f"[BRAIN:HEAL] Log rotation error for {log_file}: {e}")
+                    
+        except Exception as e:
+            logger.warning(f"[BRAIN:HEAL] Log rotation error: {e}")
+        
+        action.result = "success"
+        action.details.update({
+            "cleaned_space_mb": round(cleaned_space_mb, 2),
+            "files_deleted": files_deleted,
+            "directories_cleaned": dirs_cleaned,
+            "message": f"Cleaned {cleaned_space_mb:.1f}MB by deleting {files_deleted} files"
+        })
+        
+        logger.info(f"[BRAIN:HEAL] Storage cleanup completed: {cleaned_space_mb:.1f}MB freed")
+        
+    except Exception as e:
+        action.result = "failed"
+        action.details["error"] = str(e)[:200]
+        logger.error(f"[BRAIN:HEAL] Storage cleanup failed: {e}")
+    
+    return action
 
 
 async def _heal_roster_changes() -> HealingAction:
@@ -2106,6 +2308,19 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 "duration_ms": cache_duration
             })
 
+            # Storage (Railway disk space)
+            storage_start = time.time()
+            storage_check = await _check_storage_health()
+            storage_duration = (time.time() - storage_start) * 1000
+            all_checks.append(storage_check)
+            
+            _brain_debugger.log_debug("brain_loop", "storage_health_check", {
+                "status": storage_check.status,
+                "duration_ms": storage_duration,
+                "free_space_gb": storage_check.details.get("free_space_gb", 0),
+                "usage_percentage": storage_check.details.get("usage_percentage", 0)
+            })
+
             # Scheduler tasks
             scheduler_start = time.time()
             scheduler_check = await _check_scheduler_health()
@@ -2261,6 +2476,20 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                         cache_heal.details,
                     )
 
+                # Heal storage issues
+                if storage_check.status in ("degraded", "critical"):
+                    _brain.heals_attempted += 1
+                    storage_heal = await _heal_storage_issues()
+                    if storage_heal.result == "success":
+                        _brain.heals_succeeded += 1
+                    _brain.log_decision(
+                        "heal",
+                        "cleanup_storage",
+                        storage_heal.reason,
+                        storage_heal.result,
+                        storage_heal.details,
+                    )
+
                 # Heal roster changes
                 if roster_check.status in ("degraded", "critical"):
                     _brain.heals_attempted += 1
@@ -2296,6 +2525,11 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 if cache_check.status == "degraded":
                     changes_made.append("Cleared cache pressure")
                     commit_type = "repair"
+                
+                if storage_check.status in ("degraded", "critical"):
+                    if storage_heal.result == "success":
+                        changes_made.append(f"Storage cleanup: {storage_heal.details.get('message', 'Cleaned storage')}")
+                        commit_type = "repair"
                 
                 if roster_check.status in ("degraded", "critical"):
                     if roster_heal.result == "success":
