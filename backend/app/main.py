@@ -543,9 +543,12 @@ async def scheduler_status():
 
 @app.get("/api/brain/status")
 async def brain_status():
-    """Get autonomous brain status and health."""
+    """Get autonomous brain status and health with advanced monitoring."""
     try:
-        from app.services.brain import _brain, _brain_debugger
+        from app.services.brain import (
+            _brain, _brain_debugger, _correlation_tracker, 
+            _anomaly_detector, _data_validator, _business_metrics
+        )
         
         # Check if brain is running
         brain_task = getattr(app.state, 'brain_task', None)
@@ -562,6 +565,21 @@ async def brain_status():
             "debug_log_size": len(_brain_debugger.debug_log),
             "error_log_size": len(_brain_debugger.error_log),
             "last_cycle": None,
+            # Advanced monitoring components
+            "correlation_tracking": _correlation_tracker.get_operation_summary(),
+            "anomaly_detection": {
+                "baseline_metrics_count": len(_anomaly_detector.baseline_metrics),
+                "anomaly_thresholds": _anomaly_detector.anomaly_thresholds
+            },
+            "data_validation": {
+                "validation_rules_count": len(_data_validator.validation_rules),
+                "rules": list(_data_validator.validation_rules.keys())
+            },
+            "business_metrics": {
+                "current_metrics": _business_metrics.current_metrics,
+                "history_size": len(_business_metrics.metrics_history),
+                "trend_analysis": _business_metrics.get_trend_analysis()
+            }
         }
         
         if hasattr(_brain, 'started_at') and _brain.started_at:
