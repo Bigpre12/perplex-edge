@@ -3518,6 +3518,132 @@ class XYZOddsProvider(OddsProvider):
                 ("Mitch Marner", "LD", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
                 ("Tomas Hertl", "RD", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
             ],
+            "Boston Bruins": [
+                ("David Pastrnak", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Brad Marchand", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Charlie McAvoy", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+                ("Patrice Bergeron", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("David Krejci", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+            ],
+            "Toronto Maple Leafs": [
+                ("Auston Matthews", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 5.5, "blocked": 0.5}),
+                ("Mitch Marner", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("William Nylander", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+                ("John Tavares", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Morgan Rielly", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 2.5, "blocked": 1.5}),
+            ],
+            "Montreal Canadiens": [
+                ("Nick Suzuki", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Cole Caufield", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+                ("Juraj Slafkovsky", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Mike Matheson", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 1.5}),
+                ("Kaiden Guhle", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 1.5}),
+            ],
+            "Detroit Red Wings": [
+                ("Dylan Larkin", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Luc Raymond", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Moritz Seider", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Alex DeBrincat", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+                ("Jonas Johansson", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 1.5}),
+            ],
+            "Columbus Blue Jackets": [
+                ("Patrik Laine", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+                ("Johnny Gaudreau", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Zach Werenski", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Adam Fantilli", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Elvis Merzlikins", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Dallas Stars": [
+                ("Jason Robertson", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Roope Hintz", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Miro Heiskanen", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 2.5}),
+                ("Joe Pavelski", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Jake Oettinger", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Minnesota Wild": [
+                ("Kirill Kaprizov", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Matt Boldy", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Joel Eriksson Ek", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 1.5}),
+                ("Jared Spurgeon", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+                ("Filip Gustavsson", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Colorado Avalanche": [
+                ("Nathan MacKinnon", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Cale Makar", "D", {"goals": 0.5, "assists": 1.5, "points": 1.5, "shots": 3.5, "blocked": 2.5}),
+                ("Mikko Rantanen", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Gabriel Landeskog", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Alexandar Georgiev", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Utah Hockey Club": [
+                ("Clayton Keller", "RW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Logan Cooley", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Barrett Hayton", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Nick Schmaltz", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Connor Ingram", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Winnipeg Jets": [
+                ("Kyle Connor", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Mark Scheifele", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Josh Morrissey", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+                ("Pierre-Luc Dubois", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Connor Hellebuyck", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Vancouver Canucks": [
+                ("Elias Pettersson", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("J.T. Miller", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Brock Boeser", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 4.5, "blocked": 0.5}),
+                ("Quinn Hughes", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Thatcher Demko", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Seattle Kraken": [
+                ("Matty Beniers", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Jared McCann", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Jordan Eberle", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Jamie Oleksiak", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 2.5}),
+                ("Joey Daccord", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "St. Louis Blues": [
+                ("Robert Thomas", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Jordan Kyrou", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Brayden Schenn", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Colton Parayko", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Jordan Binnington", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Chicago Blackhawks": [
+                ("Connor Bedard", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Taylor Hall", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Seth Jones", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Tyler Bertuzzi", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Petr Mrazek", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Calgary Flames": [
+                ("Jonathan Huberdeau", "LW", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Nazem Kadri", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Mikael Backlund", "C", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Rasmus Andersson", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 2.5}),
+                ("Jacob Markstrom", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Edmonton Oilers": [
+                ("Connor McDavid", "C", {"goals": 0.5, "assists": 2.5, "points": 3.5, "shots": 4.5, "blocked": 0.5}),
+                ("Leon Draisaitl", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 4.5, "blocked": 0.5}),
+                ("Zach Hyman", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Evan Bouchard", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 1.5}),
+                ("Stuart Skinner", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "Anaheim Ducks": [
+                ("Trevor Zegras", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Troy Terry", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Frank Vatrano", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Cam Fowler", "D", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 1.5}),
+                ("John Gibson", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
+            "San Jose Sharks": [
+                ("Tomas Hertl", "C", {"goals": 0.5, "assists": 1.5, "points": 2.5, "shots": 3.5, "blocked": 0.5}),
+                ("Tim Meier", "LW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 3.5, "blocked": 0.5}),
+                ("Fabian Zetterlund", "RW", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+                ("Mario Ferraro", "D", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 1.5}),
+                ("Kaapo Kahkonen", "G", {"goals": 0.5, "assists": 0.5, "points": 1.5, "shots": 2.5, "blocked": 0.5}),
+            ],
         }
         
         DEFAULT_NHL_ROSTER = [
@@ -3533,21 +3659,44 @@ class XYZOddsProvider(OddsProvider):
         
         # Try to match team abbreviations
         team_abbr_map = {
-            # 2/6/26 Slate Teams
-            "pit": "Pittsburgh Penguins", "buf": "Buffalo Sabres",
-            "nyi": "New York Islanders", "nj": "New Jersey Devils", "njd": "New Jersey Devils",
-            "car": "Carolina Hurricanes", "nyr": "New York Rangers",
-            "ott": "Ottawa Senators", "phi": "Philadelphia Flyers",
-            "nsh": "Nashville Predators", "wsh": "Washington Capitals",
-            "fla": "Florida Panthers", "tbl": "Tampa Bay Lightning",
-            "lak": "Los Angeles Kings", "vgk": "Vegas Golden Knights",
-            # Legacy teams for compatibility
-            "ava": "Colorado Avalanche", "wil": "Minnesota Wild", "min": "Minnesota Wild",
-            "lea": "Toronto Maple Leafs", "tor": "Toronto Maple Leafs", "bru": "Boston Bruins", "bos": "Boston Bruins",
-            "oil": "Edmonton Oilers", "edm": "Edmonton Oilers", "kni": "Vegas Golden Knights",
-            "pan": "Florida Panthers", "hur": "Carolina Hurricanes", "ran": "New York Rangers",
-            "lig": "Tampa Bay Lightning", "jet": "Winnipeg Jets", "wpg": "Winnipeg Jets",
-            "sta": "Dallas Stars", "dal": "Dallas Stars",
+            # Atlantic Division
+            "bos": "Boston Bruins", "bru": "Boston Bruins",
+            "buf": "Buffalo Sabres", "sab": "Buffalo Sabres",
+            "det": "Detroit Red Wings", "drw": "Detroit Red Wings",
+            "fla": "Florida Panthers", "pan": "Florida Panthers",
+            "mtl": "Montreal Canadiens", "mon": "Montreal Canadiens",
+            "ott": "Ottawa Senators", "sen": "Ottawa Senators",
+            "tbl": "Tampa Bay Lightning", "tam": "Tampa Bay Lightning",
+            "tor": "Toronto Maple Leafs", "lea": "Toronto Maple Leafs",
+            
+            # Metropolitan Division
+            "car": "Carolina Hurricanes", "hur": "Carolina Hurricanes",
+            "cbj": "Columbus Blue Jackets", "clb": "Columbus Blue Jackets",
+            "nj": "New Jersey Devils", "njd": "New Jersey Devils",
+            "nyi": "New York Islanders", "nyr": "New York Rangers",
+            "phi": "Philadelphia Flyers", "phi": "Philadelphia Flyers",
+            "pit": "Pittsburgh Penguins", "pit": "Pittsburgh Penguins",
+            "wsh": "Washington Capitals", "was": "Washington Capitals",
+            
+            # Central Division
+            "chi": "Chicago Blackhawks", "blk": "Chicago Blackhawks",
+            "col": "Colorado Avalanche", "ava": "Colorado Avalanche",
+            "dal": "Dallas Stars", "dal": "Dallas Stars",
+            "min": "Minnesota Wild", "min": "Minnesota Wild",
+            "nsh": "Nashville Predators", "nsh": "Nashville Predators",
+            "stl": "St. Louis Blues", "stl": "St. Louis Blues",
+            "uta": "Utah Hockey Club", "utah": "Utah Hockey Club",
+            "wpg": "Winnipeg Jets", "wpg": "Winnipeg Jets",
+            
+            # Pacific Division
+            "ana": "Anaheim Ducks", "ana": "Anaheim Ducks",
+            "cgy": "Calgary Flames", "cgy": "Calgary Flames",
+            "edm": "Edmonton Oilers", "edm": "Edmonton Oilers",
+            "lak": "Los Angeles Kings", "lak": "Los Angeles Kings",
+            "sjs": "San Jose Sharks", "sjs": "San Jose Sharks",
+            "sea": "Seattle Kraken", "sea": "Seattle Kraken",
+            "van": "Vancouver Canucks", "van": "Vancouver Canucks",
+            "vgk": "Vegas Golden Knights", "vgk": "Vegas Golden Knights",
         }
         
         if len(parts) >= 3:
