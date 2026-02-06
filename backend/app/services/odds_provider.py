@@ -4467,3 +4467,95 @@ class ESPNScheduleProvider:
             "blk": blk,
             "to": round(random.uniform(2.0, 4.0) * 2) / 2,
         }
+    
+    async def get_nba_player_stats(self, player_name: str) -> dict:
+        """Extract NBA player statistics from current rosters."""
+        try:
+            # Search for player in NBA rosters
+            for team_abbr, players in NBA_TEAM_ROSTERS.items():
+                for player in players:
+                    if player['name'].lower() == player_name.lower():
+                        return {
+                            'avg_points': player.get('pts', 15.0),
+                            'avg_rebounds': player.get('reb', 5.0),
+                            'avg_assists': player.get('ast', 4.0),
+                            'team': team_abbr,
+                            'data_source': 'roster_props',
+                            'last_updated': datetime.now(timezone.utc).isoformat()
+                        }
+            
+            # Player not found in rosters
+            return {}
+            
+        except Exception as e:
+            logger.warning(f"[ODDS] Error getting NBA stats for {player_name}: {e}")
+            return {}
+    
+    async def get_nfl_player_stats(self, player_name: str) -> dict:
+        """Extract NFL player statistics from current rosters."""
+        try:
+            # Search for player in NFL rosters
+            for team_abbr, players in NFL_TEAM_ROSTERS.items():
+                for player in players:
+                    if player['name'].lower() == player_name.lower():
+                        return {
+                            'avg_passing_yards': player.get('pass_yds', 200.0),
+                            'avg_rushing_yards': player.get('rush_yds', 50.0),
+                            'avg_receptions': player.get('rec', 4.0),
+                            'avg_receiving_yards': player.get('rec_yds', 60.0),
+                            'team': team_abbr,
+                            'data_source': 'roster_props',
+                            'last_updated': datetime.now(timezone.utc).isoformat()
+                        }
+            
+            return {}
+            
+        except Exception as e:
+            logger.warning(f"[ODDS] Error getting NFL stats for {player_name}: {e}")
+            return {}
+    
+    async def get_nhl_player_stats(self, player_name: str) -> dict:
+        """Extract NHL player statistics from current rosters."""
+        try:
+            # Search for player in NHL rosters
+            for team_abbr, players in NHL_TEAM_ROSTERS.items():
+                for player in players:
+                    if player['name'].lower() == player_name.lower():
+                        return {
+                            'avg_goals': player.get('goals', 0.5),
+                            'avg_assists': player.get('assists', 1.0),
+                            'avg_points': player.get('points', 1.5),
+                            'avg_shots': player.get('shots', 3.0),
+                            'team': team_abbr,
+                            'data_source': 'roster_props',
+                            'last_updated': datetime.now(timezone.utc).isoformat()
+                        }
+            
+            return {}
+            
+        except Exception as e:
+            logger.warning(f"[ODDS] Error getting NHL stats for {player_name}: {e}")
+            return {}
+    
+    async def get_mlb_player_stats(self, player_name: str) -> dict:
+        """Extract MLB player statistics from current rosters."""
+        try:
+            # Search for player in MLB rosters
+            for team_abbr, players in MLB_TEAM_ROSTERS.items():
+                for player in players:
+                    if player['name'].lower() == player_name.lower():
+                        return {
+                            'avg_batting_avg': player.get('avg', 0.250),
+                            'avg_home_runs': player.get('hr', 0.2),
+                            'avg_rbi': player.get('rbi', 3.0),
+                            'avg_hits': player.get('hits', 1.5),
+                            'team': team_abbr,
+                            'data_source': 'roster_props',
+                            'last_updated': datetime.now(timezone.utc).isoformat()
+                        }
+            
+            return {}
+            
+        except Exception as e:
+            logger.warning(f"[ODDS] Error getting MLB stats for {player_name}: {e}")
+            return {}
