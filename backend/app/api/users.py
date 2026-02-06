@@ -48,6 +48,12 @@ class UserPlanUpdate(BaseModel):
     whop_membership_id: Optional[str] = None
 
 
+class WhopCheckoutResponse(BaseModel):
+    """Response with Whop checkout URLs."""
+    free_checkout_url: str
+    pro_checkout_url: Optional[str] = None
+
+
 # =============================================================================
 # Endpoints
 # =============================================================================
@@ -210,3 +216,19 @@ async def increment_props_viewed(
         "props_viewed_today": user.props_viewed_today,
         "reset_date": user.props_reset_date,
     }
+
+
+@router.get("/users/whop-checkout", response_model=WhopCheckoutResponse, tags=["users"])
+async def get_whop_checkout_urls():
+    """
+    Get Whop checkout URLs for subscription plans.
+    
+    Returns checkout URLs for free and pro plans.
+    """
+    from app.core.config import get_settings
+    settings = get_settings()
+    
+    return WhopCheckoutResponse(
+        free_checkout_url=settings.whop_free_checkout_url,
+        pro_checkout_url=settings.whop_pro_checkout_url or None
+    )

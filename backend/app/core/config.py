@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     ai_timeout_seconds: int = 30
     ai_max_retries: int = 2
 
+    # Whop Integration
+    whop_free_checkout_url: str = "https://whop.com/checkout/plan_WxHa3UGwMmjdd"
+    whop_pro_checkout_url: str = ""  # Add when available
+
     @field_validator('database_url')
     @classmethod
     def validate_database_url(cls, v: str) -> str:
