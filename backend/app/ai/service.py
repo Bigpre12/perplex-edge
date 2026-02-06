@@ -105,12 +105,11 @@ async def get_ai_recommendations(
     AwayTeam = aliased(Team)
 
     # Build query for today's top props
-    # Use relaxed filters: active picks for any upcoming or recent games
+    # Match the working player-props endpoint filters
     conditions = [
         ModelPick.sport_id == sport_id,
         Game.sport_id == sport_id,
         ModelPick.player_id.isnot(None),
-        ModelPick.is_active == True,
         Market.stat_type.notin_(HIDDEN_STAT_TYPES),
     ]
 
