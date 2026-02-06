@@ -2023,13 +2023,15 @@ async def get_dashboard_summary(
     """
     try:
         from datetime import timedelta
-        from sqlalchemy import select, func, distinct, and_
+        from sqlalchemy import select, func, case, and_
         from app.models import Game, Line
         from app.config.sports import SPORT_ID_TO_KEY
         
-        now = datetime.now(timezone.utc)
-        cutoff = now - timedelta(minutes=10)
-        next_24h = now + timedelta(hours=24)
+        now_utc = datetime.now(timezone.utc)
+        # Use naive datetimes for DB comparison (DB stores naive UTC)
+        now_naive = now_utc.replace(tzinfo=None)
+        cutoff = now_utc - timedelta(minutes=10)
+        next_24h = now_naive + timedelta(hours=24)
         
         sport_ids = list(SPORT_ID_TO_KEY.keys())
         
@@ -2039,7 +2041,7 @@ async def get_dashboard_summary(
             .where(
                 and_(
                     Game.sport_id.in_(sport_ids),
-                    Game.start_time >= now,
+                    Game.start_time >= now_naive,
                     Game.start_time <= next_24h,
                 )
             )
@@ -2047,12 +2049,12 @@ async def get_dashboard_summary(
         )
         game_counts: dict[int, int] = {row[0]: row[1] for row in game_rows.all()}
         
-        # --- Bulk query 2: prop counts, book counts, last_update per sport (current lines) ---
+        # --- Bulk query 2: prop counts, book counts, last_update per sport ---
         line_rows = await db.execute(
             select(
                 Game.sport_id,
-                func.count(distinct(Line.id)).filter(Line.player_id.isnot(None)),
-                func.count(distinct(Line.sportsbook)),
+                func.sum(case((Line.player_id.isnot(None), 1), else_=0)),
+                func.count(func.distinct(Line.sportsbook)),
                 func.max(Line.fetched_at),
             )
             .select_from(Line)
@@ -2066,7 +2068,7 @@ async def get_dashboard_summary(
             .group_by(Game.sport_id)
         )
         line_data: dict[int, tuple] = {
-            row[0]: (row[1], row[2], row[3]) for row in line_rows.all()
+            row[0]: (row[1] or 0, row[2] or 0, row[3]) for row in line_rows.all()
         }
         
         # --- Build response rows ---
@@ -2099,15 +2101,15 @@ async def get_dashboard_summary(
                     last_update_tz = last_update_result.replace(tzinfo=timezone.utc)
                 if last_update_tz < cutoff:
                     status = "warn" if status == "ok" else status
-                    minutes_stale = int((now - last_update_tz).total_seconds() / 60)
+                    minutes_stale = int((now_utc - last_update_tz).total_seconds() / 60)
                     issues.append(f"Odds stale ({minutes_stale} min)")
             
             rows.append({
                 "sport_id": sport_id,
                 "sport_key": sport_key_str,
                 "game_count": game_count,
-                "prop_count": prop_count,
-                "book_count": book_count,
+                "prop_count": int(prop_count),
+                "book_count": int(book_count),
                 "last_update": last_update_result.isoformat() if last_update_result else None,
                 "status": status,
                 "issues": issues,
@@ -2117,7 +2119,7 @@ async def get_dashboard_summary(
         rows.sort(key=lambda x: x["sport_id"])
         
         return {
-            "now": now.isoformat(),
+            "now": now_utc.isoformat(),
             "sports": rows,
         }
     
