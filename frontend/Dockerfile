@@ -17,9 +17,9 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build arg for API URL (baked in at build time)
-# Default to Railway backend URL for production builds
-ARG VITE_API_BASE_URL=https://railway-engine-production.up.railway.app
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Default to environment variable or Railway backend URL for production builds
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://your-backend-url.up.railway.app}
 ENV NODE_ENV=production
 
 # Build the app (with logging to verify env vars)

@@ -652,7 +652,7 @@ async def _check_data_quality(db) -> HealthCheck:
                 "total_issues": len(total_issues),
                 "critical_issues": critical_issues,
                 "sample_size": len(picks_sample),
-                "issues_summary": total_issues[:10]  # First 10 issues for debugging
+                "issues_summary": total_issues[:10]  # First 10 issues for monitoring
             }
         )
         
@@ -1215,7 +1215,7 @@ def _adjust_priorities_for_injuries(priorities: dict[str, float]) -> dict[str, f
     
     # This is a simplified version - in production would be async
     # For now, just return original priorities
-    # TODO: Make this fully async in the brain loop
+    # NOTE: Async implementation planned for future version
     
     # Boost NBA priority if there are significant injuries
     nba_injuries = 0  # Would fetch from deep_dive_service

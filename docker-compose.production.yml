@@ -1,0 +1,111 @@
+# Production Docker Compose Configuration
+# Use this for production deployments with proper environment variables
+
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: perplex_db_prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-perplex}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: perplex_backend_prod
+    environment:
+      # Database
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-perplex}
+      
+      # Environment
+      ENVIRONMENT: production
+      PORT: 8000
+      
+      # API Keys (REQUIRED)
+      ODDS_API_KEY: ${ODDS_API_KEY}
+      
+      # Frontend URL (REQUIRED)
+      FRONTEND_URL: ${FRONTEND_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      
+      # Optional Features
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_API_KEY: ${AI_API_KEY}
+      SENTRY_DSN: ${SENTRY_DSN}
+      REDIS_URL: ${REDIS_URL}
+      
+      # Scheduler
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
+      SCHEDULER_USE_STUBS: ${SCHEDULER_USE_STUBS:-false}
+      
+      # Whop Integration
+      WHOP_FREE_CHECKOUT_URL: ${WHOP_FREE_CHECKOUT_URL}
+      WHOP_PRO_MONTHLY_CHECKOUT_URL: ${WHOP_PRO_MONTHLY_CHECKOUT_URL}
+      WHOP_PRO_YEARLY_CHECKOUT_URL: ${WHOP_PRO_YEARLY_CHECKOUT_URL}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    restart: unless-stopped
+    volumes:
+      - ./backend/app:/app/app:ro  # Read-only for production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_WHOP_MONTHLY_URL: ${VITE_WHOP_MONTHLY_URL}
+        VITE_WHOP_YEARLY_URL: ${VITE_WHOP_YEARLY_URL}
+    container_name: perplex_frontend_prod
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: perplex_redis_prod
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: perplex_network_prod

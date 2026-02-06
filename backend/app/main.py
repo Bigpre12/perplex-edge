@@ -220,48 +220,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration - explicitly allow production frontend and dev origins
-# Railway production frontend + local dev servers
-ALLOWED_ORIGINS = [
-    "https://perplex-edge-production.up.railway.app",  # Production frontend
-    "http://localhost:5173",                            # Vite dev server
-    "http://localhost:3000",                            # Alternative dev port
-    "http://127.0.0.1:5173",                            # Vite dev server (127.0.0.1)
-    "http://127.0.0.1:3000",                            # Alternative dev port
-]
+# CORS configuration - use production config
+from app.core.production import validate_and_log_config
 
-# Also check for additional origins from environment variable
-_extra_origins = os.getenv("ALLOWED_ORIGINS", "")
-if _extra_origins:
-    if _extra_origins.strip() == "*":
-        ALLOWED_ORIGINS = ["*"]
-    else:
-        for origin in _extra_origins.split(","):
-            origin = origin.strip()
-            if origin and origin not in ALLOWED_ORIGINS:
-                ALLOWED_ORIGINS.append(origin)
+# Validate production configuration
+validate_and_log_config()
 
-# Temporary fix for Railway CORS issues - allow all origins in production
-if os.getenv("RAILWAY_ENVIRONMENT") == "production" or os.getenv("RAILWAY_ENVIRONMENT") is not None:
-    logger.warning("CORS: Allowing all origins in Railway production for debugging")
-    ALLOWED_ORIGINS = ["*"]
-
-# Also check for Railway service name
-if os.getenv("RAILWAY_SERVICE_NAME") or os.getenv("RAILWAY_PROJECT_NAME"):
-    logger.warning("CORS: Railway environment detected, allowing all origins")
-    ALLOWED_ORIGINS = ["*"]
-
-# Force wildcard CORS for Railway domains
-if "railway" in os.getenv("RAILWAY_ENVIRONMENT", "").lower() or "railway" in os.getenv("RAILWAY_SERVICE_NAME", "").lower():
-    logger.warning("CORS: Railway domain detected, forcing wildcard CORS")
-    ALLOWED_ORIGINS = ["*"]
-
-# Also check config settings for additional origins
-if hasattr(settings, 'allowed_origins') and settings.allowed_origins:
-    for origin in settings.allowed_origins:
-        if origin and origin not in ALLOWED_ORIGINS:
-            ALLOWED_ORIGINS.append(origin)
-
+ALLOWED_ORIGINS = settings.allowed_origins
 logger.info("cors_origins_configured", origins=ALLOWED_ORIGINS)
 
 # Middleware ordering: Starlette executes middleware in REVERSE order of addition.

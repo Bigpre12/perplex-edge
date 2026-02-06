@@ -7,6 +7,7 @@ import logging
 import sys
 
 import yaml
+from .production import get_production_config
 
 
 class Settings(BaseSettings):
@@ -39,18 +40,18 @@ class Settings(BaseSettings):
 
     # Stats API
     stats_api_key: str = ""
-    stats_api_base_url: str = "https://api.sportsstats.example.com/v1"
+    stats_api_base_url: str = "https://api.sportsstats.provider.com/v1"
 
     # Injury API
     injury_api_key: str = ""
-    injury_api_base_url: str = "https://api.injurytracker.example.com/v1"
+    injury_api_base_url: str = "https://api.injurytracker.provider.com/v1"
 
     # Roster API (balldontlie.io)
     roster_api_key: str = ""
     roster_api_base_url: str = "https://api.balldontlie.io/v1"
 
     # Frontend URL (for CORS)
-    frontend_url: str = "http://localhost:5173"
+    frontend_url: str = ""  # Set via environment variable in production
     # Additional CORS origins (comma-separated)
     cors_origins: str = ""
 
@@ -154,16 +155,9 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self) -> list[str]:
-        """Get list of allowed CORS origins."""
-        origins = ["http://localhost:5173"]
-        if self.frontend_url and self.frontend_url not in origins:
-            origins.append(self.frontend_url)
-        if self.cors_origins:
-            for origin in self.cors_origins.split(","):
-                origin = origin.strip()
-                if origin and origin not in origins:
-                    origins.append(origin)
-        return origins
+        """Get list of allowed CORS origins using production config."""
+        production_config = get_production_config()
+        return production_config.get_cors_origins()
 
 
 @lru_cache
