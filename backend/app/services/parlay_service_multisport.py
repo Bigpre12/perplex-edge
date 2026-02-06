@@ -225,7 +225,7 @@ async def build_parlays_multisport(
             total_candidates=0,
             leg_count=leg_count,
             filters_applied={
-                "min_leg_grade": min_grade,
+                "min_leg_grade": min_grade if 'min_grade' in locals() else "C",
                 "include_100_pct": include_100_pct,
                 "sport_id": sport_id
             }
