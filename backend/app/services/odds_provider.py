@@ -1896,51 +1896,61 @@ class XYZOddsProvider(OddsProvider):
         # Updated: 2025-26 Season Depth Charts
         # Stats: pts, reb, ast, pra, pr, pa, ra, 3pm, stl, blk, to
         NBA_TEAM_ROSTERS = {
-            # Atlanta Hawks - D. Daniels, N. Alexander-Walker, Z. Risacher, J. Johnson, O. Okongwu (IL)
+            # Atlanta Hawks - D. Daniels, N. Alexander-Walker, Z. Risacher, J. Johnson, J. Landale
             "ATL": [
                 {"name": "Dyson Daniels", "pts": 14.5, "reb": 4.5, "ast": 5.5, "pra": 24.5, "pr": 19.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 2.5},
                 {"name": "Nickeil Alexander-Walker", "pts": 15.5, "reb": 4.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Zac Risacher", "pts": 16.5, "reb": 6.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 20.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jalen Johnson", "pts": 20.5, "reb": 9.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 26.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Onyeka Okongwu", "pts": 12.5, "reb": 8.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Jock Landale", "pts": 10.5, "reb": 6.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
-            # Boston Celtics - J. Tatum, J. Brown, D. White, P. Pritchard, K. Porzingis
+            # Boston Celtics - J. Tatum, J. Brown, D. White, P. Pritchard, N. Vučević
             "BOS": [
                 {"name": "Jayson Tatum", "pts": 27.5, "reb": 8.5, "ast": 4.5, "pra": 40.5, "pr": 36.0, "pa": 32.0, "ra": 13.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jaylen Brown", "pts": 26.5, "reb": 6.5, "ast": 4.5, "pra": 37.5, "pr": 33.0, "pa": 31.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Derrick White", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5, "pr": 23.0, "pa": 24.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
                 {"name": "Payton Pritchard", "pts": 15.5, "reb": 3.5, "ast": 4.5, "pra": 23.5, "pr": 19.0, "pa": 20.0, "ra": 8.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Kristaps Porzingis", "pts": 19.5, "reb": 7.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 22.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Nikola Vučević", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 22.0, "ra": 14.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
             ],
-            # Brooklyn Nets - E. Demin, T. Mann, M. Porter Jr., N. Clowney, N. Claxton
+            # Brooklyn Nets - O. Agbaji, J. Minott, H. Tyson, N. Claxton, T. Jackson-Davis
             "BKN": [
+                {"name": "Ochai Agbaji", "pts": 12.5, "reb": 3.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 15.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Josh Minott", "pts": 10.5, "reb": 5.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 13.0, "ra": 8.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Hunter Tyson", "pts": 11.5, "reb": 4.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 14.0, "ra": 7.0, "3pm": 2.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
                 {"name": "Nic Claxton", "pts": 12.5, "reb": 9.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 15.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
-                {"name": "Terrence Mann", "pts": 14.5, "reb": 4.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 18.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Michael Porter Jr.", "pts": 18.5, "reb": 6.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+                {"name": "Trayce Jackson-Davis", "pts": 10.5, "reb": 7.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 13.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
-            # Charlotte Hornets - L. Ball, K. Knueppel, B. Miller, M. Bridges, M. Diabate
+            # Charlotte Hornets - M. Conley Jr., C. White, T. Jones, X. Tillman Sr., M. Bridges
             "CHA": [
-                {"name": "LaMelo Ball", "pts": 28.5, "reb": 6.5, "ast": 9.5, "pra": 44.5, "pr": 35.0, "pa": 38.0, "ra": 16.0, "3pm": 4.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Brandon Miller", "pts": 22.5, "reb": 5.5, "ast": 4.5, "pra": 32.5, "pr": 28.0, "pa": 27.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Mike Conley Jr.", "pts": 12.5, "reb": 3.5, "ast": 7.5, "pra": 23.5, "pr": 16.0, "pa": 20.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Coby White", "pts": 20.5, "reb": 4.5, "ast": 5.5, "pra": 30.5, "pr": 25.0, "pa": 26.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Tyus Jones", "pts": 15.5, "reb": 3.5, "ast": 6.5, "pra": 25.5, "pr": 19.0, "pa": 22.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Xavier Tillman Sr.", "pts": 8.5, "reb": 5.5, "ast": 2.5, "pra": 16.5, "pr": 14.0, "pa": 11.0, "ra": 8.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
                 {"name": "Miles Bridges", "pts": 19.5, "reb": 7.5, "ast": 4.5, "pra": 31.5, "pr": 27.0, "pa": 24.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
             ],
-            # Chicago Bulls - J. Giddey, C. White, I. Okoro, M. Buzelis, N. Vucevic
+            # Chicago Bulls - A. Simons, G. Yabusele, O. Dieng, C. Sexton, N. Richards
             "CHI": [
-                {"name": "Josh Giddey", "pts": 16.5, "reb": 7.5, "ast": 7.5, "pra": 31.5, "pr": 24.0, "pa": 24.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Coby White", "pts": 20.5, "reb": 4.5, "ast": 5.5, "pra": 30.5, "pr": 25.0, "pa": 26.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Nikola Vucevic", "pts": 18.5, "reb": 10.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 22.0, "ra": 14.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                {"name": "Anfernee Simons", "pts": 22.5, "reb": 4.5, "ast": 4.5, "pra": 31.5, "pr": 27.0, "pa": 27.0, "ra": 9.0, "3pm": 4.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Guerschon Yabusele", "pts": 12.5, "reb": 5.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 15.0, "ra": 8.0, "3pm": 1.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+                {"name": "Ousmane Dieng", "pts": 8.5, "reb": 4.5, "ast": 2.5, "pra": 15.5, "pr": 13.0, "pa": 11.0, "ra": 7.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Collin Sexton", "pts": 18.5, "reb": 3.5, "ast": 4.5, "pra": 26.5, "pr": 22.0, "pa": 23.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Nick Richards", "pts": 10.5, "reb": 7.5, "ast": 1.5, "pra": 19.5, "pr": 18.0, "pa": 12.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
-            # Cleveland Cavaliers - D. Garland, D. Mitchell, D. Wade, E. Mobley, J. Allen
+            # Cleveland Cavaliers - J. Harden, D. Mitchell, K. Ellis, D. Schröder, E. Mobley
             "CLE": [
+                {"name": "James Harden", "pts": 20.5, "reb": 6.5, "ast": 9.5, "pra": 36.5, "pr": 27.0, "pa": 30.0, "ra": 16.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
                 {"name": "Donovan Mitchell", "pts": 26.5, "reb": 4.5, "ast": 5.5, "pra": 36.5, "pr": 31.0, "pa": 32.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Darius Garland", "pts": 20.5, "reb": 3.5, "ast": 7.5, "pra": 31.5, "pr": 24.0, "pa": 28.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Jarrett Allen", "pts": 14.5, "reb": 10.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 17.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Keon Ellis", "pts": 12.5, "reb": 3.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 15.0, "ra": 6.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Dennis Schröder", "pts": 16.5, "reb": 3.5, "ast": 6.5, "pra": 26.5, "pr": 20.0, "pa": 23.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Evan Mobley", "pts": 16.5, "reb": 9.5, "ast": 2.5, "pra": 28.5, "pr": 26.0, "pa": 19.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
             ],
-            # Dallas Mavericks - C. Flagg, M. Christie, N. Marshall, P. Washington, D. Gafford
+            # Dallas Mavericks - K. Middleton, AJ Johnson, M. Bagley III, D. Gafford, P. Washington
             "DAL": [
-                {"name": "Cooper Flagg", "pts": 16.5, "reb": 6.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
-                {"name": "PJ Washington", "pts": 14.5, "reb": 7.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 17.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Khris Middleton", "pts": 18.5, "reb": 5.5, "ast": 4.5, "pra": 28.5, "pr": 24.0, "pa": 23.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "AJ Johnson", "pts": 12.5, "reb": 4.5, "ast": 3.5, "pra": 20.5, "pr": 17.0, "pa": 16.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Marvin Bagley III", "pts": 14.5, "reb": 7.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 17.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
                 {"name": "Daniel Gafford", "pts": 11.5, "reb": 7.5, "ast": 1.5, "pra": 20.5, "pr": 19.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                {"name": "PJ Washington", "pts": 14.5, "reb": 7.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 17.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
             # Denver Nuggets - J. Murray, C. Braun, P. Watson, S. Jones, N. Jokic
             "DEN": [
@@ -1948,18 +1958,21 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Jamal Murray", "pts": 21.5, "reb": 4.5, "ast": 6.5, "pra": 32.5, "pr": 26.0, "pa": 28.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Christian Braun", "pts": 16.5, "reb": 5.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 20.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
-            # Detroit Pistons - C. Cunningham, D. Robinson, A. Thompson, T. Harris (IL), J. Duren
+            # Detroit Pistons - C. Cunningham, K. Huerter, D. Šarić, J. Duren, D. Robinson
             "DET": [
                 {"name": "Cade Cunningham", "pts": 24.5, "reb": 5.5, "ast": 9.5, "pra": 39.5, "pr": 30.0, "pa": 34.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Kevin Huerter", "pts": 14.5, "reb": 4.5, "ast": 4.5, "pra": 23.5, "pr": 19.0, "pa": 19.0, "ra": 9.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Dario Šarić", "pts": 12.5, "reb": 6.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 16.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
                 {"name": "Jalen Duren", "pts": 13.5, "reb": 11.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 16.0, "ra": 14.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
                 {"name": "Dyson Robinson", "pts": 12.5, "reb": 4.5, "ast": 3.5, "pra": 20.5, "pr": 17.0, "pa": 16.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Ausar Thompson", "pts": 10.5, "reb": 6.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
             ],
-            # Golden State Warriors - S. Curry, B. Podziemski, M. Moody, D. Green, A. Horford
+            # Golden State Warriors - S. Curry, K. Porziņģis, B. Podziemski, D. Green, J. Kuminga (traded)
             "GSW": [
                 {"name": "Stephen Curry", "pts": 26.5, "reb": 4.5, "ast": 6.5, "pra": 37.5, "pr": 31.0, "pa": 33.0, "ra": 11.0, "3pm": 5.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Draymond Green", "pts": 9.5, "reb": 6.5, "ast": 6.5, "pra": 22.5, "pr": 16.0, "pa": 16.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                {"name": "Kristaps Porziņģis", "pts": 19.5, "reb": 7.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 22.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                 {"name": "Brandin Podziemski", "pts": 12.5, "reb": 5.5, "ast": 4.5, "pra": 22.5, "pr": 18.0, "pa": 17.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Draymond Green", "pts": 9.5, "reb": 6.5, "ast": 6.5, "pra": 22.5, "pr": 16.0, "pa": 16.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 2.5},
+                {"name": "Buddy Hield", "pts": 15.5, "reb": 3.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 19.0, "ra": 7.0, "3pm": 4.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
             ],
             # Houston Rockets - A. Thompson, T. Eason, K. Durant, J. Smith Jr., A. Sengun
             "HOU": [
@@ -1967,31 +1980,37 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Alperen Sengun", "pts": 19.5, "reb": 10.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 25.0, "ra": 16.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 3.5},
                 {"name": "Amen Thompson", "pts": 14.5, "reb": 7.5, "ast": 4.5, "pra": 26.5, "pr": 22.0, "pa": 19.0, "ra": 12.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
             ],
-            # Indiana Pacers - A. Nembhard, B. Mathurin, A. Nesmith, J. Walker, P. Siakam
+            # Indiana Pacers - A. Nembhard, I. Zubac, K. Brown, J. Walker, P. Siakam
             "IND": [
                 {"name": "Pascal Siakam", "pts": 21.5, "reb": 7.5, "ast": 4.5, "pra": 33.5, "pr": 29.0, "pa": 26.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Bennedict Mathurin", "pts": 18.5, "reb": 4.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 22.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Ivica Zubac", "pts": 12.5, "reb": 10.5, "ast": 2.5, "pra": 25.5, "pr": 23.0, "pa": 15.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Kobe Brown", "pts": 10.5, "reb": 5.5, "ast": 2.5, "pra": 18.5, "pr": 16.0, "pa": 13.0, "ra": 8.0, "3pm": 0.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
                 {"name": "Andrew Nembhard", "pts": 13.5, "reb": 3.5, "ast": 6.5, "pra": 23.5, "pr": 17.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Isaiah Jackson", "pts": 10.5, "reb": 6.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 13.0, "ra": 9.0, "3pm": 0.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
             ],
-            # LA Clippers - J. Harden, K. Dunn, K. Leonard, J. Collins, I. Zubac
+            # LA Clippers - D. Garland, K. Dunn, K. Leonard, J. Collins, I. Zubac (traded)
             "LAC": [
                 {"name": "Kawhi Leonard", "pts": 24.5, "reb": 6.5, "ast": 4.5, "pra": 35.5, "pr": 31.0, "pa": 29.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "James Harden", "pts": 18.5, "reb": 5.5, "ast": 9.5, "pra": 33.5, "pr": 24.0, "pa": 28.0, "ra": 15.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Ivica Zubac", "pts": 12.5, "reb": 10.5, "ast": 2.5, "pra": 25.5, "pr": 23.0, "pa": 15.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Darius Garland", "pts": 20.5, "reb": 3.5, "ast": 7.5, "pra": 31.5, "pr": 24.0, "pa": 28.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Kris Dunn", "pts": 10.5, "reb": 4.5, "ast": 5.5, "pra": 20.5, "pr": 15.0, "pa": 16.0, "ra": 10.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 1.5},
+                {"name": "John Collins", "pts": 16.5, "reb": 7.5, "ast": 2.5, "pra": 26.5, "pr": 24.0, "pa": 19.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Chris Paul", "pts": 12.5, "reb": 4.5, "ast": 8.5, "pra": 25.5, "pr": 17.0, "pa": 21.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
             ],
-            # LA Lakers - L. Doncic, L. James, D. Ayton, A. Reaves, R. Hachimura (2026 Post-AD Trade)
+            # LA Lakers - L. Doncic, L. James, L. Kennard, A. Reaves, R. Hachimura
             "LAL": [
                 {"name": "Luka Doncic", "pts": 33.5, "reb": 9.5, "ast": 9.5, "pra": 52.5, "pr": 43.0, "pa": 43.0, "ra": 19.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
                 {"name": "LeBron James", "pts": 25.5, "reb": 7.5, "ast": 8.5, "pra": 41.5, "pr": 33.0, "pa": 34.0, "ra": 16.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Deandre Ayton", "pts": 18.5, "reb": 12.5, "ast": 2.5, "pra": 33.5, "pr": 31.0, "pa": 21.0, "ra": 15.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Luke Kennard", "pts": 14.5, "reb": 3.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 18.0, "ra": 7.0, "3pm": 4.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
                 {"name": "Austin Reaves", "pts": 16.5, "reb": 4.5, "ast": 5.5, "pra": 26.5, "pr": 21.0, "pa": 22.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Rui Hachimura", "pts": 13.5, "reb": 5.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 16.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
-            # Memphis Grizzlies - C. Spencer, C. Coward, J. Wells, S. Aldama, J. Jackson Jr.
+            # Memphis Grizzlies - W. Clayton Jr., K. Anderson, T. Hendricks, G. Niang, E. Gordon
             "MEM": [
-                {"name": "Jaren Jackson Jr.", "pts": 22.5, "reb": 6.5, "ast": 2.5, "pra": 31.5, "pr": 29.0, "pa": 25.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 2.5, "to": 2.5},
-                {"name": "Santi Aldama", "pts": 14.5, "reb": 7.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 18.0, "ra": 11.0, "3pm": 2.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
-                {"name": "Cam Spencer", "pts": 12.5, "reb": 3.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 17.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Walter Clayton Jr.", "pts": 18.5, "reb": 4.5, "ast": 4.5, "pra": 27.5, "pr": 23.0, "pa": 23.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Kyle Anderson", "pts": 10.5, "reb": 5.5, "ast": 4.5, "pra": 20.5, "pr": 16.0, "pa": 15.0, "ra": 10.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Taylor Hendricks", "pts": 12.5, "reb": 6.5, "ast": 2.5, "pra": 21.5, "pr": 19.0, "pa": 15.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                {"name": "Georges Niang", "pts": 11.5, "reb": 3.5, "ast": 2.5, "pra": 17.5, "pr": 15.0, "pa": 14.0, "ra": 6.0, "3pm": 3.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
+                {"name": "Eric Gordon", "pts": 14.5, "reb": 3.5, "ast": 3.5, "pra": 21.5, "pr": 18.0, "pa": 18.0, "ra": 7.0, "3pm": 3.5, "stl": 0.5, "blk": 0.5, "to": 1.5},
             ],
             # Miami Heat - D. Mitchell, T. Herro, N. Powell, A. Wiggins, B. Adebayo
             "MIA": [
@@ -1999,16 +2018,20 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Tyler Herro", "pts": 23.5, "reb": 5.5, "ast": 6.5, "pra": 35.5, "pr": 29.0, "pa": 30.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Andrew Wiggins", "pts": 17.5, "reb": 4.5, "ast": 2.5, "pra": 24.5, "pr": 22.0, "pa": 20.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
-            # Milwaukee Bucks - R. Rollins, A. Green, G. Harris, K. Kuzma, M. Turner
+            # Milwaukee Bucks - N. Hayes-Davis, O. Dieng, C. Anthony, A. Coffey, G. Harris
             "MIL": [
-                {"name": "Kyle Kuzma", "pts": 22.5, "reb": 6.5, "ast": 3.5, "pra": 32.5, "pr": 29.0, "pa": 26.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Myles Turner", "pts": 16.5, "reb": 8.5, "ast": 2.5, "pra": 27.5, "pr": 25.0, "pa": 19.0, "ra": 11.0, "3pm": 1.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                {"name": "Nigel Hayes-Davis", "pts": 12.5, "reb": 4.5, "ast": 3.5, "pra": 20.5, "pr": 17.0, "pa": 16.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Ousmane Dieng", "pts": 8.5, "reb": 4.5, "ast": 2.5, "pra": 15.5, "pr": 13.0, "pa": 11.0, "ra": 7.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Cole Anthony", "pts": 16.5, "reb": 4.5, "ast": 4.5, "pra": 25.5, "pr": 21.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Amir Coffey", "pts": 10.5, "reb": 3.5, "ast": 3.5, "pra": 17.5, "pr": 14.0, "pa": 14.0, "ra": 7.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Gary Harris", "pts": 10.5, "reb": 2.5, "ast": 2.5, "pra": 15.5, "pr": 13.0, "pa": 13.0, "ra": 5.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
-            # Minnesota Timberwolves - D. DiVincenzo, A. Edwards, J. McDaniels, J. Randle, R. Gobert
+            # Minnesota Timberwolves - D. DiVincenzo, A. Edwards, J. McDaniels, A. Dosunmu, R. Gobert
             "MIN": [
                 {"name": "Anthony Edwards", "pts": 28.5, "reb": 6.5, "ast": 5.5, "pra": 40.5, "pr": 35.0, "pa": 34.0, "ra": 12.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
-                {"name": "Julius Randle", "pts": 23.5, "reb": 10.5, "ast": 5.5, "pra": 39.5, "pr": 34.0, "pa": 29.0, "ra": 16.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
+                {"name": "Donte DiVincenzo", "pts": 14.5, "reb": 4.5, "ast": 4.5, "pra": 23.5, "pr": 19.0, "pa": 19.0, "ra": 9.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Jaden McDaniels", "pts": 12.5, "reb": 4.5, "ast": 2.5, "pra": 19.5, "pr": 17.0, "pa": 15.0, "ra": 7.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
+                {"name": "Ayo Dosunmu", "pts": 15.5, "reb": 4.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 20.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Rudy Gobert", "pts": 12.5, "reb": 12.5, "ast": 1.5, "pra": 26.5, "pr": 25.0, "pa": 14.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
             ],
             # New Orleans Pelicans - T. Murphy III, H. Jones, S. Bey, Z. Williamson, D. Queen
@@ -2023,8 +2046,10 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "Karl-Anthony Towns", "pts": 24.5, "reb": 11.5, "ast": 3.5, "pra": 39.5, "pr": 36.0, "pa": 28.0, "ra": 15.0, "3pm": 2.5, "stl": 0.5, "blk": 0.5, "to": 2.5},
                 {"name": "Mikal Bridges", "pts": 18.5, "reb": 4.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 22.0, "ra": 8.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
             ],
-            # Oklahoma City Thunder - S. Gilgeous-Alexander, L. Dort, J. Williams, C. Holmgren, I. Hartenstein
+            # Oklahoma City Thunder - J. McCain, M. Plumlee, L. Ball (traded), C. Holmgren, S. Gilgeous-Alexander
             "OKC": [
+                {"name": "Jared McCain", "pts": 16.5, "reb": 4.5, "ast": 4.5, "pra": 25.5, "pr": 21.0, "pa": 21.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Mason Plumlee", "pts": 10.5, "reb": 8.5, "ast": 3.5, "pra": 22.5, "pr": 19.0, "pa": 14.0, "ra": 12.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                 {"name": "Shai Gilgeous-Alexander", "pts": 32.5, "reb": 5.5, "ast": 6.5, "pra": 44.5, "pr": 38.0, "pa": 39.0, "ra": 12.0, "3pm": 2.5, "stl": 2.5, "blk": 1.5, "to": 2.5},
                 {"name": "Chet Holmgren", "pts": 17.5, "reb": 9.5, "ast": 3.5, "pra": 30.5, "pr": 27.0, "pa": 21.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 1.5},
                 {"name": "Jalen Williams", "pts": 21.5, "reb": 6.5, "ast": 6.5, "pra": 34.5, "pr": 28.0, "pa": 28.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
@@ -2067,25 +2092,29 @@ class XYZOddsProvider(OddsProvider):
                 {"name": "De'Aaron Fox", "pts": 27.5, "reb": 4.5, "ast": 6.5, "pra": 38.5, "pr": 32.0, "pa": 34.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
                 {"name": "Devin Vassell", "pts": 17.5, "reb": 4.5, "ast": 4.5, "pra": 26.5, "pr": 22.0, "pa": 22.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
             ],
-            # Toronto Raptors - I. Quickley, B. Ingram, R. Barrett, S. Barnes, C. Murray-Boyles
+            # Toronto Raptors - C. Paul, T. Jackson-Davis, I. Quickley, B. Ingram, S. Barnes
             "TOR": [
+                {"name": "Chris Paul", "pts": 12.5, "reb": 4.5, "ast": 8.5, "pra": 25.5, "pr": 17.0, "pa": 21.0, "ra": 13.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Trayce Jackson-Davis", "pts": 10.5, "reb": 7.5, "ast": 2.5, "pra": 20.5, "pr": 18.0, "pa": 13.0, "ra": 10.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
                 {"name": "Scottie Barnes", "pts": 22.5, "reb": 8.5, "ast": 6.5, "pra": 37.5, "pr": 31.0, "pa": 29.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 3.5},
                 {"name": "Brandon Ingram", "pts": 24.5, "reb": 5.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 30.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "RJ Barrett", "pts": 21.5, "reb": 6.5, "ast": 4.5, "pra": 32.5, "pr": 28.0, "pa": 26.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
             ],
-            # Utah Jazz - K. George, C. Williams, A. Bailey, L. Markkanen, J. Nurkic
+            # Utah Jazz - L. Ball, J. Konchar, V. Williams Jr., W. Clayton Jr. (traded), L. Markkanen
             "UTA": [
+                {"name": "Lonzo Ball", "pts": 14.5, "reb": 5.5, "ast": 7.5, "pra": 27.5, "pr": 20.0, "pa": 22.0, "ra": 13.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "John Konchar", "pts": 8.5, "reb": 5.5, "ast": 3.5, "pra": 17.5, "pr": 14.0, "pa": 12.0, "ra": 9.0, "3pm": 0.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Vince Williams Jr.", "pts": 10.5, "reb": 4.5, "ast": 4.5, "pra": 19.5, "pr": 15.0, "pa": 15.0, "ra": 9.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
                 {"name": "Lauri Markkanen", "pts": 24.5, "reb": 8.5, "ast": 2.5, "pra": 35.5, "pr": 33.0, "pa": 27.0, "ra": 11.0, "3pm": 2.5, "stl": 0.5, "blk": 0.5, "to": 2.5},
-                {"name": "Keyonte George", "pts": 18.5, "reb": 3.5, "ast": 6.5, "pra": 28.5, "pr": 22.0, "pa": 25.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jusuf Nurkic", "pts": 11.5, "reb": 10.5, "ast": 3.5, "pra": 25.5, "pr": 22.0, "pa": 15.0, "ra": 14.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 2.5},
             ],
-            # Washington Wizards - T. Johnson, K. George, B. Coulibaly, J. Champagnie, A. Sarr (Current Starters)
+            # Washington Wizards - T. Young, J. Hardy, D. Russell, D. Exum, A. Davis (via trade)
             "WAS": [
-                {"name": "Tyus Johnson", "pts": 12.5, "reb": 4.5, "ast": 6.5, "pra": 23.5, "pr": 17.0, "pa": 19.0, "ra": 11.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Kevin George", "pts": 14.5, "reb": 5.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 19.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Bilal Coulibaly", "pts": 15.5, "reb": 6.5, "ast": 5.5, "pra": 27.5, "pr": 22.0, "pa": 21.0, "ra": 12.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Jalen Champagnie", "pts": 13.5, "reb": 6.5, "ast": 4.5, "pra": 24.5, "pr": 20.0, "pa": 18.0, "ra": 11.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
-                {"name": "Alex Sarr", "pts": 13.5, "reb": 9.5, "ast": 3.5, "pra": 26.5, "pr": 23.0, "pa": 17.0, "ra": 13.0, "3pm": 0.5, "stl": 0.5, "blk": 2.5, "to": 1.5},
+                {"name": "Trae Young", "pts": 28.5, "reb": 4.5, "ast": 10.5, "pra": 43.5, "pr": 33.0, "pa": 39.0, "ra": 15.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
+                {"name": "Jaden Hardy", "pts": 14.5, "reb": 4.5, "ast": 4.5, "pra": 23.5, "pr": 19.0, "pa": 19.0, "ra": 9.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "D'Angelo Russell", "pts": 18.5, "reb": 3.5, "ast": 6.5, "pra": 28.5, "pr": 22.0, "pa": 25.0, "ra": 10.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Dante Exum", "pts": 10.5, "reb": 3.5, "ast": 4.5, "pra": 18.5, "pr": 14.0, "pa": 15.0, "ra": 8.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Anthony Davis", "pts": 24.5, "reb": 10.5, "ast": 3.5, "pra": 38.5, "pr": 35.0, "pa": 28.0, "ra": 14.0, "3pm": 1.5, "stl": 1.5, "blk": 2.5, "to": 2.5},
             ],
         }
         
