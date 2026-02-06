@@ -1517,16 +1517,17 @@ async def build_parlay(
     # Wrap in try/except to ensure proper response even on errors
     # This prevents CORS issues when the endpoint crashes
     try:
+        from app.services.parlay_service_raw import build_parlays
+        
         return await build_parlays(
             db,
             sport_id,
             leg_count=leg_count,
             include_100_pct=include_100_pct,
-            min_leg_grade=min_leg_grade.upper(),
+            min_grade=min_grade.upper(),
             max_results=max_results,
             block_correlated=block_correlated,
             max_correlation_risk=max_correlation_risk.upper(),
-            force_refresh=force_refresh,
         )
     except Exception as e:
         logger.error(f"Parlay builder error for sport {sport_id}: {e}", exc_info=True)
