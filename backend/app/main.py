@@ -221,12 +221,22 @@ app = FastAPI(
 )
 
 # CORS configuration - use production config
-from app.core.production import validate_and_log_config
+from app.core.production import validate_and_log_config, get_production_config
 
 # Validate production configuration
 validate_and_log_config()
 
 ALLOWED_ORIGINS = settings.allowed_origins
+
+# Force wildcard CORS for Railway environments as fallback
+production_config = get_production_config()
+if production_config.is_railway():
+    logger.warning("CORS: Railway environment detected, forcing wildcard CORS")
+    ALLOWED_ORIGINS = ["*"]
+elif not ALLOWED_ORIGINS or ("perplex-edge-production.up.railway.app" not in str(ALLOWED_ORIGINS) and "*" not in str(ALLOWED_ORIGINS)):
+    logger.warning("CORS: No valid origins found, allowing all origins for Railway compatibility")
+    ALLOWED_ORIGINS = ["*"]
+
 logger.info("cors_origins_configured", origins=ALLOWED_ORIGINS)
 
 # Middleware ordering: Starlette executes middleware in REVERSE order of addition.
