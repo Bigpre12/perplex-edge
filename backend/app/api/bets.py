@@ -170,116 +170,6 @@ async def get_bets(
     return await list_bets(db, filters)
 
 
-@router.get("/{bet_id}", response_model=BetResponse)
-async def get_single_bet(
-    bet_id: int,
-    db: AsyncSession = Depends(get_db),
-):
-    """Get details of a single bet."""
-    
-    bet = await get_bet(db, bet_id)
-    if not bet:
-        raise HTTPException(status_code=404, detail=f"Bet {bet_id} not found")
-    
-    # Get related data
-    sport = await db.get(Sport, bet.sport_id)
-    player = await db.get(Player, bet.player_id) if bet.player_id else None
-    
-    return BetResponse(
-        id=bet.id,
-        sport_id=bet.sport_id,
-        sport_name=sport.name if sport else None,
-        game_id=bet.game_id,
-        player_id=bet.player_id,
-        player_name=player.name if player else None,
-        market_type=bet.market_type,
-        side=bet.side,
-        line_value=bet.line_value,
-        sportsbook=bet.sportsbook,
-        opening_odds=bet.opening_odds,
-        stake=bet.stake,
-        status=bet.status.value,
-        actual_value=bet.actual_value,
-        closing_odds=bet.closing_odds,
-        closing_line=bet.closing_line,
-        clv_cents=bet.clv_cents,
-        profit_loss=bet.profit_loss,
-        placed_at=bet.placed_at,
-        settled_at=bet.settled_at,
-        notes=bet.notes,
-        model_pick_id=bet.model_pick_id,
-        created_at=bet.created_at,
-        updated_at=bet.updated_at,
-    )
-
-
-@router.patch("/{bet_id}/settle", response_model=BetResponse)
-async def settle_single_bet(
-    bet_id: int,
-    settle_data: BetSettle,
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Settle a bet with the result.
-    
-    Provide the final status (won, lost, push, void) and optionally:
-    - actual_value: The actual stat value for props
-    - closing_odds: The closing odds at game start (for CLV)
-    - closing_line: The closing line at game start
-    
-    CLV and P/L are automatically calculated.
-    """
-    try:
-        bet = await settle_bet(db, bet_id, settle_data)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    
-    # Get related data
-    sport = await db.get(Sport, bet.sport_id)
-    player = await db.get(Player, bet.player_id) if bet.player_id else None
-    
-    return BetResponse(
-        id=bet.id,
-        sport_id=bet.sport_id,
-        sport_name=sport.name if sport else None,
-        game_id=bet.game_id,
-        player_id=bet.player_id,
-        player_name=player.name if player else None,
-        market_type=bet.market_type,
-        side=bet.side,
-        line_value=bet.line_value,
-        sportsbook=bet.sportsbook,
-        opening_odds=bet.opening_odds,
-        stake=bet.stake,
-        status=bet.status.value,
-        actual_value=bet.actual_value,
-        closing_odds=bet.closing_odds,
-        closing_line=bet.closing_line,
-        clv_cents=bet.clv_cents,
-        profit_loss=bet.profit_loss,
-        placed_at=bet.placed_at,
-        settled_at=bet.settled_at,
-        notes=bet.notes,
-        model_pick_id=bet.model_pick_id,
-        created_at=bet.created_at,
-        updated_at=bet.updated_at,
-    )
-
-
-@router.delete("/{bet_id}")
-async def remove_bet(
-    bet_id: int,
-    db: AsyncSession = Depends(get_db),
-):
-    """Delete a bet record."""
-    
-    deleted = await delete_bet(db, bet_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail=f"Bet {bet_id} not found")
-    
-    return {"status": "deleted", "bet_id": bet_id}
-
-
 # =============================================================================
 # Statistics Endpoints
 # =============================================================================
@@ -415,3 +305,119 @@ async def get_session_report(
         date_to=date_to,
         sport_id=sport_id,
     )
+
+
+# =============================================================================
+# Individual Bet Endpoints (must be AFTER all named routes)
+# =============================================================================
+
+@router.get("/{bet_id}", response_model=BetResponse)
+async def get_single_bet(
+    bet_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get details of a single bet."""
+    
+    bet = await get_bet(db, bet_id)
+    if not bet:
+        raise HTTPException(status_code=404, detail=f"Bet {bet_id} not found")
+    
+    # Get related data
+    sport = await db.get(Sport, bet.sport_id)
+    player = await db.get(Player, bet.player_id) if bet.player_id else None
+    
+    return BetResponse(
+        id=bet.id,
+        sport_id=bet.sport_id,
+        sport_name=sport.name if sport else None,
+        game_id=bet.game_id,
+        player_id=bet.player_id,
+        player_name=player.name if player else None,
+        market_type=bet.market_type,
+        side=bet.side,
+        line_value=bet.line_value,
+        sportsbook=bet.sportsbook,
+        opening_odds=bet.opening_odds,
+        stake=bet.stake,
+        status=bet.status.value,
+        actual_value=bet.actual_value,
+        closing_odds=bet.closing_odds,
+        closing_line=bet.closing_line,
+        clv_cents=bet.clv_cents,
+        profit_loss=bet.profit_loss,
+        placed_at=bet.placed_at,
+        settled_at=bet.settled_at,
+        notes=bet.notes,
+        model_pick_id=bet.model_pick_id,
+        created_at=bet.created_at,
+        updated_at=bet.updated_at,
+    )
+
+
+@router.patch("/{bet_id}/settle", response_model=BetResponse)
+async def settle_single_bet(
+    bet_id: int,
+    settle_data: BetSettle,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Settle a bet with the result.
+    
+    Provide the final status (won, lost, push, void) and optionally:
+    - actual_value: The actual stat value for props
+    - closing_odds: The closing odds at game start (for CLV)
+    - closing_line: The closing line at game start
+    
+    CLV and P/L are automatically calculated.
+    """
+    try:
+        bet = await settle_bet(db, bet_id, settle_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    # Get related data
+    sport = await db.get(Sport, bet.sport_id)
+    player = await db.get(Player, bet.player_id) if bet.player_id else None
+    
+    return BetResponse(
+        id=bet.id,
+        sport_id=bet.sport_id,
+        sport_name=sport.name if sport else None,
+        game_id=bet.game_id,
+        player_id=bet.player_id,
+        player_name=player.name if player else None,
+        market_type=bet.market_type,
+        side=bet.side,
+        line_value=bet.line_value,
+        sportsbook=bet.sportsbook,
+        opening_odds=bet.opening_odds,
+        stake=bet.stake,
+        status=bet.status.value,
+        actual_value=bet.actual_value,
+        closing_odds=bet.closing_odds,
+        closing_line=bet.closing_line,
+        clv_cents=bet.clv_cents,
+        profit_loss=bet.profit_loss,
+        placed_at=bet.placed_at,
+        settled_at=bet.settled_at,
+        notes=bet.notes,
+        model_pick_id=bet.model_pick_id,
+        created_at=bet.created_at,
+        updated_at=bet.updated_at,
+    )
+
+
+@router.delete("/{bet_id}")
+async def remove_bet(
+    bet_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a bet record."""
+    
+    deleted = await delete_bet(db, bet_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Bet {bet_id} not found")
+    
+    return {"status": "deleted", "bet_id": bet_id}
+
+
