@@ -1,5 +1,5 @@
 """
-Comprehensive health check module for Perplex Engine.
+Comprehensive health check module for Perplex Edge.
 
 Provides health checks for all dependencies:
 - Database connectivity

@@ -1,5 +1,5 @@
 """
-Structured logging configuration for Perplex Engine.
+Structured logging configuration for Perplex Edge.
 
 Provides JSON-formatted logs with correlation IDs for request tracing.
 Falls back to standard logging if structlog is not installed.

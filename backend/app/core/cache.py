@@ -1,5 +1,5 @@
 """
-Unified caching layer for Perplex Engine.
+Unified caching layer for Perplex Edge.
 
 Supports both Redis (preferred for production) and in-memory caching.
 Falls back to in-memory if Redis is not configured or unavailable.

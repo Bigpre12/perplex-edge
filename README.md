@@ -1,4 +1,4 @@
-# Perplex Engine
+# Perplex Edge
 
 A full-stack sports betting analytics platform with odds comparison, prop analysis, injury tracking, and model predictions.
 

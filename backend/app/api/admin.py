@@ -578,9 +578,9 @@ async def test_discord_alert():
     # Send test message
     embed = create_embed(
         title="Test Alert",
-        description="This is a test alert from Perplex Engine. If you see this, your Discord webhook is configured correctly!",
+        description="This is a test alert from Perplex Edge. If you see this, your Discord webhook is configured correctly!",
         color=0x00FF00,  # Green
-        footer="Perplex Engine | Test Alert",
+        footer="Perplex Edge | Test Alert",
     )
     
     success = await send_discord_message(embeds=[embed])

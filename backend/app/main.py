@@ -1,4 +1,4 @@
-"""Perplex Engine - Sports Betting Analytics API."""
+"""Perplex Edge - Sports Betting Analytics API."""
 import os
 import time
 import uuid
@@ -191,7 +191,7 @@ async def lifespan(app: FastAPI):
 # =============================================================================
 
 app = FastAPI(
-    title="Perplex Engine",
+    title="Perplex Edge",
     description="Sports betting analytics platform",
     version="0.1.0",
     lifespan=lifespan,
@@ -306,7 +306,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def root():
     """Root endpoint."""
     return {
-        "message": "Perplex Engine API",
+        "message": "Perplex Edge API",
         "version": "0.1.0",
         "status": "running",
     }

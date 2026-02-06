@@ -70,7 +70,7 @@ def create_embed(
 async def send_discord_message(
     content: str = None,
     embeds: list[dict] = None,
-    username: str = "Perplex Engine",
+    username: str = "Perplex Edge",
 ) -> bool:
     """
     Send a message to Discord via webhook.
@@ -179,7 +179,7 @@ async def alert_high_ev_pick(
         description=f"**{sport}** - Strong value detected",
         color=color,
         fields=fields,
-        footer="Perplex Engine | High EV Alert",
+        footer="Perplex Edge | High EV Alert",
     )
     
     return await send_discord_message(embeds=[embed])
@@ -217,7 +217,7 @@ async def alert_lock_parlay(
             {"name": "Win Prob", "value": format_percent(parlay_prob), "inline": True},
             {"name": "EV", "value": f"**+{format_percent(parlay_ev)}**", "inline": True},
         ],
-        footer="Perplex Engine | LOCK Parlay Alert",
+        footer="Perplex Edge | LOCK Parlay Alert",
     )
     
     return await send_discord_message(embeds=[embed])
@@ -252,7 +252,7 @@ async def alert_100_percent_streak(
             {"name": "Streak", "value": f"{games_count} games", "inline": True},
             {"name": "Current Odds", "value": format_odds(current_odds), "inline": True},
         ],
-        footer="Perplex Engine | 100% Streak Alert",
+        footer="Perplex Edge | 100% Streak Alert",
     )
     
     return await send_discord_message(embeds=[embed])
@@ -287,7 +287,7 @@ async def alert_sync_complete(
             {"name": "Picks", "value": str(picks_generated), "inline": True},
             {"name": "High EV", "value": str(high_ev_count), "inline": True},
         ],
-        footer="Perplex Engine | Sync Alert",
+        footer="Perplex Edge | Sync Alert",
     )
     
     return await send_discord_message(embeds=[embed])
@@ -314,7 +314,7 @@ async def alert_error(
         title=f"⚠️ {error_type}",
         description=description,
         color=0xFF4500,  # Red-orange
-        footer="Perplex Engine | Error Alert",
+        footer="Perplex Edge | Error Alert",
     )
     
     return await send_discord_message(embeds=[embed])
@@ -372,7 +372,7 @@ async def alert_line_movement(
             {"name": "New Odds", "value": format_odds(new_odds), "inline": True},
             {"name": "Odds Move", "value": f"{'+' if odds_diff > 0 else ''}{odds_diff}", "inline": True},
         ],
-        footer="Perplex Engine | Line Movement Alert",
+        footer="Perplex Edge | Line Movement Alert",
     )
     
     return await send_discord_message(embeds=[embed])
@@ -525,11 +525,11 @@ async def send_watchlist_alert(
             {"name": "Total Matches", "value": str(total_matches), "inline": True},
             {"name": "New Picks", "value": str(len(new_picks)), "inline": True},
         ],
-        footer="Perplex Engine | Watchlist Alert",
+        footer="Perplex Edge | Watchlist Alert",
     )
     
     payload = {
-        "username": "Perplex Engine",
+        "username": "Perplex Edge",
         "embeds": [embed],
     }
     

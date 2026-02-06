@@ -1,5 +1,5 @@
 """
-Unified Data Layer for Perplex Engine.
+Unified Data Layer for Perplex Edge.
 
 This module provides a clean, unified architecture for all external data:
 - Providers: API clients only (no DB operations)
