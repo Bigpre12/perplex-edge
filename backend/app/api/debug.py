@@ -22,6 +22,7 @@ async def debug_model_picks_count(
     """Debug ModelPick counts with different time filters."""
     try:
         now = datetime.now(timezone.utc)
+        now_naive = now.replace(tzinfo=None)  # Convert to naive for comparison
         
         # Count all ModelPicks for sport
         total_picks_result = await db.execute(
@@ -37,7 +38,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now - timedelta(hours=6)
+                ModelPick.generated_at > now_naive - timedelta(hours=6)
             ))
         )
         recent_picks = recent_picks_result.scalar() or 0
@@ -48,7 +49,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now - timedelta(hours=24)
+                ModelPick.generated_at > now_naive - timedelta(hours=24)
             ))
         )
         day_picks = day_picks_result.scalar() or 0
@@ -59,7 +60,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now - timedelta(hours=72)
+                ModelPick.generated_at > now_naive - timedelta(hours=72)
             ))
         )
         three_day_picks = three_day_picks_result.scalar() or 0
@@ -71,7 +72,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.generated_at > now - timedelta(hours=24)
+                ModelPick.generated_at > now_naive - timedelta(hours=24)
             ))
             .order_by(ModelPick.generated_at.desc())
             .limit(5)
@@ -118,17 +119,18 @@ async def debug_parlay_query(
         
         min_grade = "C"
         min_grade_numeric = {"A": 5, "B": 4, "C": 3, "D": 2, "F": 1}[min_grade]
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(timezone.utc)
+        now_naive = now.replace(tzinfo=None)  # Convert to naive for comparison
         
         # Use force_refresh logic (wider window)
-        game_window_start = now - timedelta(hours=2)
-        game_window_end = now + timedelta(hours=36)
+        game_window_start = now_naive - timedelta(hours=2)
+        game_window_end = now_naive + timedelta(hours=36)
         
         # Build the exact conditions from parlay service
         conditions = [
             Game.sport_id == sport_id,
             ModelPick.player_id.isnot(None),
-            ModelPick.generated_at > now - timedelta(hours=6),
+            ModelPick.generated_at > now_naive - timedelta(hours=6),
         ]
         
         conditions.extend([
@@ -153,7 +155,7 @@ async def debug_parlay_query(
             "conditions": [
                 f"Game.sport_id == {sport_id}",
                 "ModelPick.player_id.isnot(None)",
-                f"ModelPick.generated_at > {(now - timedelta(hours=6)).isoformat()}",
+                f"ModelPick.generated_at > {(now_naive - timedelta(hours=6)).isoformat()}",
                 f"Game.start_time > {game_window_start.isoformat()}",
                 f"Game.start_time < {game_window_end.isoformat()}"
             ],
