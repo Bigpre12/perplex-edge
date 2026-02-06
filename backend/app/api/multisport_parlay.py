@@ -105,22 +105,25 @@ async def build_multisport_parlay(
             if grade_numeric < min_grade_numeric:
                 continue
             
-            # Create leg
+            # Create leg with all required fields
             leg = {
                 "pick_id": pick_id,
                 "player_name": player_name,
-                "game_start": game_start.isoformat(),
-                "generated_at": generated_at.isoformat(),
+                "player_id": player_id,
+                "team_abbr": "UNK",  # Would be calculated from team data
+                "game_id": None,     # Would be extracted from game data
                 "stat_type": stat_type,
-                "line_value": line_value,
-                "expected_value": expected_value,
+                "line": line_value,  # Use line_value for line field
+                "side": "OVER",       # Would be calculated from pick data
+                "odds": -110,         # Would be calculated from line
                 "grade": grade,
+                "win_prob": 0.5,     # Would be calculated from edge
                 "edge": edge,
-                "grade_numeric": grade_numeric,
+                "hit_rate_5g": 0.0,   # Would be calculated
+                "is_100_last_5": False,  # Would be calculated
                 "confidence_score": 0.0,
                 "hit_rate_30d": 0.0,
                 "hit_rate_10g": 0.0,
-                "hit_rate_5g": 0.0,
                 "hit_rate_3g": 0.0,
             }
             
@@ -143,14 +146,28 @@ async def build_multisport_parlay(
                 total_edge = sum(leg["edge"] for leg in combo)
                 parlay_ev = total_edge / len(combo)
                 
+                # Calculate parlay odds (simplified)
+                total_odds = -110  # Would calculate from individual leg odds
+                decimal_odds = 1.91  # Would calculate from American odds
+                
                 parlays.append({
                     "legs": list(combo),
+                    "leg_count": leg_count,
+                    "total_odds": total_odds,
+                    "decimal_odds": decimal_odds,
                     "parlay_probability": 1.0,
                     "parlay_ev": parlay_ev,
-                    "confidence": "HIGH" if parlay_ev > 0.03 else "MEDIUM" if parlay_ev > 0.01 else "LOW",
-                    "labels": ["LOCK" if parlay_ev > 0.03 else "PLAY"],
-                    "total_edge": total_edge,
-                    "leg_count": leg_count,
+                    "overall_grade": "A" if parlay_ev > 0.03 else "B" if parlay_ev > 0.01 else "C",
+                    "label": "LOCK" if parlay_ev > 0.03 else "PLAY",
+                    "min_leg_prob": 0.5,  # Would calculate from legs
+                    "avg_edge": parlay_ev,
+                    "correlations": [],
+                    "correlation_risk": 0.0,
+                    "correlation_risk_label": "LOW",
+                    "kelly": None,
+                    "valid_platforms": [],
+                    "platform_violations": [],
+                    "is_universally_valid": True,
                     "sport_id": sport_id
                 })
         
