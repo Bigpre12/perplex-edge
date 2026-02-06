@@ -22,10 +22,13 @@ class ProductionConfig:
     @staticmethod
     def is_railway() -> bool:
         """Check if running on Railway platform."""
-        return bool(
-            os.getenv("RAILWAY_ENVIRONMENT") or 
-            os.getenv("RAILWAY_SERVICE_NAME") or 
-            os.getenv("RAILWAY_PROJECT_NAME")
+        return (
+            bool(os.getenv("RAILWAY_ENVIRONMENT")) or 
+            bool(os.getenv("RAILWAY_SERVICE_NAME")) or 
+            bool(os.getenv("RAILWAY_PROJECT_NAME")) or
+            "railway" in os.getenv("RAILWAY_ENVIRONMENT", "").lower() or
+            "railway" in os.getenv("RAILWAY_SERVICE_NAME", "").lower() or
+            "railway" in os.getenv("RAILWAY_PROJECT_NAME", "").lower()
         )
     
     @staticmethod
@@ -117,6 +120,12 @@ class ProductionConfig:
     @staticmethod
     def get_cors_origins() -> List[str]:
         """Get appropriate CORS origins based on environment."""
+        # Debug logging
+        logger.info(f"CORS Debug - Environment: {os.getenv('ENVIRONMENT')}")
+        logger.info(f"CORS Debug - Is Railway: {ProductionConfig.is_railway()}")
+        logger.info(f"CORS Debug - Frontend URL: {os.getenv('FRONTEND_URL')}")
+        logger.info(f"CORS Debug - CORS Origins: {os.getenv('CORS_ORIGINS')}")
+        
         if ProductionConfig.is_production():
             origins = ProductionConfig.get_production_origins()
             
@@ -129,7 +138,18 @@ class ProductionConfig:
             if os.getenv("ALLOW_DEV_ORIGINS_IN_PROD", "").lower() == "true":
                 origins.extend(ProductionConfig.get_development_origins())
             
-            return origins if origins else ["*"]  # Fallback to wildcard
+            # If no origins specified, allow the frontend URL if available
+            if not origins:
+                frontend_url = os.getenv("FRONTEND_URL", "").strip()
+                if frontend_url:
+                    origins = [frontend_url]
+                else:
+                    # Last resort - allow all origins but log warning
+                    logger.warning("CORS: No origins specified, allowing all origins")
+                    return ["*"]
+            
+            logger.info(f"CORS Debug - Final origins: {origins}")
+            return origins
         
         # Development environment
         origins = ProductionConfig.get_development_origins()

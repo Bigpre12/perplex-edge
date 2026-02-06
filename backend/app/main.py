@@ -289,6 +289,25 @@ app.add_middleware(CORSDebuggingMiddleware)
 # CORS Health Check Endpoint
 # =============================================================================
 
+@app.get("/cors-debug")
+async def cors_debug():
+    """Debug endpoint to check CORS configuration."""
+    from app.core.production import get_production_config
+    
+    config = get_production_config()
+    
+    return {
+        "environment": os.getenv("ENVIRONMENT"),
+        "is_railway": config.is_railway(),
+        "frontend_url": os.getenv("FRONTEND_URL"),
+        "cors_origins": os.getenv("CORS_ORIGINS"),
+        "allowed_origins": settings.allowed_origins,
+        "railway_env": os.getenv("RAILWAY_ENVIRONMENT"),
+        "railway_service": os.getenv("RAILWAY_SERVICE_NAME"),
+        "railway_project": os.getenv("RAILWAY_PROJECT_NAME"),
+    }
+
+
 @app.get("/cors-health")
 async def cors_health_check():
     """Health check that explicitly sets CORS headers for debugging."""
@@ -308,10 +327,8 @@ async def cors_health_check():
     else:
         response.headers["Access-Control-Allow-Origin"] = "*"
     
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Max-Age"] = "600"
     
     return response
 
