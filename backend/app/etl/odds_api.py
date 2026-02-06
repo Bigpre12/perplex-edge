@@ -44,15 +44,17 @@ MARKETS = {
     "totals": "total",
 }
 
-# Common US sportsbooks
+# Common US sportsbooks (The Odds API keys)
 BOOKMAKERS = [
     "fanduel",
     "draftkings",
     "betmgm",
     "caesars",
-    "pointsbetus",
     "betrivers",
-    "unibet_us",
+    "fanatics",
+    "hardrock",
+    "espnbet",
+    "fliff",
 ]
 
 

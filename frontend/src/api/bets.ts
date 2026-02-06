@@ -360,12 +360,14 @@ export function useDeleteBet() {
 export const DEFAULT_SPORTSBOOKS = [
   'FanDuel',
   'DraftKings',
-  'PrizePicks',
-  'Fliff',
   'BetMGM',
   'Caesars',
-  'PointsBet',
   'BetRivers',
+  'Fanatics',
+  'Hard Rock Bet',
+  'ESPN BET',
+  'PrizePicks',
+  'Fliff',
 ];
 
 export const DEFAULT_MARKET_TYPES = [
