@@ -114,9 +114,9 @@ LEAGUE_TO_SPORT_KEY_EXTENDED = {
 # Sport IDs follow a logical grouping pattern:
 # - 30s: Basketball (NBA=30, NCAAB=32, WNBA=34)
 # - 40s: MLB=40, NCAAF=41, Tennis ATP=42, Tennis WTA=43
-# - 50s: NHL=53
+# - 50s: Hockey (NHL=53)
 # - 60s: Golf (PGA=60)
-# - 70s: Soccer (EPL=70, UCL=71, MLS=72)
+# - 70s: Soccer (EPL=70, UCL=71, MLS=72, UEL=73, UECL=74)
 # - 80s: Combat sports (UFC=80)
 SPORT_ID_TO_KEY = {
     # Basketball
@@ -129,8 +129,7 @@ SPORT_ID_TO_KEY = {
     # Baseball
     40: "baseball_mlb",
     # Hockey
-    44: "icehockey_nhl",  # Legacy mapping (kept for compatibility)
-    53: "icehockey_nhl",  # Actual database ID
+    53: "icehockey_nhl",
     # Tennis
     42: "tennis_atp",
     43: "tennis_wta",

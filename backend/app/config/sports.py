@@ -186,8 +186,7 @@ SPORT_ID_TO_KEY: Dict[int, SportKey] = {
     40: SportKey.BASEBALL_MLB,
     
     # Hockey
-    44: SportKey.ICEHOCKEY_NHL,  # Legacy mapping (kept for compatibility)
-    53: SportKey.ICEHOCKEY_NHL,  # Actual database ID
+    53: SportKey.ICEHOCKEY_NHL,
     
     # Tennis
     42: SportKey.TENNIS_ATP,

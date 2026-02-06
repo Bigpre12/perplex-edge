@@ -237,8 +237,7 @@ export const SPORT_ID_TO_KEY: Record<number, SportKey> = {
   // Baseball
   40: 'baseball_mlb',
   // Hockey
-  44: 'icehockey_nhl', // Legacy mapping
-  53: 'icehockey_nhl', // Actual database ID
+  53: 'icehockey_nhl',
   // Tennis
   42: 'tennis_atp',
   43: 'tennis_wta',
