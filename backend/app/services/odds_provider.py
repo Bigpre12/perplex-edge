@@ -1896,17 +1896,20 @@ class XYZOddsProvider(OddsProvider):
         # Updated: 2025-26 Season Depth Charts
         # Stats: pts, reb, ast, pra, pr, pa, ra, 3pm, stl, blk, to
         NBA_TEAM_ROSTERS = {
-            # Atlanta Hawks - D. Daniels, N. Alexander-Walker, Z. Risacher, J. Johnson, O. Okongwu
+            # Atlanta Hawks - T. Young, D. Daniels, J. Johnson, O. Okongwu, C. Capela
             "ATL": [
+                {"name": "Trae Young", "pts": 24.5, "reb": 3.5, "ast": 10.5, "pra": 38.5, "pr": 28.0, "pa": 35.0, "ra": 14.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 4.5},
                 {"name": "Dyson Daniels", "pts": 14.5, "reb": 4.5, "ast": 5.5, "pra": 24.5, "pr": 19.0, "pa": 20.0, "ra": 10.0, "3pm": 1.5, "stl": 2.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jalen Johnson", "pts": 20.5, "reb": 9.5, "ast": 5.5, "pra": 35.5, "pr": 30.0, "pa": 26.0, "ra": 15.0, "3pm": 1.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
-                {"name": "Onyeka Okongwu", "pts": 12.5, "reb": 8.5, "ast": 2.5, "pra": 23.5, "pr": 21.0, "pa": 15.0, "ra": 11.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
+                {"name": "Clint Capela", "pts": 11.5, "reb": 10.5, "ast": 1.5, "pra": 23.5, "pr": 22.0, "pa": 13.0, "ra": 12.0, "3pm": 0.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
-            # Boston Celtics - P. Pritchard, D. White, J. Brown, S. Hauser, N. Queta
+            # Boston Celtics - J. Tatum, J. Brown, D. White, P. Pritchard, K. Porzingis
             "BOS": [
-                {"name": "Derrick White", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5, "pr": 23.0, "pa": 24.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
+                {"name": "Jayson Tatum", "pts": 27.5, "reb": 8.5, "ast": 4.5, "pra": 40.5, "pr": 36.0, "pa": 32.0, "ra": 13.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
                 {"name": "Jaylen Brown", "pts": 26.5, "reb": 6.5, "ast": 4.5, "pra": 37.5, "pr": 33.0, "pa": 31.0, "ra": 11.0, "3pm": 2.5, "stl": 1.5, "blk": 0.5, "to": 2.5},
+                {"name": "Derrick White", "pts": 18.5, "reb": 4.5, "ast": 5.5, "pra": 28.5, "pr": 23.0, "pa": 24.0, "ra": 10.0, "3pm": 2.5, "stl": 1.5, "blk": 1.5, "to": 1.5},
                 {"name": "Payton Pritchard", "pts": 15.5, "reb": 3.5, "ast": 4.5, "pra": 23.5, "pr": 19.0, "pa": 20.0, "ra": 8.0, "3pm": 3.5, "stl": 1.5, "blk": 0.5, "to": 1.5},
+                {"name": "Kristaps Porzingis", "pts": 19.5, "reb": 7.5, "ast": 2.5, "pra": 29.5, "pr": 27.0, "pa": 22.0, "ra": 10.0, "3pm": 1.5, "stl": 0.5, "blk": 1.5, "to": 1.5},
             ],
             # Brooklyn Nets - E. Demin, T. Mann, M. Porter Jr., N. Clowney, N. Claxton
             "BKN": [
@@ -2727,46 +2730,40 @@ class XYZOddsProvider(OddsProvider):
             """Generate realistic NBA stats based on position."""
             rating_mult = 0.9 + (team_rating / 100) * 0.2
             
-            if position_idx == 0:  # PG
-                pts = round(random.uniform(18, 28) * rating_mult * 2) / 2
-                reb = round(random.uniform(3, 5) * 2) / 2
-                ast = round(random.uniform(6, 10) * rating_mult * 2) / 2
-                threes = round(random.uniform(2, 4) * 2) / 2
-            elif position_idx == 1:  # SG
-                pts = round(random.uniform(20, 30) * rating_mult * 2) / 2
-                reb = round(random.uniform(3.5, 5.5) * 2) / 2
-                ast = round(random.uniform(3, 6) * 2) / 2
-                threes = round(random.uniform(2.5, 4.5) * 2) / 2
-            elif position_idx == 2:  # SF
-                pts = round(random.uniform(16, 24) * rating_mult * 2) / 2
-                reb = round(random.uniform(5, 7) * 2) / 2
-                ast = round(random.uniform(2.5, 4.5) * 2) / 2
-                threes = round(random.uniform(1.5, 3.5) * 2) / 2
-            elif position_idx == 3:  # PF
-                pts = round(random.uniform(14, 22) * rating_mult * 2) / 2
-                reb = round(random.uniform(7, 10) * 2) / 2
-                ast = round(random.uniform(2, 4) * 2) / 2
-                threes = round(random.uniform(1, 2.5) * 2) / 2
+            # Position-based stat ranges (PG=0, SG=1, SF=2, PF=3, C=4)
+            # Updated ranges based on 2024-25 season averages
+            if position_idx <= 1:  # PG/SG - guards
+                pts = round(random.uniform(15, 32) * rating_mult * 2) / 2
+                reb = round(random.uniform(2.5, 6.5) * 2) / 2
+                ast = round(random.uniform(3.5, 9) * rating_mult * 2) / 2
+                threes = round(random.uniform(1.5, 4.5) * 2) / 2
+            elif position_idx <= 3:  # SF/PF - wings/bigs
+                pts = round(random.uniform(12, 28) * rating_mult * 2) / 2
+                reb = round(random.uniform(5.5, 11.5) * 2) / 2
+                ast = round(random.uniform(2.5, 6.5) * rating_mult * 2) / 2
+                threes = round(random.uniform(0.5, 3) * 2) / 2
             else:  # C
-                pts = round(random.uniform(12, 20) * rating_mult * 2) / 2
-                reb = round(random.uniform(9, 13) * 2) / 2
-                ast = round(random.uniform(1.5, 3.5) * 2) / 2
-                threes = round(random.uniform(0.5, 1.5) * 2) / 2
+                pts = round(random.uniform(8, 22) * rating_mult * 2) / 2
+                reb = round(random.uniform(8, 14) * 2) / 2
+                ast = round(random.uniform(1, 3.5) * 2) / 2
+                threes = round(random.uniform(0, 1) * 2) / 2
+            
+            # Calculate combo props
+            pra = round((pts + reb + ast) * 2) / 2
+            pr = round((pts + reb) * 2) / 2
+            pa = round((pts + ast) * 2) / 2
+            ra = round((reb + ast) * 2) / 2
+            
+            # Defensive stats (lower variance)
+            stl = round(random.uniform(0.5, 2.5) * 2) / 2
+            blk = round(random.uniform(0.3, 2.5) * 2) / 2 if position_idx >= 2 else round(random.uniform(0.2, 1.5) * 2) / 2
+            to = round(random.uniform(1.5, 4.5) * 2) / 2
             
             return {
                 "pts": pts, "reb": reb, "ast": ast,
-                "pra": round((pts + reb + ast) * 2) / 2,
-                "pr": round((pts + reb) * 2) / 2,
-                "pa": round((pts + ast) * 2) / 2,
-                "ra": round((reb + ast) * 2) / 2,
-                "3pm": threes,
-                "stl": round(random.uniform(0.5, 2) * 2) / 2,
-                "blk": round(random.uniform(0.5, 2) * 2) / 2,
-                "to": round(random.uniform(2, 4) * 2) / 2,
+                "pra": pra, "pr": pr, "pa": pa, "ra": ra,
+                "3pm": threes, "stl": stl, "blk": blk, "to": to,
             }
-        
-        home_rating = NBA_TEAM_RATINGS.get(home_team, 75)
-        away_rating = NBA_TEAM_RATINGS.get(away_team, 75)
         
         for i, name in enumerate(home_roster):
             stats = gen_nba_stats(i, home_rating)
