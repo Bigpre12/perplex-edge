@@ -783,6 +783,33 @@ export function ParlayBuilder() {
       label: 'PP 5-Flex', desc: 'Best flex value (can miss 2)',
       minEvPerLeg: 0.02,
     },
+    // Fliff presets
+    fl3Power: {
+      legCount: 3, minGrade: 'B', entryType: 'power' as EntryType, site: 'fliff',
+      label: 'Fliff 3-Pick', desc: 'Fliff 3-pick power (5x payout)',
+      minEvPerLeg: 0.03,
+    },
+    fl4Power: {
+      legCount: 4, minGrade: 'B', entryType: 'power' as EntryType, site: 'fliff',
+      label: 'Fliff 4-Pick', desc: 'Fliff 4-pick power (10x payout)',
+      minEvPerLeg: 0.03,
+    },
+    fl5Power: {
+      legCount: 5, minGrade: 'C', entryType: 'power' as EntryType, site: 'fliff',
+      label: 'Fliff 5-Pick', desc: 'Fliff 5-pick power (20x payout)',
+      minEvPerLeg: 0.02,
+    },
+    // Underdog presets
+    ud3Power: {
+      legCount: 3, minGrade: 'B', entryType: 'power' as EntryType, site: 'underdog',
+      label: 'UD 3-Pick', desc: 'Underdog 3-pick (6x payout)',
+      minEvPerLeg: 0.03,
+    },
+    ud5Power: {
+      legCount: 5, minGrade: 'C', entryType: 'power' as EntryType, site: 'underdog',
+      label: 'UD 5-Pick', desc: 'Underdog 5-pick (20x payout)',
+      minEvPerLeg: 0.02,
+    },
     // Sportsbook presets
     sb2Leg: { 
       legCount: 2, minGrade: 'A', entryType: 'power' as EntryType, site: 'sportsbook',
@@ -798,7 +825,7 @@ export function ParlayBuilder() {
   
   // Filter presets by current site mode
   const visiblePresets = Object.entries(DFS_PRESETS).filter(([, preset]) => 
-    preset.site === siteMode || preset.site === 'sportsbook' && siteMode === 'sportsbook'
+    preset.site === siteMode
   );
   
   const applyPreset = (presetKey: string) => {
@@ -886,9 +913,10 @@ export function ParlayBuilder() {
               onClick={() => {
                 setSiteMode(key);
                 // Auto-select best preset for this site
-                if (key === 'prizepicks') applyPreset('pp3Power');
-                else if (key === 'fliff' || key === 'underdog') applyPreset('pp3Power');
-                else applyPreset('sb3Leg');
+                if (key === 'prizepicks') { setLegCount(3); setMinGrade('B'); setEntryType('power'); setActivePreset('pp3Power'); }
+                else if (key === 'fliff') { setLegCount(3); setMinGrade('B'); setEntryType('power'); setActivePreset('fl3Power'); }
+                else if (key === 'underdog') { setLegCount(3); setMinGrade('B'); setEntryType('power'); setActivePreset('ud3Power'); }
+                else { setLegCount(3); setMinGrade('B'); setEntryType('power'); setActivePreset('sb3Leg'); }
               }}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                 siteMode === key
@@ -1209,8 +1237,8 @@ export function ParlayBuilder() {
       {/* Filters */}
       <div className="bg-gray-800/50 rounded-lg p-4">
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          {/* Entry Type (DFS only) */}
-          {siteMode !== 'sportsbook' && (
+          {/* Entry Type (only for platforms with flex payouts, e.g. PrizePicks) */}
+          {siteMode !== 'sportsbook' && platformConfig.payouts.some(p => p.type === 'flex') && (
             <div>
               <label className="block text-xs text-gray-400 mb-1">Entry Type</label>
               <div className="flex bg-gray-700 rounded p-0.5">
