@@ -234,3 +234,37 @@ async def get_whop_checkout_urls():
         pro_monthly_checkout_url=settings.whop_pro_monthly_checkout_url or None,
         pro_yearly_checkout_url=settings.whop_pro_yearly_checkout_url or None
     )
+
+
+@router.get("/users/brain-debug", tags=["users"])
+async def get_brain_debug_info():
+    """
+    Get comprehensive brain debugging information.
+    
+    Returns performance metrics, error logs, and debug information.
+    """
+    try:
+        from app.services.brain import _brain_debugger
+        return _brain_debugger.get_debug_summary()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Brain debug info unavailable: {str(e)}")
+
+
+@router.get("/users/brain-debug/export", tags=["users"])
+async def export_brain_debug_data():
+    """
+    Export complete brain debugging data as JSON.
+    
+    Returns full debug logs, error logs, and performance metrics.
+    """
+    try:
+        from app.services.brain import _brain_debugger
+        from fastapi.responses import JSONResponse
+        
+        debug_data = _brain_debugger.export_debug_data()
+        return JSONResponse(
+            content=debug_data,
+            headers={"Content-Disposition": "attachment; filename=brain_debug.json"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Brain debug export failed: {str(e)}")
