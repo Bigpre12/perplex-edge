@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
-from sqlalchemy import select, func, and_, or_, Integer
+from sqlalchemy import select, func, and_, or_, Integer, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -847,11 +847,14 @@ async def seed_stub_hit_rates(db: AsyncSession, sport_id: int = 30) -> dict[str,
         logger.info(f"[seed] PlayerHitRate already has {count} records for sport {sport_id}, skipping seed")
         return {"seeded": False, "existing": count}
 
-    # Get players with picks for this sport
+    # Get players with picks for this sport (ensure both player and picks belong to same sport)
     players_result = await db.execute(
         select(Player.id, Player.name, Player.sport_id)
         .join(ModelPick, ModelPick.player_id == Player.id)
-        .where(ModelPick.sport_id == sport_id)
+        .where(and_(
+            ModelPick.sport_id == sport_id,
+            Player.sport_id == sport_id  # Ensure player also belongs to this sport
+        ))
         .group_by(Player.id, Player.name, Player.sport_id)
         .limit(80)
     )
