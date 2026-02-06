@@ -662,7 +662,7 @@ async def build_parlay_legs(
     conditions = [
         Game.sport_id == sport_id,
         ModelPick.player_id.isnot(None),  # Player props only
-        ModelPick.created_at > now - timedelta(hours=6),  # Only recent picks (avoid stale data)
+        ModelPick.generated_at > now - timedelta(hours=6),  # Only recent picks (avoid stale data)
     ]
     
     # Only include active games if enabled
@@ -681,7 +681,7 @@ async def build_parlay_legs(
         .outerjoin(Team, Player.team_id == Team.id)
         .join(Market, ModelPick.market_id == Market.id)
         .where(and_(*conditions))
-        .order_by(ModelPick.created_at.desc())  # Prioritize newest picks
+        .order_by(ModelPick.generated_at.desc())  # Prioritize newest picks
     )
     rows = result.all()
     
@@ -697,7 +697,7 @@ async def build_parlay_legs(
             continue
         
         # Dynamic freshness check - skip very old picks
-        pick_age = now - pick.created_at.replace(tzinfo=None)
+        pick_age = now - pick.generated_at.replace(tzinfo=None)
         if pick_age.total_seconds() > 21600:  # 6 hours old
             continue
         

@@ -37,7 +37,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.created_at > now - timedelta(hours=6)
+                ModelPick.generated_at > now - timedelta(hours=6)
             ))
         )
         recent_picks = recent_picks_result.scalar() or 0
@@ -48,7 +48,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.created_at > now - timedelta(hours=24)
+                ModelPick.generated_at > now - timedelta(hours=24)
             ))
         )
         day_picks = day_picks_result.scalar() or 0
@@ -59,7 +59,7 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.created_at > now - timedelta(hours=72)
+                ModelPick.generated_at > now - timedelta(hours=72)
             ))
         )
         three_day_picks = three_day_picks_result.scalar() or 0
@@ -71,9 +71,9 @@ async def debug_model_picks_count(
             .join(Game, ModelPick.game_id == Game.id)
             .where(and_(
                 Game.sport_id == sport_id,
-                ModelPick.created_at > now - timedelta(hours=24)
+                ModelPick.generated_at > now - timedelta(hours=24)
             ))
-            .order_by(ModelPick.created_at.desc())
+            .order_by(ModelPick.generated_at.desc())
             .limit(5)
         )
         sample_rows = sample_result.all()
@@ -84,7 +84,7 @@ async def debug_model_picks_count(
                 "pick_id": pick.id,
                 "player_name": player.name,
                 "game_start": game.start_time.isoformat(),
-                "created_at": pick.created_at.isoformat(),
+                "generated_at": pick.generated_at.isoformat(),
                 "expected_value": pick.expected_value,
                 "line_value": pick.line_value
             })
@@ -128,7 +128,7 @@ async def debug_parlay_query(
         conditions = [
             Game.sport_id == sport_id,
             ModelPick.player_id.isnot(None),
-            ModelPick.created_at > now - timedelta(hours=6),
+            ModelPick.generated_at > now - timedelta(hours=6),
         ]
         
         conditions.extend([
@@ -144,7 +144,7 @@ async def debug_parlay_query(
             .outerjoin(Team, Player.team_id == Team.id)
             .join(Market, ModelPick.market_id == Market.id)
             .where(and_(*conditions))
-            .order_by(ModelPick.created_at.desc())
+            .order_by(ModelPick.generated_at.desc())
         )
         rows = result.all()
         
@@ -153,7 +153,7 @@ async def debug_parlay_query(
             "conditions": [
                 f"Game.sport_id == {sport_id}",
                 "ModelPick.player_id.isnot(None)",
-                f"ModelPick.created_at > {(now - timedelta(hours=6)).isoformat()}",
+                f"ModelPick.generated_at > {(now - timedelta(hours=6)).isoformat()}",
                 f"Game.start_time > {game_window_start.isoformat()}",
                 f"Game.start_time < {game_window_end.isoformat()}"
             ],
@@ -171,7 +171,7 @@ async def debug_parlay_query(
                     "pick_id": pick.id,
                     "player_name": player.name,
                     "game_start": game.start_time.isoformat(),
-                    "pick_created": pick.created_at.isoformat(),
+                    "pick_created": pick.generated_at.isoformat(),
                     "expected_value": pick.expected_value,
                     "line_value": pick.line_value,
                     "market_type": market.market_type
