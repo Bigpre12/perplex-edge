@@ -58,6 +58,7 @@ from app.api.debug import router as debug_router
 from app.api.debug_parlay import router as debug_parlay_router
 from app.api.debug_simple import router as debug_simple_router
 from app.api.debug_raw_parlay import router as debug_raw_parlay_router
+from app.api.test_raw_service import router as test_raw_service_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -432,6 +433,7 @@ app.include_router(debug_router, tags=["debug"])
 app.include_router(debug_parlay_router, tags=["debug-parlay"])
 app.include_router(debug_simple_router, tags=["debug-simple"])
 app.include_router(debug_raw_parlay_router, tags=["debug-raw-parlay"])
+app.include_router(test_raw_service_router, tags=["test-raw-service"])
 
 
 # =============================================================================
