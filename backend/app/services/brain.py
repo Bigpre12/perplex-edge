@@ -2854,6 +2854,25 @@ async def _analyze_betting_markets() -> HealthCheck:
 
 
 # =============================================================================
+# Sport Mapping Health Check
+# =============================================================================
+
+async def check_sport_mapping_health(db: AsyncSession) -> dict:
+    """Check sport mapping data integrity."""
+    try:
+        from app.services.sport_mapping_fix import get_sport_mapping_health_check
+        return await get_sport_mapping_health_check(db)
+    except Exception as e:
+        logger.error(f"Sport mapping health check failed: {e}")
+        return HealthCheck(
+            component="sport_mapping",
+            status="critical",
+            message=f"Sport mapping health check failed: {str(e)}",
+            details={"error": str(e)}
+        )
+
+
+# =============================================================================
 # 5. MAIN BRAIN LOOP
 # =============================================================================
 
@@ -2977,6 +2996,18 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                 "duration_ms": storage_duration,
                 "free_space_gb": storage_check.details.get("free_space_gb", 0),
                 "usage_percentage": storage_check.details.get("usage_percentage", 0)
+            })
+
+            # Sport mapping data integrity
+            sport_mapping_start = time.time()
+            sport_mapping_check = await check_sport_mapping_health(db)
+            sport_mapping_duration = (time.time() - sport_mapping_start) * 1000
+            all_checks.append(sport_mapping_check)
+            
+            _brain_debugger.log_debug("brain_loop", "sport_mapping_check", {
+                "status": sport_mapping_check.status,
+                "duration_ms": sport_mapping_duration,
+                "component": "sport_mapping"
             })
 
             # Scheduler tasks
@@ -3221,6 +3252,34 @@ async def brain_loop(interval_minutes: int = 5, initial_delay: int = 90):
                     if roster_heal.result == "success":
                         changes_made.append(f"Updated roster props: {roster_heal.reason}")
                         commit_type = "upgrade"
+            
+            # Auto-heal sport mapping issues if critical
+            sport_mapping_heal = None
+            if sport_mapping_check.status in ("degraded", "critical"):
+                try:
+                    from app.services.sport_mapping_fix import fix_sport_mapping_issues
+                    sport_mapping_heal = await fix_sport_mapping_issues(db, max_fixes=50)
+                    
+                    if sport_mapping_heal.get('successful_fixes', 0) > 0:
+                        changes_made.append(f"Fixed {sport_mapping_heal['successful_fixes']} sport mappings")
+                        commit_type = "upgrade"
+                        _brain.log_decision(
+                            "heal",
+                            "sport_mapping_fix",
+                            f"Auto-fixed {sport_mapping_heal['successful_fixes']} sport mapping issues",
+                            "success",
+                            sport_mapping_heal
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"Failed to auto-heal sport mapping: {e}")
+                    _brain.log_decision(
+                        "heal",
+                        "sport_mapping_fix",
+                        f"Sport mapping auto-heal failed: {str(e)}",
+                        "failed",
+                        {"error": str(e)}
+                    )
             
             # Auto-commit if changes were made and auto-commit is enabled
             if changes_made and _brain.auto_commit_enabled:
