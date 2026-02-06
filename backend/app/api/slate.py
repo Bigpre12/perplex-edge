@@ -27,7 +27,16 @@ logger = logging.getLogger(__name__)
 EASTERN_TZ = ZoneInfo("America/New_York")
 
 # Sport IDs to include in full slate (active sports with player props)
-SLATE_SPORT_IDS = [30, 32, 31, 41, 40, 53, 42, 43]  # NBA, NCAAB, NFL, NCAAF, MLB, NHL, ATP, WTA
+SLATE_SPORT_IDS = [
+    30, 32, 34,       # NBA, NCAAB, WNBA
+    31, 41,           # NFL, NCAAF
+    40,               # MLB
+    53,               # NHL
+    42, 43,           # ATP, WTA
+    60,               # PGA
+    70, 71, 72, 73, 74,  # EPL, UCL, MLS, UEL, UECL
+    80,               # UFC
+]
 
 
 # =============================================================================

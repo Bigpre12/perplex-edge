@@ -47,6 +47,8 @@ SPORT_KEYS = [
     "soccer_epl",
     "soccer_uefa_champs_league",
     "soccer_usa_mls",
+    "soccer_uefa_europa",
+    "soccer_uefa_conference",
     # MMA/UFC
     "mma_mixed_martial_arts",
 ]

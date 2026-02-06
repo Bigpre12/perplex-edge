@@ -485,11 +485,16 @@ PROP_MAPPINGS = {
     "player_reception_yds": "REC_YDS",
     "player_receptions": "REC",
     "player_reception_tds": "REC_TDS",
+    "player_rush_reception_yds": "RUSH_REC_YDS",
+    "player_anytime_td": "ANYTIME_TD",
     # MLB props
     "batter_total_bases": "TB",
     "pitcher_strikeouts": "K",
     "batter_hits": "H",
     "batter_rbis": "RBI",
+    "batter_runs": "R",
+    "batter_home_runs": "HR",
+    "pitcher_outs": "OUTS",
     # Tennis props
     "player_aces": "ACES",
     "player_double_faults": "DF",
@@ -500,6 +505,7 @@ PROP_MAPPINGS = {
     "player_goals": "GOALS",
     "player_shots_on_goal": "SOG",
     "player_blocked_shots": "BLK_SHOTS",
+    "player_saves": "SAVES",
     "player_power_play_points": "PPP",
     "player_penalty_minutes": "PIM",
     # Golf props
@@ -526,6 +532,26 @@ PROP_MAPPINGS = {
     "fighter_takedowns": "TAKEDOWNS",
     "fight_goes_distance": "GOES_DISTANCE",
 }
+
+# Sport-specific overrides for shared API market keys.
+# The Odds API reuses keys like "player_points" and "player_assists" across sports,
+# but our internal stat types differ (e.g., PTS vs PTS_H for hockey).
+SPORT_PROP_OVERRIDES: dict[str, dict[str, str]] = {
+    "icehockey_nhl": {
+        "player_points": "PTS_H",
+        "player_assists": "AST_H",
+    },
+}
+
+
+def _resolve_stat_type(market_key: str, sport_key: str | None) -> str:
+    """Resolve API market key to internal stat type, with sport-specific overrides."""
+    if sport_key:
+        # Check for sport-specific override first
+        overrides = SPORT_PROP_OVERRIDES.get(sport_key)
+        if overrides and market_key in overrides:
+            return overrides[market_key]
+    return PROP_MAPPINGS.get(market_key, market_key.upper())
 
 
 class XYZOddsProvider(OddsProvider):
@@ -713,14 +739,22 @@ class XYZOddsProvider(OddsProvider):
                 if "basketball" in sport_key:
                     markets = "player_points,player_rebounds,player_assists,player_threes,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists,player_steals,player_blocks,player_turnovers"
                 elif "football" in sport_key:
-                    markets = "player_pass_yds,player_rush_yds,player_reception_yds,player_receptions"
+                    markets = "player_pass_yds,player_pass_tds,player_pass_attempts,player_pass_completions,player_pass_interceptions,player_rush_yds,player_rush_attempts,player_rush_tds,player_reception_yds,player_receptions,player_reception_tds,player_anytime_td"
                 elif "baseball" in sport_key:
-                    markets = "batter_total_bases,pitcher_strikeouts,batter_hits"
+                    markets = "batter_total_bases,pitcher_strikeouts,batter_hits,batter_runs,batter_rbis,batter_home_runs,pitcher_outs"
                 elif "tennis" in sport_key:
-                    # Tennis props: aces, double faults, games won, sets won, total games
                     markets = "player_aces,player_double_faults,player_games_won,player_sets_won,player_total_games"
+                elif "icehockey" in sport_key:
+                    markets = "player_goals,player_assists,player_points,player_shots_on_goal,player_blocked_shots,player_saves,player_power_play_points,player_penalty_minutes"
+                elif "golf" in sport_key:
+                    markets = "golfer_finish_position,golfer_make_cut,golfer_top_5,golfer_top_10,golfer_top_20,golfer_first_round_leader,golfer_matchup"
+                elif "soccer" in sport_key:
+                    markets = "player_anytime_goalscorer,player_shots,player_shots_on_target,player_fouls_committed,player_cards,player_tackles,player_passes"
+                elif "mma" in sport_key:
+                    markets = "fighter_to_win,fight_method,fight_total_rounds,fighter_significant_strikes,fighter_takedowns,fight_goes_distance"
                 else:
-                    markets = "player_points"
+                    logger.warning(f"No prop market mapping for sport_key={sport_key}, skipping props")
+                    return []
             
             raw_data = await self._request(
                 f"/sports/{sport_key}/events/{external_game_id}/odds",
@@ -819,7 +853,7 @@ class XYZOddsProvider(OddsProvider):
             
             for market in bookmaker.get("markets", []):
                 market_key = market["key"]
-                stat_type = PROP_MAPPINGS.get(market_key, market_key.upper())
+                stat_type = _resolve_stat_type(market_key, sport_key)
                 
                 # Validate stat type for sport if sport_key is provided
                 if sport_key is not None:
