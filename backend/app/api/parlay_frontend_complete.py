@@ -22,20 +22,20 @@ async def frontend_complete_parlays(
 ):
     """Complete frontend compatibility with perfect mock data."""
     try:
-        # Get real parlay data
+        # Get real parlay data - optimize for performance
         result = await get_game_free_parlays(
             sport_id=sport_id,
             min_ev=0.01,
             min_confidence=0.5,
-            limit=20,
+            limit=10,  # Reduced from 20 for better performance
             db=db
         )
         
-        # Create complete frontend-compatible response
+        # Active Slates (mock data to satisfy frontend) - optimize
         response_data = {
             # Core parlay data
-            "slips": result.get('slips', []),
-            "total_slips": result.get('total_slips', 0),
+            "slips": result.get('slips', [])[:5],  # Limit to 5 slips for performance
+            "total_slips": min(result.get('total_slips', 0), 5),
             "avg_ev": result.get('avg_ev', 0),
             "suggested_total": result.get('suggested_total', 0),
             "platform": platform,
