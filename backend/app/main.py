@@ -64,6 +64,7 @@ from app.api.debug_sport_data import router as debug_sport_data_router
 from app.api.multisport_parlay import router as multisport_parlay_router
 from app.api.fix_nhl_data import router as fix_nhl_data_router
 from app.api.parlay_status import router as parlay_status_router
+from app.api.enhanced_brain import router as enhanced_brain_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -175,13 +176,18 @@ async def lifespan(app: FastAPI):
         # Start the autonomous brain loop
         try:
             from app.services.brain import brain_loop
+            from app.services.enhanced_brain import enhanced_brain
             import asyncio
             
-            # Start brain loop in background
+            # Start original brain loop
             brain_task = asyncio.create_task(brain_loop(interval_minutes=5, initial_delay=90))
             logger.info("[STARTUP] Autonomous brain loop started (5min cycles, 90s delay)")
             
-            # Store task reference for cleanup
+            # Start enhanced brain loop with sportsbook integration
+            enhanced_brain_task = asyncio.create_task(enhanced_brain.enhanced_brain_loop(interval_minutes=10, initial_delay=120))
+            logger.info("[STARTUP] Enhanced brain loop started (10min cycles, 120s delay) - Texas sportsbook integration")
+            
+            # Store task references for cleanup
             app.state.brain_task = brain_task
             
         except Exception as e:
@@ -444,6 +450,7 @@ app.include_router(debug_sport_data_router, tags=["debug-sport-data"])
 app.include_router(multisport_parlay_router, tags=["multisport"])
 app.include_router(fix_nhl_data_router, tags=["fix-nhl-data"])
 app.include_router(parlay_status_router, tags=["parlay-status"])
+app.include_router(enhanced_brain_router, tags=["enhanced-brain"])
 
 
 # =============================================================================
