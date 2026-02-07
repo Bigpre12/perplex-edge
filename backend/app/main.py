@@ -83,6 +83,9 @@ from app.api.brain_control import router as brain_control_router
 from app.api.roster_control import router as roster_control_router
 from app.api.frontend_endpoints import router as frontend_endpoints_router
 from app.api.data_integrity import router as data_integrity_router
+from app.api.brain_status import router as brain_status_router
+from app.api.data_integrity_status import router as data_integrity_status_router
+from app.api.roster_status import router as roster_status_router
 from app.services.self_healing_brain import self_healing_brain
 from app.services.roster_manager_2026 import roster_manager_2026
 
@@ -511,6 +514,9 @@ app.include_router(brain_control_router, tags=["brain-control"])
 app.include_router(roster_control_router, tags=["roster-control"])
 app.include_router(frontend_endpoints_router, tags=["frontend-mapping"])
 app.include_router(data_integrity_router, tags=["data-integrity"])
+app.include_router(brain_status_router, tags=["brain-status"])
+app.include_router(data_integrity_status_router, tags=["data-integrity-status"])
+app.include_router(roster_status_router, tags=["roster-status"])
 
 
 # =============================================================================
