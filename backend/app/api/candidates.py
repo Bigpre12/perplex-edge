@@ -23,8 +23,6 @@ async def get_candidates(
 ):
     """Get candidates for parlay building - frontend compatible."""
     try:
-        print(f"DEBUG: Raw props for sport {sport_id}: {len(raw_props)}")
-        
         # Get raw props
         raw_props_query = select(ModelPick).options(
             selectinload(ModelPick.player).selectinload(Player.team),
@@ -34,7 +32,7 @@ async def get_candidates(
         raw_props_result = await db.execute(raw_props_query)
         raw_props = raw_props_result.scalars().all()
         
-        print(f"DEBUG: After edge {edge_grade}: {len(edge_filtered)}")
+        print(f"DEBUG: Raw props for sport {sport_id}: {len(raw_props)}")
         
         # Apply filters
         edge_grade_map = {"A": 0.05, "B": 0.03, "C": 0.01, "ALL": 0.0}
@@ -42,17 +40,19 @@ async def get_candidates(
         
         edge_filtered = [p for p in raw_props if p.expected_value >= edge_threshold]
         
-        print(f"DEBUG: After power {power}: {len(power_filtered)}")
+        print(f"DEBUG: After edge {edge_grade}: {len(edge_filtered)}")
         
         power_map = {"HIGH": 0.8, "FLEX": 0.6, "LOW": 0.4, "ALL": 0.0}
         power_threshold = power_map.get(power.upper(), 0.6)
         
         power_filtered = [p for p in edge_filtered if p.confidence_score >= power_threshold]
         
-        print(f"DEBUG: With medium corr: {len(final_candidates)}")
+        print(f"DEBUG: After power {power}: {len(power_filtered)}")
         
         # For now, skip correlation filtering
         final_candidates = power_filtered
+        
+        print(f"DEBUG: Final candidates: {len(final_candidates)}")
         
         # Format candidates for frontend
         candidates = []
