@@ -64,6 +64,7 @@ from app.api.debug_sport_data import router as debug_sport_data_router
 from app.api.multisport_parlay import router as multisport_parlay_router
 from app.api.fix_nhl_data import router as fix_nhl_data_router
 from app.api.parlay_status import router as parlay_status_router
+from app.api.sportsbook_intelligence import router as sportsbook_intelligence_router
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -444,6 +445,7 @@ app.include_router(debug_sport_data_router, tags=["debug-sport-data"])
 app.include_router(multisport_parlay_router, tags=["multisport"])
 app.include_router(fix_nhl_data_router, tags=["fix-nhl-data"])
 app.include_router(parlay_status_router, tags=["parlay-status"])
+app.include_router(sportsbook_intelligence_router, tags=["sportsbook"])
 
 
 # =============================================================================
