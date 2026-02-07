@@ -23,11 +23,36 @@ async def get_parlays_forward(
     # Import ultra_simple_parlays function directly
     from app.api.ultra_simple_parlays import get_ultra_simple_parlays
     
-    return await get_ultra_simple_parlays(
+    # Call the working ultra-simple parlay builder
+    result = await get_ultra_simple_parlays(
         sport_id=sport_id,
         limit=limit,
         db=db
     )
+    
+    # Ensure response format matches frontend expectations
+    if 'slips' in result:
+        return result
+    else:
+        # Convert old format to new format
+        return {
+            "slips": result.get('parlays', []),
+            "total_slips": result.get('parlay_count', 0),
+            "avg_ev": 0.0,
+            "suggested_total": 0.0,
+            "platform": "prizepicks",
+            "filters": {
+                "sport_id": sport_id,
+                "min_ev": min_ev,
+                "min_confidence": min_confidence,
+                "limit": limit
+            },
+            "timestamp": result.get('timestamp', ''),
+            "dataExists": result.get('dataExists', False),
+            "message": result.get('message', 'Parlays from ultra-simple builder'),
+            "parlay_count": result.get('parlay_count', 0),
+            "total_candidates": result.get('total_candidates', 0)
+        }
 
 @router.get("/build")
 async def build_parlays_forward(
@@ -40,14 +65,39 @@ async def build_parlays_forward(
 ):
     """Forward build parlay requests to ultra-simple parlay builder."""
     # Import ultra_simple_parlays function directly
-    from app.api.ultra_simple_parlays import build_simple_parlays
+    from app.api.ultra_simple_parlays import get_ultra_simple_parlays
     
-    return await build_simple_parlays(
+    # Call the working ultra-simple parlay builder
+    result = await get_ultra_simple_parlays(
         sport_id=sport_id,
-        leg_count=leg_count,
         limit=limit,
         db=db
     )
+    
+    # Ensure response format matches frontend expectations
+    if 'slips' in result:
+        return result
+    else:
+        # Convert old format to new format
+        return {
+            "slips": result.get('parlays', []),
+            "total_slips": result.get('parlay_count', 0),
+            "avg_ev": 0.0,
+            "suggested_total": 0.0,
+            "platform": "prizepicks",
+            "filters": {
+                "sport_id": sport_id,
+                "leg_count": leg_count,
+                "min_ev": min_ev,
+                "min_confidence": min_confidence,
+                "limit": limit
+            },
+            "timestamp": result.get('timestamp', ''),
+            "dataExists": result.get('dataExists', False),
+            "message": result.get('message', 'Built parlays from ultra-simple builder'),
+            "parlay_count": result.get('parlay_count', 0),
+            "total_candidates": result.get('total_candidates', 0)
+        }
 
 @router.get("/sports")
 async def get_sports_parlays_forward(
@@ -59,14 +109,38 @@ async def get_sports_parlays_forward(
 ):
     """Forward sports parlay requests to ultra-simple parlay builder."""
     # Import ultra_simple_parlays function directly
-    from app.api.ultra_simple_parlays import build_simple_parlays
+    from app.api.ultra_simple_parlays import get_ultra_simple_parlays
     
-    return await build_simple_parlays(
+    # Call the working ultra-simple parlay builder
+    result = await get_ultra_simple_parlays(
         sport_id=sport_id,
-        leg_count=2,  # Default to 2-leg parlays for sports
         limit=limit,
         db=db
     )
+    
+    # Ensure response format matches frontend expectations
+    if 'slips' in result:
+        return result
+    else:
+        # Convert old format to new format
+        return {
+            "slips": result.get('parlays', []),
+            "total_slips": result.get('parlay_count', 0),
+            "avg_ev": 0.0,
+            "suggested_total": 0.0,
+            "platform": "prizepicks",
+            "filters": {
+                "sport_id": sport_id,
+                "min_ev": min_ev,
+                "min_confidence": min_confidence,
+                "limit": limit
+            },
+            "timestamp": result.get('timestamp', ''),
+            "dataExists": result.get('dataExists', False),
+            "message": result.get('message', 'Sports parlays from ultra-simple builder'),
+            "parlay_count": result.get('parlay_count', 0),
+            "total_candidates": result.get('total_candidates', 0)
+        }
 
 @router.get("/player-props")
 async def get_player_props_parlays_forward(
@@ -81,11 +155,48 @@ async def get_player_props_parlays_forward(
     # Import ultra_simple_parlays function directly
     from app.api.ultra_simple_parlays import get_available_picks
     
-    return await get_available_picks(
+    # Call the working ultra-simple parlay builder
+    result = await get_available_picks(
         sport_id=sport_id,
         limit=limit,
         db=db
     )
+    
+    # Convert picks to slip format for frontend
+    slips = []
+    if result.get('picks'):
+        for i, pick in enumerate(result.get('picks', [])[:5]):
+            slip = {
+                "id": f"player_prop_slip_{i}",
+                "legs": [pick],
+                "total_odds": pick.get('odds', 1),
+                "total_expected_value": pick.get('expected_value', 0),
+                "confidence": pick.get('confidence_score', 0),
+                "created_at": result.get('timestamp', ''),
+                "platform": "prizepicks",
+                "leg_count": 1
+            }
+            slips.append(slip)
+    
+    return {
+        "slips": slips,
+        "total_slips": len(slips),
+        "avg_ev": sum(slip["total_expected_value"] for slip in slips) / len(slips) if slips else 0.0,
+        "suggested_total": sum(slip["total_odds"] for slip in slips) / len(slips) if slips else 0.0,
+        "platform": "prizepicks",
+        "filters": {
+            "player_id": player_id,
+            "sport_id": sport_id,
+            "min_ev": min_ev,
+            "min_confidence": min_confidence,
+            "limit": limit
+        },
+        "timestamp": result.get('timestamp', ''),
+        "dataExists": result.get('dataExists', False),
+        "message": f"Player props parlays from {len(slips)} picks",
+        "parlay_count": len(slips),
+        "total_candidates": result.get('total_picks', 0)
+    }
 
 @router.get("/available-picks")
 async def get_available_picks_forward(
@@ -97,8 +208,42 @@ async def get_available_picks_forward(
     # Import ultra_simple_parlays function directly
     from app.api.ultra_simple_parlays import get_available_picks
     
-    return await get_available_picks(
+    # Call the working ultra-simple parlay builder
+    result = await get_available_picks(
         sport_id=sport_id,
         limit=limit,
         db=db
     )
+    
+    # Convert picks to slip format for frontend
+    slips = []
+    if result.get('picks'):
+        for i, pick in enumerate(result.get('picks', [])[:10]):
+            slip = {
+                "id": f"available_pick_slip_{i}",
+                "legs": [pick],
+                "total_odds": pick.get('odds', 1),
+                "total_expected_value": pick.get('expected_value', 0),
+                "confidence": pick.get('confidence_score', 0),
+                "created_at": result.get('timestamp', ''),
+                "platform": "prizepicks",
+                "leg_count": 1
+            }
+            slips.append(slip)
+    
+    return {
+        "slips": slips,
+        "total_slips": len(slips),
+        "avg_ev": sum(slip["total_expected_value"] for slip in slips) / len(slips) if slips else 0.0,
+        "suggested_total": sum(slip["total_odds"] for slip in slips) / len(slips) if slips else 0.0,
+        "platform": "prizepicks",
+        "filters": {
+            "sport_id": sport_id,
+            "limit": limit
+        },
+        "timestamp": result.get('timestamp', ''),
+        "dataExists": result.get('dataExists', False),
+        "message": f"Available picks converted to {len(slips)} slips",
+        "parlay_count": len(slips),
+        "total_candidates": result.get('total_picks', 0)
+    }
