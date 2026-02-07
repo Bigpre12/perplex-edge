@@ -5,7 +5,7 @@ Ultra-Simple Parlay Builder API - Works with basic picks only
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, and_
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
