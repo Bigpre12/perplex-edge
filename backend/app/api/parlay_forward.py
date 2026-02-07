@@ -16,7 +16,7 @@ async def get_parlays_forward(
     min_ev: float = Query(default=0.05, description="Minimum expected value"),
     min_confidence: float = Query(default=0.6, description="Minimum confidence score"),
     limit: int = Query(default=10, le=50),
-    db: AsyncSession = Depends(None)
+    db: AsyncSession = Depends(get_db)
 ):
     """Forward parlay requests to ultra-simple parlay builder."""
     # Forward to ultra-simple parlay builder
@@ -35,7 +35,7 @@ async def build_parlays_forward(
     min_ev: float = Query(default=0.05, description="Minimum expected value"),
     min_confidence: float = Query(default=0.6, description="Minimum confidence score"),
     limit: int = Query(default=10, le=20),
-    db: AsyncSession = Depends(None)
+    db: AsyncSession = Depends(get_db)
 ):
     """Forward build parlay requests to ultra-simple parlay builder."""
     return await ultra_simple_parlay_router.build_simple_parlays(
@@ -53,7 +53,7 @@ async def get_sports_parlays_forward(
     min_ev: float = Query(default=0.05, description="Minimum expected value"),
     min_confidence: float = Query(default=0.6, description="Minimum confidence score"),
     limit: int = Query(default=10, le=20),
-    db: AsyncSession = Depends(None)
+    db: AsyncSession = Depends(get_db)
 ):
     """Forward sports parlay requests to ultra-simple parlay builder."""
     return await ultra_simple_parlay_router.get_sports_parlays(
