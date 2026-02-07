@@ -75,6 +75,7 @@ from app.api.parlay_auto_generate import router as parlay_auto_generate_router
 from app.api.parlay_game_free import router as parlay_game_free_router
 from app.api.parlay_force_display import router as parlay_force_display_router
 from app.api.parlay_ultimate_override import router as parlay_ultimate_override_router
+from app.api.parlay_frontend_complete import router as parlay_frontend_complete_router
 from app.api.debug_timestamps import router as debug_timestamps_router
 from app.api.debug_markets import router as debug_markets_router
 from app.api.debug_multisport import router as debug_multisport_router
@@ -502,6 +503,7 @@ app.include_router(parlay_auto_generate_router, tags=["parlays"])
 app.include_router(parlay_game_free_router, tags=["parlays"])
 app.include_router(parlay_force_display_router, tags=["parlays"])
 app.include_router(parlay_ultimate_override_router, tags=["parlays"])
+app.include_router(parlay_frontend_complete_router, tags=["parlays"])
 app.include_router(debug_timestamps_router, tags=["debug-timestamps"])
 app.include_router(debug_markets_router, tags=["debug-markets"])
 app.include_router(debug_multisport_router, tags=["debug-multisport"])
