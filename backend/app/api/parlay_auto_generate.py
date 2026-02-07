@@ -94,8 +94,8 @@ async def auto_generate_parlays(
                     pick = available_picks[i]
                     
                     # Check for conflicts
-                    current_players = {leg.player_id for leg in slip_legs}
-                    current_stats = {(leg.player_id, leg.market_id) for leg in slip_legs}
+                    current_players = {leg["player_id"] for leg in slip_legs}
+                    current_stats = {(leg["player_id"], leg["market_id"]) for leg in slip_legs}
                     
                     if (pick.player_id not in current_players and 
                         (pick.player_id, pick.market_id) not in current_stats):
@@ -111,7 +111,8 @@ async def auto_generate_parlays(
                             "side": pick.side,
                             "odds": pick.odds,
                             "expected_value": pick.expected_value,
-                            "confidence_score": pick.confidence_score
+                            "confidence_score": pick.confidence_score,
+                            "market_id": pick.market_id if hasattr(pick, 'market_id') else None
                         }
                         
                         slip_legs.append(leg_data)
