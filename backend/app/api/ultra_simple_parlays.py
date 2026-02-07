@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models import ModelPick, Player, Team, Market
+from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/ultra-simple-parlays", tags=["ultra-simple-parlays"])
 
