@@ -23,9 +23,11 @@ async def get_parlays_forward(
     # Import ultra_simple_parlays function directly
     from app.api.ultra_simple_parlays import get_ultra_simple_parlays
     
-    # Call the working ultra-simple parlay builder
+    # Call the working ultra-simple parlay builder with proper parameters
     result = await get_ultra_simple_parlays(
         sport_id=sport_id,
+        min_ev=min_ev,  # Pass the actual value, not Query object
+        min_confidence=min_confidence,  # Pass the actual value, not Query object
         limit=limit,
         db=db
     )
