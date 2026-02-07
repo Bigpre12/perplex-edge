@@ -69,6 +69,7 @@ from app.api.players import router as players_router
 from app.api.teams import router as teams_router
 from app.api.parlay_builder import router as parlay_builder_router
 from app.api.simple_parlay_builder import router as simple_parlay_builder_router
+from app.api.ultra_simple_parlays import router as ultra_simple_parlay_router
 from app.api.debug_timestamps import router as debug_timestamps_router
 from app.api.debug_markets import router as debug_markets_router
 from app.api.debug_multisport import router as debug_multisport_router
@@ -462,6 +463,7 @@ app.include_router(players_router, tags=["players"])
 app.include_router(teams_router, tags=["teams"])
 app.include_router(parlay_builder_router, tags=["parlays"])
 app.include_router(simple_parlay_builder_router, tags=["simple-parlays"])
+app.include_router(ultra_simple_parlay_router, tags=["ultra-simple-parlays"])
 app.include_router(debug_timestamps_router, tags=["debug-timestamps"])
 app.include_router(debug_markets_router, tags=["debug-markets"])
 app.include_router(debug_multisport_router, tags=["debug-multisport"])
