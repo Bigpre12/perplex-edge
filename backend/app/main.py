@@ -65,6 +65,7 @@ from app.api.multisport_parlay import router as multisport_parlay_router
 from app.api.fix_nhl_data import router as fix_nhl_data_router
 from app.api.parlay_status import router as parlay_status_router
 from app.api.sportsbook_intelligence import router as sportsbook_intelligence_router
+from app.api.players import router as players_router
 from app.api.debug_timestamps import router as debug_timestamps_router
 from app.api.debug_markets import router as debug_markets_router
 from app.api.debug_multisport import router as debug_multisport_router
@@ -454,6 +455,7 @@ app.include_router(multisport_parlay_router, tags=["multisport"])
 app.include_router(fix_nhl_data_router, tags=["fix-nhl-data"])
 app.include_router(parlay_status_router, tags=["parlay-status"])
 app.include_router(sportsbook_intelligence_router, tags=["sportsbook"])
+app.include_router(players_router, tags=["players"])
 app.include_router(debug_timestamps_router, tags=["debug-timestamps"])
 app.include_router(debug_markets_router, tags=["debug-markets"])
 app.include_router(debug_multisport_router, tags=["debug-multisport"])
