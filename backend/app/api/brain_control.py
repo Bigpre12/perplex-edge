@@ -181,6 +181,39 @@ async def get_brain_capabilities():
     }
 
 
+@router.get("/intelligence-report")
+async def get_intelligence_report():
+    """Get comprehensive brain intelligence report."""
+    try:
+        report = await self_healing_brain.get_intelligence_report()
+        
+        return {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "intelligence_report": report,
+            "brain_status": "getting_smarter"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Intelligence report error: {e}")
+
+
+@router.post("/trigger-learning")
+async def trigger_learning_cycle():
+    """Trigger immediate learning cycle."""
+    try:
+        learning_result = await self_healing_brain.continuous_learning()
+        
+        return {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "action": "learning_triggered",
+            "learning_result": learning_result,
+            "message": "Brain learning cycle completed"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Learning trigger error: {e}")
+
+
 @router.get("/logs")
 async def get_brain_logs():
     """Get recent brain activity logs."""
