@@ -28,7 +28,6 @@ async def get_teams(
                     "id": team.id,
                     "name": team.name,
                     "abbreviation": team.abbreviation,
-                    "location": team.location,
                     "sport_id": team.sport_id
                 }
                 for team in teams
@@ -52,7 +51,6 @@ async def get_team(team_id: int, db: AsyncSession = Depends(get_db)):
             "id": team.id,
             "name": team.name,
             "abbreviation": team.abbreviation,
-            "location": team.location,
             "sport_id": team.sport_id
         }
     except HTTPException:
