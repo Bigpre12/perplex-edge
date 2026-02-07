@@ -271,6 +271,26 @@ if os.getenv("RAILWAY_ENVIRONMENT") == "production":
     logger.warning("CORS: Railway production environment, ensuring wildcard CORS")
     ALLOWED_ORIGINS = ["*"]
 
+# Force wildcard CORS for all Railway deployments
+if "railway" in str(os.getenv("RAILWAY_ENVIRONMENT", "")).lower():
+    logger.warning("CORS: Railway deployment detected, forcing wildcard CORS")
+    ALLOWED_ORIGINS = ["*"]
+
+# Force wildcard CORS for perplex-edge-production origin
+if "perplex-edge-production.up.railway.app" in str(ALLOWED_ORIGINS):
+    logger.info("CORS: perplex-edge-production origin found, keeping configuration")
+else:
+    logger.warning("CORS: perplex-edge-production origin not found, adding to allowed origins")
+    if ALLOWED_ORIGINS == ["*"]:
+        pass  # Already wildcard
+    else:
+        ALLOWED_ORIGINS.append("https://perplex-edge-production.up.railway.app")
+        ALLOWED_ORIGINS.append("http://perplex-edge-production.up.railway.app")
+        ALLOWED_ORIGINS.append("https://perplex-edge-production.up.railway.app")
+        ALLOWED_ORIGINS.append("http://localhost:3000")
+        ALLOWED_ORIGINS.append("http://localhost:5173")
+        ALLOWED_ORIGINS.append("*")  # Force wildcard as backup
+
 logger.info("cors_origins_configured", origins=ALLOWED_ORIGINS)
 
 # Middleware ordering: Starlette executes middleware in REVERSE order of addition.
@@ -298,6 +318,15 @@ class RailwayCORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         
+        # Force CORS headers for Railway deployments
+        if "railway" in str(os.getenv("RAILWAY_ENVIRONMENT", "")).lower() or "perplex-edge-production.up.railway.app" in str(request.headers.get("origin", "")):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Max-Age"] = "600"
+            response.headers["Access-Control-Expose-Headers"] = "X-Correlation-ID, Content-Type, Authorization"
+        
         # Force CORS headers for Railway if not present
         origin = request.headers.get("origin")
         if origin and not response.headers.get("access-control-allow-origin"):
@@ -309,7 +338,7 @@ class RailwayCORSMiddleware(BaseHTTPMiddleware):
             logger.info(
                 "cors_backup_headers_added",
                 origin=origin,
-                path=request.url.path
+                method=request.method
             )
         
         return response
