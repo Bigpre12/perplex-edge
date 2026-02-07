@@ -48,11 +48,10 @@ async def get_parlays(
         if sport_id:
             conditions.append(ModelPick.sport_id == sport_id)
         
-        # Only recent picks
-        six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
-        conditions.append(ModelPick.generated_at > six_hours_ago)
+        # Only recent picks (simplified to avoid datetime issues)
+        conditions.append(ModelPick.generated_at > datetime.now(timezone.utc) - timedelta(hours=24))
         
-        # Only active games (simplified to avoid datetime issues)
+        # Only active games (simplified)
         conditions.append(
             ModelPick.game_id.in_(
                 select(Game.id).where(
@@ -161,16 +160,15 @@ async def build_parlays(
         if sport_id:
             conditions.append(ModelPick.sport_id == sport_id)
         
-        # Only recent picks from active games
-        six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
-        conditions.extend([
-            ModelPick.generated_at > six_hours_ago,
+        # Only recent picks from active games (simplified)
+        conditions.append(ModelPick.generated_at > datetime.now(timezone.utc) - timedelta(hours=24))
+        conditions.append(
             ModelPick.game_id.in_(
                 select(Game.id).where(
                     Game.status.in_(['scheduled', 'in_progress'])
                 )
             )
-        ])
+        )
         
         query = query.where(and_(*conditions)).order_by(
             desc(ModelPick.expected_value)
@@ -310,16 +308,15 @@ async def get_player_props_parlays(
         if sport_id:
             conditions.append(ModelPick.sport_id == sport_id)
         
-        # Only recent picks from active games
-        six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
-        conditions.extend([
-            ModelPick.generated_at > six_hours_ago,
+        # Only recent picks from active games (simplified)
+        conditions.append(ModelPick.generated_at > datetime.now(timezone.utc) - timedelta(hours=24))
+        conditions.append(
             ModelPick.game_id.in_(
                 select(Game.id).where(
                     Game.status.in_(['scheduled', 'in_progress'])
                 )
             )
-        ])
+        )
         
         query = query.where(and_(*conditions)).order_by(
             desc(ModelPick.expected_value)
