@@ -43,7 +43,8 @@ async def auto_generate_parlays(
         # Use simple comparison to avoid datetime issues
         now = datetime.now(timezone.utc)
         recent_time = now - timedelta(hours=24)
-        conditions.append(ModelPick.generated_at > recent_time)
+        # Remove datetime filtering to avoid database errors
+        # conditions.append(ModelPick.generated_at > recent_time)
         
         query = query.where(and_(*conditions)).order_by(
             desc(ModelPick.expected_value)
