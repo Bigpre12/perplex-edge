@@ -25,8 +25,6 @@ async def get_parlays_forward(
     
     return await get_ultra_simple_parlays(
         sport_id=sport_id,
-        min_ev=min_ev,
-        min_confidence=min_confidence,
         limit=limit,
         db=db
     )
@@ -47,8 +45,6 @@ async def build_parlays_forward(
     return await build_simple_parlays(
         sport_id=sport_id,
         leg_count=leg_count,
-        min_ev=min_ev,
-        min_confidence=min_confidence,
         limit=limit,
         db=db
     )
@@ -68,8 +64,6 @@ async def get_sports_parlays_forward(
     return await build_simple_parlays(
         sport_id=sport_id,
         leg_count=2,  # Default to 2-leg parlays for sports
-        min_ev=min_ev,
-        min_confidence=min_confidence,
         limit=limit,
         db=db
     )
