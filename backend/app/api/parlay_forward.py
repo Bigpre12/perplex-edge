@@ -5,6 +5,7 @@ Parlay Forwarding API - Routes to working ultra-simple parlay builder
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.api.ultra_simple_parlays import router as ultra_simple_parlay_router
 
 router = APIRouter(prefix="/api/parlays", tags=["parlays"])
@@ -19,8 +20,10 @@ async def get_parlays_forward(
     db: AsyncSession = Depends(get_db)
 ):
     """Forward parlay requests to ultra-simple parlay builder."""
-    # Forward to ultra-simple parlay builder
-    return await ultra_simple_parlay_router.get_ultra_simple_parlays(
+    # Import ultra_simple_parlays function directly
+    from app.api.ultra_simple_parlays import get_ultra_simple_parlays
+    
+    return await get_ultra_simple_parlays(
         sport_id=sport_id,
         min_ev=min_ev,
         min_confidence=min_confidence,
@@ -38,7 +41,10 @@ async def build_parlays_forward(
     db: AsyncSession = Depends(get_db)
 ):
     """Forward build parlay requests to ultra-simple parlay builder."""
-    return await ultra_simple_parlay_router.build_simple_parlays(
+    # Import ultra_simple_parlays function directly
+    from app.api.ultra_simple_parlays import build_simple_parlays
+    
+    return await build_simple_parlays(
         sport_id=sport_id,
         leg_count=leg_count,
         min_ev=min_ev,
@@ -56,8 +62,12 @@ async def get_sports_parlays_forward(
     db: AsyncSession = Depends(get_db)
 ):
     """Forward sports parlay requests to ultra-simple parlay builder."""
-    return await ultra_simple_parlay_router.get_sports_parlays(
+    # Import ultra_simple_parlays function directly
+    from app.api.ultra_simple_parlays import build_simple_parlays
+    
+    return await build_simple_parlays(
         sport_id=sport_id,
+        leg_count=2,  # Default to 2-leg parlays for sports
         min_ev=min_ev,
         min_confidence=min_confidence,
         limit=limit,
@@ -71,14 +81,14 @@ async def get_player_props_parlays_forward(
     min_ev: float = Query(default=0.05, description="Minimum expected value"),
     min_confidence: float = Query(default=0.6, description="Minimum confidence score"),
     limit: int = Query(default=10, le=20),
-    db: AsyncSession = Depends(None)
+    db: AsyncSession = Depends(get_db)
 ):
     """Forward player props parlay requests to ultra-simple parlay builder."""
-    return await ultra_simple_parlay_router.get_player_props_parlays(
-        player_id=player_id,
+    # Import ultra_simple_parlays function directly
+    from app.api.ultra_simple_parlays import get_available_picks
+    
+    return await get_available_picks(
         sport_id=sport_id,
-        min_ev=min_ev,
-        min_confidence=min_confidence,
         limit=limit,
         db=db
     )
@@ -87,10 +97,13 @@ async def get_player_props_parlays_forward(
 async def get_available_picks_forward(
     sport_id: int = Query(None, description="Filter by sport ID"),
     limit: int = Query(default=20, le=100),
-    db: AsyncSession = Depends(None)
+    db: AsyncSession = Depends(get_db)
 ):
     """Forward available picks requests to ultra-simple parlay builder."""
-    return await ultra_simple_parlay_router.get_available_picks(
+    # Import ultra_simple_parlays function directly
+    from app.api.ultra_simple_parlays import get_available_picks
+    
+    return await get_available_picks(
         sport_id=sport_id,
         limit=limit,
         db=db
