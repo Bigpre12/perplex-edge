@@ -36,10 +36,10 @@ async def test_raw_sql_parlay(
             JOIN games g ON mp.game_id = g.id
             JOIN markets m ON mp.market_id = m.id
             WHERE g.sport_id = {sport_id}
-            AND mp.generated_at > '{six_hours_ago.isoformat()}'
+            AND mp.generated_at > NOW() - INTERVAL '6 hours'
             AND mp.line_value IS NOT NULL AND mp.line_value > 0
-            AND g.start_time > '{game_window_start.isoformat()}'
-            AND g.start_time < '{game_window_end.isoformat()}'
+            AND g.start_time > NOW() - INTERVAL '24 hours'
+            AND g.start_time < NOW() + INTERVAL '48 hours'
             ORDER BY mp.expected_value DESC
             LIMIT 1000
         """)
