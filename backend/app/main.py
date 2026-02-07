@@ -80,6 +80,7 @@ from app.api.debug_timestamps import router as debug_timestamps_router
 from app.api.debug_markets import router as debug_markets_router
 from app.api.debug_multisport import router as debug_multisport_router
 from app.api.debug_slates import router as debug_slates_router
+from app.api.debug_candidates import router as debug_candidates_router
 from app.api.brain_control import router as brain_control_router
 from app.api.roster_control import router as roster_control_router
 from app.api.frontend_endpoints import router as frontend_endpoints_router
@@ -512,6 +513,7 @@ app.include_router(debug_timestamps_router, tags=["debug-timestamps"])
 app.include_router(debug_markets_router, tags=["debug-markets"])
 app.include_router(debug_multisport_router, tags=["debug-multisport"])
 app.include_router(debug_slates_router, tags=["debug-slates"])
+app.include_router(debug_candidates_router, tags=["debug-candidates"])
 app.include_router(brain_control_router, tags=["brain-control"])
 app.include_router(roster_control_router, tags=["roster-control"])
 app.include_router(frontend_endpoints_router, tags=["frontend-mapping"])
