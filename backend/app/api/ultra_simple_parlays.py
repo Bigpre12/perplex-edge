@@ -17,12 +17,20 @@ router = APIRouter(prefix="/api/ultra-simple-parlays", tags=["ultra-simple-parla
 @router.get("/")
 async def get_ultra_simple_parlays(
     sport_id: int = Query(None, description="Filter by sport ID"),
+    min_ev: float = Query(default=0.01, description="Minimum expected value"),
+    min_confidence: float = Query(default=0.5, description="Minimum confidence score"),
     limit: int = Query(default=10, le=50),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get ultra-simple parlays from basic picks."""
+    """Get ultra-simple parlays from available picks."""
     try:
-        # Simple query without datetime filtering
+        # Try cache first
+        cache_key = f"ultra_parlays:sport_{sport_id}:ev_{min_ev}:conf_{min_confidence}:limit_{limit}"
+        cached_data = await cache_service.get(cache_key)
+        if cached_data:
+            return cached_data
+        
+        # Build simple query without datetime filtering
         query = select(ModelPick).options(
             selectinload(ModelPick.player).selectinload(Player.team),
             selectinload(ModelPick.market)
@@ -32,7 +40,8 @@ async def get_ultra_simple_parlays(
         conditions = [
             ModelPick.line_value.isnot(None),
             ModelPick.line_value > 0,
-            ModelPick.expected_value > 0
+            ModelPick.expected_value >= min_ev,
+            ModelPick.confidence_score >= min_confidence
         ]
         
         if sport_id:
@@ -71,28 +80,54 @@ async def get_ultra_simple_parlays(
             for i in range(0, min(len(formatted_picks) - 1, limit)):
                 # Avoid same player in same parlay
                 if formatted_picks[i]["player_id"] != formatted_picks[i + 1]["player_id"]:
+                    # Calculate combined odds
+                    combined_odds = formatted_picks[i]["odds"] * formatted_picks[i + 1]["odds"]
+                    if combined_odds <= 0:
+                        combined_odds = 1  # Default to 1 if calculation fails
+                    
                     parlay = {
                         "id": f"ultra_parlay_{i}",
                         "legs": [formatted_picks[i], formatted_picks[i + 1]],
-                        "total_odds": formatted_picks[i]["odds"] * formatted_picks[i + 1]["odds"],
+                        "total_odds": combined_odds,
                         "total_expected_value": formatted_picks[i]["expected_value"] + formatted_picks[i + 1]["expected_value"],
                         "confidence": (formatted_picks[i]["confidence_score"] + formatted_picks[i + 1]["confidence_score"]) / 2,
-                        "created_at": datetime.now(timezone.utc).isoformat()
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "platform": "prizepicks",
+                        "leg_count": 2
                     }
                     parlays.append(parlay)
         
-        return {
-            "parlays": parlays,
-            "total_candidates": len(formatted_picks),
-            "parlay_count": len(parlays),
+        # Calculate metrics
+        if parlays:
+            avg_ev = sum(parlay["total_expected_value"] for parlay in parlays) / len(parlays)
+            suggested_total = sum(parlay["total_odds"] for parlay in parlays) / len(parlays)
+        else:
+            avg_ev = 0.0
+            suggested_total = 0.0
+        
+        response_data = {
+            "slips": parlays,
+            "total_slips": len(parlays),
+            "avg_ev": round(avg_ev, 4),
+            "suggested_total": round(suggested_total, 2),
+            "platform": "prizepicks",
             "filters": {
                 "sport_id": sport_id,
+                "min_ev": min_ev,
+                "min_confidence": min_confidence,
                 "limit": limit
             },
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "dataExists": len(formatted_picks) > 0,
-            "message": "Ultra-simple parlays from available picks"
+            "message": f"Generated {len(parlays)} parlays with avg EV of {avg_ev:.2%}",
+            "parlay_count": len(parlays),
+            "total_candidates": len(formatted_picks)
         }
+        
+        # Cache the result
+        await cache_service.set(cache_key, response_data, ttl=60)
+        
+        return response_data
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
