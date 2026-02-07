@@ -71,8 +71,8 @@ async def build_multisport_parlay(
             WHERE g.sport_id = {sport_id}
             AND mp.generated_at > NOW() - INTERVAL '6 hours'
             AND mp.line_value IS NOT NULL AND mp.line_value > 0
-            AND g.start_time > NOW() - INTERVAL '2 hours'
-            AND g.start_time < NOW() + INTERVAL '36 hours'
+            AND g.start_time > NOW() - INTERVAL '24 hours'
+            AND g.start_time < NOW() + INTERVAL '48 hours'
             ORDER BY mp.expected_value DESC
             LIMIT 1000
         """)
