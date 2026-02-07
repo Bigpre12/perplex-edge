@@ -52,16 +52,11 @@ async def get_parlays(
         six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
         conditions.append(ModelPick.generated_at > six_hours_ago)
         
-        # Only active games
-        six_hours_future = datetime.now(timezone.utc) + timedelta(hours=6)
+        # Only active games (simplified to avoid datetime issues)
         conditions.append(
             ModelPick.game_id.in_(
                 select(Game.id).where(
-                    and_(
-                        Game.start_time > six_hours_ago,
-                        Game.start_time < six_hours_future,
-                        Game.status.in_(['scheduled', 'in_progress'])
-                    )
+                    Game.status.in_(['scheduled', 'in_progress'])
                 )
             )
         )
@@ -172,11 +167,7 @@ async def build_parlays(
             ModelPick.generated_at > six_hours_ago,
             ModelPick.game_id.in_(
                 select(Game.id).where(
-                    and_(
-                        Game.start_time > six_hours_ago,
-                        Game.start_time < datetime.now(timezone.utc) + timedelta(hours=6),
-                        Game.status.in_(['scheduled', 'in_progress'])
-                    )
+                    Game.status.in_(['scheduled', 'in_progress'])
                 )
             )
         ])
@@ -325,11 +316,7 @@ async def get_player_props_parlays(
             ModelPick.generated_at > six_hours_ago,
             ModelPick.game_id.in_(
                 select(Game.id).where(
-                    and_(
-                        Game.start_time > six_hours_ago,
-                        Game.start_time < datetime.now(timezone.utc) + timedelta(hours=6),
-                        Game.status.in_(['scheduled', 'in_progress'])
-                    )
+                    Game.status.in_(['scheduled', 'in_progress'])
                 )
             )
         ])
