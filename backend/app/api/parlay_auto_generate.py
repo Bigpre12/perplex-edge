@@ -2,7 +2,7 @@
 Parlay Auto-Generate API - Automatic parlay generation for frontend
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc
