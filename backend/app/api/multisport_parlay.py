@@ -58,7 +58,7 @@ async def build_multisport_parlay(
         game_window_start = now - timedelta(hours=2)
         game_window_end = now + timedelta(hours=36)
         
-        # Use the working SQL query from debug
+        # Use the working SQL query from debug with timezone fix
         sql = text(f"""
             SELECT 
                 mp.id, mp.expected_value, mp.line_value, mp.generated_at,
@@ -69,10 +69,10 @@ async def build_multisport_parlay(
             JOIN games g ON mp.game_id = g.id
             JOIN markets m ON mp.market_id = m.id
             WHERE g.sport_id = {sport_id}
-            AND mp.generated_at > '{six_hours_ago.isoformat()}'
+            AND mp.generated_at > NOW() - INTERVAL '6 hours'
             AND mp.line_value IS NOT NULL AND mp.line_value > 0
-            AND g.start_time > '{game_window_start.isoformat()}'
-            AND g.start_time < '{game_window_end.isoformat()}'
+            AND g.start_time > NOW() - INTERVAL '2 hours'
+            AND g.start_time < NOW() + INTERVAL '36 hours'
             ORDER BY mp.expected_value DESC
             LIMIT 1000
         """)
