@@ -29,9 +29,11 @@ async def get_brain_status(db: AsyncSession = Depends(get_db)):
         high_ev_result = await db.execute(high_ev_query)
         high_ev_picks = high_ev_result.scalar()
         
-        # Get recent picks (last 24 hours)
+        # Get recent picks (last 24 hours) - Fix datetime comparison
+        now = datetime.now(timezone.utc)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         recent_query = select(func.count(ModelPick.id)).where(
-            ModelPick.generated_at >= datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            ModelPick.generated_at >= today_start
         )
         recent_result = await db.execute(recent_query)
         recent_picks = recent_result.scalar()
