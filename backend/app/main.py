@@ -68,6 +68,11 @@ from app.api.sportsbook_intelligence import router as sportsbook_intelligence_ro
 from app.api.debug_timestamps import router as debug_timestamps_router
 from app.api.debug_markets import router as debug_markets_router
 from app.api.debug_multisport import router as debug_multisport_router
+from app.api.brain_control import router as brain_control_router
+from app.api.roster_control import router as roster_control_router
+from app.api.frontend_endpoints import router as frontend_endpoints_router
+from app.services.self_healing_brain import self_healing_brain
+from app.services.roster_manager_2026 import roster_manager_2026
 
 # Configure structured logging
 # Use JSON logs in production (ENVIRONMENT != 'development')
@@ -178,19 +183,18 @@ async def lifespan(app: FastAPI):
         
         # Start the autonomous brain loop
         try:
-            from app.services.brain import brain_loop
             import asyncio
             
-            # Start brain loop in background
-            brain_task = asyncio.create_task(brain_loop(interval_minutes=5, initial_delay=90))
-            logger.info("[STARTUP] Autonomous brain loop started (5min cycles, 90s delay)")
+            # Start self-healing brain loop in background
+            brain_task = asyncio.create_task(self_healing_brain.start_healing_loop())
+            logger.info("[STARTUP] Self-healing brain loop started")
             
             # Store task reference for cleanup
             app.state.brain_task = brain_task
             
         except Exception as e:
-            logger.error(f"[STARTUP] Failed to start brain loop: {e}", exc_info=True)
-            # Continue without brain - system can still function
+            logger.error(f"[STARTUP] Failed to start brain loop: {e}")
+            logger.info("[STARTUP] Continuing without brain loop")  # system can still function
         
         logger.info("Application startup complete")
         
@@ -452,6 +456,9 @@ app.include_router(sportsbook_intelligence_router, tags=["sportsbook"])
 app.include_router(debug_timestamps_router, tags=["debug-timestamps"])
 app.include_router(debug_markets_router, tags=["debug-markets"])
 app.include_router(debug_multisport_router, tags=["debug-multisport"])
+app.include_router(brain_control_router, tags=["brain-control"])
+app.include_router(roster_control_router, tags=["roster-control"])
+app.include_router(frontend_endpoints_router, tags=["frontend-mapping"])
 
 
 # =============================================================================

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.services.sportsbook_monitor import sportsbook_monitor
+from app.services.sportsbook_monitor import enhanced_sportsbook_monitor
 
 router = APIRouter(prefix="/api/sportsbook", tags=["sportsbook"])
 
@@ -19,7 +19,7 @@ async def get_market_analysis(
 ):
     """Get current market analysis for Texas sportsbooks."""
     try:
-        analysis = await sportsbook_monitor.analyze_market_opportunities(db, sport_id)
+        analysis = await enhanced_sportsbook_monitor.analyze_market_opportunities(db, sport_id)
         
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -42,7 +42,7 @@ async def get_trading_signals(
 ):
     """Get current trading signals."""
     try:
-        signals = await sportsbook_monitor.get_trading_signals(db, min_confidence)
+        signals = await enhanced_sportsbook_monitor.get_trading_signals(db, min_confidence)
         
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -63,7 +63,7 @@ async def get_trading_signals(
 async def get_market_summary():
     """Get summary of market analysis."""
     try:
-        summary = sportsbook_monitor.get_market_summary()
+        summary = enhanced_sportsbook_monitor.get_market_summary()
         
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -83,8 +83,8 @@ async def get_texas_sportsbooks():
     try:
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "texas_sportsbooks": sportsbook_monitor.texas_sportsbooks,
-            "total_sportsbooks": len(sportsbook_monitor.texas_sportsbooks),
+            "texas_sportsbooks": enhanced_sportsbook_monitor.texas_sportsbooks,
+            "total_sportsbooks": len(enhanced_sportsbook_monitor.texas_sportsbooks),
             "monitoring_status": "active"
         }
         
@@ -102,7 +102,7 @@ async def trigger_market_analysis(
 ):
     """Trigger immediate market analysis."""
     try:
-        analysis = await sportsbook_monitor.analyze_market_opportunities(db, sport_id)
+        analysis = await enhanced_sportsbook_monitor.analyze_market_opportunities(db, sport_id)
         
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
