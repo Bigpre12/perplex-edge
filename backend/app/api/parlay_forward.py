@@ -19,12 +19,12 @@ async def get_parlays_forward(
     limit: int = Query(default=10, le=50),
     db: AsyncSession = Depends(get_db)
 ):
-    """Forward parlay requests to ultra-simple parlay builder."""
-    # Import ultra_simple_parlays function directly
-    from app.api.ultra_simple_parlays import get_ultra_simple_parlays
+    """Forward parlay requests to game-free parlay builder."""
+    # Import game-free parlay function directly
+    from app.api.parlay_game_free import get_game_free_parlays
     
-    # Call the working ultra-simple parlay builder with proper parameters
-    result = await get_ultra_simple_parlays(
+    # Call the working game-free parlay builder
+    result = await get_game_free_parlays(
         sport_id=sport_id,
         min_ev=min_ev,  # Pass the actual value, not Query object
         min_confidence=min_confidence,  # Pass the actual value, not Query object
@@ -51,9 +51,11 @@ async def get_parlays_forward(
             },
             "timestamp": result.get('timestamp', ''),
             "dataExists": result.get('dataExists', False),
-            "message": result.get('message', 'Parlays from ultra-simple builder'),
+            "message": result.get('message', 'Parlays from game-free builder'),
             "parlay_count": result.get('parlay_count', 0),
-            "total_candidates": result.get('total_candidates', 0)
+            "total_candidates": result.get('total_candidates', 0),
+            "game_free": True,
+            "source": "game_free_builder"
         }
 
 @router.get("/build")
@@ -65,13 +67,15 @@ async def build_parlays_forward(
     limit: int = Query(default=10, le=20),
     db: AsyncSession = Depends(get_db)
 ):
-    """Forward build parlay requests to ultra-simple parlay builder."""
-    # Import ultra_simple_parlays function directly
-    from app.api.ultra_simple_parlays import get_ultra_simple_parlays
+    """Forward build parlay requests to game-free parlay builder."""
+    # Import game-free parlay function directly
+    from app.api.parlay_game_free import get_game_free_parlays
     
-    # Call the working ultra-simple parlay builder
-    result = await get_ultra_simple_parlays(
+    # Call the working game-free parlay builder
+    result = await get_game_free_parlays(
         sport_id=sport_id,
+        min_ev=min_ev,  # Pass the actual value, not Query object
+        min_confidence=min_confidence,  # Pass the actual value, not Query object
         limit=limit,
         db=db
     )
@@ -96,9 +100,11 @@ async def build_parlays_forward(
             },
             "timestamp": result.get('timestamp', ''),
             "dataExists": result.get('dataExists', False),
-            "message": result.get('message', 'Built parlays from ultra-simple builder'),
+            "message": result.get('message', 'Built parlays from game-free builder'),
             "parlay_count": result.get('parlay_count', 0),
-            "total_candidates": result.get('total_candidates', 0)
+            "total_candidates": result.get('total_candidates', 0),
+            "game_free": True,
+            "source": "game_free_builder"
         }
 
 @router.get("/sports")
