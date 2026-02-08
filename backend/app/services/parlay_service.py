@@ -2,6 +2,7 @@
 
 from itertools import combinations
 from typing import Any, Optional
+from datetime import datetime, timezone
 
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1208,6 +1209,10 @@ async def build_parlays(
                 "include_100_pct": include_100_pct,
                 "sport_id": sport_id,
             },
+            model_status={
+                "status": "success",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
         )
     except Exception as e:
         logger.error(f"Error building parlays for sport {sport_id}: {e}", exc_info=True)
@@ -1221,6 +1226,11 @@ async def build_parlays(
                 "include_100_pct": include_100_pct,
                 "sport_id": sport_id,
             },
+            model_status={
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
         )
 
 
