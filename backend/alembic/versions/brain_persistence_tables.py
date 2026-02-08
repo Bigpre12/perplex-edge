@@ -1,7 +1,7 @@
 """Add brain persistence tables
 
 Revision ID: brain_persistence_001
-Revises: 
+Revises: 20260204_030000
 Create Date: 2026-02-06 20:30:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'brain_persistence_001'
-down_revision = None
+down_revision = '20260204_030000'
 branch_labels = None
 depends_on = None
 

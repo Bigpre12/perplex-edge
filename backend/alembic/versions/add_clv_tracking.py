@@ -1,7 +1,7 @@
 """Add CLV tracking fields to model_picks table
 
 Revision ID: add_clv_tracking
-Revises: brain_persistence_tables
+Revises: brain_persistence_001
 Create Date: 2026-02-07 23:00:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = 'add_clv_tracking'
-down_revision = 'brain_persistence_tables'
+down_revision = 'brain_persistence_001'
 branch_labels = None
 depends_on = None
 
