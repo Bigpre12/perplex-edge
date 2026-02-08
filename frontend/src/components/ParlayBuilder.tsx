@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParlayBuilder, ParlayBuilderFilters, ParlayRecommendation, ParlayLeg, CorrelationWarning, fetchAutoGenerateSlips, AutoGenerateSlipsResponse, createSharedCard, CardLeg, quoteParlayLegs, QuoteResponse, OddsMovement, QuotedLeg, useOddsHealth } from '../api/public';
 import { useSportContext } from '../context/SportContext';
 import { DEFAULT_PARLAY_FILTERS } from '../constants/presets';
@@ -852,6 +852,15 @@ export function ParlayBuilder() {
   const queryResult = useParlayBuilder(sportId, filters);
   const { data, isLoading, error, isFetching, status, fetchStatus } = queryResult;
   
+  // Fetch model status for dynamic warning
+  const [modelStatus, setModelStatus] = useState<any>(null);
+  useEffect(() => {
+    fetch('/api/grading/model-status')
+      .then(res => res.json())
+      .then(data => setModelStatus(data))
+      .catch(err => console.error('Failed to fetch model status:', err));
+  }, []);
+  
   // CRITICAL: Derive display state with explicit null checks
   // React Query's isLoading is true when: fetching AND no cached data
   // We want to show spinner only during initial load, not refetches
@@ -930,15 +939,33 @@ export function ParlayBuilder() {
         </div>
       </div>
       
-      {/* BETA WARNING - Model not yet validated */}
-      <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3 mb-4">
+      {/* BETA WARNING - Dynamic model status */}
+      <div className={`rounded-lg p-3 mb-4 ${modelStatus?.model_status === 'PRODUCTION' ? 'bg-green-900/20 border border-green-700/50' : 'bg-yellow-900/20 border border-yellow-700/50'}`}>
         <div className="flex items-start gap-3">
-          <span className="text-yellow-500 text-lg">⚠️</span>
-          <div>
-            <h3 className="text-sm font-bold text-yellow-400">BETA MODEL - NOT VALIDATED</h3>
-            <p className="text-xs text-yellow-300/80 mt-1">
-              Model predictions have not been validated on real results. Historical performance data not yet available. 
-              Use minimum stakes only. Track your own results. Model claims high EV but accuracy is unverified.
+          <span className={`text-lg ${modelStatus?.model_status === 'PRODUCTION' ? 'text-green-500' : 'text-yellow-500'}`}>
+            {modelStatus?.model_status === 'PRODUCTION' ? '✅' : '⚠️'}
+          </span>
+          <div className="flex-1">
+            <h3 className={`text-sm font-bold ${modelStatus?.model_status === 'PRODUCTION' ? 'text-green-400' : 'text-yellow-400'}`}>
+              {modelStatus?.model_status === 'PRODUCTION' ? 'VALIDATED MODEL' : 'BETA MODEL - NOT VALIDATED'}
+            </h3>
+            
+            {modelStatus?.grading_statistics && (
+              <div className="mt-2 text-xs text-gray-300 space-y-1">
+                <div>Picks Graded: {modelStatus.grading_statistics.total_graded || 0}</div>
+                <div>Hit Rate: {modelStatus.grading_statistics.win_rate || 0}% (predicted {modelStatus.grading_statistics.avg_model_prob || 0}%)</div>
+                <div>Average CLV: {modelStatus.grading_statistics.avg_clv || 0}%</div>
+              </div>
+            )}
+            
+            {(modelStatus?.grading_statistics?.total_graded || 0) < 100 && (
+              <p className="mt-2 text-xs text-yellow-300/80">
+                Small sample size. Use minimum stakes until 100+ picks graded.
+              </p>
+            )}
+            
+            <p className="mt-2 text-xs text-gray-400">
+              Model claims high EV but accuracy is unverified. Track your own results.
             </p>
           </div>
         </div>
