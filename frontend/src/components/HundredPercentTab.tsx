@@ -84,7 +84,7 @@ export function HundredPercentTab() {
   const showData = !isLoading && !error && items.length > 0;
   
   // Debug logging - log every render to help diagnose
-  console.log('[HundredPercentTab] Render:', {
+  if (import.meta.env.DEV) console.log('[HundredPercentTab] Render:', {
     sportId,
     window,
     status,

@@ -878,7 +878,7 @@ export function ParlayBuilder() {
   const showData = !isLoading && !error && parlays.length > 0;
   
   // Debug logging - log every render to help diagnose
-  console.log('[ParlayBuilder] Render:', {
+  if (import.meta.env.DEV) console.log('[ParlayBuilder] Render:', {
     sportId,
     status,
     fetchStatus,

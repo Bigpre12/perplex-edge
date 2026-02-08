@@ -28,7 +28,7 @@ export function GameLinesTab() {
 
   // Debug logging
   useEffect(() => {
-    console.log('[GameLinesTab] State:', { 
+    if (import.meta.env.DEV) console.log('[GameLinesTab] State:', { 
       sportId, 
       sportLoading, 
       dataTotal: data?.total, 
