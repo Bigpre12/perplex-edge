@@ -1980,3 +1980,153 @@ async def debug_date_check(db: AsyncSession = Depends(get_db)):
             f"OK: {today_games} games found for today ({now_et.date().isoformat()})"
         ),
     }
+
+
+@router.get("/sports/{sport_id}/picks/player-props-stub",
+    response_model=PlayerPropPickList,
+    tags=["public"],
+    dependencies=[Depends(picks_rate_limit)])
+async def list_player_prop_picks_stub(
+    sport_id: int,
+    game_id: Optional[int] = Query(None, description="Filter by specific game"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    STUB: Get player prop picks for testing.
+    
+    Returns mock data for Super Bowl testing.
+    """
+    # Verify sport exists
+    sport = await db.get(Sport, sport_id)
+    if not sport:
+        raise HTTPException(status_code=404, detail=f"Sport {sport_id} not found")
+    
+    # Create stub props for Super Bowl
+    stub_props = []
+    
+    if sport_id == 31 and game_id == 648:  # NFL Super Bowl
+        # Drake Maye props
+        stub_props.extend([
+            {
+                "id": 1001,
+                "player": {"id": 1001, "name": "Drake Maye", "position": "QB"},
+                "stat_type": "PASS_YDS",
+                "line_value": 265.5,
+                "side": "over",
+                "odds": -110,
+                "edge": 0.05,
+                "confidence_score": 0.75,
+                "model_probability": 0.55,
+                "implied_probability": 0.524,
+                "expected_value": 0.05,
+                "game": {"id": 648, "home_team": "New England Patriots", "away_team": "Seattle Seahawks"},
+                "market": {"stat_type": "PASS_YDS", "description": "Passing Yards"}
+            },
+            {
+                "id": 1002,
+                "player": {"id": 1001, "name": "Drake Maye", "position": "QB"},
+                "stat_type": "PASS_TDS",
+                "line_value": 1.5,
+                "side": "over",
+                "odds": -110,
+                "edge": 0.08,
+                "confidence_score": 0.80,
+                "model_probability": 0.60,
+                "implied_probability": 0.524,
+                "expected_value": 0.08,
+                "game": {"id": 648, "home_team": "New England Patriots", "away_team": "Seattle Seahawks"},
+                "market": {"stat_type": "PASS_TDS", "description": "Passing Touchdowns"}
+            },
+            {
+                "id": 1003,
+                "player": {"id": 1001, "name": "Drake Maye", "position": "QB"},
+                "stat_type": "RUSH_YDS",
+                "line_value": 22.5,
+                "side": "over",
+                "odds": -110,
+                "edge": 0.06,
+                "confidence_score": 0.70,
+                "model_probability": 0.57,
+                "implied_probability": 0.524,
+                "expected_value": 0.06,
+                "game": {"id": 648, "home_team": "New England Patriots", "away_team": "Seattle Seahawks"},
+                "market": {"stat_type": "RUSH_YDS", "description": "Rushing Yards"}
+            }
+        ])
+        
+        # Sam Darnold props
+        stub_props.extend([
+            {
+                "id": 2001,
+                "player": {"id": 2001, "name": "Sam Darnold", "position": "QB"},
+                "stat_type": "PASS_YDS",
+                "line_value": 248.5,
+                "side": "over",
+                "odds": -110,
+                "edge": 0.04,
+                "confidence_score": 0.72,
+                "model_probability": 0.54,
+                "implied_probability": 0.524,
+                "expected_value": 0.04,
+                "game": {"id": 648, "home_team": "New England Patriots", "away_team": "Seattle Seahawks"},
+                "market": {"stat_type": "PASS_YDS", "description": "Passing Yards"}
+            },
+            {
+                "id": 2002,
+                "player": {"id": 2001, "name": "Sam Darnold", "position": "QB"},
+                "stat_type": "PASS_TDS",
+                "line_value": 1.5,
+                "side": "over",
+                "odds": -110,
+                "edge": 0.07,
+                "confidence_score": 0.78,
+                "model_probability": 0.59,
+                "implied_probability": 0.524,
+                "expected_value": 0.07,
+                "game": {"id": 648, "home_team": "New England Patriots", "away_team": "Seattle Seahawks"},
+                "market": {"stat_type": "PASS_TDS", "description": "Passing Touchdowns"}
+            }
+        ])
+        
+        # Add some player props for key players
+        stub_props.extend([
+            {
+                "id": 3001,
+                "player": {"id": 3001, "name": "Jaxon Smith-Njigba", "position": "WR"},
+                "stat_type": "REC_YDS",
+                "line_value": 85.5,
+                "side": "over",
+                "odds": -110,
+                "edge": 0.09,
+                "confidence_score": 0.82,
+                "model_probability": 0.61,
+                "implied_probability": 0.524,
+                "expected_value": 0.09,
+                "game": {"id": 648, "home_team": "New England Patriots", "away_team": "Seattle Seahawks"},
+                "market": {"stat_type": "REC_YDS", "description": "Receiving Yards"}
+            },
+            {
+                "id": 3002,
+                "player": {"id": 3002, "name": "Stefon Diggs", "position": "WR"},
+                "stat_type": "REC_YDS",
+                "line_value": 75.5,
+                "side": "over",
+                "odds": -110,
+                "edge": 0.05,
+                "confidence_score": 0.73,
+                "model_probability": 0.56,
+                "implied_probability": 0.524,
+                "expected_value": 0.05,
+                "game": {"id": 648, "home_team": "New England Patriots", "away_team": "Seattle Seahawks"},
+                "market": {"stat_type": "REC_YDS", "description": "Receiving Yards"}
+            }
+        ])
+    
+    return PlayerPropPickList(
+        items=stub_props[:limit],
+        total=len(stub_props),
+        sport_id=sport_id,
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        fresh_until=(datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    )
