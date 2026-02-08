@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, func, text, create_engine
 
-from app.core.database import get_db, engine
+from app.core.database import get_db, get_engine
 from app.tasks.grade_picks import pick_grader
 from app.scripts.backtest_model import ModelBacktester
 from app.models import ModelPick
