@@ -43,7 +43,7 @@ async def get_player_statistics(
                 stats_query = stats_query.where(PlayerStat.season == season)
             
             stats_query = stats_query.order_by(PlayerStat.season.desc())
-            stats_result = await db.execute(stats_query)
+            stats_result = await db.execute(stats_query.limit(100))
             stats = stats_result.scalars().all()
         except ImportError:
             # PlayerStat model not available
@@ -242,6 +242,7 @@ async def get_team_statistics(
                 )
                 .where(Player.team_id == team_id)
                 .order_by(Player.name)
+                .limit(1000)
             )
             players = players_result.scalars().all()
             
