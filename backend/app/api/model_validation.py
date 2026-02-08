@@ -3,7 +3,7 @@ Model Validation API - Backtesting and performance validation
 """
 
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/validation", tags=["validation"])
 
 @router.get("/calibration/{sport_id}")
 async def validate_model_calibration(
-    sport_id: int = Query(default=30, description="Sport ID to validate"),
+    sport_id: int = Path(description="Sport ID to validate"),
     days_back: int = Query(default=30, description="Days of historical data to use"),
     db: AsyncSession = Depends(get_db)
 ):
@@ -30,7 +30,7 @@ async def validate_model_calibration(
 
 @router.get("/clv/{sport_id}")
 async def calculate_clv_performance(
-    sport_id: int = Query(default=30, description="Sport ID to analyze"),
+    sport_id: int = Path(description="Sport ID to analyze"),
     days_back: int = Query(default=30, description="Days to analyze"),
     db: AsyncSession = Depends(get_db)
 ):
@@ -47,7 +47,7 @@ async def calculate_clv_performance(
 
 @router.get("/status/{sport_id}")
 async def get_model_status_report(
-    sport_id: int = Query(default=30, description="Sport ID to analyze"),
+    sport_id: int = Path(description="Sport ID to analyze"),
     db: AsyncSession = Depends(get_db)
 ):
     """Generate comprehensive model status report."""

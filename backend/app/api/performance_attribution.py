@@ -3,7 +3,7 @@ Performance Attribution API - Factor breakdown for picks
 """
 
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -30,7 +30,7 @@ async def analyze_pick_attribution(
 
 @router.get("/batch/{sport_id}")
 async def analyze_batch_attribution(
-    sport_id: int = Query(default=30, description="Sport ID"),
+    sport_id: int = Path(description="Sport ID"),
     limit: int = Query(default=50, description="Number of picks to analyze"),
     db: AsyncSession = Depends(get_db)
 ):
