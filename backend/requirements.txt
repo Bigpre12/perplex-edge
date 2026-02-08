@@ -30,6 +30,9 @@ python-json-logger>=2.0.7
 # Caching
 redis>=5.0.0
 
+# Math/Statistics
+scipy>=1.12.0
+
 # Resilience (retries, circuit breakers)
 tenacity>=8.2.0
 pybreaker>=1.0.0
