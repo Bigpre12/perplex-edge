@@ -3,7 +3,7 @@ Line Movement API - Track sharp money and market movements
 """
 
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/line-movement", tags=["line-movement"])
 
 @router.get("/track/{sport_id}")
 async def track_line_movements(
-    sport_id: int,
+    sport_id: int = Path(default=..., description="Sport ID"),
     hours_back: int = Query(default=24, description="Hours to look back"),
     db: AsyncSession = Depends(get_db)
 ):
@@ -31,7 +31,7 @@ async def track_line_movements(
 
 @router.get("/alerts/{sport_id}")
 async def get_line_movement_alerts(
-    sport_id: int = Query(default=30, description="Sport ID"),
+    sport_id: int = Path(description="Sport ID"),
     db: AsyncSession = Depends(get_db)
 ):
     """Get line movement alerts for sharp money activity."""
