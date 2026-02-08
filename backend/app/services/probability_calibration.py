@@ -5,8 +5,21 @@ Probability Calibration Service - Fix overconfident model predictions
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 import numpy as np
-from scipy.stats import beta
-from sklearn.isotonic import IsotonicRegression
+
+# Make scipy and sklearn imports optional
+try:
+    from scipy.stats import beta
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
+    beta = None
+
+try:
+    from sklearn.isotonic import IsotonicRegression
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    IsotonicRegression = None
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, desc
@@ -19,7 +32,7 @@ class ProbabilityCalibrator:
     """Calibrates model probabilities using market efficiency and historical performance."""
     
     def __init__(self):
-        self.isotonic_regressor = IsotonicRegression(out_of_bounds='clip')
+        self.isotonic_regressor = IsotonicRegression(out_of_bounds='clip') if HAS_SKLEARN else None
         self.calibration_data = {}
         self.market_efficiency_factor = 0.05  # Max 5% edge over market
         
@@ -197,10 +210,14 @@ class ProbabilityCalibrator:
             actual_outcomes.append(1 if pick.result.hit else 0)
         
         # Fit isotonic regression
-        self.isotonic_regressor.fit(model_probs, actual_outcomes)
-        
-        # Calculate calibration metrics
-        calibrated_probs = self.isotonic_regressor.predict(model_probs)
+        if HAS_SKLEARN and self.isotonic_regressor is not None:
+            self.isotonic_regressor.fit(model_probs, actual_outcomes)
+            
+            # Calculate calibration metrics
+            calibrated_probs = self.isotonic_regressor.predict(model_probs)
+        else:
+            # Fallback: return uncalibrated probabilities
+            calibrated_probs = model_probs
         
         # Calculate Brier score (lower is better)
         brier_score = np.mean((calibrated_probs - np.array(actual_outcomes)) ** 2)
