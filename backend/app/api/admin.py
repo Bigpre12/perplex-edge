@@ -842,6 +842,7 @@ async def fix_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
                 select(ModelPick, Player)
                 .join(Player, ModelPick.player_id == Player.id)
                 .where(ModelPick.sport_id != Player.sport_id)
+                .limit(1000)
             )
             incorrect_picks = incorrect_picks_result.all()
             
@@ -1028,6 +1029,7 @@ async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
             # Get NBA teams
             nba_teams_result = await db.execute(
                 select(Team).where(Team.sport_id == 30)  # NBA sport_id
+                .limit(1000)
             )
             nba_teams = nba_teams_result.scalars().all()
             nba_team_ids = [team.id for team in nba_teams]
@@ -1040,6 +1042,7 @@ async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
                         Player.team_id.in_(nba_team_ids),
                         Player.sport_id == 53  # Incorrectly assigned to NHL
                     )
+                    .limit(1000)
                 )
                 nba_players_in_nhl = nba_players_in_nhl_result.scalars().all()
                 
@@ -1059,6 +1062,7 @@ async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
             # Get NHL teams
             nhl_teams_result = await db.execute(
                 select(Team).where(Team.sport_id == 53)  # NHL sport_id
+                .limit(1000)
             )
             nhl_teams = nhl_teams_result.scalars().all()
             nhl_team_ids = [team.id for team in nhl_teams]
@@ -1071,6 +1075,7 @@ async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
                         Player.team_id.in_(nhl_team_ids),
                         Player.sport_id == 30  # Incorrectly assigned to NBA
                     )
+                    .limit(1000)
                 )
                 nhl_players_in_nba = nhl_players_in_nba_result.scalars().all()
                 
