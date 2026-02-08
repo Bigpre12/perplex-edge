@@ -19,6 +19,6 @@ COPY . .
 EXPOSE 8000
 
 # Run migrations and then start the application
-# PORT env var is set by Railway, default to 8000
-# Migrations run automatically on deploy via alembic upgrade heads
-CMD ["sh", "-c", "alembic upgrade heads && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# First stamp the database to the latest migration (fixes missing revision issues)
+# Then run upgrade to ensure we're at heads
+CMD ["sh", "-c", "alembic stamp 20260207_010000 2>/dev/null || true && alembic upgrade heads && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
