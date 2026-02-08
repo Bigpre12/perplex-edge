@@ -3,7 +3,7 @@ Line Shopping API - Find best odds across sportsbooks
 """
 
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -51,7 +51,7 @@ async def find_best_odds_for_game(
 
 @router.get("/summary/{sport_id}")
 async def get_line_shopping_summary(
-    sport_id: int = Query(default=30, description="Sport ID"),
+    sport_id: int = Path(description="Sport ID"),
     hours_back: int = Query(default=24, description="Hours to look back"),
     db: AsyncSession = Depends(get_db)
 ):
