@@ -98,7 +98,7 @@ async def get_injuries_by_game(
         .order_by(Injury.updated_at.desc())
     )
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     injuries = result.scalars().all()
 
     items = []
