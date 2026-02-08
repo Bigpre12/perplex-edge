@@ -541,11 +541,7 @@ async def list_games_today(
 @router.get("/sports/{sport_id}/markets", response_model=PublicMarketList, tags=["public"])
 async def list_markets(
     sport_id: int,
-    market_type: Optional[str] = Query(None,
-        description="Filter by market type (spread,
-        total,
-        moneyline,
-        player_prop)"),
+    market_type: Optional[str] = Query(None, description="Filter by market type (spread, total, moneyline, player_prop)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
