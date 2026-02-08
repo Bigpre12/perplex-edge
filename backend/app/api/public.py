@@ -1551,6 +1551,11 @@ async def build_parlay(
                 "include_100_pct": include_100_pct,
                 "sport_id": sport_id,
             },
+            model_status={
+                "status": "error",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
         )
 
 # =============================================================================
