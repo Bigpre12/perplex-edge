@@ -1309,8 +1309,7 @@ async def list_100_percent_props(
     min_hit_rate: float = Query(0.70,
         ge=0.0,
         le=1.0,
-        description="Minimum hit rate fallback (0-1,
-        default 0.70 = 70%)"),
+        description="Minimum hit rate fallback (0-1, default 0.70 = 70%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -1379,8 +1378,7 @@ async def hitrate_100_alias(
     min_hit_rate: float = Query(0.70,
         ge=0.0,
         le=1.0,
-        description="Minimum hit rate fallback (0-1,
-        default 0.70 = 70%)"),
+        description="Minimum hit rate fallback (0-1, default 0.70 = 70%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
