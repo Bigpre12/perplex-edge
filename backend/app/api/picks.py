@@ -183,7 +183,7 @@ async def get_top_picks(
     if sport:
         query = query.join(Sport).where(Sport.league_code.ilike(f"%{sport}%"))
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     picks = result.scalars().all()
 
     items = []
