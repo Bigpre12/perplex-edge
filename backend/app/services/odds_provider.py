@@ -4559,3 +4559,7 @@ class ESPNScheduleProvider:
         except Exception as e:
             logger.warning(f"[ODDS] Error getting MLB stats for {player_name}: {e}")
             return {}
+
+
+# Create a default odds provider instance for import
+odds_provider = XYZOddsProvider()
