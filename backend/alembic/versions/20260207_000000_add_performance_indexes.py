@@ -15,9 +15,9 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    """Add performance indexes for new Phase 2 features."""
+    """Add performance indexes for new Phase 2 features - only for existing columns."""
     
-    # ModelPick performance indexes
+    # ModelPick performance indexes (columns that exist)
     op.create_index('ix_model_picks_odds_range', 'model_picks', ['odds'])
     op.create_index('ix_model_picks_line_value', 'model_picks', ['line_value'])
     op.create_index('ix_model_picks_side', 'model_picks', ['side'])
@@ -31,25 +31,11 @@ def upgrade():
     
     # Performance attribution indexes
     op.create_index('ix_model_picks_confidence_ev', 'model_picks', ['confidence_score', 'expected_value'])
-    op.create_index('ix_model_picks_line_movement_sharp', 'model_picks', ['line_movement', 'sharp_money_indicator'])
-    
-    # CLV tracking indexes
-    op.create_index('ix_model_picks_clv_roi', 'model_picks', ['clv_percentage', 'roi_percentage'])
-    op.create_index('ix_model_picks_closing_odds', 'model_picks', ['closing_odds'])
-    
-    # Line shopping indexes
-    op.create_index('ix_model_picks_best_book', 'model_picks', ['best_book_name'])
-    op.create_index('ix_model_picks_ev_improvement', 'model_picks', ['ev_improvement'])
 
 def downgrade():
     """Remove performance indexes."""
     
     # Remove indexes in reverse order
-    op.drop_index('ix_model_picks_ev_improvement', table_name='model_picks')
-    op.drop_index('ix_model_picks_best_book', table_name='model_picks')
-    op.drop_index('ix_model_picks_closing_odds', table_name='model_picks')
-    op.drop_index('ix_model_picks_clv_roi', table_name='model_picks')
-    op.drop_index('ix_model_picks_line_movement_sharp', table_name='model_picks')
     op.drop_index('ix_model_picks_confidence_ev', table_name='model_picks')
     op.drop_index('ix_model_picks_player_market', table_name='model_picks')
     op.drop_index('ix_model_picks_game_active', table_name='model_picks')
