@@ -4,8 +4,6 @@
  * Provides consistent UI patterns across all tabs and pages.
  */
 
-import React from 'react';
-
 // =============================================================================
 // Loading State
 // =============================================================================
