@@ -12,7 +12,6 @@ from app.models import ModelPick, Player, Game, Team, Market
 
 router = APIRouter(prefix="/api/debug", tags=["debug"])
 
-
 @router.get("/model-picks-count")
 async def debug_model_picks_count(
     sport_id: int = Query(30),
@@ -107,7 +106,6 @@ async def debug_model_picks_count(
             "error": str(e),
             "sport_id": sport_id
         }
-
 
 @router.get("/parlay-query-debug")
 async def debug_parlay_query(

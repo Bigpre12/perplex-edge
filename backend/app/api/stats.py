@@ -12,9 +12,7 @@ from app.services.results_tracker import ResultsTracker
 from app.services.hot_cold_service import get_hot_players_with_best_market, get_hot_cold_players_by_market
 from app.models import Sport
 
-
 router = APIRouter()
-
 
 # =============================================================================
 # Schemas
@@ -26,9 +24,7 @@ def serialize_datetime_utc(dt: datetime) -> str:
         return None
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-
 UTCDatetime = Annotated[datetime, PlainSerializer(serialize_datetime_utc)]
-
 
 def compute_trust_tag(total_picks: int, hit_rate_7d: float, current_streak: int) -> str:
     """
@@ -48,7 +44,6 @@ def compute_trust_tag(total_picks: int, hit_rate_7d: float, current_streak: int)
         return "ok"
     return "weak"
 
-
 class HotPlayer(BaseModel):
     """Hot player response."""
     player_id: int
@@ -64,12 +59,10 @@ class HotPlayer(BaseModel):
     # Trust tag for quality assessment
     trust_tag: Optional[str] = None  # "strong", "ok", "thin", "weak"
 
-
 class HotPlayerList(BaseModel):
     """List of hot players."""
     items: list[HotPlayer]
     total: int
-
 
 class StreakPlayer(BaseModel):
     """Player on a streak, tied to a specific stat type and direction."""
@@ -81,12 +74,10 @@ class StreakPlayer(BaseModel):
     hit_rate_7d: Optional[float] = None
     last_5: Optional[str] = None
 
-
 class StreaksList(BaseModel):
     """Hot and cold streaks."""
     hot: list[StreakPlayer]
     cold: list[StreakPlayer]
-
 
 class RecentResult(BaseModel):
     """Recent pick result."""
@@ -101,12 +92,10 @@ class RecentResult(BaseModel):
     settled_at: str
     game_id: int
 
-
 class RecentResultList(BaseModel):
     """List of recent results."""
     items: list[RecentResult]
     total: int
-
 
 class PlayerStats(BaseModel):
     """Player stats summary."""
@@ -119,7 +108,6 @@ class PlayerStats(BaseModel):
     worst_streak: int = 0
     last_5: Optional[str] = None
 
-
 class PlayerResult(BaseModel):
     """Individual player result."""
     stat_type: Optional[str] = None
@@ -129,14 +117,12 @@ class PlayerResult(BaseModel):
     hit: bool
     settled_at: str
 
-
 class PlayerHistory(BaseModel):
     """Player history response."""
     player_id: int
     player_name: str
     stats: PlayerStats
     results: list[PlayerResult]
-
 
 class SettleResponse(BaseModel):
     """Pick settlement response."""
@@ -145,7 +131,6 @@ class SettleResponse(BaseModel):
     hits: int
     misses: int
     hit_rate: float = 0
-
 
 # =============================================================================
 # Endpoints
@@ -223,7 +208,6 @@ async def get_hot_players(
         total=len(hot_players),
     )
 
-
 @router.get("/sports/{sport_id}/cold-players", response_model=HotPlayerList, tags=["stats"])
 async def get_cold_players(
     sport_id: int,
@@ -280,7 +264,6 @@ async def get_cold_players(
         total=len(cold_players),
     )
 
-
 @router.get("/sports/{sport_id}/streaks", response_model=StreaksList, tags=["stats"])
 async def get_streaks(
     sport_id: int,
@@ -306,7 +289,6 @@ async def get_streaks(
         cold=[StreakPlayer(**p) for p in streaks["cold"]],
     )
 
-
 class AllPlayerStats(BaseModel):
     """Comprehensive player stats for all players."""
     player_id: int
@@ -324,7 +306,6 @@ class AllPlayerStats(BaseModel):
     hits_all: int = 0
     trust_tag: Optional[str] = None
 
-
 class AllPlayerStatsList(BaseModel):
     """List of all player stats."""
     items: list[AllPlayerStats]
@@ -332,7 +313,6 @@ class AllPlayerStatsList(BaseModel):
     hot_count: int
     cold_count: int
     neutral_count: int
-
 
 @router.get("/sports/{sport_id}/all-player-stats", response_model=AllPlayerStatsList, tags=["stats"])
 async def get_all_player_stats(
@@ -460,7 +440,6 @@ async def get_all_player_stats(
         neutral_count=neutral_count,
     )
 
-
 class MarketPlayerStats(BaseModel):
     """Market-specific player stats."""
     player_id: int
@@ -475,14 +454,12 @@ class MarketPlayerStats(BaseModel):
     last_5: Optional[str] = None
     trust_tag: Optional[str] = None
 
-
 class MarketPlayerStatsList(BaseModel):
     """List of market-specific player stats."""
     items: list[MarketPlayerStats]
     total: int
     market: str
     side_filter: Optional[str] = None
-
 
 @router.get("/sports/{sport_id}/market-stats", response_model=MarketPlayerStatsList, tags=["stats"])
 async def get_market_stats(
@@ -610,7 +587,6 @@ async def get_market_stats(
         side_filter=side,
     )
 
-
 @router.get("/sports/{sport_id}/recent-results", response_model=RecentResultList, tags=["stats"])
 async def get_recent_results(
     sport_id: int,
@@ -635,7 +611,6 @@ async def get_recent_results(
         total=len(results),
     )
 
-
 @router.get("/players/{player_id}/history", response_model=PlayerHistory, tags=["stats"])
 async def get_player_history(
     player_id: int,
@@ -659,7 +634,6 @@ async def get_player_history(
         stats=PlayerStats(**history["stats"]),
         results=[PlayerResult(**r) for r in history["results"]],
     )
-
 
 @router.post("/games/{game_id}/settle", response_model=SettleResponse, tags=["stats"])
 async def settle_game_picks(
@@ -690,7 +664,6 @@ async def settle_game_picks(
         misses=result.get("misses", 0),
         hit_rate=result.get("hit_rate", 0),
     )
-
 
 @router.post("/games/{game_id}/simulate", response_model=SettleResponse, tags=["stats"])
 async def simulate_game_results(

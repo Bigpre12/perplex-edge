@@ -14,9 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.user import User, UserPlan
 
-
 router = APIRouter()
-
 
 # =============================================================================
 # Whop Webhook Schemas
@@ -27,7 +25,6 @@ class WhopMembershipEvent(BaseModel):
     action: str  # "payment.completed", "membership.cancelled", etc.
     data: dict
 
-
 class WhopPaymentData(BaseModel):
     """Whop payment data."""
     membership_id: str
@@ -35,13 +32,11 @@ class WhopPaymentData(BaseModel):
     email: Optional[str] = None
     status: str
 
-
 # =============================================================================
 # Webhook Verification
 # =============================================================================
 
 WHOP_WEBHOOK_SECRET = os.getenv("WHOP_WEBHOOK_SECRET", "")
-
 
 def verify_whop_signature(payload: bytes, signature: str) -> bool:
     """
@@ -60,7 +55,6 @@ def verify_whop_signature(payload: bytes, signature: str) -> bool:
     ).hexdigest()
     
     return hmac.compare_digest(expected, signature)
-
 
 # =============================================================================
 # Whop Webhooks
@@ -106,7 +100,6 @@ async def handle_whop_webhook(
         # Unknown event type - log and return success
         print(f"[Whop Webhook] Unhandled event: {action}")
         return {"status": "ignored", "action": action}
-
 
 async def handle_payment_completed(data: dict, db: AsyncSession):
     """
@@ -161,7 +154,6 @@ async def handle_payment_completed(data: dict, db: AsyncSession):
         "plan": user.plan,
     }
 
-
 async def handle_membership_ended(data: dict, db: AsyncSession):
     """
     Handle membership cancellation or expiration.
@@ -197,13 +189,11 @@ async def handle_membership_ended(data: dict, db: AsyncSession):
         "plan": user.plan,
     }
 
-
 # =============================================================================
 # Clerk Webhooks (optional - for user deletion, etc.)
 # =============================================================================
 
 CLERK_WEBHOOK_SECRET = os.getenv("CLERK_WEBHOOK_SECRET", "")
-
 
 @router.post("/webhooks/clerk", tags=["webhooks"])
 async def handle_clerk_webhook(
@@ -244,7 +234,6 @@ async def handle_clerk_webhook(
                 return {"status": "success", "user_id": user_id}
     
     return {"status": "ignored", "event_type": event_type}
-
 
 # =============================================================================
 # Test Endpoint (for development)

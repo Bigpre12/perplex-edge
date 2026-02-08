@@ -11,7 +11,6 @@ from app.services.roster_manager_2026 import roster_manager_2026
 
 router = APIRouter(prefix="/api/roster", tags=["roster-control"])
 
-
 @router.get("/status")
 async def get_roster_status():
     """Get current roster management status."""
@@ -36,7 +35,6 @@ async def get_roster_status():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Roster status error: {e}")
 
-
 @router.post("/process-2026-trades")
 async def process_2026_trades(db: AsyncSession = Depends(get_db)):
     """Process all 2026 trades and update rosters."""
@@ -52,7 +50,6 @@ async def process_2026_trades(db: AsyncSession = Depends(get_db)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Trade processing error: {e}")
-
 
 @router.get("/current-rosters")
 async def get_current_rosters(
@@ -72,7 +69,6 @@ async def get_current_rosters(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Roster retrieval error: {e}")
 
-
 @router.get("/trade-history")
 async def get_trade_history(
     limit: int = Query(50, description="Maximum number of trades to return"),
@@ -90,7 +86,6 @@ async def get_trade_history(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Trade history error: {e}")
 
-
 @router.get("/validate-rosters")
 async def validate_rosters(db: AsyncSession = Depends(get_db)):
     """Validate roster integrity."""
@@ -104,7 +99,6 @@ async def validate_rosters(db: AsyncSession = Depends(get_db)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Roster validation error: {e}")
-
 
 @router.get("/2026-trades")
 async def get_2026_trades():
@@ -123,7 +117,6 @@ async def get_2026_trades():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"2026 trades error: {e}")
-
 
 @router.post("/force-roster-update")
 async def force_roster_update(
@@ -148,7 +141,6 @@ async def force_roster_update(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Force roster update error: {e}")
-
 
 @router.get("/team-roster/{team_name}")
 async def get_team_roster(
@@ -198,7 +190,6 @@ async def get_team_roster(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Team roster error: {e}")
-
 
 @router.get("/player/{player_name}")
 async def get_player_info(

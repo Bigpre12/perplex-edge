@@ -11,9 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.user import User, UserPlan
 
-
 router = APIRouter()
-
 
 # =============================================================================
 # Schemas
@@ -25,7 +23,6 @@ class UserSyncRequest(BaseModel):
     email: EmailStr
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-
 
 class UserResponse(BaseModel):
     """User response with plan info."""
@@ -41,19 +38,16 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class UserPlanUpdate(BaseModel):
     """Request to update user plan."""
     plan: str
     whop_membership_id: Optional[str] = None
-
 
 class WhopCheckoutResponse(BaseModel):
     """Response with Whop checkout URLs."""
     free_checkout_url: str
     pro_monthly_checkout_url: Optional[str] = None
     pro_yearly_checkout_url: Optional[str] = None
-
 
 # =============================================================================
 # Endpoints
@@ -109,7 +103,6 @@ async def sync_user(
         created_at=user.created_at,
         props_viewed_today=user.props_viewed_today,
     )
-
 
 @router.get("/users/me", response_model=UserResponse, tags=["users"])
 async def get_current_user(
@@ -184,7 +177,6 @@ async def get_current_user(
         props_viewed_today=user.props_viewed_today,
     )
 
-
 @router.post("/users/{user_id}/increment-props", tags=["users"])
 async def increment_props_viewed(
     user_id: str,
@@ -218,7 +210,6 @@ async def increment_props_viewed(
         "reset_date": user.props_reset_date,
     }
 
-
 @router.get("/users/whop-checkout", response_model=WhopCheckoutResponse, tags=["users"])
 async def get_whop_checkout_urls():
     """
@@ -235,7 +226,6 @@ async def get_whop_checkout_urls():
         pro_yearly_checkout_url=settings.whop_pro_yearly_checkout_url or None
     )
 
-
 @router.get("/users/brain-debug", tags=["users"])
 async def get_brain_debug_info():
     """
@@ -248,7 +238,6 @@ async def get_brain_debug_info():
         return _brain_debugger.get_debug_summary()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Brain debug info unavailable: {str(e)}")
-
 
 @router.get("/users/brain-debug/export", tags=["users"])
 async def export_brain_debug_data():

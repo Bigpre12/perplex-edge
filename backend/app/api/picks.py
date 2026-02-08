@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
 @router.get("/debug/config")
 async def debug_config():
     """Debug endpoint to check current configuration values."""
@@ -31,7 +30,6 @@ async def debug_config():
         "odds_api_key_preview": settings.odds_api_key[:8] + "..." if settings.odds_api_key else None,
         "environment": settings.environment,
     }
-
 
 # Sport key mappings for refresh endpoint
 SPORT_KEY_MAP = {
@@ -59,7 +57,6 @@ SPORT_KEY_MAP = {
     "ufc": "mma_mixed_martial_arts",
     "mma": "mma_mixed_martial_arts",
 }
-
 
 @router.get("", response_model=ModelPickList)
 async def list_picks(
@@ -145,7 +142,6 @@ async def list_picks(
 
     return ModelPickList(items=items, total=total or 0)
 
-
 @router.get("/top", response_model=ModelPickList)
 async def get_top_picks(
     sport: Optional[str] = Query(None, description="Filter by sport"),
@@ -225,7 +221,6 @@ async def get_top_picks(
 
     return ModelPickList(items=items, total=len(items))
 
-
 @router.get("/summary", response_model=PickSummary)
 async def get_picks_summary(
     sport: Optional[str] = Query(None, description="Filter by sport"),
@@ -285,7 +280,6 @@ async def get_picks_summary(
         avg_confidence=round(avg_confidence, 4),
         high_confidence_picks=high_confidence_picks,
     )
-
 
 @router.post("/refresh")
 async def refresh_picks(
@@ -424,7 +418,6 @@ async def refresh_picks(
     except Exception as e:
         logger.error(f"Error refreshing picks: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 def _is_sync_successful(sync_stats: dict) -> bool:
     """Check if a sync operation returned useful data."""

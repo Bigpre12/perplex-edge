@@ -19,7 +19,6 @@ router = APIRouter()
 
 EASTERN_TZ = ZoneInfo("America/New_York")
 
-
 # =============================================================================
 # Search Response Schema
 # =============================================================================
@@ -72,7 +71,6 @@ class PropSearchResult(BaseModel):
     kelly_units: Optional[float] = None
     kelly_risk_level: Optional[str] = None
 
-
 class PropSearchResponse(BaseModel):
     """Paginated prop search response."""
     items: List[PropSearchResult]
@@ -80,7 +78,6 @@ class PropSearchResponse(BaseModel):
     page: int
     per_page: int
     filters_applied: dict
-
 
 # =============================================================================
 # Props Search Endpoint
@@ -363,7 +360,6 @@ async def search_props(
         },
     )
 
-
 @router.get("", response_model=LineList)
 async def list_props(
     game_id: Optional[int] = Query(None, description="Filter by game"),
@@ -413,7 +409,6 @@ async def list_props(
         items=[LineRead.model_validate(line) for line in lines],
         total=total or 0,
     )
-
 
 @router.get("/compare/{game_id}/{player_id}", response_model=list[LineComparison])
 async def compare_player_props(
@@ -488,7 +483,6 @@ async def compare_player_props(
 
     return comparisons
 
-
 @router.get("/players/{game_id}")
 async def list_players_with_props(
     game_id: int,
@@ -519,7 +513,6 @@ async def list_players_with_props(
         }
         for p in players
     ]
-
 
 @router.get("/stat-types")
 async def list_stat_types(

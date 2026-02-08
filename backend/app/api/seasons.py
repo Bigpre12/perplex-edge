@@ -19,10 +19,8 @@ from app.schemas.season import (
     GameOut, GamePlayerStats, GamePlayerOut,
 )
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
 
 # =============================================================================
 # Season Endpoints
@@ -54,7 +52,6 @@ async def list_seasons(
         total=len(seasons),
     )
 
-
 @router.get("/seasons/current", response_model=Optional[SeasonRead], tags=["seasons"])
 async def get_current_season(
     sport_id: int = Query(..., description="Sport ID"),
@@ -81,7 +78,6 @@ async def get_current_season(
     
     return SeasonRead.model_validate(season)
 
-
 # =============================================================================
 # Team Endpoints
 # =============================================================================
@@ -89,7 +85,10 @@ async def get_current_season(
 @router.get("/sports/{sport_id}/teams", response_model=List[TeamInfo], tags=["seasons"])
 async def list_teams_for_season(
     sport_id: int,
-    season_year: Optional[int] = Query(None, description="Season year (e.g., 2026). If not provided, returns all teams."),
+    season_year: Optional[int] = Query(None,
+        description="Season year (e.g.,
+        2026). If not provided,
+        returns all teams."),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -123,7 +122,6 @@ async def list_teams_for_season(
     teams = result.scalars().all()
     
     return [TeamInfo.model_validate(t) for t in teams]
-
 
 # =============================================================================
 # Roster Endpoints
@@ -180,7 +178,6 @@ async def list_team_roster(
         )
         for roster, player in rows
     ]
-
 
 # =============================================================================
 # Game Endpoints
@@ -253,7 +250,6 @@ async def list_games_for_date(
         )
         for g in games
     ]
-
 
 # =============================================================================
 # Game Stats Endpoints
@@ -354,7 +350,6 @@ async def list_game_player_stats(
         )
     
     return results
-
 
 # =============================================================================
 # Player Endpoints

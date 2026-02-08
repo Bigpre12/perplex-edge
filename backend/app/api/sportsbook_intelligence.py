@@ -14,7 +14,6 @@ from app.services.sportsbook_monitor import enhanced_sportsbook_monitor
 
 router = APIRouter(prefix="/api/sportsbook", tags=["sportsbook"])
 
-
 @router.get("/market-analysis")
 async def get_market_analysis(
     sport_id: int = Query(30, description="Sport ID (30=NBA, 32=NCAA, 53=NHL)"),
@@ -69,7 +68,6 @@ async def get_market_analysis(
             "sport_id": sport_id
         }
 
-
 @router.get("/trading-signals")
 async def get_trading_signals(
     min_confidence: float = Query(0.7, description="Minimum confidence level"),
@@ -115,7 +113,6 @@ async def get_trading_signals(
             "error": str(e),
             "min_confidence": min_confidence
         }
-
 
 @router.get("/intelligence")
 async def get_sportsbook_intelligence(
@@ -182,7 +179,6 @@ async def get_sportsbook_intelligence(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/market-summary")
 async def get_market_summary(db: AsyncSession = Depends(get_db)):
     """Get summary of market analysis."""
@@ -215,7 +211,6 @@ async def get_market_summary(db: AsyncSession = Depends(get_db)):
             "error": str(e)
         }
 
-
 @router.get("/texas-sportsbooks")
 async def get_texas_sportsbooks():
     """Get list of monitored Texas sportsbooks."""
@@ -232,7 +227,6 @@ async def get_texas_sportsbooks():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "error": str(e)
         }
-
 
 @router.post("/trigger-analysis")
 async def trigger_market_analysis(

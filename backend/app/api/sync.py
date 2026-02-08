@@ -11,7 +11,6 @@ from app.etl.odds_api import SPORT_KEYS
 
 router = APIRouter()
 
-
 @router.post("/odds/{sport}")
 async def sync_odds_for_sport(
     sport: str,
@@ -44,7 +43,6 @@ async def sync_odds_for_sport(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
-
 @router.post("/odds")
 async def sync_all_odds(
     db: AsyncSession = Depends(get_db),
@@ -61,7 +59,6 @@ async def sync_all_odds(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
-
 @router.get("/sports")
 async def list_available_sports():
     """List available sports for syncing."""
@@ -71,7 +68,6 @@ async def list_available_sports():
             for code, key in SPORT_KEYS.items()
         ]
     }
-
 
 @router.post("/rosters")
 async def sync_rosters(
@@ -120,7 +116,6 @@ async def sync_rosters(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Roster sync failed: {str(e)}")
-
 
 @router.post("/rosters/player")
 async def sync_single_player_roster(
@@ -181,7 +176,6 @@ async def sync_single_player_roster(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Player roster sync failed: {str(e)}")
 
-
 @router.post("/player-teams")
 async def sync_player_teams(
     sport: str = "basketball_nba",
@@ -213,7 +207,6 @@ async def sync_player_teams(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Player team sync failed: {str(e)}")
 
-
 @router.post("/clear-games")
 async def clear_games(
     sport: str = "basketball_nba",
@@ -242,7 +235,6 @@ async def clear_games(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Clear games failed: {str(e)}")
-
 
 @router.get("/status")
 async def get_sync_status(

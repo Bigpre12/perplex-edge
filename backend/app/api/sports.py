@@ -17,7 +17,6 @@ from app.schemas.sport import SportList, SportResponse
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-
 @router.get("", response_model=SportList)
 async def list_sports(
     active_only: bool = Query(True, description="Filter to active sports only"),
@@ -39,7 +38,6 @@ async def list_sports(
         logger.error(f"Error listing sports: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to list sports: {str(e)}")
 
-
 @router.get("/{sport_id}", response_model=SportResponse)
 async def get_sport(
     sport_id: int,
@@ -60,7 +58,6 @@ async def get_sport(
     except Exception as e:
         logger.error(f"Error getting sport {sport_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get sport: {str(e)}")
-
 
 @router.get("/league/{league_code}", response_model=SportResponse)
 async def get_sport_by_league(

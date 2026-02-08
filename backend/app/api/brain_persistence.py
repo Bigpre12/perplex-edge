@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/brain", tags=["brain-persistence"])
 
-
 @router.get("/decisions")
 async def get_brain_decisions(
     limit: int = Query(50, ge=1, le=500),
@@ -54,7 +53,6 @@ async def get_brain_decisions(
         logger.error(f"[API:BRAIN] Failed to get decisions: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get brain decisions: {str(e)}")
 
-
 @router.get("/health-trends")
 async def get_health_trends(
     component: Optional[str] = Query(None),
@@ -75,7 +73,6 @@ async def get_health_trends(
         logger.error(f"[API:BRAIN] Failed to get health trends: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get health trends: {str(e)}")
 
-
 @router.get("/anomalies")
 async def get_anomaly_summary(
     hours: int = Query(24, ge=1, le=168)
@@ -92,7 +89,6 @@ async def get_anomaly_summary(
     except Exception as e:
         logger.error(f"[API:BRAIN] Failed to get anomaly summary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get anomaly summary: {str(e)}")
-
 
 @router.get("/business-metrics")
 async def get_business_metrics_trends(
@@ -113,7 +109,6 @@ async def get_business_metrics_trends(
         logger.error(f"[API:BRAIN] Failed to get business metrics: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get business metrics: {str(e)}")
 
-
 @router.get("/system-state")
 async def get_system_state_history(
     limit: int = Query(10, ge=1, le=100)
@@ -132,7 +127,6 @@ async def get_system_state_history(
         logger.error(f"[API:BRAIN] Failed to get system state history: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get system state history: {str(e)}")
 
-
 @router.get("/analytics")
 async def get_brain_analytics_endpoint(
     hours: int = Query(24, ge=1, le=168)
@@ -150,7 +144,6 @@ async def get_brain_analytics_endpoint(
         logger.error(f"[API:BRAIN] Failed to get brain analytics: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get brain analytics: {str(e)}")
 
-
 @router.get("/performance")
 async def get_brain_performance() -> Dict[str, Any]:
     """Monitor brain performance metrics."""
@@ -165,7 +158,6 @@ async def get_brain_performance() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"[API:BRAIN] Failed to get brain performance: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get brain performance: {str(e)}")
-
 
 @router.post("/cleanup")
 async def trigger_cleanup() -> Dict[str, Any]:
@@ -183,7 +175,6 @@ async def trigger_cleanup() -> Dict[str, Any]:
         logger.error(f"[API:BRAIN] Failed to trigger cleanup: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to trigger cleanup: {str(e)}")
 
-
 @router.get("/correlations")
 async def get_correlation_summary() -> Dict[str, Any]:
     """Get summary of recent correlations."""
@@ -199,7 +190,6 @@ async def get_correlation_summary() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"[API:BRAIN] Failed to get correlation summary: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get correlation summary: {str(e)}")
-
 
 @router.get("/learning")
 async def get_learning_data(
@@ -219,7 +209,6 @@ async def get_learning_data(
     except Exception as e:
         logger.error(f"[API:BRAIN] Failed to get learning data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get learning data: {str(e)}")
-
 
 @router.get("/dashboard")
 async def get_brain_dashboard(
@@ -254,7 +243,6 @@ async def get_brain_dashboard(
     except Exception as e:
         logger.error(f"[API:BRAIN] Failed to get brain dashboard: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get brain dashboard: {str(e)}")
-
 
 @router.get("/export")
 async def export_brain_data(
@@ -300,7 +288,6 @@ async def export_brain_data(
         logger.error(f"[API:BRAIN] Failed to export brain data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to export brain data: {str(e)}")
 
-
 @router.post("/decision")
 async def log_manual_decision(
     category: str,
@@ -331,7 +318,6 @@ async def log_manual_decision(
         logger.error(f"[API:BRAIN] Failed to log manual decision: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to log manual decision: {str(e)}")
 
-
 @router.post("/health-check")
 async def log_manual_health_check(
     component: str,
@@ -361,7 +347,6 @@ async def log_manual_health_check(
     except Exception as e:
         logger.error(f"[API:BRAIN] Failed to log manual health check: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to log manual health check: {str(e)}")
-
 
 @router.get("/stats")
 async def get_brain_statistics(

@@ -73,7 +73,7 @@ async def debug_candidates(
         debug_info["filtering_stages"]["after_edge_filter"] = len(edge_filtered)
         print(f"DEBUG: After edge {edge_grade} filter: {len(edge_filtered)}")
         
-        # Stage 4: Power filter (simplified - just check confidence)
+        # Stage 4: Power filter (simplified -  check confidence)
         power_map = {"HIGH": 0.8, "FLEX": 0.6, "LOW": 0.4, "ALL": 0.0}
         power_threshold = power_map.get(power.upper(), 0.6)
         
@@ -85,12 +85,12 @@ async def debug_candidates(
         debug_info["filtering_stages"]["after_power_filter"] = len(power_filtered)
         print(f"DEBUG: After power {power} filter: {len(power_filtered)}")
         
-        # Stage 5: Correlation filter (simplified - just check if we have multiple props)
+        # Stage 5: Correlation filter (simplified -  check if we have multiple props)
         # In reality, this would check correlation pairs table
         correlation_map = {"HIGH": 0.8, "MEDIUM": 0.6, "LOW": 0.4, "NONE": 0.0}
         correlation_threshold = correlation_map.get(correlated.upper(), 0.6)
         
-        # For now, we'll just pass all props through correlation filter
+        # For now, we'll  pass all props through correlation filter
         final_candidates = power_filtered
         debug_info["filtering_stages"]["after_correlation_filter"] = len(final_candidates)
         print(f"DEBUG: After correlation {correlated} filter: {len(final_candidates)}")

@@ -11,7 +11,6 @@ from app.models import Player
 
 router = APIRouter(prefix="/api/players", tags=["players"])
 
-
 @router.get("/")
 async def get_players(
     limit: int = Query(default=50, le=100),
@@ -35,7 +34,6 @@ async def get_players(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/{player_id}")
 async def get_player(player_id: int, db: AsyncSession = Depends(get_db)):

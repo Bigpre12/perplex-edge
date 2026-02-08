@@ -12,7 +12,6 @@ from typing import Dict, Any
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-
 @router.get("", response_model=Dict[str, Any])
 async def get_meta():
     """Get system metadata and configuration."""
@@ -62,7 +61,6 @@ async def get_meta():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get metadata: {str(e)}")
-
 
 @router.get("/status", response_model=Dict[str, Any])
 async def get_system_status():

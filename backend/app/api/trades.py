@@ -18,10 +18,8 @@ from app.schemas.trade import (
     BulkTradeCreate, BulkTradeResult,
 )
 
-
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
 
 # =============================================================================
 # Helper Functions
@@ -102,7 +100,6 @@ async def get_team_by_name(db: AsyncSession, team_name: str, sport_id: int = 30)
     
     return None
 
-
 async def get_player_by_name(db: AsyncSession, player_name: str, sport_id: int = 30) -> Optional[Player]:
     """Find a player by name."""
     result = await db.execute(
@@ -114,7 +111,6 @@ async def get_player_by_name(db: AsyncSession, player_name: str, sport_id: int =
         )
     )
     return result.scalar_one_or_none()
-
 
 def build_trade_response(trade: Trade) -> TradeWithDetails:
     """Build a TradeWithDetails response from a Trade model."""
@@ -160,7 +156,6 @@ def build_trade_response(trade: Trade) -> TradeWithDetails:
         teams_involved=list(teams_involved),
         players_moved=players_moved,
     )
-
 
 # =============================================================================
 # Trade List & Detail Endpoints
@@ -233,7 +228,6 @@ async def list_trades(
         total=total,
     )
 
-
 @router.get("/trades/{trade_id}", response_model=TradeWithDetails, tags=["trades"])
 async def get_trade(
     trade_id: int,
@@ -255,7 +249,6 @@ async def get_trade(
         raise HTTPException(status_code=404, detail="Trade not found")
     
     return build_trade_response(trade)
-
 
 @router.get("/trades/player/{player_id}", response_model=TradeList, tags=["trades"])
 async def get_player_trade_history(
@@ -292,7 +285,6 @@ async def get_player_trade_history(
         items=[build_trade_response(t) for t in trades],
         total=len(trades),
     )
-
 
 # =============================================================================
 # Trade Create Endpoints
@@ -358,7 +350,6 @@ async def create_trade(
     
     logger.info(f"Created trade {trade.id}: {trade.headline}")
     return build_trade_response(trade)
-
 
 @router.post("/trades/bulk", response_model=BulkTradeResult, tags=["trades"])
 async def bulk_create_trades(
@@ -468,7 +459,6 @@ async def bulk_create_trades(
         errors=errors,
     )
 
-
 # =============================================================================
 # Trade Apply Endpoint
 # =============================================================================
@@ -557,7 +547,6 @@ async def _apply_trade_internal(db: AsyncSession, trade: Trade) -> dict:
         "roster_entries_deactivated": roster_deactivated,
         "details": details,
     }
-
 
 @router.post("/trades/apply/{trade_id}", response_model=TradeApplyResult, tags=["trades"])
 async def apply_trade(

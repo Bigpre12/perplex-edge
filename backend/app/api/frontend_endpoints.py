@@ -8,7 +8,6 @@ from typing import Dict, List, Any
 
 router = APIRouter(prefix="/api/frontend", tags=["frontend-mapping"])
 
-
 @router.get("/endpoint-map")
 async def get_endpoint_map():
     """Complete mapping of all frontend endpoints."""
@@ -339,7 +338,6 @@ async def get_endpoint_map():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Endpoint mapping error: {e}")
 
-
 @router.get("/validate-endpoints")
 async def validate_endpoints():
     """Validate all endpoints are working correctly."""
@@ -393,7 +391,6 @@ async def validate_endpoints():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Endpoint validation error: {e}")
-
 
 @router.get("/frontend-guide")
 async def get_frontend_guide():

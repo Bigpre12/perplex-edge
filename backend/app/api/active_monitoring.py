@@ -12,7 +12,6 @@ from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/active", tags=["active-monitoring"])
 
-
 @router.get("/status")
 async def get_active_brain_status():
     """Get current active brain status and metrics."""
@@ -31,7 +30,6 @@ async def get_active_brain_status():
             "error": str(e),
             "brain_status": {"is_running": False, "error": str(e)}
         }
-
 
 @router.get("/line-movements")
 async def get_line_movements(
@@ -89,7 +87,6 @@ async def get_line_movements(
             "error": str(e),
             "movements": []
         }
-
 
 @router.get("/opportunities")
 async def get_over_under_opportunities(
@@ -151,7 +148,6 @@ async def get_over_under_opportunities(
             "opportunities": []
         }
 
-
 @router.get("/ruled-out-players")
 async def get_ruled_out_players(db: AsyncSession = Depends(get_db)):
     """Get list of currently ruled out players (injured/out/doubtful)."""
@@ -180,7 +176,6 @@ async def get_ruled_out_players(db: AsyncSession = Depends(get_db)):
             "ruled_out_players": {"players": [], "count": 0}
         }
 
-
 @router.get("/realtime-data")
 async def get_realtime_data():
     """Get comprehensive real-time monitoring data."""
@@ -202,7 +197,6 @@ async def get_realtime_data():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "error": str(e)
         }
-
 
 @router.post("/start-monitoring")
 async def start_monitoring():
@@ -231,7 +225,6 @@ async def start_monitoring():
             "error": str(e),
             "message": "Failed to start monitoring"
         }
-
 
 @router.post("/stop-monitoring")
 async def stop_monitoring():

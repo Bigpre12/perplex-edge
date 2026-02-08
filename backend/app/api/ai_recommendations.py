@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
 # =============================================================================
 # Request / Response Models
 # =============================================================================
@@ -29,7 +28,6 @@ class AIRecommendationsRequest(BaseModel):
     books: Optional[list[str]] = Field(None, description="Preferred sportsbooks")
     markets: Optional[list[str]] = Field(None, description="Stat types to include (PTS, REB, AST, etc.)")
     max_props: int = Field(30, ge=1, le=100, description="Max props to analyze")
-
 
 # =============================================================================
 # Endpoints

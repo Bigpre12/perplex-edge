@@ -11,7 +11,6 @@ from app.models import Team
 
 router = APIRouter(prefix="/api/teams", tags=["teams"])
 
-
 @router.get("/")
 async def get_teams(
     limit: int = Query(default=50, le=100),
@@ -35,7 +34,6 @@ async def get_teams(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/{team_id}")
 async def get_team(team_id: int, db: AsyncSession = Depends(get_db)):

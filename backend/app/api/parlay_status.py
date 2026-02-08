@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/parlay-status", tags=["parlay-status"])
 
-
 @router.get("/comprehensive")
 async def get_comprehensive_status(
     db: AsyncSession = Depends(get_db)

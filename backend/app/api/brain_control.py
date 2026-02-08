@@ -11,7 +11,6 @@ from app.services.self_healing_brain import self_healing_brain
 
 router = APIRouter(prefix="/api/brain", tags=["brain-control"])
 
-
 @router.get("/status")
 async def get_brain_status():
     """Get current brain status and capabilities."""
@@ -34,7 +33,6 @@ async def get_brain_status():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Brain status error: {e}")
-
 
 @router.post("/start")
 async def start_brain():
@@ -62,7 +60,6 @@ async def start_brain():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Brain start error: {e}")
 
-
 @router.post("/stop")
 async def stop_brain():
     """Stop the self-healing brain."""
@@ -78,7 +75,6 @@ async def stop_brain():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Brain stop error: {e}")
-
 
 @router.post("/heal")
 async def trigger_heal():
@@ -102,7 +98,6 @@ async def trigger_heal():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Healing trigger error: {e}")
 
-
 @router.post("/update-rosters")
 async def update_rosters():
     """Force roster update with 2026 trades."""
@@ -120,7 +115,6 @@ async def update_rosters():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Roster update error: {e}")
-
 
 @router.get("/capabilities")
 async def get_brain_capabilities():
@@ -180,7 +174,6 @@ async def get_brain_capabilities():
         "advanced_features": "limitless_possibilities_enabled"
     }
 
-
 @router.get("/intelligence-report")
 async def get_intelligence_report():
     """Get comprehensive brain intelligence report."""
@@ -195,7 +188,6 @@ async def get_intelligence_report():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Intelligence report error: {e}")
-
 
 @router.post("/trigger-learning")
 async def trigger_learning_cycle():
@@ -212,7 +204,6 @@ async def trigger_learning_cycle():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Learning trigger error: {e}")
-
 
 @router.get("/logs")
 async def get_brain_logs():

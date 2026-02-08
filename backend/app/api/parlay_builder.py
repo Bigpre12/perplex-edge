@@ -14,7 +14,6 @@ from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/parlays", tags=["parlays"])
 
-
 @router.get("/")
 async def get_parlays(
     sport_id: int = Query(None, description="Filter by sport ID"),
@@ -130,7 +129,6 @@ async def get_parlays(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/build")
 async def build_parlays(
@@ -263,7 +261,6 @@ async def build_parlays(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/sports")
 async def get_sports_parlays(
     sport_id: int = Query(..., description="Sport ID (required)"),
@@ -273,8 +270,12 @@ async def get_sports_parlays(
     db: AsyncSession = Depends(get_db)
 ):
     """Get sport-specific parlays."""
-    return await build_parlays(sport_id=sport_id, leg_count=2, min_ev=min_ev, min_confidence=min_confidence, limit=limit, db=db)
-
+    return await build_parlays(sport_id=sport_id,
+        leg_count=2,
+        min_ev=min_ev,
+        min_confidence=min_confidence,
+        limit=limit,
+        db=db)
 
 @router.get("/player-props")
 async def get_player_props_parlays(

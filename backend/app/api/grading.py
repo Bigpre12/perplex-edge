@@ -18,12 +18,10 @@ from app.models import ModelPick
 router = APIRouter(prefix="/api/grading", tags=["grading"])
 logger = logging.getLogger(__name__)
 
-
 @router.get("/health")
 async def grading_health():
     """Simple health check that doesn't need database"""
     return {"status": "ok", "router": "grading", "timestamp": datetime.now(timezone.utc).isoformat()}
-
 
 @router.post("/grade-picks")
 async def grade_completed_picks(
@@ -156,7 +154,6 @@ def get_model_recommendations(status: str, grading_stats: dict, backtest_results
     
     return recommendations
 
-
 @router.get("/debug/picks-status")
 async def debug_picks_status(db: AsyncSession = Depends(get_db)):
     """Check current state of picks in database."""
@@ -195,7 +192,6 @@ async def debug_picks_status(db: AsyncSession = Depends(get_db)):
             "message": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
 
 @router.post("/admin/activate-test-picks")
 async def activate_test_picks(
@@ -252,7 +248,6 @@ async def activate_test_picks(
             "message": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
 
 @router.post("/admin/delete-bad-picks")
 async def delete_bad_picks(db: AsyncSession = Depends(get_db)):

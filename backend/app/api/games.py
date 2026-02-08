@@ -18,7 +18,6 @@ router = APIRouter()
 # Eastern timezone (handles DST automatically)
 EASTERN_TZ = ZoneInfo("America/New_York")
 
-
 @router.get("", response_model=GameList)
 async def list_games(
     sport: Optional[str] = Query(None, description="Filter by sport (NBA, NFL, etc.)"),
@@ -63,7 +62,6 @@ async def list_games(
         total=total or 0,
     )
 
-
 @router.get("/today", response_model=GameList)
 async def list_todays_games(
     sport: Optional[str] = Query(None),
@@ -96,7 +94,6 @@ async def list_todays_games(
         items=[GameWithTeams.model_validate(g) for g in games],
         total=len(games),
     )
-
 
 @router.get("/{game_id}", response_model=GameWithOdds)
 async def get_game(

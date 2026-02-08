@@ -13,7 +13,6 @@ from app.services.parlay_service import build_parlay_legs, calculate_grade, grad
 
 router = APIRouter(prefix="/api/debug-parlay", tags=["debug-parlay"])
 
-
 @router.get("/step-by-step")
 async def debug_parlay_step_by_step(
     sport_id: int = Query(30),

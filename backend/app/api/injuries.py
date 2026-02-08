@@ -13,7 +13,6 @@ from app.schemas.injury import InjuryList, InjuryWithPlayer
 
 router = APIRouter()
 
-
 @router.get("", response_model=InjuryList)
 async def list_injuries(
     sport: Optional[str] = Query(None, description="Filter by sport"),
@@ -73,7 +72,6 @@ async def list_injuries(
 
     return InjuryList(items=items, total=total or 0)
 
-
 @router.get("/by-game/{game_id}", response_model=InjuryList)
 async def get_injuries_by_game(
     game_id: int,
@@ -124,7 +122,6 @@ async def get_injuries_by_game(
         ))
 
     return InjuryList(items=items, total=len(items))
-
 
 @router.get("/statuses")
 async def list_injury_statuses():

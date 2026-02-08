@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/debug-raw-service", tags=["debug-raw-service"])
 
-
 @router.get("/detailed-debug")
 async def debug_raw_service_detailed(
     sport_id: int = Query(30),

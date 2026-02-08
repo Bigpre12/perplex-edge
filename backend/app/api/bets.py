@@ -33,7 +33,6 @@ from app.models import UserBet, Sport, Player
 
 router = APIRouter(prefix="/bets", tags=["bets"])
 
-
 # =============================================================================
 # Bet CRUD Endpoints
 # =============================================================================
@@ -89,7 +88,6 @@ async def log_bet(
         updated_at=bet.updated_at,
     )
 
-
 @router.post("/from-pick", response_model=BetResponse)
 async def log_bet_from_pick(
     data: QuickBetFromPick,
@@ -136,7 +134,6 @@ async def log_bet_from_pick(
         updated_at=bet.updated_at,
     )
 
-
 @router.get("", response_model=BetList)
 async def get_bets(
     sport_id: Optional[int] = Query(None, description="Filter by sport"),
@@ -169,7 +166,6 @@ async def get_bets(
     
     return await list_bets(db, filters)
 
-
 # =============================================================================
 # Statistics Endpoints
 # =============================================================================
@@ -194,7 +190,6 @@ async def get_stats_summary(
     """
     return await get_bet_stats(db, sport_id=sport_id, days_back=days_back)
 
-
 @router.get("/stats/clv-history", response_model=CLVHistoryResponse)
 async def get_clv_history_chart(
     sport_id: Optional[int] = Query(None, description="Filter by sport"),
@@ -208,7 +203,6 @@ async def get_clv_history_chart(
     whether you're consistently beating closing lines.
     """
     return await get_clv_history(db, sport_id=sport_id, days_back=days_back)
-
 
 # =============================================================================
 # Utility Endpoints
@@ -236,7 +230,6 @@ async def list_sportsbooks(db: AsyncSession = Depends(get_db)):
     
     return {"sportsbooks": sorted(sportsbooks)}
 
-
 @router.get("/market-types")
 async def list_market_types(db: AsyncSession = Depends(get_db)):
     """
@@ -262,7 +255,6 @@ async def list_market_types(db: AsyncSession = Depends(get_db)):
             market_types.append(mt)
     
     return {"market_types": sorted(market_types)}
-
 
 # =============================================================================
 # Session Report Endpoint
@@ -305,7 +297,6 @@ async def get_session_report(
         date_to=date_to,
         sport_id=sport_id,
     )
-
 
 # =============================================================================
 # Individual Bet Endpoints (must be AFTER all named routes)
@@ -352,7 +343,6 @@ async def get_single_bet(
         created_at=bet.created_at,
         updated_at=bet.updated_at,
     )
-
 
 @router.patch("/{bet_id}/settle", response_model=BetResponse)
 async def settle_single_bet(
@@ -406,7 +396,6 @@ async def settle_single_bet(
         updated_at=bet.updated_at,
     )
 
-
 @router.delete("/{bet_id}")
 async def remove_bet(
     bet_id: int,
@@ -419,5 +408,4 @@ async def remove_bet(
         raise HTTPException(status_code=404, detail=f"Bet {bet_id} not found")
     
     return {"status": "deleted", "bet_id": bet_id}
-
 

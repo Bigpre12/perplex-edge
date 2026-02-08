@@ -23,7 +23,6 @@ from app.services.etl_historical import (
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
-
 # =============================================================================
 # Hit Rate Endpoints
 # =============================================================================
@@ -52,7 +51,6 @@ async def get_player_hit_rates(
         logger.error(f"Error fetching hit rates for player {player_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
-
 # =============================================================================
 # EV Performance Endpoints
 # =============================================================================
@@ -78,7 +76,6 @@ async def get_ev_performance(
     except Exception as e:
         logger.error(f"Error calculating EV performance: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 # =============================================================================
 # Trends Endpoints
@@ -110,7 +107,6 @@ async def get_odds_trends(
     except Exception as e:
         logger.error(f"Error fetching trends for player {player_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 # =============================================================================
 # Strategy Backtester Endpoint
@@ -175,7 +171,6 @@ async def run_backtest(
             "error": str(e)[:200],
             "sample_quality": "insufficient",
         }
-
 
 # =============================================================================
 # Market Performance Endpoint
@@ -315,7 +310,6 @@ async def get_market_performance(
             detail=f"Market performance query failed: {type(e).__name__}"
         )
 
-
 # =============================================================================
 # Dashboard Endpoint
 # =============================================================================
@@ -359,7 +353,6 @@ async def get_dashboard(
     except Exception as e:
         logger.error(f"Error fetching dashboard: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 # =============================================================================
 # Sync Endpoints (Manual Triggers)
@@ -411,7 +404,6 @@ async def trigger_historical_sync(
         logger.error(f"Error running historical sync: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
-
 @router.post("/sync/odds")
 async def trigger_historical_odds_sync(
     sport: str = Query("nba", description="Sport to sync"),
@@ -450,7 +442,6 @@ async def trigger_historical_odds_sync(
     except Exception as e:
         logger.error(f"Error syncing historical odds: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 @router.post("/sync/results")
 async def trigger_results_sync(

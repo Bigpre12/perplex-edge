@@ -13,7 +13,6 @@ from app.schemas.line import LineList, LineRead, LineComparison, BookmakerLine
 
 router = APIRouter()
 
-
 @router.get("", response_model=LineList)
 async def list_lines(
     game_id: Optional[int] = Query(None, description="Filter by game"),
@@ -54,7 +53,6 @@ async def list_lines(
         items=[LineRead.model_validate(line) for line in lines],
         total=total or 0,
     )
-
 
 @router.get("/compare/{game_id}", response_model=list[LineComparison])
 async def compare_lines(
@@ -129,7 +127,6 @@ async def compare_lines(
         ))
 
     return comparisons
-
 
 @router.get("/best", response_model=list[LineComparison])
 async def get_best_lines(

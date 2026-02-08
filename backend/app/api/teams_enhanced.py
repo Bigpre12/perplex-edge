@@ -12,7 +12,6 @@ from app.models import Team, Sport, Player
 
 router = APIRouter(prefix="/api/teams", tags=["teams"])
 
-
 @router.get("/")
 async def get_teams(
     sport_id: int = Query(None, description="Filter by sport ID"),
@@ -101,7 +100,6 @@ async def get_teams(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/{team_id}")
 async def get_team(team_id: int, db: AsyncSession = Depends(get_db)):
     """Get specific team with full details and roster."""
@@ -165,7 +163,6 @@ async def get_team(team_id: int, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/search/{search_term}")
 async def search_teams(
     search_term: str,
@@ -223,7 +220,6 @@ async def search_teams(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/sport/{sport_id}")
 async def get_sport_teams(
@@ -292,7 +288,6 @@ async def get_sport_teams(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/conference/{sport_id}/{conference}")
 async def get_conference_teams(
     sport_id: int,
@@ -350,7 +345,6 @@ async def get_conference_teams(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/{team_id}/roster")
 async def get_team_roster(

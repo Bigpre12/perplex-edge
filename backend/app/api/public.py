@@ -40,7 +40,6 @@ router = APIRouter()
 # Eastern timezone (handles DST automatically)
 EASTERN_TZ = ZoneInfo("America/New_York")
 
-
 # =============================================================================
 # Helper Functions for Per-Book Line Comparison
 # =============================================================================
@@ -54,7 +53,6 @@ def calculate_ev_for_odds(model_prob: float, odds: int) -> float:
     
     ev = (model_prob * profit) - ((1 - model_prob) * 1)
     return round(ev, 4)
-
 
 async def get_book_lines_for_pick(
     db: AsyncSession,
@@ -116,7 +114,6 @@ async def get_book_lines_for_pick(
     
     return book_lines, best_book, line_variance
 
-
 # =============================================================================
 # Sports Endpoints
 # =============================================================================
@@ -153,7 +150,6 @@ async def list_sports(
     
     return response
 
-
 # =============================================================================
 # Sport Availability Endpoint
 # =============================================================================
@@ -183,7 +179,6 @@ async def get_sports_availability():
             "ncaaf": "College football is seasonal (August-January). No data available during off-season.",
         }
     }
-
 
 @router.get("/sports/{sport_id}/availability", tags=["public"])
 async def get_sport_availability(
@@ -261,7 +256,6 @@ async def get_sport_availability(
         "data_reason": reason,
         "tennis_note": "Tennis uses tournament-specific APIs. Check /sports/availability for active tournaments." if "tennis" in sport_key else None,
     }
-
 
 # =============================================================================
 # Tonight Summary Endpoint (What's On Tonight Dashboard)
@@ -388,7 +382,6 @@ async def get_tonight_summary(
         slate_quality=overall_quality,
     )
 
-
 # =============================================================================
 # Hot/Cold Players Endpoints
 # =============================================================================
@@ -426,7 +419,6 @@ async def get_hot_cold_players_endpoint(
             "limit": limit,
         },
     }
-
 
 @router.get("/players/hot-cold/by-market", tags=["public"])
 async def get_hot_cold_players_by_market_endpoint(
@@ -470,7 +462,6 @@ async def get_hot_cold_players_by_market_endpoint(
             "limit": limit,
         },
     }
-
 
 # =============================================================================
 # Games Endpoints
@@ -543,7 +534,6 @@ async def list_games_today(
     
     return PublicGameList(items=games, total=len(games))
 
-
 # =============================================================================
 # Markets Endpoints
 # =============================================================================
@@ -551,7 +541,11 @@ async def list_games_today(
 @router.get("/sports/{sport_id}/markets", response_model=PublicMarketList, tags=["public"])
 async def list_markets(
     sport_id: int,
-    market_type: Optional[str] = Query(None, description="Filter by market type (spread, total, moneyline, player_prop)"),
+    market_type: Optional[str] = Query(None,
+        description="Filter by market type (spread,
+        total,
+        moneyline,
+        player_prop)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -579,22 +573,27 @@ async def list_markets(
         total=len(markets),
     )
 
-
 # =============================================================================
 # Player Prop Picks Endpoints
 # =============================================================================
 
-@router.get("/sports/{sport_id}/picks/player-props", response_model=PlayerPropPickList, tags=["public"], dependencies=[Depends(picks_rate_limit)])
+@router.get("/sports/{sport_id}/picks/player-props",
+    response_model=PlayerPropPickList,
+    tags=["public"],
+    dependencies=[Depends(picks_rate_limit)])
 async def list_player_prop_picks(
     sport_id: int,
     stat_type: Optional[str] = Query(None, description="Filter by stat type (PTS, REB, AST, 3PM, PRA, etc.)"),
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
-    risk_levels: Optional[str] = Query(None, description="Comma-separated Kelly risk levels: NO_BET,SMALL,STANDARD,CONFIDENT,STRONG,MAX"),
+    risk_levels: Optional[str] = Query(None,
+        description="Comma-separated Kelly risk levels: NO_BET,SMALL,STANDARD,CONFIDENT,STRONG,MAX"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
     player_id: Optional[int] = Query(None, description="Filter by specific player"),
     side: Optional[str] = Query(None, description="Filter by side (over/under)"),
-    fresh_only: bool = Query(True, description="Filter out stale props (games started, old picks). Set to false to show all."),
+    fresh_only: bool = Query(True,
+        description="Filter out stale props (games started,
+        old picks). Set to false to show all."),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -1047,19 +1046,23 @@ async def list_player_prop_picks(
         },
     )
 
-
 # =============================================================================
 # Game Line Picks Endpoints
 # =============================================================================
 
-@router.get("/sports/{sport_id}/picks/game-lines", response_model=GameLinePickList, tags=["public"], dependencies=[Depends(picks_rate_limit)])
+@router.get("/sports/{sport_id}/picks/game-lines",
+    response_model=GameLinePickList,
+    tags=["public"],
+    dependencies=[Depends(picks_rate_limit)])
 async def list_game_line_picks(
     sport_id: int,
     market_type: Optional[str] = Query(None, description="Filter by market type (spread, total, moneyline)"),
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence score (0-1)"),
     min_ev: float = Query(0.0, description="Minimum expected value (e.g., 0.03 for 3%)"),
     game_id: Optional[int] = Query(None, description="Filter by specific game"),
-    fresh_only: bool = Query(True, description="Filter out stale picks (games started, old picks). Set to false to show all."),
+    fresh_only: bool = Query(True,
+        description="Filter out stale picks (games started,
+        old picks). Set to false to show all."),
     limit: int = Query(50, ge=1, le=200, description="Maximum results to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
@@ -1207,7 +1210,6 @@ async def list_game_line_picks(
         },
     )
 
-
 # =============================================================================
 # Debug Endpoint
 # =============================================================================
@@ -1290,7 +1292,6 @@ async def debug_picks(
         "picks": picks_data,
     }
 
-
 # =============================================================================
 # 100% Hit Rate Props Endpoint
 # =============================================================================
@@ -1300,7 +1301,11 @@ async def list_100_percent_props(
     sport_id: int,
     window: str = Query("last_5", description="Time window: season, last_10, last_5"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
-    min_hit_rate: float = Query(0.70, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.70 = 70%)"),
+    min_hit_rate: float = Query(0.70,
+        ge=0.0,
+        le=1.0,
+        description="Minimum hit rate fallback (0-1,
+        default 0.70 = 70%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -1360,14 +1365,17 @@ async def list_100_percent_props(
             window=window,
         )
 
-
 # Convenience endpoint alias
 @router.get("/hitrate/100", tags=["public"])
 async def hitrate_100_alias(
     sport: str = Query(..., description="Sport key (nba, ncaab, nfl) or sport_id"),
     window: str = Query("last_5", description="Time window: season, last_10, last_5"),
     limit: int = Query(50, ge=1, le=100, description="Maximum results"),
-    min_hit_rate: float = Query(0.70, ge=0.0, le=1.0, description="Minimum hit rate fallback (0-1, default 0.70 = 70%)"),
+    min_hit_rate: float = Query(0.70,
+        ge=0.0,
+        le=1.0,
+        description="Minimum hit rate fallback (0-1,
+        default 0.70 = 70%)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -1435,7 +1443,6 @@ async def hitrate_100_alias(
             total=0,
             window=window,
         )
-
 
 # =============================================================================
 # Parlay Builder Endpoint
@@ -1543,7 +1550,6 @@ async def build_parlay(
             },
         )
 
-
 # =============================================================================
 # Auto-Generate Optimal Slips Endpoint
 # =============================================================================
@@ -1642,7 +1648,6 @@ async def auto_generate_slips(
             slate_quality="PASS",
         )
 
-
 # =============================================================================
 # Real-Time Parlay Quote Endpoint
 # =============================================================================
@@ -1734,7 +1739,6 @@ async def quote_parlay(
         logger.error(f"Quote parlay error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to quote parlay: {str(e)[:200]}")
 
-
 @router.get("/parlays/odds-health", tags=["public"])
 async def get_odds_health(
     sport_id: Optional[int] = Query(None, description="Optional sport ID filter"),
@@ -1779,7 +1783,6 @@ async def get_odds_health(
             "checked_at": datetime.utcnow().isoformat(),
         }
 
-
 # =============================================================================
 # Alt-Line Explorer Endpoint
 # =============================================================================
@@ -1817,7 +1820,6 @@ async def explore_alt_lines(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 # =============================================================================
 # Metadata Endpoints
 # =============================================================================
@@ -1838,7 +1840,6 @@ async def get_data_freshness(
     
     return await get_frontend_meta(db)
 
-
 @router.get("/meta/{sport_key}", tags=["public"])
 async def get_sport_freshness(
     sport_key: str,
@@ -1855,7 +1856,12 @@ async def get_sport_freshness(
     """
     from app.services.sync_metadata_service import get_sync_metadata
     
-    VALID_SPORTS = ["basketball_nba", "basketball_ncaab", "americanfootball_nfl", "baseball_mlb", "tennis_atp", "tennis_wta"]
+    VALID_SPORTS = ["basketball_nba",
+        "basketball_ncaab",
+        "americanfootball_nfl",
+        "baseball_mlb",
+        "tennis_atp",
+        "tennis_wta"]
     
     if sport_key not in VALID_SPORTS:
         raise HTTPException(
@@ -1878,7 +1884,7 @@ async def get_sport_freshness(
     
     if hours_ago is not None:
         if hours_ago < 1:
-            relative = "just now"
+            relative = " now"
         elif hours_ago < 24:
             relative = f"{int(hours_ago)}h ago"
         else:
@@ -1898,7 +1904,6 @@ async def get_sport_freshness(
         "sync_duration_seconds": metadata.sync_duration_seconds,
         "is_healthy": metadata.is_healthy,
     }
-
 
 # =============================================================================
 # Debug/Diagnostic Endpoint

@@ -14,7 +14,6 @@ from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/simple-parlays", tags=["simple-parlays"])
 
-
 @router.get("/")
 async def get_simple_parlays(
     sport_id: int = Query(None, description="Filter by sport ID"),
@@ -123,7 +122,6 @@ async def get_simple_parlays(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/available-picks")
 async def get_available_picks(
     sport_id: int = Query(None, description="Filter by sport ID"),
@@ -186,7 +184,6 @@ async def get_available_picks(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/build")
 async def build_simple_parlays(

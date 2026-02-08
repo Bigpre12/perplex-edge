@@ -12,7 +12,6 @@ from app.models import Player, Team, Sport, Game, ModelPick
 
 router = APIRouter(prefix="/api/statistics", tags=["statistics"])
 
-
 @router.get("/players/{player_id}")
 async def get_player_statistics(
     player_id: int,
@@ -124,7 +123,6 @@ async def get_player_statistics(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/players/{player_id}/career")
 async def get_player_career_stats(player_id: int, db: AsyncSession = Depends(get_db)):
     """Get career summary statistics for a player."""
@@ -210,7 +208,6 @@ async def get_player_career_stats(player_id: int, db: AsyncSession = Depends(get
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/teams/{team_id}")
 async def get_team_statistics(
@@ -319,7 +316,6 @@ async def get_team_statistics(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/league/leaders")
 async def get_league_leaders(
     category: str = Query(default="points_per_game", description="Statistical category"),
@@ -402,7 +398,6 @@ async def get_league_leaders(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/season/{season}/summary")
 async def get_season_summary(season: int, db: AsyncSession = Depends(get_db)):

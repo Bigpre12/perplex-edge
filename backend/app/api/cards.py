@@ -14,7 +14,6 @@ from app.models import SharedCard
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/cards", tags=["Cards"])
 
-
 # =============================================================================
 # Pydantic Schemas
 # =============================================================================
@@ -31,7 +30,6 @@ class CardLeg(BaseModel):
     win_prob: float
     edge: float
 
-
 class CreateCardRequest(BaseModel):
     """Request to create a shareable card."""
     platform: str
@@ -45,7 +43,6 @@ class CreateCardRequest(BaseModel):
     label: str
     kelly_suggested_units: Optional[float]
     kelly_risk_level: Optional[str]
-
 
 class CardResponse(BaseModel):
     """Response for a shared card."""
@@ -68,7 +65,6 @@ class CardResponse(BaseModel):
     settled: bool
     won: Optional[bool]
 
-
 # =============================================================================
 # Helper Functions
 # =============================================================================
@@ -76,7 +72,6 @@ class CardResponse(BaseModel):
 def generate_card_id() -> str:
     """Generate a short, URL-safe card ID."""
     return secrets.token_urlsafe(8)[:10]
-
 
 # =============================================================================
 # Endpoints
@@ -147,7 +142,6 @@ async def create_card(
         settled=card.settled,
         won=card.won,
     )
-
 
 @router.get("/{card_id}", response_model=CardResponse)
 async def get_card(

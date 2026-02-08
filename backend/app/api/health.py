@@ -17,7 +17,6 @@ from app.models import Sport, Game, Player
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-
 @router.get("", response_model=Dict[str, Any])
 async def health_check(db: AsyncSession = Depends(get_db)):
     """Comprehensive health check."""
@@ -69,7 +68,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
-
 
 @router.get("/detailed", response_model=Dict[str, Any])
 async def detailed_health_check(db: AsyncSession = Depends(get_db)):
@@ -123,7 +121,6 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
         logger.error(f"Detailed health check failed: {e}")
         raise HTTPException(status_code=500, detail=f"Detailed health check failed: {str(e)}")
 
-
 @router.get("/ping", response_model=Dict[str, str])
 async def ping():
     """Simple ping endpoint for load balancers."""
@@ -131,7 +128,6 @@ async def ping():
         "status": "pong",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
-
 
 @router.get("/ready", response_model=Dict[str, Any])
 async def readiness_check(db: AsyncSession = Depends(get_db)):

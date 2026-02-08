@@ -12,7 +12,6 @@ from app.models import Player, Team, Sport, ModelPick
 
 router = APIRouter(prefix="/api/players", tags=["players"])
 
-
 @router.get("/")
 async def get_players(
     sport_id: int = Query(None, description="Filter by sport ID"),
@@ -100,7 +99,6 @@ async def get_players(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/{player_id}")
 async def get_player(player_id: int, db: AsyncSession = Depends(get_db)):
     """Get specific player with full details."""
@@ -171,7 +169,6 @@ async def get_player(player_id: int, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/search/{search_term}")
 async def search_players(
     search_term: str,
@@ -230,7 +227,6 @@ async def search_players(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/team/{team_id}")
 async def get_team_players(
     team_id: int,
@@ -280,7 +276,6 @@ async def get_team_players(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/sport/{sport_id}")
 async def get_sport_players(

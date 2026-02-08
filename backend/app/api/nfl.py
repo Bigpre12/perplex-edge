@@ -26,7 +26,6 @@ from app.services.nfl_backup import (
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/nfl", tags=["NFL"])
 
-
 # =============================================================================
 # Live Odds Endpoints
 # =============================================================================
@@ -54,7 +53,6 @@ async def get_nfl_live_odds(
         logger.error(f"Error fetching live NFL odds: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
-
 @router.post("/odds/sync")
 async def sync_odds(
     db: AsyncSession = Depends(get_db),
@@ -76,7 +74,6 @@ async def sync_odds(
     except Exception as e:
         logger.error(f"Error syncing NFL odds: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 @router.post("/games/sync")
 async def sync_nfl_games(
@@ -140,7 +137,6 @@ async def sync_nfl_games(
         logger.error(f"Error syncing NFL games: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
-
 # =============================================================================
 # Historical Odds Endpoints
 # =============================================================================
@@ -184,7 +180,6 @@ async def get_nfl_historical_odds(
         logger.error(f"Error fetching historical NFL odds: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
-
 @router.post("/odds/snapshot")
 async def create_snapshot(
     snapshot_date: Optional[date] = Query(None, description="Snapshot date (defaults to today)"),
@@ -204,7 +199,6 @@ async def create_snapshot(
     except Exception as e:
         logger.error(f"Error creating snapshot: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 # =============================================================================
 # Results & Hit Rates Endpoints
@@ -233,7 +227,6 @@ async def set_game_result(
     except Exception as e:
         logger.error(f"Error setting game result: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 @router.get("/hit-rates")
 async def get_hit_rates(
@@ -265,7 +258,6 @@ async def get_hit_rates(
         logger.error(f"Error calculating hit rates: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
-
 # =============================================================================
 # Backup Management Endpoints
 # =============================================================================
@@ -287,7 +279,6 @@ async def get_backups(
         logger.error(f"Error listing backups: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
-
 @router.get("/backups/check/{backup_date}")
 async def check_backup(backup_date: date):
     """
@@ -298,7 +289,6 @@ async def check_backup(backup_date: date):
         "date": backup_date.isoformat(),
         "exists": exists,
     }
-
 
 @router.delete("/backups/cleanup")
 async def cleanup_old_backups(
@@ -317,7 +307,6 @@ async def cleanup_old_backups(
     except Exception as e:
         logger.error(f"Error cleaning up backups: {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
-
 
 # =============================================================================
 # Setup Endpoint

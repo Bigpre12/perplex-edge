@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/debug-timestamps", tags=["debug-timestamps"])
 
-
 @router.get("/check-data")
 async def check_data_timestamps(
     sport_id: int = 30,
@@ -130,7 +129,6 @@ async def check_data_timestamps(
             "error": str(e),
             "sport_id": sport_id
         }
-
 
 @router.get("/test-sql-variations")
 async def test_sql_variations(

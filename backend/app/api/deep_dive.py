@@ -17,7 +17,6 @@ from app.services.deep_dive_service import deep_dive_service
 
 router = APIRouter()
 
-
 @router.get("/injuries", tags=["deep-dive"])
 async def get_injury_analysis(
     sport_id: int = Query(..., description="Sport ID (30=NBA, 31=NFL, etc.)"),
@@ -60,7 +59,6 @@ async def get_injury_analysis(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze injuries: {str(e)}")
 
-
 @router.get("/starters", tags=["deep-dive"])
 async def get_starter_changes(
     sport_id: int = Query(..., description="Sport ID (30=NBA, 31=NFL, etc.)"),
@@ -99,7 +97,6 @@ async def get_starter_changes(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze starter changes: {str(e)}")
 
-
 @router.get("/matchup/{game_id}", tags=["deep-dive"])
 async def get_matchup_analysis(
     game_id: str,
@@ -137,7 +134,6 @@ async def get_matchup_analysis(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze matchup: {str(e)}")
 
-
 @router.get("/sentiment/{game_id}", tags=["deep-dive"])
 async def get_market_sentiment(
     game_id: str,
@@ -168,7 +164,6 @@ async def get_market_sentiment(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze market sentiment: {str(e)}")
 
-
 @router.get("/comprehensive", tags=["deep-dive"])
 async def get_comprehensive_analysis(
     sport_id: int = Query(..., description="Sport ID (30=NBA, 31=NFL, etc.)"),
@@ -195,7 +190,6 @@ async def get_comprehensive_analysis(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get comprehensive analysis: {str(e)}")
-
 
 @router.get("/impact-alerts", tags=["deep-dive"])
 async def get_impact_alerts(

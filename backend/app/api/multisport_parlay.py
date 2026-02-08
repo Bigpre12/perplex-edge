@@ -11,7 +11,6 @@ from app.services.parlay_service_multisport import build_parlays_multisport, get
 
 router = APIRouter(prefix="/api/multisport", tags=["multisport"])
 
-
 @router.get("/supported-sports")
 async def get_supported_sports_endpoint(
     db: AsyncSession = Depends(get_db)
@@ -29,7 +28,6 @@ async def get_supported_sports_endpoint(
             "error": str(e),
             "supported_sports": []
         }
-
 
 @router.get("/sports/{sport_id}/parlays/builder")
 async def build_multisport_parlay(

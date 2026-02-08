@@ -38,7 +38,6 @@ SLATE_SPORT_IDS = [
     80,               # UFC
 ]
 
-
 # =============================================================================
 # Schemas
 # =============================================================================
@@ -52,13 +51,11 @@ class SportSlate(BaseModel):
     count: int
     props: list[PlayerPropPick]
 
-
 class FullSlateResponse(BaseModel):
     """Full slate response with props grouped by sport."""
     date: str
     total_props: int
     sports: list[SportSlate]
-
 
 # =============================================================================
 # Helper Functions
@@ -73,7 +70,6 @@ def calculate_ev_for_odds(model_prob: float, odds: int) -> float:
     
     ev = (model_prob * profit) - ((1 - model_prob) * 1)
     return round(ev, 4)
-
 
 async def get_props_for_sport(
     db: AsyncSession,
@@ -300,7 +296,6 @@ async def get_props_for_sport(
     picks = dedupe_player_props(picks)
     
     return picks
-
 
 # =============================================================================
 # Endpoints

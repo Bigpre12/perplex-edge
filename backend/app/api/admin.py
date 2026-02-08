@@ -43,7 +43,6 @@ router = APIRouter()
 _last_refresh_times: Dict[str, datetime] = {}
 MANUAL_REFRESH_COOLDOWN_SECONDS = 300  # 5 minutes between manual refreshes
 
-
 # =============================================================================
 # Available Sport Keys
 # =============================================================================
@@ -73,7 +72,6 @@ AVAILABLE_SPORTS = [
     "mma_mixed_martial_arts",
 ]
 
-
 # =============================================================================
 # Quota Management Endpoints
 # =============================================================================
@@ -100,7 +98,6 @@ async def get_api_quota():
             "buffer_remaining": quota["remaining"] - 180 if quota["remaining"] > 180 else 0,
         }
     }
-
 
 # =============================================================================
 # Cache Management Endpoints
@@ -134,7 +131,6 @@ async def clear_cache():
             "message": "Memory cache module not available",
             "note": "No cache to clear",
         }
-
 
 @router.get("/season-info")
 async def get_season_info():
@@ -191,7 +187,6 @@ async def get_season_info():
             },
         },
     }
-
 
 @router.post("/jobs/sync-quota-safe")
 async def run_quota_safe_sync(
@@ -258,7 +253,6 @@ async def run_quota_safe_sync(
             },
         )
 
-
 # =============================================================================
 # Debug Endpoint (Check Schedule Files)
 # =============================================================================
@@ -316,7 +310,6 @@ async def debug_schedules():
     
     return result
 
-
 # =============================================================================
 # Force Refresh Endpoint (Clear + Sync)
 # =============================================================================
@@ -329,7 +322,7 @@ async def browser_force_refresh(
     """
     Browser-friendly GET endpoint to force refresh data.
     
-    Just open in browser:
+     open in browser:
     - /admin/jobs/refresh/basketball_nba
     - /admin/jobs/refresh/basketball_ncaab  
     - /admin/jobs/refresh/americanfootball_nfl
@@ -381,7 +374,6 @@ async def browser_force_refresh(
         import traceback
         return {"status": "error", "sport": sport, "error": str(e), "traceback": traceback.format_exc()}
 
-
 @router.get("/jobs/manual-refresh/{sport}")
 async def manual_refresh_live(
     sport: str,
@@ -400,7 +392,7 @@ async def manual_refresh_live(
     4. Fall back to stubs if API unavailable
     5. Generate fresh picks
     
-    Browser-friendly: just open in browser.
+    Browser-friendly:  open in browser.
     """
     global _last_refresh_times
     
@@ -475,7 +467,6 @@ async def manual_refresh_live(
             "error": str(e),
             "traceback": traceback.format_exc(),
         }
-
 
 @router.post("/jobs/force-refresh")
 async def force_refresh_games(
@@ -554,7 +545,6 @@ async def force_refresh_games(
             },
         )
 
-
 # =============================================================================
 # Discord Alert Endpoints
 # =============================================================================
@@ -578,7 +568,8 @@ async def test_discord_alert():
     # Send test message
     embed = create_embed(
         title="Test Alert",
-        description="This is a test alert from Perplex Edge. If you see this, your Discord webhook is configured correctly!",
+        description="This is a test alert from Perplex Edge. If you see this,
+            your Discord webhook is configured correctly!",
         color=0x00FF00,  # Green
         footer="Perplex Edge | Test Alert",
     )
@@ -589,7 +580,6 @@ async def test_discord_alert():
         "status": "sent" if success else "failed",
         "message": "Test alert sent to Discord" if success else "Failed to send alert",
     }
-
 
 @router.get("/alerts/test-high-ev")
 async def test_high_ev_alert(
@@ -625,7 +615,6 @@ async def test_high_ev_alert(
         "message": "Sample high-EV alert sent" if success else "Failed to send alert",
     }
 
-
 # =============================================================================
 # Snapshot Endpoints
 # =============================================================================
@@ -649,7 +638,6 @@ async def get_snapshots(
         "count": len(snapshots),
         "snapshots": snapshots,
     }
-
 
 @router.post("/snapshots")
 async def create_snapshot(
@@ -678,7 +666,6 @@ async def create_snapshot(
         "status": "success",
         "snapshot": result,
     }
-
 
 @router.get("/snapshots/{sport}/{snapshot_date}")
 async def get_snapshot(
@@ -721,7 +708,6 @@ async def get_snapshot(
             detail=f"Snapshot not found for {sport} on {snapshot_date}",
         )
 
-
 # =============================================================================
 # Brain (Autonomous System) Endpoints
 # =============================================================================
@@ -745,7 +731,6 @@ async def analyze_system():
         logger.error(f"Brain analysis failed: {e}")
         raise HTTPException(status_code=500, detail=f"Brain analysis failed: {str(e)}")
 
-
 @router.post("/brain/analyze/auto-fix", response_model=dict)
 async def generate_auto_fixes():
     """Generate automatic fixes for system issues."""
@@ -765,7 +750,6 @@ async def generate_auto_fixes():
         logger.error(f"Auto-fix generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Auto-fix generation failed: {str(e)}")
 
-
 @router.post("/brain/analyze/expand", response_model=dict)
 async def generate_expansions():
     """Generate system expansions and new features."""
@@ -784,7 +768,6 @@ async def generate_expansions():
     except Exception as e:
         logger.error(f"Expansion generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Expansion generation failed: {str(e)}")
-
 
 @router.post("/brain/analyze/commit", response_model=dict)
 async def commit_improvements():
@@ -815,7 +798,6 @@ async def commit_improvements():
         logger.error(f"Improvement commit failed: {e}")
         raise HTTPException(status_code=500, detail=f"Improvement commit failed: {str(e)}")
 
-
 @router.get("/brain/analyze/summary", response_model=dict)
 async def get_analysis_summary():
     """Get comprehensive brain analysis summary."""
@@ -833,7 +815,6 @@ async def get_analysis_summary():
     except Exception as e:
         logger.error(f"Analysis summary failed: {e}")
         raise HTTPException(status_code=500, detail=f"Analysis summary failed: {str(e)}")
-
 
 @router.post("/fix-model-picks-sport-mappings", response_model=dict)
 async def fix_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
@@ -918,7 +899,6 @@ async def fix_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"[ADMIN] Critical error in ModelPicks sport mapping fix: {e}")
         raise HTTPException(status_code=500, detail=f"ModelPicks sport mapping fix failed: {str(e)}")
-
 
 @router.post("/verify-model-picks-sport-mappings", response_model=dict)
 async def verify_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
@@ -1020,7 +1000,6 @@ async def verify_model_picks_sport_mappings(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.error(f"[ADMIN] Critical error in ModelPicks sport mapping verification: {e}")
         raise HTTPException(status_code=500, detail=f"ModelPicks sport mapping verification failed: {str(e)}")
-
 
 @router.post("/fix-sport-mappings", response_model=dict)
 async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
@@ -1184,7 +1163,6 @@ async def fix_sport_mappings_production(db: AsyncSession = Depends(get_db)):
         logger.error(f"[ADMIN] Critical error in sport mapping fix: {e}")
         raise HTTPException(status_code=500, detail=f"Sport mapping fix failed: {str(e)}")
 
-
 @router.post("/verify-sport-mappings", response_model=dict)
 async def verify_sport_mappings_production(db: AsyncSession = Depends(get_db)):
     """Verify sport mappings are correct in production."""
@@ -1306,7 +1284,6 @@ async def verify_sport_mappings_production(db: AsyncSession = Depends(get_db)):
         logger.error(f"[ADMIN] Critical error in sport mapping verification: {e}")
         raise HTTPException(status_code=500, detail=f"Sport mapping verification failed: {str(e)}")
 
-
 @router.get("/resources", response_model=dict)
 async def get_resource_status():
     """Get current resource usage and credit monitoring."""
@@ -1328,7 +1305,6 @@ async def get_resource_status():
     except Exception as e:
         logger.error(f"Resource status failed: {e}")
         raise HTTPException(status_code=500, detail=f"Resource monitoring failed: {str(e)}")
-
 
 @router.post("/resources/monitoring/start")
 async def start_resource_monitoring(interval_seconds: int = 60):
@@ -1355,7 +1331,6 @@ async def start_resource_monitoring(interval_seconds: int = 60):
         logger.error(f"Failed to start resource monitoring: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to start monitoring: {str(e)}")
 
-
 @router.post("/resources/monitoring/stop")
 async def stop_resource_monitoring():
     """Stop continuous resource monitoring."""
@@ -1372,7 +1347,6 @@ async def stop_resource_monitoring():
     except Exception as e:
         logger.error(f"Failed to stop resource monitoring: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to stop monitoring: {str(e)}")
-
 
 @router.get("/resources/baseline", response_model=dict)
 async def get_performance_baseline():
@@ -1392,7 +1366,6 @@ async def get_performance_baseline():
         logger.error(f"Performance baseline failed: {e}")
         raise HTTPException(status_code=500, detail=f"Baseline failed: {str(e)}")
 
-
 @router.get("/resources/export", response_model=dict)
 async def export_resource_metrics():
     """Export resource metrics history."""
@@ -1410,7 +1383,6 @@ async def export_resource_metrics():
     except Exception as e:
         logger.error(f"Resource export failed: {e}")
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
-
 
 @router.get("/verification", response_model=dict)
 async def get_verification_status():
@@ -1431,7 +1403,6 @@ async def get_verification_status():
         logger.error(f"Verification status failed: {e}")
         raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
 
-
 @router.get("/verification/stress-test", response_model=dict)
 async def run_stress_test():
     """Run brain loop stress test on historical data."""
@@ -1449,7 +1420,6 @@ async def run_stress_test():
     except Exception as e:
         logger.error(f"Stress test failed: {e}")
         raise HTTPException(status_code=500, detail=f"Stress test failed: {str(e)}")
-
 
 @router.get("/verification/backtest", response_model=dict)
 async def run_ev_backtest():
@@ -1469,7 +1439,6 @@ async def run_ev_backtest():
         logger.error(f"EV backtest failed: {e}")
         raise HTTPException(status_code=500, detail=f"EV backtest failed: {str(e)}")
 
-
 @router.get("/verification/performance", response_model=dict)
 async def run_performance_benchmark():
     """Run Hobby tier performance benchmark."""
@@ -1487,7 +1456,6 @@ async def run_performance_benchmark():
     except Exception as e:
         logger.error(f"Performance benchmark failed: {e}")
         raise HTTPException(status_code=500, detail=f"Performance benchmark failed: {str(e)}")
-
 
 @router.get("/verification/checklist", response_model=dict)
 async def get_go_live_checklist():
@@ -1507,7 +1475,6 @@ async def get_go_live_checklist():
         logger.error(f"Go-live checklist failed: {e}")
         raise HTTPException(status_code=500, detail=f"Go-live checklist failed: {str(e)}")
 
-
 @router.get("/brain", response_model=dict)
 async def get_brain_status():
     """
@@ -1519,7 +1486,6 @@ async def get_brain_status():
     from app.services.brain import get_brain_status as _get_brain_status
     return _get_brain_status()
 
-
 @router.get("/brain/health")
 async def get_brain_health():
     """
@@ -1529,7 +1495,6 @@ async def get_brain_health():
     """
     from app.services.brain import get_brain_health_summary
     return get_brain_health_summary()
-
 
 # =============================================================================
 # Sync Status Endpoints
@@ -1547,7 +1512,6 @@ async def get_sync_status(
     """
     return await get_all_sync_status(db)
 
-
 @router.get("/sync-status/stale")
 async def get_stale_data_alerts(
     max_age_hours: int = Query(24, description="Hours before data is considered stale"),
@@ -1560,7 +1524,6 @@ async def get_stale_data_alerts(
     updated in the specified number of hours.
     """
     return await check_stale_data(db, max_age_hours)
-
 
 # =============================================================================
 # Health Check Endpoints
@@ -1584,7 +1547,6 @@ async def get_health_status(
     result = await run_all_health_checks(db)
     return result
 
-
 @router.get("/health/{sport}")
 async def get_sport_health(
     sport: str,
@@ -1603,7 +1565,6 @@ async def get_sport_health(
     
     result = await check_sync_health(db, sport)
     return result.to_dict()
-
 
 # =============================================================================
 # Sport ID Verification Endpoint (for debugging NFL/NCAAF/Tennis mapping issues)
@@ -1684,7 +1645,6 @@ async def verify_sport_id_counts(
         ]
     }
 
-
 @router.get("/verify/sportsbooks")
 async def verify_sportsbooks(
     db: AsyncSession = Depends(get_db),
@@ -1755,7 +1715,6 @@ async def verify_sportsbooks(
         ]
     }
 
-
 @router.get("/verify/players-by-sport")
 async def verify_players_by_sport(
     db: AsyncSession = Depends(get_db),
@@ -1803,7 +1762,6 @@ async def verify_players_by_sport(
             "NCAAF should have college player names or be empty (off-season)",
         ]
     }
-
 
 # =============================================================================
 # Data Freshness Diagnostic Endpoint
@@ -1981,7 +1939,6 @@ async def debug_data_freshness(
         },
     }
 
-
 def _get_sport_alerts(
     sport_key: str,
     sport_status: dict,
@@ -2015,7 +1972,6 @@ def _get_sport_alerts(
     
     return alerts
 
-
 # =============================================================================
 # API Monitoring Endpoints
 # =============================================================================
@@ -2038,7 +1994,6 @@ async def get_api_metrics(
         "recent_calls": [c.to_dict() for c in monitor.get_recent_calls(minutes=minutes)[-20:]],
     }
 
-
 @router.get("/monitoring/alerts")
 async def get_api_alerts():
     """
@@ -2058,7 +2013,6 @@ async def get_api_alerts():
         "has_critical": any(a.get("severity") == "error" for a in alerts),
         "alerts": alerts,
     }
-
 
 @router.get("/metrics/dashboard")
 async def get_metrics_dashboard(
@@ -2145,14 +2099,12 @@ async def get_metrics_dashboard(
         },
     }
 
-
 @router.post("/metrics/reset")
 async def reset_request_metrics():
     """Reset request metrics counters (for testing)."""
     from app.core.logging import request_metrics
     request_metrics.reset()
     return {"status": "reset", "message": "Request metrics have been reset"}
-
 
 # =============================================================================
 # Data Quality Endpoints
@@ -2193,7 +2145,6 @@ async def get_data_quality(
         "validation": result.to_dict(),
     }
 
-
 @router.get("/quality")
 async def get_all_data_quality(
     db: AsyncSession = Depends(get_db),
@@ -2222,7 +2173,6 @@ async def get_all_data_quality(
         "total_warnings": total_warnings,
         "sports": results,
     }
-
 
 # =============================================================================
 # Calibration Endpoints
@@ -2253,7 +2203,6 @@ async def get_calibration_report(
     
     result = await get_reliability_data(db, sport, days)
     return result
-
 
 @router.get("/calibration/{sport}/reliability")
 async def get_reliability_plot_data(
@@ -2290,7 +2239,6 @@ async def get_reliability_plot_data(
     }
     return plot_data
 
-
 @router.get("/calibration/{sport}/roi")
 async def get_roi_by_confidence_bucket(
     sport: str,
@@ -2311,7 +2259,6 @@ async def get_roi_by_confidence_bucket(
     
     result = await get_roi_by_confidence(db, sport, days)
     return result
-
 
 @router.get("/calibration/{sport}/clv")
 async def get_clv_analysis_endpoint(
@@ -2338,7 +2285,6 @@ async def get_clv_analysis_endpoint(
     
     result = await get_clv_analysis(db, sport, days)
     return result
-
 
 # =============================================================================
 # Admin Job Endpoints
@@ -2404,7 +2350,6 @@ async def run_sync_odds_job(
                 "error": str(e),
             },
         )
-
 
 @router.post("/jobs/sync-stats")
 async def run_sync_stats_job(
@@ -2476,7 +2421,6 @@ async def run_sync_stats_job(
             },
         )
 
-
 @router.post("/jobs/sync-injuries")
 async def run_sync_injuries_job(
     sport: str = Query("basketball_nba", description="Sport key to sync"),
@@ -2545,7 +2489,6 @@ async def run_sync_injuries_job(
             },
         )
 
-
 @router.post("/jobs/sync-injuries-espn")
 async def sync_injuries_from_espn(
     sport: str = Query("basketball_nba", description="Sport key to sync"),
@@ -2595,7 +2538,6 @@ async def sync_injuries_from_espn(
                 "error": str(e),
             },
         )
-
 
 @router.post("/jobs/generate-picks")
 async def run_generate_picks_job(
@@ -2667,7 +2609,6 @@ async def run_generate_picks_job(
             },
         )
 
-
 # =============================================================================
 # Utility Endpoints
 # =============================================================================
@@ -2678,7 +2619,6 @@ async def list_available_sports():
     return {
         "sports": AVAILABLE_SPORTS,
     }
-
 
 @router.post("/jobs/run-all")
 async def run_all_jobs(
@@ -2737,7 +2677,6 @@ async def run_all_jobs(
         "results": results,
     }
 
-
 # =============================================================================
 # Cache Management Endpoints
 # =============================================================================
@@ -2760,7 +2699,6 @@ async def get_cache_stats():
         "stats": cache.get_stats(),
         "entries": cache.get_entries_info()[:50],  # Top 50 by hits
     }
-
 
 @router.post("/cache/clear")
 async def clear_cache(
@@ -2789,7 +2727,6 @@ async def clear_cache(
             "entries_cleared": count,
         }
 
-
 @router.post("/cache/cleanup")
 async def cleanup_expired_cache():
     """
@@ -2804,7 +2741,6 @@ async def cleanup_expired_cache():
         "status": "cleanup_complete",
         "entries_removed": count,
     }
-
 
 # =============================================================================
 # Dashboard Endpoints

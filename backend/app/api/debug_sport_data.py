@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/debug-sport-data", tags=["debug-sport-data"])
 
-
 @router.get("/check-games")
 async def check_games_by_sport(
     sport_id: int = Query(53),
@@ -75,7 +74,6 @@ async def check_games_by_sport(
             "error": str(e),
             "sport_id": sport_id
         }
-
 
 @router.get("/check-nhl-players")
 async def check_nhl_players(

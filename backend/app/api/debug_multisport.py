@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/debug-multisport", tags=["debug-multisport"])
 
-
 @router.get("/test-multisport-sql")
 async def test_multisport_sql(
     sport_id: int = 30,
@@ -68,7 +67,6 @@ async def test_multisport_sql(
             "error": str(e),
             "sport_id": sport_id
         }
-
 
 @router.get("/test-multisport-processing")
 async def test_multisport_processing(
@@ -171,7 +169,6 @@ async def test_multisport_processing(
             "error": str(e),
             "sport_id": sport_id
         }
-
 
 @router.get("/compare-endpoints")
 async def compare_endpoints(

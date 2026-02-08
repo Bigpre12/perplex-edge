@@ -11,7 +11,6 @@ from app.services.parlay_service_raw import build_parlays
 
 router = APIRouter(prefix="/api/test-raw-service", tags=["test-raw-service"])
 
-
 @router.get("/direct-test")
 async def test_raw_parlay_service_directly(
     sport_id: int = Query(30),

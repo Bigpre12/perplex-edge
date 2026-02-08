@@ -15,7 +15,6 @@ from app.models import Watchlist, ModelPick, Game, Market
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/watchlists", tags=["Watchlists"])
 
-
 # =============================================================================
 # Pydantic Schemas
 # =============================================================================
@@ -29,7 +28,6 @@ class WatchlistFilters(BaseModel):
     min_confidence: Optional[float] = None
     risk_levels: Optional[str] = None  # Comma-separated: "STANDARD,CONFIDENT,STRONG"
 
-
 class WatchlistCreate(BaseModel):
     """Request body for creating a watchlist."""
     name: str
@@ -38,7 +36,6 @@ class WatchlistCreate(BaseModel):
     alert_discord_webhook: Optional[str] = None
     alert_email: Optional[str] = None
 
-
 class WatchlistUpdate(BaseModel):
     """Request body for updating a watchlist."""
     name: Optional[str] = None
@@ -46,7 +43,6 @@ class WatchlistUpdate(BaseModel):
     alert_enabled: Optional[bool] = None
     alert_discord_webhook: Optional[str] = None
     alert_email: Optional[str] = None
-
 
 class WatchlistResponse(BaseModel):
     """Response for a single watchlist."""
@@ -64,12 +60,10 @@ class WatchlistResponse(BaseModel):
     current_match_count: int = 0
     new_matches_since_last_check: int = 0
 
-
 class WatchlistListResponse(BaseModel):
     """Response for listing watchlists."""
     items: List[WatchlistResponse]
     total: int
-
 
 # =============================================================================
 # Helper Functions
@@ -114,7 +108,6 @@ async def count_matching_picks(
     )
     
     return result.scalar() or 0
-
 
 # =============================================================================
 # CRUD Endpoints
@@ -167,7 +160,6 @@ async def create_watchlist(
         new_matches_since_last_check=max(0, match_count - watchlist.last_match_count),
     )
 
-
 @router.get("", response_model=WatchlistListResponse)
 async def list_watchlists(
     sport_id: Optional[int] = Query(None, description="Filter by sport"),
@@ -212,7 +204,6 @@ async def list_watchlists(
     
     return WatchlistListResponse(items=items, total=len(items))
 
-
 @router.get("/{watchlist_id}", response_model=WatchlistResponse)
 async def get_watchlist(
     watchlist_id: int,
@@ -239,7 +230,6 @@ async def get_watchlist(
         current_match_count=match_count,
         new_matches_since_last_check=max(0, match_count - watchlist.last_match_count),
     )
-
 
 @router.patch("/{watchlist_id}", response_model=WatchlistResponse)
 async def update_watchlist(
@@ -286,7 +276,6 @@ async def update_watchlist(
         new_matches_since_last_check=max(0, match_count - watchlist.last_match_count),
     )
 
-
 @router.delete("/{watchlist_id}")
 async def delete_watchlist(
     watchlist_id: int,
@@ -303,7 +292,6 @@ async def delete_watchlist(
     logger.info(f"Deleted watchlist {watchlist_id}")
     
     return {"status": "deleted", "watchlist_id": watchlist_id}
-
 
 @router.post("/{watchlist_id}/mark-checked")
 async def mark_watchlist_checked(

@@ -10,7 +10,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/fix-nhl-data", tags=["fix-nhl-data"])
 
-
 @router.post("/identify-corruption")
 async def identify_nhl_corruption(
     db: AsyncSession = Depends(get_db)
@@ -68,7 +67,6 @@ async def identify_nhl_corruption(
             "sample_corruption": []
         }
 
-
 @router.post("/clean-corruption")
 async def clean_nhl_corruption(
     db: AsyncSession = Depends(get_db)
@@ -106,7 +104,6 @@ async def clean_nhl_corruption(
             "deleted_count": 0,
             "status": "failed"
         }
-
 
 @router.post("/verify-nhl-players")
 async def verify_nhl_players_exist(

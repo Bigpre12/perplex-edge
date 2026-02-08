@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/debug-markets", tags=["debug-markets"])
 
-
 @router.get("/check-markets-data")
 async def check_markets_data(
     sport_id: int = 30,
@@ -27,7 +26,8 @@ async def check_markets_data(
         results["total_markets"] = result.fetchone()[0]
         
         # Check market types
-        market_types_sql = text("SELECT DISTINCT stat_type, COUNT(*) as count FROM markets GROUP BY stat_type ORDER BY count DESC")
+        market_types_sql = text("SELECT DISTINCT stat_type,
+            COUNT(*) as count FROM markets GROUP BY stat_type ORDER BY count DESC")
         result = await db.execute(market_types_sql)
         results["market_types"] = [{"stat_type": row[0], "count": row[1]} for row in result.fetchall()]
         
@@ -111,7 +111,6 @@ async def check_markets_data(
             "error": str(e),
             "sport_id": sport_id
         }
-
 
 @router.get("/test-without-markets")
 async def test_without_markets_join(

@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/debug-simple", tags=["debug-simple"])
 
-
 @router.get("/test-sql")
 async def test_raw_sql(
     sport_id: int = Query(30),
@@ -49,7 +48,6 @@ async def test_raw_sql(
             "error": str(e),
             "sport_id": sport_id
         }
-
 
 @router.get("/test-recent-picks")
 async def test_recent_picks(

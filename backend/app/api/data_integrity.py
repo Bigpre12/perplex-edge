@@ -13,7 +13,6 @@ from app.services.data_integrity_fixer import data_integrity_fixer
 
 router = APIRouter(prefix="/api/data-integrity", tags=["data-integrity"])
 
-
 @router.get("/diagnose")
 async def diagnose_corruption(db: AsyncSession = Depends(get_db)):
     """Diagnose all data corruption issues."""
@@ -32,7 +31,6 @@ async def diagnose_corruption(db: AsyncSession = Depends(get_db)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Diagnosis failed: {e}")
-
 
 @router.post("/fix-sport/{sport_id}")
 async def fix_sport_data(
@@ -61,7 +59,6 @@ async def fix_sport_data(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sport fix failed: {e}")
-
 
 @router.post("/fix-all-sports")
 async def fix_all_sports(db: AsyncSession = Depends(get_db)):
@@ -98,7 +95,6 @@ async def fix_all_sports(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"All sports fix failed: {e}")
 
-
 @router.get("/validate-sport/{sport_id}")
 async def validate_sport_data(
     sport_id: int,
@@ -116,7 +112,6 @@ async def validate_sport_data(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Validation failed: {e}")
-
 
 @router.get("/validate-all-sports")
 async def validate_all_sports(db: AsyncSession = Depends(get_db)):
@@ -141,7 +136,6 @@ async def validate_all_sports(db: AsyncSession = Depends(get_db)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"All validation failed: {e}")
-
 
 @router.get("/sport-status/{sport_id}")
 async def get_sport_status(
@@ -198,7 +192,6 @@ async def get_sport_status(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Sport status failed: {e}")
-
 
 @router.post("/emergency-fix")
 async def emergency_fix(db: AsyncSession = Depends(get_db)):

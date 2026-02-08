@@ -11,7 +11,6 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/api/debug-raw-parlay", tags=["debug-raw-parlay"])
 
-
 @router.get("/test-raw-sql")
 async def test_raw_sql_parlay(
     sport_id: int = Query(30),

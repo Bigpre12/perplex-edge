@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v2", tags=["Data Layer V2"])
 
-
 # =============================================================================
 # Odds Endpoints
 # =============================================================================
@@ -64,7 +63,6 @@ async def get_odds(
         "count": len(response.data) if isinstance(response.data, list) else 1,
     }
 
-
 @router.get("/props/{sport_key}")
 async def get_player_props(
     sport_key: str,
@@ -92,7 +90,6 @@ async def get_player_props(
         },
         "count": len(response.data) if isinstance(response.data, list) else 1,
     }
-
 
 # =============================================================================
 # Schedule Endpoints
@@ -137,7 +134,6 @@ async def get_schedule(
         "count": len(response.data),
     }
 
-
 @router.get("/schedule/{sport_key}/today")
 async def get_today_schedule(
     sport_key: str,
@@ -157,7 +153,6 @@ async def get_today_schedule(
         },
         "count": len(response.data),
     }
-
 
 # =============================================================================
 # Injury Endpoints
@@ -186,7 +181,6 @@ async def get_injuries(
         "count": len(response.data),
     }
 
-
 @router.get("/injuries/{sport_key}/player-ids")
 async def get_injured_player_ids(
     sport_key: str,
@@ -204,7 +198,6 @@ async def get_injured_player_ids(
         "count": len(injured_ids),
     }
 
-
 # =============================================================================
 # Cache Management
 # =============================================================================
@@ -214,7 +207,6 @@ async def get_cache_stats():
     """Get cache statistics."""
     cache = get_cache_manager()
     return cache.get_stats()
-
 
 @router.post("/cache/clear")
 async def clear_cache(
@@ -233,7 +225,6 @@ async def clear_cache(
     else:
         count = cache.clear_all()
         return {"cleared": "all", "count": count}
-
 
 # =============================================================================
 # Health & Quota

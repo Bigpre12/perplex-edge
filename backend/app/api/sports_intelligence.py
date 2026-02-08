@@ -12,7 +12,6 @@ from app.services.cache_service import cache_service
 
 router = APIRouter(prefix="/api/intelligence", tags=["sports-intelligence"])
 
-
 @router.get("/status")
 async def get_intelligence_brain_status():
     """Get current sports intelligence brain status and metrics."""
@@ -31,7 +30,6 @@ async def get_intelligence_brain_status():
             "error": str(e),
             "brain_status": {"is_running": False, "error": str(e)}
         }
-
 
 @router.get("/news")
 async def get_sports_news(
@@ -96,7 +94,6 @@ async def get_sports_news(
             "news": []
         }
 
-
 @router.get("/weather")
 async def get_weather_conditions(
     condition: str = Query(None, description="Filter by condition: clear, rain, snow, windy, extreme"),
@@ -153,7 +150,6 @@ async def get_weather_conditions(
             "error": str(e),
             "weather": []
         }
-
 
 @router.get("/recommendations")
 async def get_intelligence_recommendations(
@@ -216,7 +212,6 @@ async def get_intelligence_recommendations(
             "recommendations": []
         }
 
-
 @router.get("/git-status")
 async def get_git_integration_status():
     """Get git integration status and history."""
@@ -235,7 +230,6 @@ async def get_git_integration_status():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "error": str(e)
         }
-
 
 @router.post("/start-intelligence")
 async def start_intelligence_monitoring():
@@ -265,7 +259,6 @@ async def start_intelligence_monitoring():
             "message": "Failed to start intelligence monitoring"
         }
 
-
 @router.post("/stop-intelligence")
 async def stop_intelligence_monitoring():
     """Stop the sports intelligence monitoring brain."""
@@ -284,7 +277,6 @@ async def stop_intelligence_monitoring():
             "error": str(e),
             "message": "Failed to stop intelligence monitoring"
         }
-
 
 @router.post("/force-git-push")
 async def force_git_push():
