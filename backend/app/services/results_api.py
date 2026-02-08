@@ -169,5 +169,36 @@ class NBAStatsAPI:
         except:
             return False
 
+async def fetch_game_results(game_id: int, sport_id: int) -> Optional[GameResult]:
+    """
+    Fetch game results for grading picks.
+    
+    Args:
+        game_id: The game ID
+        sport_id: The sport ID
+        
+    Returns:
+        GameResult with player stats or None if not available
+    """
+    try:
+        # For now, return a placeholder result
+        # In production, this would fetch actual results from the appropriate API
+        logger.info(f"Fetching results for game {game_id}, sport {sport_id}")
+        
+        # TODO: Implement actual result fetching based on sport_id
+        # - NBA: Use NBA Stats API
+        # - NFL: Use NFL API
+        # - MLB: Use MLB API
+        
+        return GameResult(
+            game_id=game_id,
+            player_stats={},
+            game_time=datetime.now(timezone.utc),
+            status="completed"
+        )
+    except Exception as e:
+        logger.error(f"Error fetching game results: {e}")
+        return None
+
 # Global NBA Stats API instance
 nba_stats_api = NBAStatsAPI()
