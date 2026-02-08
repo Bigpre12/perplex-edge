@@ -4,7 +4,16 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header
-from pydantic import BaseModel, EmailStr
+
+# Make EmailStr optional to avoid import errors
+try:
+    from pydantic import BaseModel, EmailStr
+    HAS_EMAIL_STR = True
+except ImportError:
+    from pydantic import BaseModel
+    EmailStr = str
+    HAS_EMAIL_STR = False
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

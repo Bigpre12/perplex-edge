@@ -202,3 +202,6 @@ async def fetch_game_results(game_id: int, sport_id: int) -> Optional[GameResult
 
 # Global NBA Stats API instance
 nba_stats_api = NBAStatsAPI()
+
+# Alias for backward compatibility
+results_api = nba_stats_api
