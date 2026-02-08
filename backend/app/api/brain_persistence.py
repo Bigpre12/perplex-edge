@@ -258,9 +258,9 @@ async def get_brain_dashboard(
 
 @router.get("/export")
 async def export_brain_data(
-    data_type: str = Query(..., regex="^(decisions|health|anomalies|metrics|state)$"),
+    data_type: str = Query(..., pattern="^(decisions|health|anomalies|metrics|state)$"),
     hours: int = Query(24, ge=1, le=168),
-    format: str = Query("json", regex="^(json|csv)$")
+    format: str = Query("json", pattern="^(json|csv)$")
 ) -> Dict[str, Any]:
     """Export brain data in specified format."""
     try:

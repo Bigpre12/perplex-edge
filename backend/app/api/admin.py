@@ -7,7 +7,7 @@ from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
