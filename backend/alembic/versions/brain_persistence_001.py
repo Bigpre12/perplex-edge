@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = 'brain_persistence_001'
-down_revision = '20260204_030000'
+down_revision = None
 branch_labels = None
 depends_on = None
 
