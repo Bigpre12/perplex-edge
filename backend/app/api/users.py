@@ -4,16 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header
-
-# Make EmailStr optional to avoid import errors
-try:
-    from pydantic import BaseModel, EmailStr
-    HAS_EMAIL_STR = True
-except ImportError:
-    from pydantic import BaseModel
-    EmailStr = str
-    HAS_EMAIL_STR = False
-
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,7 +20,7 @@ router = APIRouter()
 class UserSyncRequest(BaseModel):
     """Request to sync user from Clerk."""
     clerk_id: str
-    email: EmailStr
+    email: str  # Using str instead of EmailStr to avoid import issues
     first_name: Optional[str] = None
     last_name: Optional[str] = None
 
