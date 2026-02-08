@@ -1500,7 +1500,7 @@ async def build_parlay(
     Returns:
         ParlayBuilderResponse with recommended parlays
     """
-    from app.services.parlay_service import build_parlays
+    from app.services.parlay_service_raw import build_parlays
     from app.schemas.public import ParlayBuilderResponse
     
     # Validate sport exists
