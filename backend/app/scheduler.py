@@ -1477,8 +1477,16 @@ def start_background_tasks() -> List[asyncio.Task]:
     tasks.append(task2)
     logger.info(f"Created stats_sync_loop task (every {settings.sched_stats_interval_min} min, use_stubs={use_stubs})")
 
-    # Model generation task
+    # Pick grading task (every 2 hours)
     task3 = asyncio.create_task(
+        grading_loop(interval_minutes=120, use_stubs=use_stubs),
+        name="grading_loop"
+    )
+    tasks.append(task3)
+    logger.info(f"Created grading_loop task (every 120 min, use_stubs={use_stubs})")
+
+    # Model generation task
+    task4 = asyncio.create_task(
         model_generation_loop(
             interval_minutes=settings.sched_model_interval_min,
             initial_delay=60,  # Stagger start by 60 seconds
@@ -1708,3 +1716,44 @@ def shutdown_scheduler():
 def get_scheduler():
     """Legacy function - returns None (no APScheduler)."""
     return None
+
+
+# =============================================================================
+# Pick Grading Loop
+# =============================================================================
+
+async def grading_loop(interval_minutes: int = 120, initial_delay: int = 60, use_stubs: bool = True):
+    """
+    Background task that grades completed picks and calculates CLV.
+    
+    Args:
+        interval_minutes: Interval in minutes between grading runs
+        initial_delay: Initial delay in seconds before first run
+        use_stubs: Whether to use stub data for testing
+    """
+    from app.tasks.grade_picks import pick_grader
+    from app.core.database import get_session_maker
+    
+    if initial_delay > 0:
+        logger.info(f"Grading loop starting in {initial_delay}s...")
+        await asyncio.sleep(initial_delay)
+    
+    logger.info(f"Grading loop started (interval: {interval_minutes} min, use_stubs={use_stubs})")
+    
+    while True:
+        try:
+            logger.info("Running pick grading pipeline...")
+            session_maker = get_session_maker()
+            
+            async with session_maker() as db:
+                result = await pick_grader.grade_completed_picks(db)
+                logger.info(f"Grading completed: {result}")
+            
+        except asyncio.CancelledError:
+            logger.info("Grading loop cancelled")
+            break
+        except Exception as e:
+            logger.error(f"Grading loop error: {e}", exc_info=True)
+        
+        # Wait for next interval
+        await asyncio.sleep(interval_minutes * 60)
