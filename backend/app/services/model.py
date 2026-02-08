@@ -13,12 +13,8 @@ from sqlalchemy import select, update, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import (
-    get_games_window,
-    get_ev_threshold,
-    get_min_model_probability,
-    get_sport_config,
-)
+from app.services.probability_calibration import ProbabilityCalibrator
+from app.core.config import get_games_window, get_ev_threshold, get_min_model_probability, get_sport_config
 from app.core.constants import SPORT_KEY_TO_LEAGUE
 from app.models import (
     Sport, Game, Line, Market, Player, Team,
@@ -775,8 +771,24 @@ async def generate_model_picks_for_today(
                 hit_rate_10g = model_result.get("hit_rate_10g")
                 hit_rate_30d = model_result.get("hit_rate_30d")
                 
-                # Compute EV
-                ev = compute_ev(model_prob, int(line.odds))
+                # Apply probability calibration to fix impossible EV values
+                calibrator = ProbabilityCalibrator()
+                sample_size = model_result.get("sample_size_10g", 10)
+                implied_prob = american_to_implied_prob(int(line.odds))
+                
+                # Calibrate the model probability
+                calibrated_prob = calibrator.calibrate_probability(
+                    model_prob, 
+                    implied_prob, 
+                    sample_size,
+                    market_type="player_props"
+                )
+                
+                # Compute EV with calibrated probability
+                ev = compute_ev(calibrated_prob, int(line.odds))
+                
+                # Use calibrated probability for storage
+                final_model_prob = calibrated_prob
                 
                 # Check thresholds
                 if ev < ev_threshold:
@@ -806,7 +818,7 @@ async def generate_model_picks_for_today(
                     # Update existing pick
                     existing_pick.line_value = line.line_value
                     existing_pick.odds = line.odds
-                    existing_pick.model_probability = model_prob
+                    existing_pick.model_probability = final_model_prob
                     existing_pick.implied_probability = implied_prob
                     existing_pick.expected_value = ev
                     existing_pick.hit_rate_10g = hit_rate_10g
@@ -825,7 +837,7 @@ async def generate_model_picks_for_today(
                         side=line.side,
                         line_value=line.line_value,
                         odds=line.odds,
-                        model_probability=model_prob,
+                        model_probability=final_model_prob,
                         implied_probability=implied_prob,
                         expected_value=ev,
                         hit_rate_10g=hit_rate_10g,

@@ -83,6 +83,8 @@ from app.api.debug_slates import router as debug_slates_router
 from app.api.debug_candidates import router as debug_candidates_router
 from app.api.candidates import router as candidates_router
 from app.api.debug_ev import router as debug_ev_router
+from app.api.clv_dashboard import router as clv_dashboard_router
+from app.api.calibration import router as calibration_router
 from app.api.brain_control import router as brain_control_router
 from app.api.roster_control import router as roster_control_router
 from app.api.frontend_endpoints import router as frontend_endpoints_router
@@ -518,6 +520,8 @@ app.include_router(debug_slates_router, tags=["debug-slates"])
 app.include_router(debug_candidates_router, tags=["debug-candidates"])
 app.include_router(candidates_router, tags=["candidates"])
 app.include_router(debug_ev_router, tags=["debug-ev"])
+app.include_router(clv_dashboard_router, tags=["clv"])
+app.include_router(calibration_router, tags=["calibration"])
 app.include_router(brain_control_router, tags=["brain-control"])
 app.include_router(roster_control_router, tags=["roster-control"])
 app.include_router(frontend_endpoints_router, tags=["frontend-mapping"])

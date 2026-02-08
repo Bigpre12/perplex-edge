@@ -62,6 +62,14 @@ class ModelPick(Base):
         server_default=func.now(),
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # CLV Tracking fields
+    closing_odds: Mapped[Optional[float]] = mapped_column(Float)
+    # Closing odds at game time for CLV calculation
+    clv_percentage: Mapped[Optional[float]] = mapped_column(Float)
+    # Closing Line Value percentage (entry vs closing)
+    roi_percentage: Mapped[Optional[float]] = mapped_column(Float)
+    # Actual ROI after result
 
     # Relationships
     sport: Mapped["Sport"] = relationship(back_populates="model_picks")
