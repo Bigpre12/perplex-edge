@@ -73,13 +73,7 @@ def implied_prob_to_decimal(imp: float) -> float:
 
 def compute_ev(model_prob: float, odds: int) -> float:
     """
-    Compute expected value for a bet.
-    
-    EV = (probability of winning * net profit) - (probability of losing * stake)
-    
-    For a $1 stake:
-    - If odds are negative (e.g., -110): profit = 100/110 = 0.909
-    - If odds are positive (e.g., +150): profit = 150/100 = 1.5
+    Compute expected value for a bet with validation.
     
     Args:
         model_prob: Model's predicted probability of winning (0-1)
@@ -87,16 +81,33 @@ def compute_ev(model_prob: float, odds: int) -> float:
     
     Returns:
         Expected value as a decimal (0.05 = 5% EV)
-    
-    Examples:
-        model_prob=0.55, odds=-110 -> EV = 0.55*0.909 - 0.45*1 = 0.05 (5% EV)
     """
+    # Validate inputs
+    if model_prob < 0 or model_prob > 1:
+        raise ValueError(f"Invalid model probability: {model_prob}")
+    
+    if odds == 0:
+        raise ValueError("Odds cannot be zero")
+    
+    # Calculate profit
     if odds < 0:
         profit = 100 / abs(odds)
     else:
         profit = odds / 100
     
     ev = (model_prob * profit) - ((1 - model_prob) * 1)
+    
+    # Cap suspicious EV values
+    if ev > 0.15:  # 15% EV threshold
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Suspicious EV {ev:.4f} capped to 0.15")
+        ev = 0.15
+    
+    if ev < -0.50:  # -50% EV threshold
+        logger.warning(f"Suspicious negative EV {ev:.4f} set to -0.50")
+        ev = -0.50
+    
     return round(ev, 4)
 
 
@@ -403,46 +414,59 @@ async def compute_player_prop_model_probabilities(
         select(Game).where(Game.id == game_id)
     )
     game = game_result.scalar_one_or_none()
-    sport_id = game.sport_id if game else 30  # Default to NBA if no game
     
-    # Get last 10 games stats
-    stats_10g = await get_player_recent_stats(db, player_id, stat_type, n_games=10)
-    values_10g = [s[0] for s in stats_10g]
-    minutes_10g = [s[1] for s in stats_10g if s[1] is not None]
+    # Get recent stats (last 10 games and last 30 days)
+    sport_id = game.sport_id if game else 30  # Default to NBA
+    recent_stats_10g = await get_player_recent_stats(db, player_id, stat_type, n_games=10)
+    recent_stats_30d = await get_player_recent_stats(db, player_id, stat_type, days=30)
     
-    # Get last 30 days stats (with season boundary awareness)
-    stats_30d = await get_player_stats_last_n_days(db, player_id, stat_type, days=30, sport_id=sport_id)
-    values_30d = [s[0] for s in stats_30d]
-    minutes_30d = [s[1] for s in stats_30d if s[1] is not None]
+    # Extract values and minutes
+    values_10g = [v[0] for v in recent_stats_10g]
+    minutes_10g = [v[1] for v in recent_stats_10g]
+    values_30d = [v[0] for v in recent_stats_30d]
+    minutes_30d = [v[1] for v in recent_stats_30d]
     
-    # Compute hit rates
-    hit_rate_10g = compute_hit_rate(values_10g, line_value, side) if values_10g else None
-    hit_rate_30d = compute_hit_rate(values_30d, line_value, side) if values_30d else None
+    # Calculate hit rates
+    hit_rate_10g = compute_hit_rate(values_10g, line_value, side)
+    hit_rate_30d = compute_hit_rate(values_30d, line_value, side)
     
-    factors["sample_size_10g"] = len(values_10g)
-    factors["sample_size_30d"] = len(values_30d)
-    factors["avg_value_10g"] = sum(values_10g) / len(values_10g) if values_10g else None
-    factors["avg_value_30d"] = sum(values_30d) / len(values_30d) if values_30d else None
+    # Conservative weighting (more weight to longer-term performance)
+    base_prob = 0.4 * hit_rate_10g + 0.6 * hit_rate_30d  # More conservative
     
-    # Handle cases with limited data
-    if hit_rate_10g is None and hit_rate_30d is None:
-        return {
-            "model_prob": 0.5,
-            "hit_rate_10g": None,
-            "hit_rate_30d": None,
-            "confidence": 0.0,
-            "factors": {"error": "No historical data available"},
-        }
+    # Get market implied probability for blending
+    # This would require getting current odds - for now, use a reasonable default
+    market_implied_prob = 0.524  # ~-110 odds default
     
-    # Base model probability (weighted average)
-    if hit_rate_10g is not None and hit_rate_30d is not None:
-        base_prob = 0.6 * hit_rate_10g + 0.4 * hit_rate_30d
-    elif hit_rate_10g is not None:
-        base_prob = hit_rate_10g
-    else:
-        base_prob = hit_rate_30d
+    # Blend with market (respect market efficiency)
+    blended_prob = 0.7 * base_prob + 0.3 * market_implied_prob
     
-    factors["base_prob"] = round(base_prob, 4)
+    # Apply regression to mean for small samples
+    if len(values_10g) < 5:
+        # Strong regression for very small samples
+        blended_prob = 0.5 * blended_prob + 0.5 * 0.5
+    elif len(values_10g) < 10:
+        # Moderate regression for small samples
+        blended_prob = 0.8 * blended_prob + 0.2 * 0.5
+    
+    # Conservative bounds (wider than before)
+    model_prob = max(0.25, min(0.75, blended_prob))  # 25%-75% range
+    
+    # Calculate variance for confidence
+    variance = compute_variance(values_10g)
+    
+    return {
+        "model_prob": round(model_prob, 4),
+        "hit_rate_10g": round(hit_rate_10g, 4),
+        "hit_rate_30d": round(hit_rate_30d, 4),
+        "sample_size_10g": len(values_10g),
+        "sample_size_30d": len(values_30d),
+        "variance": round(variance, 4),
+        "minutes_avg_10g": round(sum(minutes_10g) / len(minutes_10g), 1) if minutes_10g else 0,
+        "confidence": calculate_model_confidence(hit_rate_10g, hit_rate_30d, len(values_10g), len(values_30d), variance, 0),
+        "market_implied_prob": round(market_implied_prob, 4),
+        "blended_prob": round(blended_prob, 4),
+        "regression_applied": len(values_10g) < 10
+    }
     
     # ==========================================================================
     # Adjustments

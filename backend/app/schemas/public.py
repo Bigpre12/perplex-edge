@@ -361,6 +361,7 @@ class ParlayBuilderResponse(BaseModel):
     total_candidates: int  # Total legs available
     leg_count: int
     filters_applied: dict
+    model_status: dict  # Model validation and status information
 
 
 class AutoGenerateSlipsResponse(BaseModel):

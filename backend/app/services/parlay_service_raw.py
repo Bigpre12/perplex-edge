@@ -509,6 +509,13 @@ async def build_parlays(
                 "min_leg_grade": min_grade,
                 "include_100_pct": include_100_pct,
                 "sport_id": sport_id
+            },
+            model_status={
+                "backtested": False,
+                "sample_size": len(legs),
+                "validated_accuracy": None,
+                "clv_tracked": False,
+                "disclaimer": "Model in beta testing - use small stakes"
             }
         )
         
@@ -523,5 +530,12 @@ async def build_parlays(
                 "min_leg_grade": min_grade,
                 "include_100_pct": include_100_pct,
                 "sport_id": sport_id
+            },
+            model_status={
+                "backtested": False,
+                "sample_size": 0,
+                "validated_accuracy": None,
+                "clv_tracked": False,
+                "disclaimer": "Model in beta testing - use small stakes"
             }
         )
