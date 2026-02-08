@@ -930,6 +930,20 @@ export function ParlayBuilder() {
         </div>
       </div>
       
+      {/* BETA WARNING - Model not yet validated */}
+      <div className="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-3 mb-4">
+        <div className="flex items-start gap-3">
+          <span className="text-yellow-500 text-lg">⚠️</span>
+          <div>
+            <h3 className="text-sm font-bold text-yellow-400">BETA MODEL - NOT VALIDATED</h3>
+            <p className="text-xs text-yellow-300/80 mt-1">
+              Model predictions have not been validated on real results. Historical performance data not yet available. 
+              Use minimum stakes only. Track your own results. Model claims high EV but accuracy is unverified.
+            </p>
+          </div>
+        </div>
+      </div>
+      
       {/* Live odds health banner */}
       <OddsHealthBanner sportId={sportId} />
       
