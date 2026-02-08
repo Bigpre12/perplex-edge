@@ -71,9 +71,9 @@ from app.api.parlay_builder import router as parlay_builder_router
 from app.api.simple_parlay_builder import router as simple_parlay_builder_router
 from app.api.ultra_simple_parlays import router as ultra_simple_parlay_router
 from app.api.parlay_forward import router as parlay_forward_router
-from app.api.parlay_auto_generate import router as parlay_auto_generate_router
-from app.api.parlay_game_free import router as parlay_game_free_router
-from app.api.parlay_force_display import router as parlay_force_display_router
+# Skip parlay_auto_generate - it's in public.py
+# Skip parlay_game_free - it's in public.py  
+# Skip parlay_force_display - it's in public.py
 from app.api.parlay_ultimate_override import router as parlay_ultimate_override_router
 from app.api.parlay_frontend_complete import router as parlay_frontend_complete_router
 from app.api.debug_timestamps import router as debug_timestamps_router
@@ -515,9 +515,9 @@ app.include_router(teams_router, prefix="/api", tags=["teams"])
 app.include_router(parlay_forward_router, prefix="/api", tags=["parlays"])
 app.include_router(simple_parlay_builder_router, prefix="/api", tags=["simple-parlays"])
 app.include_router(ultra_simple_parlay_router, prefix="/api", tags=["ultra-simple-parlays"])
-app.include_router(parlay_auto_generate_router, prefix="/api", tags=["parlays"])
-app.include_router(parlay_game_free_router, prefix="/api", tags=["parlays"])
-app.include_router(parlay_force_display_router, prefix="/api", tags=["parlays"])
+# Skip parlay_auto_generate_router - it's in public.py
+# Skip parlay_game_free_router - it's in public.py
+# Skip parlay_force_display_router - it's in public.py
 app.include_router(parlay_ultimate_override_router, prefix="/api", tags=["parlays"])
 app.include_router(parlay_frontend_complete_router, prefix="/api", tags=["parlays"])
 app.include_router(debug_timestamps_router, prefix="/api", tags=["debug-timestamps"])
