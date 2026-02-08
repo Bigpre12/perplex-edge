@@ -70,7 +70,7 @@ async def compare_lines(
     if market_type:
         query = query.join(Market).where(Market.market_type == market_type)
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     lines = result.scalars().all()
 
     if not lines:
@@ -168,7 +168,7 @@ async def get_best_lines(
     if sport:
         query = query.join(Sport).where(Sport.league_code.ilike(f"%{sport}%"))
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     lines = result.scalars().all()
 
     # Group by game and find best
