@@ -26,8 +26,7 @@ async def check_markets_data(
         results["total_markets"] = result.fetchone()[0]
         
         # Check market types
-        market_types_sql = text("SELECT DISTINCT stat_type,
-            COUNT(*) as count FROM markets GROUP BY stat_type ORDER BY count DESC")
+        market_types_sql = text("SELECT DISTINCT stat_type, COUNT(*) as count FROM markets GROUP BY stat_type ORDER BY count DESC")
         result = await db.execute(market_types_sql)
         results["market_types"] = [{"stat_type": row[0], "count": row[1]} for row in result.fetchall()]
         

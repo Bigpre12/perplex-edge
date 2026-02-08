@@ -85,10 +85,7 @@ async def get_current_season(
 @router.get("/sports/{sport_id}/teams", response_model=List[TeamInfo], tags=["seasons"])
 async def list_teams_for_season(
     sport_id: int,
-    season_year: Optional[int] = Query(None,
-        description="Season year (e.g.,
-        2026). If not provided,
-        returns all teams."),
+    season_year: Optional[int] = Query(None, description="Season year (e.g., 2026). If not provided, returns all teams."),
     db: AsyncSession = Depends(get_db),
 ):
     """
