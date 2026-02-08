@@ -85,6 +85,10 @@ from app.api.candidates import router as candidates_router
 from app.api.debug_ev import router as debug_ev_router
 from app.api.clv_dashboard import router as clv_dashboard_router
 from app.api.calibration import router as calibration_router
+from app.api.line_movement import router as line_movement_router
+from app.api.correlation import router as correlation_router
+from app.api.line_shopping import router as line_shopping_router
+from app.api.performance_attribution import router as performance_attribution_router
 from app.api.brain_control import router as brain_control_router
 from app.api.roster_control import router as roster_control_router
 from app.api.frontend_endpoints import router as frontend_endpoints_router
@@ -522,6 +526,10 @@ app.include_router(candidates_router, tags=["candidates"])
 app.include_router(debug_ev_router, tags=["debug-ev"])
 app.include_router(clv_dashboard_router, tags=["clv"])
 app.include_router(calibration_router, tags=["calibration"])
+app.include_router(line_movement_router, tags=["line-movement"])
+app.include_router(correlation_router, tags=["correlation"])
+app.include_router(line_shopping_router, tags=["line-shopping"])
+app.include_router(performance_attribution_router, tags=["attribution"])
 app.include_router(brain_control_router, tags=["brain-control"])
 app.include_router(roster_control_router, tags=["roster-control"])
 app.include_router(frontend_endpoints_router, tags=["frontend-mapping"])

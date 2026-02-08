@@ -70,6 +70,22 @@ class ModelPick(Base):
     # Closing Line Value percentage (entry vs closing)
     roi_percentage: Mapped[Optional[float]] = mapped_column(Float)
     # Actual ROI after result
+    
+    # Line Movement Tracking fields
+    opening_odds: Mapped[Optional[float]] = mapped_column(Float)
+    # Opening odds when first posted
+    line_movement: Mapped[Optional[float]] = mapped_column(Float)
+    # Line movement (current - opening)
+    sharp_money_indicator: Mapped[Optional[float]] = mapped_column(Float)
+    # Sharp money indicator (-1 to 1)
+    
+    # Multi-Book Shopping fields
+    best_book_odds: Mapped[Optional[float]] = mapped_column(Float)
+    # Best odds found across all books
+    best_book_name: Mapped[Optional[str]] = mapped_column(String(50))
+    # Name of book with best odds
+    ev_improvement: Mapped[Optional[float]] = mapped_column(Float)
+    # EV improvement from line shopping
 
     # Relationships
     sport: Mapped["Sport"] = relationship(back_populates="model_picks")
