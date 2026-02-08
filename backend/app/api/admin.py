@@ -7,8 +7,9 @@ from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends, Query, HTTPException, Path
+from fastapi import APIRouter, Depends, Query, HTTPException, Path, Body
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from app.core.database import get_db
 from app.services import (
@@ -2870,6 +2871,40 @@ async def get_dashboard_summary(
         return {
             "now": now_utc.isoformat(),
             "sports": rows,
+        }
+
+
+@router.post("/sql")
+async def run_sql(
+    query: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Run SQL query (admin only)
+    """
+    try:
+        result = await db.execute(text(query))
+        
+        # For SELECT queries
+        if query.strip().upper().startswith('SELECT'):
+            rows = result.all()
+            return {
+                "status": "success",
+                "rows": [dict(row._mapping) for row in rows],
+                "row_count": len(rows)
+            }
+        else:
+            # For INSERT, UPDATE, DELETE
+            await db.commit()
+            return {
+                "status": "success",
+                "message": f"Query executed successfully",
+                "row_count": result.rowcount
+            }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
         }
     
     except Exception as e:
