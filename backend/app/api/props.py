@@ -433,7 +433,7 @@ async def compare_player_props(
     if stat_type:
         query = query.where(Market.stat_type == stat_type.upper())
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     lines = result.scalars().all()
 
     if not lines:
@@ -501,7 +501,7 @@ async def list_players_with_props(
         .distinct()
     )
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     players = result.scalars().all()
 
     return [
@@ -532,7 +532,7 @@ async def list_stat_types(
     if sport:
         query = query.join(Sport).where(Sport.league_code.ilike(f"%{sport}%"))
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     stat_types = result.scalars().all()
 
     return {"stat_types": stat_types}
