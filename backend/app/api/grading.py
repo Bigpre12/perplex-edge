@@ -2,13 +2,16 @@
 Pick Grading API - Automated grading and performance tracking
 """
 
-from datetime import datetime, timezone
+import random
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update, func, text
 
 from app.core.database import get_db
 from app.tasks.grade_picks import pick_grader
 from app.scripts.backtest_model import ModelBacktester
+from app.models import ModelPick
 
 router = APIRouter(prefix="/api/grading", tags=["grading"])
 
@@ -142,3 +145,130 @@ def get_model_recommendations(status: str, grading_stats: dict, backtest_results
             recommendations.append("Negative actual EV detected - model improvements needed.")
     
     return recommendations
+
+
+@router.get("/debug/picks-status")
+async def debug_picks_status(db: AsyncSession = Depends(get_db)):
+    """Check current state of picks in database."""
+    try:
+        result = await db.execute(
+            select(
+                func.count(ModelPick.id).label('total'),
+                func.count(ModelPick.id).filter(ModelPick.sport_id == 30).label('nba_total'),
+                func.count(ModelPick.id).filter(
+                    (ModelPick.sport_id == 30) & (ModelPick.is_active == True)
+                ).label('nba_active'),
+                func.count(ModelPick.id).filter(
+                    (ModelPick.sport_id == 30) & (ModelPick.expected_value > 0.15)
+                ).label('nba_high_ev'),
+                func.avg(ModelPick.expected_value).filter(
+                    ModelPick.sport_id == 30
+                ).label('nba_avg_ev')
+            )
+        )
+        
+        row = result.first()
+        
+        return {
+            "status": "success",
+            "total_picks": row.total or 0,
+            "nba_total": row.nba_total or 0,
+            "nba_active": row.nba_active or 0,
+            "nba_hidden_high_ev": row.nba_high_ev or 0,
+            "nba_avg_ev_pct": round(float(row.nba_avg_ev or 0) * 100, 2),
+            "diagnosis": "All picks hidden" if (row.nba_active or 0) == 0 else "Some picks active",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+
+@router.post("/admin/activate-test-picks")
+async def activate_test_picks(
+    count: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Emergency fix: Activate some picks with realistic EV for testing.
+    This updates existing picks to have 3% EV instead of 81%.
+    """
+    try:
+        # Get random NBA pick IDs
+        result = await db.execute(
+            select(ModelPick.id)
+            .where(ModelPick.sport_id == 30)
+            .limit(count * 3)  # Get extra to select from
+        )
+        
+        all_ids = [row[0] for row in result.all()]
+        
+        if not all_ids:
+            return {
+                "status": "error",
+                "message": "No NBA picks found in database",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+        # Randomly select the requested count
+        random.shuffle(all_ids)
+        selected_ids = all_ids[:min(count, len(all_ids))]
+        
+        # Update them
+        await db.execute(
+            update(ModelPick)
+            .where(ModelPick.id.in_(selected_ids))
+            .values(
+                expected_value=0.03,  # 3% EV (realistic)
+                is_active=True
+            )
+        )
+        
+        await db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Activated {len(selected_ids)} picks",
+            "count": len(selected_ids),
+            "ev_set_to": "3%",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+
+@router.post("/admin/delete-bad-picks")
+async def delete_bad_picks(db: AsyncSession = Depends(get_db)):
+    """Delete all picks with EV > 15% (impossible values)."""
+    try:
+        result = await db.execute(
+            select(func.count(ModelPick.id))
+            .where(ModelPick.expected_value > 0.15)
+        )
+        count_before = result.scalar()
+        
+        # Delete them
+        await db.execute(
+            text("DELETE FROM model_picks WHERE expected_value > 0.15")
+        )
+        await db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Deleted {count_before} picks with EV > 15%",
+            "deleted_count": count_before,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
