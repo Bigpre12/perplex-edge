@@ -2123,6 +2123,115 @@ async def list_player_prop_picks_stub(
             }
         ])
     
+    elif sport_id == 30:  # NBA
+        # NBA props for 4 games
+        nba_games = [
+            {"id": 700, "home_team": "Boston Celtics", "away_team": "New York Knicks"},
+            {"id": 701, "home_team": "Washington Wizards", "away_team": "Miami Heat"},
+            {"id": 702, "home_team": "Toronto Raptors", "away_team": "Indiana Pacers"},
+            {"id": 703, "home_team": "Minnesota Timberwolves", "away_team": "Los Angeles Clippers"}
+        ]
+        
+        for game in nba_games:
+            if game_id and game_id != game["id"]:
+                continue
+                
+            # Key players for each game
+            players = []
+            if game["id"] == 700:  # Knicks @ Celtics
+                players = [
+                    {"id": 4001, "name": "Jayson Tatum", "team": "Boston Celtics"},
+                    {"id": 4002, "name": "Jaylen Brown", "team": "Boston Celtics"},
+                    {"id": 4003, "name": "Jalen Brunson", "team": "New York Knicks"},
+                    {"id": 4004, "name": "Karl-Anthony Towns", "team": "New York Knicks"}
+                ]
+            elif game["id"] == 701:  # Heat @ Wizards
+                players = [
+                    {"id": 4011, "name": "Jimmy Butler", "team": "Miami Heat"},
+                    {"id": 4012, "name": "Bam Adebayo", "team": "Miami Heat"},
+                    {"id": 4013, "name": "Kyle Kuzma", "team": "Washington Wizards"},
+                    {"id": 4014, "name": "Jordan Poole", "team": "Washington Wizards"}
+                ]
+            elif game["id"] == 702:  # Pacers @ Raptors
+                players = [
+                    {"id": 4021, "name": "Tyrese Haliburton", "team": "Indiana Pacers"},
+                    {"id": 4022, "name": "Pascal Siakam", "team": "Toronto Raptors"},
+                    {"id": 4023, "name": "Scottie Barnes", "team": "Toronto Raptors"},
+                    {"id": 4024, "name": "Myles Turner", "team": "Indiana Pacers"}
+                ]
+            elif game["id"] == 703:  # Clippers @ Timberwolves
+                players = [
+                    {"id": 4031, "name": "Anthony Edwards", "team": "Minnesota Timberwolves"},
+                    {"id": 4032, "name": "Karl-Anthony Towns", "team": "Minnesota Timberwolves"},
+                    {"id": 4033, "name": "Kawhi Leonard", "team": "Los Angeles Clippers"},
+                    {"id": 4034, "name": "Paul George", "team": "Los Angeles Clippers"}
+                ]
+            
+            # Create props for each player
+            for player in players:
+                stub_props.extend([
+                    {
+                        "id": f"{player['id']}1",
+                        "player": {"id": player["id"], "name": player["name"], "position": "G/F"},
+                        "stat_type": "PTS",
+                        "line_value": 25.5,
+                        "side": "over",
+                        "odds": -110,
+                        "edge": 0.06,
+                        "confidence_score": 0.75,
+                        "model_probability": 0.56,
+                        "implied_probability": 0.524,
+                        "expected_value": 0.06,
+                        "game": {"id": game["id"], "home_team": game["home_team"], "away_team": game["away_team"]},
+                        "market": {"stat_type": "PTS", "description": "Points"}
+                    },
+                    {
+                        "id": f"{player['id']}2",
+                        "player": {"id": player["id"], "name": player["name"], "position": "G/F"},
+                        "stat_type": "REB",
+                        "line_value": 8.5,
+                        "side": "over",
+                        "odds": -110,
+                        "edge": 0.05,
+                        "confidence_score": 0.70,
+                        "model_probability": 0.55,
+                        "implied_probability": 0.524,
+                        "expected_value": 0.05,
+                        "game": {"id": game["id"], "home_team": game["home_team"], "away_team": game["away_team"]},
+                        "market": {"stat_type": "REB", "description": "Rebounds"}
+                    },
+                    {
+                        "id": f"{player['id']}3",
+                        "player": {"id": player["id"], "name": player["name"], "position": "G/F"},
+                        "stat_type": "AST",
+                        "line_value": 6.5,
+                        "side": "over",
+                        "odds": -110,
+                        "edge": 0.04,
+                        "confidence_score": 0.68,
+                        "model_probability": 0.54,
+                        "implied_probability": 0.524,
+                        "expected_value": 0.04,
+                        "game": {"id": game["id"], "home_team": game["home_team"], "away_team": game["away_team"]},
+                        "market": {"stat_type": "AST", "description": "Assists"}
+                    },
+                    {
+                        "id": f"{player['id']}4",
+                        "player": {"id": player["id"], "name": player["name"], "position": "G/F"},
+                        "stat_type": "PRA",
+                        "line_value": 35.5,
+                        "side": "over",
+                        "odds": -110,
+                        "edge": 0.07,
+                        "confidence_score": 0.72,
+                        "model_probability": 0.57,
+                        "implied_probability": 0.524,
+                        "expected_value": 0.07,
+                        "game": {"id": game["id"], "home_team": game["home_team"], "away_team": game["away_team"]},
+                        "market": {"stat_type": "PRA", "description": "Points+Rebounds+Assists"}
+                    }
+                ])
+    
     return PlayerPropPickList(
         items=stub_props[:limit],
         total=len(stub_props),
