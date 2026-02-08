@@ -1229,26 +1229,39 @@ async def debug_picks(
     )
     picks = result.scalars().all()
     
-    # Get related data for each pick
+    # Get all related data in bulk to avoid N+1 queries
+    player_ids = [p.player_id for p in picks if p.player_id]
+    game_ids = [p.game_id for p in picks]
+    
+    # Fetch all players in one query
+    players_map = {}
+    if player_ids:
+        players_result = await db.execute(
+            select(Player.id, Player.name).where(Player.id.in_(player_ids))
+        )
+        for player_id, player_name in players_result.all():
+            players_map[player_id] = player_name
+    
+    # Fetch all games in one query
+    games_map = {}
+    if game_ids:
+        games_result = await db.execute(
+            select(Game.id, Game.start_time, Game.status).where(Game.id.in_(game_ids))
+        )
+        for game_id, start_time, status in games_result.all():
+            games_map[game_id] = (start_time, status)
+    
+    # Build picks data
     picks_data = []
     for p in picks:
         # Check if player exists
-        player_exists = None
-        player_name = None
-        if p.player_id:
-            player_result = await db.execute(
-                select(Player.id, Player.name).where(Player.id == p.player_id)
-            )
-            player = player_result.first()
-            player_exists = player is not None
-            player_name = player[1] if player else None
+        player_exists = p.player_id in players_map
+        player_name = players_map.get(p.player_id)
         
         # Check game start_time
-        game_result = await db.execute(
-            select(Game.start_time, Game.status).where(Game.id == p.game_id)
-        )
-        game = game_result.first()
-        
+        game_data = games_map.get(p.game_id)
+        game_start_time = game_data[0] if game_data else None
+        game_status = game_data[1] if game_data else None
         # Check if player is injured
         injury_status = None
         if p.player_id:
@@ -1265,8 +1278,8 @@ async def debug_picks(
             "player_exists": player_exists,
             "injury_status": injury_status,
             "game_id": p.game_id,
-            "game_start_time": game[0].isoformat() if game and game[0] else None,
-            "game_status": game[1] if game else None,
+            "game_start_time": game_start_time.isoformat() if game_start_time else None,
+            "game_status": game_status,
             "market_id": p.market_id,
             "is_active": p.is_active,
             "side": p.side,
