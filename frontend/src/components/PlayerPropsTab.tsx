@@ -667,7 +667,7 @@ export function PlayerPropsTab() {
 
   // Debug logging
   useEffect(() => {
-    console.log('[PlayerPropsTab] State:', { 
+    if (import.meta.env.DEV) console.log('[PlayerPropsTab] State:', { 
       sportId, 
       sportLoading, 
       dataTotal: data?.total, 
