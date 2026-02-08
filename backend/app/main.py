@@ -89,6 +89,7 @@ from app.api.line_movement import router as line_movement_router
 from app.api.correlation import router as correlation_router
 from app.api.line_shopping import router as line_shopping_router
 from app.api.performance_attribution import router as performance_attribution_router
+from app.api.advanced_analytics import router as advanced_analytics_router
 from app.api.brain_control import router as brain_control_router
 from app.api.roster_control import router as roster_control_router
 from app.api.frontend_endpoints import router as frontend_endpoints_router
@@ -530,6 +531,7 @@ app.include_router(line_movement_router, tags=["line-movement"])
 app.include_router(correlation_router, tags=["correlation"])
 app.include_router(line_shopping_router, tags=["line-shopping"])
 app.include_router(performance_attribution_router, tags=["attribution"])
+app.include_router(advanced_analytics_router, tags=["advanced-analytics"])
 app.include_router(brain_control_router, tags=["brain-control"])
 app.include_router(roster_control_router, tags=["roster-control"])
 app.include_router(frontend_endpoints_router, tags=["frontend-mapping"])

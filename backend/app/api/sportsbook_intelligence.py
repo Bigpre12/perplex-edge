@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models import ModelPick, Player, Team, Market
+from app.services.sportsbook_monitor import enhanced_sportsbook_monitor
 
 router = APIRouter(prefix="/api/sportsbook", tags=["sportsbook"])
 
