@@ -37,10 +37,10 @@ def upgrade():
         ('ev_improvement', sa.Float, nullable=True)
     ]
     
-    for col_name, col_type, nullable in clv_columns:
+    for col_name, col_type in clv_columns:
         if col_name not in columns:
             # Add the column
-            op.add_column('model_picks', sa.Column(col_name, col_type, nullable=nullable))
+            op.add_column('model_picks', sa.Column(col_name, col_type, nullable=True))
             print(f"Added {col_name} column to model_picks table")
         else:
             print(f"{col_name} column already exists")
