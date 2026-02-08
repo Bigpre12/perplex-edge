@@ -20,8 +20,7 @@ def upgrade():
     # Deactivate picks with EV > 15% - these are mathematically impossible
     op.execute("""
         UPDATE model_picks 
-        SET is_active = false, 
-            notes = COALESCE(notes || '; ', '') || 'Auto-deactivated: EV > 15% (impossible value)'
+        SET is_active = false
         WHERE expected_value > 0.15 
         AND is_active = true
     """)
@@ -30,7 +29,7 @@ def upgrade():
     result = op.get_bind().execute(sa.text("""
         SELECT COUNT(*) FROM model_picks 
         WHERE expected_value > 0.15 
-        AND notes LIKE '%Auto-deactivated%'
+        AND is_active = false
     """))
     count = result.scalar()
     
@@ -42,7 +41,6 @@ def downgrade():
     """Reactivate the hidden picks (if needed for rollback)."""
     op.execute("""
         UPDATE model_picks 
-        SET is_active = true,
-            notes = REPLACE(notes, 'Auto-deactivated: EV > 15% (impossible value); ', '')
-        WHERE notes LIKE '%Auto-deactivated: EV > 15% (impossible value)%'
+        SET is_active = true
+        WHERE expected_value > 0.15
     """)
