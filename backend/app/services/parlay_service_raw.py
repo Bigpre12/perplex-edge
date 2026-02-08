@@ -54,8 +54,8 @@ def calculate_grade(edge: float) -> str:
 
 
 def grade_to_numeric(grade: str) -> int:
-    """Convert grade to numeric for comparison (A=4, B=3, C=2, D=1, F=0)."""
-    return {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}.get(grade.upper(), 0)
+    """Convert grade to numeric for comparison (A=5, B=4, C=3, D=2, F=1)."""
+    return {"A": 5, "B": 4, "C": 3, "D": 2, "F": 1}.get(grade.upper(), 0)
 
 
 # =============================================================================
@@ -395,7 +395,7 @@ async def build_parlays(
             game_window_start = now - timedelta(hours=1)
             game_window_end = now + timedelta(hours=24)
         
-        # Use raw SQL to avoid timezone issues
+        # Use raw SQL to avoid timezone issues - extended time window for better results
         sql = text(f"""
             SELECT 
                 mp.id, mp.expected_value, mp.line_value, mp.generated_at,
@@ -406,7 +406,7 @@ async def build_parlays(
             JOIN games g ON mp.game_id = g.id
             JOIN markets m ON mp.market_id = m.id
             WHERE g.sport_id = {sport_id}
-            AND mp.generated_at > '{now - timedelta(hours=6)}'
+            AND mp.generated_at > '{now - timedelta(hours=48)}  -- Extended to 48 hours
             AND mp.line_value IS NOT NULL AND mp.line_value > 0
             AND g.start_time > '{game_window_start}'
             AND g.start_time < '{game_window_end}'
