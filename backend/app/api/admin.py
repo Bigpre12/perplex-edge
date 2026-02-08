@@ -2872,6 +2872,17 @@ async def get_dashboard_summary(
             "now": now_utc.isoformat(),
             "sports": rows,
         }
+    
+    except Exception as e:
+        logger.error(
+            "dashboard_summary_error",
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Dashboard query failed: {type(e).__name__}: {str(e)}"
+        )
 
 
 @router.post("/sql")
@@ -2906,14 +2917,3 @@ async def run_sql(
             "status": "error",
             "message": str(e)
         }
-    
-    except Exception as e:
-        logger.error(
-            "dashboard_summary_error",
-            error=str(e),
-            error_type=type(e).__name__,
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Dashboard query failed: {type(e).__name__}: {str(e)}"
-        )
