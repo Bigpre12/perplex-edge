@@ -44,7 +44,7 @@ async def list_seasons(
     )
     
     # Execute
-    result = await db.execute(query)
+    result = await db.execute(query.limit(100))
     seasons = result.scalars().all()
     
     return SeasonList(
@@ -118,7 +118,7 @@ async def list_teams_for_season(
             .order_by(Team.name)
         )
     
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     teams = result.scalars().all()
     
     return [TeamInfo.model_validate(t) for t in teams]
@@ -165,7 +165,7 @@ async def list_team_roster(
         .order_by(Player.name)
     )
     
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     rows = result.all()
     
     return [
@@ -235,7 +235,7 @@ async def list_games_for_date(
             .order_by(Game.start_time)
         )
     
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     games = result.scalars().all()
     
     return [
@@ -285,7 +285,7 @@ async def list_game_player_stats(
         .order_by(Player.name)
     )
     
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     rows = result.all()
     
     # Group stats by player
