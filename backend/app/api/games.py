@@ -87,7 +87,7 @@ async def list_todays_games(
     if sport:
         query = query.join(Sport).where(Sport.league_code.ilike(f"%{sport}%"))
 
-    result = await db.execute(query)
+    result = await db.execute(query.limit(1000))
     games = result.scalars().all()
 
     return GameList(
