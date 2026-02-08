@@ -1,7 +1,7 @@
 """Add performance indexes for Phase 2 features
 
 Revision ID: 20260207_000000
-Revises: add_phase2_features
+Revises: 20260204_030000
 Create Date: 2026-02-07 23:45:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = '20260207_000000'
-down_revision = 'add_phase2_features'
+down_revision = '20260204_030000'
 branch_labels = None
 depends_on = None
 
