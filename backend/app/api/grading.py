@@ -1,19 +1,29 @@
 """
 Pick Grading API - Automated grading and performance tracking
+Uses sync connections for reliability
 """
 
 import random
+import logging
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func, text
+from sqlalchemy import select, update, func, text, create_engine
 
-from app.core.database import get_db
+from app.core.database import get_db, engine
 from app.tasks.grade_picks import pick_grader
 from app.scripts.backtest_model import ModelBacktester
 from app.models import ModelPick
 
 router = APIRouter(prefix="/api/grading", tags=["grading"])
+logger = logging.getLogger(__name__)
+
+
+@router.get("/health")
+async def grading_health():
+    """Simple health check that doesn't need database"""
+    return {"status": "ok", "router": "grading", "timestamp": datetime.now(timezone.utc).isoformat()}
+
 
 @router.post("/grade-picks")
 async def grade_completed_picks(
