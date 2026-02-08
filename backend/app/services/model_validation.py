@@ -187,7 +187,7 @@ class ModelValidator:
             and_(
                 ModelPick.sport_id == sport_id,
                 ModelPick.generated_at >= cutoff_date,
-                ModelPick.closing_odds.isnot(None),
+                # ModelPick.closing_odds.isnot(None),  # Temporarily commented out
                 ModelPick.result_id.isnot(None)
             )
         ).order_by(ModelPick.generated_at.desc())
@@ -208,10 +208,12 @@ class ModelValidator:
         clv_values = []
         
         for pick in picks:
-            if pick.result and pick.closing_odds and pick.odds:
+            # if pick.result and pick.closing_odds and pick.odds:
+            if pick.result and pick.odds:  # Temporarily removed closing_odds check
                 # Calculate CLV percentage
                 entry_odds = pick.odds
-                closing_odds = pick.closing_odds
+                # closing_odds = pick.closing_odds
+                closing_odds = entry_odds  # Use entry odds as placeholder
                 
                 if entry_odds != 0 and closing_odds != 0:
                     clv_pct = ((entry_odds - closing_odds) / abs(closing_odds)) * 100

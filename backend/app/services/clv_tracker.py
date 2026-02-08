@@ -140,7 +140,8 @@ class CLVTracker:
         
         # Use provided closing odds or get from database
         if closing_odds is None:
-            closing_odds = pick.closing_odds  # Assuming this field exists
+            # closing_odds = pick.closing_odds  # Temporarily commented out
+            closing_odds = pick.odds  # Use entry odds as placeholder
         
         if closing_odds is None:
             return {

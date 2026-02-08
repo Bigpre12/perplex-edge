@@ -53,7 +53,7 @@ def main():
             else:
                 print(f"    {error['error']}")
     else:
-        print("✓ No syntax errors found")
+        print("OK No syntax errors found")
     
     print("="*80)
     

@@ -127,8 +127,8 @@ class PickGrader:
             pick_result.actual_value = game_result.get(pick.player_id, {}).get(pick.market.stat_type, 0)
             
             # Update pick with CLV data
-            pick.closing_odds = closing_odds
-            pick.clv_percentage = clv_percentage
+            # pick.closing_odds = closing_odds  # Temporarily commented out
+            # pick.clv_percentage = clv_percentage  # Temporarily commented out
             
             logger.info(f"[grader] Graded pick {pick.id}: {pick_result.result} (CLV: {clv_percentage:.2f}%)")
             
