@@ -3,7 +3,7 @@ Active Monitoring API - Real-time line and stat monitoring endpoints.
 """
 
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db

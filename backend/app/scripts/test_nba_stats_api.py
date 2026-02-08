@@ -6,8 +6,11 @@ Run this after Railway deployment to test grading functionality
 import asyncio
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
-sys.path.append('/app')
+# Add parent directories to path for imports
+backend_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(backend_dir))
 
 async def test_nba_stats_api():
     """Test NBA Stats API with a known player and game."""
