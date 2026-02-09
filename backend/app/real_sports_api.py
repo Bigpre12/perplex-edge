@@ -2,8 +2,8 @@
 Real Sports API Integration
 Connects to actual sports data providers for live odds and results
 """
-import asyncio
 import os
+import httpx
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 import json
@@ -12,12 +12,87 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class RealSportsAPI:
+class RealDataConnector:
     def __init__(self):
-        self.api_key = os.getenv("SPORTS_DATA_API_KEY", "demo_key")
-        self.odds_api_key = os.getenv("ODDS_API_KEY", "demo_key")
-        self.base_url = "https://api.sportsdata.io/v3"
-        self.odds_url = "https://api.the-odds-api.com/v4"
+        # API Keys from environment
+        self.betstack_api_key = os.getenv("BETSTACK_API_KEY")
+        self.odds_api_key = os.getenv("THE_ODDS_API_KEY")
+        self.roster_api_key = os.getenv("ROSTER_API_KEY")
+        self.ai_api_key = os.getenv("AI_API_KEY")
+        
+        # API Base URLs
+        self.betstack_base_url = "https://api.betstack.com/v1"
+        self.odds_api_base_url = "https://api.the-odds-api.com/v4"
+        self.groq_api_base_url = "https://api.groq.com/openai/v1"
+        
+    async def fetch_odds_from_theodds(self, sport: str = "basketball_nba"):
+        """Fetch real-time odds from The Odds API"""
+        async with httpx.AsyncClient() as client:
+            url = f"{self.odds_api_base_url}/sports/{sport}/odds"
+            params = {
+                "apiKey": self.odds_api_key,
+                "regions": "us",
+                "markets": "h2h,spreads,totals,player_props",
+                "oddsFormat": "american"
+            }
+            try:
+                response = await client.get(url, params=params, timeout=10.0)
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                logger.error(f"Error fetching odds: {e}")
+                return {"error": str(e)}
+    
+    async def fetch_props_from_betstack(self, sport: str = "nba"):
+        """Fetch player props from Betstack"""
+        async with httpx.AsyncClient() as client:
+            url = f"{self.betstack_base_url}/props/{sport}"
+            headers = {"X-API-Key": self.betstack_api_key}
+            try:
+                response = await client.get(url, headers=headers, timeout=10.0)
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                logger.error(f"Error fetching props: {e}")
+                return {"error": str(e)}
+    
+    async def fetch_roster_data(self, team: str):
+        """Fetch roster data using Roster API"""
+        async with httpx.AsyncClient() as client:
+            url = f"https://api.roster.com/v1/teams/{team}/roster"
+            headers = {"Authorization": f"Bearer {self.roster_api_key}"}
+            try:
+                response = await client.get(url, headers=headers, timeout=10.0)
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                logger.error(f"Error fetching roster: {e}")
+                return {"error": str(e)}
+    
+    async def generate_ai_analysis(self, prompt: str):
+        """Generate AI analysis using Groq API (fast LLM)"""
+        async with httpx.AsyncClient() as client:
+            url = f"{self.groq_api_base_url}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.ai_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": "llama-3.3-70b-versatile",  # Fast Groq model
+                "messages": [
+                    {"role": "system", "content": "You are a sports betting analytics expert."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 500
+            }
+            try:
+                response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                logger.error(f"Error generating AI analysis: {e}")
+                return {"error": str(e)}
         
     async def get_nba_games(self) -> List[Dict]:
         """Fetch real NBA games from SportsDataIO"""
