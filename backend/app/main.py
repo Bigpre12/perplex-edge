@@ -4,6 +4,7 @@ Main FastAPI application for the sports betting system
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.immediate_working import router
+from app.api.validation_endpoints import router as validation_router
 
 app = FastAPI(
     title="Sports Betting Intelligence API",
@@ -22,6 +23,9 @@ app.add_middleware(
 
 # Include the immediate working router
 app.include_router(router, prefix="/immediate", tags=["immediate"])
+
+# Include the validation router
+app.include_router(validation_router, prefix="/validation", tags=["validation"])
 
 @app.get("/")
 async def root():
