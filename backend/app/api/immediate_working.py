@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone, timedelta
 import textwrap
 
 router = APIRouter()
@@ -1516,7 +1516,7 @@ async def get_game_result_detail(game_id: int):
                 "start_time": "20:20 UTC",
                 "duration": "3:15:00",
                 "attendance": 76416,
-                "weather": "Clear, 72캟"
+                "weather": "Clear, 72째F"
             },
             "betting_summary": {
                 "total_bets": 15420,
@@ -2081,7 +2081,7 @@ async def get_game_detail(game_id: int):
                 "venue": "Arrowhead Stadium",
                 "location": "Kansas City, MO",
                 "attendance": 76416,
-                "weather": "Clear, 72캟",
+                "weather": "Clear, 72째F",
                 "duration": "3:15:00",
                 "broadcast": "CBS",
                 "referees": ["John Smith", "Mike Johnson", "Bob Wilson"]
@@ -3858,7 +3858,7 @@ async def get_active_injuries(sport_id: int = Query(None, description="Sport ID 
             },
             {
                 "id": 404,
-                "sport_id': 32,
+                "sport_id": 32,
                 'player_id': 404,
                 'status': 'DAY_TO_DAY',
                 'status_detail': 'Back Strain',
@@ -4820,7 +4820,7 @@ async def get_line_movements(game_id: int, player_id: int, market_id: int = Quer
         
         # Apply market filter
         if market_id:
-            mock_movements = [m for m in mock_movements if m['sportsbook'] == 'draftkings'] or m['sportsbook'] == 'fanduel']
+            mock_movements = [m for m in mock_movements if m['sportsbook'] == 'draftkings' or m['sportsbook'] == 'fanduel']
         
         return {
             "game_id": game_id,
@@ -12391,7 +12391,7 @@ async def get_game_result_detail(game_id: int):
                 "start_time": "20:20 UTC",
                 "duration": "3:15:00",
                 "attendance": 76416,
-                "weather": "Clear, 72캟"
+                "weather": "Clear, 72째F"
             },
             "betting_summary": {
                 "total_bets": 15420,
@@ -12956,7 +12956,7 @@ async def get_game_detail(game_id: int):
                 "venue": "Arrowhead Stadium",
                 "location": "Kansas City, MO",
                 "attendance": 76416,
-                "weather": "Clear, 72캟",
+                "weather": "Clear, 72째F",
                 "duration": "3:15:00",
                 "broadcast": "CBS",
                 "referees": ["John Smith", "Mike Johnson", "Bob Wilson"]
@@ -14733,7 +14733,7 @@ async def get_active_injuries(sport_id: int = Query(None, description="Sport ID 
             },
             {
                 "id": 404,
-                "sport_id': 32,
+                "sport_id": 32,
                 'player_id': 404,
                 'status': 'DAY_TO_DAY',
                 'status_detail': 'Back Strain',
@@ -15695,7 +15695,7 @@ async def get_line_movements(game_id: int, player_id: int, market_id: int = Quer
         
         # Apply market filter
         if market_id:
-            mock_movements = [m for m in mock_movements if m['sportsbook'] == 'draftkings'] or m['sportsbook'] == 'fanduel']
+            mock_movements = [m for m in mock_movements if m['sportsbook'] == 'draftkings' or m['sportsbook'] == 'fanduel']
         
         return {
             "game_id": game_id,
