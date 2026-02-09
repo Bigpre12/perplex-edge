@@ -6061,9 +6061,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 5,
@@ -6079,9 +6079,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -6097,9 +6097,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(hours=1).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=1).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=1).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 7,
@@ -6115,9 +6115,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -6565,9 +6565,9 @@ async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, descripti
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 5,
@@ -6583,9 +6583,9 @@ async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, descripti
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -6803,8 +6803,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 2,
@@ -6819,8 +6819,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 3,
@@ -6835,8 +6835,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 19.09,
                 "confidence": 87.0,
                 "hit_rate": 63.5,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 4,
@@ -6851,8 +6851,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 17.40,
                 "confidence": 89.0,
                 "hit_rate": 64.1,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 5,
@@ -6883,8 +6883,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 7,
@@ -6899,8 +6899,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 13.58,
                 "confidence": 86.0,
                 "hit_rate": 63.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 8,
@@ -6915,8 +6915,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 10.75,
                 "confidence": 84.0,
                 "hit_rate": 63.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=3).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=3).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 9,
@@ -6931,8 +6931,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 12.61,
                 "confidence": 85.0,
                 "hit_rate": 62.9,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 10,
@@ -6947,8 +6947,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -7008,8 +7008,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 1,
@@ -7024,8 +7024,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 3,
@@ -7040,8 +7040,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 19.09,
                 "confidence": 87.0,
                 "hit_rate": 63.5,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -7056,8 +7056,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 10,
@@ -7072,8 +7072,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -7120,8 +7120,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 1,
@@ -7136,8 +7136,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 4,
@@ -7152,8 +7152,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 17.40,
                 "confidence": 89.0,
                 "hit_rate": 64.1,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -7168,8 +7168,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 10,
@@ -7184,8 +7184,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -7395,8 +7395,8 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -7411,8 +7411,8 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 11,
@@ -7427,8 +7427,8 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
                 "ev_percentage": 8.84,
                 "confidence": 80.0,
                 "hit_rate": 61.7,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -7468,8 +7468,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 4,
@@ -7484,8 +7484,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 17.40,
                 "confidence": 89.0,
                 "hit_rate": 64.1,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -7500,8 +7500,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 7,
@@ -7516,8 +7516,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 13.58,
                 "confidence": 86.0,
                 "hit_rate": 63.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -7557,8 +7557,8 @@ async def search_picks(query: str = Query(..., description="Search query"),
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 2,
@@ -7573,8 +7573,8 @@ async def search_picks(query: str = Query(..., description="Search query"),
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -16936,9 +16936,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 5,
@@ -16954,9 +16954,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -16972,9 +16972,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(hours=1).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=1).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=1).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 7,
@@ -16990,9 +16990,9 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -17440,9 +17440,9 @@ async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, descripti
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 5,
@@ -17458,9 +17458,9 @@ async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, descripti
                 "american_odds": -110,
                 "side": "over",
                 "is_active": True,
-                "snapshot_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "snapshot_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -17678,8 +17678,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 2,
@@ -17694,8 +17694,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 3,
@@ -17710,8 +17710,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 19.09,
                 "confidence": 87.0,
                 "hit_rate": 63.5,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 4,
@@ -17726,8 +17726,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 17.40,
                 "confidence": 89.0,
                 "hit_rate": 64.1,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 5,
@@ -17758,8 +17758,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 7,
@@ -17774,8 +17774,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 13.58,
                 "confidence": 86.0,
                 "hit_rate": 63.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 8,
@@ -17790,8 +17790,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 10.75,
                 "confidence": 84.0,
                 "hit_rate": 63.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=3).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=3).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 9,
@@ -17806,8 +17806,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 12.61,
                 "confidence": 85.0,
                 "hit_rate": 62.9,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 10,
@@ -17822,8 +17822,8 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -17883,8 +17883,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 1,
@@ -17899,8 +17899,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 3,
@@ -17915,8 +17915,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 19.09,
                 "confidence": 87.0,
                 "hit_rate": 63.5,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=10).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -17931,8 +17931,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 10,
@@ -17947,8 +17947,8 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -17995,8 +17995,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 1,
@@ -18011,8 +18011,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 4,
@@ -18027,8 +18027,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 17.40,
                 "confidence": 89.0,
                 "hit_rate": 64.1,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -18043,8 +18043,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 10,
@@ -18059,8 +18059,8 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=4).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -18270,8 +18270,8 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -18286,8 +18286,8 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 11,
@@ -18302,8 +18302,8 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
                 "ev_percentage": 8.84,
                 "confidence": 80.0,
                 "hit_rate": 61.7,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -18343,8 +18343,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 4,
@@ -18359,8 +18359,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 17.40,
                 "confidence": 89.0,
                 "hit_rate": 64.1,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 6,
@@ -18375,8 +18375,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 15.92,
                 "confidence": 88.0,
                 "hit_rate": 64.0,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 7,
@@ -18391,8 +18391,8 @@ async def get_picks_by_game(game_id: int):
                 "ev_percentage": 13.58,
                 "confidence": 86.0,
                 "hit_rate": 63.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(hours=2).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
@@ -18432,8 +18432,8 @@ async def search_picks(query: str = Query(..., description="Search query"),
                 "ev_percentage": 19.28,
                 "confidence": 90.0,
                 "hit_rate": 65.2,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=30).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             },
             {
                 "id": 2,
@@ -18448,8 +18448,8 @@ async def search_picks(query: str = Query(..., description="Search query"),
                 "ev_percentage": 21.28,
                 "confidence": 91.0,
                 "hit_rate": 66.8,
-                "created_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat(),
-                "updated_at": datetime.now(timezone.utc) - timedelta(minutes=15).isoformat()
+                "created_at": (datetime.now(timezone.utc) - timedelta()).isoformat(),
+                "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
         
