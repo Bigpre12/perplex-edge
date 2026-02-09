@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.immediate_working import router
 from app.api.validation_endpoints import router as validation_router
+from app.api.track_record_endpoints import router as track_record_router
 
 app = FastAPI(
     title="Sports Betting Intelligence API",
@@ -26,6 +27,9 @@ app.include_router(router, prefix="/immediate", tags=["immediate"])
 
 # Include the validation router
 app.include_router(validation_router, prefix="/validation", tags=["validation"])
+
+# Include the track record router
+app.include_router(track_record_router, prefix="/track-record", tags=["track-record"])
 
 @app.get("/")
 async def root():
