@@ -8,7 +8,7 @@ from app.real_data_connector import get_real_picks_with_validation, model_valida
 
 router = APIRouter()
 
-@router.get("/validation/picks")
+@router.get("/picks")
 async def get_validated_picks(
     limit: int = Query(50, description="Number of picks to return"),
     include_graded: bool = Query(True, description="Include graded picks")
@@ -43,7 +43,7 @@ async def get_validated_picks(
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-@router.get("/validation/performance")
+@router.get("/performance")
 async def get_validation_performance(days: int = Query(30, description="Days of performance data")):
     """Get model validation performance metrics"""
     try:
@@ -89,7 +89,7 @@ async def get_validation_performance(days: int = Query(30, description="Days of 
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-@router.get("/validation/track-record")
+@router.get("/track-record")
 async def get_track_record():
     """Get transparent track record"""
     try:
