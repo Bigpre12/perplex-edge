@@ -10,8 +10,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 async def get_db() -> AsyncGenerator[asyncpg.Connection, None]:
     """Get database connection"""
     if not DATABASE_URL:
-        # Return None if no database URL - allows app to start without DB
-        return None
+        # Can't return None in async generator, just don't yield
+        return
     
     try:
         conn = await asyncpg.connect(DATABASE_URL)
@@ -22,7 +22,8 @@ async def get_db() -> AsyncGenerator[asyncpg.Connection, None]:
     except Exception as e:
         # Log error but don't crash app
         print(f"Database connection error: {e}")
-        yield None
+        # Don't yield None on error either
+        return
 
 async def get_db_connection() -> Optional[asyncpg.Connection]:
     """Get database connection"""
