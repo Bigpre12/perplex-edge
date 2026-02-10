@@ -1,0 +1,5 @@
+# Exclude problematic files from Railway build
+app/api/emergency.py
+app/api/emergency.py.bak
+**/emergency.py
+**/emergency.*
