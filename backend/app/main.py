@@ -1,6 +1,7 @@
 """
 Main FastAPI application for the sports betting system
 """
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.immediate_working import router
@@ -43,8 +44,11 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": "2025-02-09T12:00:00Z"}
+    from datetime import datetime, timezone
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use Railway's PORT or default to 8000
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

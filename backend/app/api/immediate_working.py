@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from datetime import datetime, timedelta, timezone, timedelta
 import textwrap
@@ -7,7 +6,7 @@ import textwrap
 router = APIRouter()
 
 def get_player_recent_stats(player_id, days=None):
-    """Get recent player statistics - fixed function signature"""
+    """Get recent player statistics - handles missing function gracefully"""
     try:
         # Mock implementation to prevent crashes
         return {
@@ -28,7 +27,7 @@ def get_player_recent_stats(player_id, days=None):
 async def get_working_player_props_immediate(
     sport_id: int = Query(31, description="Sport ID"),
     limit: int = Query(10, description="Number of props to return"),
-    db: AsyncSession = Depends(get_db)
+    db = Depends(get_db)
 ):
     """Immediate working player props endpoint"""
     try:
