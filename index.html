@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Betting Intelligence</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .api-status {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .endpoint-list {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .endpoint {
+            padding: 10px;
+            margin: 5px 0;
+            background: #ecf0f1;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .status-healthy {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏈 Sports Betting Intelligence Platform</h1>
+        <p>Real-time analytics and predictions</p>
+    </div>
+
+    <div class="api-status">
+        <h2>🔧 API Status</h2>
+        <p>Backend Status: <span id="backend-status" class="status-healthy">Checking...</span></p>
+        <p>Frontend Status: <span class="status-healthy">✅ Running</span></p>
+        <button class="btn" onclick="checkBackend()">Check Backend Health</button>
+        <button class="btn" onclick="loadEndpoints()">Load API Endpoints</button>
+    </div>
+
+    <div class="endpoint-list">
+        <h2>🚀 Available API Endpoints</h2>
+        <div id="endpoints">
+            <p>Click "Load API Endpoints" to see available endpoints...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://railway-engine-production.up.railway.app';
+
+        async function checkBackend() {
+            const status = document.getElementById('backend-status');
+            status.textContent = 'Checking...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    status.textContent = '✅ Healthy';
+                    status.className = 'status-healthy';
+                } else {
+                    status.textContent = '❌ Unhealthy';
+                    status.className = 'status-unhealthy';
+                }
+            } catch (error) {
+                status.textContent = '❌ Error';
+                status.className = 'status-unhealthy';
+            }
+        }
+
+        async function loadEndpoints() {
+            const endpointsDiv = document.getElementById('endpoints');
+            endpointsDiv.innerHTML = '<p>Loading endpoints...</p>';
+            
+            const endpoints = [
+                { path: '/health', description: 'Health check endpoint' },
+                { path: '/immediate/working-player-props', description: 'Working player props' },
+                { path: '/immediate/brain-metrics', description: 'Brain metrics' },
+                { path: '/immediate/picks', description: 'Model picks' },
+                { path: '/track-record/track-record', description: 'Track record' },
+                { path: '/status/model-status', description: 'Model status' },
+                { path: '/docs', description: 'API Documentation' }
+            ];
+
+            let html = '';
+            endpoints.forEach(endpoint => {
+                html += `
+                    <div class="endpoint">
+                        <strong>${API_BASE}${endpoint.path}</strong><br>
+                        <small>${endpoint.description}</small>
+                        <button class="btn" onclick="testEndpoint('${endpoint.path}')">Test</button>
+                    </div>
+                `;
+            });
+            
+            endpointsDiv.innerHTML = html;
+        }
+
+        async function testEndpoint(path) {
+            try {
+                const response = await fetch(`${API_BASE}${path}`);
+                const data = await response.json();
+                alert(`Success! Response:\n\n${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                alert(`Error testing ${path}:\n\n${error.message}`);
+            }
+        }
+
+        // Auto-check backend on load
+        window.onload = function() {
+            checkBackend();
+        };
+    </script>
+</body>
+</html>
