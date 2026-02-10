@@ -28,7 +28,7 @@ def get_player_recent_stats(player_id, days=None):
 async def get_working_player_props_immediate(
     sport_id: int = Query(31, description="Sport ID"),
     limit: int = Query(10, description="Number of props to return"),
-    db = Depends(get_db)
+    db = None
 ):
     """Immediate working player props endpoint"""
     try:
@@ -108,7 +108,7 @@ async def get_working_player_props_immediate(
 
 # Brain Metrics Endpoints
 @router.get("/brain-metrics")
-async def get_brain_metrics(db: AsyncSession = Depends(get_db)):
+async def get_brain_metrics(db = None):
     """Get current brain business metrics"""
     try:
         # Return mock data for now
@@ -10983,7 +10983,7 @@ async def get_super_bowl_props_immediate():
 
 # Brain Metrics Endpoints
 @router.get("/brain-metrics")
-async def get_brain_metrics(db: AsyncSession = Depends(get_db)):
+async def get_brain_metrics(db = None):
     """Get current brain business metrics"""
     try:
         # Return mock data for now

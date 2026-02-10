@@ -1,29 +1,16 @@
 """
 Database module for the sports betting system
 """
-import asyncpg
 import os
 from typing import AsyncGenerator, Optional
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-async def get_db() -> AsyncGenerator[asyncpg.Connection, None]:
-    """Get database connection"""
-    if not DATABASE_URL:
-        # Can't return None in async generator, just don't yield
-        return
-    
-    try:
-        conn = await asyncpg.connect(DATABASE_URL)
-        try:
-            yield conn
-        finally:
-            await conn.close()
-    except Exception as e:
-        # Log error but don't crash app
-        print(f"Database connection error: {e}")
-        # Don't yield None on error either
-        return
+async def get_db() -> AsyncGenerator[None, None]:
+    """Get database connection - mock implementation for Railway deployment"""
+    # Mock database dependency for now
+    # This allows FastAPI to start without actual database
+    yield None
 
 async def get_db_connection() -> Optional[asyncpg.Connection]:
     """Get database connection"""
