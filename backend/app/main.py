@@ -45,7 +45,7 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     from datetime import datetime, timezone
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat(), "version": "1.0.1"}
 
 if __name__ == "__main__":
     import uvicorn
