@@ -1,226 +1,214 @@
-from fastapi import APIRouter, Depends, Query
+"""
+Working Parlays Router — Backward-compatible parlay & Monte Carlo endpoints.
+
+Now delegates to the real monte_carlo_service instead of returning hardcoded data.
+"""
+import random
 from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database import get_db
+from app.services.monte_carlo_service import monte_carlo_service
+from app.real_data_connector import real_data_connector
+from app.services.brain_service import brain_service
 
 router = APIRouter()
 
+
 @router.get("/working-parlays")
 async def get_working_parlays(
-    sport_id: int = Query(30, description="Sport ID"),
-    limit: int = Query(5, description="Number of parlays to return"),
-    db = Depends(get_db)
+    sport_key: str = Query("basketball_nba", description="The Odds API sport key"),
+    game_id: str = Query(None, description="External Game ID (leave empty to pick a random live game)"),
+    limit: int = Query(5, description="Number of parlays to generate"),
+    db=Depends(get_db),
 ):
-    """Working parlay endpoint - returns sample parlays"""
+    """Generate realistic sample parlays using live Odds API data and Monte Carlo edges."""
     try:
-        # Sample parlay data
-        sample_parlays = [
-            {
-                'id': 1,
-                'total_ev': 0.15,
-                'total_odds': 275,
-                'legs': [
-                    {
-                        'player_name': 'Drake Maye',
-                        'stat_type': 'Passing Yards',
-                        'line_value': 245.5,
-                        'side': 'over',
-                        'odds': -110,
-                        'edge': 0.12
-                    },
-                    {
-                        'player_name': 'Sam Darnold',
-                        'stat_type': 'Passing Yards',
-                        'line_value': 235.5,
-                        'side': 'over',
-                        'odds': -105,
-                        'edge': 0.08
-                    }
-                ],
-                'confidence_score': 0.75,
-                'created_at': datetime.now(timezone.utc).isoformat()
-            },
-            {
-                'id': 2,
-                'total_ev': 0.18,
-                'total_odds': 320,
-                'legs': [
-                    {
-                        'player_name': 'Drake Maye',
-                        'stat_type': 'Passing TDs',
-                        'line_value': 1.5,
-                        'side': 'over',
-                        'odds': -115,
-                        'edge': 0.15
-                    },
-                    {
-                        'player_name': 'Sam Darnold',
-                        'stat_type': 'Passing TDs',
-                        'line_value': 1.5,
-                        'side': 'over',
-                        'odds': -110,
-                        'edge': 0.12
-                    }
-                ],
-                'confidence_score': 0.78,
-                'created_at': datetime.now(timezone.utc).isoformat()
-            },
-            {
-                'id': 3,
-                'total_ev': 0.22,
-                'total_odds': 450,
-                'legs': [
-                    {
-                        'player_name': 'Drake Maye',
-                        'stat_type': 'Completions',
-                        'line_value': 22.5,
-                        'side': 'over',
-                        'odds': -105,
-                        'edge': 0.09
-                    },
-                    {
-                        'player_name': 'Sam Darnold',
-                        'stat_type': 'Completions',
-                        'line_value': 21.5,
-                        'side': 'over',
-                        'odds': -110,
-                        'edge': 0.11
-                    },
-                    {
-                        'player_name': 'Drake Maye',
-                        'stat_type': 'Passing Yards',
-                        'line_value': 245.5,
-                        'side': 'over',
-                        'odds': -110,
-                        'edge': 0.12
-                    }
-                ],
-                'confidence_score': 0.82,
-                'created_at': datetime.now(timezone.utc).isoformat()
+        # 1. Fetch live games and pick one if game_id is not provided
+        games = await real_data_connector.fetch_nba_games() if "nba" in sport_key else await real_data_connector.fetch_nfl_games()
+        
+        if not games:
+            raise HTTPException(status_code=404, detail="No live games found for parlay generation")
+            
+        target_game_id = game_id or games[0].get("id")
+        
+        # 2. Fetch live player props for this game (Points market used as default)
+        props = await real_data_connector.fetch_player_props(sport_key, target_game_id, "player_points")
+        
+        if len(props) < 3:
+            raise HTTPException(status_code=404, detail=f"Not enough player props found for game {target_game_id}")
+            
+        # Extract unique players to build parlay combinations
+        unique_players = list({p["player_name"]: p for p in props}.values())
+        
+        # 3. Build sample parlay definitions
+        result_parlays = []
+        parlay_id = 1
+        
+        for _ in range(limit):
+            # Pick 2-4 random legs for the parlay
+            num_legs = random.randint(2, min(4, len(unique_players)))
+            selected_props = random.sample(unique_players, num_legs)
+            
+            legs_def = []
+            for prop in selected_props:
+                # To simulate reality, we assume the true mean is close to the line
+                # In a real system, the mean/std_dev would come from your ML projections model
+                simulated_mean = prop["line"] * random.uniform(0.85, 1.15) 
+                
+                legs_def.append({
+                    "player_name": prop["player_name"],
+                    "stat_type": prop["stat_type"],
+                    "mean": simulated_mean,
+                    "std_dev": simulated_mean * 0.2, # 20% variance estimator
+                    "line": prop["line"],
+                    "side": "over" if random.choice([True, False]) else "under",
+                    "odds": prop["over_odds"] if random.choice([True, False]) else prop["under_odds"]
+                })
+                
+            # 4. Run real Monte Carlo simulation on this parlay definition
+            mc_result = monte_carlo_service.simulate_parlay(
+                legs=legs_def, n_sims=5000
+            )
+
+            # 5. Format legs for response
+            formatted_legs = []
+            for i, leg in enumerate(legs_def):
+                leg_mc = mc_result["leg_results"][i] if i < len(mc_result["leg_results"]) else {}
+                formatted_legs.append({
+                    "player_name": leg["player_name"],
+                    "stat_type": leg["stat_type"],
+                    "line_value": leg["line"],
+                    "side": leg["side"],
+                    "odds": leg["odds"],
+                    "edge": leg_mc.get("edge", 0),
+                    "simulated_hit_rate": leg_mc.get("simulated_hit_rate", 0),
+                })
+
+            parlay_dict = {
+                "id": parlay_id,
+                "game_id": target_game_id,
+                "game_name": f"{games[0].get('away_team_name')} @ {games[0].get('home_team_name')}",
+                "total_ev": mc_result["parlay_ev"],
+                "total_odds": mc_result["combined_decimal_odds"],
+                "parlay_hit_rate": mc_result["parlay_hit_rate"],
+                "legs": formatted_legs,
+                "confidence_score": mc_result["parlay_hit_rate"],
+                "simulations": mc_result["simulations"],
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
-        ]
-        
+            
+            # 6. Generate AI reasoning for this specific parlay configuration
+            parlay_dict["ai_reasoning"] = await brain_service.analyze_parlay(parlay_dict)
+            
+            result_parlays.append(parlay_dict)
+            parlay_id += 1
+
         return {
-            'parlays': sample_parlays[:limit],
-            'total': len(sample_parlays),
-            'sport_id': sport_id,
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            "game_name": f"{games[0].get('away_team_name')} @ {games[0].get('home_team_name')}",
+            "parlays": result_parlays,
+            "total": len(result_parlays),
+            "sport_key": sport_key,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "source": "The Odds API + Monte Carlo Engine"
         }
-        
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
         return {
-            'parlays': [],
-            'total': 0,
-            'error': str(e),
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            "parlays": [],
+            "total": 0,
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
 
 @router.get("/monte-carlo-simulation")
 async def get_monte_carlo_simulation(
-    sport_id: int = Query(31, description="Sport ID"),
-    game_id: int = Query(648, description="Game ID"),
-    simulations: int = Query(10000, description="Number of simulations"),
-    db = Depends(get_db)
+    sport_key: str = Query("basketball_nba", description="The Odds API sport key"),
+    game_id: str = Query(None, description="External Game ID (leave empty to pick a random live game)"),
+    simulations: int = Query(5000, description="Number of simulations"),
+    db=Depends(get_db),
 ):
-    """Monte Carlo simulation endpoint"""
+    """
+    Monte Carlo simulation endpoint using Live Data.
+
+    Generates player stat distributions against Odds API real lines
+    using the monte_carlo_service engine.
+    """
     try:
-        # Sample Monte Carlo results
-        simulation_results = {
-            'game_id': game_id,
-            'sport_id': sport_id,
-            'simulations_run': simulations,
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'results': {
-                'drake_maye': {
-                    'passing_yards': {
-                        'mean': 248.5,
-                        'median': 245.0,
-                        'std_dev': 45.2,
-                        'percentiles': {
-                            '10': 195.0,
-                            '25': 215.0,
-                            '50': 245.0,
-                            '75': 280.0,
-                            '90': 310.0
-                        }
-                    },
-                    'passing_tds': {
-                        'mean': 1.8,
-                        'median': 2.0,
-                        'std_dev': 0.9,
-                        'percentiles': {
-                            '10': 0.0,
-                            '25': 1.0,
-                            '50': 2.0,
-                            '75': 2.0,
-                            '90': 3.0
-                        }
-                    },
-                    'completions': {
-                        'mean': 23.2,
-                        'median': 23.0,
-                        'std_dev': 4.1,
-                        'percentiles': {
-                            '10': 17.0,
-                            '25': 20.0,
-                            '50': 23.0,
-                            '75': 26.0,
-                            '90': 29.0
-                        }
-                    }
-                },
-                'sam_darnold': {
-                    'passing_yards': {
-                        'mean': 238.5,
-                        'median': 235.0,
-                        'std_dev': 42.8,
-                        'percentiles': {
-                            '10': 185.0,
-                            '25': 205.0,
-                            '50': 235.0,
-                            '75': 270.0,
-                            '90': 300.0
-                        }
-                    },
-                    'passing_tds': {
-                        'mean': 1.6,
-                        'median': 2.0,
-                        'std_dev': 0.8,
-                        'percentiles': {
-                            '10': 0.0,
-                            '25': 1.0,
-                            '50': 2.0,
-                            '75': 2.0,
-                            '90': 3.0
-                        }
-                    },
-                    'completions': {
-                        'mean': 22.1,
-                        'median': 22.0,
-                        'std_dev': 3.9,
-                        'percentiles': {
-                            '10': 16.0,
-                            '25': 19.0,
-                            '50': 22.0,
-                            '75': 25.0,
-                            '90': 28.0
-                        }
-                    }
-                }
-            },
-            'probabilities': {
-                'drake_mayne_passing_yards_over_245.5': 0.52,
-                'sam_darnold_passing_yards_over_235.5': 0.48,
-                'drake_mayne_passing_tds_over_1.5': 0.58,
-                'sam_darnold_passing_tds_over_1.5': 0.54,
-                'drake_mayne_completions_over_22.5': 0.56,
-                'sam_darnold_completions_over_21.5': 0.53
+        # 1. Fetch live games and pick one if game_id is not provided
+        games = await real_data_connector.fetch_nba_games() if "nba" in sport_key else await real_data_connector.fetch_nfl_games()
+        
+        if not games:
+            raise HTTPException(status_code=404, detail="No live games found for MC simulation")
+            
+        target_game_id = game_id or games[0].get("id")
+
+        # 2. Fetch live props across multiple markets to analyze
+        markets = ["player_points", "player_rebounds", "player_assists"] if "nba" in sport_key else ["player_pass_yds", "player_rush_yds"]
+        
+        all_props = []
+        for market in markets:
+            props = await real_data_connector.fetch_player_props(sport_key, target_game_id, market)
+            all_props.extend(props[:10]) # Limit to top 10 per market for reasonable API speed
+            
+        if not all_props:
+            raise HTTPException(status_code=404, detail="No player props found for Monte Carlo simulation")
+            
+        # Run real simulations per prop
+        results = {}
+        probabilities = {}
+
+        for prop in all_props:
+            player_key = prop["player_name"].replace(" ", "_").lower()
+            stat_key = prop["stat_type"]
+            
+            if player_key not in results:
+                results[player_key] = {}
+                
+            # Simulate projections (mock ML means - variance around the line)
+            simulated_mean = prop["line"] * random.uniform(0.9, 1.1)
+            std_dev = simulated_mean * 0.2
+            
+            sim_result = monte_carlo_service.simulate_prop(
+                mean=simulated_mean,
+                std_dev=std_dev,
+                line=prop["line"],
+                side="over",
+                n_sims=simulations,
+                distribution="normal" if "points" in stat_key or "yds" in stat_key else "poisson",
+            )
+
+            results[player_key][stat_key] = {
+                "mean": sim_result["mean"],
+                "median": sim_result["median"],
+                "std_dev": sim_result["std_dev"],
+                "percentiles": sim_result["percentiles"],
+                "actual_line": prop["line"],
+                "simulated_mean": round(simulated_mean, 1)
             }
+
+            prob_key = f"{player_key}_{stat_key}_over_{prop['line']}"
+            probabilities[prob_key] = sim_result["hit_rate"]
+
+        return {
+            "game_id": target_game_id,
+            "sport_key": sport_key,
+            "simulations_run": simulations,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "results": results,
+            "probabilities": probabilities,
+            "source": "The Odds API + Monte Carlo Engine"
         }
-        
-        return simulation_results
-        
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
         return {
-            'error': str(e),
-            'timestamp': datetime.now(timezone.utc).isoformat()
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
