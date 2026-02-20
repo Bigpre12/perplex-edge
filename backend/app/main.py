@@ -4,10 +4,16 @@ Main FastAPI application for the sports betting system
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
 from app.api.immediate_working import router
 from app.api.validation_endpoints import router as validation_router
 from app.api.track_record_endpoints import router as track_record_router
 from app.api.model_status_endpoints import router as model_status_router
+from app.api.working_parlays import router as working_parlays_router
+from app.api.picks import router as picks_router
+from app.api.analysis import router as analysis_v2_router
 
 app = FastAPI(
     title="Sports Betting Intelligence API",
@@ -35,6 +41,15 @@ app.include_router(track_record_router, prefix="/track-record", tags=["track-rec
 
 # Include the model status router
 app.include_router(model_status_router, prefix="/status", tags=["status"])
+
+# Include the working parlays router
+app.include_router(working_parlays_router, prefix="/parlays", tags=["parlays"])
+
+# Include the analysis router (CLV & Monte Carlo)
+app.include_router(analysis_v2_router, prefix="/analysis", tags=["analysis"])
+
+# Include the picks router (CLV & EV)
+app.include_router(picks_router, prefix="/picks", tags=["picks"])
 
 @app.get("/")
 async def root():
