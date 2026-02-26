@@ -42,6 +42,7 @@ from routers.execution_router import router as execution_router
 from routers.backtest_router import router as backtest_router
 
 from ml.prop_predictor import router as prop_predictor_router
+from routers.user_profile_router import router as user_profile_router
 
 from routers import (
     contest_router, prop_router, shop_router, feed_router, 
@@ -258,6 +259,7 @@ app.include_router(admin_router.router)
 app.include_router(affiliate_router.router)
 app.include_router(live_odds_socket.router)
 app.include_router(prop_predictor_router)
+app.include_router(user_profile_router)
 
 @app.get("/")
 async def root():

@@ -11,6 +11,7 @@ import SportsbookDeeplinks from '@/components/SportsbookDeeplinks';
 import PlayerTrendsModal from '@/components/PlayerTrendsModal';
 import { HitRateStack } from '@/components/HitRateLight';
 import { getAuthToken } from '@/lib/auth';
+import BetSlipShare from '@/components/BetSlipShare';
 
 const AVAILABLE_BOOKS = [
     { key: 'fanduel', name: 'FanDuel' },
@@ -693,6 +694,17 @@ function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, l
                                     line={getLineValue()}
                                     side={line.toLowerCase().includes('over') ? 'over' : 'under'}
                                     odds={parseInt(odds)}
+                                />
+                                <BetSlipShare
+                                    pick={{
+                                        player_name: name,
+                                        stat_type: prop,
+                                        line: getLineValue(),
+                                        side: line.toLowerCase().includes('over') ? 'over' : 'under',
+                                        odds: parseInt(odds),
+                                        sportsbook: sportsbook || "Sharp Model",
+                                        edge: parseFloat(edge.replace('%', '')) / 100
+                                    }}
                                 />
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onOpenModal(); }}

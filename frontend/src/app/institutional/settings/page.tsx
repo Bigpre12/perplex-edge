@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Cpu, ShieldAlert, Save, TrendingUp, Loader2 } from "lucide-react";
+import { Settings, Cpu, ShieldAlert, Save, TrendingUp, Loader2, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function EdgeSettingsPage() {
@@ -14,7 +14,8 @@ export default function EdgeSettingsPage() {
         min_games_sample: 10,
         min_bets_volume: 50,
         max_juice: -120.0,
-        include_main_lines: true
+        include_main_lines: true,
+        discord_webhook_url: ""
     });
     const [statusBlock, setStatusBlock] = useState<{ msg: string, isError: boolean } | null>(null);
 
@@ -185,6 +186,32 @@ export default function EdgeSettingsPage() {
                         >
                             <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform ${config.include_main_lines ? 'translate-x-8' : 'translate-x-1'}`}></div>
                         </button>
+                    </div>
+                </div>
+
+                {/* Institutional Integrations */}
+                <div className="glass-panel p-8 rounded-3xl border-white/[0.05] bg-[#0c1416]/90 relative overflow-hidden group hover:border-white/10 transition-colors lg:col-span-2">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform text-white">
+                        <Zap size={80} />
+                    </div>
+                    <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase italic tracking-widest mb-8 border-b border-white/[0.05] pb-4">
+                        <Zap size={18} className="text-primary" /> External API & Webhooks
+                    </h3>
+
+                    <div className="space-y-6 relative z-10 max-w-2xl">
+                        <div>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 tracking-[0.2em]">Discord Webhook URL</label>
+                            <input
+                                type="text"
+                                placeholder="https://discord.com/api/webhooks/..."
+                                value={config.discord_webhook_url}
+                                onChange={e => setConfig({ ...config, discord_webhook_url: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-700 focus:outline-none focus:border-primary/50 transition-colors font-mono"
+                            />
+                            <p className="text-[10px] text-slate-500 mt-3 font-medium flex items-center gap-2">
+                                <span className="size-1 rounded-full bg-primary" /> Instantly pipes +EV alerts and whale movements into your private community.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
