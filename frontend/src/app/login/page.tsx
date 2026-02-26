@@ -6,11 +6,12 @@ import { User, Lock, ArrowRight, ShieldCheck, Cpu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setAuthToken, setUser } from "@/lib/auth";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function LoginPage() {
     const router = useRouter();
     const [formData, setFormData] = useState({
-        username: "",
+        email: "",
         password: "",
     });
     const [loading, setLoading] = useState(false);
@@ -22,27 +23,21 @@ export default function LoginPage() {
         setError("");
 
         try {
-            // Use URLSearchParams for OAuth2 Password Flow (form-data)
-            const params = new URLSearchParams();
-            params.append('username', formData.username);
-            params.append('password', formData.password);
-
-            const res = await fetch("http://localhost:8000/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: params,
+            const { data, error: sbError } = await supabase.auth.signInWithPassword({
+                email: formData.email,
+                password: formData.password
             });
 
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.detail || "Authentication Failed");
+            if (sbError) {
+                throw new Error(sbError.message);
             }
 
-            const data = await res.json();
-            setAuthToken(data.access_token);
-            setUser(data.user);
-
-            router.push("/");
+            if (data.session) {
+                setAuthToken(data.session.access_token);
+                // @ts-ignore
+                setUser({ email: data.user.email });
+                router.push("/");
+            }
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -88,12 +83,12 @@ export default function LoginPage() {
                             <div className="relative group">
                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-blue-500 transition-colors" />
                                 <input
-                                    type="text"
+                                    type="email"
                                     required
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all font-medium"
-                                    placeholder="Username"
-                                    value={formData.username}
-                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                    placeholder="Email Address"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 />
                             </div>
                         </div>

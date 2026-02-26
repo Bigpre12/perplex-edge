@@ -8,6 +8,7 @@ import { useBrainData } from '@/hooks/useBrainData';
 import TrendChart from '@/components/TrendChart';
 import MatchupIntelligence from '@/components/MatchupIntelligence';
 import SportsbookDeeplinks from '@/components/SportsbookDeeplinks';
+import PlayerTrendsModal from '@/components/PlayerTrendsModal';
 import { HitRateStack } from '@/components/HitRateLight';
 import { getAuthToken } from '@/lib/auth';
 
@@ -26,6 +27,7 @@ export default function PlayerProps() {
     const [activeSport, setActiveSport] = useState('basketball_nba');
     const [props, setProps] = useState<any[]>([]);
     const [isLoadingPicks, setIsLoadingPicks] = useState(true);
+    const [selectedPropForModal, setSelectedPropForModal] = useState<any>(null);
     const [selectedBooks, setSelectedBooks] = useState<string[]>(AVAILABLE_BOOKS.map(b => b.key));
     const [searchQuery, setSearchQuery] = useState('');
     const [sortColumn, setSortColumn] = useState<'edge' | 'odds' | 'player'>('edge');
@@ -295,6 +297,7 @@ export default function PlayerProps() {
                                                 lineVelocity={prop.line_velocity}
                                                 injuryStatus={prop.injury_status}
                                                 propId={prop.id}
+                                                onOpenModal={() => setSelectedPropForModal(prop)}
                                             />
                                         ))}
                                     </AnimatePresence>
@@ -365,6 +368,13 @@ export default function PlayerProps() {
                     </div>
                 </div>
             </aside>
+
+            {/* Trends Modal Overlay */}
+            <PlayerTrendsModal
+                isOpen={!!selectedPropForModal}
+                onClose={() => setSelectedPropForModal(null)}
+                propData={selectedPropForModal}
+            />
         </div>
     );
 }
@@ -395,7 +405,7 @@ function Checkbox({ label, checked }: any) {
     );
 }
 
-function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, line, odds, sportsbook, edge, confidence, progress, trendData, matchupData, usageData, performanceSplits, volatility, idx, injuryStatus, propId }: any) {
+function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, line, odds, sportsbook, edge, confidence, progress, trendData, matchupData, usageData, performanceSplits, volatility, idx, injuryStatus, propId, onOpenModal }: any) {
     const [isTracked, setIsTracked] = useState(false);
     const [isTracking, setIsTracking] = useState(false);
     const [kellyData, setKellyData] = useState<any>(null);
@@ -661,6 +671,12 @@ function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, l
                                     side={line.toLowerCase().includes('over') ? 'over' : 'under'}
                                     odds={parseInt(odds)}
                                 />
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onOpenModal(); }}
+                                    className="w-full py-3 border border-primary/30 rounded-xl text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/10 transition-all active:scale-[0.98]"
+                                >
+                                    ANALYZE TRENDS
+                                </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleTrackBet(); }}
                                     disabled={isTracking || isTracked}

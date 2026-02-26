@@ -6,6 +6,7 @@ import { User, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setAuthToken, setUser } from "@/lib/auth";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function SignupPage() {
     const router = useRouter();
@@ -24,15 +25,18 @@ export default function SignupPage() {
         setError("");
 
         try {
-            const res = await fetch("http://localhost:8000/auth/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+            const { data, error: sbError } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
+                options: {
+                    data: {
+                        username: formData.username
+                    }
+                }
             });
 
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.detail || "Signup failed");
+            if (sbError) {
+                throw new Error(sbError.message);
             }
 
             setSuccess(true);
