@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, Activity, Crosshair } from "lucide-react";
+import { X, TrendingUp, Activity, Crosshair, Brain } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
@@ -23,6 +24,35 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
 
     const hasEdge = propData.edge > 0;
     const hitRate = propData.matchup?.last_5_hit_rate ? `${propData.matchup.last_5_hit_rate}%` : "60%";
+
+    const [aiConfidence, setAiConfidence] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (!isOpen || !propData) return;
+
+        const fetchPrediction = async () => {
+            try {
+                const res = await fetch("http://localhost:8000/api/ml/predict-probability", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        player_name: propData.player?.name || propData.player_name,
+                        stat_type: propData.market?.stat_type || propData.stat_type,
+                        line: currentLine,
+                        recent_performance: mockHistory.map(h => h.value)
+                    })
+                });
+                const data = await res.json();
+                if (data.ai_confidence_score) {
+                    setAiConfidence(data.ai_confidence_score);
+                }
+            } catch (err) {
+                console.error("ML Prediction Failed:", err);
+            }
+        };
+
+        fetchPrediction();
+    }, [isOpen, propData, currentLine]);
 
     return (
         <AnimatePresence>
@@ -64,14 +94,14 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                             <p className="text-xs text-slate-400">{propData.market?.stat_type || propData.stat_type}</p>
                         </div>
                         <div className="p-6 text-center">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center justify-center gap-1"><TrendingUp size={12} className={hasEdge ? "text-primary" : "text-accent-orange"} /> AI Edge</p>
-                            <p className={`text-2xl font-black ${hasEdge ? "text-primary" : "text-accent-orange"}`}>{((propData.edge || 0) * 100).toFixed(1)}%</p>
-                            <p className="text-xs text-slate-400">{propData.odds > 0 ? `+${propData.odds}` : propData.odds}</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center justify-center gap-1"><Brain size={12} className={hasEdge ? "text-primary" : "text-accent-orange"} /> AI Confidence</p>
+                            <p className={`text-2xl font-black ${hasEdge ? "text-primary" : "text-accent-orange"}`}>{aiConfidence ? `${aiConfidence}%` : '...'}</p>
+                            <p className="text-xs text-slate-400">ML Predicted Cover</p>
                         </div>
                         <div className="p-6 text-center">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center justify-center gap-1"><Activity size={12} /> L5 Hit Rate</p>
-                            <p className="text-2xl font-black text-white">{hitRate}</p>
-                            <p className="text-xs text-slate-400">Historical Cover</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center justify-center gap-1"><TrendingUp size={12} /> Edge %</p>
+                            <p className="text-2xl font-black text-white">{((propData.edge || 0) * 100).toFixed(1)}%</p>
+                            <p className="text-xs text-slate-400">Math Diff.</p>
                         </div>
                     </div>
 

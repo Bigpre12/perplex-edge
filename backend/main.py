@@ -41,12 +41,17 @@ from routers.reporting_router import router as reporting_router
 from routers.execution_router import router as execution_router
 from routers.backtest_router import router as backtest_router
 
+from ml.prop_predictor import router as prop_predictor_router
+
 from routers import (
     contest_router, prop_router, shop_router, feed_router, 
     ml_router, analytics_router, whale_router,
     auth_router, push_router, web_push, admin_router, config_router,
-    stripe_router, chat_router, affiliate_router
+    stripe_router, chat_router, affiliate_router,
+    live_odds_socket
 )
+
+from routers.live_odds_socket import live_odds_broadcaster
 
 from jobs.email_cron import start_email_cron
 
@@ -127,6 +132,7 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(daily_digest_loop())
     asyncio.create_task(settlement_loop())
     asyncio.create_task(weekly_reporting_loop())
+    asyncio.create_task(live_odds_broadcaster())
     
     # Connect Redis (Upstash) or fall back to in-memory
     await cache.connect()
@@ -250,6 +256,8 @@ app.include_router(stripe_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_router.router)
 app.include_router(affiliate_router.router)
+app.include_router(live_odds_socket.router)
+app.include_router(prop_predictor_router)
 
 @app.get("/")
 async def root():

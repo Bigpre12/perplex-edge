@@ -79,6 +79,27 @@ export default function PlayerProps() {
 
     useEffect(() => {
         fetchProps(activeSport);
+
+        // Establish Real-Time EV Stream
+        const ws = new WebSocket('ws://localhost:8000/api/ws/live-odds');
+
+        ws.onopen = () => console.log("🚀 Connected to Live EV Engine Stream");
+
+        ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                if (message.type === 'LIVE_EV_UPDATE' && message.data?.items) {
+                    // Update the grid instantaneously without polling
+                    setProps(message.data.items);
+                }
+            } catch (err) {
+                console.error("WebSocket Message Error:", err);
+            }
+        };
+
+        return () => {
+            ws.close();
+        };
     }, [activeSport]);
 
     const toggleBook = (bookKey: string) => {
@@ -195,7 +216,9 @@ export default function PlayerProps() {
                     <div>
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-black tracking-tight text-white">Market Intel & Picks</h1>
-                            <span className="px-2 py-0.5 rounded text-xs font-bold bg-primary/20 text-primary border border-primary/20">DAILY SLATE</span>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-black tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" /> LIVE STREAM
+                            </div>
                         </div>
                         <p className="text-sm text-secondary mt-1">
                             AI-powered value detection across the entire daily sports slate.
