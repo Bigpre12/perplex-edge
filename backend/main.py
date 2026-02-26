@@ -27,7 +27,6 @@ from api.share import router as share_router
 from routers import auth_router, ledger_router
 
 # Newly Added Routers (Audit Phase 2)
-from routers.affiliate_router import router as affiliate_router
 from routers.ai_assistant import router as ai_assistant_router
 from routers.api_tier_router import router as api_tier_router
 from routers.autocopy_router import router as autocopy_router
@@ -46,7 +45,7 @@ from routers import (
     contest_router, prop_router, shop_router, feed_router, 
     ml_router, analytics_router, whale_router,
     auth_router, push_router, web_push, admin_router, config_router,
-    stripe_router, chat_router
+    stripe_router, chat_router, affiliate_router
 )
 
 from jobs.email_cron import start_email_cron
@@ -58,6 +57,11 @@ from services.live_game_tracker import live_sync_loop
 from services.discord_bot import daily_digest_loop
 from services.ledger_service import ledger_service
 from database import get_async_db, async_session_maker
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 async def weekly_reporting_loop():
     """Background task for weekly reports."""
@@ -136,6 +140,12 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+
+# Global API Rate Limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Configure CORS
 app.add_middleware(
@@ -239,6 +249,7 @@ app.include_router(ledger_router.router)
 app.include_router(stripe_router.router)
 app.include_router(chat_router.router)
 app.include_router(admin_router.router)
+app.include_router(affiliate_router.router)
 
 @app.get("/")
 async def root():

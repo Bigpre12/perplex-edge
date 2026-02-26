@@ -1,12 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 import httpx
 import os
 from openai import AsyncOpenAI
 from database import get_db
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter(prefix="/api/chat", tags=["Oracle AI Chat"])
+limiter = Limiter(key_func=get_remote_address)
 
 # Load OpenAI Async Client
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "sk_mock_api_key_only")
@@ -17,7 +20,8 @@ class ChatRequest(BaseModel):
     user_id: str
 
 @router.post("/ask-oracle")
-async def ask_oracle(req: ChatRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def ask_oracle(request: Request, req: ChatRequest, db: Session = Depends(get_db)):
     try:
         # 1. Fetch the live "Immediate Working Player Props" from the local engine
         # We query our own API to get the current EV data to feed to the LLM

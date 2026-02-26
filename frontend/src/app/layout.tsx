@@ -5,10 +5,35 @@ import AIHandler from "@/components/ai/AIHandler";
 import Header from "@/components/layout/Header";
 import AlertFeed from "@/components/AlertFeed";
 import OracleChatbot from "@/components/OracleChatbot";
+import CommandPalette from "@/components/CommandPalette";
 
 export const metadata: Metadata = {
-  title: "Perplex Edge Console",
-  description: "Sports Betting Intelligence",
+  title: "Perplex Edge | Institutional Sports Betting Intelligence",
+  description: "The world's fastest Real-Time Expected Value (+EV) Engine, Arbitrage Scanner, and Live Middle betting radar. Stop guessing. Start investing with an Edge.",
+  keywords: ["Expected Value", "+EV", "Sports Betting", "Arbitrage", "Middling", "Player Props", "DFS", "PrizePicks"],
+  authors: [{ name: "Perplex Engine" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://perplexedge.com",
+    title: "Perplex Edge | Intuitive Actionable Intelligence",
+    description: "Access institutional-grade Real-Time EV streams, Arbitrage Scanners, and Live Middle betting radars.",
+    siteName: "Perplex Edge",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Perplex Edge Dashboard",
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Perplex Edge",
+    description: "The world's fastest Real-Time Expected Value (+EV) Engine.",
+    images: ["/og-image.png"],
+  }
 };
 
 export default function RootLayout({
@@ -42,7 +67,8 @@ export default function RootLayout({
               </main>
             </div>
 
-            {/* Global Floating AI Assistant */}
+            {/* Global Modals & Listeners */}
+            <CommandPalette />
             <OracleChatbot />
           </main>
         </div>
