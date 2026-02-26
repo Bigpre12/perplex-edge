@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { useBrainData } from '@/hooks/useBrainData';
-import { Database, MemoryStick as Memory, Globe, Activity, Brain, Loader2, Target, TrendingUp } from 'lucide-react';
+import { Database, MemoryStick as Memory, Globe, Activity, Brain, Loader2, Target, TrendingUp, Zap, BarChart3, Fingerprint } from 'lucide-react';
 import Link from 'next/link';
 import LiveTrackCard from '@/components/dashboard/LiveTrackCard';
 import WhaleTracker from '@/components/dashboard/WhaleTracker';
+import LiveMiddlesCard from '@/components/dashboard/LiveMiddlesCard';
 
 interface BrainMetrics {
     total_recommendations: number;
@@ -40,6 +41,7 @@ export default function Dashboard() {
     const { decisions, loading } = useBrainData();
     const [metrics, setMetrics] = useState<BrainMetrics | null>(null);
     const [healing, setHealing] = useState<HealingStatus | null>(null);
+    const [liveMiddles, setLiveMiddles] = useState<any[]>([]);
     const [metricsLoading, setMetricsLoading] = useState(true);
     const [healingTime, setHealingTime] = useState('—');
 
@@ -47,14 +49,22 @@ export default function Dashboard() {
         const fetchMetrics = async () => {
             try {
                 const backendUrl = "http://localhost:8000";
-                const [metricsRes, healingRes] = await Promise.all([
+                const [metricsRes, healingRes, middlesRes] = await Promise.all([
                     fetch(`${backendUrl}/immediate/brain-metrics`),
-                    fetch(`${backendUrl}/immediate/brain-healing-status`)
+                    fetch(`${backendUrl}/immediate/brain-healing-status`),
+                    fetch(`${backendUrl}/api/edge/live-middles`).catch(() => null)
                 ]);
                 const metricsData = await metricsRes.json();
                 const healingData = await healingRes.json();
+
+                let middlesData = { items: [] };
+                if (middlesRes && middlesRes.ok) {
+                    middlesData = await middlesRes.json();
+                }
+
                 setMetrics(metricsData);
                 setHealing(healingData);
+                setLiveMiddles(middlesData.items || []);
             } catch (err) {
                 console.error("Failed to fetch dashboard metrics:", err);
             } finally {
@@ -248,8 +258,29 @@ export default function Dashboard() {
                 </div>
             </div>
 
+            {/* Live Middles / Steam Aggregator Section */}
+            {liveMiddles.length > 0 && (
+                <div className="glass-panel p-6 rounded-xl space-y-6 relative overflow-hidden group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-accent-blue/5 to-primary/5 rounded-xl blur-2xl group-hover:blur-3xl transition-all duration-700 pointer-events-none"></div>
+                    <div className="relative z-10 flex justify-between items-center">
+                        <h3 className="text-white font-semibold flex items-center gap-2">
+                            <Zap className="text-accent-blue animate-pulse" size={20} /> Arbitrage & Live Middles
+                        </h3>
+                        <div className="flex items-center gap-2 bg-gradient-to-r from-accent-blue/10 to-primary/10 border border-accent-blue/20 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(13,204,242,0.15)]">
+                            <Target size={12} className="text-accent-blue animate-spin-slow" />
+                            <span className="text-[10px] text-white font-bold uppercase tracking-widest">{liveMiddles.length} Discovered</span>
+                        </div>
+                    </div>
+                    <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {liveMiddles.map((middle, index) => (
+                            <LiveMiddlesCard key={middle.id || index} middle={middle} index={index} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* AI Decisions Section */}
-            <div className="glass-panel p-6 rounded-xl">
+            <div className="glass-panel p-6 rounded-xl border-white/[0.03]">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-white font-semibold flex items-center gap-2">
                         <Brain className="text-primary" size={20} /> Recent AI Decisions
@@ -273,11 +304,17 @@ export default function Dashboard() {
 
 function MetricCard({ label, value, trend, sparkline, progress, progressLabel, badge, stats, status, subMetrics }: any) {
     return (
-        <div className="glass-panel p-5 rounded-xl flex flex-col gap-4 relative overflow-hidden group hover:border-primary/30 transition-colors">
+        <div className="glass-panel p-5 rounded-xl flex flex-col gap-4 relative overflow-hidden group hover:border-primary/40 border-white/[0.05] bg-[#0c1416]/90 transition-all duration-500 hover:shadow-[0_0_30px_rgba(13,242,51,0.08)]">
+            <div className="absolute -inset-1 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl blur"></div>
             <div className="flex justify-between items-start z-10">
                 <div>
-                    <p className="text-secondary text-xs font-medium uppercase tracking-wider">{label}</p>
-                    <h3 className="text-2xl font-bold text-white mt-1">{value}</h3>
+                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                        {sparkline && <TrendingUp size={12} className="text-slate-500" />}
+                        {progress && <BarChart3 size={12} className="text-slate-500" />}
+                        {status && <Fingerprint size={12} className="text-slate-500" />}
+                        {label}
+                    </p>
+                    <h3 className="text-3xl font-black text-white mt-1.5 tracking-tighter drop-shadow-md">{value}</h3>
                 </div>
                 {trend && (
                     <span className="bg-accent-green/10 text-accent-green text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">

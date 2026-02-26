@@ -1,38 +1,31 @@
-self.addEventListener('push', function (event) {
-    if (event.data) {
-        const data = event.data.json();
-        const options = {
-            body: data.body,
-            icon: data.icon || '/logo.png',
-            badge: data.badge || '/badge.png',
-            data: data.data,
-            vibrate: [100, 50, 100],
-            actions: [
-                { action: 'open', title: 'View Ledger' }
-            ]
-        };
+self.addEventListener("push", function (event) {
+    let payload = { title: "Perplex Edge Alert", body: "New market data arrived." };
 
-        event.waitUntil(
-            self.registration.showNotification(data.title, options)
-        );
+    try {
+        if (event.data) {
+            payload = event.data.json();
+        }
+    } catch (e) {
+        console.warn("Could not parse push payload as JSON:", e);
     }
+
+    const options = {
+        body: payload.body,
+        icon: "/icon.png", // Assuming an icon exists in public
+        badge: "/badge.png", // Small icon for android status bar
+        vibrate: [200, 100, 200, 100, 200, 100, 200],
+        tag: "perplex-edge-alert",
+        data: {
+            dateOfArrival: Date.now(),
+            primaryKey: 1,
+        },
+    };
+
+    event.waitUntil(self.registration.showNotification(payload.title, options));
 });
 
-self.addEventListener('notificationclick', function (event) {
+self.addEventListener("notificationclick", function (event) {
     event.notification.close();
-    const urlToOpen = event.notification.data.url || '/';
-
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windowClients) {
-            for (let i = 0; i < windowClients.length; i++) {
-                const client = windowClients[i];
-                if (client.url === urlToOpen && 'focus' in client) {
-                    return client.focus();
-                }
-            }
-            if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
-            }
-        })
-    );
+    // Open the primary dashboard when clicked
+    event.waitUntil(clients.openWindow("/"));
 });

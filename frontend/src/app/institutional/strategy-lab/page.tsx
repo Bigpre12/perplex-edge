@@ -98,7 +98,7 @@ export default function StrategyLab() {
                 <button
                     onClick={runBacktest}
                     disabled={loading}
-                    className="px-8 py-3 bg-primary text-background-dark font-black rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(13,242,51,0.3)] disabled:opacity-50"
+                    className="px-8 py-3 bg-gradient-to-r from-primary to-emerald-400 text-background-dark font-black rounded-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(13,242,51,0.3)] disabled:opacity-50"
                 >
                     {loading ? <Timer className="animate-spin" size={20} /> : <Play size={20} />}
                     {loading ? "SIMULATING..." : "RUN SIMULATION"}
@@ -122,12 +122,12 @@ export default function StrategyLab() {
                             <ParamInput
                                 label="Initial Bankroll"
                                 value={params.initial_bankroll}
-                                onChange={(v) => setParams({ ...params, initial_bankroll: parseInt(v) })}
+                                onChange={(v: any) => setParams({ ...params, initial_bankroll: parseInt(v) })}
                             />
                             <ParamInput
                                 label="Execution Horizon (Days)"
                                 value={params.days}
-                                onChange={(v) => setParams({ ...params, days: parseInt(v) })}
+                                onChange={(v: any) => setParams({ ...params, days: parseInt(v) })}
                                 max={90}
                             />
                             <div className="space-y-2">
@@ -146,18 +146,18 @@ export default function StrategyLab() {
                             <ParamInput
                                 label="Minimum EV% Guard"
                                 value={params.min_ev}
-                                onChange={(v) => setParams({ ...params, min_ev: parseFloat(v) })}
+                                onChange={(v: any) => setParams({ ...params, min_ev: parseFloat(v) })}
                                 step={0.1}
                             />
                         </div>
                     </div>
 
-                    <div className="p-6 rounded-3xl bg-[#0c1416] border border-white/[0.05] relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform">
+                    <div className="p-6 rounded-3xl bg-slate-900 border border-white/[0.05] relative overflow-hidden group hover:border-amber-500/30 transition-colors">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-amber-500 group-hover:rotate-12 transition-transform">
                             <ShieldAlert size={60} />
                         </div>
                         <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">Backtest Constraints</h4>
-                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
+                        <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic z-10 relative">
                             Simulations use "Closing Line Value" proxies where settle data is absent. Slippage of 0.5% is assumed for high-volume execution.
                         </p>
                     </div>
@@ -273,7 +273,7 @@ export default function StrategyLab() {
     );
 }
 
-function ParamInput({ label, value, onChange, type = "number", ...props }: any) {
+function ParamInput({ label, value, onChange, type = "number", max, step, ...props }: any) {
     return (
         <div className="space-y-2">
             <label className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">{label}</label>
@@ -283,17 +283,21 @@ function ParamInput({ label, value, onChange, type = "number", ...props }: any) 
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-xs text-white font-mono focus:outline-none focus:border-primary/50"
                 {...props}
+                max={max}
+                step={step}
             />
         </div>
     );
 }
 
-function StatsCard({ label, value, sub, color }: any) {
+function StatsCard({ label, value, sub, color = "primary" }: any) {
+    const isPrimary = color === "primary";
     return (
-        <div className="glass-panel p-6 rounded-3xl border-white/[0.05] hover:border-white/10 transition-all">
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">{label}</p>
-            <p className={`text-2xl font-black text-${color} italic tracking-tighter mb-1`}>{value}</p>
-            <p className="text-[10px] text-slate-600 font-bold uppercase">{sub}</p>
+        <div className={`p-6 rounded-3xl border border-white/[0.05] relative overflow-hidden group hover:border-white/10 transition-all ${isPrimary ? "bg-[#0df233]/10" : "bg-[#0c1416]/90 backdrop-blur-md"}`}>
+            <div className={`absolute -right-10 -top-10 size-40 rounded-full blur-3xl opacity-20 ${isPrimary ? "bg-[#0df233]" : `bg-${color}`}`}></div>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+            <h3 className={`text-4xl font-black ${isPrimary ? "text-[#0df233]" : "text-white"} tracking-tighter`}>{value}</h3>
+            <p className="text-xs text-slate-400 font-medium mt-2">{sub}</p>
         </div>
     );
 }

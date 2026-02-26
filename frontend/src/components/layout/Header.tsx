@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Search, Bell, HelpCircle } from 'lucide-react';
+import { Search, HelpCircle } from 'lucide-react';
+import PushSubscriber from '@/components/dashboard/PushSubscriber';
 
 export default function Header() {
     const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking');
@@ -46,10 +47,7 @@ export default function Header() {
                     </div>
                 </div>
 
-                <button className="relative p-2 text-secondary hover:text-white transition-colors rounded-lg hover:bg-surface-highlight">
-                    <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-[#102023]"></span>
-                </button>
+                <PushSubscriber />
 
                 <button className="p-2 text-secondary hover:text-white transition-colors rounded-lg hover:bg-surface-highlight">
                     <HelpCircle size={20} />
@@ -58,4 +56,3 @@ export default function Header() {
         </header>
     );
 }
-
