@@ -27,27 +27,29 @@ from api.share import router as share_router
 from routers import auth_router, ledger_router
 
 # Newly Added Routers (Audit Phase 2)
-from routers.admin_router import router as admin_router
 from routers.affiliate_router import router as affiliate_router
 from routers.ai_assistant import router as ai_assistant_router
-from routers.analytics_router import router as analytics_router
 from routers.api_tier_router import router as api_tier_router
 from routers.autocopy_router import router as autocopy_router
-from routers.contest_router import router as contest_router
 from routers.hedge_router import router as hedge_router
 from routers.kalshi_router import router as kalshi_router
 from routers.kelly_router import router as kelly_router
-from routers.line_shopping_router import router as line_shopping_router
 from routers.live_router import router as live_router
-from routers.push_router import router as push_router
 from routers.referral_router import router as referral_router
 from routers.sgp_router import router as sgp_router
 from routers.social_router import router as social_router
-from routers.whale_router import router as whale_router
 from routers.reporting_router import router as reporting_router
 from routers.execution_router import router as execution_router
 from routers.backtest_router import router as backtest_router
-from routers.config_router import router as config_router
+
+from routers import (
+    contest_router, prop_router, shop_router, feed_router, 
+    ml_router, analytics_router, whale_router,
+    auth_router, push_router, web_push, admin_router, config_router,
+    stripe_router, chat_router
+)
+
+from jobs.email_cron import start_email_cron
 
 from services.cache import cache
 
@@ -83,11 +85,29 @@ async def settlement_loop():
         await asyncio.sleep(3600)
 
 @asynccontextmanager
-async def lifespan(app):
-    """Startup/shutdown lifecycle — connect cache, log provider status, and start loops."""
+async def lifespan(app: FastAPI):
+    print("🚀 FastAPI Server starting up...")
     import logging
     logger = logging.getLogger(__name__)
     
+    # Pre-populate static data into Redis cache
+    from services.redis_service import redis_client
+    from services.nfl_players import get_nfl_player_data
+    
+    try:
+        # Just test the connection
+        if redis_client:
+            redis_client.ping()
+            print("✅ connected to redis")
+    except Exception as e:
+        print(f"⚠️ redis not available: {e}")
+
+    try:
+        from jobs.email_cron import start_email_cron
+        start_email_cron()
+    except Exception as e:
+        print(f"⚠️ email cron failed to boot: {e}")
+        
     # Ensure tables exist (Synchronous)
     try:
         from database import engine, Base
@@ -216,6 +236,9 @@ app.include_router(config_router)
 app.include_router(webhook_router)
 app.include_router(auth_router.router)
 app.include_router(ledger_router.router)
+app.include_router(stripe_router.router)
+app.include_router(chat_router.router)
+app.include_router(admin_router.router)
 
 @app.get("/")
 async def root():

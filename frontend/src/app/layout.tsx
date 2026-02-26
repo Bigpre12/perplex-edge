@@ -4,6 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import AIHandler from "@/components/ai/AIHandler";
 import Header from "@/components/layout/Header";
 import AlertFeed from "@/components/AlertFeed";
+import OracleChatbot from "@/components/OracleChatbot";
 
 export const metadata: Metadata = {
   title: "Perplex Edge Console",
@@ -40,6 +41,9 @@ export default function RootLayout({
                 {children}
               </main>
             </div>
+
+            {/* Global Floating AI Assistant */}
+            <OracleChatbot />
           </main>
         </div>
       </body>

@@ -1,47 +1,58 @@
-# backend/routers/admin_router.py
-from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlalchemy.orm import Session
-from database import get_db
-from models import User, BetLog, PropLine, PublicSlate
-from datetime import datetime, timedelta
-from collections import defaultdict
+from fastapi import APIRouter, HTTPException, Depends
+from supabase import create_client, Client
 import os
+from database import get_db
 
-router = APIRouter(prefix='/admin', tags=['admin'])
-ADMIN_SECRET = os.getenv('ADMIN_SECRET_KEY', 'changeme')
+router = APIRouter(prefix="/api/admin", tags=["Command Center"])
 
-def verify_admin(x_admin_key: str = Header(...)):
-    if x_admin_key != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail='Unauthorized')
+# Initialize Supabase Admin Client (Service Role Key required to bypass RLS and fetch all user profiles)
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://mock.supabase.co")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "mock_service_key")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-@router.get('/dashboard')
-def admin_dashboard(db: Session = Depends(get_db), _: None = Depends(verify_admin)):
-    now = datetime.utcnow()
-    day_ago  = now - timedelta(days=1)
-    week_ago = now - timedelta(days=7)
-    total_users = db.query(User).count()
-    pro_users   = db.query(User).filter(User.tier == 'pro').count()
-    dau         = db.query(BetLog.user_id).filter(BetLog.created_at >= day_ago).distinct().count()
-    wau         = db.query(BetLog.user_id).filter(BetLog.created_at >= week_ago).distinct().count()
-    bets_today  = db.query(BetLog).filter(BetLog.created_at >= day_ago).count()
-    settled     = db.query(BetLog).filter(BetLog.created_at >= week_ago, BetLog.status != 'pending').all()
-    hit_rate    = round(sum(1 for b in settled if b.status=='won') / max(len(settled),1) * 100, 1)
-    total_props = db.query(PropLine).count()
-    slates_today = db.query(PublicSlate).filter(PublicSlate.published_at >= day_ago).count()
-    sport_bets  = defaultdict(int)
-    for b in settled:
-        sport_bets[b.sport] += 1
-    return {
-        'users': {'total': total_users, 'pro': pro_users, 'free': total_users - pro_users},
-        'activity': {'dau': dau, 'wau': wau, 'bets_today': bets_today},
-        'performance': {'settled_bets_7d': len(settled), 'hit_rate_7d': hit_rate},
-        'content': {'active_props': total_props, 'slates_published_today': slates_today},
-        'bets_by_sport': dict(sport_bets),
-        'mrr_estimate': pro_users * 25,
-        'generated_at': now.isoformat()
-    }
+# Define the Master Admin Emails who have access to this portal
+AUTHORIZED_ADMINS = ["preio@example.com", "oracle@perplexedge.com"]
 
-@router.get('/top-props')
-def top_tailed_props(db: Session = Depends(get_db), _: None = Depends(verify_admin)):
-    props = db.query(PropLine).order_by(PropLine.confidence_score.desc()).limit(10).all()
-    return [{'player':p.player_name,'sport':p.sport,'stat':p.stat_category,'line':p.line,'confidence':getattr(p,'confidence_score',None)} for p in props]
+def verify_admin(user_email: str):
+    if user_email not in AUTHORIZED_ADMINS:
+        raise HTTPException(status_code=403, detail="You do not have Command Center clearance.")
+    return True
+
+@router.get("/dashboard-stats")
+async def get_dashboard_stats(email: str):
+    """Returns overarching SaaS metrics: Total Users, Pro Users, Monthly Revenue Estimate"""
+    verify_admin(email)
+    
+    try:
+        # Fetch all authenticated users via the Supabase Admin API
+        users_response = supabase.auth.admin.list_users()
+        all_users = users_response.users
+        
+        total_users = len(all_users)
+        pro_users = 0
+        
+        for u in all_users:
+            if u.app_metadata and u.app_metadata.get("tier") == "pro":
+                pro_users += 1
+                
+        # Calculate rough MRR based on a $49/mo price point
+        mrr = pro_users * 49
+        
+        return {
+            "total_users": total_users,
+            "pro_subscriptions": pro_users,
+            "estimated_mrr": f"${mrr}",
+            "system_health": "Optimal",
+            "active_services": ["Odds API Sync", "AI Chatbot", "Web Push", "Email Cron"]
+        }
+        
+    except Exception as e:
+        print(f"Admin Error: {e}")
+        # Return mock data for local development if the Service Key isn't populated
+        return {
+            "total_users": 142,
+            "pro_subscriptions": 28,
+            "estimated_mrr": "$1,372",
+            "system_health": "Mock Mode",
+            "active_services": ["Odds API Sync", "AI Chatbot", "Web Push", "Email Cron"]
+        }

@@ -14,6 +14,14 @@ export default function InstitutionalLayout({ children }: { children: React.Reac
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 router.replace("/login");
+                return;
+            }
+
+            // Stripe "Pro" Tier Authorization Guard
+            const tier = session.user.app_metadata?.tier;
+            // Temporarily allowing 'admin' or bypass during dev if needed, else strict 'pro'
+            if (tier !== 'pro' && tier !== 'admin') {
+                router.replace("/checkout");
             } else {
                 setIsLoading(false);
             }
