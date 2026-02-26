@@ -6,6 +6,13 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy import select
+import os
+import json
+try:
+    from pywebpush import webpush, WebPushException
+except ImportError:
+    webpush = None
+    WebPushException = Exception
 
 router = APIRouter(prefix='/api/push', tags=['push'])
 
@@ -52,3 +59,62 @@ async def unsubscribe(
     await db.execute(stmt)
     await db.commit()
     return {'status': 'unsubscribed'}
+
+class PushMessage(BaseModel):
+    title: str
+    body: str
+
+@router.post('/send')
+async def send_push_notification(
+    message: PushMessage,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Dispatch a push notification to all subscribed users.
+    Requires VAPID_PRIVATE_KEY exported in environment.
+    """
+    vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
+    vapid_claims = {"sub": "mailto:admin@perplex.com"}
+
+    if not webpush:
+        return {"status": "error", "message": "pywebpush module not installed."}
+
+    if not vapid_private_key:
+        print("Warning: VAPID_PRIVATE_KEY not set. Push simulated.")
+        return {"status": "simulated_success", "note": "Keys not configured for real push."}
+
+    stmt = select(PushSubscription)
+    result = await db.execute(stmt)
+    subscriptions = result.scalars().all()
+    
+    success_count = 0
+    failure_count = 0
+
+    for sub in subscriptions:
+        try:
+            sub_info = {
+                "endpoint": sub.endpoint,
+                "keys": {
+                    "p256dh": sub.p256dh,
+                    "auth": sub.auth
+                }
+            }
+            webpush(
+                subscription_info=sub_info,
+                data=json.dumps({"title": message.title, "body": message.body}),
+                vapid_private_key=vapid_private_key,
+                vapid_claims=vapid_claims
+            )
+            success_count += 1
+        except WebPushException as ex:
+            print("WebPushException:", repr(ex))
+            failure_count += 1
+        except Exception as e:
+            print("Push exception:", repr(e))
+            failure_count += 1
+
+    return {
+        "status": "completed", 
+        "sent": success_count, 
+        "failed": failure_count
+    }

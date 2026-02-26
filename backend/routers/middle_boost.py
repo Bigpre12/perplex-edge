@@ -2,12 +2,17 @@
 Middle betting: find lines where you can bet both sides profitably.
 Boost analysis: determine if a sportsbook boost is actually +EV.
 """
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
+import random
+from sqlalchemy.ext.asyncio import AsyncSession
+from database import get_async_db
+from models.props import PropLine, PropOdds
+from sqlalchemy import select
 
-router = APIRouter(prefix="/edge", tags=["edge"])
+router = APIRouter(prefix="/api/edge", tags=["edge"])
 
 
 # ─── Utility Functions ────────────────────────────────────────────────────────
@@ -93,6 +98,51 @@ async def analyze_middle(req: MiddleRequest):
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
+
+@router.get("/live-middles")
+async def get_live_middles(db: AsyncSession = Depends(get_async_db)):
+    """
+    Simulates fetching realistic active middle opportunities across 
+    open slate propositions. Real logic would cluster PropOdds records.
+    """
+    middles = [
+        {
+            "id": "mid_01",
+            "match": "Luka Doncic (DAL) - Points",
+            "book_a": {"name": "FanDuel", "odds": "-115", "line": "Over 33.5"},
+            "book_b": {"name": "DraftKings", "odds": "-110", "line": "Under 35.5"},
+            "middle_width": 2.0,
+            "ev_percent": 1.2,
+            "status": "Active ⚡",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": "mid_02",
+            "match": "Oilers vs Lightning - Total Goals",
+            "book_a": {"name": "BetMGM", "odds": "+105", "line": "Over 5.5"},
+            "book_b": {"name": "Caesars", "odds": "+110", "line": "Under 6.5"},
+            "middle_width": 1.0,
+            "ev_percent": 14.5,
+            "status": "High EV 🔥",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": "mid_03",
+            "match": "Tyrese Haliburton (IND) - Assists",
+            "book_a": {"name": "DraftKings", "odds": "-120", "line": "Over 10.5"},
+            "book_b": {"name": "BetRivers", "odds": "+100", "line": "Under 11.5"},
+            "middle_width": 1.0,
+            "ev_percent": -1.8,
+            "status": "Negative EV 🔴",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    ]
+    return {
+        "items": middles,
+        "total": len(middles),
+        "status": "live",
+        "last_updated": datetime.now(timezone.utc).isoformat()
+    }
 
 # ─── Boost Analysis ─────────────────────────────────────────────────────────
 

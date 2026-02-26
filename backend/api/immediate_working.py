@@ -9761,12 +9761,13 @@ _TEAM_SPORT_MAP = {
 }
 
 def _detect_sport(team1: str, team2: str, fallback: str = "NBA") -> str:
-    """Detect the correct sport from team names."""
+    """Legacy helper: better to use direct sport_key mapping if available."""
     for team in [team1, team2]:
         for name, sport in _TEAM_SPORT_MAP.items():
             if name.lower() in team.lower():
                 return sport
     return fallback
+
 
 
 def generate_synthetic_arbitrage(sport_key: str) -> list:
@@ -9794,10 +9795,13 @@ def generate_synthetic_arbitrage(sport_key: str) -> list:
         },
     ]
 
+    # Secure sport string resolution directly from routing key map
+    display_sport = SPORT_LABELS.get(sport_key, fallback_sport)
+
     result = []
     for entry in entries:
         teams = entry.pop("teams")
-        entry["sport"] = _detect_sport(teams[0], teams[1], fallback_sport)
+        entry["sport"] = display_sport
         entry["status"] = "Historical Backtest • Verified Edge"
         entry["timestamp"] = datetime.now(timezone.utc).isoformat()
         result.append(entry)
@@ -9907,9 +9911,9 @@ async def get_arbitrage_opportunities(
             home = game.get("home_team_name", "Home")
             away = game.get("away_team_name", "Away")
             
-            # Determine generic display name
+            # Map via exact key instead of generic team parsing collision
             fallback_name = sport_key.split("_")[1].upper() if "_" in sport_key else sport_key.upper()
-            display_name = _detect_sport(home, away, fallback_name)
+            display_name = SPORT_LABELS.get(sport_key, fallback_name)
             
             if market == "Moneyline":
                 side1 = home
