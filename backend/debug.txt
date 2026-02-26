@@ -1,0 +1,8 @@
+```json
+{
+    "action": "none",
+    "target": "none",
+    "reason": "All metrics are within acceptable ranges. API response time is below 400ms, database connection pool usage is below 0.9, error rate is below 0.05, memory usage is below 0.8, and CPU usage is below 0.5.",
+    "is_critical": false
+}
+```

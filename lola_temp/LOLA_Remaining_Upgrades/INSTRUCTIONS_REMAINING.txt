@@ -1,0 +1,88 @@
+LOLA Remaining Upgrades — Integration Guide
+
+AUTO-COPY SLIP
+  cp autocopy_router.py backend/routers/
+  cp AutoCopySlip.tsx components/
+  Register: app.include_router(autocopy_router)
+  Usage: <AutoCopySlip props={selectedProps} /> in your picks page
+
+PUSH NOTIFICATIONS
+  cp push_router.py backend/routers/
+  cp push_service.py backend/services/
+  pip install pywebpush
+  Generate VAPID keys: python -c "from pywebpush import Vapid; v=Vapid(); v.generate_keys(); print(v.private_key, v.public_key)"
+  Add to .env: VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, VAPID_EMAIL
+  Requires PushSubscription model: user_id, endpoint, keys_json, created_at
+  Call notify_line_move() inside your odds sync when line moves >= 0.5
+
+DARK MODE
+  cp ThemeToggle.tsx components/
+  Add to tailwind.config.js: darkMode: 'class'
+  Add <ThemeToggle /> to Navbar
+  Sweep component styles with dark: prefix classes
+
+ONBOARDING
+  cp OnboardingFlow.tsx components/
+  Create app/onboarding/page.tsx with <OnboardingFlow />
+  In middleware.ts, check cookie/localStorage lola-onboarded
+  POST /api/user/preferences to save sport/bankroll/books prefs
+
+LINE SHOPPING
+  cp line_shopping_router.py backend/routers/
+  Register: app.include_router(line_shopping_router)
+  Requires PropOdds to have multiple rows per player (one per book)
+
+ALTERNATE LINES
+  cp alternate_lines_service.py backend/services/
+  Add is_alternate Boolean column to PropOdds model
+  Run alembic migration
+  Call sync_alt_lines(sport) in your daily sync scheduler
+
+FEATURE GATING
+  cp feature_gate.py backend/utils/
+  Register: app.include_router(feature_gate.router)
+  Add to .env: WHOP_WEBHOOK_SECRET (from Whop dashboard)
+  Add User model fields: tier, whop_active, referral_code
+  Call require_pro(user.tier, 'feature_name') at top of gated endpoints
+
+AFFILIATE DEEPLINKS
+  cp affiliate_router.py backend/routers/
+  Register: app.include_router(affiliate_router)
+  Add to .env: DK_AFFILIATE_CODE, FD_AFFILIATE_CODE, BETMGM_AFFILIATE_CODE, etc.
+  Get codes by signing up at DraftKings Affiliates, FanDuel Affiliates, BetMGM Partners
+
+REFERRAL SYSTEM
+  cp referral_router.py backend/routers/
+  Register: app.include_router(referral_router)
+  Add User.referral_code + Referral model: referrer_id, referred_email, is_active, created_at
+  Activate referral (is_active=True) when referred user subscribes via Whop webhook
+
+ANALYTICS
+  cp analytics_router.py backend/routers/
+  Register: app.include_router(analytics_router)
+  Add confidence_at_bet Float column to BetLog (store prop confidence score at time of bet)
+
+ML PROJECTIONS
+  cp ml_projections.py backend/ml/
+  pip install scikit-learn joblib
+  PlayerStats model needs: rolling_avg_5/10/20, vs_opponent_avg, is_home, days_rest, is_b2b, dvp_rank, pace, minutes_avg_5
+  Add Celery task to call retrain_all(db) every Sunday at 3am
+  Call predict(sport, stat, features) in your prop grading pipeline
+
+ADMIN DASHBOARD
+  cp admin_router.py backend/routers/
+  Register: app.include_router(admin_router)
+  Add to .env: ADMIN_SECRET_KEY=your_secret
+  Hit GET /admin/dashboard with X-Admin-Key header
+  Build minimal React admin page at /admin (protect with same key)
+
+NEW .ENV VARIABLES NEEDED:
+  VAPID_PRIVATE_KEY=...
+  VAPID_PUBLIC_KEY=...
+  VAPID_EMAIL=you@yourdomain.com
+  WHOP_WEBHOOK_SECRET=...
+  DK_AFFILIATE_CODE=...
+  FD_AFFILIATE_CODE=...
+  BETMGM_AFFILIATE_CODE=...
+  CAESARS_AFFILIATE_CODE=...
+  ADMIN_SECRET_KEY=...

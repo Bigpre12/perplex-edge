@@ -1,0 +1,29 @@
+{
+  "health": {
+    "status": 200,
+    "success": true
+  },
+  "props_working_nfl": {
+    "status": 404,
+    "success": false,
+    "props_count": 0
+  },
+  "props_working_nba": {
+    "status": 404,
+    "success": false,
+    "props_count": 0
+  },
+  "props_super_bowl_working": {
+    "status": 404,
+    "success": false,
+    "props_count": 0
+  },
+  "parlay_working_parlays": {
+    "status": 404,
+    "success": false
+  },
+  "parlay_monte_carlo": {
+    "status": 404,
+    "success": false
+  }
+}

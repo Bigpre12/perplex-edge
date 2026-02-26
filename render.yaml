@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: perplex-edge-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: THE_ODDS_API_KEY
+        sync: false
+      - key: THERUNDOWN_API_KEY
+        sync: false
+      - key: BALLDONTLIE_API_KEY
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SPORTSDATA_API_KEY
+        sync: false
+    healthCheckPath: /immediate/status
