@@ -1,17 +1,26 @@
+# Cache and logs
 __pycache__/
-*.pyc
-*.pyo
-.env
-.env.*
-.git/
-.gitignore
-*.db
-*.sqlite
-*.sqlite3
-perplex_local.db
-.pytest_cache/
-.mypy_cache/
-node_modules/
+*.py[cod]
+*$py.class
 *.log
-.vscode/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Virtual Environments
+venv/
+env/
+.env
+
+# Database state (SQLite should not be shipped in the image unless explicitly wanted)
+*.db
+*.sqlite3
+
+# IDEs
 .idea/
+.vscode/
+
+# Ignore Docker related
+Dockerfile
+.dockerignore

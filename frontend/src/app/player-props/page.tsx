@@ -28,6 +28,8 @@ export default function PlayerProps() {
     const [isLoadingPicks, setIsLoadingPicks] = useState(true);
     const [selectedBooks, setSelectedBooks] = useState<string[]>(AVAILABLE_BOOKS.map(b => b.key));
     const [searchQuery, setSearchQuery] = useState('');
+    const [sortColumn, setSortColumn] = useState<'edge' | 'odds' | 'player'>('edge');
+    const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
 
     const { marketIntel, decisions } = useBrainData(activeSport);
 
@@ -89,6 +91,34 @@ export default function PlayerProps() {
         selectedBooks.includes(p.sportsbook_key) &&
         (p.player?.name || p.player_name || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const handleSort = (column: 'edge' | 'odds' | 'player') => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('desc'); // Default to high-to-low for new columns
+        }
+    };
+
+    const sortedProps = [...filteredProps].sort((a, b) => {
+        let valA, valB;
+        if (sortColumn === 'edge') {
+            valA = a.edge || 0;
+            valB = b.edge || 0;
+        } else if (sortColumn === 'odds') {
+            // Treat American odds correctly (-110 < +150)
+            valA = a.odds > 0 ? a.odds : (10000 / Math.abs(a.odds));
+            valB = b.odds > 0 ? b.odds : (10000 / Math.abs(b.odds));
+        } else {
+            valA = (a.player?.name || a.player_name || '').toLowerCase();
+            valB = (b.player?.name || b.player_name || '').toLowerCase();
+        }
+
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
 
     return (
         <div className="flex gap-6">
@@ -211,12 +241,18 @@ export default function PlayerProps() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-slate-800 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                                    <th className="px-6 py-4">Player</th>
+                                <tr className="border-b border-slate-800 text-[10px] uppercase tracking-widest text-slate-500 font-bold bg-[#0c1416]/50">
+                                    <th className="px-6 py-4 cursor-pointer hover:text-white transition-colors group" onClick={() => handleSort('player')}>
+                                        <div className="flex items-center gap-1">Player {sortColumn === 'player' && <span className="text-primary">{sortDirection === 'desc' ? '↓' : '↑'}</span>}</div>
+                                    </th>
                                     <th className="px-6 py-4">Matchup</th>
                                     <th className="px-6 py-4">Prop / Line</th>
-                                    <th className="px-6 py-4">Source</th>
-                                    <th className="px-6 py-4 text-right">Model / Edge</th>
+                                    <th className="px-6 py-4 cursor-pointer hover:text-white transition-colors group" onClick={() => handleSort('odds')}>
+                                        <div className="flex items-center gap-1">Source / Odds {sortColumn === 'odds' && <span className="text-primary">{sortDirection === 'desc' ? '↓' : '↑'}</span>}</div>
+                                    </th>
+                                    <th className="px-6 py-4 text-right cursor-pointer hover:text-white transition-colors group" onClick={() => handleSort('edge')}>
+                                        <div className="flex items-center justify-end gap-1">Model / Edge {sortColumn === 'edge' && <span className="text-primary">{sortDirection === 'desc' ? '↓' : '↑'}</span>}</div>
+                                    </th>
                                     <th className="px-4 py-4 w-10"></th>
                                 </tr>
                             </thead>
@@ -230,9 +266,9 @@ export default function PlayerProps() {
                                             </div>
                                         </td>
                                     </tr>
-                                ) : props.length > 0 ? (
+                                ) : sortedProps.length > 0 ? (
                                     <AnimatePresence mode="popLayout">
-                                        {filteredProps.map((prop, idx) => (
+                                        {sortedProps.map((prop, idx) => (
                                             <PlayerRow
                                                 key={`${prop.id}-${prop.sportsbook_key || idx}`}
                                                 id={prop.id}

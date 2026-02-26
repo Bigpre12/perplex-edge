@@ -47,6 +47,7 @@ from routers.whale_router import router as whale_router
 from routers.reporting_router import router as reporting_router
 from routers.execution_router import router as execution_router
 from routers.backtest_router import router as backtest_router
+from routers.config_router import router as config_router
 
 from services.cache import cache
 
@@ -209,6 +210,9 @@ app.include_router(push_router)
 app.include_router(reporting_router)
 app.include_router(execution_router)
 app.include_router(backtest_router)
+
+# Phase 6
+app.include_router(config_router)
 app.include_router(webhook_router)
 app.include_router(auth_router.router)
 app.include_router(ledger_router.router)
