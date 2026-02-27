@@ -1,6 +1,9 @@
 import httpx
 import asyncio
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class WebhookManager:
     def __init__(self):
@@ -33,10 +36,11 @@ class WebhookManager:
                 }]
             }
             
+            # Use self.http_client to send the post
             response = await self.http_client.post(webhook_url, json=payload, timeout=5.0)
             return response.status_code == 204
         except Exception as e:
-            print(f"Failed to send Discord webhook: {e}")
+            logger.error(f"Failed to send Discord webhook: {e}")
             return False
 
     async def dispatch_alerts(self, picking_data: list, registered_hooks: list):
@@ -53,6 +57,6 @@ class WebhookManager:
         
         if tasks:
             results = await asyncio.gather(*tasks)
-            print(f"📢 Dispatched {sum(results)} alerts to external Discord Webhooks.")
+            logger.info(f"📢 Dispatched {sum(results)} alerts to external Discord Webhooks.")
 
 webhook_manager = WebhookManager()
