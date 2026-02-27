@@ -39,7 +39,7 @@ from routers.dfs import router as dfs_router
 from routers.line_movement import router as line_movement_router
 
 # Institutional & SaaS Infrastructure
-from routers import auth_router, ledger_router, stripe_router, push_router, admin_router, config_router, affiliate_router, chat_router
+from routers import auth_router, ledger_router, stripe_router, push_router, admin_router, config_router, affiliate_router, chat_router, brain_router
 from routers.api_tier_router import router as api_tier_router
 from routers.autocopy_router import router as autocopy_router
 from routers.reporting_router import router as reporting_router
@@ -232,6 +232,7 @@ app.include_router(backtest_router)
 app.include_router(referral_router)
 app.include_router(assistant_router)
 app.include_router(chat_router.router)
+app.include_router(brain_router.router)
 app.include_router(contest_router)
 app.include_router(webhook_router)
 
