@@ -3,6 +3,7 @@ import json
 import httpx
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List
+from services.webhook_manager import dispatch_webhooks
 
 router = APIRouter(tags=["Real-Time WebSockets"])
 
@@ -46,6 +47,10 @@ async def live_odds_broadcaster():
                     if res.status_code == 200:
                         data = res.json()
                         await manager.broadcast({"type": "LIVE_EV_UPDATE", "data": data})
+
+                        # Phase 11: Trigger Institutional Webhook Pipes for Whales & High-EV Signals
+                        if data.get("items"):
+                            asyncio.create_task(dispatch_webhooks(data["items"]))
             except Exception as e:
                 print(f"WS Engine Polling Error: {e}")
             

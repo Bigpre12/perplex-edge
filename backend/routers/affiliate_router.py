@@ -1,10 +1,22 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from supabase import create_client, Client
-import os
-import uuid
-
-router = APIRouter(prefix="/api/affiliates", tags=["Affiliate Marketing"])
+try:
+    from supabase import create_client, Client
+except ImportError:
+    # MOCK FOR LOCAL ENVIRONMENTS WITHOUT SUPABASE BINARIES
+    class Client: pass
+    class MockSupabase:
+        def __init__(self):
+            self.auth = self
+            self.admin = self
+        def get_user_by_id(self, uid):
+            class MockUser:
+                def __init__(self):
+                    self.user = self
+                    self.app_metadata = {"referral_code": "edge_dev_local", "tier": "pro"}
+            return MockUser()
+        def update_user_by_id(self, uid, data): return True
+    def create_client(url, key): return MockSupabase()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://mock.supabase.co")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "mock_service_key")
