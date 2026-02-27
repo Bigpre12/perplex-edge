@@ -27,4 +27,6 @@ class BetLog(Base):
     # Closing Line Value Analytics
     closing_odds = Column(Integer, nullable=True)
     closing_line = Column(Float, nullable=True)
+    clv = Column(Float, nullable=True) # Sprint 11: Actual CLV (Closing - Taken)
+    clv_label = Column(String, nullable=True) # Sprint 11: 'GREAT', 'GOOD', etc.
     clv_percent = Column(Float, nullable=True)

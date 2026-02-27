@@ -17,6 +17,8 @@ class PropLine(Base):
     # Meta
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
+    hit_rate_l10 = Column(Integer, default=50) # Sprint 11: Player's L10 hit rate %
+    fatigue_flag = Column(String, nullable=True) # Sprint 15: 'B2B', '3-IN-4', etc.
 
 class PropOdds(Base):
     __tablename__ = "propodds"

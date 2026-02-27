@@ -30,11 +30,6 @@ from routers.dvp import router as dvp_router
 from routers.kelly_router import router as kelly_router
 from routers.sgp_router import router as sgp_router
 from routers.hedge_router import router as hedge_router
-from routers.line_shopping_router import router as shop_router
-from routers.whale_router import router as whale_router
-
-# Institutional & SaaS Infrastructure
-from routers import auth_router, ledger_router, stripe_router, push_router, admin_router, config_router, affiliate_router, chat_router
 from routers.api_tier_router import router as api_tier_router
 from routers.autocopy_router import router as autocopy_router
 from routers.reporting_router import router as reporting_router
@@ -42,6 +37,7 @@ from routers.execution_router import router as execution_router
 from routers.backtest_router import router as backtest_router
 from routers.referral_router import router as referral_router
 from routers.ai_assistant import router as assistant_router
+from routers.contest_router import router as contest_router
 from utils.feature_gate import router as webhook_router
 
 # Community & Real-Time Engine (Phase 10/11)
@@ -198,6 +194,7 @@ app.include_router(backtest_router)
 app.include_router(referral_router)
 app.include_router(assistant_router)
 app.include_router(chat_router.router)
+app.include_router(contest_router)
 app.include_router(webhook_router)
 
 # 4. Community & Real-Time Expansion

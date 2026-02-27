@@ -32,9 +32,8 @@ async def get_kelly_size(
     if not prop:
         raise HTTPException(status_code=404, detail='Prop not found')
     
-    # In a real app we'd fetch the latest EV/Probability from a probability service
-    # For now we use the stat_type and line to mock a decent hit rate
-    hit_rate = 0.54 # Mocked sharp hit rate
+    # Use real-time L10 statistics from the database
+    hit_rate = (getattr(prop, 'hit_rate_l10', 50) or 50) / 100
     
     odds = -110 # Default for mock
     
@@ -75,7 +74,7 @@ async def bulk_kelly(
     props = result.scalars().all()
     
     for prop in props:
-        hit_rate = 0.53 # Mock
+        hit_rate = (getattr(prop, 'hit_rate_l10', 50) or 50) / 100
         odds = -110
         decimal = american_to_decimal(odds)
         qk = kelly_fraction(hit_rate, decimal, 0.25)

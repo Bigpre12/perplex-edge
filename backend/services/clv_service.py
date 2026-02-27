@@ -46,7 +46,7 @@ class CLVService:
             'avg_clv': avg_clv,
             'beat_close_pct': round(beat_close / len(clvs) * 100, 1),
             'skill_verdict': 'SHARP' if avg_clv >= 0.5 else 'ABOVE AVG' if avg_clv >= 0 else 'NEEDS WORK',
-            'interpretation': f'You beat closing line by {avg_clv} pts on average.'
+            'interpretation': f'You beat closing line by {avg_clv} pts on average. {"This indicates genuine edge." if avg_clv > 0 else "Negative CLV suggests timing or line selection issues."}'
         }
         
     def compute_for_pick(self, pick_data: Dict, odds_history: Optional[List[Dict]] = None, odds_by_book: Optional[Dict] = None, public_pct: Optional[float] = None) -> Dict:

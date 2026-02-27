@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import AlertFeed from "@/components/AlertFeed";
 import OracleChatbot from "@/components/OracleChatbot";
 import CommandPalette from "@/components/CommandPalette";
+import PWASetup from "@/components/PWASetup";
 
 export const metadata: Metadata = {
   title: "Perplex Edge | Institutional Sports Betting Intelligence",
@@ -33,7 +34,15 @@ export const metadata: Metadata = {
     title: "Perplex Edge",
     description: "The world's fastest Real-Time Expected Value (+EV) Engine.",
     images: ["/og-image.png"],
-  }
+  },
+  manifest: "/manifest.json",
+  themeColor: "#3b82f6",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Perplex Edge",
+  },
 };
 
 export default function RootLayout({
@@ -50,6 +59,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="antialiased">
+        <PWASetup />
         <div className="flex h-screen w-full overflow-hidden bg-background-dark text-slate-100 font-display selection:bg-primary selection:text-background-dark relative">
           {/* Animated Background Elements */}
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] animate-pulse-slow"></div>
