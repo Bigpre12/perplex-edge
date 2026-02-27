@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
     ADMIN: `${API_BASE_URL}/api/admin`,
     STRIPE: `${API_BASE_URL}/api/stripe`,
     PUSH: `${API_BASE_URL}/api/push`,
+    LEDGER: `${API_BASE_URL}/api/ledger`,
     ODDS: `${API_BASE_URL}/immediate/working-player-props`,
     KELLY: `${API_BASE_URL}/api/kelly`,
     SGP: `${API_BASE_URL}/api/sgp`,

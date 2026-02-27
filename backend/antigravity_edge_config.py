@@ -78,19 +78,31 @@ _DEFAULT_CONFIG = PerplexEdgeConfig(
 
 # ---- OPTIONAL: HOOK FOR DB / REDIS OVERRIDES ----
 
-def _load_config_from_db() -> Optional[PerplexEdgeConfig]:
+def _load_config_from_disk() -> Optional[PerplexEdgeConfig]:
     """
-    TODO: Replace this stub with real DB/Redis load.
-    Return None to fall back to hard defaults.
+    Loads saved configuration from edge_settings_storage.json if it exists.
     """
-    # Example structure if you later load JSON from DB:
-    # row = session.query(EdgeConfigModel).first()
-    # if not row:
-    #     return None
-    # return PerplexEdgeConfig(
-    #     feed=EdgeFeedConfig(**row.feed_json),
-    #     player_page=PlayerPageConfig(**row.player_page_json),
-    # )
+    import json
+    import os
+    config_path = "edge_settings_storage.json"
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r") as f:
+                saved = json.load(f)
+            return PerplexEdgeConfig(
+                feed=EdgeFeedConfig(
+                    active_edge_model=saved.get("active_edge_model", "baseline"),
+                    min_edge_percent=saved.get("min_edge_percent", 2.0),
+                    max_edge_percent=saved.get("max_edge_percent", 40.0),
+                    min_games_sample=saved.get("min_games_sample", 5),
+                    min_bets_volume=saved.get("min_bets_volume", 10),
+                    max_juice=saved.get("max_juice", -200.0),
+                    include_main_lines=saved.get("include_main_lines", True)
+                ),
+                player_page=PlayerPageConfig()
+            )
+        except Exception as e:
+            print(f"Warning: Failed to load config from disk: {e}")
     return None
 
 
@@ -100,16 +112,16 @@ _cached_config: Optional[PerplexEdgeConfig] = None
 def get_edge_config() -> PerplexEdgeConfig:
     """
     Main entry point: call this from your edge calc + routes.
-    Uses cached config if available; falls back to defaults if DB not set.
+    Uses cached config if available; falls back to disk then defaults.
     """
     global _cached_config
 
     if _cached_config is not None:
         return _cached_config
 
-    db_config = _load_config_from_db()
-    if db_config is not None:
-        _cached_config = db_config
+    disk_config = _load_config_from_disk()
+    if disk_config is not None:
+        _cached_config = disk_config
         return _cached_config
 
     # Fall back to hardcoded defaults

@@ -25,8 +25,10 @@ async def ask_oracle(request: Request, req: ChatRequest, db: Session = Depends(g
     try:
         # 1. Fetch the live "Immediate Working Player Props" from the local engine
         # We query our own API to get the current EV data to feed to the LLM
+        port = os.environ.get("PORT", "8000")
+        internal_url = f"http://localhost:{port}/immediate/working-player-props?limit=15"
         async with httpx.AsyncClient() as http_client:
-            live_props_response = await http_client.get("http://localhost:8000/immediate/working-player-props?limit=15")
+            live_props_response = await http_client.get(internal_url)
             
             if live_props_response.status_code == 200:
                 live_data = live_props_response.json()

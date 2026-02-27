@@ -38,12 +38,15 @@ manager = ConnectionManager()
 # For simplicity here, we simulate the "Push" by having the WS server poll internal memory every 10 seconds and broadcast.
 async def live_odds_broadcaster():
     print("🚀 Starting WebSockets Live Odds Broadcaster Loop...")
+    import os
+    port = os.environ.get("PORT", "8000")
+    internal_url = f"http://localhost:{port}/immediate/working-player-props?limit=15"
     async with httpx.AsyncClient() as client:
         while True:
             try:
                 # Only poll if we have connected clients to save CPU
                 if len(manager.active_connections) > 0:
-                    res = await client.get("http://localhost:8000/immediate/working-player-props?limit=15", timeout=5.0)
+                    res = await client.get(internal_url, timeout=5.0)
                     if res.status_code == 200:
                         data = res.json()
                         await manager.broadcast({"type": "LIVE_EV_UPDATE", "data": data})

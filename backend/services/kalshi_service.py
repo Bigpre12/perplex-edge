@@ -1,2 +1,0 @@
-class KalshiService:
-    pass

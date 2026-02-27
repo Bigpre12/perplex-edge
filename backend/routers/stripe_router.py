@@ -58,14 +58,23 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     # Handle the successful checkout session event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        
         user_id = session.get('client_reference_id')
         customer_id = session.get('customer')
         
         if user_id:
             print(f"✅ Subscription Activated for Supabase User: {user_id}")
-            # TODO: Here you would use the Supabase Admin SDK to update the user's `app_metadata` to { "tier": "pro" }
-            # Or update a custom `profiles` table in Postgres where id = user_id 
-            pass
+            try:
+                from utils.supabase_proxy import supabase
+                # Update user metadata to set tier to 'pro'
+                res = supabase.auth.admin.get_user_by_id(user_id)
+                user = res.user
+                metadata = user.app_metadata or {}
+                metadata["tier"] = "pro"
+                metadata["stripe_customer_id"] = customer_id
+                
+                supabase.auth.admin.update_user_by_id(user_id, {"app_metadata": metadata})
+                print(f"🚀 User {user_id} upgraded to PRO tier.")
+            except Exception as e:
+                print(f"❌ Failed to upgrade user {user_id}: {e}")
             
     return {"status": "success"}

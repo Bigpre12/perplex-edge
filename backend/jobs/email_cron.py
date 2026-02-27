@@ -10,9 +10,11 @@ SENDER_EMAIL = os.environ.get("RESEND_SENDER_EMAIL", "oracle@perplexedge.com")
 
 async def fetch_top_picks():
     """Hits the local API to get the Top 3 Highest EV Props"""
+    port = os.environ.get("PORT", "8000")
+    internal_url = f"http://localhost:{port}/immediate/working-player-props?limit=3"
     try:
         async with httpx.AsyncClient() as client:
-            res = await client.get("http://localhost:8000/immediate/working-player-props?limit=3")
+            res = await client.get(internal_url)
             if res.status_code == 200:
                 data = res.json()
                 if data and len(data) > 0:

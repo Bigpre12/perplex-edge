@@ -33,24 +33,6 @@ def save_config_to_disk(config_obj):
     except Exception as e:
         print(f"Warning: Failed to persist config to disk: {e}")
 
-@router.on_event("startup")
-async def load_config_on_startup():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r") as f:
-                saved = json.load(f)
-            config = get_edge_config()
-            config.active_edge_model = saved.get("active_edge_model", config.active_edge_model)
-            config.min_edge_percent = saved.get("min_edge_percent", config.min_edge_percent)
-            config.max_edge_percent = saved.get("max_edge_percent", config.max_edge_percent)
-            config.min_games_sample = saved.get("min_games_sample", config.min_games_sample)
-            config.min_bets_volume = saved.get("min_bets_volume", config.min_bets_volume)
-            config.max_juice = saved.get("max_juice", config.max_juice)
-            config.include_main_lines = saved.get("include_main_lines", config.include_main_lines)
-            print("Loaded Edge Config from disk storage.")
-        except Exception as e:
-            print(f"Failed to load config from disk: {e}")
-
 @router.get("/")
 async def read_config():
     """Return the active AI edge finding configuration parameters."""

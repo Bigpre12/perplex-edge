@@ -83,7 +83,7 @@ export default function PlayerProps() {
         fetchProps(activeSport);
 
         // Establish Real-Time EV Stream
-        const ws = new WebSocket('ws://localhost:8000/api/ws/live-odds');
+        const ws = new WebSocket(API_ENDPOINTS.WS_ODDS);
 
         ws.onopen = () => console.log("🚀 Connected to Live EV Engine Stream");
 

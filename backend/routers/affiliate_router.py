@@ -51,5 +51,26 @@ async def track_referral_click(req: ReferralClick):
     and increment their `referral_clicks` in `app_metadata`.
     """
     print(f"🟢 Authenticated Click tracked for referral code: {req.referral_code}")
-    # TODO: Execute Supabase Auth Admin scan to increment the click counter.
+    try:
+        from utils.supabase_proxy import supabase
+        # In a real heavy-load system, you'd use a Postgres Function or a cached lookup.
+        # For 'fix all', we'll implement a search-and-update logic.
+        users = supabase.auth.admin.list_users()
+        target_user = None
+        for user in users:
+            if user.app_metadata.get("referral_code") == req.referral_code:
+                target_user = user
+                break
+        
+        if target_user:
+            metadata = target_user.app_metadata or {}
+            metadata["referral_clicks"] = metadata.get("referral_clicks", 0) + 1
+            supabase.auth.admin.update_user_by_id(target_user.id, {"app_metadata": metadata})
+            print(f"📈 Incremented clicks for {target_user.id} ({req.referral_code})")
+        else:
+            print(f"⚠️ Referral code {req.referral_code} not found.")
+            
+    except Exception as e:
+        print(f"❌ Click tracking error: {e}")
+        
     return {"status": "success", "message": "Click registered"}

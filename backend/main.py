@@ -67,10 +67,28 @@ from slowapi.middleware import SlowAPIMiddleware
 async def weekly_reporting_loop():
     """Background task for weekly reports."""
     import logging
+    from datetime import datetime, timedelta
+    from sqlalchemy import select, func
+    from models.bets import BetLog
+    
     logger = logging.getLogger("weekly_report")
     while True:
         try:
-            logger.info("Weekly reporting cycle — no action taken (stub).")
+            async with async_session_maker() as db:
+                one_week_ago = datetime.utcnow() - timedelta(days=7)
+                # Query performance for the last week
+                stmt = select(
+                    func.count(BetLog.id).label("total_bets"),
+                    func.sum(BetLog.profit_loss).label("total_profit")
+                ).where(BetLog.created_at >= one_week_ago, BetLog.status == "settled")
+                
+                result = await db.execute(stmt)
+                summary = result.first()
+                
+                if summary and summary.total_bets > 0:
+                    logger.info(f"📊 Weekly Performance Summary: {summary.total_bets} bets settled, total P/L: ${summary.total_profit:.2f}")
+                else:
+                    logger.info("Weekly reporting cycle: No bets settled in the last 7 days.")
         except Exception as e:
             logger.error(f"Weekly reporting error: {e}")
         await asyncio.sleep(604800)  # 7 days
