@@ -99,7 +99,8 @@ def _load_config_from_disk() -> Optional[PerplexEdgeConfig]:
                     min_games_sample=saved.get("min_games_sample", 5),
                     min_bets_volume=saved.get("min_bets_volume", 10),
                     max_juice=saved.get("max_juice", -200.0),
-                    include_main_lines=saved.get("include_main_lines", True)
+                    include_main_lines=saved.get("include_main_lines", True),
+                    discord_webhook_url=saved.get("discord_webhook_url", "")
                 ),
                 player_page=PlayerPageConfig()
             )
