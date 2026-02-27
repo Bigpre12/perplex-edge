@@ -30,6 +30,11 @@ from routers.dvp import router as dvp_router
 from routers.kelly_router import router as kelly_router
 from routers.sgp_router import router as sgp_router
 from routers.hedge_router import router as hedge_router
+from routers.line_shopping_router import router as shop_router
+from routers.whale_router import router as whale_router
+
+# Institutional & SaaS Infrastructure
+from routers import auth_router, ledger_router, stripe_router, push_router, admin_router, config_router, affiliate_router, chat_router
 from routers.api_tier_router import router as api_tier_router
 from routers.autocopy_router import router as autocopy_router
 from routers.reporting_router import router as reporting_router
@@ -155,6 +160,9 @@ if os.path.exists(static_path):
 
 # --- ROUTER REGISTRATION ---
 
+from routers.social_router import router as social_router
+from routers.analytics_router import router as analytics_router
+
 # 1. Core Odds Engine & Analytics
 app.include_router(immediate_router, prefix="/immediate", tags=["immediate"])
 app.include_router(validation_router, prefix="/validation", tags=["validation"])
@@ -164,6 +172,8 @@ app.include_router(working_parlays_router, prefix="/parlays", tags=["parlays"])
 app.include_router(analysis_v2_router, prefix="/analysis", tags=["analysis"])
 app.include_router(picks_router, prefix="/picks", tags=["picks"])
 app.include_router(share_router, prefix="/share", tags=["share"])
+app.include_router(social_router, prefix="/social", tags=["social"])
+app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 
 # 2. Market Tools & Sharp Intel
 app.include_router(deeplinks_router)
