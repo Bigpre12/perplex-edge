@@ -32,6 +32,11 @@ from routers.sgp_router import router as sgp_router
 from routers.hedge_router import router as hedge_router
 from routers.line_shopping_router import router as shop_router
 from routers.whale_router import router as whale_router
+from routers.weather import router as weather_router
+from routers.referees import router as referee_router
+from routers.h2h import router as h2h_router
+from routers.dfs import router as dfs_router
+from routers.line_movement import router as line_movement_router
 
 # Institutional & SaaS Infrastructure
 from routers import auth_router, ledger_router, stripe_router, push_router, admin_router, config_router, affiliate_router, chat_router
@@ -205,6 +210,11 @@ app.include_router(sgp_router)
 app.include_router(hedge_router)
 app.include_router(shop_router)
 app.include_router(whale_router)
+app.include_router(weather_router)
+app.include_router(referee_router)
+app.include_router(h2h_router)
+app.include_router(dfs_router)
+app.include_router(line_movement_router)
 
 # 3. Institutional & SaaS Infrastructure
 app.include_router(auth_router.router)
