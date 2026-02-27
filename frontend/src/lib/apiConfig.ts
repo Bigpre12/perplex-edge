@@ -14,5 +14,9 @@ export const API_ENDPOINTS = {
     STRIPE: `${API_BASE_URL}/api/stripe`,
     PUSH: `${API_BASE_URL}/api/push`,
     ODDS: `${API_BASE_URL}/immediate/working-player-props`,
+    KELLY: `${API_BASE_URL}/api/kelly`,
+    SGP: `${API_BASE_URL}/api/sgp`,
+    HEDGE: `${API_BASE_URL}/api/hedge`,
+    CONTESTS: `${API_BASE_URL}/api/contests`,
     WS_ODDS: API_BASE_URL.replace('http', 'ws') + '/api/ws/live-odds'
 };
