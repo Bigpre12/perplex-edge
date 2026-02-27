@@ -3,10 +3,12 @@ import os
 from utils.supabase_proxy import supabase
 
 # Define the Master Admin Emails who have access to this portal
-AUTHORIZED_ADMINS = ["preio@example.com", "oracle@perplexedge.com"]
+_env_admins = os.getenv("ADMIN_EMAILS", "").split(",")
+AUTHORIZED_ADMINS = [email.strip() for email in _env_admins if email.strip()] or ["preio@example.com", "oracle@perplexedge.com"]
 
 def verify_admin(user_email: str):
     if user_email not in AUTHORIZED_ADMINS:
+        logger.warning(f"Unauthorized admin access attempt by {user_email}")
         raise HTTPException(status_code=403, detail="You do not have Command Center clearance.")
     return True
 
