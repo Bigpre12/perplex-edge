@@ -321,6 +321,8 @@ export default function PlayerProps() {
                                                 volatility={prop.volatility}
                                                 lineVelocity={prop.line_velocity}
                                                 injuryStatus={prop.injury_status}
+                                                fatigueFlag={prop.fatigue_flag}
+                                                hitRateL10={prop.hit_rate_l10}
                                                 propId={prop.id}
                                                 onOpenModal={() => setSelectedPropForModal(prop)}
                                             />
@@ -430,7 +432,7 @@ function Checkbox({ label, checked }: any) {
     );
 }
 
-function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, line, odds, sportsbook, edge, confidence, progress, trendData, matchupData, usageData, performanceSplits, volatility, idx, injuryStatus, propId, onOpenModal }: any) {
+function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, line, odds, sportsbook, edge, confidence, progress, trendData, matchupData, usageData, performanceSplits, volatility, idx, injuryStatus, fatigueFlag, hitRateL10, propId, onOpenModal }: any) {
     const [isTracked, setIsTracked] = useState(false);
     const [isTracking, setIsTracking] = useState(false);
     const [kellyData, setKellyData] = useState<any>(null);
@@ -543,6 +545,11 @@ function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, l
                                 D-RANK: {matchupData?.def_rank_vs_pos ? `#${matchupData.def_rank_vs_pos}` : 'N/A'}
                             </span>
                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">vs {matchupData?.opponent || 'Opp'}</span>
+                            {fatigueFlag && (
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 animate-pulse">
+                                    {fatigueFlag}
+                                </span>
+                            )}
                         </div>
                         {matchupData?.l10_trend && (
                             <div className="flex items-center gap-1 mt-1">
@@ -633,7 +640,7 @@ function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, l
                                                 <HitRateStack
                                                     splits={{
                                                         l5: (performanceSplits?.last_5?.rate || 60) / 100,
-                                                        l10: (performanceSplits?.last_10?.rate || 70) / 100,
+                                                        l10: (hitRateL10 || performanceSplits?.last_10?.rate || 70) / 100,
                                                         l20: (performanceSplits?.last_20?.rate || 55) / 100,
                                                         vs_opp: (performanceSplits?.away?.rate || 80) / 100
                                                     }}
