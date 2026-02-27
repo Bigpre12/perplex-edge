@@ -18,6 +18,8 @@ class EdgeFeedConfig:
     min_games_sample: int = 5              # min games in sample
     min_bets_volume: int = 10              # min historical attempts if you track it
     max_juice: float = -200.0              # ignore props worse than -120 by default (lowered for testing)
+    discord_webhook_url: str = ""          # user-defined Discord webhook override 
+
 
     # Feed content filters
     include_main_lines: bool = True

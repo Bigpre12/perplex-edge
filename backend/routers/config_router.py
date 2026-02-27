@@ -17,6 +17,7 @@ class ConfigUpdateModel(BaseModel):
     min_bets_volume: int
     max_juice: float
     include_main_lines: bool
+    discord_webhook_url: Optional[str] = ""
 
 def save_config_to_disk(config_obj):
     try:
@@ -28,7 +29,8 @@ def save_config_to_disk(config_obj):
                 "min_games_sample": config_obj.min_games_sample,
                 "min_bets_volume": config_obj.min_bets_volume,
                 "max_juice": config_obj.max_juice,
-                "include_main_lines": config_obj.include_main_lines
+                "include_main_lines": config_obj.include_main_lines,
+                "discord_webhook_url": config_obj.discord_webhook_url
             }, f)
     except Exception as e:
         print(f"Warning: Failed to persist config to disk: {e}")
@@ -44,7 +46,8 @@ async def read_config():
         "min_games_sample": config.min_games_sample,
         "min_bets_volume": config.min_bets_volume,
         "max_juice": config.max_juice,
-        "include_main_lines": config.include_main_lines
+        "include_main_lines": config.include_main_lines,
+        "discord_webhook_url": config.discord_webhook_url
     }
 
 @router.post("/")
@@ -59,6 +62,7 @@ async def update_config(payload: ConfigUpdateModel):
     config.min_bets_volume = payload.min_bets_volume
     config.max_juice = payload.max_juice
     config.include_main_lines = payload.include_main_lines
+    config.discord_webhook_url = payload.discord_webhook_url
     
     # Save the mutation to a local file so changes survive development restarts
     save_config_to_disk(config)

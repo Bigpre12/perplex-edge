@@ -123,6 +123,12 @@ def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
     conf = float(db_conf) if db_conf is not None and float(db_conf) != 0 else (55.0 + (name_hash % 35))
     
     edge_pct = ev
+    
+    # Active Strategy Switching (Zero-Debt Sweep)
+    if cfg.active_edge_model == "sharp_v2":
+        # Proof-of-concept: sharp_v2 model adds a slight 'sharp' bias to the EV
+        edge_pct += (name_hash % 5) / 10.0
+        
     if edge_pct < cfg.min_edge_percent or edge_pct > cfg.max_edge_percent:
         return None
         

@@ -39,18 +39,26 @@ def build_digest_embed(db: Session) -> dict:
     }
 
 async def send_daily_digest():
-    if not DISCORD_WEBHOOK:
-        print('No Discord webhook set')
+    from antigravity_edge_config import get_edge_config
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Prioritize user-defined webhook from config over env var
+    cfg = get_edge_config().feed
+    target_webhook = cfg.discord_webhook_url or DISCORD_WEBHOOK
+    
+    if not target_webhook:
+        logger.warning('No Discord webhook set (env or config)')
         return
     db = SessionLocal()
     try:
         embed = build_digest_embed(db)
         if not embed:
-            print('No high-confidence props to send today')
+            logger.info('No high-confidence props to send today')
             return
         async with httpx.AsyncClient() as c:
-            r = await c.post(DISCORD_WEBHOOK, json=embed)
-            print(f'Discord digest sent: {r.status_code}')
+            r = await c.post(target_webhook, json=embed)
+            logger.info(f'Discord digest sent: {r.status_code}')
     finally:
         db.close()
 
