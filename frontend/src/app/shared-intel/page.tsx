@@ -15,6 +15,7 @@ import {
     Plus
 } from "lucide-react";
 import { getAuthToken, getUser } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 export default function SharedIntelPage() {
     const [posts, setPosts] = useState<any[]>([]);
@@ -31,7 +32,7 @@ export default function SharedIntelPage() {
 
     const fetchFeed = async () => {
         try {
-            const res = await fetch("http://localhost:8000/social/feed");
+            const res = await fetch(`${API_BASE_URL}/social/feed`);
             if (res.ok) setPosts(await res.json());
         } catch (err) {
             console.error("Failed to fetch community feed:", err);
@@ -45,7 +46,7 @@ export default function SharedIntelPage() {
         if (!token) return alert("Please login to interact with posts.");
 
         try {
-            const res = await fetch(`http://localhost:8000/social/like/${postId}`, {
+            const res = await fetch(`${API_BASE_URL}/social/like/${postId}`, {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${token}` }
             });
@@ -64,7 +65,7 @@ export default function SharedIntelPage() {
 
         setIsPosting(true);
         try {
-            const res = await fetch("http://localhost:8000/social/share", {
+            const res = await fetch(`${API_BASE_URL}/social/share`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

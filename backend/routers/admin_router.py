@@ -1,24 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 import os
-try:
-    from supabase import create_client, Client
-except ImportError:
-    # MOCK FOR LOCAL ENVIRONMENTS WITHOUT SUPABASE BINARIES
-    class Client: pass
-    class MockSupabase:
-        def __init__(self):
-            self.auth = self
-            self.admin = self
-        def list_users(self):
-            class MockUsers:
-                def __init__(self): self.users = []
-            return MockUsers()
-    def create_client(url, key): return MockSupabase()
-
-# Initialize Supabase Admin Client (Service Role Key required to bypass RLS and fetch all user profiles)
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://mock.supabase.co")
-SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "mock_service_key")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+from utils.supabase_proxy import supabase
 
 # Define the Master Admin Emails who have access to this portal
 AUTHORIZED_ADMINS = ["preio@example.com", "oracle@perplexedge.com"]

@@ -12,6 +12,7 @@ import PlayerTrendsModal from '@/components/PlayerTrendsModal';
 import { HitRateStack } from '@/components/HitRateLight';
 import { getAuthToken } from '@/lib/auth';
 import BetSlipShare from '@/components/BetSlipShare';
+import { API_BASE_URL, API_ENDPOINTS } from "@/lib/apiConfig";
 
 const AVAILABLE_BOOKS = [
     { key: 'fanduel', name: 'FanDuel' },
@@ -39,14 +40,14 @@ export default function PlayerProps() {
     const fetchProps = async (sport: string) => {
         setIsLoadingPicks(true);
         try {
-            const res = await fetch(`http://localhost:8000/immediate/working-player-props?sport_key=${sport}&limit=50`);
+            const res = await fetch(`${API_BASE_URL}/immediate/working-player-props?sport_key=${sport}&limit=50`);
             const data = await res.json();
 
             if (data.items && data.items.length > 0) {
                 setProps(data.items);
             } else {
                 // FALLBACK: use validation picks when slate is empty
-                const fallbackRes = await fetch(`http://localhost:8000/validation/picks`);
+                const fallbackRes = await fetch(`${API_BASE_URL}/validation/picks`);
                 const fallbackData = await fallbackRes.json();
                 const transformed = (fallbackData.picks || []).map((p: any) => ({
                     id: p.id,
@@ -438,7 +439,7 @@ function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, l
     useEffect(() => {
         const fetchBestPrice = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/api/shop/best-price/${propId || 0}`);
+                const res = await fetch(`${API_BASE_URL}/api/shop/best-price/${propId || 0}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.status !== 'error') setBestPrice(data);
@@ -453,7 +454,7 @@ function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, l
     useEffect(() => {
         const fetchKelly = async () => {
             try {
-                const res = await fetch(`http://localhost:8000/api/kelly/size/${propId || 0}?bankroll=1000&side=${line.toLowerCase().includes('over') ? 'over' : 'under'}`);
+                const res = await fetch(`${API_BASE_URL}/api/kelly/size/${propId || 0}?bankroll=1000&side=${line.toLowerCase().includes('over') ? 'over' : 'under'}`);
                 if (res.ok) setKellyData(await res.json());
             } catch (err) {
                 console.error("Kelly fetch error:", err);
@@ -471,7 +472,7 @@ function PlayerRow({ expanded, onClick, image, name, pos, matchup, time, prop, l
 
         setIsTracking(true);
         try {
-            const res = await fetch("http://localhost:8000/ledger/track", {
+            const res = await fetch(`${API_ENDPOINTS.LEDGER}/track`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

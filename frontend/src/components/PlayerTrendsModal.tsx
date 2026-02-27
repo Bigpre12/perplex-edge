@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, TrendingUp, Activity, Crosshair, Brain } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
+import { API_BASE_URL } from "@/lib/apiConfig";
+
 export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
     if (!isOpen || !propData) return null;
 
@@ -32,7 +34,7 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
 
         const fetchPrediction = async () => {
             try {
-                const res = await fetch("http://localhost:8000/api/ml/predict-probability", {
+                const res = await fetch(`${API_BASE_URL}/api/ml/predict-probability`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

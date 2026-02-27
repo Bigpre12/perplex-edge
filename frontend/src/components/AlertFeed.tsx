@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { Zap, AlertTriangle, TrendingUp } from 'lucide-react';
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 interface Alert {
     id: string;
@@ -16,7 +17,7 @@ export default function AlertFeed() {
     useEffect(() => {
         const fetchAlerts = async () => {
             try {
-                const res = await fetch('http://localhost:8000/immediate/market-intel?sport_key=basketball_nba');
+                const res = await fetch(`${API_BASE_URL}/immediate/market-intel?sport_key=basketball_nba`);
                 const data = await res.json();
                 if (data.items && data.items.length > 0) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,4 +68,3 @@ export default function AlertFeed() {
         </div>
     );
 }
-

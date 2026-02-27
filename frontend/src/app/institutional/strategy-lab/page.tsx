@@ -32,6 +32,7 @@ import {
     Area
 } from "recharts";
 import { getAuthToken } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 export default function StrategyLab() {
     const [loading, setLoading] = useState(false);
@@ -55,7 +56,7 @@ export default function StrategyLab() {
             return;
         }
         try {
-            const res = await fetch("http://localhost:8000/backtest/run", {
+            const res = await fetch(`${API_BASE_URL}/backtest/run`, {
                 method: 'POST',
                 headers: {
                     "Authorization": `Bearer ${token}`,

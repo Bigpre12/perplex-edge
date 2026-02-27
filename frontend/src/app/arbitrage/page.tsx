@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Bolt, LayoutDashboard, Calculator, ExternalLink, RefreshCw, TrendingUp as Savings, Loader2, Target, Zap } from 'lucide-react';
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 const AVAILABLE_BOOKS = [
     { key: 'fanduel', name: 'FanDuel' },
@@ -37,7 +38,7 @@ export default function Arbitrage() {
             else if (activeTab === 'middles') endpoint = 'middles';
             else if (activeTab === 'ev') endpoint = 'ev-feed';
 
-            const res = await fetch(`http://localhost:8000/immediate/${endpoint}`);
+            const res = await fetch(`${API_BASE_URL}/immediate/${endpoint}`);
             const data = await res.json();
 
             const fetchedItems = data.opportunities || data.items || [];

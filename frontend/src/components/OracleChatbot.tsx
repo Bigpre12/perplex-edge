@@ -6,6 +6,8 @@ import { Bot, X, Send, Loader2, Sparkles, BrainCircuit } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import { supabase } from "@/lib/supabaseClient";
 
+import { API_ENDPOINTS } from "@/lib/apiConfig";
+
 interface Message {
     id: string;
     text: string;
@@ -53,7 +55,7 @@ export default function OracleChatbot() {
         try {
             const { data: { session } } = await supabase.auth.getSession();
 
-            const res = await fetch("http://localhost:8000/api/chat/ask-oracle", {
+            const res = await fetch(API_ENDPOINTS.CHATTING, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -159,8 +161,8 @@ export default function OracleChatbot() {
                                 >
                                     <div
                                         className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.isUser
-                                                ? 'bg-primary text-black font-medium rounded-tr-sm'
-                                                : 'glass-panel border-white/5 text-slate-200 rounded-tl-sm shadow-xl'
+                                            ? 'bg-primary text-black font-medium rounded-tr-sm'
+                                            : 'glass-panel border-white/5 text-slate-200 rounded-tl-sm shadow-xl'
                                             }`}
                                     >
                                         <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>

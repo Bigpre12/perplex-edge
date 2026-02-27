@@ -14,6 +14,7 @@ import {
     Target
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 export default function AIHandler() {
     const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +41,7 @@ export default function AIHandler() {
 
         try {
             const token = getAuthToken();
-            const res = await fetch("http://localhost:8000/ai/chat", {
+            const res = await fetch(`${API_BASE_URL}/ai/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

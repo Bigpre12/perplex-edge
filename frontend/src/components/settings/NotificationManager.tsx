@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Bell, BellOff, ShieldCheck, Loader2 } from "lucide-react";
 import { getAuthToken, getUser } from "@/lib/auth";
 
+import { API_ENDPOINTS } from "@/lib/apiConfig";
+
 export default function NotificationManager() {
     const [status, setStatus] = useState<"default" | "granted" | "denied">("default");
     const [isSubscribing, setIsSubscribing] = useState(false);
@@ -44,7 +46,7 @@ export default function NotificationManager() {
                 const token = getAuthToken();
                 const user = getUser();
                 if (token && user) {
-                    await fetch("http://localhost:8000/api/push/subscribe", {
+                    await fetch(`${API_ENDPOINTS.PUSH}/subscribe`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",

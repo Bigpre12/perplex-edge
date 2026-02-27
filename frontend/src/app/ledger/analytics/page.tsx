@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import Link from "next/link";
+import { API_BASE_URL } from "@/lib/apiConfig";
 import {
     ScatterChart,
     Scatter,
@@ -39,7 +40,7 @@ export default function PortfolioAnalytics() {
         if (!token) return;
 
         try {
-            const res = await fetch(`http://localhost:8000/reporting/export/${format}`, {
+            const res = await fetch(`${API_BASE_URL}/reporting/export/${format}`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             if (res.ok) {
@@ -66,7 +67,7 @@ export default function PortfolioAnalytics() {
             }
 
             try {
-                const res = await fetch("http://localhost:8000/ledger/stats", {
+                const res = await fetch(`${API_BASE_URL}/ledger/stats`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 });
                 if (res.ok) setStats(await res.json());

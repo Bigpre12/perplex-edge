@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Settings, Cpu, ShieldAlert, Save, TrendingUp, Loader2, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 export default function EdgeSettingsPage() {
     const [loading, setLoading] = useState(true);
@@ -22,7 +23,7 @@ export default function EdgeSettingsPage() {
     useEffect(() => {
         async function fetchConfig() {
             try {
-                const res = await fetch("http://localhost:8000/api/config");
+                const res = await fetch(`${API_BASE_URL}/api/config`);
                 if (res.ok) {
                     const data = await res.json();
                     setConfig(data);
@@ -40,7 +41,7 @@ export default function EdgeSettingsPage() {
         setSaving(true);
         setStatusBlock(null);
         try {
-            const res = await fetch("http://localhost:8000/api/config", {
+            const res = await fetch(`${API_BASE_URL}/api/config`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(config)

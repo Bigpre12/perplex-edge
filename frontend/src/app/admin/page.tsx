@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Activity, Users, DollarSign, ShieldAlert, Cpu, Database, RefreshCw, Send } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
+import { API_ENDPOINTS } from "@/lib/apiConfig";
+
 export default function AdminCommandCenter() {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -21,7 +23,7 @@ export default function AdminCommandCenter() {
                 }
 
                 // Verify Clearance via the backend
-                const res = await fetch(`http://localhost:8000/api/admin/dashboard-stats?email=${session.user.email}`);
+                const res = await fetch(`${API_ENDPOINTS.ADMIN}/dashboard-stats?email=${session.user.email}`);
 
                 if (res.status === 403) {
                     setIsAdmin(false);

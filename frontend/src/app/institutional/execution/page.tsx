@@ -21,6 +21,7 @@ import {
     Bot
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 export default function ExecutionHub() {
     const [apiKeys, setApiKeys] = useState<any[]>([]);
@@ -40,7 +41,7 @@ export default function ExecutionHub() {
     const fetchKeys = async () => {
         const token = getAuthToken();
         try {
-            const res = await fetch("http://localhost:8000/auth/keys", {
+            const res = await fetch(`${API_BASE_URL}/auth/keys`, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             if (res.ok) setApiKeys(await res.json());
@@ -63,7 +64,7 @@ export default function ExecutionHub() {
             return;
         }
         try {
-            const res = await fetch("http://localhost:8000/auth/keys/generate?label=" + encodeURIComponent(newKeyLabel), {
+            const res = await fetch(`${API_BASE_URL}/auth/keys/generate?label=` + encodeURIComponent(newKeyLabel), {
                 method: 'POST',
                 headers: { "Authorization": `Bearer ${token}` }
             });
@@ -88,7 +89,7 @@ export default function ExecutionHub() {
         setSaving(true);
         const token = getAuthToken();
         try {
-            await fetch("http://localhost:8000/auth/profile/update-webhooks", {
+            await fetch(`${API_BASE_URL}/auth/profile/update-webhooks`, {
                 method: 'POST',
                 headers: {
                     "Authorization": `Bearer ${token}`,

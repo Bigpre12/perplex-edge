@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Layers, Plus, X, Zap, ChevronRight, TrendingUp, Share2, Loader2, Copy, BookOpen, Brain, Star } from 'lucide-react';
 import { SPORTS } from '@/utils/sportUtils';
 import { useBrainData } from '@/hooks/useBrainData';
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 const AVAILABLE_BOOKS = [
     { key: 'fanduel', name: 'FanDuel' },
@@ -29,14 +30,14 @@ export default function ParlayBuilder() {
     const fetchAvailableProps = async (sport: string) => {
         setIsLoadingAvailable(true);
         try {
-            const res = await fetch(`http://localhost:8000/immediate/working-player-props?sport_key=${sport}&limit=50`);
+            const res = await fetch(`${API_BASE_URL}/immediate/working-player-props?sport_key=${sport}&limit=50`);
             const data = await res.json();
 
             if (data.items && data.items.length > 0) {
                 setAvailableProps(data.items);
             } else {
                 // FALLBACK: use validation picks
-                const fallbackRes = await fetch(`http://localhost:8000/validation/picks`);
+                const fallbackRes = await fetch(`${API_BASE_URL}/validation/picks`);
                 const fallbackData = await fallbackRes.json();
                 const transformed = (fallbackData.picks || []).map((p: any) => ({
                     id: p.id,
@@ -65,7 +66,7 @@ export default function ParlayBuilder() {
 
     const fetchSuggestedParlays = async (sport: string) => {
         try {
-            const res = await fetch(`http://localhost:8000/immediate/suggested-parlays?sport_key=${sport}`);
+            const res = await fetch(`${API_BASE_URL}/immediate/suggested-parlays?sport_key=${sport}`);
             const data = await res.json();
             setSuggestedBundles(data.bundles || []);
         } catch (err) {

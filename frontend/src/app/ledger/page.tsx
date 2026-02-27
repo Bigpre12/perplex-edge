@@ -18,6 +18,7 @@ import {
     Plus
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 export default function LedgerPage() {
     const [bets, setBets] = useState<any[]>([]);
@@ -38,10 +39,10 @@ export default function LedgerPage() {
 
             try {
                 const [betsRes, statsRes] = await Promise.all([
-                    fetch("http://localhost:8000/ledger/my-bets", {
+                    fetch(`${API_BASE_URL}/ledger/my-bets`, {
                         headers: { "Authorization": `Bearer ${token}` }
                     }),
-                    fetch("http://localhost:8000/ledger/stats", {
+                    fetch(`${API_BASE_URL}/ledger/stats`, {
                         headers: { "Authorization": `Bearer ${token}` }
                     })
                 ]);
@@ -72,7 +73,7 @@ export default function LedgerPage() {
 
         setIsSharing(true);
         try {
-            const res = await fetch("http://localhost:8000/social/share", {
+            const res = await fetch(`${API_BASE_URL}/social/share`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

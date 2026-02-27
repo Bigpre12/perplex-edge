@@ -21,6 +21,7 @@ import {
     CheckCircle2
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 const SPORTS_TO_SCAN = [
     { key: 'basketball_nba', name: 'NBA', icon: 'sports_basketball' },
@@ -44,7 +45,7 @@ export default function InstitutionalScanner() {
         try {
             for (let i = 0; i < SPORTS_TO_SCAN.length; i++) {
                 const sport = SPORTS_TO_SCAN[i];
-                const res = await fetch(`http://localhost:8000/immediate/working-player-props?sport_key=${sport.key}&limit=20`);
+                const res = await fetch(`${API_BASE_URL}/immediate/working-player-props?sport_key=${sport.key}&limit=20`);
                 if (res.ok) {
                     const data = await res.json();
                     const items = (data.items || []).map((p: any) => ({
@@ -68,7 +69,7 @@ export default function InstitutionalScanner() {
     const handleSignal = async (prop: any) => {
         const token = getAuthToken();
         try {
-            await fetch("http://localhost:8000/execution/signal", {
+            await fetch(`${API_BASE_URL}/execution/signal`, {
                 method: 'POST',
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -86,7 +87,7 @@ export default function InstitutionalScanner() {
         const token = getAuthToken();
         try {
             // Mocking the track-bet endpoint call
-            await fetch("http://localhost:8000/ledger/track", {
+            await fetch(`${API_BASE_URL}/ledger/track`, {
                 method: 'POST',
                 headers: {
                     "Authorization": `Bearer ${token}`,

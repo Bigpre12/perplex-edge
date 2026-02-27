@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Sparkles, ShieldCheck, Zap, ArrowRight, Check } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
+import { API_ENDPOINTS } from "@/lib/apiConfig";
+
 export default function CheckoutPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -21,7 +23,7 @@ export default function CheckoutPage() {
                 return;
             }
 
-            const res = await fetch("http://localhost:8000/api/stripe/create-checkout-session", {
+            const res = await fetch(`${API_ENDPOINTS.STRIPE}/create-checkout-session`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

@@ -15,6 +15,8 @@ interface WhaleMove {
     books_involved: string[];
 }
 
+import { API_BASE_URL } from "@/lib/apiConfig";
+
 export default function WhaleTracker() {
     const [moves, setMoves] = useState<WhaleMove[]>([]);
     const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export default function WhaleTracker() {
     useEffect(() => {
         const fetchMoves = async () => {
             try {
-                const res = await fetch("http://localhost:8000/api/whale/active-moves");
+                const res = await fetch(`${API_BASE_URL}/api/whale/active-moves`);
                 const json = await res.json();
                 setMoves(json.data);
             } catch (err) {

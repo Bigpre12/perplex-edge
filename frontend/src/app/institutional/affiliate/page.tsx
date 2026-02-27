@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Copy, Users, Link2, DollarSign, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 export default function AffiliateDashboard() {
     const [referralData, setReferralData] = useState<any>(null);
@@ -16,7 +17,7 @@ export default function AffiliateDashboard() {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (!session) return;
 
-                const res = await fetch(`http://localhost:8000/api/affiliates/my-link/${session.user.id}`);
+                const res = await fetch(`${API_BASE_URL}/api/affiliates/my-link/${session.user.id}`);
                 const data = await res.json();
                 setReferralData(data);
             } catch (err) {
@@ -79,8 +80,8 @@ export default function AffiliateDashboard() {
                         <button
                             onClick={handleCopy}
                             className={`px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all ${copied
-                                    ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/50'
-                                    : 'bg-primary text-black shadow-[0_0_20px_rgba(13,242,51,0.2)] hover:bg-primary/90 active:scale-[0.98]'
+                                ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/50'
+                                : 'bg-primary text-black shadow-[0_0_20px_rgba(13,242,51,0.2)] hover:bg-primary/90 active:scale-[0.98]'
                                 }`}
                         >
                             {copied ? <><CheckCircle2 size={16} /> COPIED</> : <><Copy size={16} /> COPY LINK</>}

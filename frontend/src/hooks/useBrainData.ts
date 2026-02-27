@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react'
+import { API_BASE_URL } from '@/lib/apiConfig'
 
 export interface BrainDecision {
     action: string
@@ -44,17 +44,15 @@ export const useBrainData = (sportKey: string = "basketball_nba") => {
 
     const fetchData = async () => {
         try {
-            const backendUrl = "http://localhost:8000"
-
             // Fetch decisions
-            const decRes = await fetch(`${backendUrl}/immediate/brain-decisions?sport_key=${sportKey}&limit=5`)
+            const decRes = await fetch(`${API_BASE_URL}/immediate/brain-decisions?sport_key=${sportKey}&limit=5`)
             const decData = await decRes.json()
             if (decData.decisions && decData.decisions.length > 0) {
                 setDecisions(decData.decisions)
                 localStorage.setItem(`decisions_${sportKey}`, JSON.stringify(decData.decisions))
             } else {
                 // FALLBACK: build decisions from track-record recent picks
-                const trackRes = await fetch(`${backendUrl}/track-record/recent`);
+                const trackRes = await fetch(`${API_BASE_URL}/track-record/recent`);
                 const trackData = await trackRes.json();
                 const syntheticDecisions = (trackData.recent_picks || []).slice(0, 5).map((p: any) => ({
                     action: 'BET',
@@ -74,12 +72,12 @@ export const useBrainData = (sportKey: string = "basketball_nba") => {
             }
 
             // Fetch health status (GET, not POST)
-            const healthRes = await fetch(`${backendUrl}/immediate/brain-healing-status`)
+            const healthRes = await fetch(`${API_BASE_URL}/immediate/brain-healing-status`)
             const healthData = await healthRes.json()
             setHealth(healthData)
 
             // Fetch Market Intel
-            const intelRes = await fetch(`${backendUrl}/immediate/market-intel?sport_key=${sportKey}`)
+            const intelRes = await fetch(`${API_BASE_URL}/immediate/market-intel?sport_key=${sportKey}`)
             const intelData = await intelRes.json()
             if (intelData.items) {
                 setMarketIntel(intelData.items)

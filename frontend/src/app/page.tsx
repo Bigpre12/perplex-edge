@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useBrainData } from '@/hooks/useBrainData';
 import { Database, MemoryStick as Memory, Globe, Activity, Brain, Loader2, Target, TrendingUp, Zap, BarChart3, Fingerprint } from 'lucide-react';
 import Link from 'next/link';
+import { API_BASE_URL } from "@/lib/apiConfig";
 import LiveTrackCard from '@/components/dashboard/LiveTrackCard';
 import WhaleTracker from '@/components/dashboard/WhaleTracker';
 import LiveMiddlesCard from '@/components/dashboard/LiveMiddlesCard';
@@ -48,11 +49,10 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchMetrics = async () => {
             try {
-                const backendUrl = "http://localhost:8000";
                 const [metricsRes, healingRes, middlesRes] = await Promise.all([
-                    fetch(`${backendUrl}/immediate/brain-metrics`),
-                    fetch(`${backendUrl}/immediate/brain-healing-status`),
-                    fetch(`${backendUrl}/api/edge/live-middles`).catch(() => null)
+                    fetch(`${API_BASE_URL}/immediate/brain-metrics`),
+                    fetch(`${API_BASE_URL}/immediate/brain-healing-status`),
+                    fetch(`${API_BASE_URL}/api/edge/live-middles`).catch(() => null)
                 ]);
                 const metricsData = await metricsRes.json();
                 const healingData = await healingRes.json();

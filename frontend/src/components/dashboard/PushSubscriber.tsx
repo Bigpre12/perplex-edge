@@ -6,6 +6,8 @@ import { Bell, BellRing, Loader2 } from "lucide-react";
 // The VAPID Public Key (replace with the generated env key in production)
 const PUBLIC_VAPID_KEY = "BKQ9P9RY1ZcQf97K13tOOhM6g1x4Uq1sxgC-N32bLhC2B3n_b5G7Y6yB_y302B6a0xZ1-B8Z8_tT02d1z2x2Q";
 
+import { API_ENDPOINTS } from "@/lib/apiConfig";
+
 export default function PushSubscriber() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -51,9 +53,8 @@ export default function PushSubscriber() {
 
             // Post to backend
             const subData = JSON.parse(JSON.stringify(subscription));
-            const backendUrl = "http://localhost:8000";
 
-            await fetch(`${backendUrl}/api/push/subscribe`, {
+            await fetch(`${API_ENDPOINTS.PUSH}/subscribe`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -76,8 +77,8 @@ export default function PushSubscriber() {
             onClick={subscribeToPush}
             disabled={loading || isSubscribed}
             className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all ${isSubscribed
-                    ? "bg-accent-green/20 text-accent-green border border-accent-green/30"
-                    : "bg-surface text-secondary hover:text-white border border-slate-700 hover:border-primary/50"
+                ? "bg-accent-green/20 text-accent-green border border-accent-green/30"
+                : "bg-surface text-secondary hover:text-white border border-slate-700 hover:border-primary/50"
                 }`}
         >
             {loading ? <Loader2 size={16} className="animate-spin" /> : (isSubscribed ? <BellRing size={16} /> : <Bell size={16} />)}

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Medal, Star, TrendingUp, Users, Loader2, Search, ArrowRight } from "lucide-react";
 
+import { API_ENDPOINTS } from "@/lib/apiConfig";
+
 export default function Leaderboard() {
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -11,7 +13,7 @@ export default function Leaderboard() {
     useEffect(() => {
         const fetchLeaderboard = async () => {
             try {
-                const res = await fetch("http://localhost:8000/api/profiles/leaderboard");
+                const res = await fetch(API_ENDPOINTS.LEADERBOARD);
                 const data = await res.json();
                 setLeaderboard(data.leaderboard);
             } catch (err) {
