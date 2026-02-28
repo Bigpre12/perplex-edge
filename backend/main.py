@@ -3,11 +3,12 @@ Main FastAPI application for the sports betting system
 """
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
+load_dotenv()
 
 # --- ROUTER IMPORTS ---
 # Core Odds & Picks API
@@ -19,6 +20,7 @@ from api.working_parlays import router as working_parlays_router
 from api.picks import router as picks_router
 from api.analysis import router as analysis_v2_router
 from api.share import router as share_router
+from api.immediate_working_admin import router as antigravity_admin_router
 
 # Market Intelligence & Tools
 from routers.deeplinks import router as deeplinks_router
@@ -54,8 +56,10 @@ from utils.feature_gate import router as webhook_router
 from routers.live_odds_socket import router as live_socket_router, live_odds_broadcaster
 from routers.user_profile_router import router as user_profile_router
 from ml.prop_predictor import router as prop_predictor_router
+from routers import intelligence_stub
 
 from jobs.email_cron import start_email_cron
+from jobs.ingest_scheduler import start_ingestion_scheduler
 from services.cache import cache
 
 import asyncio
@@ -81,19 +85,16 @@ async def weekly_reporting_loop():
         try:
             async with async_session_maker() as db:
                 one_week_ago = datetime.utcnow() - timedelta(days=7)
-                # Query performance for the last week
-                stmt = select(
-                    func.count(BetLog.id).label("total_bets"),
-                    func.sum(BetLog.profit_loss).label("total_profit")
-                ).where(BetLog.created_at >= one_week_ago, BetLog.status == "settled")
+                # BetLog does not have profit_loss or status. Using basic count for now.
+                stmt = select(func.count(BetLog.id).label("total_bets"))
                 
                 result = await db.execute(stmt)
                 summary = result.first()
                 
-                if summary and summary.total_bets > 0:
-                    logger.info(f"📊 Weekly Performance Summary: {summary.total_bets} bets settled, total P/L: ${summary.total_profit:.2f}")
+                if summary and getattr(summary, "total_bets", 0) > 0:
+                    logger.info(f"📊 Weekly Performance Summary: {summary.total_bets} bets processed")
                 else:
-                    logger.info("Weekly reporting cycle: No bets settled in the last 7 days.")
+                    logger.info("Weekly reporting cycle: No new bets recorded.")
         except Exception as e:
             logger.error(f"Weekly reporting error: {e}")
         await asyncio.sleep(604800)  # 7 days
@@ -114,19 +115,12 @@ async def settlement_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 FastAPI Server starting up...")
+    print("FastAPI Server starting up...")
     import logging
     logger = logging.getLogger(__name__)
     
     # Pre-populate static data into Redis cache
-    from services.redis_service import redis_client
-    
-    try:
-        if redis_client:
-            redis_client.ping()
-            print("✅ connected to redis")
-    except Exception as e:
-        print(f"⚠️ redis not available: {e}")
+    # Note: cache.connect() is called below and handles its own connectivity checks.
 
     try:
         start_email_cron()
@@ -143,11 +137,19 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error creating tables: {e}")
 
     # Start background tasks
+    from services.brain_clv_tracker_loop import start_clv_tracker
     asyncio.create_task(live_sync_loop())
     asyncio.create_task(daily_digest_loop())
     asyncio.create_task(settlement_loop())
     asyncio.create_task(weekly_reporting_loop())
     asyncio.create_task(live_odds_broadcaster())
+    asyncio.create_task(start_clv_tracker())
+    
+    # Start the 24/7 ingestion scheduler
+    try:
+        start_ingestion_scheduler()
+    except Exception as e:
+        logger.error(f"⚠️ Ingestion scheduler failed to boot: {e}")
     
     await cache.connect()
     logger.info(f"Cache mode: {cache.status}")
@@ -187,34 +189,34 @@ from routers.social_router import router as social_router
 from routers.analytics_router import router as analytics_router
 
 # 1. Core Odds Engine & Analytics
-app.include_router(immediate_router, prefix="/immediate", tags=["immediate"])
-app.include_router(validation_router, prefix="/validation", tags=["validation"])
-app.include_router(track_record_router, prefix="/track-record", tags=["track-record"])
-app.include_router(model_status_router, prefix="/status", tags=["status"])
-app.include_router(working_parlays_router, prefix="/parlays", tags=["parlays"])
-app.include_router(analysis_v2_router, prefix="/analysis", tags=["analysis"])
-app.include_router(picks_router, prefix="/picks", tags=["picks"])
-app.include_router(share_router, prefix="/share", tags=["share"])
-app.include_router(social_router, prefix="/social", tags=["social"])
-app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
+app.include_router(immediate_router, prefix="/api/immediate", tags=["immediate"])
+app.include_router(validation_router, prefix="/api/validation", tags=["validation"])
+app.include_router(track_record_router, prefix="/api/track-record", tags=["track-record"])
+app.include_router(model_status_router, prefix="/api/status", tags=["status"])
+app.include_router(working_parlays_router, prefix="/api/parlays", tags=["parlays"])
+app.include_router(analysis_v2_router, prefix="/api/analysis", tags=["analysis"])
+app.include_router(picks_router, prefix="/api/picks", tags=["picks"])
+app.include_router(share_router, prefix="/api/share", tags=["share"])
+app.include_router(social_router, prefix="/api/social", tags=["social"])
+app.include_router(analytics_router, tags=["analytics"])
 
 # 2. Market Tools & Sharp Intel
-app.include_router(deeplinks_router)
-app.include_router(splits_router)
-app.include_router(alt_lines_router)
-app.include_router(injuries_router)
-app.include_router(middle_boost_router)
-app.include_router(dvp_router)
-app.include_router(kelly_router)
-app.include_router(sgp_router)
-app.include_router(hedge_router)
-app.include_router(shop_router)
-app.include_router(whale_router)
-app.include_router(weather_router)
-app.include_router(referee_router)
-app.include_router(h2h_router)
-app.include_router(dfs_router)
-app.include_router(line_movement_router)
+app.include_router(deeplinks_router, prefix="/api")
+app.include_router(splits_router, prefix="/api")
+app.include_router(alt_lines_router, prefix="/api")
+app.include_router(injuries_router, prefix="/api")
+app.include_router(middle_boost_router, prefix="/api")
+app.include_router(dvp_router, prefix="/api")
+app.include_router(kelly_router, prefix="/api")
+app.include_router(sgp_router, prefix="/api")
+app.include_router(hedge_router, prefix="/api")
+app.include_router(shop_router, prefix="/api")
+app.include_router(whale_router, prefix="/api")
+app.include_router(weather_router, prefix="/api")
+app.include_router(referee_router, prefix="/api")
+app.include_router(h2h_router, prefix="/api")
+app.include_router(dfs_router, prefix="/api")
+app.include_router(line_movement_router, prefix="/api")
 
 # 3. Institutional & SaaS Infrastructure
 app.include_router(auth_router.router)
@@ -231,6 +233,7 @@ app.include_router(execution_router)
 app.include_router(backtest_router)
 app.include_router(referral_router)
 app.include_router(assistant_router)
+app.include_router(antigravity_admin_router, prefix="/api/admin", tags=["Antigravity"])
 app.include_router(chat_router.router)
 app.include_router(brain_router.router)
 app.include_router(contest_router)
@@ -240,6 +243,18 @@ app.include_router(webhook_router)
 app.include_router(live_socket_router)
 app.include_router(prop_predictor_router)
 app.include_router(user_profile_router)
+app.include_router(intelligence_stub.router)
+
+@app.get("/api/smart-money")
+async def get_sharp_signals(db = Depends(get_async_db)):
+    from services.sharpmush_service import get_smart_money_signal
+    from sqlalchemy.orm import Session
+    # Note: sharpmush_service currently uses synchronous Session
+    # We will need to wrap it if we want full async, but for local use this is fine
+    # with a standard session
+    from database import SessionLocal
+    with SessionLocal() as sync_db:
+        return get_smart_money_signal(sync_db)
 
 
 @app.get("/")
@@ -250,7 +265,7 @@ async def root():
         return FileResponse(index_path)
     return {"message": "Sports Betting Intelligence API", "status": "running"}
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     """Health check endpoint — reports waterfall and cache status"""
     from datetime import datetime, timezone

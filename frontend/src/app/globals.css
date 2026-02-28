@@ -4,22 +4,51 @@
 
 @layer base {
   :root {
-    --background: #0a0a0c;
-    --primary: #0dccf2;
-    --primary-dark: #0ab8da;
-    --secondary: #90c1cb;
-    --background-dark: #0f1719;
-    --surface: #16262a;
-    --surface-highlight: #1e3238;
-    --accent-green: #0bda54;
-    --accent-red: #ff4d4d;
-    --accent-orange: #ffa600;
-    --emerald-primary: #0df233;
+    /* Brand */
+    --lucrix-gold: #F5C518;
+    --lucrix-gold-dim: #C49A12;
+    --lucrix-dark: #080810;
+    --lucrix-surface: #0F0F1A;
+    --lucrix-card: #141424;
+    --lucrix-border: #1E1E35;
+    --lucrix-muted: #2A2A45;
+
+    /* Status */
+    --sharp: #F5C518;
+    /* gold  — sharp signal  */
+    --steam: #FF6B35;
+    /* orange — steam move    */
+    --edge: #22C55E;
+    /* green — positive EV    */
+    --fade: #EF4444;
+    /* red   — negative/fade  */
+    --neutral: #6B7280;
+    /* gray  — neutral        */
+
+    /* Typography */
+    --font-primary: var(--font-inter), 'Inter', sans-serif;
+    --font-mono: var(--font-mono), 'JetBrains Mono', monospace;
+
+    /* Legacy mapping (keep for compatibility during transition) */
+    --background: var(--lucrix-dark);
+    --primary: var(--lucrix-gold);
+    --primary-dark: var(--lucrix-gold-dim);
+    --surface: var(--lucrix-surface);
+    --background-dark: var(--lucrix-dark);
   }
 }
 
 /* Custom Utilities */
 @layer utilities {
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   .glass-premium {
     background: rgba(255, 255, 255, 0.02);
     backdrop-filter: blur(20px) saturate(180%);
@@ -111,9 +140,9 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #0f1719;
+  background-color: var(--lucrix-dark);
   color: #f1f5f9;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-primary);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }

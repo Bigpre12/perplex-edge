@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Copy, Share2, Check } from 'lucide-react';
-import { API_BASE_URL } from "@/lib/apiConfig";
+import { API_ENDPOINTS } from "@/lib/apiConfig";
 
 interface DeepLink {
     sportsbook: string;
@@ -53,7 +53,7 @@ export const SportsbookDeeplinks: React.FC<Props> = ({
                 playerName, statType, line, side, odds, id
             };
 
-            const res = await fetch(`${API_BASE_URL}/share/create`, {
+            const res = await fetch(`${API_ENDPOINTS.SHARE}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(shareData)

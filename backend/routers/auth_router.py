@@ -9,9 +9,9 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 import secrets
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 from database import get_async_db, async_session_maker
 
@@ -115,7 +115,7 @@ async def signup(user_data: UserSignup, db: AsyncSession = Depends(get_async_db)
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
-    stmt = select(User).where(User.username == form_data.username)
+    stmt = select(User).where((User.username == form_data.username) | (User.email == form_data.username))
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     
@@ -126,12 +126,15 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    access_token = auth_service.create_access_token(data={"sub": user.username})
+    access_token = auth_service.create_access_token(
+        data={"sub": user.username, "email": user.email, "tier": user.subscription_tier or "free"}
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": user
     }
+
 
 @router.post("/keys/generate")
 async def generate_api_key(

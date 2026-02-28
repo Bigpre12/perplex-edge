@@ -6,9 +6,17 @@ import { useEffect } from 'react';
 export default function PWASetup() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(reg => {
-        console.log('LOLA SW registered:', reg.scope);
-      }).catch(err => console.error('SW error:', err));
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('Lucrix SW forcefully unregistered to clear strict cache.');
+        }
+      });
+      caches.keys().then((keyList) => {
+        return Promise.all(keyList.map((key) => {
+          return caches.delete(key);
+        }));
+      });
     }
   }, []);
   return null;

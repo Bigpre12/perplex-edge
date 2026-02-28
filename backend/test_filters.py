@@ -1,6 +1,6 @@
 import asyncio
 import json
-from antigravity_edge_config import get_edge_config
+from app.antigravity_edge_config import get_edge_config
 
 async def test_immediate_slate():
     from services.picks_service import picks_service

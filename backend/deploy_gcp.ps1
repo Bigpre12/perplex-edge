@@ -1,5 +1,5 @@
-# Perplex Edge Backend Deployment Script (Google Cloud Run)
-Write-Host "Initializing Google Cloud Run Deployment for Perplex Edge..." -ForegroundColor Cyan
+# Lucrix Backend Deployment Script (Google Cloud Run)
+Write-Host "Initializing Google Cloud Run Deployment for Lucrix..." -ForegroundColor Cyan
 
 # Ensure the user is authenticated to GCP
 Write-Host "Checking GCP authentication..."

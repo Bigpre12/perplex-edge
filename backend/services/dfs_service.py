@@ -1,5 +1,5 @@
 """
-DFS Service for Perplex Edge
+DFS Service for Lucrix
 
 Handles logic specific to Pickem platforms (PrizePicks, Underdog, Sleeper).
 Calculates implied odds and payout structures for DFS slips.

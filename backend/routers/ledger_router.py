@@ -7,7 +7,7 @@ from services.ledger_service import ledger_service
 from pydantic import BaseModel
 from typing import List, Optional
 
-router = APIRouter(prefix="/ledger", tags=["ledger"])
+router = APIRouter(prefix="/api/ledger", tags=["ledger"])
 
 class BetLegCreate(BaseModel):
     prop_id: int

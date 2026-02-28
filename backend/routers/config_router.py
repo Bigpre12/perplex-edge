@@ -2,7 +2,8 @@ import json
 import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from api.antigravity_edge_config import get_edge_config, EdgeModelName
+from typing import Optional
+from app.antigravity_edge_config import get_edge_config, EdgeModelName
 
 router = APIRouter(prefix="/api/config", tags=["config"])
 

@@ -291,14 +291,14 @@ def _kelly_recommendation(kelly: float) -> str:
     return "Extreme edge — verify your inputs. This is unusually high."
 
 
-def _generate_sample_clv_picks() -> List[Dict[str, Any]]:
+def _generate_sample_clv_picks(target_sport: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Generate sample picks with CLV data for demonstration.
     In production, this reads from the picks table.
     """
     import random as rng
 
-    players = [
+    raw_players = [
         # NBA 2025-26 Season
         ("Victor Wembanyama", "points", 28.5, -110, "NBA"),
         ("Shai Gilgeous-Alexander", "points", 32.5, -115, "NBA"),
@@ -324,9 +324,23 @@ def _generate_sample_clv_picks() -> List[Dict[str, Any]]:
         ("Gunnar Henderson", "hits", 1.5, -110, "MLB"),
         ("Elly De La Cruz", "stolen_bases", 1.5, -108, "MLB"),
     ]
+    if target_sport:
+        sport_upper = target_sport.upper()
+        if "_" in sport_upper:
+            sport_upper = sport_upper.split("_")[-1]
+        players = [p for p in raw_players if p[4] == sport_upper]
+        if not players:
+            players = raw_players # Fallback to all if target_sport is somehow mismatched
+    else:
+        players = raw_players
 
+    rng.shuffle(players)
     picks = []
     for i, (name, stat, line, odds, sport) in enumerate(players):
+        # Add dynamic jitter to make lines look fresh on every refresh
+        line = line + rng.choice([-1.0, -0.5, 0.0, 0.5, 1.0]) if line > 5 else line # Don't jitter small lines like NHL goals too much
+        odds = odds + rng.randint(-10, 10)
+        
         # Simulate realistic CLV data
         opening_odds = odds + rng.randint(-15, 5)
         closing_odds = odds + rng.randint(-5, 15)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Body
 from services.share_service import share_service
 from typing import Dict, Any
 
-router = APIRouter(prefix="/share", tags=["share"])
+router = APIRouter()
 
 @router.post("/create")
 async def create_share(prop_data: Dict[str, Any] = Body(...)):

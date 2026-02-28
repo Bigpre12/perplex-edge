@@ -13,7 +13,7 @@ class PushService:
             "sub": f"mailto:{os.getenv('ADMIN_EMAIL', 'admin@perplexedge.com')}"
         }
 
-    async def send_notification(self, subscription: Dict[str, Any], message: str, title: str = "Perplex Edge Alert"):
+    async def send_notification(self, subscription: Dict[str, Any], message: str, title: str = "Lucrix Alert"):
         """
         Sends a web push notification to a specific subscriber.
         Subscription should contain {endpoint, p256dh, auth}.

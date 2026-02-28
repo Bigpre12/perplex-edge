@@ -1,6 +1,8 @@
 export const setAuthToken = (token: string) => {
     if (typeof window !== 'undefined') {
         localStorage.setItem('perplex_edge_token', token);
+        // Set cookie for Next.js middleware
+        document.cookie = `perplex-auth=${token}; path=/; max-age=86400; SameSite=Lax`;
     }
 };
 
@@ -14,6 +16,7 @@ export const getAuthToken = () => {
 export const removeAuthToken = () => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('perplex_edge_token');
+        document.cookie = `perplex-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     }
 };
 

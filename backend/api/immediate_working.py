@@ -6,14 +6,24 @@ import asyncio
 import json
 import random
 import logging
+import hashlib
 
 from services.brain_service import brain_service
+from services.brain_arbitrage_scout import arbitrage_scout
+from services.brain_bottom_up_projections import bottom_up_projections
+from services.brain_exposure_risk import exposure_risk
 from real_data_connector import real_data_connector
 from services.intel_service import intel_service
 from services.injury_service import injury_service
 from services.middle_service import middle_service
 from services.parlay_service import parlay_service
 from services.player_stats_service import player_stats_service
+from services.weather_service import get_game_weather
+from services.h2h_service import check_back_to_back
+from services.referee_service import get_ref_tendencies, get_game_refs
+from services.props_service import get_props_by_sport, get_combos_by_sport, build_parlay_by_sport
+from core.sport_constants import get_sport_id, SPORT_ID_TO_KEY
+from api.dependencies import get_user_tier
 
 logger = logging.getLogger(__name__)
 
@@ -98,11 +108,14 @@ SPORT_LABELS = {
     "icehockey_nhl": "NHL", "americanfootball_nfl": "NFL", "baseball_mlb": "MLB",
 }
 
-from antigravity_edge_config import get_edge_config
+from app.antigravity_edge_config import get_edge_config, invalidate_config_cache
+from app.antigravity_engine import apply_antigravity_filter
+from fastapi import Body
 
-def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
+async def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
     """Helper to transform a database pick into a working prop format (sport-aware)."""
-    cfg = get_edge_config().feed
+    cfg = await get_edge_config()
+    cfg = cfg # Handle potential refactor to cfg.feed if needed, but the new cfg is the object itself in the user's request
 
     is_obj = hasattr(p, 'player_name')
     player_name = p.player_name if is_obj else p['player_name']
@@ -111,7 +124,7 @@ def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
     odds = p.odds if is_obj else p['odds']
     
     # Fast paths for exclusions
-    if odds and float(odds) < cfg.max_juice:
+    if odds and int(odds) < cfg.min_odds:
         return None
         
     name_hash = int(sum(ord(c) for c in str(player_name)))
@@ -119,8 +132,9 @@ def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
     db_ev = p.ev_percentage if is_obj else p.get('ev_percentage')
     db_conf = p.confidence if is_obj else p.get('confidence')
     
-    ev = float(db_ev) if db_ev is not None and float(db_ev) != 0 else (2.0 + (name_hash % 80) / 10.0)
-    conf = float(db_conf) if db_conf is not None and float(db_conf) != 0 else (55.0 + (name_hash % 35))
+    import random
+    ev = float(db_ev) if db_ev is not None and float(db_ev) != 0 else (2.0 + random.uniform(1.0, 7.0))
+    conf = float(db_conf) if db_conf is not None and float(db_conf) != 0 else (55.0 + random.randint(0, 30))
     
     edge_pct = ev
     
@@ -129,7 +143,7 @@ def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
         # Proof-of-concept: sharp_v2 model adds a slight 'sharp' bias to the EV
         edge_pct += (name_hash % 5) / 10.0
         
-    if edge_pct < cfg.min_edge_percent or edge_pct > cfg.max_edge_percent:
+    if edge_pct < cfg.min_ev_threshold or edge_pct > cfg.max_edge_percent:
         return None
         
     teams = TEAMS_BY_SPORT.get(sport_key, TEAMS_BY_SPORT["basketball_nba"])
@@ -141,6 +155,23 @@ def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
     pos = positions[name_hash % len(positions)]
     rank = 1 + (name_hash % 30)
     
+    # Institutional Grade: Apply Exposure Risk Adjustment
+    # Note: In a real request, we'd need the current bankroll from user context
+    current_bankroll = 1000.0 
+    adjusted_kelly = await exposure_risk.calculate_risk_adjusted_kelly(
+        {"game_id": p.game_id if is_obj else p.get('game_id'), "player_id": None}, # player_name is used for hash usually
+        max(1.0, edge_pct / 2.0), 
+        current_bankroll
+    )
+
+    # Institutional Grade: Append AI True Line Projection
+    # This provides the "Syndicate Line Maker" perspective
+    true_line_data = await bottom_up_projections.generate_true_line(
+        {"player_name": player_name, "season_avg": line}, 
+        stat_type, 
+        sport_key
+    )
+
     return {
         "id": p.id if is_obj else p['id'],
         "player": {"name": player_name, "position": pos, "team": team},
@@ -159,7 +190,10 @@ def transform_validation_to_prop(p, sport_key: str = "basketball_nba") -> dict:
         "trend_data": None,
         "matchup": {"def_rank_vs_pos": rank, "opponent": opponent, "last_5_hit_rate": f"{3 + (name_hash % 3)}/5"},
         "volatility": "high" if name_hash % 2 == 0 else "medium",
-        "status": "validation_fallback"
+        "status": "validation_fallback",
+        "kelly_units": adjusted_kelly,
+        "true_line": true_line_data.get("true_line"),
+        "projection_stats": true_line_data
     }
 @router.get("/live-games")
 async def get_live_games(
@@ -229,7 +263,9 @@ async def get_waterfall_status():
 @router.get("/working-player-props")
 async def get_working_player_props_immediate(
     sport_key: str = Query("basketball_nba", description="The Odds API sport key"),
-    limit: int = Query(20, description="Number of props to return")
+    limit: int = Query(20, description="Number of props to return"),
+    tier: str = Depends(get_user_tier),
+    db: Session = Depends(get_db)
 ):
     """Immediate working player props endpoint with seasonal logic and daily slate aggregation"""
     try:
@@ -264,15 +300,17 @@ async def get_working_player_props_immediate(
         # 3. Aggregated props across the slate
         all_props = []
         if "nba" in sport_key or "wnba" in sport_key:
-            markets_to_try = ["player_points", "player_rebounds", "player_assists"]
+            markets_to_try = ["player_points", "player_rebounds", "player_assists", "player_steals", "player_blocks", "player_three_pointers_made"]
         elif "nhl" in sport_key:
-            markets_to_try = ["player_points", "player_goals"]
-        elif "nfl" in sport_key:
-            markets_to_try = ["player_pass_yards", "player_rush_yards"]
+            markets_to_try = ["player_points", "player_goals", "player_assists", "player_shots_on_goal"]
+        elif "nfl" in sport_key or "ncaaf" in sport_key:
+            markets_to_try = ["player_pass_yards", "player_rush_yards", "player_reception_yards", "player_anytime_td", "player_pass_tds"]
         elif "mlb" in sport_key:
-            markets_to_try = ["pitcher_strikeouts", "batter_home_runs"]
+            markets_to_try = ["hits", "total_bases", "strikeouts", "runs_batted_in", "walks", "home_runs", "pitcher_strikeouts", "earned_runs"]
+        elif "tennis" in sport_key:
+            markets_to_try = ["player_games_won", "player_aces", "player_double_faults"]
         else:
-            markets_to_try = [] # No standard player props defined for these sports yet
+            markets_to_try = []
         
         # Process ONLY the active daily slate (next 24h) - No arbitrary game limit
         for target_game in active_slate:
@@ -290,11 +328,11 @@ async def get_working_player_props_immediate(
         
         if not all_props:
             # FALLBACK: Query DB for historical/validated picks if live slate is empty
-            fallback_picks = await picks_service.get_high_ev_picks(min_ev=2.0, hours=168) # 1 week lookback
+            fallback_picks = await picks_service.get_high_ev_picks(min_ev=2.0, hours=168, target_sport=sport_key) # 1 week lookback
             
             if fallback_picks:
-                items = [transform_validation_to_prop(p, sport_key) for p in fallback_picks]
-                items = [i for i in items if i is not None][:limit]
+                results = await asyncio.gather(*[transform_validation_to_prop(p, sport_key) for p in fallback_picks])
+                items = [i for i in results if i is not None][:limit]
                 return {
                     'items': items,
                     'total': len(items),
@@ -311,8 +349,8 @@ async def get_working_player_props_immediate(
                 leaderboard = clv_data.get("leaderboard", [])
                 
                 if leaderboard:
-                    items = [transform_validation_to_prop(p, sport_key) for p in leaderboard]
-                    items = [i for i in items if i is not None][:limit]
+                    results = await asyncio.gather(*[transform_validation_to_prop(p, sport_key) for p in leaderboard])
+                    items = [i for i in results if i is not None][:limit]
                     return {
                         'items': items,
                         'total': len(items),
@@ -336,11 +374,23 @@ async def get_working_player_props_immediate(
         all_props = await injury_service.filter_injured_players(all_props, sport_key, name_key="player_name")
 
         # Access Edge Config
-        cfg = get_edge_config().feed
+        cfg = await get_edge_config()
 
         # Format real props
-        formatted_props = []
-        for i, p in enumerate(all_props):
+        from database import async_session_maker
+        from models.props import PropLine
+        from sqlalchemy import select
+        
+        sharp_signals = {}
+        try:
+            async with async_session_maker() as session:
+                stmt = select(PropLine).where(PropLine.sharp_money == True, PropLine.sport_key == sport_key)
+                res = await session.execute(stmt)
+                sharp_signals = {(r.player_name, r.stat_type): {"sharp": True, "steam": r.steam_score} for r in res.scalars().all()}
+        except Exception as e:
+            logger.error(f"Error fetching sharp signals from DB: {e}")
+
+        async def enrich_prop(i, p):
             game_info = p.get('game_info', {})
             home_team = game_info.get('home_team', 'TBD')
             away_team = game_info.get('away_team', 'TBD')
@@ -351,9 +401,19 @@ async def get_working_player_props_immediate(
             
             p_pos = p.get('player', {}).get('position')
             if not p_pos or p_pos == 'N/A':
-                # Deterministic positional fallback to query DVP if odds API omitted it
-                pos_map = ["PG", "SG", "SF", "PF", "C"] if "nba" in sport_key.lower() else ["QB", "RB", "WR", "TE"] if "nfl" in sport_key.lower() else ["P", "C", "1B", "SS", "OF"] if "mlb" in sport_key.lower() else ["C", "LW", "RW", "D", "G"]
-                p_pos = pos_map[player_hash % len(pos_map)]
+                # Deterministic positional fallback
+                pos_maps = {
+                    "basketball_nba": ["PG", "SG", "SF", "PF", "C"],
+                    "basketball_wnba": ["G", "F", "C"],
+                    "americanfootball_nfl": ["QB", "RB", "WR", "TE"],
+                    "americanfootball_ncaaf": ["QB", "RB", "WR", "TE"],
+                    "icehockey_nhl": ["C", "LW", "RW", "D", "G"],
+                    "baseball_mlb": ["P", "C", "1B", "SS", "OF"],
+                    "tennis_atp": ["S"],
+                    "tennis_wta": ["S"]
+                }
+                pos_list = pos_maps.get(sport_key, ["N/A"])
+                p_pos = pos_list[player_hash % len(pos_list)]
                 
             dvp = get_dvp_rating(sport_key, away_team, p_pos)
             matchup_rank = dvp.get("rank", 15)
@@ -385,37 +445,53 @@ async def get_working_player_props_immediate(
                 edge = model_prob - impl_prob
                 conf = model_prob
             
-            # Generate realistic last 5 game trends based on confidence
-            # If confidence is high (e.g. 85%), hit rate should naturally be 4/5 or 5/5
+            # Generate realistic last 5 game trends
             trend_data = []
             hits = 0
-            
             for j in range(5):
-                # We weight the random roll by the player's confidence score
                 is_hit = random.random() < conf
-                
-                # If they hit, they scored slightly above the line. If miss, slightly below.
                 if is_hit:
                     hits += 1
                     val = line + random.uniform(0.5, line * 0.3 + 0.5)
                 else:
                     val = max(0.0, line - random.uniform(0.5, line * 0.3 + 0.5))
-                    
-                trend_data.append({
-                    "game": f"G{j+1}",
-                    "value": round(val, 1),
-                    "hit": is_hit
-                })
+                trend_data.append({"game": f"G{j+1}", "value": round(val, 1), "hit": is_hit})
 
             pace_factor = "High" if player_hash % 3 == 0 else "Low" if player_hash % 3 == 1 else "Avg"
+            l10_trend = [random.random() < conf for _ in range(10)]
             
-            # Generate L10 boolean array for sparklines
-            l10_trend = []
-            for j in range(10):
-                l10_trend.append(random.random() < conf)
+            # Generate unique ID based on immutable prop properties
+            # sport_id included to prevent across-sport interaction bugs
+            s_id = get_sport_id(sport_key) or 0
+            prop_id_str = f"{player_name}_{p['stat_type']}_{line}_{s_id}_{p.get('sportsbook_key', 'consensus')}"
+            unique_id = hashlib.md5(prop_id_str.encode()).hexdigest()
+
+            # Parallelize sub-service calls
+            tasks = [
+                player_stats_service.get_performance_splits(player_name, p['stat_type'])
+            ]
             
-            formatted_props.append({
-                'id': i + 1,
+            if sport_key in ['americanfootball_nfl', 'baseball_mlb']:
+                tasks.append(get_game_weather(home_team))
+            else:
+                tasks.append(asyncio.sleep(0, result=None))
+                
+            if sport_key == 'basketball_nba':
+                today_str = datetime.utcnow().strftime('%Y-%m-%d')
+                tasks.append(asyncio.to_thread(check_back_to_back, player_name, today_str, db))
+                
+                game_id = game_info.get('id', '')
+                crew = get_game_refs(game_id, db) if game_id else []
+                tasks.append(asyncio.to_thread(get_ref_tendencies, crew, db))
+            else:
+                tasks.append(asyncio.sleep(0, result=None))
+                tasks.append(asyncio.sleep(0, result=None))
+
+            results = await asyncio.gather(*tasks)
+            performance_splits, weather_data, fatigue_data, ref_intel = results
+
+            return {
+                'id': unique_id,
                 'player': {'name': player_name, 'position': p_pos, 'team': home_team},
                 'player_image': get_player_image(player_name),
                 'market': {'stat_type': p['stat_type'], 'description': 'Over/Under'},
@@ -424,10 +500,13 @@ async def get_working_player_props_immediate(
                 'odds': p['over_odds'],
                 'edge': edge,
                 'confidence_score': conf,
+                'sharp_money': sharp_signals.get((player_name, p['stat_type']), {}).get("sharp", False),
+                'steam_score': sharp_signals.get((player_name, p['stat_type']), {}).get("steam", 0.0),
                 'generated_at': p['updated_at'].isoformat(),
                 'sportsbook': p.get('sportsbook', 'Consensus'),
                 'sportsbook_key': p.get('sportsbook_key', 'consensus'),
-                # Enrichment for Outlier-style experience
+                'game_id': game_info.get('id'),
+                'start_time': game_info.get('start_time'),
                 'trend_data': trend_data,
                 'matchup': {
                     'opp_rank': matchup_rank,
@@ -441,73 +520,50 @@ async def get_working_player_props_immediate(
                 },
                 'volatility': 'high' if (player_hash % 5) == 0 else 'medium',
                 'line_velocity': ((player_hash % 11) - 5) / 10.0,
-                'performance_splits': await player_stats_service.get_performance_splits(p['player_name'], p['stat_type'])
-            })
+                'performance_splits': performance_splits,
+                'weather': weather_data,
+                'fatigue': fatigue_data,
+                'referee_intel': ref_intel
+            }
+
+        # Parallelize prop enrichment
+        formatted_props = await asyncio.gather(*[enrich_prop(i, p) for i, p in enumerate(all_props)])
 
         # Sort by edge to show best picks first
         formatted_props.sort(key=lambda x: x['edge'], reverse=True)
 
-        # Background Persistence Task (Phase 3 ORM Storage)
-        async def persist_live_props(props: list, s_key: str):
+        # Brain Odds Scout Analysis (Real-time Steam & Sharp detection)
+        async def run_odds_scout(props: list, s_key: str):
             try:
-                from database import async_session_maker
-                from models.props import PropLine, PropOdds
-                async with async_session_maker() as session:
-                    async with session.begin():
-                        for p in props:
-                            line_entry = PropLine(
-                                player_id=str(p['id']),
-                                player_name=p['player']['name'],
-                                team=p['player']['team'],
-                                opponent=p['matchup']['opponent'],
-                                sport_key=s_key,
-                                stat_type=p['market']['stat_type'],
-                                line=p['line_value']
-                            )
-                            session.add(line_entry)
-                            await session.flush()
-                            odds_entry = PropOdds(
-                                prop_line_id=line_entry.id,
-                                sportsbook=p.get('sportsbook_key', 'consensus'),
-                                over_odds=p.get('odds', -110),
-                                under_odds=-110,
-                                ev_percent=p.get('edge', 0.0),
-                                confidence=p.get('confidence_score', 0.0)
-                            )
-                            session.add(odds_entry)
+                from services.brain_odds_scout import brain_odds_scout
+                await brain_odds_scout.analyze_and_persist(props, s_key)
             except Exception as e:
-                logger.error(f"Persistence error: {e}")
-                
-        # 4. Filter and cap props based on configuration thresholds
-        valid_props = []
-        for p in formatted_props:
-            prop_odds = p.get('odds', -110)
-            if prop_odds and float(prop_odds) < cfg.max_juice:
-                continue
-                
-            prop_edge = p.get('edge', 0.0) * 100 # convert 0.05 to 5.0%
-            if prop_edge < cfg.min_edge_percent or prop_edge > cfg.max_edge_percent:
-                continue
-                
-            # Optionally check min games sample if trends are available
-            trend = p.get('matchup', {}).get('l10_trend')
-            if trend is not None and len(trend) < cfg.min_games_sample:
-                continue
-                
-            valid_props.append(p)
+                logger.error(f"Odds Scout failure: {e}")
 
-        # Sort by edge to show best picks first
-        valid_props.sort(key=lambda x: x['edge'], reverse=True)
-        final_props = valid_props[:limit]
+                
+        # 4. Run through Antigravity Filter (Automated thresholds + Sharp Flags + Kelly Sizing)
+        final_props = await apply_antigravity_filter(formatted_props)
+        final_props = final_props[:limit]
         
+        # 5. Tier-Based Gating (Monetization Engine)
+        if tier == "free":
+            for prop in final_props:
+                prop.pop("kelly_units", None)
+                prop.pop("sharp_money", None)
+                prop.pop("steam_score", None)
+                prop.pop("display_edge", None)
+                prop.pop("edge", None)
+                prop["is_locked"] = True
+            final_props = final_props[:3]
+
         # Dispatch background db save task...
-        import asyncio
-        asyncio.create_task(persist_live_props(final_props, sport_key))
+        asyncio.create_task(run_odds_scout(final_props, sport_key))
 
         return {
             'items': final_props,
-            'total': len(final_props),
+            'total': len(final_props) if tier != "free" else 3,
             'sport_key': sport_key,
+            'tier': tier,
             'timestamp': datetime.now(timezone.utc).isoformat(),
             'status': 'live_slate_aggregated',
             'note': f'Combined active slate filtered with edge rules. Returned {len(final_props)} props.'
@@ -9982,3 +10038,145 @@ async def get_suggested_parlays(
         logger.error(f"Error suggesting parlays: {e}")
         return {"bundles": [], "error": str(e)}
 
+# ── NBA (30) ──────────────────────────────────────────────
+@router.get("/sports/30/picks/player-props")
+async def nba_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=30, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/30/picks/prop-combos")
+async def nba_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=30, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/30/picks/parlay-builder")
+async def nba_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=30, legs=legs, db=db, tier=tier)
+
+# ── NCAAB (39) ────────────────────────────────────────────
+@router.get("/sports/39/picks/player-props")
+async def ncaab_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=39, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/39/picks/prop-combos")
+async def ncaab_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=39, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/39/picks/parlay-builder")
+async def ncaab_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=39, legs=legs, db=db, tier=tier)
+
+# ── WNBA (53) ─────────────────────────────────────────────
+@router.get("/sports/53/picks/player-props")
+async def wnba_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=53, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/53/picks/prop-combos")
+async def wnba_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=53, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/53/picks/parlay-builder")
+async def wnba_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=53, legs=legs, db=db, tier=tier)
+
+# ── MMA / UFC (54) ──────────────────────────────────────────────
+@router.get("/sports/54/picks/player-props")
+async def mma_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=54, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/54/picks/prop-combos")
+async def mma_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_fight_combos(sport_id=54, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/54/picks/parlay-builder")
+async def mma_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=54, legs=legs, db=db, tier=tier)
+
+# ── BOXING (55) ─────────────────────────────────────────────
+@router.get("/sports/55/picks/player-props")
+async def boxing_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=55, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/55/picks/prop-combos")
+async def boxing_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_fight_combos(sport_id=55, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/55/picks/parlay-builder")
+async def boxing_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=55, legs=legs, db=db, tier=tier)
+
+# ── NFL (31) ──────────────────────────────────────────────
+@router.get("/sports/31/picks/player-props")
+async def nfl_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=31, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/31/picks/prop-combos")
+async def nfl_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=31, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/31/picks/parlay-builder")
+async def nfl_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=31, legs=legs, db=db, tier=tier)
+
+# ── NCAAF (41) ────────────────────────────────────────────
+@router.get("/sports/41/picks/player-props")
+async def ncaaf_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=41, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/41/picks/prop-combos")
+async def ncaaf_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=41, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/41/picks/parlay-builder")
+async def ncaaf_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=41, legs=legs, db=db, tier=tier)
+
+# ── MLB (40) ──────────────────────────────────────────────
+@router.get("/sports/40/picks/player-props")
+async def mlb_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=40, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/40/picks/prop-combos")
+async def mlb_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=40, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/40/picks/parlay-builder")
+async def mlb_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=40, legs=legs, db=db, tier=tier)
+
+# ── NHL (22) ──────────────────────────────────────────────
+@router.get("/sports/22/picks/player-props")
+async def nhl_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=22, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/22/picks/prop-combos")
+async def nhl_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=22, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/22/picks/parlay-builder")
+async def nhl_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=22, legs=legs, db=db, tier=tier)
+
+# ── ATP (42) ──────────────────────────────────────────────
+@router.get("/sports/42/picks/player-props")
+async def atp_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=42, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/42/picks/prop-combos")
+async def atp_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=42, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/42/picks/parlay-builder")
+async def atp_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=42, legs=legs, db=db, tier=tier)
+
+# ── WTA (43) ──────────────────────────────────────────────
+@router.get("/sports/43/picks/player-props")
+async def wta_player_props(limit: int = 50, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_props_by_sport(sport_id=43, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/43/picks/prop-combos")
+async def wta_prop_combos(limit: int = 20, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await get_combos_by_sport(sport_id=43, limit=limit, db=db, tier=tier)
+
+@router.get("/sports/43/picks/parlay-builder")
+async def wta_parlay_builder(legs: int = 3, tier: str = Depends(get_user_tier), db: Session = Depends(get_db)):
+    return await build_parlay_by_sport(sport_id=43, legs=legs, db=db, tier=tier)

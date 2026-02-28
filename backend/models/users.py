@@ -51,3 +51,14 @@ class APIKey(Base):
     last_used = Column(DateTime(timezone=True), nullable=True)
     label = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class UserOverride(Base):
+    __tablename__ = "user_overrides"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    tier = Column(String, default="elite", nullable=False)
+    granted_by = Column(String, default="admin")
+    note = Column(String, nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True) # NULL = never expires
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

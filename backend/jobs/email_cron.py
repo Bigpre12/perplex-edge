@@ -27,7 +27,7 @@ def generate_email_html(picks):
     """Builds the HTML String for the Daily Email Report"""
     html_content = f"""
     <div style="font-family: 'Space Grotesk', sans-serif; background-color: #050505; color: #ffffff; padding: 40px; border-radius: 16px;">
-        <h1 style="color: #0df233; margin-bottom: 8px;">Perplex Oracle: Live Edge Detection</h1>
+        <h1 style="color: #FFD700; margin-bottom: 8px;">Lucrix Oracle: Live Edge Detection</h1>
         <p style="color: #94a3b8; font-size: 14px; margin-bottom: 30px;">
             Here are your Top 3 Sharp Action Picks for {datetime.now().strftime('%B %d, %Y')}.
         </p>

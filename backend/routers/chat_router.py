@@ -11,9 +11,9 @@ from slowapi.util import get_remote_address
 router = APIRouter(prefix="/api/chat", tags=["Oracle AI Chat"])
 limiter = Limiter(key_func=get_remote_address)
 
-# Load OpenAI Async Client
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "sk_mock_api_key_only")
-client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+# Load Groq Async Client (using OpenAI SDK compatibility)
+AI_API_KEY = os.environ.get("AI_API_KEY", "sk_mock_api_key_only")
+client = AsyncOpenAI(api_key=AI_API_KEY, base_url="https://api.groq.com/openai/v1")
 
 class ChatRequest(BaseModel):
     message: str
@@ -26,7 +26,7 @@ async def ask_oracle(request: Request, req: ChatRequest, db: Session = Depends(g
         # 1. Fetch the live "Immediate Working Player Props" from the local engine
         # We query our own API to get the current EV data to feed to the LLM
         port = os.environ.get("PORT", "8000")
-        internal_url = f"http://localhost:{port}/immediate/working-player-props?limit=15"
+        internal_url = f"http://localhost:{port}/api/immediate/working-player-props?limit=15"
         async with httpx.AsyncClient() as http_client:
             live_props_response = await http_client.get(internal_url)
             
@@ -38,18 +38,21 @@ async def ask_oracle(request: Request, req: ChatRequest, db: Session = Depends(g
 
         # 2. Build the System Prompt
         system_prompt = f"""
-        You are the 'Perplex Oracle', an elite, institutional-grade sports betting AI assistant.
+        You are the 'Lucrix Oracle', an elite, institutional-grade sports betting AI assistant.
         You specialize in Advanced Expected Value (+EV) data, arbitrage, and sharp line movement.
         Your tone is highly professional, data-centric, and concise. You do not give financial advice, only mathematical probability analysis.
         
         {market_context}
         
-        Answer the user's query using strictly the LIVE data provided above. If the data doesn't contain the answer, say you don't have enough edge data on that specific market yet.
+        Answer the user's query using strictly the LIVE data provided above. 
+        Focus on identifying specific discrepancies between sportsbook odds and our model's simulated probabilities.
+        Highlight any edge >= 5% or confidence >= 65% as 'Prime Sharp Action'.
+        If the data doesn't contain the answer, say you don't have enough edge data on that specific market yet.
         """
 
-        # 3. Call OpenAI gpt-4o-mini (or gpt-4-turbo)
+        # 3. Call Groq Llama 3
         completion = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": req.message}
@@ -63,4 +66,4 @@ async def ask_oracle(request: Request, req: ChatRequest, db: Session = Depends(g
 
     except Exception as e:
         print(f"Oracle Error: {e}")
-        raise HTTPException(status_code=500, detail="The Oracle is currently recalibrating. Try again shortly.")
+        raise HTTPException(status_code=500, detail=str(e))

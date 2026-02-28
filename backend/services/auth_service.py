@@ -29,8 +29,10 @@ class AuthService:
             expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         
         to_encode.update({"exp": expire})
+        # Note: 'tier' should be passed in 'data' from the router
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
+
 
     def decode_access_token(self, token: str) -> dict:
         """Decode and validate a JWT access token."""

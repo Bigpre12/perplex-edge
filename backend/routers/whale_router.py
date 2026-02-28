@@ -5,7 +5,7 @@ from models.props import PropLine, PropOdds
 from sqlalchemy import select, func
 from typing import List, Dict, Any
 
-router = APIRouter(prefix="/api/whale", tags=["whale"])
+router = APIRouter(prefix="/whale", tags=["whale"])
 
 @router.get("/active-moves")
 async def get_whale_moves(db: AsyncSession = Depends(get_async_db)):

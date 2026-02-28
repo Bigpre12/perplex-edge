@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { API_ENDPOINTS } from '@/lib/apiConfig';
 
 const SPORTS = ['NBA', 'NFL', 'MLB', 'NHL', 'NCAAF', 'WNBA'];
-const BOOKS  = ['PrizePicks', 'DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'Fliff'];
+const BOOKS = ['PrizePicks', 'DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'Fliff'];
 
 export default function OnboardingFlow() {
   const router = useRouter();
@@ -12,16 +13,16 @@ export default function OnboardingFlow() {
   const [bankroll, setBankroll] = useState(500);
   const [books, setBooks] = useState<string[]>(['PrizePicks']);
 
-  const toggleSport = (s: string) => setSports(p => p.includes(s) ? p.filter(x=>x!==s) : [...p, s]);
-  const toggleBook = (b: string) => setBooks(p => p.includes(b) ? p.filter(x=>x!==b) : [...p, b]);
+  const toggleSport = (s: string) => setSports(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+  const toggleBook = (b: string) => setBooks(p => p.includes(b) ? p.filter(x => x !== b) : [...p, b]);
 
   const finish = async () => {
-    await fetch('/api/user/preferences', {
+    await fetch(API_ENDPOINTS.USER_PREFERENCES, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sports, bankroll, books })
     });
     localStorage.setItem('lola-onboarded', 'true');
-    router.push('/picks');
+    router.push('/');
   };
 
   const btnStyle = (active: boolean) => ({
@@ -34,7 +35,7 @@ export default function OnboardingFlow() {
     <div style={{ maxWidth: 480, margin: '80px auto', padding: 32, background: '#111', borderRadius: 16, color: '#fff' }}>
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {[1,2,3].map(i => <div key={i} style={{ height: 4, flex: 1, borderRadius: 4, background: i <= step ? '#3b82f6' : '#333' }} />)}
+          {[1, 2, 3].map(i => <div key={i} style={{ height: 4, flex: 1, borderRadius: 4, background: i <= step ? '#3b82f6' : '#333' }} />)}
         </div>
         <h1 style={{ fontSize: 24, fontWeight: 700 }}>Welcome to LOLA ✦</h1>
         <p style={{ color: '#888' }}>Quick setup — takes 30 seconds</p>

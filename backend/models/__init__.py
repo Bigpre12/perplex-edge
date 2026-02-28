@@ -6,6 +6,7 @@ from .users import User, PushSubscription, APIKey
 from .social import PublicSlate, OddsAlert
 from .contests import Contest, ContestEntry
 from .kalshi import KalshiMarket
+from .brain import BrainSystemState, ModelPick
 
 # For legacy dummy models not yet migrated
 from sqlalchemy import Column, Integer

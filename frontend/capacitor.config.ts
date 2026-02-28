@@ -2,9 +2,8 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
     appId: 'com.perplexedge.app',
-    appName: 'Perplex Edge',
+    appName: 'Lucrix',
     webDir: 'out',
-    bundledWebRuntime: false,
     server: {
         // In production, this should be removed to serve the bundled 'out' directory.
         // During local development, we point the native webview to the Next.js dev server:

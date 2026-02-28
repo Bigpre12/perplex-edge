@@ -1,5 +1,5 @@
-# Perplex Edge Frontend Deployment Script (Vercel)
-Write-Host "Initializing Vercel Deployment for Perplex Edge Frontend..." -ForegroundColor Cyan
+# Lucrix Frontend Deployment Script (Vercel)
+Write-Host "Initializing Vercel Deployment for Lucrix Frontend..." -ForegroundColor Cyan
 
 # Install Vercel CLI globally if not already present
 Write-Host "Checking for Vercel CLI..."

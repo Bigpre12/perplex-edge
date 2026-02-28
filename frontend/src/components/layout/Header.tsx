@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Search, HelpCircle } from 'lucide-react';
 import PushSubscriber from '@/components/dashboard/PushSubscriber';
 
-import { API_BASE_URL } from "@/lib/apiConfig";
+import { API_ENDPOINTS } from "@/lib/apiConfig";
 
 export default function Header() {
     const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking');
@@ -11,7 +11,7 @@ export default function Header() {
     useEffect(() => {
         const checkHealth = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/health`, { signal: AbortSignal.timeout(3000) });
+                const res = await fetch(`${API_ENDPOINTS.HEALTH}`, { signal: AbortSignal.timeout(3000) });
                 setStatus(res.ok ? 'online' : 'offline');
             } catch {
                 setStatus('offline');

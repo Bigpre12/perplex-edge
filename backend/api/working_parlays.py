@@ -13,6 +13,7 @@ from database import get_db
 from services.monte_carlo_service import monte_carlo_service
 from real_data_connector import real_data_connector
 from services.brain_service import brain_service
+from api.dependencies import require_pro
 
 router = APIRouter()
 
@@ -23,6 +24,7 @@ async def get_working_parlays(
     game_id: str = Query(None, description="External Game ID (leave empty to pick a random live game)"),
     limit: int = Query(5, description="Number of parlays to generate"),
     db=Depends(get_db),
+    _ = Depends(require_pro)
 ):
     """Generate realistic sample parlays using live Odds API data and Monte Carlo edges."""
     try:
@@ -158,6 +160,7 @@ async def get_monte_carlo_simulation(
     game_id: str = Query(None, description="External Game ID (leave empty to pick a random live game)"),
     simulations: int = Query(5000, description="Number of simulations"),
     db=Depends(get_db),
+    _ = Depends(require_pro)
 ):
     """
     Monte Carlo simulation endpoint using Live Data.

@@ -59,7 +59,7 @@ export default function WhaleTracker() {
                     <div className="h-full flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-orange" />
                     </div>
-                ) : moves.map((move, i) => (
+                ) : (moves || []).map((move, i) => (
                     <motion.div
                         key={move.id}
                         initial={{ opacity: 0, x: -10 }}
@@ -86,7 +86,7 @@ export default function WhaleTracker() {
                                 <p className="text-[10px] text-slate-500 font-medium">{move.stat} • {move.line}</p>
                             </div>
                             <div className="flex -space-x-1.5">
-                                {move.books_involved.slice(0, 3).map((book, idx) => (
+                                {(move.books_involved || []).slice(0, 3).map((book, idx) => (
                                     <div key={idx} className="size-4 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[6px] font-black text-slate-300 ring-2 ring-background-dark">
                                         {book[0]}
                                     </div>

@@ -2,7 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import get_db
 from models.brain import BrainSystemState, ModelPick
-from core.state import state
+try:
+    from app.core.state import state
+except ImportError:
+    from core.state import state
 from datetime import datetime, timezone
 import logging
 
@@ -36,7 +39,7 @@ async def run_brain_analysis(payload: dict = None):
         }
     }
 
-@router.get("/metrics/dashboard")
+@router.post("/metrics/dashboard")
 async def get_brain_metrics(db: Session = Depends(get_db)):
     """Returns aggregated metrics from the model_picks and brain_system_state tables."""
     try:

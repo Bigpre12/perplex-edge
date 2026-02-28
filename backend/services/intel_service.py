@@ -23,7 +23,7 @@ class MarketIntelService:
             # 2. Pick a few games to "generate" news about
             sampled_games = random.sample(games, min(3, len(games)))
             
-            system_prompt = """You are a sharp, deep-insider sports news AI for Perplex Edge. 
+            system_prompt = """You are a sharp, deep-insider sports news AI for Lucrix. 
             Your goal is to provide 'Market Intel'—breaking news and analysis that would affect betting lines.
             Focus on player status, weather (if applicable), sharp action, or coaching leanings.
             Keep each item to 1-2 punchy sentences.

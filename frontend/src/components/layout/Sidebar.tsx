@@ -55,7 +55,7 @@ export default function Sidebar() {
                         <span className="material-symbols-outlined text-white text-2xl">psychology</span>
                     </div>
                     <div className="flex flex-col">
-                        <h1 className="text-white text-base font-bold leading-tight tracking-wide uppercase">PERPLEX</h1>
+                        <h1 className="text-white text-base font-bold leading-tight tracking-wide uppercase">LUCRIX</h1>
                         <p className="text-secondary text-xs font-normal">Engine Console</p>
                     </div>
                 </div>

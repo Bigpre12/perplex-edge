@@ -17,7 +17,7 @@ export default function PushSubscriber() {
         const checkSubscription = async () => {
             if ("serviceWorker" in navigator && "PushManager" in window) {
                 try {
-                    const registration = await navigator.serviceWorker.register("/sw.js");
+                    const registration = await navigator.serviceWorker.register("/sw.js?v=4");
                     const subscription = await registration.pushManager.getSubscription();
                     setIsSubscribed(!!subscription);
                 } catch (e) {

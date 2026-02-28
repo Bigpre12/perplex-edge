@@ -1,6 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 import os
+import logging
 from utils.supabase_proxy import supabase
+from services.odds.the_odds_client import get_odds_usage
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Define the Master Admin Emails who have access to this portal
 _env_admins = os.getenv("ADMIN_EMAILS", "").split(",")
@@ -50,3 +55,10 @@ async def get_dashboard_stats(email: str):
             "system_health": "Mock Mode",
             "active_services": ["Odds API Sync", "AI Chatbot", "Web Push", "Email Cron"]
         }
+
+@router.get("/odds-usage")
+async def fetch_odds_usage(admin_key: str = Header(None, alias="X-Admin-Key")):
+    """Returns the current daily usage and monthly projections of The Odds API."""
+    if admin_key != os.getenv("ADMIN_SECRET_KEY"):
+        raise HTTPException(status_code=401, detail="Unauthorized Command Center access.")
+    return await get_odds_usage()

@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/shop", tags=["line_shopping"])
 async def get_best_line(
     player_name: str, 
     stat_type: str, 
-    side: str = Query("over", regex="^(over|under)$"),
+    side: str = Query("over", pattern="^(over|under)$"),
     db: AsyncSession = Depends(get_async_db)
 ):
     """

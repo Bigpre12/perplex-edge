@@ -51,7 +51,7 @@ class AIService:
             user_context = await self.get_user_context(db, user_id)
 
         system_prompt = f"""
-You are Perplex AI, the specialized intelligence assistant for the Perplex Edge sports betting platform.
+You are Lucrix AI, the specialized intelligence assistant for the Lucrix sports betting platform.
 Your goal is to provide sharp, data-driven analysis to help users find value in the markets.
 
 {market_context}

@@ -26,6 +26,7 @@ from services.balldontlie_client import balldontlie_client
 from services.thesportsdb_client import thesportsdb_client
 from services.mysportsfeeds_client import mysportsfeeds_client
 from services.sportsgameodds_client import sportsgameodds_client
+from core.sport_constants import get_sport_id, SPORT_ID_TO_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class RealDataConnector:
                     display_name = sport_key.split("_")[1].upper() if "_" in sport_key else sport_key.upper()
                     formatted.append({
                         "id": game.get("id"),
-                        "sport_id": abs(hash(sport_key)) % 100,
+                        "sport_id": get_sport_id(sport_key) or 0,
                         "external_game_id": game.get("id"),
                         "home_team_name": game.get("home_team"),
                         "away_team_name": game.get("away_team"),
@@ -193,7 +194,7 @@ class RealDataConnector:
         """Fetch NFL games via waterfall."""
         games = await self.fetch_games_by_sport("americanfootball_nfl")
         for g in games:
-            g.setdefault("sport_id", 1)
+            g.setdefault("sport_id", 31)
             g.setdefault("sport_name", "NFL")
         return games
     
@@ -292,7 +293,7 @@ class RealDataConnector:
         """Fetch NHL games via waterfall."""
         games = await self.fetch_games_by_sport("icehockey_nhl")
         for g in games:
-            g.setdefault("sport_id", 4)
+            g.setdefault("sport_id", 22)
             g.setdefault("sport_name", "NHL")
         return games
 

@@ -14,7 +14,7 @@ import {
     Target
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/apiConfig";
+import { API_ENDPOINTS } from "@/lib/apiConfig";
 
 export default function AIHandler() {
     const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +41,7 @@ export default function AIHandler() {
 
         try {
             const token = getAuthToken();
-            const res = await fetch(`${API_BASE_URL}/ai/chat`, {
+            const res = await fetch(`${API_ENDPOINTS.AI_CHAT}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -54,7 +54,7 @@ export default function AIHandler() {
                 const data = await res.json();
                 setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
             } else {
-                setMessages(prev => [...prev, { role: "assistant", content: "I encountered a synchronization error with the Perplex brain. Please try again." }]);
+                setMessages(prev => [...prev, { role: "assistant", content: "I encountered a synchronization error with the Lucrix brain. Please try again." }]);
             }
         } catch (err) {
             setMessages(prev => [...prev, { role: "assistant", content: "Connection failure to intelligence nodes." }]);
@@ -101,7 +101,7 @@ export default function AIHandler() {
                                         <Brain className="text-primary" size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-black text-white uppercase tracking-tight">Perplex Intelligence</h3>
+                                        <h3 className="text-sm font-black text-white uppercase tracking-tight">Lucrix Intelligence</h3>
                                         <div className="flex items-center gap-1.5">
                                             <div className="size-1.5 bg-primary rounded-full animate-pulse" />
                                             <span className="text-[10px] text-primary font-bold uppercase">Node Active</span>
@@ -164,7 +164,7 @@ export default function AIHandler() {
                                         value={query}
                                         onChange={(e) => setQuery(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                        placeholder="Ask Perplex about market edges..."
+                                        placeholder="Ask Lucrix about market edges..."
                                         className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors pr-12"
                                     />
                                     <button

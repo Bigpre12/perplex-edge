@@ -1,20 +1,57 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-    // Attempt to read the Supabase Auth cookie or local storage equivalent 
-    // In a pure client-side SPA without SSR helpers, the easiest protection is checking for a generic auth pattern.
-    // However, since we're using Next.js App Router, we'll implement a basic cookie check.
-    // If you need strict verification, you should use @supabase/ssr
-    const authCookie = req.cookies.get('sb-access-token');
+function decodeJwt(token: string) {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        // Native atob is available in Next.js Edge Runtime
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return payload;
+    } catch (e) {
+        return null;
+    }
+}
 
-    // For now, if someone tries to reach /institutional but has no authentication cookie, reroute them.
-    // Since we're using the standard client JS setup, let's enforce a softer check or just allow client-side hydration to redirect.
-    // Actually, we'll allow client side layout to handle the hard bounce to avoid flash of unauthenticated content,
-    // but we can add a basic block here.
+export async function middleware(req: NextRequest) {
+    const authCookie = req.cookies.get('sb-access-token') || req.cookies.get('perplex-auth');
+    const token = authCookie?.value;
+
+    const isAuthPage = req.nextUrl.pathname.startsWith('/login') || req.nextUrl.pathname.startsWith('/signup');
+    const isPublicRoute = (req.nextUrl.pathname === '/' && req.nextUrl.searchParams.has('public')) || req.nextUrl.pathname.startsWith('/results');
+    const isApiRoute = req.nextUrl.pathname.startsWith('/api') || req.nextUrl.pathname.startsWith('/_next');
+
+    // Tier-based routes
+    const isPremiumRoute = req.nextUrl.pathname.startsWith('/institutional') ||
+        req.nextUrl.pathname.startsWith('/sharp-analysis');
+
+    if (isApiRoute || isPublicRoute) {
+        return NextResponse.next();
+    }
+
+    // Redirect authenticated users away from auth pages
+    if (token && isAuthPage) {
+        return NextResponse.redirect(new URL('/', req.url));
+    }
+
+    // Redirect unauthenticated users to login
+    if (!token && !isAuthPage) {
+        return NextResponse.redirect(new URL('/login', req.url));
+    }
+
+    // Premium Route Protection
+    if (token && isPremiumRoute) {
+        const payload = decodeJwt(token);
+        const tier = payload?.subscription_tier || 'free';
+
+        if (tier !== 'pro' && tier !== 'admin') {
+            return NextResponse.redirect(new URL('/checkout?reason=premium_required', req.url));
+        }
+    }
+
     return NextResponse.next();
 }
 
 export const config = {
-    matcher: ['/institutional/:path*']
+    matcher: ['/((?!api|_next/static|_next/image|images|favicon.ico|manifest.json).*)'],
 };

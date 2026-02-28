@@ -7,7 +7,7 @@ from services.social_service import social_service
 from pydantic import BaseModel
 from typing import List, Optional
 
-router = APIRouter(prefix="/social", tags=["social"])
+router = APIRouter()
 
 class ShareCreate(BaseModel):
     title: str

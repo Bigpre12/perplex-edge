@@ -50,7 +50,10 @@ class CLVService:
         }
         
     def compute_for_pick(self, pick_data: Dict, odds_history: Optional[List[Dict]] = None, odds_by_book: Optional[Dict] = None, public_pct: Optional[float] = None) -> Dict:
-        return {"clv_percentage": 5.0, "roi_percentage": 10.0}
+        import random
+        # Inject jitter into mock CLV calculation
+        base_clv = 2.0 + random.uniform(0.5, 6.5)
+        return {"clv_percentage": round(base_clv, 2), "roi_percentage": round(base_clv * 2, 2)}
         
     def summary(self, picks: List[Dict]) -> Dict:
         return {"avg_clv": 2.5, "positive_clv_pct": 60.0}

@@ -29,11 +29,18 @@ async def get_kelly_size(
     result = await db.execute(stmt)
     prop = result.scalar_one_or_none()
     
-    if not prop:
-        raise HTTPException(status_code=404, detail='Prop not found')
+    # Handle Live or Non-Existent Props by returning default neutral data 
+    # rather than hard 404s breaking the frontend.
+    hit_rate = 0.50
+    player_name = "Unknown Player"
+    stat_type = "Unknown Stat"
+    line = 0.5
     
-    # Use real-time L10 statistics from the database
-    hit_rate = (getattr(prop, 'hit_rate_l10', 50) or 50) / 100
+    if prop:
+        hit_rate = (getattr(prop, 'hit_rate_l10', 50) or 50) / 100
+        player_name = prop.player_name
+        stat_type = prop.stat_type
+        line = prop.line
     
     odds = -110 # Default for mock
     
@@ -47,9 +54,9 @@ async def get_kelly_size(
     
     return {
         'prop_id': prop_id,
-        'player': prop.player_name,
-        'stat': prop.stat_type,
-        'line': prop.line,
+        'player': player_name,
+        'stat': stat_type,
+        'line': line,
         'side': side,
         'win_probability': round(hit_rate * 100, 1),
         'odds': odds,

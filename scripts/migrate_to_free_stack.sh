@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # =============================================================
-# Perplex Edge — Free Stack Migration Script
+# Lucrix — Free Stack Migration Script
 # Migrates from Railway to Render + Supabase + Upstash
 # =============================================================
 
 set -euo pipefail
 
 echo "=========================================="
-echo "  Perplex Edge — Free Stack Migration"
+echo "  Lucrix — Free Stack Migration"
 echo "=========================================="
 echo ""
 

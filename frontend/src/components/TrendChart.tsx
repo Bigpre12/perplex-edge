@@ -37,7 +37,7 @@ export default function TrendChart({ data, line, statType }: TrendChartProps) {
                     />
                     <ReferenceLine y={line} stroke="#94a3b8" strokeDasharray="3 3" />
                     <Bar dataKey="value" radius={[2, 2, 0, 0]}>
-                        {data.map((entry, index) => (
+                        {(data || []).map((entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
                                 fill={entry.value >= line ? '#0df233' : '#ff4d4d'}
@@ -49,7 +49,7 @@ export default function TrendChart({ data, line, statType }: TrendChartProps) {
             </ResponsiveContainer>
             <div className="flex justify-between items-center mt-1 px-1">
                 <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">
-                    Last 5: {data.filter(d => d.value >= line).length}/5 HITS
+                    Last 5: {(data || []).filter(d => d.value >= line).length}/5 HITS
                 </p>
                 <p className="text-[9px] text-slate-300 font-mono">Line: {line}</p>
             </div>

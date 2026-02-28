@@ -39,7 +39,7 @@ def build_digest_embed(db: Session) -> dict:
     }
 
 async def send_daily_digest():
-    from antigravity_edge_config import get_edge_config
+    from app.antigravity_edge_config import get_edge_config
     import logging
     logger = logging.getLogger(__name__)
     

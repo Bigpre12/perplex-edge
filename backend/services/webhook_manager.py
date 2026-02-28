@@ -21,7 +21,7 @@ class WebhookManager:
             book = pick_data.get("sportsbook", "DraftKings")
             
             payload = {
-                "username": "Perplex Edge Bot",
+                "username": "Lucrix Bot",
                 "avatar_url": "https://perplexedge.com/og-image.png",
                 "embeds": [{
                     "title": f"🚀 Institutional +EV Alert: {player_name}",
@@ -32,7 +32,7 @@ class WebhookManager:
                         {"name": "line", "value": f"{line}", "inline": True},
                         {"name": "edge", "value": f"+{edge}%", "inline": True},
                     ],
-                    "footer": {"text": "Powered by Perplex Edge Intelligence"}
+                    "footer": {"text": "Powered by Lucrix Intelligence"}
                 }]
             }
             

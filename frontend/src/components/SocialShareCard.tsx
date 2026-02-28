@@ -40,7 +40,7 @@ export const SocialShareCard: React.FC<SocialShareCardProps> = ({ data, id }) =>
                         <div className="size-16 bg-primary rounded-xl flex items-center justify-center shadow-[0_0_30px_rgba(13,242,51,0.4)]">
                             <Zap size={40} className="text-background-dark fill-background-dark" />
                         </div>
-                        <h2 className="text-5xl font-black text-white tracking-tighter uppercase italic">Perplex <span className="text-primary">Edge</span></h2>
+                        <h2 className="text-5xl font-black text-white tracking-tighter uppercase italic">Lucrix <span className="text-primary">Index</span></h2>
                     </div>
                     <p className="text-2xl font-bold text-slate-500 uppercase tracking-[0.3em] ml-20">Intelligence Hub</p>
                 </div>
@@ -123,7 +123,7 @@ export const SocialShareCard: React.FC<SocialShareCardProps> = ({ data, id }) =>
                 <div className="flex flex-col items-end gap-6 text-right">
                     <div className="size-48 bg-white p-4 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)]">
                         <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://perplex-edge.com/share/${id}`)}&color=050a08&bgcolor=ffffff`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://lucrix.ai/share/${id}`)}&color=050a08&bgcolor=ffffff`}
                             className="size-full"
                             alt="Verification QR"
                             crossOrigin="anonymous"

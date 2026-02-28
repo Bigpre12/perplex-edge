@@ -79,4 +79,40 @@ class RiskService:
                 
         return round(max_drawdown * 100, 2)
 
+    @staticmethod
+    def calculate_expected_growth(edge: float, win_prob: float, fraction: float = 0.5) -> float:
+        """
+        Calculate expected geometric growth rate per wager.
+        G = p*log(1+f*b) + q*log(1-f)
+        """
+        p = win_prob
+        q = 1.0 - p
+        
+        # Simplified growth estimation for small edges
+        # G approx = fraction * (edge^2 / 2)
+        growth = fraction * (edge ** 2) / 2.0
+        return round(growth * 100, 4)
+
+    @staticmethod
+    def standardize_kelly(bankroll: float, edge: float, odds: int, min_unit: float = 10.0, max_pct: float = 0.05) -> float:
+        """
+        Standardize a Kelly wager into a dollar amount with safety caps.
+        """
+        if odds > 0:
+            b = odds / 100.0
+        else:
+            b = 100.0 / abs(odds)
+            
+        # Full Kelly f = edge / b
+        raw_f = edge / b
+        
+        # Apply conservative 0.25 fraction for "Standardized" sizing
+        safe_f = max(0, raw_f * 0.25)
+        
+        # Cap at max_pct of bankroll
+        final_f = min(safe_f, max_pct)
+        
+        amount = bankroll * final_f
+        return max(min_unit, round(amount, 2))
+
 risk_service = RiskService()

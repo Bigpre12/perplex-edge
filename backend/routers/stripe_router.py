@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/stripe", tags=["Stripe Monetization"])
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock_key_only")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_mock_secret")
 
-# The price ID from your Stripe Dashboard for the "Pro Subscription" product
+# The price ID from your Stripe Dashboard for the "Pro Subscription" product.
 PRO_PRICE_ID = os.environ.get("STRIPE_PRO_PRICE_ID", "price_mock_id")
 
 class CheckoutRequest(BaseModel):
@@ -21,13 +21,20 @@ class CheckoutRequest(BaseModel):
 @router.post("/create-checkout-session")
 async def create_checkout_session(req: CheckoutRequest):
     try:
+        # If using local mock key, bypass Stripe API entirely and pretend it succeeded
+        if stripe.api_key == "sk_test_mock_key_only":
+            return {"session_url": os.environ.get("FRONTEND_URL", "http://localhost:3000") + '/institutional/settings?checkout=success&mock=true'}
+
+        # Get the latest price ID dynamically at request time
+        price_id = os.environ.get("STRIPE_PRO_PRICE_ID", "price_mock_id")
+
         # Create a new Stripe Checkout Session
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             customer_email=req.user_email,
-            client_reference_id=req.user_id, # Link the Stripe session back to the Supabase User ID!
+            client_reference_id=req.user_id, # Link the Stripe session back to the user ID
             line_items=[{
-                'price': PRO_PRICE_ID,
+                'price': price_id,
                 'quantity': 1,
             }],
             mode='subscription',

@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, X, Send, Loader2, Sparkles, BrainCircuit } from "lucide-react";
-import { getAuthToken } from "@/lib/auth";
-import { supabase } from "@/lib/supabaseClient";
+import { getAuthToken, getUser } from "@/lib/auth";
 
 import { API_ENDPOINTS } from "@/lib/apiConfig";
 
@@ -20,7 +19,7 @@ export default function OracleChatbot() {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: "initial",
-            text: "I am the Perplex Oracle. I have live awareness of the entire +EV betting slate. What edge are you looking for today?",
+            text: "I am the Lucrix Oracle. I have live awareness of the entire +EV betting slate. What edge are you looking for today?",
             isUser: false,
             timestamp: new Date()
         }
@@ -53,7 +52,7 @@ export default function OracleChatbot() {
         setIsLoading(true);
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            const user = getUser();
 
             const res = await fetch(API_ENDPOINTS.CHATTING, {
                 method: "POST",
@@ -63,7 +62,7 @@ export default function OracleChatbot() {
                 },
                 body: JSON.stringify({
                     message: userMessage.text,
-                    user_id: session?.user?.id || "anonymous"
+                    user_id: user?.username || user?.email || "anonymous"
                 })
             });
 
@@ -135,7 +134,7 @@ export default function OracleChatbot() {
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-                                        Perplex Oracle <Sparkles size={12} className="text-primary" />
+                                        Lucrix Oracle <Sparkles size={12} className="text-primary" />
                                     </h3>
                                     <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-1">
                                         <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Engine Connected

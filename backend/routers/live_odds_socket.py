@@ -3,7 +3,7 @@ import json
 import httpx
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List
-from services.webhook_manager import dispatch_webhooks
+from services.webhook_manager import webhook_manager
 
 router = APIRouter(tags=["Real-Time WebSockets"])
 
@@ -53,7 +53,11 @@ async def live_odds_broadcaster():
 
                         # Phase 11: Trigger Institutional Webhook Pipes for Whales & High-EV Signals
                         if data.get("items"):
-                            asyncio.create_task(dispatch_webhooks(data["items"]))
+                            # Logic: In production, registered_hooks would be fetched from the DB
+                            # For now, we use a default list if available in ENV
+                            discord_webhook = os.getenv("DISCORD_WEBHOOK_URL")
+                            hooks = [discord_webhook] if discord_webhook else []
+                            asyncio.create_task(webhook_manager.dispatch_alerts(data["items"], hooks))
             except Exception as e:
                 print(f"WS Engine Polling Error: {e}")
             

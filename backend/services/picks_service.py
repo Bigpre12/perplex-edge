@@ -11,6 +11,7 @@ from dataclasses import dataclass, fields
 from enum import Enum
 from sqlalchemy import text, select
 from database import engine, async_session_maker
+from core.sport_constants import get_sport_id
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,7 +78,7 @@ class PicksService:
         
     async def create_pick(self, game_id: int, pick_type: str, player_name: str, stat_type: str,
                          line: float, odds: int, model_probability: float, confidence: float,
-                         hit_rate: float) -> Optional[int]:
+                         hit_rate: float, sport_key: str = "basketball_nba") -> Optional[int]:
         """Create a new pick with EV calculation"""
         try:
             # Calculate implied probability from odds
@@ -95,18 +96,22 @@ class PicksService:
                 async with session.begin():
                     # For SQLite compatibility, we use text() and values
                     query = text("""
-                        INSERT INTO picks (
-                            game_id, pick_type, player_name, stat_type, line, odds, model_probability,
-                            implied_probability, ev_percentage, confidence, hit_rate, created_at, updated_at
-                        ) VALUES (:game_id, :pick_type, :player_name, :stat_type, :line, :odds, :model_probability,
-                                :implied_probability, :ev_percentage, :confidence, :hit_rate, :created_at, :updated_at)
+                        INSERT INTO model_picks (
+                            game_id, player_name, stat_type, line, odds, model_probability,
+                            implied_probability, ev_percentage, confidence, hit_rate, 
+                            sport_key, sport_id, created_at, updated_at
+                        ) VALUES (:game_id, :player_name, :stat_type, :line, :odds, :model_probability,
+                                :implied_probability, :ev_percentage, :confidence, :hit_rate, 
+                                :sport_key, :sport_id, :created_at, :updated_at)
                     """)
                     
                     await session.execute(query, {
-                        "game_id": game_id, "pick_type": pick_type, "player_name": player_name,
+                        "game_id": game_id, "player_name": player_name,
                         "stat_type": stat_type, "line": line, "odds": odds, "model_probability": model_probability,
                         "implied_probability": implied_probability, "ev_percentage": ev_percentage,
-                        "confidence": confidence, "hit_rate": hit_rate, "created_at": now, "updated_at": now
+                        "confidence": confidence, "hit_rate": hit_rate, 
+                        "sport_key": sport_key, "sport_id": get_sport_id(sport_key) or 0,
+                        "created_at": now, "updated_at": now
                     })
                     
                     # Manual RETURNING id for SQLite
@@ -124,7 +129,7 @@ class PicksService:
         try:
             async with async_session_maker() as session:
                 query = text("""
-                    SELECT * FROM picks 
+                    SELECT * FROM model_picks 
                     WHERE game_id = :game_id
                     ORDER BY ev_percentage DESC
                 """)
@@ -140,7 +145,7 @@ class PicksService:
         try:
             async with async_session_maker() as session:
                 query = text("""
-                    SELECT * FROM picks 
+                    SELECT * FROM model_picks 
                     WHERE player_name = :player_name
                     AND created_at >= :lookback
                     ORDER BY created_at DESC
@@ -153,18 +158,30 @@ class PicksService:
             logger.error(f"Error getting picks by player: {e}")
             return []
     
-    async def get_high_ev_picks(self, min_ev: float = 2.0, hours: int = 24) -> List[Pick]:
+    async def get_high_ev_picks(self, min_ev: float = 2.0, hours: int = 24, target_sport: Optional[str] = None) -> List[Pick]:
         """Get picks with high expected value. Cascades to CLV leaderboard if empty."""
         try:
             async with async_session_maker() as session:
-                query = text("""
-                    SELECT * FROM picks 
-                    WHERE ev_percentage >= :min_ev
-                    AND created_at >= :lookback
-                    ORDER BY ev_percentage DESC
-                """)
                 lookback = datetime.now(timezone.utc) - timedelta(hours=hours)
-                result = await session.execute(query, {"min_ev": min_ev, "lookback": lookback})
+                
+                sql = "SELECT * FROM model_picks WHERE ev_percentage >= :min_ev AND created_at >= :lookback"
+                params = {"min_ev": min_ev, "lookback": lookback}
+                
+                if target_sport:
+                    s_id = get_sport_id(target_sport)
+                    if s_id:
+                        sql += " AND sport_id = :s_id"
+                        params["s_id"] = s_id
+                    else:
+                        sport_filter = target_sport.upper()
+                        if "_" in sport_filter:
+                            sport_filter = sport_filter.split("_")[-1]
+                        sql += " AND (sport_key = :sport_filter OR sport_id IS NULL)"
+                        params["sport_filter"] = sport_filter
+                
+                sql += " ORDER BY ev_percentage DESC"
+                
+                result = await session.execute(text(sql), params)
                 rows = result.mappings().all()
                 
                 picks = [self._map_row_to_pick(row) for row in rows]
@@ -172,7 +189,7 @@ class PicksService:
                 if not picks:
                     # FALLBACK: Pull from CLV leaderboard
                     from api.analysis import _generate_sample_clv_picks
-                    clv_samples = _generate_sample_clv_picks()
+                    clv_samples = _generate_sample_clv_picks(target_sport)
                     picks = [self._map_clv_to_pick(p) for p in clv_samples if p.get('clv_percentage', 0) >= min_ev]
                     
                 return picks
@@ -207,7 +224,7 @@ class PicksService:
         try:
             async with async_session_maker() as session:
                 query = text("""
-                    SELECT * FROM picks 
+                    SELECT * FROM model_picks 
                     WHERE confidence >= :min_conf
                     AND created_at >= :lookback
                     ORDER BY confidence DESC
@@ -295,7 +312,7 @@ class PicksService:
                         AVG(ev_percentage) as avg_ev,
                         AVG(confidence) as avg_confidence,
                         AVG(hit_rate) as avg_hit_rate
-                    FROM picks
+                    FROM model_picks
                     WHERE created_at >= :lookback
                 """)
                 result = await session.execute(overall_query, {"lookback": lookback})
@@ -324,7 +341,7 @@ class PicksService:
                         COUNT(*) as total_picks,
                         AVG(ev_percentage) as avg_ev,
                         AVG(confidence) as avg_confidence
-                    FROM picks
+                    FROM model_picks
                     WHERE created_at >= :lookback
                     GROUP BY player_name
                     ORDER BY avg_ev DESC
@@ -359,8 +376,8 @@ class PicksService:
                 like_op = "ILIKE" if "postgresql" in db_dialect else "LIKE"
                 
                 sql = f"""
-                    SELECT * FROM picks 
-                    WHERE (player_name {like_op} :q OR stat_type {like_op} :q OR pick_type {like_op} :q)
+                    SELECT * FROM model_picks 
+                    WHERE (player_name {like_op} :q OR stat_type {like_op} :q OR sport_key {like_op} :q)
                     AND created_at >= :lookback
                     ORDER BY ev_percentage DESC
                     LIMIT :limit
@@ -392,7 +409,7 @@ class PicksService:
         try:
             async with async_session_maker() as session:
                 query = text("""
-                    SELECT * FROM picks 
+                    SELECT * FROM model_picks 
                     WHERE status = 'graded' 
                     ORDER BY created_at DESC 
                     LIMIT :limit
