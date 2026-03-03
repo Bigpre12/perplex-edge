@@ -4,11 +4,11 @@
   "description": "Sports Betting Intelligence Platform",
   "main": "index.html",
   "scripts": {
-    "dev": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
-    "dev-backend": "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload",
-    "dashboard": "cd dashboard && npm run dev",
-    "start": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
-    "start-backend": "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8001"
+    "dev": "npm run dev-frontend & npm run dev-backend",
+    "dev-frontend": "cd frontend && npm run dev",
+    "dev-backend": "cd backend && ..\\.venv\\Scripts\\python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+    "start-frontend": "cd frontend && npm run start",
+    "start-backend": "cd backend && ..\\.venv\\Scripts\\python -m uvicorn main:app --host 0.0.0.0 --port 8000"
   },
   "keywords": [
     "sports-betting",
