@@ -1,15 +1,19 @@
-// apps/web/src/hooks/useEvSignals.ts
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useReconnectingWs } from "./useReconnectingWs";
 import { API } from "@/lib/api";
 
 export type EVSignal = {
     event_id: string;
-    market: string;
-    selection: string;
-    book: string;
-    odds: number;
+    sport_key: string;
+    player_name: string;
+    market_key: string;
+    line: number;
+    bookmaker: string;
+    current_price: number;
     true_prob: number;
-    edge: number;
+    implied_prob: number;
+    edge_percent: number;
+    confidence_score: number;
     updated_at: string;
 };
 
@@ -18,13 +22,28 @@ export function useEvSignals(sport: string, minEv = 2.0) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
     const load = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/ev/unified/top?sport=${sport}&min_ev=${minEv}`);
-            if (!res.ok) throw new Error("Failed to load EV signals");
-            const data = await res.json();
-            setSignals(data.signals || []);
+            const res = await API.getEV(sport, minEv);
+            const raw = res.data || [];
+            const mapped = raw.map((s: any) => ({
+                event_id: s.event_id,
+                sport_key: s.sport,
+                player_name: s.player,
+                market_key: s.market,
+                line: s.line,
+                bookmaker: s.best_book,
+                current_price: s.price,
+                true_prob: s.true_prob,
+                implied_prob: 1 / s.price,
+                edge_percent: s.edge,
+                confidence_score: s.confidence,
+                updated_at: s.updated_at
+            }));
+            setSignals(mapped);
             setError(null);
         } catch (err: any) {
             setError(err.message);
@@ -32,6 +51,49 @@ export function useEvSignals(sport: string, minEv = 2.0) {
             setLoading(false);
         }
     }, [sport, minEv]);
+
+    // WebSocket for live updates
+    useReconnectingWs(API.wsEv, (message: any) => {
+        if (message.type === "ev_signal") {
+            const s = message.data;
+            const newSignal: EVSignal = {
+                event_id: s.event_id,
+                sport_key: s.sport,
+                player_name: s.player,
+                market_key: s.market,
+                line: s.line,
+                bookmaker: s.best_book,
+                current_price: s.price,
+                true_prob: s.true_prob,
+                implied_prob: 1 / s.price,
+                edge_percent: s.edge,
+                confidence_score: s.confidence,
+                updated_at: s.updated_at
+            };
+            
+            // Only add if it matches the current sport and minEv threshold
+            if (newSignal.sport_key === sport && newSignal.edge_percent >= minEv) {
+                setSignals(prev => {
+                    const exists = prev.findIndex(p => 
+                        p.event_id === newSignal.event_id && 
+                        p.market_key === newSignal.market_key && 
+                        p.player_name === newSignal.player_name &&
+                        p.bookmaker === newSignal.bookmaker
+                    );
+                    
+                    if (exists > -1) {
+                        const next = [...prev];
+                        next[exists] = newSignal;
+                        return next.sort((a, b) => b.edge_percent - a.edge_percent);
+                    }
+                    
+                    return [newSignal, ...prev].sort((a, b) => b.edge_percent - a.edge_percent).slice(0, 50);
+                });
+            }
+        } else if (message.type === "ev_refresh_request") {
+            if (message.sport === sport) load();
+        }
+    });
 
     useEffect(() => {
         load();

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { API, apiFetch } from '@/lib/api';
+import { API } from '@/lib/api';
 import { SportKey } from '@/lib/sports.config';
 import { useBackendStatus } from './useBackendStatus';
 
@@ -16,8 +16,8 @@ export function useLiveOdds(sportId: SportKey) {
     const fetchHTTP = useCallback(async () => {
         if (isDown) return;
         try {
-            const data = await apiFetch<any>(API.odds(sportId));
-            const items: any[] = data?.data ?? data?.items ?? [];
+            const data = await API.getProps(sportId);
+            const items: any[] = (data as any)?.data ?? [];
             if (items.length > 0 && mountedRef.current) {
                 setProps(items);
                 setLastUpdate(new Date().toISOString());
@@ -34,7 +34,7 @@ export function useLiveOdds(sportId: SportKey) {
         fetchHTTP();
         pollRef.current = setInterval(() => {
             if (!isDown) fetchHTTP();
-        }, API.POLL_MS);
+        }, API.pollMs);
 
         let reconnectTimeout: NodeJS.Timeout;
         const tryWS = () => {
@@ -48,7 +48,7 @@ export function useLiveOdds(sportId: SportKey) {
                     try {
                         if (e.data === 'pong') return;
                         const msg = JSON.parse(e.data);
-                        const items = msg?.items ?? msg?.data?.items;
+                        const items = msg?.items ?? msg?.data?.items ?? msg?.data;
                         if (items?.length && mountedRef.current) {
                             setProps(items);
                             setLastUpdate(msg.timestamp ?? new Date().toISOString());

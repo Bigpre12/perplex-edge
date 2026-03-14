@@ -1,8 +1,9 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from typing import Optional, List
 import asyncio
 import json
 import logging
-import redis.asyncio as aioredis
+import redis.asyncio as redis # Keep this import
 import os
 
 logger = logging.getLogger(__name__)
@@ -27,8 +28,8 @@ async def kalshi_ws_proxy(
     await websocket.accept()
     
     redis_url = os.getenv("REDIS_URL")
-    redis = aioredis.from_url(redis_url, decode_responses=True)
-    pubsub = redis.pubsub()
+    redis_conn = redis.from_url(redis_url, decode_responses=True)
+    pubsub = redis_conn.pubsub()
     await pubsub.subscribe("kalshi:prices")
     
     ticker_list = tickers.split(",") if tickers else []

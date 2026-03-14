@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { API } from "@/lib/api";
 
 interface PriceUpdate {
     ticker: string;
@@ -21,7 +22,7 @@ export function useKalshiPrices(tickers: string[]) {
         const tickerParams = tickers.length > 0 ? `&tickers=${tickers.join(",")}` : "";
         // In production, get token from Clerk/Supabase
         const token = "mock_token";
-        const wsUrl = `ws://localhost:8000/ws/kalshi?token=${token}${tickerParams}`;
+        const wsUrl = `${API.wsKalshi}?token=${token}${tickerParams}`;
 
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;

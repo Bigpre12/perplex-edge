@@ -1,64 +1,58 @@
-// apps/web/src/hooks/useReconnectingWs.ts
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import { API } from '../lib/api';
 
-type Status = "CONNECTING" | "OPEN" | "RECONNECTING" | "CLOSED";
+export function useReconnectingWs(endpoint: string, onMessage?: (data: any) => void) {
+  const [data, setData] = useState<any>(null);
+  const [status, setStatus] = useState<'connecting' | 'open' | 'closed'>('connecting');
+  const ws = useRef<WebSocket | null>(null);
+  const reconnectCount = useRef(0);
 
-export function useReconnectingWs(url: string, onMessage: (data: any) => void) {
-  const [status, setStatus] = useState<Status>("CONNECTING");
-  const wsRef = useRef<WebSocket | null>(null);
-  const retries = useRef(0);
+  const connect = () => {
+    setStatus('connecting');
+    const wsUrl = endpoint.startsWith('ws') ? endpoint : `${API.wsBaseUrl}${endpoint}`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      console.log(`[WS] Connected to ${endpoint}`);
+      setStatus('open');
+      reconnectCount.current = 0;
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        setData(payload);
+        if (onMessage) onMessage(payload);
+      } catch (e) {
+        console.warn("[WS] Failed to parse message", event.data);
+      }
+    };
+
+    socket.onclose = () => {
+      setStatus('closed');
+      const delay = Math.min(1000 * Math.pow(2, reconnectCount.current), 30000);
+      reconnectCount.current += 1;
+      console.log(`[WS] Connection closed. Retrying in ${delay / 1000}s...`);
+      setTimeout(connect, delay);
+    };
+
+    socket.onerror = (err) => {
+      console.error("[WS] Error", err);
+      socket.close();
+    };
+
+    ws.current = socket;
+  };
 
   useEffect(() => {
-    let cancelled = false;
-
-    function connect() {
-      // Handle protocol for local vs prod
-      const wsUrl = url.startsWith('ws') ? url : `ws://${window.location.host}${url}`;
-      
-      setStatus(retries.current === 0 ? "CONNECTING" : "RECONNECTING");
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        if (cancelled) return;
-        retries.current = 0;
-        setStatus("OPEN");
-        console.log("WS Connected:", wsUrl);
-      };
-
-      ws.onmessage = (evt) => {
-        if (cancelled) return;
-        try {
-          onMessage(JSON.parse(evt.data));
-        } catch (e) {
-          console.error("WS Parse Error:", e);
-        }
-      };
-
-      ws.onclose = () => {
-        if (cancelled) return;
-        retries.current += 1;
-        if (retries.current > 10) {
-          setStatus("CLOSED");
-          return;
-        }
-        const delay = Math.min(30_000, 1000 * 2 ** retries.current);
-        console.log(`WS Disconnected. Retrying in ${delay}ms...`);
-        setTimeout(connect, delay);
-      };
-
-      ws.onerror = (err) => {
-        console.error("WS Error:", err);
-        ws.close();
-      };
-    }
-
     connect();
     return () => {
-      cancelled = true;
-      wsRef.current?.close();
+      if (ws.current) {
+        ws.current.close();
+      }
     };
-  }, [url, onMessage]);
+  }, [endpoint]);
 
-  return status;
+  return { data, status };
 }
