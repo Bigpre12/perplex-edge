@@ -3,11 +3,12 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 from database import get_db
-from models import PropLine, APIKey
+from models.props import PropLine
+from models.users import APIKey
 from datetime import datetime, timedelta
 from typing import Optional
 
-router = APIRouter(prefix='/v1', tags=['api_tier'])
+router = APIRouter(tags=['api_tier'])
 
 def verify_api_key(x_api_key: str = Header(...), db: Session = Depends(get_db)) -> APIKey:
     key = db.query(APIKey).filter(APIKey.key == x_api_key, APIKey.is_active == True).first()

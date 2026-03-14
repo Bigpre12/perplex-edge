@@ -14,33 +14,66 @@ else:
     # Fallback to absolute path search if find_dotenv fails
     load_dotenv()
 
+from config import settings
+
 logger = logging.getLogger(__name__)
 
+# --- Key Rotation Logic ---
+_KEYS = []
+_CURRENT_KEY_IDX = 0
+
+def init_keys():
+    global _KEYS
+    # Support Primary (100k) and Backup (20k) from settings
+    p = settings.ODDS_API_KEY_PRIMARY
+    b = settings.ODDS_API_KEY_BACKUP
+    keys = [k for k in [p, b] if k]
+    if not keys:
+        # Fallback to any generic key
+        k = os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY")
+        if k: keys = [k]
+    
+    _KEYS.clear()
+    _KEYS.extend(keys)
+    
+    if not _KEYS:
+        logger.error("❌ No Odds API keys found!")
+
 def get_api_key():
-    return os.getenv("THE_ODDS_API_KEY")
+    if not _KEYS: init_keys()
+    if not _KEYS: return None
+    return _KEYS[_CURRENT_KEY_IDX]
+
+def rotate_api_key():
+    global _CURRENT_KEY_IDX
+    if not _KEYS: init_keys()
+    if len(_KEYS) <= 1: return False
+    _CURRENT_KEY_IDX = (_CURRENT_KEY_IDX + 1) % len(_KEYS)
+    logger.info(f"🔄 Rotating to Odds API key index {_CURRENT_KEY_IDX}")
+    return True
 
 def get_base_url():
     return os.getenv("THE_ODDS_API_BASE", "https://api.the-odds-api.com/v4")
 
 def get_max_calls():
-    return int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 600))
+    # 120k monthly = ~4k daily (baseline), but we allow aggressive burst up to 10k
+    # User math for new 100k tier aggressive strategy is ~9,360/day
+    return int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
 
 async def increment_call_count() -> int:
     """Store the API hit count in Redis so it survives server restarts."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     key = f"odds_api:calls:{today}"
     
-    # Check if cache is connected to real Redis
     if cache.is_redis and cache._redis:
         try:
             count = await cache._redis.incr(key)
             if count == 1:
-                await cache._redis.expire(key, 86400)  # expires at end of day
+                await cache._redis.expire(key, 86400)
             return count
         except Exception as e:
             logger.error(f"Failed to increment Redis call count: {e}")
             
-    # Fallback to local memory dictionary if no Redis
     val = cache._memory.get(key, {"val": 0})
     new_count = int(val["val"]) + 1
     cache._memory[key] = {"val": new_count, "exp": datetime.utcnow().timestamp() + 86400}
@@ -58,44 +91,63 @@ async def get_call_count() -> int:
         except Exception as e:
             logger.error(f"Failed to get Redis call count: {e}")
             
-    # Fallback to local memory
     val = cache._memory.get(key)
     return int(val["val"]) if val else 0
 
-async def fetch_odds(path: str, params: dict | None = None):
+call_log = []
+
+async def fetch_odds(path: str, params: dict | None = None, retry_on_fail=True):
     """
     Single, safe entrypoint for ALL TheOddsAPI requests.
-    Enforces daily call cap so you don't blow the 20k tier.
+    Enforces daily call cap and handles 401/429 with automatic Key Rotation.
     """
     api_key = get_api_key()
     base_url = get_base_url()
     max_calls = get_max_calls()
 
     calls_today = await get_call_count()
-    if calls_today >= max_calls:
-        logger.warning(f"TheOddsAPI daily call cap ({max_calls}) reached, using cache only.")
+    if calls_today >= max_calls and not settings.DEVELOPMENT_MODE:
+        logger.warning(f"🚨 TheOddsAPI daily call cap ({max_calls}) reached. serving CACHED data.")
         return None
 
     if params is None:
         params = {}
-    params["apiKey"] = api_key
+    
+    # We use a copy to avoid mutating the original params in case of retry
+    p = params.copy()
+    p["apiKey"] = api_key
 
     url = f"{base_url}{path}"
-    print(f"DEBUG: Calling TheOddsAPI: {url} with params {params}")
-
+    
     try:
         async with httpx.AsyncClient() as client:
-            resp = await client.get(url, params=params, timeout=10.0)
-            print(f"DEBUG: Response Status: {resp.status_code}")
-            if resp.status_code != 200:
-                print(f"DEBUG: Response Error: {resp.text[:500]}")
-                logger.error(f"TheOddsAPI error {resp.status_code}: {resp.text[:200]}")
-                return None
+            resp = await client.get(url, params=p, timeout=10.0)
+            
+            used = resp.headers.get("x-requests-used")
+            rem = resp.headers.get("x-requests-remaining")
+            
+            # Log usage headers on every call forpaid tier tracking
+            logger.info(f"✅ OddsAPI quota → used: {used} | remaining: {rem} | Path: {path}")
+            
+            # Alert when getting low (threshold: 10,000 credits remaining)
+            try:
+                if rem and int(rem) < 10000:
+                    logger.warning(f"⚠️ OddsAPI quota low: {rem} remaining")
+            except (ValueError, TypeError):
+                pass
 
-            await increment_call_count()
-            data = resp.json()
-            print(f"DEBUG: Received {len(data) if isinstance(data, list) else 'dict'} from API")
-            return data
+            if resp.status_code == 200:
+                await increment_call_count()
+                return resp.json()
+            
+            elif resp.status_code in (401, 429):
+                logger.error(f"❌ OddsAPI Key index {_CURRENT_KEY_IDX} Exhausted ({resp.status_code})")
+                if retry_on_fail and rotate_api_key():
+                    return await fetch_odds(path, params, retry_on_fail=False)
+                return None
+            else:
+                logger.error(f"❌ OddsAPI Error {resp.status_code} | Path: {path} | Detail: {resp.text[:100]}")
+                return None
     except Exception as e:
         logger.exception(f"TheOddsAPI request failed: {e}")
         return None
@@ -109,7 +161,7 @@ async def get_odds_usage():
 
     # Projected monthly usage
     projected_monthly = calls_today * 30
-    monthly_limit     = 20000
+    monthly_limit     = 120000 # Combined 100k + 20k
     monthly_pct       = round((projected_monthly / monthly_limit) * 100, 1)
 
     return {

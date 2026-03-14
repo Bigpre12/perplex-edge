@@ -34,7 +34,7 @@ export default function TailLink() {
     useEffect(() => {
         const fetchShare = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/share/${id}`);
+                const res = await fetch(`/api/share/${id}`);
                 if (!res.ok) throw new Error("Link expired or invalid");
                 const json = await res.json();
                 setData(json.data);

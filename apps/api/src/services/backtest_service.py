@@ -1,8 +1,8 @@
+class AsyncSession: pass
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import select, and_
-from sqlalchemy.ext.asyncio import AsyncSession
 from models.props import PropLine
 from models.contests import Contest # Assuming result data might be related or in a results table
 # Alternative: Use a mock result generator if actual result table isn't fully populated for all metrics

@@ -446,3 +446,12 @@ class MonteCarloService:
 
 
 monte_carlo_service = MonteCarloService()
+simulate_prop = monte_carlo_service.simulate_prop
+simulate_parlay = monte_carlo_service.simulate_parlay
+simulate_bankroll = monte_carlo_service.simulate_bankroll
+kelly = monte_carlo_service.kelly
+american_to_decimal = american_to_decimal
+american_to_implied = american_to_implied
+run_prop_simulation = run_prop_simulation
+run_parlay_simulation = run_parlay_simulation
+calculate_kelly_stake = calculate_kelly_stake

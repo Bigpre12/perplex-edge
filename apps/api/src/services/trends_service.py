@@ -3,12 +3,38 @@ import random
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from services.player_splits_service import get_full_splits
-from api.sports.immediate_working import MOCK_PLAYERS_BY_SPORT
+# Mock data for fallback when real data is unavailable
+MOCK_PLAYERS_BY_SPORT = {
+    "basketball_nba": [
+        {"name": "LeBron James"}, {"name": "Stephen Curry"}, {"name": "Luka Doncic"},
+        {"name": "Joel Embiid"}, {"name": "Nikola Jokic"}, {"name": "Giannis Antetokounmpo"},
+        {"name": "Jayson Tatum"}, {"name": "Kevin Durant"}, {"name": "Anthony Davis"},
+        {"name": "Tyrese Haliburton"}
+    ],
+    "americanfootball_nfl": [
+        {"name": "Patrick Mahomes"}, {"name": "Christian McCaffrey"}, {"name": "Tyreek Hill"},
+        {"name": "Lamar Jackson"}, {"name": "Josh Allen"}, {"name": "Justin Jefferson"},
+        {"name": "Travis Kelce"}, {"name": "CeeDee Lamb"}, {"name": "A.J. Brown"},
+        {"name": "Jalen Hurts"}
+    ],
+    "icehockey_nhl": [
+        {"name": "Connor McDavid"}, {"name": "Nathan MacKinnon"}, {"name": "Auston Matthews"},
+        {"name": "Nikita Kucherov"}, {"name": "Cale Makar"}, {"name": "Connor Bedard"}
+    ],
+    "baseball_mlb": [
+        {"name": "Shohei Ohtani"}, {"name": "Ronald Acuna Jr."}, {"name": "Aaron Judge"},
+        {"name": "Mookie Betts"}, {"name": "Freddie Freeman"}, {"name": "Juan Soto"}
+    ],
+    "soccer_usa_mls": [
+        {"name": "Lionel Messi"}, {"name": "Luis Suarez"}, {"name": "Cucho Hernandez"},
+        {"name": "Luciano Acosta"}, {"name": "Denis Bouanga"}, {"name": "Hany Mukhtar"}
+    ]
+}
 
 logger = logging.getLogger(__name__)
 
 from database import async_session_maker
-from models.brain import ModelPick
+from models.props import PropLine
 from sqlalchemy import select, and_
 
 logger = logging.getLogger(__name__)
@@ -33,20 +59,18 @@ class TrendsService:
         try:
             # 1. Fetch active props from the database using async session
             async with async_session_maker() as db:
-                stmt = select(ModelPick).where(
+                stmt = select(PropLine).where(
                     and_(
-                        ModelPick.sport_key == sport_key,
-                        ModelPick.ev_percentage > -15.0 # Very relaxed for trend hunting
+                        PropLine.sport_key == sport_key,
+                        PropLine.is_active == True
                     )
-                ).order_by(ModelPick.ev_percentage.desc()).limit(15)
+                ).order_by(PropLine.created_at.desc()).limit(30)
                 
                 result = await db.execute(stmt)
                 picks = result.scalars().all()
 
-            # If no real props for this sport, use high-quality mock so the UI isn't dead
             if not picks:
-                logger.info(f"No active props for {sport_key}, using generated trends.")
-                return self._get_generated_trends(sport_key, timeframe)
+                return []
 
             results = []
             seen_combos = set()
@@ -62,38 +86,34 @@ class TrendsService:
                     continue
                 seen_combos.add(combo_key)
 
-                # Fetch real splits from BDL (NBA only for now)
+                # Fetch real splits from BDL (NBA only for now) or hit_rates table
+                # For now, we attempt get_full_splits and fall back to skipping
                 if sport_key == "basketball_nba":
                     splits_data = await get_full_splits(pick.player_name, pick.stat_type, pick.line)
                 else:
-                    # Non-NBA sports don't have BDL, so we calculate from the Pick metadata
-                    # or just generate a high-quality trend item
-                    results.append(self._generate_single_trend(pick, timeframe))
+                    # Non-NBA sports: future integration
                     continue
                 
                 if not splits_data or "error" in splits_data:
-                    # Fallback to single trend generation if API fails or player not found
-                    results.append(self._generate_single_trend(pick, timeframe))
                     continue
 
                 split = splits_data.get("splits", {}).get(split_key)
                 if not split or split.get("hit_rate") is None:
-                    results.append(self._generate_single_trend(pick, timeframe))
                     continue
 
                 hit_rate_pct = round(split["hit_rate"] * 100, 1)
                 
-                # 3. Filter for 50-100% hit rate (Relaxed from 60%)
+                # 3. Filter for 50-100% hit rate
                 if 50.0 <= hit_rate_pct <= 100.0:
                     results.append({
                         "id": f"trend-{pick.player_name}-{pick.stat_type}-{timeframe}",
                         "player_name": pick.player_name,
-                        "player_image": pick.player_image or f"https://api.dicebear.com/7.x/avataaars/svg?seed={pick.player_name}",
+                        "player_image": f"https://api.dicebear.com/7.x/avataaars/svg?seed={pick.player_name}",
                         "stat_type": pick.stat_type,
                         "line": pick.line,
-                        "side": pick.side or "over",
-                        "odds": pick.odds or -110,
-                        "edge": pick.edge or round(pick.ev_percentage, 1),
+                        "side": "over",
+                        "odds": -110,
+                        "edge": 5.0,
                         "hit_rate": hit_rate_pct,
                         "hits": split["hits"],
                         "total_games": split["sample"],
@@ -101,16 +121,12 @@ class TrendsService:
                         "trend": "up" if hit_rate_pct >= 70.0 else "stable",
                         "avg_value": split["avg"],
                         "last_10_values": splits_data["splits"]["l10"]["values"][:10],
-                        "matchup": pick.matchup or {"opponent": "TBD", "time": "TBD"},
-                        "sportsbook": pick.sportsbook or "SharpModel"
+                        "matchup": {"opponent": pick.opponent or "TBD", "time": "TBD"},
+                        "sportsbook": "MarketAvg"
                     })
                 
-                if len(results) >= 15: # Increased limit slightly for better UI variety
+                if len(results) >= 20: 
                     break
-
-            # If we still have very few results, supplement with a few interesting ones
-            if len(results) < 5:
-                results.extend(self._get_generated_trends(sport_key, timeframe)[:5])
 
             results.sort(key=lambda x: x['hit_rate'], reverse=True)
             _TRENDS_CACHE[cache_key] = (results, now)
@@ -118,59 +134,6 @@ class TrendsService:
             
         except Exception as e:
             logger.error(f"TrendsService error: {e}")
-            return self._get_generated_trends(sport_key, timeframe)
-
-    def _generate_single_trend(self, pick, timeframe: str) -> Dict[str, Any]:
-        """Convert a database pick into a trend item if API split is unavailable."""
-        hit_rate = pick.hit_rate or random.uniform(55, 85)
-        total = 10 if timeframe == "10g" else 5
-        hits = int(hit_rate / 100 * total)
-        return {
-            "id": f"db-{pick.id}-{timeframe}",
-            "player_name": pick.player_name,
-            "player_image": pick.player_image or f"https://api.dicebear.com/7.x/avataaars/svg?seed={pick.player_name}",
-            "stat_type": pick.stat_type,
-            "line": pick.line,
-            "side": pick.side or "over",
-            "odds": pick.odds or -110,
-            "edge": pick.edge or round(pick.ev_percentage, 1),
-            "hit_rate": round(hit_rate, 1),
-            "hits": hits,
-            "total_games": total,
-            "timeframe": timeframe,
-            "trend": "stable",
-            "avg_value": round(pick.line + random.uniform(1, 3), 1),
-            "last_10_values": [random.randint(int(pick.line-5), int(pick.line+8)) for _ in range(10)],
-            "matchup": pick.matchup or {"opponent": "TBD", "time": "TBD"},
-            "sportsbook": pick.sportsbook or "SharpModel"
-        }
-
-    def _get_generated_trends(self, sport_key: str, timeframe: str) -> List[Dict[str, Any]]:
-        """Fallback generator for when everything else fails."""
-        players = MOCK_PLAYERS_BY_SPORT.get(sport_key, MOCK_PLAYERS_BY_SPORT["basketball_nba"])
-        results = []
-        for p in players[:10]:
-            rate = random.uniform(52, 94)
-            line = 24.5 if sport_key == "basketball_nba" else 2.5
-            results.append({
-                "id": f"gen-{p['name']}-{timeframe}",
-                "player_name": p['name'],
-                "player_image": f"https://api.dicebear.com/7.x/avataaars/svg?seed={p['name']}",
-                "stat_type": "Points" if sport_key == "basketball_nba" else "Goals",
-                "line": line,
-                "side": "over",
-                "odds": -115,
-                "edge": round(random.uniform(2, 12), 1),
-                "hit_rate": round(rate, 1),
-                "hits": int(rate/10),
-                "total_games": 10,
-                "timeframe": timeframe,
-                "trend": "up" if rate > 70 else "stable",
-                "avg_value": round(line + 2.1, 1),
-                "last_10_values": [random.randint(int(line-5), int(line+10)) for _ in range(10)],
-                "matchup": {"opponent": "Opp", "time": "7:30 PM"},
-                "sportsbook": "FanDuel" if random.random() > 0.5 else "DraftKings"
-            })
-        return results
+            return []
 
 trends_service = TrendsService()

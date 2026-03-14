@@ -18,7 +18,11 @@ async def write_props_to_db(sport_id: int, props_data: list):
     for event in props_data:
         try:
             # event is the raw API dict for a single game
-            transformed_props = transform_odds_api_props([event], event)
+            print(f"DEBUG INGEST: Event keys: {event.keys()}")
+            home_team = event.get('home_team', 'TBD')
+            away_team = event.get('away_team', 'TBD')
+            print(f"DEBUG INGEST: teams match: {home_team} vs {away_team}")
+            transformed_props = transform_odds_api_props([event], event, home_team, away_team)
             if transformed_props:
                 await brain_odds_scout.analyze_and_persist(transformed_props, sport_key)
         except Exception as e:
@@ -27,32 +31,28 @@ async def write_props_to_db(sport_id: int, props_data: list):
             continue
 
 async def write_lines_to_db(sport_id: int, lines_data: list):
-    """Placeholder or adapter for persisting game lines."""
+    """Persist game lines to DB via OddsScout."""
     sport_key = SPORT_KEY_MAP.get(sport_id)
     if not sport_key or not lines_data:
         return
-    logger.debug(f"Successfully processed lines for {sport_key} ({len(lines_data)} games)")
+    
+    try:
+        await brain_odds_scout.analyze_game_lines(lines_data, sport_key)
+        logger.debug(f"Successfully processed lines for {sport_key} ({len(lines_data)} games)")
+    except Exception as e:
+        logger.error(f"Failed to write lines to DB for {sport_key}: {e}")
 
 
 async def ingest_all_odds():
-    """Combined cycle to ingest both props and lines for all sports safely."""
-    logger.info("Starting combined odds ingestion cycle...")
+    """Combined cycle to ingest both props and lines for all sports safely into the Unified model."""
+    from services.unified_ingestion import unified_ingestion
+    logger.info("Starting combined odds ingestion cycle (Unified)...")
 
     for sport_id in list(SPORT_KEY_MAP.keys()):
         try:
             sport_key = SPORT_KEY_MAP[sport_id]
-            logger.info(f"Fetching endpoints for {sport_key}...")
-            
-            # Fetch and write Props
-            props = await fetch_props_for_sport(sport_id)
-            if props:
-                await write_props_to_db(sport_id, props)
-
-            # Fetch and write Lines
-            lines = await fetch_lines_for_sport(sport_id)
-            if lines:
-                await write_lines_to_db(sport_id, lines)
-
+            logger.info(f"Syncing {sport_key} via UnifiedIngestion...")
+            await unified_ingestion.ingest_and_compute_ev(sport_id)
         except Exception as e:
             logger.error(f"Ingestion failed for sport {sport_id}: {e}")
             traceback.print_exc()
@@ -60,7 +60,7 @@ async def ingest_all_odds():
 
     logger.info("Odds ingestion cycle complete.")
 
-def transform_odds_api_props(odds_events, game_info):
+def transform_odds_api_props(odds_events, game_info, home_team='TBD', away_team='TBD'):
     """Transform The Odds API prop format to internal Brain format."""
     transformed = []
     
@@ -100,12 +100,12 @@ def transform_odds_api_props(odds_events, game_info):
                     prop_key = (player_name, stat_type)
                     if prop_key not in grouped_props:
                         grouped_props[prop_key] = {
-                            "player": {"name": player_name, "team": "TBD"},
+                            "player": {"name": player_name, "team": home_team},
                             "market": {"stat_type": stat_type},
                             "line_value": line,
                             "game_id": game_id,
                             "start_time": commence_time,
-                            "matchup": {"opponent": "TBD"},
+                            "matchup": {"opponent": away_team},
                             "books": {} # book_key -> {over, under, line}
                         }
                     

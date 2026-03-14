@@ -60,3 +60,29 @@ class ModelPick(Base):
     model_probability = Column(Float, nullable=True)
     implied_probability = Column(Float, nullable=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+class SteamSnapshot(Base):
+    __tablename__ = "steam_snapshots"
+    
+    id = Column(String, primary_key=True, index=True) # UUID string
+    sport = Column(String)
+    player = Column(String)
+    stat_type = Column(String)
+    line = Column(Float)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    sportsbook = Column(String)
+    game = Column(String)
+
+class BrainLog(Base):
+    __tablename__ = "brain_log"
+    
+    id = Column(String, primary_key=True, index=True) # UUID string
+    sport = Column(String)
+    player = Column(String)
+    stat_type = Column(String)
+    line = Column(Float)
+    signal = Column(String)
+    brain_score = Column(Integer)
+    reason = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    result = Column(String, default='PENDING')

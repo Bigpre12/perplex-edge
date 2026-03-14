@@ -1,0 +1,159 @@
+
+> frontend@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/33) ...
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at d (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\slate\page.js:1:3494)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547) {
+  digest: '3948692298'
+}
+
+Error occurred prerendering page "/slate". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at d (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\slate\page.js:1:3494)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at x (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\line-movement\page.js:1:3502)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547) {
+  digest: '3275901079'
+}
+
+Error occurred prerendering page "/line-movement". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at x (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\line-movement\page.js:1:3502)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+   Generating static pages (8/33) 
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at eC (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\performance\page.js:1:16258)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547) {
+  digest: '3149153197'
+}
+
+Error occurred prerendering page "/performance". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at eC (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\performance\page.js:1:16258)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at j (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\top-edges\page.js:7:1728)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547) {
+  digest: '670321021'
+}
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at x (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\bet-tracker\page.js:1:3722)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547) {
+  digest: '2729802961'
+}
+
+Error occurred prerendering page "/bet-tracker". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at x (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\bet-tracker\page.js:1:3722)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+   Generating static pages (16/33) 
+   Generating static pages (24/33) 
+
+Error occurred prerendering page "/top-edges". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: No QueryClient set, use QueryClientProvider to set one
+    at E (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:18262)
+    at C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:19312
+    at _ (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\547.js:1:20210)
+    at j (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(app)\top-edges\page.js:7:1728)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nI (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47011)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47718)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+ ✓ Generating static pages (33/33)
+
+> Export encountered errors on following paths:
+	/(app)/bet-tracker/page: /bet-tracker
+	/(app)/line-movement/page: /line-movement
+	/(app)/performance/page: /performance
+	/(app)/slate/page: /slate
+	/(app)/top-edges/page: /top-edges

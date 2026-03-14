@@ -1,0 +1,1219 @@
+
+> frontend@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/33) ...
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\_not-found\page.js:1:3917)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '137875921'
+}
+
+Error occurred prerendering page "/_not-found". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\_not-found\page.js:1:3917)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\signup\page.js:1:10449)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1769667255'
+}
+
+Error occurred prerendering page "/arbitrage". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\signup\page.js:1:10449)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/top-edges". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\login\page.js:1:10411)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '765664687'
+}
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/ledger". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/parlays". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+
+Error occurred prerendering page "/parlay-builder". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+
+Error occurred prerendering page "/player-props". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+
+Error occurred prerendering page "/prop-combos". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+
+Error occurred prerendering page "/bet-tracker". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\login\page.js:1:10411)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+
+Error occurred prerendering page "/schedule". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+   Generating static pages (8/33) 
+
+Error occurred prerendering page "/shared-intel". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/slate". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/performance". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\_not-found\page.js:1:3917)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '137875921'
+}
+
+Error occurred prerendering page "/institutional/scanner". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\_not-found\page.js:1:3917)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/upgrade". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+   Generating static pages (16/33) 
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/results". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/line-movement". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\signup\page.js:1:10449)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1769667255'
+}
+
+Error occurred prerendering page "/signup". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\signup\page.js:1:10449)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/checkout". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/dashboard". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/ledger/analytics". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\login\page.js:1:10411)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '765664687'
+}
+
+Error occurred prerendering page "/trend-hunter". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\(auth)\login\page.js:1:10411)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/admin". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/leaderboard". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/institutional/affiliate". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/institutional/settings". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/institutional/execution". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '1718483164'
+}
+
+Error occurred prerendering page "/login". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at c (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\6722.js:1:2254)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\_not-found\page.js:1:3917)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854) {
+  digest: '137875921'
+}
+
+Error occurred prerendering page "/institutional/strategy-lab". Read more: https://nextjs.org/docs/messages/prerender-error
+
+Error: useUser can only be used within the <ClerkProvider /> component.
+
+Possible fixes:
+1. Ensure that the <ClerkProvider /> is correctly wrapping your application where this component is used.
+2. Check for multiple versions of the `@clerk/shared` package in your project. Use a tool like `npm ls @clerk/shared` to identify multiple versions, and update your dependencies to only rely on one.
+
+Learn more: https://clerk.com/docs/components/clerk-provider
+    at e1 (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:15:15883)
+    at te (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\chunks\7253.js:21:2496)
+    at u (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\.next\server\app\_not-found\page.js:1:3917)
+    at nj (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:46252)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:47572)
+    at nM (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:61547)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64547)
+    at nB (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:67539)
+    at nD (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:66681)
+    at nL (C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:64854)
+   Generating static pages (24/33) 
+ ✓ Generating static pages (33/33)
+
+> Export encountered errors on following paths:
+	/(app)/admin/page: /admin
+	/(app)/arbitrage/page: /arbitrage
+	/(app)/bet-tracker/page: /bet-tracker
+	/(app)/checkout/page: /checkout
+	/(app)/dashboard/page: /dashboard
+	/(app)/institutional/affiliate/page: /institutional/affiliate
+	/(app)/institutional/execution/page: /institutional/execution
+	/(app)/institutional/scanner/page: /institutional/scanner
+	/(app)/institutional/settings/page: /institutional/settings
+	/(app)/institutional/strategy-lab/page: /institutional/strategy-lab
+	/(app)/leaderboard/page: /leaderboard
+	/(app)/ledger/analytics/page: /ledger/analytics
+	/(app)/ledger/page: /ledger
+	/(app)/line-movement/page: /line-movement
+	/(app)/page: /
+	/(app)/parlay-builder/page: /parlay-builder
+	/(app)/parlays/page: /parlays
+	/(app)/performance/page: /performance
+	/(app)/player-props/page: /player-props
+	/(app)/prop-combos/page: /prop-combos
+	/(app)/schedule/page: /schedule
+	/(app)/shared-intel/page: /shared-intel
+	/(app)/slate/page: /slate
+	/(app)/top-edges/page: /top-edges
+	/(app)/trend-hunter/page: /trend-hunter
+	/(app)/upgrade/page: /upgrade
+	/(auth)/login/page: /login
+	/(auth)/signup/page: /signup
+	/_not-found/page: /_not-found
+	/results/page: /results

@@ -5,10 +5,8 @@ import { motion } from "framer-motion";
 import { User, Lock, ArrowRight, ShieldCheck, Cpu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { setAuthToken, setUser } from "@/lib/auth";
-import { API_ENDPOINTS } from "@/lib/apiConfig";
-
-import { supabase } from "@/lib/supabaseClient";
+import { authStorage } from "@/lib/auth";
+import { API } from "@/lib/api";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -25,22 +23,27 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const { data, error: signInError } = await supabase.auth.signInWithPassword({
-                email: formData.email,
-                password: formData.password
-            });
+            const data: any = await API.authLogin(
+                formData.email,
+                formData.password
+            );
 
-            if (signInError) {
-                throw new Error(signInError.message || "Invalid credentials");
+            // Backend may return accessToken (simple) or access_token (legacy)
+            const token = data?.accessToken || data?.access_token;
+
+            if (data?.error || !token) {
+                throw new Error(data?.error || data?.detail || "Login failed — check your credentials");
             }
 
-            if (data?.session) {
-                setAuthToken(data.session.access_token);
-                setUser(data.user);
-                router.push("/");
-            }
+            // Save token for both authStorage AND apiFetch
+            authStorage.saveToken(token);
+            localStorage.setItem("accessToken", token); // apiFetch reads this key
+            if (data.user) authStorage.saveUser(data.user);
+
+            // Hard redirect to dashboard
+            window.location.href = "/";
         } catch (err: any) {
-            setError(err.message);
+            setError(err.message || "Cannot connect to server — make sure backend is running");
         } finally {
             setLoading(false);
         }

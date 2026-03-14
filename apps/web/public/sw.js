@@ -1,63 +1,76 @@
-const CACHE_NAME = "lucrix-v2-cache";
-const ASSETS_TO_CACHE = [
-  "/",
-  "/manifest.json",
-  "/favicon.ico",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png"
-];
+// sw.js — LUCRIX Service Worker v2
+const CACHE_NAME = "lucrix-cache-v2";
 
-// Install: Cache static assets
+// ── Install ──────────────────────────────────────────────
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+    console.log("[SW] Installing...");
+    self.skipWaiting();
 });
 
-// Activate: Clean up old caches
+// ── Activate ─────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
-      );
-    })
-  );
+    console.log("[SW] Activating...");
+    event.waitUntil(
+        caches.keys().then((keys) =>
+            Promise.all(
+                keys
+                    .filter((key) => key !== CACHE_NAME)
+                    .map((key) => caches.delete(key))
+            )
+        )
+    );
+    self.clients.claim();
 });
 
-// Fetch: Network first, fallback to cache for static assets
+// ── Fetch ─────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
-  // Only handle GET requests
-  if (event.request.method !== "GET") return;
+    const { request } = event;
+    const url = new URL(request.url);
 
-  // Let the browser handle standard requests for APIs unless we want offline mode
-  if (event.request.url.includes("/api/")) {
+    // ✅ NEVER intercept — pass straight through to network
+    const skipPatterns = [
+        url.port === "8000",                          // FastAPI backend
+        url.pathname.startsWith("/api/"),             // API routes
+        url.pathname.startsWith("/_next/"),           // Next.js internals
+        url.pathname.includes("hot-update"),          // HMR
+        url.pathname.includes("webpack"),             // Webpack
+        url.hostname !== self.location.hostname,      // External URLs (ESPN, Odds API)
+        request.method !== "GET",                     // POST/PUT/DELETE
+    ];
+
+    if (skipPatterns.some(Boolean)) {
+        // Pass through — do NOT intercept. Let browser handle it natively.
+        // This prevents "Failed to convert value to 'Response'" errors when SW fetch fails.
+        return;
+    }
+
+    // For static assets only — cache then network
     event.respondWith(
-      fetch(event.request).catch(() => {
-        // If API fails and we have it in cache, return it (e.g. static configuration)
-        return caches.match(event.request);
-      })
+        (async () => {
+            const cache = await caches.open(CACHE_NAME);
+            const cached = await cache.match(request);
+            if (cached) return cached;
+
+            try {
+                const response = await fetch(request);
+                // Only cache valid same-origin responses
+                if (
+                    response &&
+                    response.status === 200 &&
+                    response.type === "basic"
+                ) {
+                    cache.put(request, response.clone());
+                }
+                return response;
+            } catch (err) {
+                console.warn("[SW] Fetch failed:", request.url, err);
+                // Return a valid empty response — never reject or return undefined
+                return new Response("Network error - Service Unavailable", {
+                    status: 503,
+                    statusText: "Service Unavailable",
+                    headers: { "Content-Type": "text/plain" },
+                });
+            }
+        })()
     );
-    return;
-  }
-
-  // Handle static assets with Stale-While-Revalidate
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchedResponse = fetch(event.request).then((networkResponse) => {
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, networkResponse.clone());
-        });
-        return networkResponse;
-      });
-
-      return cachedResponse || fetchedResponse;
-    })
-  );
 });

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Bell, BellOff, ShieldCheck, Loader2 } from "lucide-react";
 import { getAuthToken, getUser } from "@/lib/auth";
 
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api } from "@/lib/api";
 
 export default function NotificationManager() {
     const [status, setStatus] = useState<"default" | "granted" | "denied">("default");
@@ -32,37 +32,12 @@ export default function NotificationManager() {
 
         setIsSubscribing(true);
         try {
-            const registration = await navigator.serviceWorker.register("/sw.js?v=4");
+            // Service worker disabled to prevent caching issues
+            // const registration = await navigator.serviceWorker.register("/sw.js?v=4");
             const permission = await Notification.requestPermission();
             setStatus(permission);
+            // Push subscriptions require an active service worker, which is currently disabled.
 
-            if (permission === "granted") {
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "")
-                });
-
-                // Send to backend
-                const token = getAuthToken();
-                const user = getUser();
-                if (token && user) {
-                    await fetch(`${API_ENDPOINTS.PUSH}/subscribe`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            user_id: user.id,
-                            endpoint: subscription.endpoint,
-                            keys: {
-                                p256dh: btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey("p256dh")!)))),
-                                auth: btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(subscription.getKey("auth")!))))
-                            }
-                        })
-                    });
-                }
-            }
         } catch (err) {
             console.error("Subscription failed:", err);
         } finally {

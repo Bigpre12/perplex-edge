@@ -1,0 +1,195 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              PERPLEX EDGE — CURSOR SYSTEM RULES v2.0                       ║
+║   Copy this into .cursorrules at the project root. Never override these.   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STACK IDENTITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Backend  : FastAPI (Python 3.11+), asyncpg, SQLAlchemy async, Alembic
+Frontend : Next.js 14 App Router, TypeScript, Tailwind CSS, Axios
+Database : PostgreSQL via Supabase
+Hosting  : Railway (backend), Vercel (frontend)
+AI       : Groq API (llama-3.3-70b-versatile) via AI_API_KEY
+Odds     : The Odds API (primary + backup key failover)
+Props    : BetStack free API → https://api.betstack.dev
+Sport IDs: NBA=30, NFL=31, MLB=29, NHL=28
+Entry    : backend/app/main.py (ONE canonical file — never create another)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — FASTAPI RULES (Backend)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROUTING
+  ✅ Every route MUST be prefixed /api — mount routers as prefix="/api/..."
+  ✅ Every import in main.py MUST be aliased: `from x import router as x_router`
+  ✅ main.py is the ONLY entry point — never create minimalmain.py, emergency.py,
+     cleanprops.py, or any parallel main file
+  ✅ New routers go in backend/app/api/ and are registered in main.py only
+  ❌ NEVER define @app.get("/health") — always @app.get("/api/health")
+  ❌ NEVER register the same prefix twice in main.py
+  ❌ NEVER put /api in the route decorator if the router already has prefix="/api/..."
+
+CORS
+  ✅ allow_origins MUST be an explicit list from env var ALLOWED_ORIGINS
+  ✅ allow_credentials=True requires explicit origins — never wildcard ["*"] with it
+  ✅ Default fallback: ["http://localhost:3000","http://localhost:3001"]
+  ❌ NEVER use allow_origins=["*"] and allow_credentials=True together — browser blocks it
+
+ENVIRONMENT / SERVER
+  ✅ PORT read as: int(os.environ.get("PORT") or 8000)  ← guards empty string
+  ✅ All secrets via os.getenv() — never hardcode keys, URLs, or passwords
+  ✅ DATABASE_URL uses +asyncpg driver for async: postgresql+asyncpg://...
+  ❌ NEVER use int(os.environ.get("PORT", 8000)) — Railway can set PORT=""
+
+DATABASE — asyncpg
+  ✅ Always use a connection POOL: asyncpg.create_pool(db_url, min_size=2, max_size=10)
+  ✅ Acquire connections as: async with pool.acquire() as conn:
+  ✅ Pool is a global singleton in picks_service.py — get_pool() lazy-init pattern
+  ✅ Every query wrapped in try/except — log errors, return empty list, never raise
+  ❌ NEVER use asyncpg.connect() per request — creates a new TCP connection every time
+  ❌ NEVER call conn.close() manually — context manager handles it
+  ❌ NEVER leave a connection outside a try block — always async with pool.acquire()
+
+DATABASE — SQLAlchemy Async
+  ✅ Use AsyncSession with async def get_db() as Depends
+  ✅ Queries via select(Model).where(...) — never await db.get(Model, id) for async sessions
+  ✅ All new columns nullable=True unless absolutely required
+  ✅ Relationship loads: use selectinload() or joinedload() — never lazy load in async
+
+ALEMBIC MIGRATIONS
+  ✅ Every migration checks IF column exists before ALTER TABLE — safe for re-runs
+  ✅ Migration template: check with information_schema.columns before add_column
+  ✅ Every new nullable column also needs COALESCE in all queries that reference it
+  ✅ After adding new columns run: alembic upgrade head in Railway deploy hook
+  ❌ NEVER reference a column in code before the migration has run — use try/except fallback
+
+CLV COLUMNS — ALWAYS DEFENSIVE
+  ✅ All 9 CLV columns are nullable: closing_odds, clv_percentage, roi_percentage,
+     opening_odds, line_movement, sharp_money_indicator, best_book_odds,
+     best_book_name, ev_improvement
+  ✅ Every SQL query using CLV columns: COALESCE(closing_odds, 0) AS closing_odds
+  ✅ Every endpoint that touches modelpicks has a fallback query without CLV columns
+     in the except asyncpg.UndefinedColumnError: block
+  ❌ NEVER assume CLV columns exist — always COALESCE or catch UndefinedColumnError
+
+ERROR HANDLING
+  ✅ Every endpoint: try/except Exception as e → return {"error": str(e), "items": [], "total": 0}
+  ✅ Log every error: logger.error(f"[endpoint_name] {e}")
+  ✅ Never let an endpoint return a raw 500 — always catch and return structured JSON
+  ✅ Service-level imports that might fail (clv_service, monte_carlo_service) wrapped in
+     try/except ImportError at module level so the whole app doesn't crash on startup
+  ❌ NEVER raise inside an endpoint handler — always return the error dict
+
+RESPONSE SHAPE CONTRACT — every endpoint returns this shape:
+  {
+    "items": [...],       ← always a list, never null
+    "total": int,         ← len(items)
+    "sport_id": int,      ← if applicable
+    "timestamp": str,     ← datetime.now(timezone.utc).isoformat()
+    "error": str | None   ← None on success, message on failure
+  }
+
+IN-MEMORY STATE
+  ✅ Import from app.core.state: from app.core.state import app_state
+  ✅ app_state is the single global singleton for healing_actions, brain_decisions,
+     system_metrics, last_health_check
+  ❌ NEVER create a new module-level dict/list for state — use app_state
+
+DATES & TIMES
+  ✅ Always compute today dynamically:
+       today    = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+       date_tag = datetime.now(timezone.utc).strftime("%Y%m%d")
+  ✅ All timestamps in responses: datetime.now(timezone.utc).isoformat()
+  ❌ NEVER hardcode any date string like "2026-02-09" or "20260209"
+  ❌ NEVER use datetime.utcnow() — it's deprecated; use datetime.now(timezone.utc)
+
+EXTERNAL APIs
+  ✅ BetStack base URL: https://api.betstack.dev  (NOT api.betstack.com)
+  ✅ The Odds API: primary key first, fallback to backup on 401/429
+  ✅ Groq model: llama-3.3-70b-versatile
+  ✅ All external calls: async with httpx.AsyncClient() as client: with timeout=10.0
+  ✅ All external calls wrapped in try/except — log, return None, never propagate
+  ❌ NEVER use requests library in async code — always httpx
+  ❌ NEVER set timeout > 30s on any external API call
+
+ROUTER IMPORT PATTERN (copy exactly)
+  from app.api.immediateworking     import router as immediate_router
+  from app.api.validationendpoints  import router as validation_router
+  from app.api.trackrecordendpoints import router as trackrecord_router
+  from app.api.modelstatusendpoints import router as modelstatus_router
+  from app.api.analysis             import router as analysis_router
+
+  app.include_router(immediate_router,   prefix="/api/immediate",    tags=["immediate"])
+  app.include_router(validation_router,  prefix="/api/validation",   tags=["validation"])
+  app.include_router(trackrecord_router, prefix="/api/track-record", tags=["track-record"])
+  app.include_router(modelstatus_router, prefix="/api/status",       tags=["status"])
+  app.include_router(analysis_router,    prefix="/api/analysis",     tags=["analysis"])
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — NEXT.JS / FRONTEND RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+API CLIENT
+  ✅ baseURL = NEXT_PUBLIC_API_URL only (just the host, no /api suffix)
+       const apiClient = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000" })
+  ✅ All endpoint paths start with /api/...:
+       apiClient.get("/api/health")
+       apiClient.get("/api/immediate/player-props?sport_id=30&limit=20")
+  ❌ NEVER set baseURL to "${host}/api" — doubles the prefix on every call
+  ❌ NEVER call apiClient.get("/api/...") if baseURL already ends in /api
+
+NEXT.JS REWRITES (next.config.js) — only if using proxy pattern
+  ✅ Source: "/api/:path*"  →  Destination: "${BACKEND_URL}/api/:path*"
+  ✅ This does NOT double the prefix — source and destination both have /api
+  ❌ NEVER set source: "/api/:path*" → destination: "${BACKEND_URL}/:path*"
+     (strips /api from backend, breaking all routes)
+  ❌ NEVER use both rewrites AND a baseURL with /api — pick one pattern
+
+ENV VARIABLES
+  ✅ Frontend env: NEXT_PUBLIC_API_URL=http://localhost:8000  (no trailing slash)
+  ✅ Backend env:  BACKEND_URL used only for next.config.js rewrites
+  ✅ Vercel: set NEXT_PUBLIC_API_URL to your Railway backend URL
+  ❌ NEVER commit .env or .env.local to git
+
+TYPESCRIPT
+  ✅ Every API response typed with an interface matching the response shape contract above
+  ✅ Always destructure with defaults: const { items = [], total = 0 } = data
+  ✅ Optional chaining everywhere on API data: data?.items?.[0]?.player?.name
+  ❌ NEVER trust API response shape — always default-initialize destructured values
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 3 — RAILWAY / DEPLOYMENT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✅ Dockerfile CMD: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+  ✅ Alembic runs BEFORE uvicorn starts — never the other way
+  ✅ waitForDb retry logic in startup: retry DB connection up to 10x with 3s sleep
+  ✅ Railway memory limit: keep worker count at 1, max_connections=10 in asyncpg pool
+  ✅ Health check path in Railway config: /api/health  (not /health)
+  ❌ NEVER use gunicorn with multiple workers on Railway free tier — OOM crash
+  ❌ NEVER import heavy modules (numpy, scipy) at module top level in a hot path —
+     lazy import inside the function that needs them
+
+DOCKERFILE (minimal safe version)
+  FROM python:3.11-slim
+  WORKDIR /app
+  COPY requirements.txt .
+  RUN pip install --no-cache-dir -r requirements.txt
+  COPY . .
+  EXPOSE 8000
+  CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 4 — SUPABASE / POSTGRESQL RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✅ All migrations use IF NOT EXISTS / IF EXISTS — safe for re-runs
+  ✅ New columns always nullable with a safe default: COALESCE in every query
+  ✅ Index every foreign key column and sport_id for query performance
+  ✅ Supabase connection string uses ?sslmode=require for production
+  ✅ asyncpg pool max_size=10 — Supabase free tier caps at 10-20 connections total
+  ❌ NEVER use DROP TABLE or DROP COLUMN in a migration without a confirmed backup
+  ❌ NEVER run raw ALTER TABLE in application code — use migrations only
+
+MIGRATION TEMPLATE (copy for every new column)

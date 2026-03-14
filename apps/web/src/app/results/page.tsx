@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { API_ENDPOINTS } from '@/lib/apiConfig';
+import { api, isApiError } from '@/lib/api';
 import {
     TrendingUp,
     Target,
@@ -48,16 +48,13 @@ export default function ResultsPage() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [perfRes, recentRes] = await Promise.all([
-                    fetch(API_ENDPOINTS.TRACK_RECORD_SUMMARY),
-                    fetch(`${API_ENDPOINTS.TRACK_RECORD_RECENT}?limit=20`)
+                const [perfData, recentData] = await Promise.all([
+                    api.trackRecordSummary(),
+                    api.trackRecordRecent(20)
                 ]);
 
-                const perfData = await perfRes.json();
-                const recentData = await recentRes.json();
-
-                setPerformance(perfData);
-                setRecentPicks(recentData.recent_picks || []);
+                if (!isApiError(perfData)) setPerformance(perfData);
+                if (!isApiError(recentData)) setRecentPicks(recentData.recent_picks || []);
             } catch (err) {
                 console.error('Failed to fetch results:', err);
             } finally {

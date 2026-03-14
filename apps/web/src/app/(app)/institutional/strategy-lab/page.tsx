@@ -2,37 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Scale, Zap, Cpu, Download, ArrowRight, Filter, Target, ShieldAlert, TrendingUp, History, Timer, Play, Settings2, BarChart3, LineChart, FlaskConical } from "lucide-react";
 import {
-    FlaskConical,
-    LineChart,
-    BarChart3,
-    Settings2,
-    Play,
-    Timer,
-    History,
-    TrendingUp,
-    ShieldAlert,
-    Target,
-    Filter,
-    ArrowRight,
-    Download,
-    Cpu,
-    Zap,
-    Scale
-} from "lucide-react";
-import {
-    LineChart as RechartLine,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
+    Area,
     AreaChart,
-    Area
+    ResponsiveContainer,
+    Tooltip,
+    YAxis,
+    XAxis,
+    CartesianGrid,
+    Line,
+    LineChart as RechartLine
 } from "recharts";
-import { getAuthToken } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/apiConfig";
+import { api, isApiError } from "@/lib/api";
+import GateLock from "@/components/GateLock";
+import { useGate } from "@/hooks/useGate";
 
 export default function StrategyLab() {
     const [loading, setLoading] = useState(false);
@@ -49,32 +33,22 @@ export default function StrategyLab() {
     const runBacktest = async () => {
         setLoading(true);
         setError(null);
-        const token = getAuthToken();
-        if (!token) {
-            setError("Authentication required. Please login first.");
-            setLoading(false);
-            return;
-        }
         try {
-            const res = await fetch(`${API_BASE_URL}/backtest/run`, {
-                method: 'POST',
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    ...params,
-                    start_date: new Date(Date.now() - params.days * 24 * 60 * 60 * 1000).toISOString()
-                })
+            const data = await api.backtestRun({
+                ...params,
+                start_date: new Date(Date.now() - params.days * 24 * 60 * 60 * 1000).toISOString()
             });
-            if (res.ok) {
-                const data = await res.json();
-                setBacktestResult(data);
-            } else if (res.status === 401) {
-                setError("Session expired. Please login again.");
-            } else {
-                setError(`Simulation failed (${res.status}). Check backend logs.`);
+
+            if (isApiError(data)) {
+                if (data.status === 401) {
+                    setError("Session expired. Please login again.");
+                } else {
+                    setError(data.message || "Simulation failed. Check backend logs.");
+                }
+                return;
             }
+
+            setBacktestResult(data);
         } catch (err) {
             setError("Cannot connect to simulation engine. Check that backend is running.");
             console.error("Backtest failed:", err);

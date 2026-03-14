@@ -5,32 +5,14 @@ from datetime import datetime
 from database import SessionLocal
 from models import PropOdds
 
-ODDS_API_KEY = os.getenv('ODDS_API_KEY')
-BASE = 'https://api.the-odds-api.com/v4'
-
-ALT_MARKETS = {
-    'NBA': ['player_points_alternate','player_rebounds_alternate','player_assists_alternate',
-            'player_threes_alternate','player_blocks_alternate','player_steals_alternate'],
-    'NFL': ['player_pass_yds_alternate','player_rush_yds_alternate','player_reception_yds_alternate',
-            'player_receptions_alternate'],
-    'MLB': ['batter_hits_alternate','batter_home_runs_alternate','pitcher_strikeouts_alternate'],
-    'NHL': ['player_goals_alternate','player_shots_on_goal_alternate']
-}
-
-SPORT_KEYS = {'NBA':'basketball_nba','NFL':'americanfootball_nfl','MLB':'baseball_mlb','NHL':'icehockey_nhl'}
+from app.services.odds_api_client import odds_api
 
 async def fetch_alt_lines(sport: str):
     skey = SPORT_KEYS.get(sport)
     markets = ','.join(ALT_MARKETS.get(sport, []))
     if not skey or not markets:
         return []
-    url = f'{BASE}/sports/{skey}/odds'
-    async with httpx.AsyncClient(timeout=15) as c:
-        r = await c.get(url, params={
-            'apiKey': ODDS_API_KEY, 'regions': 'us',
-            'markets': markets, 'oddsFormat': 'american'
-        })
-        return r.json() if r.status_code == 200 else []
+    return await odds_api.get_live_odds(skey, markets=markets)
 
 def upsert_alt_prop(db, player_name, sport, stat_category, line, over_odds, under_odds, book):
     existing = db.query(PropOdds).filter(

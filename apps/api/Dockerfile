@@ -22,7 +22,7 @@ COPY requirements.txt .
 # Install Python dependencies
 # Also forcefully ensure pywebpush is installed (for web push notifications)
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir pywebpush cryptography
+    && pip install --no-cache-dir pywebpush cryptography gunicorn uvicorn
 
 # Copy the entire backend application into the container
 COPY . .
@@ -33,6 +33,8 @@ ENV PYTHONPATH=/app/src
 # Expose port 8080 logic (Google Cloud Run default port)
 EXPOSE 8080
 
-# Command to run the application using Hypercorn/Uvicorn
-# Binding to 0.0.0.0 and port 8080 to satisfy Cloud Run listener constraints
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers"]
+# Ensure startup script is executable
+RUN chmod +x start-api.sh
+
+# Command to run the application using the startup script (Gunicorn + Uvicorn)
+CMD ["./start-api.sh"]

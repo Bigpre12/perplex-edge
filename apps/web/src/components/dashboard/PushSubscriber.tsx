@@ -6,7 +6,7 @@ import { Bell, BellRing, Loader2 } from "lucide-react";
 // The VAPID Public Key (replace with the generated env key in production)
 const PUBLIC_VAPID_KEY = "BKQ9P9RY1ZcQf97K13tOOhM6g1x4Uq1sxgC-N32bLhC2B3n_b5G7Y6yB_y302B6a0xZ1-B8Z8_tT02d1z2x2Q";
 
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api, isApiError } from "@/lib/api";
 
 export default function PushSubscriber() {
     const [isSubscribed, setIsSubscribed] = useState(false);
@@ -17,9 +17,10 @@ export default function PushSubscriber() {
         const checkSubscription = async () => {
             if ("serviceWorker" in navigator && "PushManager" in window) {
                 try {
-                    const registration = await navigator.serviceWorker.register("/sw.js?v=4");
-                    const subscription = await registration.pushManager.getSubscription();
-                    setIsSubscribed(!!subscription);
+                    // Service worker disabled to prevent caching issues
+                    // const registration = await navigator.serviceWorker.register("/sw.js?v=4");
+                    // const subscription = await registration.pushManager.getSubscription();
+                    // setIsSubscribed(!!subscription);
                 } catch (e) {
                     console.error("SW Registration failed:", e);
                 }
@@ -45,26 +46,23 @@ export default function PushSubscriber() {
         setLoading(true);
 
         try {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
-            });
+            // Service worker disabled to prevent caching issues
+            // const registration = await navigator.serviceWorker.ready;
+            // const subscription = await registration.pushManager.subscribe({
+            //     userVisibleOnly: true,
+            //     applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+            // });
 
             // Post to backend
-            const subData = JSON.parse(JSON.stringify(subscription));
+            // const subData = JSON.parse(JSON.stringify(subscription));
 
-            await fetch(`${API_ENDPOINTS.PUSH}/subscribe`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    user_id: "1", // Hardcoded admin user id for demo
-                    endpoint: subData.endpoint,
-                    keys: subData.keys
-                })
-            });
+            // await api.post('/push/subscribe', {
+            //     user_id: "1", // Hardcoded admin user id for demo
+            //     endpoint: subData.endpoint,
+            //     keys: subData.keys
+            // });
 
-            setIsSubscribed(true);
+            // setIsSubscribed(true);
         } catch (error) {
             console.error("Failed to subscribe to push", error);
         } finally {

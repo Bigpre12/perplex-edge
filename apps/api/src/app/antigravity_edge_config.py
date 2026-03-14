@@ -15,7 +15,7 @@ class EdgeFeedConfig:
     active_edge_model: EdgeModelName = "baseline"
     min_ev_threshold: float = 2.0          # min EV% to show a pick
     max_ev_threshold: float = 40.0         # sanity cap
-    min_confidence: float = 0.55           # min model confidence
+    min_confidence: float = 0.45           # min model confidence
     max_edge_percent: float = 30.0         # display cap
     min_line_value: float = 0.5
     max_line_value: float = 999.0

@@ -1,5 +1,10 @@
+"use client";
+
 import { useState, useEffect } from 'react'
-import { API_BASE_URL, API_ENDPOINTS } from '@/lib/apiConfig'
+import { API, apiFetch, isApiError, api } from '@/lib/api'
+import { useBackendStatus } from './useBackendStatus'
+import { useLiveData } from './useLiveData'
+import { SportKey } from '@/lib/sports.config'
 
 export interface BrainDecision {
     action: string
@@ -36,74 +41,47 @@ export interface MarketIntelItem {
     timestamp: string
 }
 
-export const useBrainData = (sportKey: string = "basketball_nba") => {
+export const useBrainData = (sportKey: SportKey = "basketball_nba") => {
     const [decisions, setDecisions] = useState<BrainDecision[]>([])
     const [health, setHealth] = useState<SystemHealth | null>(null)
     const [marketIntel, setMarketIntel] = useState<MarketIntelItem[]>([])
-    const [loading, setLoading] = useState(true)
+    const { isDown } = useBackendStatus()
 
-    const fetchData = async () => {
-        try {
-            // Fetch decisions
-            const decRes = await fetch(`${API_ENDPOINTS.BRAIN_DECISIONS}?sport_key=${sportKey}&limit=5`)
-            const decData = await decRes.json()
-            if (decData.decisions && decData.decisions.length > 0) {
-                setDecisions(decData.decisions)
-                localStorage.setItem(`decisions_${sportKey}`, JSON.stringify(decData.decisions))
-            } else {
-                // FALLBACK: build decisions from track-record recent picks
-                const trackRes = await fetch(`${API_ENDPOINTS.TRACK_RECORD_RECENT}`);
-                const trackData = await trackRes.json();
-                const syntheticDecisions = (trackData.recent_picks || []).slice(0, 5).map((p: any) => ({
-                    action: 'BET',
-                    reasoning: `${p.player_name} has strong recent form on ${p.stat_type} (${p.line} line). EV: +${(p.ev_percentage || 3.2).toFixed(1)}%`,
-                    confidence_tier: (p.confidence || 0) > 70 ? 'high' : 'mid',
-                    details: {
-                        player_name: p.player_name,
-                        stat_type: p.stat_type,
-                        line_value: p.line,
-                        side: 'over',
-                        edge: (p.ev_percentage || 3.2) / 100,
-                        confidence: (p.confidence || 55) / 100,
-                    }
-                }));
-                setDecisions(syntheticDecisions);
-                localStorage.setItem(`decisions_${sportKey}`, JSON.stringify(syntheticDecisions));
-            }
+    // 1. Fetch Decisions
+    const { data: decData, loading: decLoading } = useLiveData(
+        () => api.brain.decisions(sportKey, 5),
+        ['brain-decisions', sportKey],
+        { enabled: !isDown, refreshInterval: 30000 }
+    )
 
-            // Fetch health status (GET, not POST)
-            const healthRes = await fetch(`${API_ENDPOINTS.BRAIN_HEALTH}`)
-            const healthData = await healthRes.json()
-            setHealth(healthData)
+    // 2. Fetch Health/Metrics
+    const { data: healthData, loading: healthLoading } = useLiveData(
+        () => api.brain.metrics(sportKey),
+        ['brain-metrics', sportKey],
+        { enabled: !isDown, refreshInterval: 30000 }
+    )
 
-            // Fetch Market Intel
-            const intelRes = await fetch(`${API_ENDPOINTS.MARKET_INTEL}?sport_key=${sportKey}`)
-            const intelData = await intelRes.json()
-            if (intelData.items) {
-                setMarketIntel(intelData.items)
-                localStorage.setItem(`intel_${sportKey}`, JSON.stringify(intelData.items))
-            }
-
-        } catch (err) {
-            console.error("Failed to fetch brain data:", err)
-            // Silently fail as we have cache
-        } finally {
-            setLoading(false)
-        }
-    }
+    // 3. Fetch Intel
+    const { data: intelData, loading: intelLoading } = useLiveData(
+        () => api.recentIntel(sportKey),
+        ['recent-intel', sportKey],
+        { enabled: !isDown, refreshInterval: 60000 }
+    )
 
     useEffect(() => {
-        // Load from cache first
-        const cachedDec = localStorage.getItem(`decisions_${sportKey}`)
-        const cachedIntel = localStorage.getItem(`intel_${sportKey}`)
+        if (intelData && !isApiError(intelData)) {
+            const data = intelData as { items?: MarketIntelItem[] }
+            setMarketIntel(data.items || [])
+        }
+    }, [intelData])
 
-        if (cachedDec) setDecisions(JSON.parse(cachedDec))
-        if (cachedIntel) setMarketIntel(JSON.parse(cachedIntel))
+    const loading = decLoading || healthLoading || intelLoading
 
-        fetchData()
-        const interval = setInterval(fetchData, 10000) // Poll every 10s
-        return () => clearInterval(interval)
-    }, [sportKey])
-
-    return { decisions, health, marketIntel, loading, refetch: fetchData }
+    return {
+        decisions: decData?.decisions || [],
+        health: healthData,
+        marketIntel,
+        loading,
+        refetch: () => { }
+    }
 }

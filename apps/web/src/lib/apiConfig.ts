@@ -2,9 +2,14 @@
  * Lucrix API Configuration
  * Centralizes endpoint management to avoid hardcoded localhost URLs.
  */
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+if (typeof window !== 'undefined') {
+    console.info("Lucrix Edge: Standardized relative API paths active.");
+}
+
 const BASE = API_BASE_URL;
-const WS_BASE = API_BASE_URL.replace('https', 'wss').replace('http', 'ws');
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 
 export const API_ENDPOINTS = {
     // Core (Legacy, preserved for unmigrated components)
@@ -16,15 +21,16 @@ export const API_ENDPOINTS = {
     STRIPE: `${BASE}/api/stripe`,
     PUSH: `${BASE}/api/push`,
     LEDGER: `${BASE}/api/ledger`,
-    ODDS: `${BASE}/api/immediate/working-player-props`,
+    ODDS: `${BASE}/api/props/player`,
     ANTIGRAVITY: `${BASE}/api/antigravity/config`,
     LINE_MOVEMENT: `${BASE}/api/line-movement`,
     SMART_MONEY: `${BASE}/api/smart-money`,
     SUGGESTED_PARLAYS: `${BASE}/api/immediate/suggested-parlays`,
     VALIDATION_PICKS: `${BASE}/api/validation/picks`,
-    BRAIN_DECISIONS: `${BASE}/api/immediate/brain-decisions`,
-    BRAIN_HEALTH: `${BASE}/api/immediate/brain-healing-status`,
-    MARKET_INTEL: `${BASE}/api/immediate/market-intel`,
+    BRAIN_DECISIONS: `${BASE}/api/brain/brain-decisions`,
+    BRAIN_HEALTH: `${BASE}/api/brain/health`,
+    MARKET_INTEL: `${BASE}/api/brain/market-intel`,
+    NEWS_TICKER: `${BASE}/api/news/ticker`,
     TRACK_RECORD_RECENT: `${BASE}/api/track-record/recent`,
     TRACK_RECORD_PERFORMANCE: `${BASE}/api/track-record/performance`,
     TRACK_RECORD_SUMMARY: `${BASE}/api/track-record/summary`,
@@ -70,10 +76,12 @@ export const API_ENDPOINTS = {
     NCAAB_PARLAY: `${BASE}/api/sports/39/picks/parlay-builder`,
 
     // Brain / Intelligence
-    BRAIN_STATUS: `${BASE}/api/immediate/brain-status`,
-    BRAIN_METRICS: `${BASE}/api/immediate/brain-metrics`,
-    BRAIN_ANOMALIES: `${BASE}/api/immediate/brain-anomalies`,
-    STEAM_ALERTS: `${BASE}/api/immediate/steam-alerts`,
+    BRAIN_STATUS: `${BASE}/api/brain/live-analysis`,
+    BRAIN_METRICS: `${BASE}/api/brain/brain-metrics`,
+    BRAIN_ANOMALIES: `${BASE}/api/brain/injury-impact`,
+    BRAIN_HEATMAP: `${BASE}/api/brain/heatmap`,
+    BRAIN_INSIGHTS: `${BASE}/api/brain/brain-insights`,
+    STEAM_ALERTS: `${BASE}/api/signals/alerts`,
 
     // Antigravity
     AG_CONFIG: `${BASE}/api/antigravity/config`,
@@ -96,6 +104,7 @@ export const API_ENDPOINTS = {
 
     // AI
     AI_CHAT: `${BASE}/api/ai/chat`,
+    ORACLE_CHAT: `${BASE}/api/oracle/chat`,
     REPORTING_EXPORT: `${BASE}/api/reporting/export`,
 
     // Social
@@ -112,8 +121,16 @@ export const API_ENDPOINTS = {
     ADMIN_AG_CONFIG: `${BASE}/api/antigravity/config`,
 
     // WebSocket
-    WS_ODDS: `${WS_BASE}/api/feed/live-ev`,
+    WS_ODDS: `${WS_BASE}/api/ws/live-odds`,
     WS_PROPS: `${WS_BASE}/api/ws/props`,
+
+    // Institutional Suite
+    PICKS: `${BASE}/api/picks`,
+    BIT_RATES: `${BASE}/api/picks/hit-rates`,
+    ARBITRAGE: `${BASE}/api/arbitrage`,
+    EDGES: `${BASE}/api/edges/top`,
+    SLATE: `${BASE}/api/slate/today`,
+    PLAYER_PROFILE: (name: string) => `${BASE}/api/players/${encodeURIComponent(name)}`,
 } as const;
 
 export const API = API_ENDPOINTS;

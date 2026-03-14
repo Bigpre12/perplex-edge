@@ -2,7 +2,6 @@
 Brain System State Service - Comprehensive system state monitoring and management
 """
 import asyncio
-import asyncpg
 import os
 import json
 import time
@@ -11,6 +10,8 @@ from typing import Dict, List, Optional, Any, Callable
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from database import async_session_maker
+from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -56,44 +57,38 @@ class SystemState:
 
 class BrainSystemStateService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
         self.state_monitoring_active = False
         self.current_state = None
         
     async def get_current_state(self) -> Optional[SystemState]:
         """Get current system state"""
         try:
-            conn = await asyncpg.connect(self.db_url)
-            
-            result = await conn.fetchrow("""
-                SELECT * FROM brain_system_state 
-                ORDER BY timestamp DESC 
-                LIMIT 1
-            """)
-            
-            await conn.close()
-            
-            if result:
-                return SystemState(
-                    cycle_count=result['cycle_count'],
-                    overall_status=SystemStatus(result['overall_status']),
-                    heals_attempted=result['heals_attempted'],
-                    heals_succeeded=result['heals_succeeded'],
-                    consecutive_failures=result['consecutive_failures'],
-                    sport_priority=SportPriority(result['sport_priority']),
-                    quota_budget=result['quota_budget'],
-                    auto_commit_enabled=result['auto_commit_enabled'],
-                    git_commits_made=result['git_commits_made'],
-                    betting_opportunities_found=result['betting_opportunities_found'],
-                    strong_bets_identified=result['strong_bets_identified'],
-                    last_betting_scan=result['last_betting_scan'],
-                    top_betting_opportunities=json.loads(result['top_betting_opportunities']),
-                    last_cycle_duration_ms=result['last_cycle_duration_ms'],
-                    uptime_hours=result['uptime_hours']
-                )
-            
+            async with async_session_maker() as conn:
+                result = await conn.execute(text("""
+                    SELECT * FROM brain_system_state 
+                    ORDER BY timestamp DESC 
+                    LIMIT 1
+                """))
+                row = result.mappings().first()
+                if row:
+                    return SystemState(
+                        cycle_count=row['cycle_count'],
+                        overall_status=SystemStatus(row['overall_status']),
+                        heals_attempted=row['heals_attempted'],
+                        heals_succeeded=row['heals_succeeded'],
+                        consecutive_failures=row['consecutive_failures'],
+                        sport_priority=SportPriority(row['sport_priority']),
+                        quota_budget=row['quota_budget'],
+                        auto_commit_enabled=row['auto_commit_enabled'],
+                        git_commits_made=row['git_commits_made'],
+                        betting_opportunities_found=row['betting_opportunities_found'],
+                        strong_bets_identified=row['strong_bets_identified'],
+                        last_betting_scan=row['last_betting_scan'],
+                        top_betting_opportunities=json.loads(row['top_betting_opportunities']),
+                        last_cycle_duration_ms=row['last_cycle_duration_ms'],
+                        uptime_hours=row['uptime_hours']
+                    )
             return None
-            
         except Exception as e:
             logger.error(f"Error getting current state: {e}")
             return None
@@ -101,37 +96,35 @@ class BrainSystemStateService:
     async def update_system_state(self, state: SystemState) -> bool:
         """Update system state in database"""
         try:
-            conn = await asyncpg.connect(self.db_url)
+            async with async_session_maker() as conn:
+                await conn.execute(text("""
+                    INSERT INTO brain_system_state (
+                        cycle_count, overall_status, heals_attempted, heals_succeeded,
+                        consecutive_failures, sport_priority, quota_budget, auto_commit_enabled,
+                        git_commits_made, betting_opportunities_found, strong_bets_identified,
+                        last_betting_scan, top_betting_opportunities, last_cycle_duration_ms, uptime_hours
+                    ) VALUES (:p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10, :p11, :p12, :p13, :p14, :p15)
+                """), {
+                    "p1": state.cycle_count,
+                    "p2": state.overall_status.value,
+                    "p3": state.heals_attempted,
+                    "p4": state.heals_succeeded,
+                    "p5": state.consecutive_failures,
+                    "p6": state.sport_priority.value,
+                    "p7": state.quota_budget,
+                    "p8": state.auto_commit_enabled,
+                    "p9": state.git_commits_made,
+                    "p10": state.betting_opportunities_found,
+                    "p11": state.strong_bets_identified,
+                    "p12": state.last_betting_scan,
+                    "p13": json.dumps(state.top_betting_opportunities),
+                    "p14": state.last_cycle_duration_ms,
+                    "p15": state.uptime_hours
+                })
+                await conn.commit()
             
-            await conn.execute("""
-                INSERT INTO brain_system_state (
-                    cycle_count, overall_status, heals_attempted, heals_succeeded,
-                    consecutive_failures, sport_priority, quota_budget, auto_commit_enabled,
-                    git_commits_made, betting_opportunities_found, strong_bets_identified,
-                    last_betting_scan, top_betting_opportunities, last_cycle_duration_ms, uptime_hours
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-            """, 
-                state.cycle_count,
-                state.overall_status.value,
-                state.heals_attempted,
-                state.heals_succeeded,
-                state.consecutive_failures,
-                state.sport_priority.value,
-                state.quota_budget,
-                state.auto_commit_enabled,
-                state.git_commits_made,
-                state.betting_opportunities_found,
-                state.strong_bets_identified,
-                state.last_betting_scan,
-                json.dumps(state.top_betting_opportunities),
-                state.last_cycle_duration_ms,
-                state.uptime_hours
-            )
-            
-            await conn.close()
             logger.info(f"Updated system state: {state.overall_status.value}")
             return True
-            
         except Exception as e:
             logger.error(f"Error updating system state: {e}")
             return False
@@ -347,17 +340,13 @@ class BrainSystemStateService:
     async def get_system_state_history(self, hours: int = 24) -> List[Dict]:
         """Get system state history"""
         try:
-            conn = await asyncpg.connect(self.db_url)
-            
-            result = await conn.fetch("""
-                SELECT * FROM brain_system_state 
-                WHERE timestamp >= NOW() - INTERVAL '$1 hours'
-                ORDER BY timestamp DESC
-            """, hours)
-            
-            await conn.close()
-            return [dict(row) for row in result]
-            
+            async with async_session_maker() as conn:
+                result = await conn.execute(text("""
+                    SELECT * FROM brain_system_state 
+                    WHERE timestamp >= NOW() - make_interval(hours => :h)
+                    ORDER BY timestamp DESC
+                """), {"h": hours})
+                return [dict(row) for row in result.mappings()]
         except Exception as e:
             logger.error(f"Error getting system state history: {e}")
             return []
@@ -365,59 +354,48 @@ class BrainSystemStateService:
     async def get_system_performance(self, hours: int = 24) -> Dict[str, Any]:
         """Get system performance metrics"""
         try:
-            conn = await asyncpg.connect(self.db_url)
-            
-            # Overall performance
-            overall = await conn.fetchrow("""
-                SELECT 
-                    COUNT(*) as total_states,
-                    COUNT(CASE WHEN overall_status = 'optimal' THEN 1 END) as optimal_states,
-                    COUNT(CASE WHEN overall_status = 'healthy' THEN 1 END) as healthy_states,
-                    COUNT(CASE WHEN overall_status = 'active' THEN 1 END) as active_states,
-                    COUNT(CASE WHEN overall_status = 'degraded' THEN 1 END) as degraded_states,
-                    COUNT(CASE WHEN overall_status = 'maintenance' THEN 1 END) as maintenance_states,
-                    COUNT(CASE WHEN overall_status = 'recovering' THEN 1 END) as recovering_states,
-                    AVG(heals_attempted) as avg_heals_attempted,
-                    AVG(heals_succeeded) as avg_heals_succeeded,
-                    AVG(consecutive_failures) as avg_consecutive_failures,
-                    AVG(last_cycle_duration_ms) as avg_cycle_duration,
-                    AVG(uptime_hours) as avg_uptime,
-                    SUM(git_commits_made) as total_commits,
-                    SUM(betting_opportunities_found) as total_opportunities,
-                    SUM(strong_bets_identified) as total_strong_bets
-                FROM brain_system_state 
-                WHERE timestamp >= NOW() - INTERVAL '$1 hours'
-            """, hours)
-            
-            # Status distribution over time
-            status_timeline = await conn.fetch("""
-                SELECT 
-                    timestamp,
-                    overall_status,
-                    heals_attempted,
-                    heals_succeeded,
-                    uptime_hours
-                FROM brain_system_state 
-                WHERE timestamp >= NOW() - INTERVAL '$1 hours'
-                ORDER BY timestamp ASC
-            """, hours)
-            
-            # Performance trends
-            performance_trends = await conn.fetch("""
-                SELECT 
-                    timestamp,
-                    cycle_count,
-                    betting_opportunities_found,
-                    strong_bets_identified,
-                    last_cycle_duration_ms
-                FROM brain_system_state 
-                WHERE timestamp >= NOW() - INTERVAL '$1 hours'
-                ORDER BY timestamp ASC
-            """, hours)
-            
-            await conn.close()
-            
-            success_rate = (overall['avg_heals_succeeded'] / overall['avg_heals_attempted'] * 100) if overall['avg_heals_attempted'] > 0 else 0
+            async with async_session_maker() as conn:
+                result_overall = await conn.execute(text("""
+                    SELECT 
+                        COUNT(*) as total_states,
+                        COUNT(CASE WHEN overall_status = 'optimal' THEN 1 END) as optimal_states,
+                        COUNT(CASE WHEN overall_status = 'healthy' THEN 1 END) as healthy_states,
+                        COUNT(CASE WHEN overall_status = 'active' THEN 1 END) as active_states,
+                        COUNT(CASE WHEN overall_status = 'degraded' THEN 1 END) as degraded_states,
+                        COUNT(CASE WHEN overall_status = 'maintenance' THEN 1 END) as maintenance_states,
+                        COUNT(CASE WHEN overall_status = 'recovering' THEN 1 END) as recovering_states,
+                        AVG(heals_attempted) as avg_heals_attempted,
+                        AVG(heals_succeeded) as avg_heals_succeeded,
+                        AVG(consecutive_failures) as avg_consecutive_failures,
+                        AVG(last_cycle_duration_ms) as avg_cycle_duration,
+                        AVG(uptime_hours) as avg_uptime,
+                        SUM(git_commits_made) as total_commits,
+                        SUM(betting_opportunities_found) as total_opportunities,
+                        SUM(strong_bets_identified) as total_strong_bets
+                    FROM brain_system_state 
+                    WHERE timestamp >= NOW() - make_interval(hours => :h)
+                """), {"h": hours})
+                overall = result_overall.mappings().first()
+                if not overall or not overall['total_states']:
+                    return {}
+                
+                result_status = await conn.execute(text("""
+                    SELECT timestamp, overall_status, heals_attempted, heals_succeeded, uptime_hours
+                    FROM brain_system_state 
+                    WHERE timestamp >= NOW() - make_interval(hours => :h)
+                    ORDER BY timestamp ASC
+                """), {"h": hours})
+                status_timeline = result_status.mappings().all()
+                
+                result_perf = await conn.execute(text("""
+                    SELECT timestamp, cycle_count, betting_opportunities_found, strong_bets_identified, last_cycle_duration_ms
+                    FROM brain_system_state 
+                    WHERE timestamp >= NOW() - make_interval(hours => :h)
+                    ORDER BY timestamp ASC
+                """), {"h": hours})
+                performance_trends = result_perf.mappings().all()
+                
+            success_rate = (overall['avg_heals_succeeded'] / overall['avg_heals_attempted'] * 100) if overall['avg_heals_attempted'] and overall['avg_heals_attempted'] > 0 else 0
             
             return {
                 'period_hours': hours,
@@ -429,18 +407,17 @@ class BrainSystemStateService:
                 'maintenance_states': overall['maintenance_states'],
                 'recovering_states': overall['recovering_states'],
                 'healing_success_rate': success_rate,
-                'avg_heals_attempted': overall['avg_heals_attempted'],
-                'avg_heals_succeeded': overall['avg_heals_succeeded'],
-                'avg_consecutive_failures': overall['avg_consecutive_failures'],
-                'avg_cycle_duration_ms': overall['avg_cycle_duration_ms'],
-                'avg_uptime_hours': overall['avg_uptime'],
-                'total_commits': overall['total_commits'],
-                'total_opportunities': overall['total_opportunities'],
-                'total_strong_bets': overall['total_strong_bets'],
+                'avg_heals_attempted': overall['avg_heals_attempted'] or 0,
+                'avg_heals_succeeded': overall['avg_heals_succeeded'] or 0,
+                'avg_consecutive_failures': overall['avg_consecutive_failures'] or 0,
+                'avg_cycle_duration_ms': overall['avg_cycle_duration'] or 0,
+                'avg_uptime_hours': overall['avg_uptime'] or 0,
+                'total_commits': overall['total_commits'] or 0,
+                'total_opportunities': overall['total_opportunities'] or 0,
+                'total_strong_bets': overall['total_strong_bets'] or 0,
                 'status_timeline': [dict(row) for row in status_timeline],
                 'performance_trends': [dict(row) for row in performance_trends]
             }
-            
         except Exception as e:
             logger.error(f"Error getting system performance: {e}")
             return {}

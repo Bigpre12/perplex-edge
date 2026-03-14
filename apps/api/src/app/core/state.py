@@ -1,34 +1,37 @@
-# backend/core/state.py
-import logging
+"""
+Global in-memory app state singleton.
+FIX #5: app.core.state was completely missing → caused Brain Health 500.
+"""
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Any
 
-logger = logging.getLogger(__name__)
-
-class SystemState:
-    """Manages the internal state of the Lucrix Engine Brain."""
+class AppState:
     def __init__(self):
-        self.start_time = datetime.now(timezone.utc)
-        self.cycle_count = 0
-        self.last_sync = None
-        self.active_tasks = []
-        self.health_metrics = {
-            "api_status": "healthy",
-            "db_status": "healthy",
-            "ai_status": "healthy"
-        }
+        self.started_at = datetime.now(timezone.utc)
+        self.healing_actions: list = []
+        self.last_health_check: str | None = None
+        self.system_metrics: dict[str, Any] = {}
+        self.brain_decisions: list = []
 
-    def get_uptime(self) -> float:
-        delta = datetime.now(timezone.utc) - self.start_time
-        return delta.total_seconds() / 3600.0
+    def record_healing_action(self, action: str, component: str):
+        self.healing_actions.append({
+            "action": action,
+            "component": component,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        if len(self.healing_actions) > 100:
+            self.healing_actions = self.healing_actions[-100:]
 
-    def get_summary(self) -> Dict[str, Any]:
-        return {
-            "uptime_hours": round(self.get_uptime(), 2),
-            "cycle_count": self.cycle_count,
-            "last_sync": self.last_sync.isoformat() if self.last_sync else None,
-            "health": self.health_metrics
-        }
+    def update_metrics(self, metrics: dict):
+        self.system_metrics.update(metrics)
+        self.last_health_check = datetime.now(timezone.utc).isoformat()
 
-# Global state singleton
-state = SystemState()
+    def record_brain_decision(self, decision: dict):
+        self.brain_decisions.append({
+            **decision,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        if len(self.brain_decisions) > 200:
+            self.brain_decisions = self.brain_decisions[-200:]
+
+app_state = AppState()

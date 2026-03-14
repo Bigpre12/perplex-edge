@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, TrendingDown, TrendingUp, Info, AlertTriangle } from "lucide-react";
+import { API, apiFetch, isApiError } from "@/lib/api";
+import { useBackendStatus } from "@/hooks/useBackendStatus";
+import { SportKey } from "@/lib/sports.config";
 
 interface WhaleMove {
-    id: number;
+    id: string;
     player: string;
     stat: string;
     line: number;
@@ -13,32 +16,56 @@ interface WhaleMove {
     delta: number;
     severity: string;
     books_involved: string[];
+    whale_label?: string;
+    confidence?: number;
 }
 
-import { API_BASE_URL } from "@/lib/apiConfig";
+import { useFreshness } from '@/hooks/useFreshness';
+import { FreshnessBadge } from './FreshnessBadge';
 
-export default function WhaleTracker() {
-    const [moves, setMoves] = useState<WhaleMove[]>([]);
+export function WhaleTracker({ sport = "basketball_nba" }: { sport?: string }) {
+    const freshness = useFreshness(sport);
+    const [moves, setMoves] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { isDown } = useBackendStatus();
+
+    const fetchMoves = async () => {
+        if (isDown) return;
+        const result = await API.activeMoves(sport);
+
+        if (!isApiError(result)) {
+            // Handle both object with data/items and raw array
+            const data = Array.isArray(result) ? result : (result.data || result.items || []);
+            
+            // Map legacy/model fields to WhaleMove schema if needed
+            const mappedMoves = data.map((m: any) => ({
+                id: m.id || m.event_id || Math.random().toString(),
+                player: m.player_name || m.player || "Unknown",
+                stat: m.stat_type || "Market",
+                line: m.line || 0,
+                move_type: m.side || m.move_type || "WHALE",
+                delta: m.delta || m.ev_percentage || 0,
+                severity: m.severity || (m.confidence_score > 80 ? 'High' : 'Medium'),
+                books_involved: m.books_involved || [m.book || "Institutional"],
+                whale_label: m.whale_label || (m.expected_value > 5 ? "MAX VALUE" : "SHARP MONEY"),
+                confidence: m.confidence_score || m.confidence || 0
+            }));
+            
+            setMoves(mappedMoves);
+        } else {
+            console.warn('Whale tracker unavailable:', result.error);
+            setMoves([]);
+        }
+        setLoading(false);
+    };
 
     useEffect(() => {
-        const fetchMoves = async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/whale/active-moves`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const json = await res.json();
-                setMoves(json.data || []);
-            } catch (err) {
-                console.warn('Whale tracker unavailable:', err);
-                setMoves([]); // Fail silently
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchMoves();
-        const interval = setInterval(fetchMoves, 30000);
+        const interval = setInterval(() => {
+            if (!isDown) fetchMoves();
+        }, 60000);
         return () => clearInterval(interval);
-    }, []);
+    }, [isDown, sport]);
 
     return (
         <div className="glass-panel p-5 rounded-2xl border-white/[0.05] h-full flex flex-col">
@@ -47,63 +74,84 @@ export default function WhaleTracker() {
                     <div className="p-2 bg-accent-orange/10 rounded-xl border border-accent-orange/20">
                         <Zap className="text-accent-orange fill-accent-orange/20" size={20} />
                     </div>
-                    <div>
-                        <h3 className="text-sm font-black text-white uppercase tracking-tight">Whale Intelligence</h3>
-                        <p className="text-[10px] text-slate-500 font-bold">Sharp Market Steam Detection</p>
+                    <div className="flex flex-col">
+                        <h3 className="text-lg font-bold tracking-tight text-white/90">Whale Intel</h3>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">Sharp Money Detection</p>
+                        <FreshnessBadge 
+                            oddsTs={freshness?.odds_last_updated || null} 
+                            evTs={freshness?.ev_last_updated || null} 
+                        />
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5 bg-accent-orange/10 px-2 py-1 rounded-lg border border-accent-orange/20">
-                    <div className="size-1.5 bg-accent-orange rounded-full animate-ping" />
-                    <span className="text-[10px] font-black text-accent-orange uppercase tracking-tighter">LIVE FEED</span>
+                    <div className="size-1.5 bg-accent-orange rounded-full animate-pulse shadow-[0_0_8px_#FF6B35]" />
+                    <span className="text-[10px] font-black text-accent-orange uppercase tracking-tighter">LIVE MONITOR</span>
                 </div>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto pr-1 scrollbar-hide">
+            <div className="flex-1 space-y-3 overflow-y-auto pr-1 custom-scrollbar">
                 {loading ? (
-                    <div className="h-full flex items-center justify-center">
+                    <div className="h-full flex flex-col items-center justify-center gap-3 py-10">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-orange" />
+                        <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Scanning Markets...</span>
                     </div>
-                ) : (moves || []).map((move, i) => (
-                    <motion.div
-                        key={move.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:border-accent-orange/30 hover:bg-white/[0.04] transition-all group cursor-pointer"
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${move.severity === 'High' ? 'bg-red-500/20 text-red-500' : 'bg-accent-orange/20 text-accent-orange'} uppercase tracking-tighter`}>
-                                    {move.move_type}
-                                </span>
-                                <span className="text-[10px] text-slate-500 font-mono">14s ago</span>
+                ) : (moves || []).length > 0 ? (
+                    moves.map((move, i) => (
+                        <motion.div
+                            key={move.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:border-accent-orange/30 hover:bg-white/[0.04] transition-all group cursor-pointer relative overflow-hidden"
+                        >
+                            <div className="flex justify-between items-start mb-2 relative z-10">
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded tracking-tighter uppercase ${move.severity === 'High' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-accent-orange/10 text-accent-orange border border-accent-orange/20'}`}>
+                                        {move.move_type}
+                                    </span>
+                                    {move.confidence && (
+                                        <span className="text-[9px] text-slate-500 font-black border border-white/5 bg-white/5 px-1.5 rounded">
+                                            {move.confidence}% CONF
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="text-[9px] font-black text-accent-orange italic uppercase">
+                                    {move.whale_label}
+                                </div>
                             </div>
-                            <div className="flex items-center gap-1 text-[10px] font-black">
-                                {move.delta < 0 ? <TrendingDown size={14} className="text-red-500" /> : <TrendingUp size={14} className="text-primary" />}
-                                <span className={move.delta < 0 ? "text-red-500" : "text-primary"}>{move.delta > 0 ? '+' : ''}{move.delta}</span>
-                            </div>
-                        </div>
 
-                        <div className="flex items-end justify-between">
-                            <div>
-                                <h4 className="text-xs font-bold text-white tracking-tight">{move.player}</h4>
-                                <p className="text-[10px] text-slate-500 font-medium">{move.stat} • {move.line}</p>
+                            <div className="flex items-end justify-between relative z-10">
+                                <div className="space-y-0.5">
+                                    <h4 className="text-sm font-black text-white tracking-tight uppercase italic">{move.player}</h4>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">
+                                        {move.stat.replace('player_', '').replace('_', ' ')} <span className="text-slate-400">@{move.line}</span>
+                                    </p>
+                                </div>
+                                <div className="flex -space-x-1.5">
+                                    {(move.books_involved || []).slice(0, 3).map((book: string, idx: number) => (
+                                        <div key={idx} className="size-5 rounded-full bg-[#0F0F1A] border border-white/10 flex items-center justify-center text-[7px] font-black text-slate-300 ring-2 ring-[#080810] uppercase shadow-lg">
+                                            {book[0]}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="flex -space-x-1.5">
-                                {(move.books_involved || []).slice(0, 3).map((book, idx) => (
-                                    <div key={idx} className="size-4 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[6px] font-black text-slate-300 ring-2 ring-background-dark">
-                                        {book[0]}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
+
+                            {move.severity === 'High' && (
+                                <div className="absolute -right-2 -bottom-2 w-12 h-12 bg-red-500/5 blur-2xl rounded-full" />
+                            )}
+                        </motion.div>
+                    ))
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center gap-2 opacity-50">
+                        <TrendingUp size={24} className="text-slate-600" />
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Monitoring Sharp Books</p>
+                    </div>
+                )}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-white/[0.05] flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+            <div className="mt-4 pt-4 border-t border-white/[0.05] flex items-center gap-2 text-[10px] text-slate-500 font-black uppercase tracking-tight">
                 <AlertTriangle size={12} className="text-accent-orange" />
-                <span>High volatility detected in NBA markets</span>
+                <span>Pinnacle split detected in {sport.split('_').pop()?.toUpperCase()}</span>
             </div>
         </div>
     );

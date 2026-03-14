@@ -9,7 +9,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "perplex_ultra_secret_fallback_key_99")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 43200)) # Default 30 days
 
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
 class AuthService:
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:

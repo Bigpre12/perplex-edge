@@ -5,17 +5,17 @@ import { useEffect } from 'react';
 
 export default function PWASetup() {
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(
-          (registration) => {
-            console.log('Lucrix SW registered: ', registration.scope);
-          },
-          (err) => {
-            console.log('Lucrix SW registration failed: ', err);
-          }
-        );
-      });
+    if ("serviceWorker" in navigator) {
+      // In dev, always unregister to avoid stale SW issues
+      if (process.env.NODE_ENV === "development") {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((reg) => reg.unregister());
+        });
+        return;
+      }
+
+      // Production only — register SW
+      navigator.serviceWorker.register("/sw.js").catch(console.error);
     }
   }, []);
   return null;

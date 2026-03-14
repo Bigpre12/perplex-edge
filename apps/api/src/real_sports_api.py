@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Any
 import json
 import logging
 import asyncio
+from services.balldontlie_client import balldontlie_client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -46,36 +47,35 @@ class RealSportsAPI:
     
     async def fetch_props_from_betstack(self, sport: str = "nba"):
         """Fetch player props from Betstack"""
-        async with httpx.AsyncClient() as client:
-            url = f"{self.betstack_base_url}/props/{sport}"
-            headers = {"X-API-Key": self.betstack_api_key}
-            try:
-                response = await client.get(url, headers=headers, timeout=10.0)
-                response.raise_for_status()
-                return response.json()
-            except Exception as e:
-                logger.error(f"Error fetching props: {e}")
-                return {"error": str(e)}
+        from services.betstack_client import betstack_client
+        
+        if not betstack_client.available:
+            logger.warning("Betstack API key missing. Returning empty props.")
+            return []
+            
+        try:
+            return await betstack_client.get_player_props(sport)
+        except Exception as e:
+            logger.error(f"Error fetching props from BetstackClient: {e}")
+            return {"error": str(e)}
     
     async def fetch_roster_data(self, team: str, sport: str = "nba"):
-        """Fetch roster data using Roster API with fallback logic"""
-        if not self.roster_api_key or self.roster_api_key == "YOUR_ROSTER_API_KEY":
-            logger.warning(f"Roster API key missing. Returning mock roster for {team}")
+        """Fetch roster data using BallDontLie API with fallback logic"""
+        if sport.lower() != "nba":
             return self._get_mock_roster(team, sport)
 
-        async with httpx.AsyncClient() as client:
-            # Normalized endpoint for Roster API
-            url = f"https://api.roster.com/v1/{sport}/teams/{team}/roster"
-            headers = {"Authorization": f"Bearer {self.roster_api_key}"}
-            try:
-                response = await client.get(url, headers=headers, timeout=10.0)
-                if response.status_code == 404:
-                    return self._get_mock_roster(team, sport)
-                response.raise_for_status()
-                return response.json()
-            except Exception as e:
-                logger.error(f"Error fetching roster for {team}: {e}")
+        if not balldontlie_client.available:
+            logger.warning(f"BallDontLie API key missing. Returning mock roster for {team}")
+            return self._get_mock_roster(team, sport)
+
+        try:
+            roster = await balldontlie_client.get_team_roster(team)
+            if not roster:
                 return self._get_mock_roster(team, sport)
+            return roster
+        except Exception as e:
+            logger.error(f"Error fetching roster for {team} from BallDontLie: {e}")
+            return self._get_mock_roster(team, sport)
 
     def _get_mock_roster(self, team: str, sport: str) -> List[Dict]:
         """Provide a healthy mock roster for seeding when API is unavailable"""
@@ -134,235 +134,53 @@ class RealSportsAPI:
                 return {"error": str(e)}
         
     async def get_nba_games(self) -> List[Dict]:
-        """Fetch real NBA games from SportsDataIO"""
+        """Fetch real NBA games via waterfall connector"""
+        from real_data_connector import real_data_connector
         try:
-            # Mock real NBA games data (replace with actual API call)
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            mock_games = [
-                {
-                    "game_id": "20260225/OKC/BOS",
-                    "date": today,
-                    "time": "19:30:00",
-                    "home_team": "Boston Celtics",
-                    "away_team": "Oklahoma City Thunder",
-                    "home_team_id": 27,
-                    "away_team_id": 32,
-                    "status": "Scheduled",
-                    "venue": "TD Garden",
-                    "city": "Boston"
-                },
-                {
-                    "game_id": "20260225/MIN/NYK", 
-                    "date": today,
-                    "time": "20:00:00",
-                    "home_team": "New York Knicks",
-                    "away_team": "Minnesota Timberwolves",
-                    "home_team_id": 7,
-                    "away_team_id": 22,
-                    "status": "Scheduled",
-                    "venue": "Madison Square Garden",
-                    "city": "New York"
-                },
-                {
-                    "game_id": "20260225/SAS/ORL", 
-                    "date": today,
-                    "time": "19:00:00",
-                    "home_team": "Orlando Magic",
-                    "away_team": "San Antonio Spurs",
-                    "home_team_id": 19,
-                    "away_team_id": 24,
-                    "status": "Scheduled",
-                    "venue": "Kia Center",
-                    "city": "Orlando"
-                }
-            ]
-            return mock_games
-            
+            return await real_data_connector.fetch_nba_games()
         except Exception as e:
-            logger.error(f"Error fetching NBA games: {e}")
+            logger.error(f"Error fetching NBA games via waterfall: {e}")
             return []
     
     async def get_nba_odds(self, game_id: str) -> List[Dict]:
-        """Fetch real NBA odds from The Odds API"""
+        """Fetch real NBA odds via waterfall connector"""
         try:
-            # Mock real odds data (replace with actual API call)
-            mock_odds = [
-                {
-                    "id": "nba_player_props_001",
-                    "sport_key": "basketball_nba",
-                    "sport_title": "NBA",
-                    "game_id": game_id,
-                    "bookmakers": [
-                        {
-                            "key": "draftkings",
-                            "title": "DraftKings",
-                            "last_update": datetime.now(timezone.utc).isoformat(),
-                            "markets": [
-                                {
-                                    "key": "player_points",
-                                    "last_update": datetime.now(timezone.utc).isoformat(),
-                                    "outcomes": [
-                                        {"name": "Shai Gilgeous-Alexander", "price": -115, "point": 32.5},
-                                        {"name": "Jayson Tatum", "price": -110, "point": 28.0},
-                                        {"name": "Victor Wembanyama", "price": -108, "point": 28.5},
-                                        {"name": "Anthony Edwards", "price": -112, "point": 27.5},
-                                        {"name": "Jalen Brunson", "price": -110, "point": 26.5},
-                                        {"name": "Paolo Banchero", "price": -108, "point": 25.5}
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "key": "fanduel",
-                            "title": "FanDuel",
-                            "last_update": datetime.now(timezone.utc).isoformat(),
-                            "markets": [
-                                {
-                                    "key": "player_points",
-                                    "last_update": datetime.now(timezone.utc).isoformat(),
-                                    "outcomes": [
-                                        {"name": "Shai Gilgeous-Alexander", "price": -112, "point": 32.5},
-                                        {"name": "Jayson Tatum", "price": -108, "point": 28.5},
-                                        {"name": "Victor Wembanyama", "price": -105, "point": 28.5},
-                                        {"name": "Anthony Edwards", "price": -110, "point": 27.5},
-                                        {"name": "Jalen Brunson", "price": -108, "point": 27.0},
-                                        {"name": "Paolo Banchero", "price": -105, "point": 25.5}
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-            return mock_odds
-            
+            # Note: real_data_connector.fetch_player_props returns a list of formatted props
+            # We wrap it in the expected structure if needed, or return directly.
+            # RealSportsAPI consumers usually expect a list of bookmakers or props.
+            return await real_data_connector.fetch_player_props("basketball_nba", game_id)
         except Exception as e:
-            logger.error(f"Error fetching NBA odds: {e}")
+            logger.error(f"Error fetching NBA odds via waterfall: {e}")
             return []
     
     async def get_game_results(self, game_id: str) -> Optional[Dict]:
-        """Fetch real game results"""
+        """Fetch real game results using GameResultsService"""
         try:
-            # Mock game results (replace with actual API call)
-            mock_results = {
-                "game_id": game_id,
-                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-                "status": "Final",
-                "home_score": 121,
-                "away_score": 118,
-                "quarter_scores": [30, 28, 31, 32],
-                "player_stats": [
-                    {
-                        "player_name": "Shai Gilgeous-Alexander",
-                        "player_id": 32,
-                        "team": "Thunder",
-                        "minutes": 37,
-                        "points": 34,
-                        "rebounds": 5,
-                        "assists": 6,
-                        "steals": 2,
-                        "blocks": 1,
-                        "turnovers": 2,
-                        "fg_made": 13,
-                        "fg_attempted": 22,
-                        "three_pt_made": 3,
-                        "three_pt_attempted": 7,
-                        "free_throws_made": 5,
-                        "free_throws_attempted": 6
-                    },
-                    {
-                        "player_name": "Jayson Tatum",
-                        "player_id": 27,
-                        "team": "Celtics",
-                        "minutes": 38,
-                        "points": 29,
-                        "rebounds": 8,
-                        "assists": 5,
-                        "steals": 1,
-                        "blocks": 1,
-                        "turnovers": 3,
-                        "fg_made": 11,
-                        "fg_attempted": 22,
-                        "three_pt_made": 3,
-                        "three_pt_attempted": 8,
-                        "free_throws_made": 4,
-                        "free_throws_attempted": 4
-                    },
-                    {
-                        "player_name": "Victor Wembanyama",
-                        "player_id": 24,
-                        "team": "Spurs",
-                        "minutes": 35,
-                        "points": 30,
-                        "rebounds": 11,
-                        "assists": 4,
-                        "steals": 1,
-                        "blocks": 4,
-                        "turnovers": 2,
-                        "fg_made": 11,
-                        "fg_attempted": 20,
-                        "three_pt_made": 3,
-                        "three_pt_attempted": 8,
-                        "free_throws_made": 5,
-                        "free_throws_attempted": 6
-                    },
-                    {
-                        "player_name": "Anthony Edwards",
-                        "player_id": 22,
-                        "team": "Timberwolves",
-                        "minutes": 36,
-                        "points": 28,
-                        "rebounds": 5,
-                        "assists": 4,
-                        "steals": 2,
-                        "blocks": 0,
-                        "turnovers": 3,
-                        "fg_made": 10,
-                        "fg_attempted": 21,
-                        "three_pt_made": 4,
-                        "three_pt_attempted": 10,
-                        "free_throws_made": 4,
-                        "free_throws_attempted": 5
-                    },
-                    {
-                        "player_name": "Jalen Brunson",
-                        "player_id": 7,
-                        "team": "Knicks",
-                        "minutes": 37,
-                        "points": 27,
-                        "rebounds": 3,
-                        "assists": 8,
-                        "steals": 1,
-                        "blocks": 0,
-                        "turnovers": 2,
-                        "fg_made": 10,
-                        "fg_attempted": 19,
-                        "three_pt_made": 3,
-                        "three_pt_attempted": 7,
-                        "free_throws_made": 4,
-                        "free_throws_attempted": 4
-                    },
-                    {
-                        "player_name": "Paolo Banchero",
-                        "player_id": 19,
-                        "team": "Magic",
-                        "minutes": 35,
-                        "points": 26,
-                        "rebounds": 7,
-                        "assists": 5,
-                        "steals": 1,
-                        "blocks": 1,
-                        "turnovers": 2,
-                        "fg_made": 10,
-                        "fg_attempted": 20,
-                        "three_pt_made": 2,
-                        "three_pt_attempted": 6,
-                        "free_throws_made": 4,
-                        "free_throws_attempted": 5
-                    }
-                ]
-            }
-            return mock_results
+            from services.game_results_service import game_results_service
+            # Try to get from service (which usually checks DB or waterfall scores)
+            # For simplicity, we fallback to a search if not in DB
+            result = await game_results_service.get_game_result(game_id)
+            if result:
+                return {
+                    "game_id": result.game_id,
+                    "status": "Final",
+                    "home_score": result.home_score,
+                    "away_score": result.away_score,
+                    "player_stats": [] # Stats would require a deeper API hit (e.g. BallDontLie or MySportsFeeds)
+                }
+            # If not in DB, use waterfall via live router logic
+            from real_data_connector import real_data_connector
+            games = await real_data_connector.fetch_games_by_sport("basketball_nba")
+            game = next((g for g in games if str(g.get("id")) == str(game_id)), None)
+            if game:
+                return {
+                    "game_id": game_id,
+                    "status": game.get("status"),
+                    "home_score": game.get("home_score"),
+                    "away_score": game.get("away_score"),
+                    "player_stats": []
+                }
+            return None
             
         except Exception as e:
             logger.error(f"Error fetching game results: {e}")
@@ -382,56 +200,52 @@ class TrackRecordBuilder:
             picks = []
             
             for game in games:
-                # Get odds for this game
-                odds_data = await self.api.get_nba_odds(game["game_id"])
+                # Get props for this game via waterfall
+                props_data = await self.api.get_nba_odds(game["id"])
                 
-                for odds in odds_data:
-                    for bookmaker in odds["bookmakers"]:
-                        for market in bookmaker["markets"]:
-                            if market["key"] == "player_points":
-                                for outcome in market["outcomes"]:
-                                    # Calculate model probability (simplified)
-                                    point = outcome["point"]
-                                    price = outcome["price"]
-                                    
-                                    # Model probability based on historical data
-                                    if point >= 30:
-                                        model_prob = 0.45  # Lower for high lines
-                                    elif point >= 25:
-                                        model_prob = 0.55  # Medium for medium lines
-                                    else:
-                                        model_prob = 0.65  # Higher for low lines
-                                    
-                                    # Calculate implied probability
-                                    if price > 0:
-                                        implied_prob = 100 / (price + 100)
-                                    else:
-                                        implied_prob = abs(price) / (abs(price) + 100)
-                                    
-                                    # Calculate EV
-                                    ev = (model_prob - implied_prob) * 100
-                                    
-                                    # Only include positive EV picks
-                                    if ev > 0:
-                                        pick = {
-                                            "id": len(picks) + 1,
-                                            "game_id": game["game_id"],
-                                            "game_date": game["date"],
-                                            "teams": f"{game['away_team']} @ {game['home_team']}",
-                                            "player_name": outcome["name"],
-                                            "stat_type": "points",
-                                            "line": float(point) if point is not None else 0.0,
-                                            "over_odds": int(price) if price is not None else -110,
-                                            "bookmaker": bookmaker["title"],
-                                            "model_probability": round(float(model_prob), 3) if model_prob is not None else 0.5,
-                                            "implied_probability": round(float(implied_prob), 3) if implied_prob is not None else 0.52,
-                                            "ev_percentage": round(float(ev), 2) if ev is not None else 0.0,
-                                            "confidence": round(50 + (float(ev or 0) * 10), 1),
-                                            "predicted_hit_rate": round(float(model_prob or 0) * 100, 1),
-                                            "created_at": datetime.now(timezone.utc).isoformat(),
-                                            "status": "pending"
-                                        }
-                                        picks.append(pick)
+                for prop in props_data:
+                    # Calculate model probability (simplified)
+                    point = prop.get("line", 0)
+                    price = prop.get("over_odds", -110)
+                    
+                    # Model probability based on historical data (simplified logic)
+                    if point >= 30:
+                        model_prob = 0.45
+                    elif point >= 25:
+                        model_prob = 0.55
+                    else:
+                        model_prob = 0.65
+                    
+                    # Calculate implied probability
+                    if price > 0:
+                        implied_prob = 100 / (price + 100)
+                    else:
+                        implied_prob = abs(price) / (abs(price) + 100)
+                    
+                    # Calculate EV
+                    ev = (model_prob - implied_prob) * 100
+                    
+                    # Only include positive EV picks
+                    if ev > 0:
+                        pick = {
+                            "id": len(picks) + 1,
+                            "game_id": game["id"],
+                            "game_date": game.get("start_time").isoformat() if isinstance(game.get("start_time"), datetime) else datetime.now(timezone.utc).isoformat(),
+                            "teams": f"{game.get('away_team_name', 'Away')} @ {game.get('home_team_name', 'Home')}",
+                            "player_name": prop["player_name"],
+                            "stat_type": prop["stat_type"],
+                            "line": float(point),
+                            "over_odds": int(price),
+                            "bookmaker": prop.get("sportsbook", "Unknown"),
+                            "model_probability": round(float(model_prob), 3),
+                            "implied_probability": round(float(implied_prob), 3),
+                            "ev_percentage": round(float(ev), 2),
+                            "confidence": round(50 + (float(ev or 0) * 10), 1),
+                            "predicted_hit_rate": round(float(model_prob or 0) * 100, 1),
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "status": "pending"
+                        }
+                        picks.append(pick)
             
             return picks
             

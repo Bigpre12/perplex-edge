@@ -1,29 +1,13 @@
 "use client";
-import { useState, useEffect } from 'react';
 import { Search, HelpCircle } from 'lucide-react';
 import PushSubscriber from '@/components/dashboard/PushSubscriber';
-
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { useLucrixStore } from '@/store';
 
 export default function Header() {
-    const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+    const { backendOnline } = useLucrixStore();
 
-    useEffect(() => {
-        const checkHealth = async () => {
-            try {
-                const res = await fetch(`${API_ENDPOINTS.HEALTH}`, { signal: AbortSignal.timeout(3000) });
-                setStatus(res.ok ? 'online' : 'offline');
-            } catch {
-                setStatus('offline');
-            }
-        };
-        checkHealth();
-        const interval = setInterval(checkHealth, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const statusLabel = status === 'checking' ? 'Checking...' : status === 'online' ? 'Online' : 'Offline';
-    const dotColor = status === 'online' ? 'bg-accent-green animate-pulse' : status === 'offline' ? 'bg-red-500' : 'bg-amber-400 animate-pulse';
+    const statusLabel = backendOnline ? 'Online' : 'Offline';
+    const dotColor = backendOnline ? 'bg-accent-green animate-pulse' : 'bg-red-500';
 
     return (
         <header className="h-16 flex items-center justify-between px-8 border-b border-slate-800/60 bg-[#102023]/80 backdrop-blur-md z-10 sticky top-0">

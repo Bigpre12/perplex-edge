@@ -1,22 +1,34 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
+    { id: 'home', label: 'Home', icon: '⌂', href: '/' },
     { id: 'props', label: 'Props', icon: '🎯', href: '/player-props' },
-    { id: 'trends', label: 'Hit Rate', icon: '🔥', href: '/trend-hunter' },
+    { id: 'ev', label: 'EV+', icon: '📈', href: '/ev' },
+    { id: 'sharp', label: 'Sharp', icon: '⚡', href: '/sharp' },
+    { id: 'trends', label: 'Hit Rate', icon: '🔥', href: '/hit-rate' },
     { id: 'parlay', label: 'Parlay', icon: '🔗', href: '/parlays' },
-    { id: 'live', label: 'Live', icon: '🔴', href: '/arbitrage' },
-    { id: 'clv', label: 'CLV', icon: '📈', href: '/leaderboard' },
+    { id: 'live', label: 'Live', icon: '🔴', href: '/live' },
+    { id: 'movement', label: 'Move', icon: '📉', href: '/line-movement' },
+    { id: 'settings', label: 'Settings', icon: '⚙️', href: '/settings' },
 ];
 
 export function TabBar() {
     const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
+    const [activePath, setActivePath] = useState("");
+
+    useEffect(() => {
+        setMounted(true);
+        setActivePath(pathname);
+    }, [pathname]);
 
     const isActive = (href: string) => {
-        if (pathname === href) return true;
-        return false;
+        if (!mounted) return false;
+        return activePath === href;
     };
 
     return (

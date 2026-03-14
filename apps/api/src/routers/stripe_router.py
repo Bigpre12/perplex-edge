@@ -1,18 +1,20 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-import stripe
-import os
+import stripe, os
 from database import get_db
 from sqlalchemy.orm import Session
+from config import settings
+from common_deps import get_db, require_elite
 
 router = APIRouter(prefix="/api/stripe", tags=["Stripe Monetization"])
 
 # These should be pulled from secure environment variables in production
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock_key_only")
+stripe.api_key = settings.STRIPE_SECRET_KEY or os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock_key_only")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_mock_secret")
+# Note: settings doesn't cleanly export STRIPE_WEBHOOK_SECRET today, fallback to OS
 
 # The price ID from your Stripe Dashboard for the "Pro Subscription" product.
-PRO_PRICE_ID = os.environ.get("STRIPE_PRO_PRICE_ID", "price_mock_id")
+PRO_PRICE_ID = getattr(settings, "STRIPE_PRO_PRICE_ID", os.environ.get("STRIPE_PRO_PRICE_ID", "price_mock_id"))
 
 class CheckoutRequest(BaseModel):
     user_email: str
@@ -23,7 +25,7 @@ async def create_checkout_session(req: CheckoutRequest):
     try:
         # If using local mock key, bypass Stripe API entirely and pretend it succeeded
         if stripe.api_key == "sk_test_mock_key_only":
-            return {"session_url": os.environ.get("FRONTEND_URL", "http://localhost:3000") + '/institutional/settings?checkout=success&mock=true'}
+            return {"session_url": settings.FRONTEND_URL + '/institutional/settings?checkout=success&mock=true'}
 
         # Get the latest price ID dynamically at request time
         price_id = os.environ.get("STRIPE_PRO_PRICE_ID", "price_mock_id")
@@ -38,8 +40,8 @@ async def create_checkout_session(req: CheckoutRequest):
                 'quantity': 1,
             }],
             mode='subscription',
-            success_url=os.environ.get("FRONTEND_URL", "http://localhost:3000") + '/institutional/settings?checkout=success',
-            cancel_url=os.environ.get("FRONTEND_URL", "http://localhost:3000") + '/institutional/settings?checkout=canceled',
+            success_url=settings.FRONTEND_URL + '/institutional/settings?checkout=success',
+            cancel_url=settings.FRONTEND_URL + '/institutional/settings?checkout=canceled',
         )
         return {"session_url": session.url}
     except Exception as e:
@@ -51,37 +53,35 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     sig_header = request.headers.get("stripe-signature")
 
     try:
-        # Verify the webhook signature against Stripe's secret
         event = stripe.Webhook.construct_event(
             payload, sig_header, STRIPE_WEBHOOK_SECRET
         )
-    except ValueError as e:
-        # Invalid payload
+    except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
-    except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
+    except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
-    # Handle the successful checkout session event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
+        # Use client_reference_id if it's the local DB ID, or search by email
         user_id = session.get('client_reference_id')
-        customer_id = session.get('customer')
+        customer_email = session.get('customer_details', {}).get('email')
         
-        if user_id:
-            print(f"✅ Subscription Activated for Supabase User: {user_id}")
-            try:
-                from utils.supabase_proxy import supabase
-                # Update user metadata to set tier to 'pro'
-                res = supabase.auth.admin.get_user_by_id(user_id)
-                user = res.user
-                metadata = user.app_metadata or {}
-                metadata["tier"] = "pro"
-                metadata["stripe_customer_id"] = customer_id
-                
-                supabase.auth.admin.update_user_by_id(user_id, {"app_metadata": metadata})
-                print(f"🚀 User {user_id} upgraded to PRO tier.")
-            except Exception as e:
-                print(f"❌ Failed to upgrade user {user_id}: {e}")
+        from models.users import User
+        from sqlalchemy import update, select
+
+        # Search for user to update
+        user = None
+        if user_id and user_id.isdigit():
+            user = db.query(User).filter(User.id == int(user_id)).first()
+        elif customer_email:
+            user = db.query(User).filter(User.email == customer_email).first()
+
+        if user:
+            user.subscription_tier = "pro"
+            db.commit()
+            print(f"✅ Subscription tier updated to pro for user {user.email}")
+        else:
+            print(f"⚠️ User not found for Stripe completion: ID={user_id}, Email={customer_email}")
             
     return {"status": "success"}

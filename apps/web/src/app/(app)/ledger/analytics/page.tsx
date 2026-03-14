@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import Link from "next/link";
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api, isApiError } from "@/lib/api";
 import {
     ScatterChart,
     Scatter,
@@ -40,7 +40,8 @@ export default function PortfolioAnalytics() {
         if (!token) return;
 
         try {
-            const res = await fetch(`${API_ENDPOINTS.REPORTING_EXPORT}/${format}`, {
+            const { API } = await import("@/lib/api");
+            const res = await fetch(API.reportingExport(format), {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             if (res.ok) {
@@ -60,17 +61,12 @@ export default function PortfolioAnalytics() {
 
     useEffect(() => {
         const fetchStats = async () => {
-            const token = getAuthToken();
-            if (!token) {
-                setLoading(false);
-                return;
-            }
-
+            setLoading(true);
             try {
-                const res = await fetch(API_ENDPOINTS.LEDGER_STATS, {
-                    headers: { "Authorization": `Bearer ${token}` }
-                });
-                if (res.ok) setStats(await res.json());
+                const data = await api.ledgerStats();
+                if (!isApiError(data)) {
+                    setStats(data);
+                }
             } catch (err) {
                 console.error("Failed to fetch statistics:", err);
             } finally {

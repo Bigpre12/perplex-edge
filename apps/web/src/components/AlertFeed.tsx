@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { Zap, AlertTriangle, TrendingUp, Globe } from 'lucide-react';
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api, API, isApiError } from "@/lib/api";
 
 interface Alert {
     id: string;
@@ -17,9 +17,8 @@ export default function AlertFeed() {
     useEffect(() => {
         const fetchAlerts = async () => {
             try {
-                const res = await fetch(`${API_ENDPOINTS.MARKET_INTEL}?sport_key=basketball_nba`);
-                const data = await res.json();
-                if (data.items && data.items.length > 0) {
+                const data = await api.get<any>(API.recentIntel('basketball_nba' as any));
+                if (!isApiError(data) && data.items && data.items.length > 0) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     setAlerts(data.items.map((item: any, i: number) => ({
                         id: String(i),

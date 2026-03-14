@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { API_ENDPOINTS } from '@/lib/apiConfig';
+import { api, isApiError } from '@/lib/api';
 
 interface Prop { id: string; player_name: string; stat_category: string; line: number; }
 
@@ -11,14 +11,13 @@ export default function AutoCopySlip({ props }: { props: Prop[] }) {
   const handleCopy = async () => {
     const ids = props.map(p => p.id);
     const endpoint = platform === 'prizepicks' ? 'prizepicks-slip' : 'fliff-slip';
-    const res = await fetch(`${API_ENDPOINTS.AUTOCOPY}/${endpoint}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ids)
-    });
-    const data = await res.json();
-    await navigator.clipboard.writeText(data.slip_text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    const data = await api.autocopy(endpoint, ids);
+
+    if (!isApiError(data) && data.slip_text) {
+      await navigator.clipboard.writeText(data.slip_text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   return (

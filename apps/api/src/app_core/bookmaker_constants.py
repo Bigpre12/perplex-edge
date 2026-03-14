@@ -1,0 +1,105 @@
+"""
+Bookmaker Constants Mapping
+Centralized registry for all supported sportsbooks, DFS platforms, and exchanges.
+Data source: SportsGameOdds API Documentation.
+"""
+
+BOOKMAKERS = {
+    "1xbet": {"name": "1xBet", "type": "sportsbook"},
+    "888sport": {"name": "888 Sport", "type": "sportsbook"},
+    "ballybet": {"name": "Bally Bet", "type": "sportsbook"},
+    "barstool": {"name": "Barstool", "type": "sportsbook"},
+    "betvictor": {"name": "Bet Victor", "type": "sportsbook"},
+    "bet365": {"name": "Bet365", "type": "sportsbook"},
+    "betanysports": {"name": "BetAnySports", "type": "sportsbook"},
+    "betclic": {"name": "BetClic", "type": "sportsbook"},
+    "betfairexchange": {"name": "Betfair Exchange", "type": "exchange"},
+    "betfairsportsbook": {"name": "Betfair Sportsbook", "type": "sportsbook"},
+    "betfred": {"name": "Betfred", "type": "sportsbook"},
+    "betmgm": {"name": "BetMGM", "type": "sportsbook"},
+    "betonline": {"name": "BetOnline", "type": "sportsbook"},
+    "betparx": {"name": "BetPARX", "type": "sportsbook"},
+    "betrsportsbook": {"name": "Betr Sportsbook", "type": "sportsbook"},
+    "betrivers": {"name": "BetRivers", "type": "sportsbook"},
+    "betsafe": {"name": "Betsafe", "type": "sportsbook"},
+    "betsson": {"name": "Betsson", "type": "sportsbook"},
+    "betus": {"name": "BetUS", "type": "sportsbook"},
+    "betway": {"name": "Betway", "type": "sportsbook"},
+    "bluebet": {"name": "BlueBet", "type": "sportsbook"},
+    "bodog": {"name": "Bodog", "type": "sportsbook"},
+    "bookmakereu": {"name": "Bookmaker.eu", "type": "sportsbook"},
+    "boombet": {"name": "BoomBet", "type": "sportsbook"},
+    "bovada": {"name": "Bovada", "type": "sportsbook"},
+    "boylesports": {"name": "BoyleSports", "type": "sportsbook"},
+    "caesars": {"name": "Caesars", "type": "sportsbook"},
+    "casumo": {"name": "Casumo", "type": "sportsbook"},
+    "circa": {"name": "Circa", "type": "sportsbook"},
+    "coolbet": {"name": "Coolbet", "type": "sportsbook"},
+    "coral": {"name": "Coral", "type": "sportsbook"},
+    "draftkings": {"name": "Draft Kings", "type": "sportsbook"},
+    "espnbet": {"name": "ESPN BET", "type": "sportsbook"},
+    "everygame": {"name": "Everygame", "type": "sportsbook"},
+    "fanatics": {"name": "Fanatics", "type": "sportsbook"},
+    "fanduel": {"name": "FanDuel", "type": "sportsbook"},
+    "fliff": {"name": "Fliff", "type": "sportsbook"},
+    "fourwinds": {"name": "FourWinds", "type": "sportsbook"},
+    "foxbet": {"name": "FOX Bet", "type": "sportsbook"},
+    "grosvenor": {"name": "Grosvenor", "type": "sportsbook"},
+    "gtbets": {"name": "GTbets", "type": "sportsbook"},
+    "hardrockbet": {"name": "Hard Rock Bet", "type": "sportsbook"},
+    "hotstreak": {"name": "HotStreak", "type": "dfs"},
+    "kalshi": {"name": "Kalshi", "type": "exchange"},
+    "ladbrokes": {"name": "Ladbrokes", "type": "sportsbook"},
+    "leovegas": {"name": "LeoVegas", "type": "sportsbook"},
+    "livescorebet": {"name": "LiveScore Bet", "type": "sportsbook"},
+    "lowvig": {"name": "LowVig", "type": "sportsbook"},
+    "marathonbet": {"name": "Marathon Bet", "type": "sportsbook"},
+    "matchbook": {"name": "Matchbook", "type": "exchange"},
+    "mrgreen": {"name": "Mr Green", "type": "sportsbook"},
+    "mybookie": {"name": "MyBookie", "type": "sportsbook"},
+    "neds": {"name": "Neds", "type": "sportsbook"},
+    "nordicbet": {"name": "NordicBet", "type": "sportsbook"},
+    "northstarbets": {"name": "NorthStar Bets", "type": "sportsbook"},
+    "paddypower": {"name": "Paddy Power", "type": "sportsbook"},
+    "parlayplay": {"name": "ParlayPlay", "type": "dfs"},
+    "pinnacle": {"name": "Pinnacle", "type": "sportsbook"},
+    "playup": {"name": "PlayUp", "type": "sportsbook"},
+    "pointsbet": {"name": "PointsBet", "type": "sportsbook"},
+    "primesports": {"name": "Prime Sports", "type": "sportsbook"},
+    "prizepicks": {"name": "PrizePicks", "type": "dfs"},
+    "prophetexchange": {"name": "Prophet Exchange", "type": "sportsbook"},
+    "si": {"name": "SI Sportsbook", "type": "sportsbook"},
+    "skybet": {"name": "Sky Bet", "type": "sportsbook"},
+    "sleeper": {"name": "Sleeper", "type": "dfs"},
+    "sportsbet": {"name": "SportsBet", "type": "sportsbook"},
+    "sportsbetting_ag": {"name": "SportsBetting.ag", "type": "sportsbook"},
+    "sporttrade": {"name": "Sporttrade", "type": "exchange"},
+    "stake": {"name": "Stake", "type": "sportsbook"},
+    "sugarhouse": {"name": "SugarHouse", "type": "sportsbook"},
+    "superbook": {"name": "Superbook", "type": "sportsbook"},
+    "suprabets": {"name": "Suprabets", "type": "sportsbook"},
+    "tab": {"name": "TAB", "type": "sportsbook"},
+    "tabtouch": {"name": "TABtouch", "type": "sportsbook"},
+    "thescorebet": {"name": "theScore Bet", "type": "sportsbook"},
+    "tipico": {"name": "Tipico", "type": "sportsbook"},
+    "topsport": {"name": "TopSport", "type": "sportsbook"},
+    "underdog": {"name": "Underdog Fantasy", "type": "dfs"},
+    "unibet": {"name": "Unibet", "type": "sportsbook"},
+    "virginbet": {"name": "Virgin Bet", "type": "sportsbook"},
+    "williamhill": {"name": "William Hill", "type": "sportsbook"},
+    "windcreek": {"name": "Wind Creek (Betfred PA)", "type": "sportsbook"},
+    "wynnbet": {"name": "WynnBet", "type": "sportsbook"},
+    "unknown": {"name": "Unknown", "type": "unknown"},
+}
+
+DFS_BOOKMAKERS = {k for k, v in BOOKMAKERS.items() if v["type"] == "dfs"}
+EXCHANGE_BOOKMAKERS = {k for k, v in BOOKMAKERS.items() if v["type"] == "exchange"}
+SPORTSBOOK_BOOKMAKERS = {k for k, v in BOOKMAKERS.items() if v["type"] == "sportsbook"}
+
+def get_bookmaker_name(bookmaker_id: str) -> str:
+    """Get display name for a bookmaker ID."""
+    return BOOKMAKERS.get(bookmaker_id.lower(), {}).get("name", "Unknown")
+
+def get_bookmaker_type(bookmaker_id: str) -> str:
+    """Get type (dfs/sportsbook/exchange) for a bookmaker ID."""
+    return BOOKMAKERS.get(bookmaker_id.lower(), {}).get("type", "unknown")

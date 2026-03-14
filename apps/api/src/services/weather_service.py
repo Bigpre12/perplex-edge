@@ -25,40 +25,58 @@ STADIUM_COORDS = {
     'OAK': (37.7516, -122.2005), 'WAS': (38.9078, -76.8645)
 }
 
-async def get_game_weather(team_abbr: str) -> dict:
-    if DOME_STADIUMS.get(team_abbr):
-        return {'is_dome': True, 'weather_impact': 'NONE', 'conditions': 'Indoor'}
-    coords = STADIUM_COORDS.get(team_abbr)
-    if not coords:
-        return {'is_dome': False, 'weather_impact': 'UNKNOWN', 'conditions': 'Data unavailable'}
-    lat, lon = coords
-    url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OWM_KEY}&units=imperial'
-    async with httpx.AsyncClient(timeout=5) as c:
-        r = await c.get(url)
-        if r.status_code != 200:
-            return {'error': 'Weather API unavailable'}
-        data = r.json()
-    wind_mph = round(data['wind']['speed'], 1)
-    temp_f = round(data['main']['temp'], 1)
-    conditions = data['weather'][0]['main']
-    impact_factors = []
-    impact_level = 'LOW'
-    if wind_mph >= 20:
-        impact_factors.append(f'High wind ({wind_mph} mph) — reduces passing/kicking')
-        impact_level = 'HIGH' if wind_mph >= 30 else 'MODERATE'
-    if temp_f <= 20:
-        impact_factors.append(f'Extreme cold ({temp_f}F) — reduces scoring')
-        impact_level = 'HIGH'
-    if conditions in ['Rain', 'Snow', 'Drizzle', 'Thunderstorm']:
-        impact_factors.append(f'{conditions} — reduces passing/rushing efficiency')
-        impact_level = 'HIGH' if conditions in ['Snow', 'Thunderstorm'] else 'MODERATE'
-    return {
-        'is_dome': False,
-        'team': team_abbr,
-        'temperature_f': temp_f,
-        'wind_mph': wind_mph,
-        'conditions': conditions,
-        'weather_impact': impact_level,
-        'impact_factors': impact_factors,
-        'prop_advice': '; '.join(impact_factors) if impact_factors else 'No significant weather impact'
-    }
+class WeatherService:
+    def __init__(self):
+        self.owm_key = os.getenv('OPENWEATHER_API_KEY')
+
+    async def get_game_weather(self, team_abbr: str) -> dict:
+        if DOME_STADIUMS.get(team_abbr):
+            return {'is_dome': True, 'weather_impact': 'NONE', 'conditions': 'Indoor'}
+        coords = STADIUM_COORDS.get(team_abbr)
+        if not coords:
+            return {'is_dome': False, 'weather_impact': 'UNKNOWN', 'conditions': 'Data unavailable'}
+        
+        lat, lon = coords
+        if not self.owm_key:
+            return {'error': 'Weather API Key missing', 'is_dome': False}
+            
+        url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={self.owm_key}&units=imperial'
+        try:
+            async with httpx.AsyncClient(timeout=5) as c:
+                r = await c.get(url)
+                if r.status_code != 200:
+                    return {'error': 'Weather API unavailable'}
+                data = r.json()
+                
+            wind_mph = round(data['wind']['speed'], 1)
+            temp_f = round(data['main']['temp'], 1)
+            conditions = data['weather'][0]['main']
+            
+            impact_factors = []
+            impact_level = 'LOW'
+            
+            if wind_mph >= 20:
+                impact_factors.append(f'High wind ({wind_mph} mph) — reduces passing/kicking')
+                impact_level = 'HIGH' if wind_mph >= 30 else 'MODERATE'
+            if temp_f <= 20:
+                impact_factors.append(f'Extreme cold ({temp_f}F) — reduces scoring')
+                impact_level = 'HIGH'
+            if conditions in ['Rain', 'Snow', 'Drizzle', 'Thunderstorm']:
+                impact_factors.append(f'{conditions} — reduces passing/rushing efficiency')
+                impact_level = 'HIGH' if conditions in ['Snow', 'Thunderstorm'] else 'MODERATE'
+                
+            return {
+                'is_dome': False,
+                'team': team_abbr,
+                'temperature_f': temp_f,
+                'wind_mph': wind_mph,
+                'conditions': conditions,
+                'weather_impact': impact_level,
+                'impact_factors': impact_factors,
+                'prop_advice': '; '.join(impact_factors) if impact_factors else 'No significant weather impact'
+            }
+        except Exception as e:
+            return {'error': f'Weather service error: {str(e)}'}
+
+weather_service = WeatherService()
+get_game_weather = weather_service.get_game_weather

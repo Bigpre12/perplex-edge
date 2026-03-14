@@ -139,7 +139,7 @@ class BallDontLieClient:
                 # Get season averages
                 avg_resp = await client.get(
                     f"{self.BASE_URL}/season_averages",
-                    params={"player_ids[]": player_id, "season": 2025},
+                    params={"player_ids[]": player_id, "season": 2024}, # Use 2024 for current/most recent full stats
                     headers=headers,
                 )
                 avg_resp.raise_for_status()
@@ -155,6 +155,59 @@ class BallDontLieClient:
         except Exception as e:
             logger.error(f"BallDontLie player stats error: {e}")
             return None
+
+    async def get_team_roster(self, team_name: str) -> List[Dict]:
+        """Fetch all players for a specific team (roster)."""
+        if not self.available:
+            return []
+
+        cache_key = f"bdl_roster_{team_name}"
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        headers = {"Authorization": self.api_key}
+        all_players = []
+        cursor = None
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                # Search for players associated with the team name
+                # Note: The API doesn't have a direct "team_id" filter for /players in v1 without pagination
+                # We'll fetch a batch and filter
+                while True:
+                    params = {"per_page": 100}
+                    if cursor:
+                        params["cursor"] = cursor
+                    
+                    resp = await client.get(f"{self.BASE_URL}/players", params=params, headers=headers)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    
+                    players = data.get("data", [])
+                    for p in players:
+                        team = p.get("team", {})
+                        if team_name.lower() in team.get("full_name", "").lower() or \
+                           team_name.lower() in team.get("name", "").lower() or \
+                           team_name.lower() in team.get("abbreviation", "").lower():
+                            all_players.append({
+                                "player_name": f"{p.get('first_name')} {p.get('last_name')}",
+                                "player_id": p.get("id"),
+                                "position": p.get("position"),
+                                "jersey": p.get("jersey_number"),
+                                "team": team.get("full_name"),
+                                "is_active": True
+                            })
+                    
+                    cursor = data.get("meta", {}).get("next_cursor")
+                    if not cursor or len(all_players) > 30: # Limit to avoid 429 and fetch enough for a roster
+                        break
+            
+            self._set_cache(cache_key, all_players, ttl=3600 * 24) # Cache for 24h
+            return all_players
+        except Exception as e:
+            logger.error(f"BallDontLie roster error: {e}")
+            return []
 
 
 # Singleton

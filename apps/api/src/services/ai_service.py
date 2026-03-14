@@ -1,10 +1,10 @@
+class AsyncSession: pass
 import os
 import json
 import httpx
 import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from models.props import PropLine
 from models.bets import BetSlip, BetLog
 from models.users import User
@@ -15,7 +15,15 @@ class AIService:
     def __init__(self):
         self.groq_key = os.getenv("AI_API_KEY")
         self.openai_key = os.getenv("OPENAI_API_KEY")
-        self.base_url = "https://api.groq.com/openai/v1/chat/completions" if self.groq_key else "https://api.openai.com/v1/chat/completions"
+        self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        
+        # Priority: Groq -> OpenRouter -> OpenAI
+        if self.groq_key:
+            self.base_url = "https://api.groq.com/openai/v1/chat/completions"
+        elif self.openrouter_key:
+            self.base_url = "https://openrouter.ai/api/v1/chat/completions"
+        else:
+            self.base_url = "https://api.openai.com/v1/chat/completions"
 
     async def get_market_context(self, db: AsyncSession) -> str:
         """Fetch top EV props to provide market context to the AI."""
@@ -61,7 +69,7 @@ Be concise, technical, and objective. Avoid generic advice. Use specific numbers
 If a user asks about their performance, refer to the provided user context.
 """
 
-        api_key = self.groq_key or self.openai_key
+        api_key = self.groq_key or self.openrouter_key or self.openai_key
         if not api_key:
             return "AI Service Error: No API key configured."
 
@@ -70,8 +78,16 @@ If a user asks about their performance, refer to the provided user context.
             "Content-Type": "application/json"
         }
         
+        # Model Selection
+        if self.groq_key:
+            model = "llama-3.3-70b-versatile"
+        elif self.openrouter_key:
+            model = "meta-llama/llama-3.3-70b-instruct"
+        else:
+            model = "gpt-4-turbo-preview"
+
         payload = {
-            "model": "llama3-70b-8192" if self.groq_key else "gpt-4-turbo-preview",
+            "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_query}

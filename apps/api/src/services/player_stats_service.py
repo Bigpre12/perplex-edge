@@ -45,3 +45,6 @@ class PlayerStatsService:
 
 # Global instance
 player_stats_service = PlayerStatsService()
+get_performance_splits = player_stats_service.get_performance_splits
+get_player_hit_rates = player_stats_service.get_player_hit_rates
+get_player_statistics = player_stats_service.get_player_statistics

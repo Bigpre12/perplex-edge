@@ -18,7 +18,7 @@ import {
     Plus
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api, isApiError } from "@/lib/api";
 
 export default function LedgerPage() {
     const [bets, setBets] = useState<any[]>([]);
@@ -31,24 +31,15 @@ export default function LedgerPage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            const token = getAuthToken();
-            if (!token) {
-                setLoading(false);
-                return;
-            }
-
+            setLoading(true);
             try {
                 const [betsRes, statsRes] = await Promise.all([
-                    fetch(API_ENDPOINTS.LEDGER_MY_BETS, {
-                        headers: { "Authorization": `Bearer ${token}` }
-                    }),
-                    fetch(API_ENDPOINTS.LEDGER_STATS, {
-                        headers: { "Authorization": `Bearer ${token}` }
-                    })
+                    api.ledgerMyBets(),
+                    api.ledgerStats()
                 ]);
 
-                if (betsRes.ok) setBets(await betsRes.json());
-                if (statsRes.ok) setStats(await statsRes.json());
+                if (!isApiError(betsRes)) setBets(betsRes);
+                if (!isApiError(statsRes)) setStats(statsRes);
             } catch (err) {
                 console.error("Failed to fetch ledger data:", err);
             } finally {
@@ -68,25 +59,16 @@ export default function LedgerPage() {
 
     const handleShare = async () => {
         if (!selectedSlip) return;
-        const token = getAuthToken();
-        if (!token) return alert("Please login to share insights.");
-
         setIsSharing(true);
         try {
-            const res = await fetch(API_ENDPOINTS.SOCIAL_SHARE, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    title: `Locked in: ${selectedSlip.slip_type} @ ${selectedSlip.total_odds}`,
-                    content: shareText,
-                    slip_id: selectedSlip.id
-                })
-            });
+            const token = getAuthToken();
+            const data = await api.socialShare({
+                title: `Locked in: ${selectedSlip.slip_type} @ ${selectedSlip.total_odds}`,
+                content: shareText,
+                slip_id: selectedSlip.id
+            }, token as string);
 
-            if (res.ok) {
+            if (!isApiError(data)) {
                 setShowShareModal(false);
                 setShareText("");
                 alert("Shared successfully to community feed!");

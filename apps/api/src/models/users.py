@@ -10,12 +10,17 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     
-    # Tier limits (free, pro, whale)
+    # Tier limits (free, pro, elite)
     subscription_tier = Column(String, default="free")
+    stripe_customer_id = Column(String, nullable=True, index=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    
+    @property
+    def tier(self):
+        return (self.subscription_tier or "free").lower()
     
     # Overall ROI tracking
     lifetime_roi = Column(Integer, default=0)

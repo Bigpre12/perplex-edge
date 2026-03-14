@@ -11,7 +11,7 @@ from dataclasses import dataclass, fields
 from enum import Enum
 from sqlalchemy import text, select
 from database import engine, async_session_maker
-from core.sport_constants import get_sport_id
+from app_core.sport_constants import get_sport_id
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

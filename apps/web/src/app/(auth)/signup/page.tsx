@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { User, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { API_ENDPOINTS } from "@/lib/apiConfig";
 
 import { supabase } from "@/lib/supabaseClient";
 

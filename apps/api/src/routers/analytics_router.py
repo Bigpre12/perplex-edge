@@ -2,12 +2,13 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from database import get_db
-from models import BetLog, PropLine
+from models.bets import BetLog
+from models.props import PropLine
 from datetime import datetime, timedelta
 from collections import defaultdict
 from typing import Optional
 
-router = APIRouter(prefix='/api/analytics', tags=['analytics'])
+router = APIRouter(tags=["analytics"])
 
 @router.get('/ev-distribution')
 def ev_distribution(sport: Optional[str] = None, db: Session = Depends(get_db)):

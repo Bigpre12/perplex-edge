@@ -14,7 +14,7 @@ import {
     Target
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api, isApiError } from "@/lib/api";
 
 export default function AIHandler() {
     const [isOpen, setIsOpen] = useState(false);
@@ -41,17 +41,9 @@ export default function AIHandler() {
 
         try {
             const token = getAuthToken();
-            const res = await fetch(`${API_ENDPOINTS.AI_CHAT}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(token && { "Authorization": `Bearer ${token}` })
-                },
-                body: JSON.stringify({ message: query })
-            });
+            const data = await api.aiChat(query, token as string);
 
-            if (res.ok) {
-                const data = await res.json();
+            if (!isApiError(data)) {
                 setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
             } else {
                 setMessages(prev => [...prev, { role: "assistant", content: "I encountered a synchronization error with the Lucrix brain. Please try again." }]);

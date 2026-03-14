@@ -2,11 +2,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Trophy, TrendingUp, Info } from "lucide-react";
+import { api, isApiError } from "@/lib/api";
 
 export function CLVLeaderboard() {
     const { data, isLoading } = useQuery({
         queryKey: ["clv-leaderboard"],
-        queryFn: () => fetch("/api/clv/leaderboard").then(r => r.json()),
+        queryFn: async () => {
+            const res = await api.clvLeaderboard();
+            if (isApiError(res)) throw new Error(res.message);
+            return res;
+        },
     });
 
     if (isLoading) return (

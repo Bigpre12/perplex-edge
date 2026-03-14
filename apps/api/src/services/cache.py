@@ -17,18 +17,24 @@ logger = logging.getLogger(__name__)
 
 # Try to import redis — optional dependency
 try:
-    import redis.asyncio as aioredis
-    HAS_REDIS = True
+    if os.getenv("DEVELOPMENT_MODE") == "1":
+        HAS_REDIS = False
+        logger.info("redis disabled locally to prevent import-time hang — using in-memory cache")
+    else:
+        import redis.asyncio as aioredis
+        HAS_REDIS = True
 except ImportError:
     HAS_REDIS = False
     logger.info("redis package not installed — using in-memory cache")
 
 
+from config import settings
+
 class CacheManager:
     """Dual-mode cache: Redis (production) or in-memory dict (local dev)."""
 
     def __init__(self):
-        self.redis_url = os.getenv("REDIS_URL", "")
+        self.redis_url = settings.REDIS_URL
         self._redis = None
         self._memory: dict = {}
         self._connected = False
@@ -37,16 +43,24 @@ class CacheManager:
         """Connect to Redis if URL is configured."""
         if self.redis_url and HAS_REDIS:
             try:
+                logger.info(f"Attempting to connect to Redis at {self.redis_url}...")
                 self._redis = aioredis.from_url(
                     self.redis_url,
                     decode_responses=True,
-                    socket_connect_timeout=5,
+                    socket_connect_timeout=1.0,  # Reduced from 2.0
+                    socket_timeout=1.0,          # Added socket timeout
                 )
-                await self._redis.ping()
-                self._connected = True
-                logger.info("Redis connected (Upstash)")
+                import asyncio
+                try:
+                    await asyncio.wait_for(self._redis.ping(), timeout=2.0)
+                    self._connected = True
+                    logger.info("OK - Redis connected (Upstash)")
+                except asyncio.TimeoutError:
+                    logger.warning("WARN - Redis ping timed out, using in-memory fallback")
+                    self._redis = None
+                    self._connected = False
             except Exception as e:
-                logger.warning(f"Redis connection failed, using in-memory: {e}")
+                logger.warning(f"WARN - Redis connection failed, using in-memory: {e}")
                 self._redis = None
                 self._connected = False
         else:

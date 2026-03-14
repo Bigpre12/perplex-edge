@@ -20,11 +20,12 @@ import models
 config = context.config
 
 # Overwrite the sqlalchemy.url from the env file
-database_url = os.environ.get("DATABASE_URL", "sqlite:///./perplex_local.db")
-# alembic doesn't natively support sqlite+aiosqlite format so use sync sqlite for migrations
-if database_url.startswith("sqlite+aiosqlite"):
-    database_url = database_url.replace("sqlite+aiosqlite", "sqlite")
-config.set_main_option("sqlalchemy.url", database_url)
+config.set_main_option(
+    "sqlalchemy.url",
+    os.environ.get("DATABASE_URL", "sqlite:///./data/perplex_local.db")
+        .replace("postgresql+asyncpg", "postgresql")
+        .replace("sqlite+aiosqlite", "sqlite")
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -57,6 +58,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=True
     )
 
     with context.begin_transaction():
@@ -78,7 +80,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata,
+            render_as_batch=True
         )
 
         with context.begin_transaction():

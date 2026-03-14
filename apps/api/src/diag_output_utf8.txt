@@ -1,0 +1,57 @@
+﻿py : ERROR:app.services
+.odds_api_client:No 
+Odds API key configured
+At line:1 char:1
++ py 
+test_props_diag.py > 
+diag_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (ERROR:app.ser   
+ vi... key configur    
+ed:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+INFO:httpx:HTTP 
+Request: GET https://si
+te.api.espn.com/apis/si
+te/v2/sports/basketball
+/nba/scoreboard 
+"HTTP/1.1 200 OK"
+INFO:services.espn_clie
+nt:ESPN: Fetched 8 
+games for 
+basketball_nba
+INFO:app.services.real_
+sports_api:Waterfall: 
+Successfully fetched 
+basketball_nba from 
+espn
+ERROR:app.services.odds
+_api_client:No Odds 
+API key configured
+ERROR:app.services.odds
+_api_client:No Odds 
+API key configured
+--- Diagnostic Script Start ---
+
+Testing NBA Games...
+Found 8 NBA games.
+Game: None vs None | ID: 401810816
+Testing Props for Game ID: 401810816
+Found 0 props for this game.
+Game: None vs None | ID: 401810817
+Testing Props for Game ID: 401810817
+Found 0 props for this game.
+
+Testing ESPN Scoreboard directly...
+ESPN found 8 games.
+
+Check Odds API Key...
+THE_ODDS_API_KEY set: False
+--- Diagnostic Script End ---

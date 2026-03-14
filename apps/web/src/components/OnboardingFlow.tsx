@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_ENDPOINTS } from '@/lib/apiConfig';
+import { api, API } from '@/lib/api';
 
 const SPORTS = ['NBA', 'NFL', 'MLB', 'NHL', 'NCAAF', 'WNBA'];
 const BOOKS = ['PrizePicks', 'DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'Fliff'];
@@ -17,10 +17,7 @@ export default function OnboardingFlow() {
   const toggleBook = (b: string) => setBooks(p => p.includes(b) ? p.filter(x => x !== b) : [...p, b]);
 
   const finish = async () => {
-    await fetch(API_ENDPOINTS.USER_PREFERENCES, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sports, bankroll, books })
-    });
+    await api.post('/user/preferences', { sports, bankroll, books });
     localStorage.setItem('lola-onboarded', 'true');
     router.push('/');
   };

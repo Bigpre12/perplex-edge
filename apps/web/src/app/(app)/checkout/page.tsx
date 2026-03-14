@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Sparkles, ShieldCheck, Zap, ArrowRight, Check } from "lucide-react";
 import { getUser } from "@/lib/auth";
 
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api, isApiError } from "@/lib/api";
 
 export default function CheckoutPage() {
     const [loading, setLoading] = useState(false);
@@ -17,30 +17,22 @@ export default function CheckoutPage() {
 
         try {
             const user = getUser();
-
             if (!user) {
                 window.location.href = "/login";
                 return;
             }
 
-            const res = await fetch(`${API_ENDPOINTS.STRIPE}/create-checkout-session`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    user_email: user.email,
-                    user_id: String(user.id)
-                })
-            });
+            const data = await api.stripeCheckout('price_pro_monthly'); // Defaulting to pro monthly
 
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.detail || "Failed to initialize secure checkout");
+            if (isApiError(data)) {
+                throw new Error(data.message || "Failed to initialize secure checkout");
             }
 
-            const { session_url } = await res.json();
-
-            // Redirect to Stripe Hosted Checkout
-            window.location.href = session_url;
+            if (data.session_url) {
+                window.location.href = data.session_url;
+            } else {
+                throw new Error("Stripe engine failed to generate a secure session.");
+            }
 
         } catch (err: any) {
             setError(err.message);

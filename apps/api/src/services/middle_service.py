@@ -100,7 +100,7 @@ class MiddleService:
                         p1, p2 = american_to_implied(b1.over_odds), american_to_implied(b2.under_odds)
                         if (p1 + p2) < 0.99:
                             middles.append({
-                                "game": f"{p.team} @ {p.opponent}",
+                                "game": f"{p.team} vs {p.opponent}" if p.team and p.opponent else "Game Info Missing",
                                 "market": f"{p.player_name} {p.stat_type.upper().replace('_', ' ')}",
                                 "window": f"Line: {p.line}",
                                 "width": round(1.0 - (p1 + p2), 3),
@@ -115,3 +115,5 @@ class MiddleService:
             db.close()
 
 middle_service = MiddleService()
+scan_for_middles = middle_service.scan_for_middles
+scan_for_prop_middles = middle_service.scan_for_prop_middles

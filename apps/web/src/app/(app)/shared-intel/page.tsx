@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { getAuthToken, getUser } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/apiConfig";
+import { SteamAlerts } from "@/components/SteamAlerts";
 
 export default function SharedIntelPage() {
     const [posts, setPosts] = useState<any[]>([]);
@@ -32,7 +33,7 @@ export default function SharedIntelPage() {
 
     const fetchFeed = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/social/feed`);
+            const res = await fetch(`/api/social/feed`);
             if (res.ok) setPosts(await res.json());
         } catch (err) {
             console.error("Failed to fetch community feed:", err);
@@ -46,7 +47,7 @@ export default function SharedIntelPage() {
         if (!token) return alert("Please login to interact with posts.");
 
         try {
-            const res = await fetch(`${API_BASE_URL}/social/like/${postId}`, {
+            const res = await fetch(`/api/social/like/${postId}`, {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${token}` }
             });
@@ -65,7 +66,7 @@ export default function SharedIntelPage() {
 
         setIsPosting(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/social/share`, {
+            const res = await fetch(`/api/social/share`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -163,7 +164,10 @@ export default function SharedIntelPage() {
                                     <button className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-primary transition-colors">
                                         <MessageSquare size={16} /> {post.comments_count}
                                     </button>
-                                    <button className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-white transition-colors ml-auto">
+                                    <button 
+                                        title="Share Insight"
+                                        className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-white transition-colors ml-auto"
+                                    >
                                         <Share2 size={16} />
                                     </button>
                                 </div>
@@ -181,13 +185,9 @@ export default function SharedIntelPage() {
             <div className="hidden xl:flex flex-col w-80 shrink-0 space-y-6">
                 <div className="glass-panel p-6 rounded-2xl border-white/[0.05]">
                     <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                        <TrendingUp size={16} className="text-primary" /> Trending Intel
+                        <TrendingUp size={16} className="text-primary" /> Dynamic Steam Alerts
                     </h3>
-                    <div className="space-y-4">
-                        <TrendingTopic title="NBA Player Props" volume="1.2k shared" />
-                        <TrendingTopic title="Super Bowl LVIII" volume="4.5k shared" />
-                        <TrendingTopic title="UFC 298 Steam Move" volume="842 shared" />
-                    </div>
+                    <SteamAlerts sport="basketball_nba" />
                 </div>
 
                 <div className="glass-panel p-6 rounded-2xl border-white/[0.05] bg-gradient-to-br from-[#0c1416] to-[#0a0a0a]">
@@ -195,10 +195,10 @@ export default function SharedIntelPage() {
                         <div className="p-2 bg-primary/20 rounded-lg text-primary">
                             <Brain size={20} />
                         </div>
-                        <h3 className="text-sm font-bold text-white uppercase tracking-tight">Wisdom of Crowds</h3>
+                        <h3 className="text-sm font-bold text-white uppercase tracking-tight">AI Advantage</h3>
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed italic">
-                        "68% of verified analysts are moving towards the OVER on LeBron James points tonight. Crowdsourced efficiency is currently high."
+                        The Lucrix Neural Engine is currently scanning lines across 5 sharpeners to detect significant market pressure.
                     </p>
                 </div>
             </div>

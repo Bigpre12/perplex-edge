@@ -1,14 +1,15 @@
-from models.bets import BetSlip, BetLog
+class AsyncSession: pass
+from models import BetSlip, BetLog, BetLeg, BetResult
 from models.users import User
 from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from typing import List
 import logging
 
 logger = logging.getLogger(__name__)
 
 class LedgerService:
-    async def track_bet(self, db: AsyncSession, user_id: int, slip_data: dict, legs: List[dict]):
+    async def track_bet(self, db: AsyncSession, user_id: str, slip_data: dict, legs: List[dict]):
         """
         Track a new bet slip with multiple legs.
         """
@@ -24,7 +25,7 @@ class LedgerService:
         
         # Create Legs
         for leg in legs:
-            new_leg = BetLog(
+            new_leg = BetLeg(
                 slip_id=new_slip.id,
                 prop_id=leg.get("prop_id"),
                 side=leg.get("side"),
@@ -37,20 +38,19 @@ class LedgerService:
         await db.refresh(new_slip)
         return new_slip
 
-    async def get_user_ledger(self, db: AsyncSession, user_id: int):
+    async def get_user_ledger(self, db: AsyncSession, user_id: str):
         """Fetch all bets for a user with legs."""
-        # Note: In a real app we'd use joinedload, but keeping it simple for now
-        stmt = select(BetSlip).where(BetSlip.user_id == user_id).order_by(BetSlip.placed_at.desc())
+        stmt = select(BetSlip).where(BetSlip.user_id == user_id).options(selectinload(BetSlip.legs)).order_by(BetSlip.placed_at.desc())
         result = await db.execute(stmt)
         slips = result.scalars().all()
         return slips
 
-    async def get_user_stats(self, db: AsyncSession, user_id: int):
+    async def get_user_stats(self, db: AsyncSession, user_id: str):
         """Calculate ROI, Win Rate, Heatmaps, and Risk/Reward data."""
         from models.props import PropLine
         
         # 1. Fetch all slips for the user
-        stmt = select(BetSlip).where(BetSlip.user_id == user_id)
+        stmt = select(BetSlip).where(BetSlip.user_id == user_id).options(selectinload(BetSlip.legs))
         result = await db.execute(stmt)
         slips = result.scalars().all()
         
@@ -64,7 +64,7 @@ class LedgerService:
         slip_ids = [s.id for s in slips]
         
         # 2. Fetch all legs and join with PropLine for sport/stat info
-        legs_stmt = select(BetLog, PropLine).join(PropLine, BetLog.prop_id == PropLine.id).where(BetLog.slip_id.in_(slip_ids))
+        legs_stmt = select(BetLeg, PropLine).join(PropLine, BetLeg.prop_id == PropLine.id).where(BetLeg.slip_id.in_(slip_ids))
         legs_result = await db.execute(legs_stmt)
         legs_data = legs_result.all()
 
@@ -73,8 +73,8 @@ class LedgerService:
             "total_bets": len(slips),
             "wins": len([s for s in slips if s.status == "won"]),
             "losses": len([s for s in slips if s.status == "lost"]),
-            "by_sport": {}, # { 'NBA': { 'profit': 0, 'bets': 0 } }
-            "by_market": {}, # { 'Points': { 'profit': 0, 'bets': 0 } }
+            "by_sport": {}, 
+            "by_market": {}, 
             "risk_reward": []
         }
 
@@ -82,6 +82,7 @@ class LedgerService:
         def get_slip_profit(slip: BetSlip):
             if slip.status == "won":
                 odds = slip.total_odds
+                if not odds: return 0.0
                 return (odds/100) if odds > 0 else (100/abs(odds))
             elif slip.status == "lost":
                 return -1.0
@@ -92,18 +93,19 @@ class LedgerService:
             
             # Find legs for this slip to aggregate sport/market
             slip_legs = [l for l in legs_data if l[0].slip_id == slip.id]
+            div = len(slip_legs) if slip_legs else 1
             for leg, prop in slip_legs:
                 sport = prop.sport_key or "Unknown"
                 market = prop.stat_type or "Unknown"
                 
                 # aggregate sport
                 if sport not in stats["by_sport"]: stats["by_sport"][sport] = {"profit": 0, "bets": 0}
-                stats["by_sport"][sport]["profit"] += profit / len(slip_legs) # Split profit across legs if parlay
+                stats["by_sport"][sport]["profit"] += profit / div 
                 stats["by_sport"][sport]["bets"] += 1
                 
                 # aggregate market
                 if market not in stats["by_market"]: stats["by_market"][market] = {"profit": 0, "bets": 0}
-                stats["by_market"][market]["profit"] += profit / len(slip_legs)
+                stats["by_market"][market]["profit"] += profit / div
                 stats["by_market"][market]["bets"] += 1
 
             # Scatter plot data: odds vs profit
@@ -111,7 +113,7 @@ class LedgerService:
                 "odds": slip.total_odds,
                 "profit": profit,
                 "status": slip.status,
-                "date": slip.placed_at.isoformat()
+                "date": slip.placed_at.isoformat() if slip.placed_at else None
             })
 
         # Format heatmaps for frontend
@@ -132,7 +134,8 @@ class LedgerService:
         # 3. Calculate Balance History & Drawdown (Starting with 100 units)
         balance_history = [100.0]
         current_balance = 100.0
-        for slip in sorted(slips, key=lambda x: x.placed_at):
+        sorted_slips = sorted([s for s in slips if s.placed_at], key=lambda x: x.placed_at)
+        for slip in sorted_slips:
             current_balance += get_slip_profit(slip)
             balance_history.append(current_balance)
         
@@ -140,7 +143,6 @@ class LedgerService:
 
         # 4. Calculate Risk of Ruin
         win_rate_raw = (stats["wins"] / stats["total_bets"]) if stats["total_bets"] > 0 else 0
-        # Assume a standard 3% model edge if we haven't integrated CLV per slip yet
         ror = RiskService.calculate_risk_of_ruin(win_rate_raw, 0.03, 100)
 
         return {
@@ -174,24 +176,21 @@ class LedgerService:
         
         settled_count = 0
         for slip in pending_slips:
-            # For simplicity, we assume straight bets for now
-            # Get legs
-            stmt_legs = select(BetLog).where(BetLog.slip_id == slip.id)
+            # Load legs explicitly if not already loaded
+            stmt_legs = select(BetLeg).where(BetLeg.slip_id == slip.id)
             res_legs = await db.execute(stmt_legs)
             legs = res_legs.scalars().all()
             
             leg_results = []
             for leg in legs:
-                # In a real system, we'd need a more robust way to link PropID to GameResults
-                # Here we'll search by player name and stat type on the same day as placed_at
                 stats = await player_stats_service.search_player_stats(
-                    query=f"{leg.prop_id}", # Hack: if prop_id isn't directly in stats, we might need a better join
+                    query=f"{leg.prop_id}", 
                     limit=1
                 )
                 
                 if stats:
                     stat = stats[0]
-                    actual = stat['actual_value']
+                    actual = stat.get('actual_value', 0)
                     line = leg.line_taken
                     side = leg.side
                     
@@ -199,11 +198,10 @@ class LedgerService:
                     if side == "over" and actual > line: is_win = True
                     elif side == "under" and actual < line: is_win = True
                     
-                    leg.status = "won" if is_win else "lost"
-                    leg_results.append(leg.status)
+                    # We might want to store leg status too, but for now we just track it
+                    leg_results.append("won" if is_win else "lost")
             
             if leg_results:
-                # If all legs won -> won. If any leg lost -> lost.
                 if all(r == "won" for r in leg_results):
                     slip.status = "won"
                 elif any(r == "lost" for r in leg_results):

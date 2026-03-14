@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { Loader2 } from "lucide-react";
 
+import GateLock from "@/components/GateLock";
+import { useGate } from "@/hooks/useGate";
+
 export default function InstitutionalLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
@@ -16,15 +19,7 @@ export default function InstitutionalLayout({ children }: { children: React.Reac
                 router.replace("/login");
                 return;
             }
-
-            // Authorization Guard
-            const tier = user.subscription_tier;
-            // Temporarily allowing 'admin' or bypass during dev if needed, else strict 'pro'
-            if (tier !== 'pro' && tier !== 'admin') {
-                router.replace("/checkout");
-            } else {
-                setIsLoading(false);
-            }
+            setIsLoading(false);
         };
 
         checkSession();
@@ -39,5 +34,9 @@ export default function InstitutionalLayout({ children }: { children: React.Reac
         );
     }
 
-    return <>{children}</>;
+    return (
+        <GateLock feature="export" reason="Institutional-grade tools and configurations are reserved for Elite partners.">
+            {children}
+        </GateLock>
+    );
 }

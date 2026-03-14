@@ -67,7 +67,7 @@ class TheRundownClient:
 
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         url = f"{self.BASE_URL}/sports/{sport_id}/events/{today}"
-        headers = {"x-rapidapi-key": self.api_key}
+        headers = {"x-therundown-key": self.api_key}
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:

@@ -60,3 +60,5 @@ class WebhookManager:
             logger.info(f"📢 Dispatched {sum(results)} alerts to external Discord Webhooks.")
 
 webhook_manager = WebhookManager()
+send_discord_alert = webhook_manager.send_discord_alert
+dispatch_alerts = webhook_manager.dispatch_alerts

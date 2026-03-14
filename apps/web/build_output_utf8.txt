@@ -1,0 +1,261 @@
+﻿
+> frontend@0.1.0 build
+> next build
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+node.exe :  ΓÜá 
+Compiled with warnings
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ( ΓÜá Compiled   
+  with warnings:Str    
+ing) [], RemoteExc    
+eption
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+
+./src/app/(app)/shared-
+intel/page.tsx
+Attempted import 
+error: '@/components/St
+eamAlerts' does not 
+contain a default 
+export (imported as 
+'SteamAlerts').
+
+Import trace for 
+requested module:
+./src/app/(app)/shared-
+intel/page.tsx
+
+ ΓÜá Compiled with 
+warnings
+
+./src/app/(app)/shared-
+intel/page.tsx
+Attempted import 
+error: '@/components/St
+eamAlerts' does not 
+contain a default 
+export (imported as 
+'SteamAlerts').
+
+Import trace for 
+requested module:
+./src/app/(app)/shared-
+intel/page.tsx
+
+ Γ£ô Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/49) ...
+   Generating static pages (12/49) 
+   Generating static pages (24/49) 
+Error: Element type is 
+invalid: expected a 
+string (for built-in 
+components) or a 
+class/function (for 
+composite components) 
+but got: undefined.
+    at nM (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:61600)
+    at nL (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:64547)
+    at nB (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:67539)
+    at nD (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:66681)
+    at nL (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:64854)
+    at nB (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:67539)
+    at nM (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:58561)
+    at nL (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:64547)
+    at nB (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:67539)
+    at nD (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:66681) {
+  digest: '193259938'
+}
+   Generating static pages (36/49) 
+
+Error occurred 
+prerendering page 
+"/shared-intel". Read 
+more: https://nextjs.or
+g/docs/messages/prerend
+er-error
+
+Error: Element type is 
+invalid: expected a 
+string (for built-in 
+components) or a 
+class/function (for 
+composite components) 
+but got: undefined.
+    at nM (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:61600)
+    at nL (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:64547)
+    at nB (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:67539)
+    at nD (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:66681)
+    at nL (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:64854)
+    at nB (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:67539)
+    at nM (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:58561)
+    at nL (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:64547)
+    at nB (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:67539)
+    at nD (C:\Users\pre
+io\OneDrive\Documents\U
+ntitled\perplex_engine\
+perplex-edge\apps\web\n
+ode_modules\next\dist\c
+ompiled\next-server\app
+-page.runtime.prod.js:1
+2:66681)
+ Γ£ô Generating static pages (49/49)
+
+> Export encountered 
+errors on following 
+paths:
+	/(app)/shared-intel/pa
+ge: /shared-intel

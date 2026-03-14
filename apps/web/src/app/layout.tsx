@@ -2,7 +2,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import "./globals.css";
 import PWASetup from "@/components/PWASetup";
 import { OnboardingModal } from "@/components/OnboardingModal";
-
+import { Providers } from "@/components/Providers";
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
@@ -15,8 +15,13 @@ const mono = JetBrains_Mono({
   display: 'swap',
 });
 
-// ... meta tags ...
-// (keeping the metadata object as is, just updating the export and body)
+export const metadata = {
+  title: "LUCRIX",
+  description: "Professional betting intelligence platform",
+  icons: {
+    icon: "/icon-192.png",
+  },
+};
 
 export default function RootLayout({
   children,
@@ -24,10 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#6366f1" />
+        <meta name="theme-color" content="#0f1117" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -37,10 +43,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="antialiased bg-[#080810] text-[#f1f5f9] font-sans selection:bg-[#F5C518] selection:text-black relative">
+      <body className="antialiased bg-[#080810] text-[#f1f5f9] font-sans selection:bg-[#F5C518] selection:text-black relative" suppressHydrationWarning>
         <PWASetup />
         <OnboardingModal />
-        {children}
+        <Providers>
+          {children}
+        </Providers>
         <footer style={{
           padding: '20px', textAlign: 'center', fontSize: '0.75rem',
           color: '#666', borderTop: '1px solid #1a1a2e', marginTop: 'auto'
@@ -52,4 +60,3 @@ export default function RootLayout({
     </html>
   );
 }
-

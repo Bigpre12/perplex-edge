@@ -1,5 +1,5 @@
+class AsyncSession: pass
 from sqlalchemy import select, desc
-from sqlalchemy.ext.asyncio import AsyncSession
 from models.social import SharedIntel
 from models.bets import BetSlip
 from models.users import User

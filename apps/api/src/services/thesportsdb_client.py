@@ -144,6 +144,57 @@ class TheSportsDBClient:
             logger.error(f"TheSportsDB player search error: {e}")
             return None
 
+    async def search_teams(self, team_name: str) -> List[Dict]:
+        """Search for teams by name."""
+        cache_key = f"tsdb_teams_{team_name}"
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        url = f"{self.BASE_URL}/{self.api_key}/searchteams.php"
+        params = {"t": team_name}
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url, params=params)
+                resp.raise_for_status()
+                raw = resp.json()
+
+            teams = raw.get("teams") or []
+            self._set_cache(cache_key, teams, ttl=3600 * 24)
+            return teams
+
+        except Exception as e:
+            logger.error(f"TheSportsDB team search error: {e}")
+            return []
+
+    async def lookup_event(self, event_id: str) -> Optional[Dict]:
+        """Look up details for a specific event/game."""
+        cache_key = f"tsdb_event_{event_id}"
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        url = f"{self.BASE_URL}/{self.api_key}/lookupevent.php"
+        params = {"id": event_id}
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url, params=params)
+                resp.raise_for_status()
+                raw = resp.json()
+
+            events = raw.get("events") or []
+            if events:
+                result = events[0]
+                self._set_cache(cache_key, result, ttl=3600 * 12)
+                return result
+            return None
+
+        except Exception as e:
+            logger.error(f"TheSportsDB event lookup error for {event_id}: {e}")
+            return None
+
 
 # Singleton
 thesportsdb_client = TheSportsDBClient()

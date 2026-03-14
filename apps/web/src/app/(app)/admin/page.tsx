@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Activity, Users, DollarSign, ShieldAlert, Cpu, Database, RefreshCw, Send } from "lucide-react";
 import { getUser } from "@/lib/auth";
 
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { api, isApiError } from "@/lib/api";
 
 export default function AdminCommandCenter() {
     const [stats, setStats] = useState<any>(null);
@@ -22,19 +22,18 @@ export default function AdminCommandCenter() {
                     return;
                 }
 
-                // Verify Clearance via the backend
-                const res = await fetch(`${API_ENDPOINTS.ADMIN}/dashboard-stats?email=${user.email}`);
+                const data = await api.adminStats(user.email);
 
-                if (res.status === 403) {
-                    setIsAdmin(false);
-                    setError("ACCESS DENIED: Insufficient Security Clearance");
-                    setLoading(false);
+                if (isApiError(data)) {
+                    if (data.status === 403) {
+                        setIsAdmin(false);
+                        setError("ACCESS DENIED: Insufficient Security Clearance");
+                    } else {
+                        throw new Error(data.message || "Failed to fetch command center metrics");
+                    }
                     return;
                 }
 
-                if (!res.ok) throw new Error("Failed to fetch command center metrics");
-
-                const data = await res.json();
                 setStats(data);
                 setIsAdmin(true);
 

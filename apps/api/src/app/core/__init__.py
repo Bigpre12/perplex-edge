@@ -1,1 +1,1 @@
-# Init file for app.core package
+# intentionally empty

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update, desc
 from sqlalchemy.orm import Session
 from database import async_session_maker
-from models.props import PropLine, PropOdds
+from models.props import PropLine, PropOdds, GameLine, GameLineOdds
 from models.history import PropHistory
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class BrainOddsScout:
         self.steam_threshold_line = steam_threshold_line
         self.steam_threshold_odds = steam_threshold_odds
 
-    async def analyze_and_persist(self, props: list, sport_key: str):
+    async def analyze_and_persist(self, props: list, sport: str):
         """
         Takes live props, compares with history, logs deltas, and updates signals.
         Called by the props persistence background task.
@@ -35,7 +35,7 @@ class BrainOddsScout:
                     stmt = select(PropLine).where(
                         PropLine.player_name == player_name,
                         PropLine.stat_type == stat_type,
-                        PropLine.sport_key == sport_key
+                        PropLine.sport_key == sport
                     )
                     result = await session.execute(stmt)
                     existing_line = result.scalar_one_or_none()
@@ -44,17 +44,14 @@ class BrainOddsScout:
                     current_odds_over = p.get('odds', -110)
                     current_odds_under = -110 # Default for now
                     
-                    print(f"DEBUG: Processing {player_name} | {stat_type} | Line: {current_line}")
-
                     if not existing_line:
                         # NEW PROP - create and initial history
-                        print(f"DEBUG: Creating NEW PropLine for {player_name}")
                         existing_line = PropLine(
                             player_id=str(p.get('id', hash(player_name))),
                             player_name=player_name,
                             team=p['player']['team'],
                             opponent=p['matchup']['opponent'],
-                            sport_key=sport_key,
+                            sport_key=sport,
                             stat_type=stat_type,
                             line=current_line,
                             game_id=p.get('game_id'),
@@ -63,10 +60,12 @@ class BrainOddsScout:
                         session.add(existing_line)
                         await session.flush() # Get the ID
                     else:
-                        print(f"DEBUG: Updating EXISTING PropLine for {player_name}")
-                        # Update metadata if missing
-                        if not existing_line.game_id: existing_line.game_id = p.get('game_id')
-                        if not existing_line.start_time: existing_line.start_time = p.get('start_time')
+                        # ALWAYS Update metadata to ensure we have current game info
+                        existing_line.game_id = p.get('game_id') or existing_line.game_id
+                        existing_line.start_time = p.get('start_time') or existing_line.start_time
+                        existing_line.team = p['player']['team'] or existing_line.team
+                        existing_line.opponent = p['matchup']['opponent'] or existing_line.opponent
+                        existing_line.updated_at = datetime.now(timezone.utc)
                         
                         # check for deltas (Steam detection)
                         delta_line = abs(current_line - existing_line.line)
@@ -116,14 +115,103 @@ class BrainOddsScout:
                 print(f"DEBUG: Analysis failed: {e}")
                 logger.error(f"OddsScout analysis failed: {e}")
 
-    async def get_sharp_signals(self, sport_key: str = None) -> list:
+    async def get_sharp_signals(self, sport: str = None) -> list:
         """Fetch all props that currently have active sharp signals."""
         async with async_session_maker() as session:
             stmt = select(PropLine).where(PropLine.sharp_money == True)
-            if sport_key:
-                stmt = stmt.where(PropLine.sport_key == sport_key)
+            if sport:
+                stmt = stmt.where(PropLine.sport_key == sport)
             
             result = await session.execute(stmt)
             return result.scalars().all()
+
+    async def analyze_game_lines(self, lines: list, sport: str):
+        """
+        Takes live game lines (h2h, spreads, totals), compares with history, and persists.
+        """
+        async with async_session_maker() as session:
+            try:
+                for g in lines:
+                    game_id = g.get('id')
+                    home_team = g.get('home_team')
+                    away_team = g.get('away_team')
+                    commence_time_str = g.get('commence_time')
+                    
+                    commence_time = None
+                    if commence_time_str:
+                        try:
+                            commence_time = datetime.fromisoformat(commence_time_str.replace('Z', '+00:00'))
+                        except: pass
+
+                    # Process each market: h2h, spreads, totals
+                    for book in g.get('bookmakers', []):
+                        b_key = book.get('key')
+                        for market in book.get('markets', []):
+                            m_key = market.get('key') # h2h, spreads, totals
+                            
+                            # 1. Find or create GameLine
+                            stmt = select(GameLine).where(
+                                GameLine.game_id == game_id,
+                                GameLine.market_key == m_key,
+                                GameLine.sport_key == sport
+                            )
+                            res = await session.execute(stmt)
+                            existing_gl = res.scalar_one_or_none()
+                            
+                            if not existing_gl:
+                                existing_gl = GameLine(
+                                    game_id=game_id,
+                                    sport_key=sport,
+                                    home_team=home_team,
+                                    away_team=away_team,
+                                    commence_time=commence_time,
+                                    market_key=m_key
+                                )
+                                session.add(existing_gl)
+                                await session.flush()
+
+                            # 2. Update GameLineOdds
+                            stmt_odds = select(GameLineOdds).where(
+                                GameLineOdds.game_line_id == existing_gl.id,
+                                GameLineOdds.sportsbook == b_key
+                            )
+                            res_odds = await session.execute(stmt_odds)
+                            existing_odds = res_odds.scalar_one_or_none()
+                            
+                            if not existing_odds:
+                                existing_odds = GameLineOdds(
+                                    game_line_id=existing_gl.id,
+                                    sportsbook=b_key
+                                )
+                                session.add(existing_odds)
+
+                            # Map outcomes
+                            for outcome in market.get('outcomes', []):
+                                name = outcome.get('name')
+                                price = outcome.get('price')
+                                point = outcome.get('point')
+                                
+                                if m_key == 'h2h':
+                                    if name == home_team: existing_odds.home_price = price
+                                    elif name == away_team: existing_odds.away_price = price
+                                    elif name == 'Draw': existing_odds.draw_price = price
+                                elif m_key == 'spreads':
+                                    if name == home_team:
+                                        existing_odds.home_price = price
+                                        existing_odds.home_point = point
+                                    elif name == away_team:
+                                        existing_odds.away_price = price
+                                        existing_odds.away_point = point
+                                elif m_key == 'totals':
+                                    if name == 'Over': existing_odds.over_price = price
+                                    elif name == 'Under': existing_odds.under_price = price
+                                    existing_odds.total_line = point
+
+                            existing_odds.updated_at = datetime.now(timezone.utc)
+
+                await session.commit()
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"GameLines analysis failed for {sport}: {e}")
 
 brain_odds_scout = BrainOddsScout()

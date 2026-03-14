@@ -69,7 +69,7 @@ export default function LiveTrackCard({ player, statType, currentValue, line, si
                 <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-2">
                         <Activity size={14} className="text-slate-500" />
-                        <span className="text-[10px] text-slate-500 font-bold uppercase">Live Velocity: +2.1</span>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase">Confidence: {Math.round(progress)}%</span>
                     </div>
                     <button className="text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-widest px-2 py-1">
                         Detailed View →

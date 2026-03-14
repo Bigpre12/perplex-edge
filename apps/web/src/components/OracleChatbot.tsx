@@ -1,218 +1,193 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bot, X, Send, Loader2, Sparkles, BrainCircuit } from "lucide-react";
-import { getAuthToken, getUser } from "@/lib/auth";
-
-import { API_ENDPOINTS } from "@/lib/apiConfig";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 interface Message {
-    id: string;
-    text: string;
-    isUser: boolean;
-    timestamp: Date;
+    role: "user" | "assistant";
+    content: string;
 }
 
-export default function OracleChatbot() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: "initial",
-            text: "I am the Lucrix Oracle. I have live awareness of the entire +EV betting slate. What edge are you looking for today?",
-            isUser: false,
-            timestamp: new Date()
-        }
-    ]);
-    const [input, setInput] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+const INITIAL_MESSAGE: Message = {
+    role: "assistant",
+    content: "Oracle online. Ask me about tonight's props, sharp money, or parlays. What are you looking at?",
+};
 
-    // Auto-scroll to bottom of chat
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+const SUGGESTIONS = [
+    "Best props tonight?",
+    "Any steam moves?",
+    "Build me a 3-leg parlay",
+    "Who's trending over?",
+    "Sharp money report",
+];
+
+import { useGate } from "@/hooks/useGate";
+import { api, isApiError } from "@/lib/api";
+
+export default function OracleChatbot() {
+    const { tier, oracleLimit } = useGate();
+    const [open, setOpen] = useState(false);
+    const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+    const [input, setInput] = useState("");
+    const [loading, setLoading] = useState(false);
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        scrollToBottom();
-    }, [messages, isLoading]);
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
 
-    const handleSend = async () => {
-        if (!input.trim()) return;
+    useEffect(() => {
+        if (open) setTimeout(() => inputRef.current?.focus(), 100);
+    }, [open]);
 
-        const userMessage: Message = {
-            id: Date.now().toString(),
-            text: input,
-            isUser: true,
-            timestamp: new Date()
-        };
+    const ask = useCallback(async (text: string) => {
+        if (!text.trim() || loading) return;
 
-        setMessages(prev => [...prev, userMessage]);
+        const userMsg: Message = { role: "user", content: text };
+        const updated = [...messages, userMsg];
+        setMessages(updated);
         setInput("");
-        setIsLoading(true);
+        setLoading(true);
 
         try {
-            const user = getUser();
+            const res = await api.oracle({ messages: updated });
 
-            const res = await fetch(API_ENDPOINTS.CHATTING, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${getAuthToken() || ''}`
-                },
-                body: JSON.stringify({
-                    message: userMessage.text,
-                    user_id: user?.username || user?.email || "anonymous"
-                })
-            });
-
-            if (!res.ok) throw new Error("Oracle connection failed.");
-
-            const data = await res.json();
-
-            const oracleMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                text: data.reply,
-                isUser: false,
-                timestamp: new Date()
-            };
-
-            setMessages(prev => [...prev, oracleMessage]);
-
-        } catch (error) {
-            console.error(error);
-            setMessages(prev => [...prev, {
-                id: (Date.now() + 1).toString(),
-                text: "My connection to the live engine was severed. Please try again.",
-                isUser: false,
-                timestamp: new Date()
-            }]);
+            if (!isApiError(res)) {
+                setMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", content: res.message ?? "No response from Oracle." },
+                ]);
+            } else {
+                throw new Error(res.message);
+            }
+        } catch {
+            setMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: "Connection lost. Try again." },
+            ]);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
-    };
+    }, [messages, loading]);
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    };
+    const reset = () => setMessages([INITIAL_MESSAGE]);
 
     return (
         <>
-            {/* Floating Action Button */}
-            <motion.button
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsOpen(true)}
-                className={`fixed bottom-6 right-6 z-50 size-14 rounded-full bg-gradient-to-r from-primary to-emerald-500 shadow-[0_0_25px_rgba(13,242,51,0.4)] flex items-center justify-center border-2 border-primary/50 text-black overflow-hidden group ${isOpen ? 'hidden' : 'flex'}`}
+            {/* Floating Button — right side, above Command Center */}
+            <button
+                onClick={() => setOpen(!open)}
+                aria-label="Toggle Oracle"
+                className="fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full bg-purple-600 hover:bg-purple-500 active:scale-95 text-white shadow-xl flex items-center justify-center text-2xl transition-all duration-200"
             >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <BrainCircuit size={24} className="relative z-10" />
-            </motion.button>
+                {open ? "✕" : "🔮"}
+            </button>
 
-            {/* Chat Panel */}
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                        className="fixed bottom-6 right-6 z-[60] w-[380px] h-[600px] max-h-[85vh] glass-premium rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden backdrop-blur-3xl"
-                    >
-                        {/* Header */}
-                        <div className="px-5 py-4 border-b border-slate-800/80 bg-[#0c1416]/80 flex items-center justify-between relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-                            <div className="flex items-center gap-3">
-                                <div className="size-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary relative">
-                                    <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50" />
-                                    <Bot size={16} />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-                                        Lucrix Oracle <Sparkles size={12} className="text-primary" />
-                                    </h3>
-                                    <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                                        <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Engine Connected
-                                    </p>
+            {/* Chat Window */}
+            {open && (
+                <div className="fixed bottom-40 right-6 z-50 w-80 sm:w-96 h-[520px] bg-gray-950 border border-purple-800/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-purple-900/30 border-b border-purple-800/50">
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">🔮</span>
+                            <span className="font-bold text-white text-sm tracking-wide">Oracle</span>
+                            <span className="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">
+                                LIVE
+                            </span>
+                        </div>
+                        <button
+                            onClick={reset}
+                            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                        >
+                            Clear
+                        </button>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-700">
+                        {messages.map((msg, i) => (
+                            <div
+                                key={i}
+                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                            >
+                                {msg.role === "assistant" && (
+                                    <span className="text-base mr-2 mt-1 flex-shrink-0">🔮</span>
+                                )}
+                                <div
+                                    className={`max-w-[82%] px-3 py-2 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "user"
+                                        ? "bg-purple-600 text-white rounded-br-none"
+                                        : "bg-gray-800/80 text-gray-100 rounded-bl-none border border-gray-700/50"
+                                        }`}
+                                >
+                                    {msg.content}
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="text-slate-500 hover:text-white transition-colors bg-white/5 rounded-full p-1.5"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
+                        ))}
 
-                        {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-black/40">
-                            {messages.map((msg) => (
-                                <motion.div
-                                    key={msg.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
-                                >
-                                    <div
-                                        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.isUser
-                                            ? 'bg-primary text-black font-medium rounded-tr-sm'
-                                            : 'glass-panel border-white/5 text-slate-200 rounded-tl-sm shadow-xl'
-                                            }`}
-                                    >
-                                        <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                                        <span className={`text-[9px] mt-2 block font-medium ${msg.isUser ? 'text-black/60' : 'text-slate-500'}`}>
-                                            {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
+                        {/* Typing indicator */}
+                        {loading && (
+                            <div className="flex justify-start items-center gap-2">
+                                <span className="text-base">🔮</span>
+                                <div className="bg-gray-800 px-4 py-3 rounded-xl rounded-bl-none border border-gray-700/50">
+                                    <div className="flex gap-1">
+                                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                                     </div>
-                                </motion.div>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={bottomRef} />
+                    </div>
+
+                    {/* Suggestions — only on first message */}
+                    {messages.length <= 1 && (
+                        <div className="px-3 pb-2 flex flex-wrap gap-1.5">
+                            {SUGGESTIONS.map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => ask(s)}
+                                    className="text-xs bg-purple-900/40 hover:bg-purple-700/60 text-purple-300 px-2.5 py-1 rounded-full border border-purple-700/50 transition-all duration-150"
+                                >
+                                    {s}
+                                </button>
                             ))}
-                            {isLoading && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="flex justify-start"
-                                >
-                                    <div className="glass-panel border-white/5 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
-                                        <Loader2 size={14} className="animate-spin text-primary" />
-                                        <span className="text-xs text-slate-400 font-medium italic">Analyzing edge markets...</span>
-                                    </div>
-                                </motion.div>
-                            )}
-                            <div ref={messagesEndRef} />
                         </div>
+                    )}
 
-                        {/* Input Area */}
-                        <div className="p-4 border-t border-slate-800/80 bg-[#0c1416]/90">
-                            <div className="relative flex items-center">
-                                <textarea
+                    {/* Input */}
+                    <div className="flex flex-col border-t border-purple-800/50">
+                        {messages.length > oracleLimit * 2 && tier === "free" ? (
+                            <div className="p-4 text-center bg-purple-900/20">
+                                <p className="text-xs text-gray-400">Daily Oracle limit reached</p>
+                                <a href="/pricing" className="text-purple-400 font-bold text-xs hover:underline mt-1 inline-block">
+                                    Upgrade to Pro for Unlimited Oracle →
+                                </a>
+                            </div>
+                        ) : (
+                            <div className="p-3 flex gap-2">
+                                <input
+                                    ref={inputRef}
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={handleKeyPress}
-                                    placeholder="Ask the Oracle about live props..."
-                                    className="w-full bg-[#050505] border border-slate-700/50 rounded-xl pl-4 pr-12 py-3 text-sm text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 resize-none transition-all custom-scrollbar placeholder:text-slate-600"
-                                    rows={1}
-                                    style={{ minHeight: '44px', maxHeight: '120px' }}
+                                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && ask(input)}
+                                    placeholder="Ask Oracle..."
+                                    disabled={loading}
+                                    className="flex-1 bg-gray-800/80 text-white text-sm rounded-xl px-3 py-2 outline-none border border-gray-700/50 focus:border-purple-500 placeholder-gray-500 disabled:opacity-50 transition-colors"
                                 />
                                 <button
-                                    onClick={handleSend}
-                                    disabled={!input.trim() || isLoading}
-                                    className="absolute right-2 p-2 bg-primary/10 text-primary hover:bg-primary hover:text-black rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary/10 disabled:hover:text-primary"
+                                    onClick={() => ask(input)}
+                                    disabled={loading || !input.trim()}
+                                    className="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 active:scale-95"
                                 >
-                                    <Send size={16} className={input.trim() && !isLoading ? 'translate-x-0.5 -translate-y-0.5 transition-transform' : ''} />
+                                    {loading ? "..." : "→"}
                                 </button>
                             </div>
-                            <p className="text-center text-[9px] text-slate-600 mt-2 font-medium">
-                                The Oracle analyzes mathematical EV, not financial advice.
-                            </p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        )}
+                    </div>
+                </div>
+            )}
         </>
     );
 }

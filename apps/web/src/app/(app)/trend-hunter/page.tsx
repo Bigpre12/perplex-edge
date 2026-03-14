@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Search, Bell, ChevronDown, Filter, BarChart3, Database } from 'lucide-react';
-import { API_BASE_URL } from '@/lib/apiConfig';
+import { api, isApiError } from '@/lib/api';
 import { TrendCard } from '@/components/TrendHunter/TrendCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -32,9 +32,10 @@ function TrendHunterContent() {
     const fetchTrends = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/trends/hit-rates?sport_key=${activeSport}&timeframe=${timeframe}`);
-            const data = await res.json();
-            setTrends(data.items || []);
+            const data = await api.trendHunter(activeSport, timeframe);
+            if (!isApiError(data)) {
+                setTrends(data.items || []);
+            }
         } catch (err) {
             console.error("Failed to fetch trends", err);
         } finally {
@@ -70,8 +71,8 @@ function TrendHunterContent() {
                                 key={sport.id}
                                 onClick={() => handleSportChange(sport.id)}
                                 className={`flex items-center space-x-2 pb-2 -mb-3 transition-all whitespace-nowrap border-b-2 font-bold text-sm ${activeSport === sport.id
-                                        ? 'text-primary border-primary'
-                                        : 'text-gray-500 border-transparent hover:text-gray-300'
+                                    ? 'text-primary border-primary'
+                                    : 'text-gray-500 border-transparent hover:text-gray-300'
                                     }`}
                             >
                                 <span className="text-xs">{sport.icon}</span>
@@ -91,8 +92,8 @@ function TrendHunterContent() {
                                 key={cat}
                                 onClick={() => setStatFilter(cat)}
                                 className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${statFilter === cat
-                                        ? 'bg-primary text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                                        : 'bg-[#181B21] border border-gray-800 text-gray-400 hover:border-gray-600'
+                                    ? 'bg-primary text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                                    : 'bg-[#181B21] border border-gray-800 text-gray-400 hover:border-gray-600'
                                     }`}
                             >
                                 {cat}
@@ -107,8 +108,8 @@ function TrendHunterContent() {
                                     key={t}
                                     onClick={() => setTimeframe(t)}
                                     className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${timeframe === t
-                                            ? 'bg-primary text-white shadow-lg'
-                                            : 'text-gray-500 hover:text-white'
+                                        ? 'bg-primary text-white shadow-lg'
+                                        : 'text-gray-500 hover:text-white'
                                         }`}
                                 >
                                     {t}

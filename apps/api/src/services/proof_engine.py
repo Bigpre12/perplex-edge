@@ -39,17 +39,17 @@ class ProofEngine:
                 wins = metrics['wins'] or 0
                 win_rate = (wins / total * 100) if total > 0 else 0
                 
-                # Fallback to realistic mock metrics if no real graded picks exist yet (for cold start)
+                # If no real data, return empty metrics structure
                 if total == 0:
                     return {
                         "period_days": days,
-                        "total_picks": 142,
-                        "wins": 82,
-                        "win_rate": 57.75,
-                        "avg_ev": 4.25,
-                        "avg_clv": 3.10,
-                        "total_profit_units": 24.5,
-                        "is_mock": True,
+                        "total_picks": 0,
+                        "wins": 0,
+                        "win_rate": 0,
+                        "avg_ev": 0,
+                        "avg_clv": 0,
+                        "total_profit_units": 0,
+                        "is_mock": False,
                         "timestamp": datetime.now(timezone.utc).isoformat()
                     }
                 
@@ -77,11 +77,7 @@ class ProofEngine:
                 picks = result.scalars().all()
                 
                 if not picks:
-                    # Fallback samples
-                    return [
-                        {"player": "LeBron James", "stat": "points", "line": 25.5, "odds": -110, "result": "WIN", "actual": 28, "clv": 5.2, "date": datetime.now(timezone.utc).isoformat()},
-                        {"player": "Kevin Durant", "stat": "points", "line": 27.5, "odds": -110, "result": "LOSS", "actual": 24, "clv": 2.1, "date": datetime.now(timezone.utc).isoformat()}
-                    ]
+                    return []
                 
                 return [
                     {

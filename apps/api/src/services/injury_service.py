@@ -38,20 +38,62 @@ async def fetch_injuries(sport: str = "nba") -> list[dict]:
         for inj in team.get("injuries", []):
             athlete = inj.get("athlete", {})
             status  = inj.get("status", "Unknown")
-            meta    = IMPACT_MAP.get(status, {"impact": "unknown", "color": "#888", "badge": status})
+            description = inj.get("longComment", inj.get("shortComment", ""))
+            
+            # Debug: Log status to see if it matches IMPACT_MAP
+            # print(f"DEBUG: Player: {athlete.get('displayName')} Status: '{status}'")
+            
+            # Simple body part extraction
+            body_part = "Unknown"
+            if "(" in description and ")" in description:
+                # Often formatted as "Player (Body Part) is out..."
+                import re
+                match = re.search(r'\((.*?)\)', description)
+                if match: body_part = match.group(1)
+            elif "injury" in description.lower():
+                parts = description.lower().split(" injury")[0].split()
+                if parts: body_part = parts[-1].capitalize()
+
+            # Improved case-insensitive mapping
+            status_lower = status.lower()
+            meta = {"impact": "unknown", "color": "#888", "badge": status}
+            
+            if "out" in status_lower:
+                meta = IMPACT_MAP["Out"]
+            elif "doubtful" in status_lower:
+                meta = IMPACT_MAP["Doubtful"]
+            elif "questionable" in status_lower or "q" == status_lower:
+                meta = IMPACT_MAP["Questionable"]
+            elif "probable" in status_lower:
+                meta = IMPACT_MAP["Probable"]
+            elif "day-to-day" in status_lower or "d2d" in status_lower or "dtd" in status_lower:
+                meta = IMPACT_MAP["Day-To-Day"]
+            
+            # Estimate teammate boost based on position and impact
+            teammate_boost = "+0% usage"
+            if meta["impact"] == "high":
+                pos = athlete.get("position", {}).get("abbreviation", "")
+                if pos in ["PG", "SG", "SF"]: teammate_boost = "+12% usage"
+                elif pos in ["PF", "C"]: teammate_boost = "+15% rebs"
+                elif pos in ["QB", "WR"]: teammate_boost = "+20% targets"
+
             injuries.append({
-                "player_name":  athlete.get("displayName", ""),
-                "position":     athlete.get("position", {}).get("abbreviation", ""),
-                "team":         team_name,
-                "status":       status,
-                "description":  inj.get("longComment", inj.get("shortComment", "")),
-                "sport":        sport.upper(),
-                "impact":       meta["impact"],
-                "color":        meta["color"],
-                "badge":        meta["badge"],
-                "return_date":  inj.get("date", "Unknown"),
-                "source":       "ESPN",
-                "fetched_at":   datetime.utcnow().isoformat(),
+                "player":        athlete.get("displayName", ""), # Frontend usually expects 'player'
+                "player_name":   athlete.get("displayName", ""), # Backward compatibility
+                "position":      athlete.get("position", {}).get("abbreviation", ""),
+                "team":          team_name,
+                "status":        status,
+                "description":   description,
+                "body_part":     body_part,
+                "stat_impact":   "High Value" if meta["impact"] == "high" else "Minor Adjustment",
+                "teammate_boost": teammate_boost,
+                "sport":         sport.upper(),
+                "impact":        meta["impact"],
+                "color":         meta["color"],
+                "badge":         meta["badge"],
+                "return_date":   inj.get("date", "Unknown"),
+                "source":        "ESPN",
+                "fetched_at":    datetime.utcnow().isoformat(),
             })
 
     return sorted(injuries, key=lambda x: {"high": 0, "medium": 1, "low": 2}.get(x["impact"], 3))
@@ -125,3 +167,5 @@ class InjuryService:
 
 # Singleton for backward compatibility
 injury_service = InjuryService()
+filter_injured_players = injury_service.filter_injured_players
+calculate_injury_impact = injury_service.calculate_injury_impact

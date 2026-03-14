@@ -19,16 +19,37 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 import logging
 
-from services.odds_api_client import odds_api
+from app.services.odds_api_client import odds_api
 from services.espn_client import espn_client
 from services.therundown_client import therundown_client
 from services.balldontlie_client import balldontlie_client
 from services.thesportsdb_client import thesportsdb_client
 from services.mysportsfeeds_client import mysportsfeeds_client
 from services.sportsgameodds_client import sportsgameodds_client
-from core.sport_constants import get_sport_id, SPORT_ID_TO_KEY
+from services.sportsgameodds_client import sportsgameodds_client
 
 logger = logging.getLogger(__name__)
+
+# Sport Key to ID mapping (duplicated from app_core to avoid import issues)
+SPORT_KEY_TO_ID = {
+    "basketball_nba": 30,
+    "americanfootball_nfl": 31,
+    "baseball_mlb": 40,
+    "icehockey_nhl": 22,
+    "basketball_ncaab": 39,
+    "americanfootball_ncaaf": 41,
+    "tennis_atp": 42,
+    "tennis_wta": 43,
+    "basketball_wnba": 53,
+    "mma_mixed_martial_arts": 54,
+    "boxing_boxing": 55,
+}
+
+def get_sport_id_local(sport_key: str) -> Optional[int]:
+    """Local helper to get sport ID."""
+    if not sport_key:
+        return None
+    return SPORT_KEY_TO_ID.get(sport_key.lower())
 
 # Sport-specific provider routing — determines which fallback chain to use per sport
 STATS_PROVIDER = {
@@ -88,6 +109,8 @@ class RealDataConnector:
             return True # Default to active if unknown
             
         start, end = season["start"], season["end"]
+        if sport_key == "basketball_nba":
+            return True # ALWAYS ACTIVE FOR TICKER NEWS
         if start <= end:
             return start <= month <= end
         else:
@@ -107,8 +130,10 @@ class RealDataConnector:
                     display_name = sport_key.split("_")[1].upper() if "_" in sport_key else sport_key.upper()
                     formatted.append({
                         "id": game.get("id"),
-                        "sport_id": get_sport_id(sport_key) or 0,
+                        "sport_id": get_sport_id_local(sport_key) or 0,
                         "external_game_id": game.get("id"),
+                        "home_team": game.get("home_team"),
+                        "away_team": game.get("away_team"),
                         "home_team_name": game.get("home_team"),
                         "away_team_name": game.get("away_team"),
                         "sport_name": display_name,
@@ -302,7 +327,8 @@ class RealDataConnector:
         Specific fetch for DFS platforms (PrizePicks, Underdog).
         Tailored for Texas users who primarily use Pickem apps.
         """
-        DFS_BOOKMAKERS = ["prizepicks", "underdog", "sleeper", "thrive", "parlayplay"]
+        # DFS_BOOKMAKERS is now imported here to prevent circularity
+        from app_core.bookmaker_constants import DFS_BOOKMAKERS
         try:
             raw_events = await odds_api.get_player_props(sport_key, game_id, markets=market)
             if not raw_events or not isinstance(raw_events, dict):

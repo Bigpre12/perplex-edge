@@ -1,0 +1,3 @@
+STATUS: 500
+HEADERS: {'date': 'Mon, 09 Mar 2026 00:52:11 GMT', 'server': 'uvicorn', 'content-length': '73', 'content-type': 'application/json'}
+BODY: {"detail":"Internal Server Error","error":"name 'logger' is not defined"}

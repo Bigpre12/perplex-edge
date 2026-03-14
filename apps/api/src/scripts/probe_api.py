@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # MUST LOAD DOTENV BEFORE INITIALIZING THE CLIENT
 load_dotenv()
 
-from services.odds_api_client import odds_api
+from app.services.odds_api_client import odds_api
 
 async def main():
     print("--- Environment Check ---")

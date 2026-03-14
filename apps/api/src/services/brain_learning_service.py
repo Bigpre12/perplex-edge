@@ -2,7 +2,6 @@
 Brain Learning Service - Machine learning and adaptation system
 """
 import asyncio
-import asyncpg
 import os
 import json
 import uuid
@@ -11,6 +10,8 @@ from typing import Dict, List, Optional, Any, Callable
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from database import async_session_maker
+from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,7 +59,6 @@ class LearningResult:
 
 class BrainLearningService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
         self.learning_algorithms = self._initialize_learning_algorithms()
         self.validation_queue = []
         self.active_learning = False
@@ -84,30 +84,28 @@ class BrainLearningService:
     async def record_learning_event(self, event: LearningEvent) -> str:
         """Record a learning event in the database"""
         try:
-            conn = await asyncpg.connect(self.db_url)
+            async with async_session_maker() as conn:
+                learning_id = str(uuid.uuid4())
+                await conn.execute(text("""
+                    INSERT INTO brain_learning (
+                        id, learning_type, metric_name, old_value, new_value,
+                        confidence, context, impact_assessment, validation_result
+                    ) VALUES (:id, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8)
+                """), {
+                    "id": learning_id,
+                    "p1": event.learning_type.value,
+                    "p2": event.metric_name,
+                    "p3": event.old_value,
+                    "p4": event.new_value,
+                    "p5": event.confidence,
+                    "p6": event.context,
+                    "p7": event.impact_assessment,
+                    "p8": ValidationStatus.PENDING.value
+                })
+                await conn.commit()
             
-            learning_id = str(uuid.uuid4())
-            
-            await conn.execute("""
-                INSERT INTO brain_learning (
-                    learning_type, metric_name, old_value, new_value,
-                    confidence, context, impact_assessment, validation_result
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            """, 
-                event.learning_type.value,
-                event.metric_name,
-                event.old_value,
-                event.new_value,
-                event.confidence,
-                event.context,
-                event.impact_assessment,
-                ValidationStatus.PENDING.value
-            )
-            
-            await conn.close()
             logger.info(f"Recorded learning event: {event.learning_type.value} - {event.metric_name}")
             return learning_id
-            
         except Exception as e:
             logger.error(f"Error recording learning event: {e}")
             return ""
@@ -115,46 +113,43 @@ class BrainLearningService:
     async def validate_learning_event(self, learning_id: str, days_to_validate: int = 7) -> LearningResult:
         """Validate a learning event by measuring actual improvement"""
         try:
-            conn = await asyncpg.connect(self.db_url)
-            
-            # Get the learning event
-            event = await conn.fetchrow("""
-                SELECT * FROM brain_learning 
-                WHERE id = $1
-            """, learning_id)
-            
-            if not event:
-                await conn.close()
-                return LearningResult(False, ValidationStatus.REJECTED, None, {"error": "Learning event not found"})
-            
-            # Simulate validation process
-            actual_improvement = await self._calculate_actual_improvement(
-                event['metric_name'],
-                event['old_value'],
-                event['new_value'],
-                days_to_validate
-            )
-            
-            # Determine validation result
-            if actual_improvement is None:
-                validation_result = ValidationStatus.PENDING
-                success = False
-            elif actual_improvement >= (event['new_value'] - event['old_value']) * 0.5:  # At least 50% of expected improvement
-                validation_result = ValidationStatus.VALIDATED
-                success = True
-            else:
-                validation_result = ValidationStatus.REJECTED
-                success = False
-            
-            # Update validation status
-            await conn.execute("""
-                UPDATE brain_learning 
-                SET validated_at = NOW(), validation_result = $1
-                WHERE id = $2
-            """, validation_result.value, learning_id)
-            
-            await conn.close()
-            
+            async with async_session_maker() as conn:
+                result = await conn.execute(text("""
+                    SELECT * FROM brain_learning 
+                    WHERE id = :id
+                """), {"id": learning_id})
+                event = result.mappings().first()
+                
+                if not event:
+                    return LearningResult(False, ValidationStatus.REJECTED, None, {"error": "Learning event not found"})
+                
+                # Simulate validation process
+                actual_improvement = await self._calculate_actual_improvement(
+                    event['metric_name'],
+                    event['old_value'],
+                    event['new_value'],
+                    days_to_validate
+                )
+                
+                # Determine validation result
+                if actual_improvement is None:
+                    validation_result = ValidationStatus.PENDING
+                    success = False
+                elif actual_improvement >= (event['new_value'] - event['old_value']) * 0.5:  # At least 50% of expected improvement
+                    validation_result = ValidationStatus.VALIDATED
+                    success = True
+                else:
+                    validation_result = ValidationStatus.REJECTED
+                    success = False
+                
+                # Update validation status
+                await conn.execute(text("""
+                    UPDATE brain_learning 
+                    SET validated_at = NOW(), validation_result = :val
+                    WHERE id = :id
+                """), {"val": validation_result.value, "id": learning_id})
+                await conn.commit()
+                
             return LearningResult(
                 success=success,
                 validation_result=validation_result,
@@ -165,7 +160,6 @@ class BrainLearningService:
                     "validation_days": days_to_validate
                 }
             )
-            
         except Exception as e:
             logger.error(f"Error validating learning event: {e}")
             return LearningResult(False, ValidationStatus.REJECTED, None, {"error": str(e)})
@@ -411,35 +405,26 @@ class BrainLearningService:
     async def run_all_learning_algorithms(self) -> List[LearningEvent]:
         """Run all learning algorithms"""
         all_events = []
-        
         for learning_type in LearningType:
             try:
                 events = await self.run_learning_algorithm(learning_type)
                 all_events.extend(events)
-                
-                # Record each learning event
                 for event in events:
                     await self.record_learning_event(event)
-                    
             except Exception as e:
                 logger.error(f"Error running {learning_type.value} learning: {e}")
-        
         return all_events
     
     async def get_learning_history(self, hours: int = 24) -> List[Dict]:
         """Get learning event history"""
         try:
-            conn = await asyncpg.connect(self.db_url)
-            
-            result = await conn.fetch("""
-                SELECT * FROM brain_learning 
-                WHERE timestamp >= NOW() - INTERVAL '$1 hours'
-                ORDER BY timestamp DESC
-            """, hours)
-            
-            await conn.close()
-            return [dict(row) for row in result]
-            
+            async with async_session_maker() as conn:
+                result = await conn.execute(text("""
+                    SELECT * FROM brain_learning 
+                    WHERE timestamp >= NOW() - make_interval(hours => :h)
+                    ORDER BY timestamp DESC
+                """), {"h": hours})
+                return [dict(row) for row in result.mappings()]
         except Exception as e:
             logger.error(f"Error getting learning history: {e}")
             return []
@@ -447,38 +432,37 @@ class BrainLearningService:
     async def get_learning_performance(self, hours: int = 24) -> Dict[str, Any]:
         """Get learning performance metrics"""
         try:
-            conn = await asyncpg.connect(self.db_url)
-            
-            # Overall performance
-            overall = await conn.fetchrow("""
-                SELECT 
-                    COUNT(*) as total_events,
-                    COUNT(CASE WHEN validation_result = 'validated' THEN 1 END) as validated,
-                    COUNT(CASE WHEN validation_result = 'pending' THEN 1 END) as pending,
-                    COUNT(CASE WHEN validation_result = 'rejected' THEN 1 END) as rejected,
-                    AVG(confidence) as avg_confidence,
-                    AVG(new_value - old_value) as avg_improvement
-                FROM brain_learning 
-                WHERE timestamp >= NOW() - INTERVAL '$1 hours'
-            """, hours)
-            
-            # Learning type performance
-            learning_types = await conn.fetch("""
-                SELECT 
-                    learning_type,
-                    COUNT(*) as total,
-                    COUNT(CASE WHEN validation_result = 'validated' THEN 1 END) as validated,
-                    AVG(confidence) as avg_confidence,
-                    AVG(new_value - old_value) as avg_improvement
-                FROM brain_learning 
-                WHERE timestamp >= NOW() - INTERVAL '$1 hours'
-                GROUP BY learning_type
-                ORDER BY total DESC
-            """, hours)
-            
-            await conn.close()
-            
-            validation_rate = (overall['validated'] / overall['total_events'] * 100) if overall['total_events'] > 0 else 0
+            async with async_session_maker() as conn:
+                result_overall = await conn.execute(text("""
+                    SELECT 
+                        COUNT(*) as total_events,
+                        COUNT(CASE WHEN validation_result = 'validated' THEN 1 END) as validated,
+                        COUNT(CASE WHEN validation_result = 'pending' THEN 1 END) as pending,
+                        COUNT(CASE WHEN validation_result = 'rejected' THEN 1 END) as rejected,
+                        AVG(confidence) as avg_confidence,
+                        AVG(new_value - old_value) as avg_improvement
+                    FROM brain_learning 
+                    WHERE timestamp >= NOW() - make_interval(hours => :h)
+                """), {"h": hours})
+                overall = result_overall.mappings().first()
+                if not overall or not overall['total_events']:
+                    return {}
+                
+                result_types = await conn.execute(text("""
+                    SELECT 
+                        learning_type,
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN validation_result = 'validated' THEN 1 END) as validated,
+                        AVG(confidence) as avg_confidence,
+                        AVG(new_value - old_value) as avg_improvement
+                    FROM brain_learning 
+                    WHERE timestamp >= NOW() - make_interval(hours => :h)
+                    GROUP BY learning_type
+                    ORDER BY total DESC
+                """), {"h": hours})
+                learning_types = result_types.mappings().all()
+                
+            validation_rate = (overall['validated'] / overall['total_events'] * 100) if overall['total_events'] and overall['total_events'] > 0 else 0
             
             return {
                 'period_hours': hours,
@@ -487,11 +471,10 @@ class BrainLearningService:
                 'pending_events': overall['pending'],
                 'rejected_events': overall['rejected'],
                 'validation_rate': validation_rate,
-                'avg_confidence': overall['avg_confidence'],
-                'avg_improvement': overall['avg_improvement'],
+                'avg_confidence': overall['avg_confidence'] or 0,
+                'avg_improvement': overall['avg_improvement'] or 0,
                 'learning_type_performance': [dict(row) for row in learning_types]
             }
-            
         except Exception as e:
             logger.error(f"Error getting learning performance: {e}")
             return {}
@@ -501,19 +484,12 @@ class BrainLearningService:
         if self.active_learning:
             logger.info("Learning cycle already in progress")
             return
-        
         self.active_learning = True
-        
         try:
             logger.info("Starting brain learning cycle")
-            
-            # Run all learning algorithms
             events = await self.run_all_learning_algorithms()
-            
             logger.info(f"Learning cycle completed: {len(events)} events generated")
-            
             return events
-            
         except Exception as e:
             logger.error(f"Error in learning cycle: {e}")
             return []
@@ -534,7 +510,6 @@ async def get_learning_history(hours: int = 24):
 if __name__ == "__main__":
     # Test learning service
     async def test():
-        # Test a learning event
         event = LearningEvent(
             learning_type=LearningType.MODEL_IMPROVEMENT,
             metric_name="passing_yards_prediction_accuracy",
@@ -544,15 +519,13 @@ if __name__ == "__main__":
             context="Test learning event",
             impact_assessment="High impact"
         )
-        
         learning_id = await learning_service.record_learning_event(event)
         print(f"Recorded learning event: {learning_id}")
         
-        # Test validation
         result = await learning_service.validate_learning_event(learning_id)
-        print(f"Validation result: {result.validation_result.value}")
+        if result:
+            print(f"Validation result: {result.validation_result.value}")
         
-        # Get performance
         performance = await learning_service.get_learning_performance()
         print(f"Learning performance: {performance}")
     

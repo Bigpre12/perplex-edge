@@ -30,6 +30,10 @@ class PropLine(Base):
     closing_line = Column(Float, nullable=True)
     clv_val = Column(Float, nullable=True)
     beat_closing_line = Column(Boolean, nullable=True)
+    
+    # Settlement
+    hit = Column(Boolean, nullable=True)
+    actual_value = Column(Float, nullable=True)
 
 class PropOdds(Base):
     __tablename__ = "propodds"
@@ -43,6 +47,41 @@ class PropOdds(Base):
     # Calculated Analytics
     ev_percent = Column(Float, nullable=True)
     confidence = Column(Float, nullable=True)
+    
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+class GameLine(Base):
+    __tablename__ = "gamelines"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(String, index=True)
+    sport_key = Column(String, index=True)
+    home_team = Column(String)
+    away_team = Column(String)
+    commence_time = Column(DateTime(timezone=True), index=True)
+    market_key = Column(String) # h2h, spreads, totals
+    
+    # Meta
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True)
+
+class GameLineOdds(Base):
+    __tablename__ = "gamelineodds"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    game_line_id = Column(Integer) # FK to gamelines.id
+    sportsbook = Column(String, index=True)
+    
+    home_price = Column(Integer, nullable=True) # for h2h/spreads
+    away_price = Column(Integer, nullable=True)
+    draw_price = Column(Integer, nullable=True)
+    
+    home_point = Column(Float, nullable=True) # line for spreads
+    away_point = Column(Float, nullable=True)
+    
+    over_price = Column(Integer, nullable=True) # for totals
+    under_price = Column(Integer, nullable=True)
+    total_line = Column(Float, nullable=True)
     
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
 

@@ -1,8 +1,8 @@
+class AsyncSession: pass
 """
 Brain Metrics API - Expose brain business metrics
 """
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from datetime import datetime, timezone, timedelta
 import asyncio
