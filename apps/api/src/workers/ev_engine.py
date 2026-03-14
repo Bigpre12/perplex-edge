@@ -14,14 +14,14 @@ logger = logging.getLogger(__name__)
 
 from celery_app import celery_app
 
-# Primary instance for imports
-ev_engine = EVEngine()
 
 def get_ev_engine():
-    global ev_engine
-    if ev_engine is None:
-        ev_engine = EVEngine()
-    return ev_engine
+    global _ev_engine
+    if _ev_engine is None:
+        _ev_engine = EVEngine()
+    return _ev_engine
+
+_ev_engine = None
 
 # --- Celery Task Wrapper ---
 @celery_app.task(name="workers.ev_engine.run_ev_cycle_task")
@@ -105,16 +105,32 @@ class EVEngine:
     async def upsert_ev_signals(self, signals: List[Dict]):
         async with async_session_maker() as session:
             try:
-                stmt = insert(UnifiedEVSignal).values(signals)
-                stmt = stmt.on_conflict_do_update(
-                    constraint='uix_ev_unique',
-                    set_={
-                        'price': stmt.excluded.price,
-                        'true_prob': stmt.excluded.true_prob,
-                        'edge_percent': stmt.excluded.edge_percent,
-                        'updated_at': func.now()
-                    }
-                )
+                dialect_name = session.sync_session.bind.dialect.name
+                
+                if dialect_name == 'sqlite':
+                    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+                    stmt = sqlite_insert(UnifiedEVSignal).values(signals)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=['sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version'],
+                        set_={
+                            'price': stmt.excluded.price,
+                            'true_prob': stmt.excluded.true_prob,
+                            'edge_percent': stmt.excluded.edge_percent,
+                            'updated_at': func.now()
+                        }
+                    )
+                else:
+                    from sqlalchemy.dialects.postgresql import insert as pg_insert
+                    stmt = pg_insert(UnifiedEVSignal).values(signals)
+                    stmt = stmt.on_conflict_do_update(
+                        constraint='uix_ev_unique',
+                        set_={
+                            'price': stmt.excluded.price,
+                            'true_prob': stmt.excluded.true_prob,
+                            'edge_percent': stmt.excluded.edge_percent,
+                            'updated_at': func.now()
+                        }
+                    )
                 await session.execute(stmt)
                 await session.commit()
                 logger.info(f"EVEngine: Upserted {len(signals)} EV signals.")

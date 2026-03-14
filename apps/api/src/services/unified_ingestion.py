@@ -1,6 +1,7 @@
 # apps/api/src/services/unified_ingestion.py
 import logging
 import asyncio
+import traceback
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
@@ -145,24 +146,41 @@ class UnifiedIngestionService:
             
         async with async_session_maker() as session:
             try:
-                # Use PostgreSQL ON CONFLICT if available, or manual merge for SQLite
-                # The user blueprint specifically mentioned postgres
-                stmt = insert(UnifiedOdds).values(rows)
-                stmt = stmt.on_conflict_do_update(
-                    constraint='uix_odds_unique',
-                    set_={
-                        'price': stmt.excluded.price,
-                        'implied_prob': stmt.excluded.implied_prob,
-                        'line': stmt.excluded.line,
-                        'source_ts': stmt.excluded.source_ts,
-                        'ingested_ts': stmt.excluded.ingested_ts
-                    }
-                )
+                # Detect dialect for on_conflict handling
+                dialect_name = session.sync_session.bind.dialect.name
+                
+                if dialect_name == 'sqlite':
+                    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+                    stmt = sqlite_insert(UnifiedOdds).values(rows)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=['sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker'],
+                        set_={
+                            'price': stmt.excluded.price,
+                            'implied_prob': stmt.excluded.implied_prob,
+                            'line': stmt.excluded.line,
+                            'source_ts': stmt.excluded.source_ts,
+                            'ingested_ts': stmt.excluded.ingested_ts
+                        }
+                    )
+                else:
+                    from sqlalchemy.dialects.postgresql import insert as pg_insert
+                    stmt = pg_insert(UnifiedOdds).values(rows)
+                    stmt = stmt.on_conflict_do_update(
+                        constraint='uix_odds_unique',
+                        set_={
+                            'price': stmt.excluded.price,
+                            'implied_prob': stmt.excluded.implied_prob,
+                            'line': stmt.excluded.line,
+                            'source_ts': stmt.excluded.source_ts,
+                            'ingested_ts': stmt.excluded.ingested_ts
+                        }
+                    )
                 await session.execute(stmt)
                 await session.commit()
                 logger.info(f"UnifiedIngestion: Upserted {len(rows)} odds.")
             except Exception as e:
                 await session.rollback()
                 logger.error(f"UnifiedIngestion: Bulk upsert failed: {e}")
+                traceback.print_exc()
 
 unified_ingestion = UnifiedIngestionService()
