@@ -161,12 +161,14 @@ class RealDataConnector:
                     if mkt.get("key") != market: continue
                     for out in mkt.get("outcomes", []):
                         player = out.get("description", "Unknown")
+                        side = out.get("name", "Over").lower()
                         props.append({
                             "game_id": game_id,
                             "player_name": player,
                             "stat_type": market,
                             "line": out.get("point"),
-                            "over_odds": out.get("price"),
+                            "side": side,
+                            "odds": out.get("price"),
                             "sportsbook": book.get("title")
                         })
             return props

@@ -87,7 +87,7 @@ async def get_working_player_props(sport_id: int = Query(30), limit: int = Query
     if not games:
         return {"items": [], "total": 0, "source": "fallback_no_games", "timestamp": datetime.now(timezone.utc).isoformat()}
         
-    all_props = []
+    all_props_dict = {}
     # Fetch props for up to top 3 games to ensure a healthy feed
     for g in games[:3]:
         game_id = g.get("id") or g.get("game_id")
@@ -95,11 +95,66 @@ async def get_working_player_props(sport_id: int = Query(30), limit: int = Query
         
         props = await real_data_connector.fetch_player_props(sport_key, game_id)
         if props:
-            # Enrich props with team names for the UI
+            game_time = g.get("commence_time") or datetime.now(timezone.utc).isoformat()
+            
             for p in props:
-                p["home_team"] = g.get("home_team") or g.get("home_team_name") or "Home"
-                p["away_team"] = g.get("away_team") or g.get("away_team_name") or "Away"
-                all_props.append(p)
+                player = p.get("player_name")
+                stat = p.get("stat_type")
+                key = f"{player}_{stat}"
+                
+                if key not in all_props_dict:
+                    all_props_dict[key] = {
+                        "id": f"raw_{key}",
+                        "game_id": game_id,
+                        "player_name": player,
+                        "stat_type": stat,
+                        "sport_id": sport_id,
+                        "home_team": g.get("home_team") or g.get("home_team_name") or "Home",
+                        "away_team": g.get("away_team") or g.get("away_team_name") or "Away",
+                        "commence_time": game_time,
+                        "best_over": None,
+                        "best_under": None,
+                        "recommendation": None
+                    }
+                
+                side = str(p.get("side", "")).lower()
+                odds = p.get("odds")
+                line = p.get("line")
+                book = p.get("sportsbook", "Unknown")
+                
+                # Basic validation
+                if odds is None or line is None:
+                    continue
+                    
+                target = all_props_dict[key]
+                if side in ["over", "o"] or "over" in side:
+                    if not target["best_over"] or (odds > target["best_over"]["odds"]):
+                        target["best_over"] = {"line": float(line), "odds": odds, "book": book}
+                elif side in ["under", "u"] or "under" in side:
+                    if not target["best_under"] or (odds > target["best_under"]["odds"]):
+                        target["best_under"] = {"line": float(line), "odds": odds, "book": book}
+
+    # Generate basic recommendations and filter empty
+    all_props = []
+    for v in all_props_dict.values():
+        if not v["best_over"] and not v["best_under"]:
+            continue
+            
+        if v["best_over"] and v["best_under"]:
+            v["recommendation"] = {
+                "side": "over" if v["best_over"]["odds"] < v["best_under"]["odds"] else "under",
+                "tier": "A",
+                "reason": "Market Edge Indicator"
+            }
+        else:
+            v["recommendation"] = {
+                "side": "over" if v["best_over"] else "under",
+                "tier": "B",
+                "reason": "Single Side Market"
+            }
+        
+        all_props.append(v)
+
                 
     return {
         "items": all_props[:limit],
