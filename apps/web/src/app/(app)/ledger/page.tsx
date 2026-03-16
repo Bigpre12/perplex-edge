@@ -198,11 +198,15 @@ export default function LedgerPage() {
                                                                 setSelectedSlip(bet);
                                                                 setShowShareModal(true);
                                                             }}
+                                                            title="Share Insight"
                                                             className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-primary transition-all"
                                                         >
                                                             <Share2 size={16} />
                                                         </button>
-                                                        <button className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
+                                                        <button 
+                                                            title="View Details"
+                                                            className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all"
+                                                        >
                                                             <ChevronRight size={16} />
                                                         </button>
                                                     </div>
