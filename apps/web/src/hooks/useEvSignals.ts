@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useReconnectingWs } from "./useReconnectingWs";
 import api, { isApiError } from "@/lib/api";
 

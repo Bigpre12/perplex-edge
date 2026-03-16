@@ -74,11 +74,17 @@ export const useBrainData = (sportKey: SportKey = "basketball_nba") => {
         }
     }, [intelData])
 
+    useEffect(() => {
+        if (healthData && !isApiError(healthData)) {
+            setHealth(healthData as SystemHealth)
+        }
+    }, [healthData])
+
     const loading = decLoading || healthLoading || intelLoading
 
     return {
         decisions: unwrap(decData),
-        health: healthData,
+        health,
         marketIntel,
         loading,
         refetch: () => { }
