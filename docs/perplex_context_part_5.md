@@ -53,6 +53,7 @@
         ]
 
         # Apply filters
+
         filtered_trades = mock_trades
         if season:
             filtered_trades = [t for t in filtered_trades if t['season_year'] == season]
@@ -62,6 +63,7 @@
             filtered_trades = [t for t in filtered_trades if t['is_applied'] == applied]
 
         # Apply sorting
+
         if recent:
             filtered_trades = sorted(filtered_trades, key=lambda x: x['trade_date'], reverse=True)
 
@@ -90,6 +92,7 @@ async def get_trades_statistics(days: int = Query(365, description="Days of data
     """Get master trades statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_trades": 14,
@@ -191,6 +194,7 @@ async def get_trades_by_season(season: int):
     """Get trades for a specific season"""
     try:
         # Return mock season-specific data for now
+
         mock_season_trades = [
             {
                 "id": 1,
@@ -238,6 +242,7 @@ async def get_trades_by_source(source: str):
     """Get trades from a specific source"""
     try:
         # Return mock source-specific data for now
+
         mock_source_trades = [
             {
                 "id": 1,
@@ -285,6 +290,7 @@ async def get_applied_trades():
     """Get applied trades"""
     try:
         # Return mock applied trades data for now
+
         mock_applied_trades = [
             {
                 "id": 1,
@@ -330,6 +336,7 @@ async def get_pending_trades():
     """Get pending trades"""
     try:
         # Return mock pending trades data for now
+
         mock_pending_trades = [
             {
                 "id": 11,
@@ -376,6 +383,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
     """Search trades by headline or description"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -404,6 +412,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -429,7 +438,8 @@ async def search_trades(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# User Betting Tracking Endpoints
+## User Betting Tracking Endpoints
+
 @router.get("/user-bets")
 async def get_user_bets(sport: int = Query(None, description="Sport ID to filter"),
                         status: str = Query(None, description="Bet status to filter"),
@@ -439,6 +449,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
     """Get user bets with optional filters"""
     try:
         # Return mock user bets data for now
+
         mock_user_bets = [
             {
                 "id": 1,
@@ -611,6 +622,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
         ]
 
         # Apply filters
+
         filtered_bets = mock_user_bets
         if sport:
             filtered_bets = [b for b in filtered_bets if b['sport_id'] == sport]
@@ -620,6 +632,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
             filtered_bets = [b for b in filtered_bets if b['sportsbook'] == sportsbook]
 
         # Apply sorting
+
         if recent:
             filtered_bets = sorted(filtered_bets, key=lambda x: x['placed_at'], reverse=True)
 
@@ -648,6 +661,7 @@ async def get_user_bets_statistics(days: int = Query(30, description="Days of da
     """Get user bets statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_bets": 15,
@@ -843,6 +857,7 @@ async def get_user_bets_by_sport(sport_id: int):
     """Get user bets for a specific sport"""
     try:
         # Return mock sport-specific data for now
+
         mock_sport_bets = [
             {
                 "id": 1,
@@ -914,6 +929,7 @@ async def get_user_bets_by_status(status: str):
     """Get user bets by status"""
     try:
         # Return mock status-specific data for now
+
         mock_status_bets = [
             {
                 "id": 1,
@@ -985,6 +1001,7 @@ async def get_user_bets_by_sportsbook(sportsbook: str):
     """Get user bets from a specific sportsbook"""
     try:
         # Return mock sportsbook-specific data for now
+
         mock_sportsbook_bets = [
             {
                 "id": 1,
@@ -1057,6 +1074,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
     """Search user bets by market, side, or notes"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -1109,6 +1127,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -1135,12 +1154,14 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Anomaly Detection Endpoints
+## Brain Anomaly Detection Endpoints
+
 @router.get("/brain-anomalies")
 async def get_brain_anomalies():
     """Get current brain anomalies"""
     try:
         # Return mock anomaly data for now
+
         mock_anomalies = [
             {
                 "id": 1,
@@ -1190,6 +1211,7 @@ async def get_brain_anomalies_summary():
     """Get brain anomalies summary"""
     try:
         # Return mock summary
+
         return {
             "total_anomalies": 9,
             "active_anomalies": 2,
@@ -1368,12 +1390,14 @@ async def get_super_bowl_props_immediate():
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Metrics Endpoints
+## Brain Metrics Endpoints
+
 @router.get("/brain-metrics")
 async def get_brain_metrics(db = None):
     """Get current brain business metrics"""
     try:
         # Return mock data for now
+
         return {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "total_recommendations": 220,
@@ -1406,6 +1430,7 @@ async def get_brain_metrics_summary(
     """Get brain metrics summary for the last N hours"""
     try:
         # Return mock summary
+
         return {
             "period_hours": hours,
             "total_records": 10,
@@ -1427,12 +1452,14 @@ async def get_brain_metrics_summary(
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Decision Tracking Endpoints
+## Brain Decision Tracking Endpoints
+
 @router.get("/brain-decisions")
 async def get_brain_decisions(limit: int = Query(50, description="Number of decisions to return")):
     """Get recent brain decisions"""
     try:
         # Return mock decision data for now
+
         mock_decisions = [
             {
                 "id": 1,
@@ -1505,6 +1532,7 @@ async def get_brain_decisions_performance(hours: int = Query(24, description="Ho
     """Get brain decision performance metrics"""
     try:
         # Return mock performance data
+
         return {
             "period_hours": hours,
             "total_decisions": 8,
@@ -1539,12 +1567,14 @@ async def get_brain_decisions_performance(hours: int = Query(24, description="Ho
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Healing System Endpoints
+## Brain Healing System Endpoints
+
 @router.get("/brain-healing-actions")
 async def get_brain_healing_actions(limit: int = Query(50, description="Number of actions to return")):
     """Get recent brain healing actions"""
     try:
         # Return mock healing action data for now
+
         mock_actions = [
             {
                 "id": 1,
@@ -1652,6 +1682,7 @@ async def get_brain_healing_performance(hours: int = Query(24, description="Hour
     """Get brain healing performance metrics"""
     try:
         # Return mock performance data
+
         return {
             "period_hours": hours,
             "total_actions": 9,
@@ -1752,6 +1783,7 @@ async def run_healing_cycle():
     """Run a brain healing cycle"""
     try:
         # Simulate running a healing cycle
+
         await asyncio.sleep(2)  # Simulate work
 
         return {
@@ -1777,6 +1809,7 @@ async def trigger_healing_action(healing_data: dict):
     """Manually trigger a healing action"""
     try:
         # Simulate triggering a healing action
+
         action = healing_data.get("action", "scale_resources")
         target = healing_data.get("target", "database_connection")
 
@@ -1799,7 +1832,8 @@ async def trigger_healing_action(healing_data: dict):
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Health Monitoring Endpoints
+## Brain Health Monitoring Endpoints
+
 @router.get("/brain-health-status")
 async def get_brain_health_status():
     """Get overall brain system health status"""
@@ -1941,6 +1975,7 @@ async def run_health_check(component: str = Query(..., description="Component to
     """Run a health check for a specific component"""
     try:
         # Mock health check result
+
         mock_results = {
             "database_connection_pool": {
                 "status": "healthy",
@@ -2002,12 +2037,14 @@ async def run_all_health_checks():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Learning System Endpoints
+## Brain Learning System Endpoints
+
 @router.get("/brain-learning-events")
 async def get_brain_learning_events(limit: int = Query(50, description="Number of events to return")):
     """Get recent brain learning events"""
     try:
         # Return mock learning event data for now
+
         mock_events = [
             {
                 "id": 1,
@@ -2095,6 +2132,7 @@ async def get_brain_learning_performance(hours: int = Query(24, description="Hou
     """Get brain learning performance metrics"""
     try:
         # Return mock performance data
+
         return {
             "period_hours": hours,
             "total_events": 12,
@@ -2198,6 +2236,7 @@ async def run_learning_cycle():
     """Run a brain learning cycle"""
     try:
         # Simulate running a learning cycle
+
         await asyncio.sleep(3)  # Simulate work
 
         return {
@@ -2223,6 +2262,7 @@ async def validate_learning_event(learning_id: str = Query(..., description="Lea
     """Validate a specific learning event"""
     try:
         # Simulate validation
+
         await asyncio.sleep(1)  # Simulate validation work
 
         return {
@@ -2249,6 +2289,7 @@ async def record_learning_event(learning_data: dict):
     """Record a new learning event"""
     try:
         # Simulate recording a learning event
+
         learning_id = f"learning-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
 
         return {
@@ -2270,12 +2311,14 @@ async def record_learning_event(learning_data: dict):
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Calibration Analysis Endpoints
+## Brain Calibration Analysis Endpoints
+
 @router.get("/brain-calibration-summary")
 async def get_brain_calibration_summary(sport_id: int = Query(32, description="Sport ID"), days: int = Query(30, description="Days of data to analyze")):
     """Get brain calibration summary for a sport"""
     try:
         # Return mock calibration summary data for now
+
         mock_summary = {
             "sport_id": sport_id,
             "period_days": days,
@@ -2359,6 +2402,7 @@ async def run_brain_calibration_analysis(sport_id: int = Query(32, description="
     """Run complete brain calibration analysis"""
     try:
         # Return mock calibration analysis data for now
+
         mock_analysis = {
             "sport_id": sport_id,
             "analysis_period_days": days,
@@ -2424,6 +2468,7 @@ async def get_brain_calibration_comparison(days: int = Query(30, description="Da
     """Get cross-sport calibration comparison"""
     try:
         # Return mock comparison data for now
+
         mock_comparison = {
             "period_days": days,
             "date_range": f"{(datetime.now(timezone.utc) - timedelta(days=days)).strftime('%Y-%m-%d')} to {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
@@ -2468,6 +2513,7 @@ async def get_brain_calibration_issues(sport_id: int = Query(32, description="Sp
     """Get calibration issues for a sport"""
     try:
         # Return mock issues data for now
+
         mock_issues = [
             {
                 "type": "confidence_mismatch",
@@ -2511,6 +2557,7 @@ async def get_brain_calibration_improvements(sport_id: int = Query(32, descripti
     """Get calibration improvement suggestions"""
     try:
         # Return mock suggestions data for now
+
         mock_suggestions = [
             {
                 "category": "probability_adjustment",
@@ -2555,12 +2602,14 @@ async def get_brain_calibration_improvements(sport_id: int = Query(32, descripti
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Game Results Tracking Endpoints
+## Game Results Tracking Endpoints
+
 @router.get("/game-results")
 async def get_game_results(date: str = Query(None, description="Date to filter (YYYY-MM-DD)"), sport_id: int = Query(None, description="Sport ID to filter")):
     """Get game results for a specific date"""
     try:
         # Return mock game results data for now
+
         mock_results = [
             {
                 "id": 1,
@@ -2664,6 +2713,7 @@ async def get_pending_games():
     """Get all pending games"""
     try:
         # Return mock pending games data for now
+
         mock_pending = [
             {
                 "id": 5,
@@ -2709,6 +2759,7 @@ async def get_game_statistics(days: int = Query(30, description="Days of data to
     """Get game statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_games": 8,
@@ -2760,6 +2811,7 @@ async def get_game_result_detail(game_id: int):
     """Get detailed game result by ID"""
     try:
         # Return mock detailed game result data for now
+
         mock_detail = {
             "id": 1,
             "game_id": game_id,
@@ -2812,6 +2864,7 @@ async def settle_game_results(settlement_data: dict):
     """Settle game results"""
     try:
         # Simulate settling game results
+
         games_to_settle = settlement_data.get("games", [])
 
         settled_count = 0
@@ -2833,6 +2886,7 @@ async def settle_game_results(settlement_data: dict):
                 continue
 
             # Simulate successful settlement
+
             settled_count += 1
             settlement_results.append({
                 "game_id": game_id,
@@ -2862,6 +2916,7 @@ async def create_game_result(game_data: dict):
     """Create a new game result record"""
     try:
         # Simulate creating a game result
+
         game_id = game_data.get("game_id")
         external_fixture_id = game_data.get("external_fixture_id")
 
@@ -2895,6 +2950,7 @@ async def update_game_result(game_id: int, result_data: dict):
     """Update game result with scores"""
     try:
         # Simulate updating game result
+
         home_score = result_data.get("home_score")
         away_score = result_data.get("away_score")
         period_scores = result_data.get("period_scores", {})
@@ -2925,7 +2981,8 @@ async def update_game_result(game_id: int, result_data: dict):
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Games Management Endpoints
+## Games Management Endpoints
+
 @router.get("/games")
 async def get_games(sport_id: int = Query(None, description="Sport ID to filter"),
                   status: str = Query(None, description="Game status to filter"),
@@ -2935,6 +2992,7 @@ async def get_games(sport_id: int = Query(None, description="Sport ID to filter"
     """Get games with optional filters"""
     try:
         # Return mock games data for now
+
         mock_games = [
             {
                 "id": 1,
@@ -3014,6 +3072,7 @@ async def get_games(sport_id: int = Query(None, description="Sport ID to filter"
         ]
 
         # Apply filters
+
         filtered_games = mock_games
         if sport_id:
             filtered_games = [g for g in filtered_games if g['sport_id'] == sport_id]
@@ -3050,6 +3109,7 @@ async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to 
     """Get upcoming games"""
     try:
         # Return mock upcoming games data for now
+
         mock_upcoming = [
             {
                 "id": 4,
@@ -3099,6 +3159,7 @@ async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to 
         ]
 
         # Apply sport filter
+
         if sport_id:
             mock_upcoming = [g for g in mock_upcoming if g['sport_id'] == sport_id]
 
@@ -3123,6 +3184,7 @@ async def get_recent_games(hours: int = Query(24, description="Hours back to loo
     """Get recent games"""
     try:
         # Return mock recent games data for now
+
         mock_recent = [
             {
                 "id": 1,
@@ -3172,6 +3234,7 @@ async def get_recent_games(hours: int = Query(24, description="Hours back to loo
         ]
 
         # Apply sport filter
+
         if sport_id:
             mock_recent = [g for g in mock_recent if g['sport_id'] == sport_id]
 
@@ -3195,6 +3258,7 @@ async def get_games_statistics(days: int = Query(30, description="Days of data t
     """Get games statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_games": 15,
@@ -3253,6 +3317,7 @@ async def get_game_schedule(start_date: str = Query(..., description="Start date
     """Get game schedule for date range"""
     try:
         # Return mock schedule data for now
+
         mock_schedule = [
             {
                 "id": 1,
@@ -3302,6 +3367,7 @@ async def get_game_schedule(start_date: str = Query(..., description="Start date
         ]
 
         # Apply date and sport filters
+
         if sport_id:
             mock_schedule = [g for g in mock_schedule if g['sport_id'] == sport_id]
 
@@ -3329,6 +3395,7 @@ async def get_game_detail(game_id: int):
     """Get detailed game information"""
     try:
         # Return mock detailed game data for now
+
         mock_detail = {
             "id": game_id,
             "sport_id": 32,
@@ -3378,6 +3445,7 @@ async def create_game(game_data: dict):
     """Create a new game"""
     try:
         # Simulate creating a game
+
         game_id = game_data.get("game_id")
         external_game_id = game_data.get("external_game_id")
         home_team_id = game_data.get("home_team_id")
@@ -3415,6 +3483,7 @@ async def update_game_status(game_id: int, status: str = Query(..., description=
     """Update game status"""
     try:
         # Simulate updating game status
+
         valid_statuses = ["scheduled", "in_progress", "final", "cancelled", "postponed", "suspended"]
 
         if status not in valid_statuses:
@@ -3446,6 +3515,7 @@ async def search_games(query: str = Query(..., description="Search query"),
     """Search games by external ID or team names"""
     try:
         # Return mock search results
+
         mock_results = [
             {
                 "id": 1,
@@ -3465,6 +3535,7 @@ async def search_games(query: str = Query(..., description="Search query"),
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -3475,6 +3546,7 @@ async def search_games(query: str = Query(..., description="Search query"),
             ]
 
         # Apply sport filter
+
         if sport_id:
             mock_results = [g for g in mock_results if g['sport_id'] == sport_id]
 
@@ -3494,7 +3566,8 @@ async def search_games(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Historical Odds NCAAB Endpoints
+## Historical Odds NCAAB Endpoints
+
 @router.get("/historical-odds-ncaab")
 async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game ID to filter"),
                                   bookmaker: str = Query(None, description="Bookmaker to filter"),
@@ -3504,6 +3577,7 @@ async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game
     """Get NCAA basketball historical odds with optional filters"""
     try:
         # Return mock historical odds data for now
+
         mock_odds = [
             {
                 "id": 1,
@@ -3588,6 +3662,7 @@ async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game
         ]
 
         # Apply filters
+
         filtered_odds = mock_odds
         if game_id:
             filtered_odds = [o for o in filtered_odds if o['game_id'] == game_id]
@@ -3621,6 +3696,7 @@ async def get_odds_by_game(game_id: int):
     """Get odds history for a specific game"""
     try:
         # Return mock odds history for a specific game
+
         mock_odds_history = [
             {
                 "id": 1,
@@ -3726,6 +3802,7 @@ async def get_odds_movements(game_id: int):
     """Get odds movements for a specific game"""
     try:
         # Return mock odds movements data
+
         mock_movements = [
             {
                 "bookmaker": "DraftKings",
@@ -3814,6 +3891,7 @@ async def get_bookmaker_comparison(game_id: int):
     """Compare odds across bookmakers for a specific game"""
     try:
         # Return mock bookmaker comparison data
+
         mock_comparison = [
             {
                 "bookmaker": "DraftKings",
@@ -3858,6 +3936,7 @@ async def get_bookmaker_comparison(game_id: int):
         ]
 
         # Calculate best odds
+
         best_home_odds = max(mock_comparison, key=lambda x: x['home_odds'])
         best_away_odds = min(mock_comparison, key=lambda x: x['away_odds'])
 
@@ -3890,6 +3969,7 @@ async def get_historical_odds_statistics(days: int = Query(30, description="Days
     """Get NCAA basketball historical odds statistics"""
     try:
         # Return mock statistics data
+
         mock_stats = {
             "period_days": days,
             "total_odds": 28,
@@ -4022,6 +4102,7 @@ async def get_odds_efficiency(days: int = Query(30, description="Days of data to
     """Analyze odds efficiency and accuracy"""
     try:
         # Return mock efficiency analysis data
+
         mock_efficiency = {
             "period_days": days,
             "bookmaker_efficiency": [
@@ -4101,6 +4182,7 @@ async def search_historical_odds(query: str = Query(..., description="Search que
     """Search NCAA basketball historical odds"""
     try:
         # Return mock search results
+
         mock_results = [
             {
                 "id": 1,
@@ -4121,6 +4203,7 @@ async def search_historical_odds(query: str = Query(..., description="Search que
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -4146,7 +4229,8 @@ async def search_historical_odds(query: str = Query(..., description="Search que
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Historical Performance Tracking Endpoints
+## Historical Performance Tracking Endpoints
+
 @router.get("/historical-performances")
 async def get_historical_performances(player: str = Query(None, description="Player name to filter"),
                                       stat_type: str = Query(None, description="Stat type to filter"),
@@ -4154,6 +4238,7 @@ async def get_historical_performances(player: str = Query(None, description="Pla
     """Get historical performances with optional filters"""
     try:
         # Return mock historical performance data for now
+
         mock_performances = [
             {
                 "id": 1,
@@ -4254,6 +4339,7 @@ async def get_historical_performances(player: str = Query(None, description="Pla
         ]
 
         # Apply filters
+
         filtered_performances = mock_performances
         if player:
             filtered_performances = [p for p in filtered_performances if player.lower() in p['player_name'].lower()]
@@ -4284,6 +4370,7 @@ async def get_top_performers(limit: int = Query(10, description="Number of top p
     """Get top performers by hit rate"""
     try:
         # Return mock top performers data
+
         mock_top_performers = [
             {
                 "player_name": "Stephen Curry",
@@ -4378,6 +4465,7 @@ async def get_top_performers(limit: int = Query(10, description="Number of top p
         ]
 
         # Apply stat type filter
+
         if stat_type:
             mock_top_performers = [p for p in mock_top_performers if p['stat_type'] == stat_type]
 
@@ -4402,6 +4490,7 @@ async def get_best_ev_performers(limit: int = Query(10, description="Number of b
     """Get best performers by expected value"""
     try:
         # Return mock best EV performers data
+
         mock_best_ev = [
             {
                 "player_name": "Stephen Curry",
@@ -4496,6 +4585,7 @@ async def get_best_ev_performers(limit: int = Query(10, description="Number of b
         ]
 
         # Apply stat type filter
+
         if stat_type:
             mock_best_ev = [p for p in mock_best_ev if p['stat_type'] == stat_type]
 
@@ -4520,6 +4610,7 @@ async def get_worst_performers(limit: int = Query(10, description="Number of wor
     """Get worst performers by hit rate"""
     try:
         # Return mock worst performers data
+
         mock_worst = [
             {
                 "player_name": "Russell Westbrook",
@@ -4569,6 +4660,7 @@ async def get_worst_performers(limit: int = Query(10, description="Number of wor
         ]
 
         # Apply stat type filter
+
         if stat_type:
             mock_worst = [p for p in mock_worst if p['stat_type'] == stat_type]
 
@@ -4592,6 +4684,7 @@ async def get_performance_statistics(days: int = Query(30, description="Days of 
     """Get performance statistics"""
     try:
         # Return mock statistics data
+
         mock_stats = {
             "period_days": days,
             "total_performances": 21,
@@ -4713,6 +4806,7 @@ async def get_player_performance(player_name: str, stat_type: str = Query(None, 
     """Get performance for a specific player"""
     try:
         # Return mock player performance data
+
         mock_player_data = {
             "player_name": player_name,
             "performances": [
@@ -4751,6 +4845,7 @@ async def get_player_performance(player_name: str, stat_type: str = Query(None, 
         }
 
         # Apply stat type filter
+
         if stat_type:
             mock_player_data["performances"] = [p for p in mock_player_data["performances"] if p["stat_type"] == stat_type]
 
@@ -4774,6 +4869,7 @@ async def search_performances(query: str = Query(..., description="Search query"
     """Search performances by player name or stat type"""
     try:
         # Return mock search results
+
         mock_results = [
             {
                 "id": 1,
@@ -4790,6 +4886,7 @@ async def search_performances(query: str = Query(..., description="Search query"
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -4813,7 +4910,8 @@ async def search_performances(query: str = Query(..., description="Search query"
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Injury Tracking Endpoints
+## Injury Tracking Endpoints
+
 @router.get("/injuries")
 async def get_injuries(sport_id: int = Query(None, description="Sport ID to filter"),
                         status: str = Query(None, description="Injury status to filter"),
@@ -4822,6 +4920,7 @@ async def get_injuries(sport_id: int = Query(None, description="Sport ID to filt
     """Get injuries with optional filters"""
     try:
         # Return mock injury data for now
+
         mock_injuries = [
             {
                 "id": 21,
@@ -5002,6 +5101,7 @@ async def get_injuries(sport_id: int = Query(None, description="Sport ID to filt
         ]
 
         # Apply filters
+
         filtered_injuries = mock_injuries
         if sport_id:
             filtered_injuries = [i for i in filtered_injuries if i['sport_id'] == sport_id]
@@ -5038,6 +5138,7 @@ async def get_active_injuries(sport_id: int = Query(None, description="Sport ID 
     """Get currently active injuries"""
     try:
         # Return mock active injuries data for now
+
         mock_active = [
             {
                 "id": 21,
@@ -5130,6 +5231,7 @@ async def get_active_injuries(sport_id: int = Query(None, description="Sport ID 
         ]
 
         # Apply sport filter
+
         if sport_id:
             mock_active = [i for i in mock_active if i['sport_id'] == sport_id]
 
@@ -5153,6 +5255,7 @@ async def get_out_injuries(sport_id: int = Query(None, description="Sport ID to 
     """Get players who are out"""
     try:
         # Return mock out injuries data for now
+
         mock_out = [
             {
                 "id": 23,
@@ -5256,6 +5359,7 @@ async def get_out_injuries(sport_id: int = Query(None, description="Sport ID to 
         ]
 
         # Apply sport filter
+
         if sport_id:
             mock_out = [i for i in mock_out if i['sport_id'] == sport_id]
 
@@ -5279,6 +5383,7 @@ async def get_injury_statistics(days: int = Query(30, description="Days of data 
     """Get injury statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_injuries": 21,
@@ -5392,6 +5497,7 @@ async def get_player_injuries(player_id: int, sport_id: int = Query(None, descri
     """Get injuries for a specific player"""
     try:
         # Return mock player injury data for now
+
         mock_player_injuries = [
             {
                 "id": 21,
@@ -5429,6 +5535,7 @@ async def get_player_injuries(player_id: int, sport_id: int = Query(None, descri
         ]
 
         # Apply sport filter
+
         if sport_id:
             mock_player_injuries = [i for i in mock_player_injuries if i['sport_id'] == sport_id]
 
@@ -5454,6 +5561,7 @@ async def get_injury_impact_analysis(sport_id: int, days: int = Query(30, descri
     """Analyze injury impact on team performance"""
     try:
         # Return mock impact analysis data for now
+
         mock_impact = {
             "sport_id": sport_id,
             "period_days": days,
@@ -5500,6 +5608,7 @@ async def get_injury_trends(sport_id: int, days: int = Query(30, description="Da
     """Analyze injury trends over time"""
     try:
         # Return mock trend analysis data for now
+
         mock_trends = {
             "sport_id": sport_id,
             "period_days": days,
@@ -5575,6 +5684,7 @@ async def search_injuries(query: str = Query(..., description="Search query"),
     """Search injuries by player ID or status detail"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 21,
@@ -5612,10 +5722,12 @@ async def search_injuries(query: str = Query(..., description="Search query"),
         ]
 
         # Apply filters
+
         if sport_id:
             mock_results = [r for r in mock_results if r['sport_id'] == sport_id]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -5642,7 +5754,8 @@ async def search_injuries(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Line Tracking Endpoints
+## Line Tracking Endpoints
+
 @router.get("/lines")
 async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
                    player_id: int = Query(None, description="Player ID to filter"),
@@ -5652,6 +5765,7 @@ async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
     """Get betting lines with optional filters"""
     try:
         # Return mock line data for now
+
         mock_lines = [
             {
                 "id": 759109,
@@ -5776,6 +5890,7 @@ async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
         ]
 
         # Apply filters
+
         filtered_lines = mock_lines
         if game_id:
             filtered_lines = [l for l in filtered_lines if l['game_id'] == game_id]
@@ -5812,6 +5927,7 @@ async def get_current_lines(game_id: int = Query(None, description="Game ID to f
     """Get current betting lines"""
     try:
         # Return mock current lines data for now
+
         mock_current = [
             {
                 "id": 759119,
@@ -5936,6 +6052,7 @@ async def get_current_lines(game_id: int = Query(None, description="Game ID to f
         ]
 
         # Apply filters
+
         if game_id:
             mock_current = [l for l in mock_current if l['game_id'] == game_id]
         if player_id:
@@ -5963,6 +6080,7 @@ async def get_line_movements(game_id: int, player_id: int, market_id: int = Quer
     """Get line movements for a specific game/player"""
     try:
         # Return mock line movements data for now
+
         mock_movements = [
             {
                 "sportsbook": "draftkings",
@@ -6077,6 +6195,7 @@ async def get_line_movements(game_id: int, player_id: int, market_id: int = Quer
         ]
 
         # Apply market filter
+
         if market_id:
             mock_movements = [m for m in mock_movements if m['sportsbook'] == 'draftkings' or m['sportsbook'] == 'fanduel']
 
@@ -6104,6 +6223,7 @@ async def get_sportsbook_comparison(game_id: int, player_id: int, market_id: int
     """Compare lines across sportsbooks"""
     try:
         # Return mock comparison data for now
+
         mock_comparison = [
             {
                 "sportsbook": "draftkings",
@@ -6150,6 +6270,7 @@ async def get_sportsbook_comparison(game_id: int, player_id: int, market_id: int
         ]
 
         # Calculate best odds
+
         best_over = max(mock_comparison, key=lambda x: x['odds'] if x['side'] == 'over' else float('inf'))
         best_under = max(mock_comparison, key=lambda x: x['odds'] if x['side'] == 'under' else float('inf'))
 
@@ -6189,6 +6310,7 @@ async def get_line_statistics(hours: int = Query(24, description="Hours of data 
     """Get line statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_hours": hours,
             "total_lines": 24,
@@ -6272,6 +6394,7 @@ async def get_line_efficiency(hours: int = Query(24, description="Hours of data 
     """Analyze line efficiency and market efficiency"""
     try:
         # Return mock efficiency analysis data for now
+
         mock_efficiency = {
             "period_hours": hours,
             "sportsbook_efficiency": [
@@ -6325,6 +6448,7 @@ async def search_lines(query: str = Query(..., description="Search query"),
     """Search lines by player ID or sportsbook"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 759109,
@@ -6365,10 +6489,12 @@ async def search_lines(query: str = Query(..., description="Search query"),
         ]
 
         # Apply filters
+
         if sportsbook:
             mock_results = [r for r in mock_results if r['sportsbook'].lower() == sportsbook.lower()]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -6395,7 +6521,8 @@ async def search_lines(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Live Odds NFL Endpoints
+## Live Odds NFL Endpoints
+
 @router.get("/live-odds-nfl")
 async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to filter"),
                           team: str = Query(None, description="Team name to filter"),
@@ -6405,6 +6532,7 @@ async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to f
     """Get live NFL odds with optional filters"""
     try:
         # Return mock live NFL odds data for now
+
         mock_odds = [
             {
                 "id": 1,
@@ -6569,6 +6697,7 @@ async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to f
         ]
 
         # Apply filters
+
         filtered_odds = mock_odds
         if game_id:
             filtered_odds = [o for o in filtered_odds if o['game_id'] == game_id]
@@ -6605,6 +6734,7 @@ async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game
     """Get current live NFL odds"""
     try:
         # Return mock current live NFL odds data for now
+
         mock_current = [
             {
                 "id": 11,
@@ -6689,6 +6819,7 @@ async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game
         ]
 
         # Apply filters
+
         if game_id:
             mock_current = [o for o in mock_current if o['game_id'] == game_id]
         if bookmaker:
@@ -6716,6 +6847,7 @@ async def get_live_odds_nfl_movements(game_id: int, minutes: int = Query(30, des
     """Get live NFL odds movements for a specific game"""
     try:
         # Return mock movements data for now
+
         mock_movements = [
             {
                 "sportsbook": "DraftKings",
@@ -6801,6 +6933,7 @@ async def get_live_odds_nfl_comparison(game_id: int, minutes: int = Query(30, de
     """Compare live NFL odds across sportsbooks for a specific game"""
     try:
         # Return mock comparison data for now
+
         mock_comparison = [
             {
                 "sportsbook": "DraftKings",
@@ -6826,6 +6959,7 @@ async def get_live_odds_nfl_comparison(game_id: int, minutes: int = Query(30, de
         ]
 
         # Calculate best odds
+
         best_home_odds = max(mock_comparison, key=lambda x: x['home_odds'] if x['home_odds'] < 0 else float('inf'))
         best_away_odds = max(mock_comparison, key=lambda x: x['away_odds'] if x['away_odds'] < 0 else float('inf'))
 
@@ -6861,6 +6995,7 @@ async def get_live_odds_nfl_statistics(hours: int = Query(24, description="Hours
     """Get live NFL odds statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_hours": hours,
             "total_odds": 24,
@@ -6999,6 +7134,7 @@ async def get_live_odds_nfl_efficiency(hours: int = Query(24, description="Hours
     """Analyze live NFL odds market efficiency and arbitrage opportunities"""
     try:
         # Return mock efficiency analysis data for now
+
         mock_efficiency = {
             "period_hours": hours,
             "total_arbitrage_opportunities": 8,
@@ -7072,6 +7208,7 @@ async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, descrip
     """Get live NFL odds for a specific week"""
     try:
         # Return mock week data for now
+
         mock_week_odds = [
             {
                 "id": 16,
@@ -7124,6 +7261,7 @@ async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, descrip
         ]
 
         # Apply bookmaker filter
+
         if bookmaker:
             mock_week_odds = [o for o in mock_week_odds if o['bookmaker'].lower() == bookmaker.lower()]
 
@@ -7153,6 +7291,7 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
     """Search live NFL odds by team name or sportsbook"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -7205,10 +7344,12 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
         ]
 
         # Apply filters
+
         if bookmaker:
             mock_results = [r for r in mock_results if r['bookmaker'].lower() == bookmaker.lower()]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -7236,7 +7377,8 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Odds Snapshots Tracking Endpoints
+## Odds Snapshots Tracking Endpoints
+
 @router.get("/odds-snapshots")
 async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to filter"),
                            player_id: int = Query(None, description="Player ID to filter"),
@@ -7246,6 +7388,7 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
     """Get odds snapshots with optional filters"""
     try:
         # Return mock odds snapshots data for now
+
         mock_snapshots = [
             {
                 "id": 1,
@@ -7376,6 +7519,7 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
         ]
 
         # Apply filters
+
         filtered_snapshots = mock_snapshots
         if game_id:
             filtered_snapshots = [s for s in filtered_snapshots if s['game_id'] == game_id]
@@ -7411,6 +7555,7 @@ async def get_odds_movements(game_id: int, market_id: int = Query(None, descript
     """Get odds movements for a specific game"""
     try:
         # Return mock movements data for now
+
         mock_movements = [
             {
                 "bookmaker": "DraftKings",
@@ -7555,12 +7700,15 @@ async def get_odds_movements(game_id: int, market_id: int = Query(None, descript
         ]
 
         # Apply filters
+
         filtered_movements = mock_movements
         if market_id:
             # Filter by market_id logic would go here
+
             pass
         if player_id:
             # Filter by player_id logic would go here
+
             pass
 
         return {
@@ -7591,6 +7739,7 @@ async def get_odds_comparison(game_id: int, market_id: int = Query(None, descrip
     """Compare odds across bookmakers for a specific game"""
     try:
         # Return mock comparison data for now
+
         mock_comparison = [
             {
                 "bookmaker": "DraftKings",
@@ -7619,6 +7768,7 @@ async def get_odds_comparison(game_id: int, market_id: int = Query(None, descrip
         ]
 
         # Calculate best odds
+
         best_over = max(mock_comparison, key=lambda x: x['price'] if x['side'] == 'over' else float('inf'))
         best_under = max(mock_comparison, key=lambda x: x['price'] if x['side'] == 'under' else float('inf'))
 
@@ -7660,6 +7810,7 @@ async def get_odds_snapshots_statistics(hours: int = Query(24, description="Hour
     """Get odds snapshots statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_hours": hours,
             "total_snapshots": 25,
@@ -7786,6 +7937,7 @@ async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, descripti
     """Get odds snapshots from a specific bookmaker"""
     try:
         # Return mock bookmaker data for now
+
         mock_bookmaker_snapshots = [
             {
                 "id": 1,
@@ -7866,6 +8018,7 @@ async def get_odds_by_player(player_id: int, bookmaker: str = Query(None, descri
     """Get odds snapshots for a specific player"""
     try:
         # Return mock player data for now
+
         mock_player_snapshots = [
             {
                 "id": 1,
@@ -7924,6 +8077,7 @@ async def get_odds_by_player(player_id: int, bookmaker: str = Query(None, descri
         ]
 
         # Apply bookmaker filter
+
         if bookmaker:
             mock_player_snapshots = [s for s in mock_player_snapshots if s['bookmaker'].lower() == bookmaker.lower()]
 
@@ -7954,6 +8108,7 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
     """Search odds snapshots by external IDs or bookmaker"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -7994,10 +8149,12 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
         ]
 
         # Apply filters
+
         if bookmaker:
             mock_results = [r for r in mock_results if r['bookmaker'].lower() == bookmaker.lower()]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -8029,7 +8186,8 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Picks Management Endpoints
+## Picks Management Endpoints
+
 @router.get("/picks")
 async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                   player: str = Query(None, description="Player name to filter"),
@@ -8041,6 +8199,7 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
     """Get picks with optional filters"""
     try:
         # Return mock picks data for now
+
         mock_picks = [
             {
                 "id": 1,
@@ -8205,6 +8364,7 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
         ]
 
         # Apply filters
+
         filtered_picks = mock_picks
         if game_id:
             filtered_picks = [p for p in filtered_picks if p['game_id'] == game_id]
@@ -8246,6 +8406,7 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
     """Get picks with high expected value"""
     try:
         # Return mock high EV picks data for now
+
         mock_high_ev = [
             {
                 "id": 2,
@@ -8330,6 +8491,7 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
         ]
 
         # Apply EV filter
+
         filtered_picks = [p for p in mock_high_ev if p['ev_percentage'] >= min_ev]
 
         return {
@@ -8358,6 +8520,7 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
     """Get picks with high confidence"""
     try:
         # Return mock high confidence picks data for now
+
         mock_high_confidence = [
             {
                 "id": 2,
@@ -8442,6 +8605,7 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
         ]
 
         # Apply confidence filter
+
         filtered_picks = [p for p in mock_high_confidence if p['confidence'] >= min_confidence]
 
         return {
@@ -8468,6 +8632,7 @@ async def get_picks_statistics(hours: int = Query(24, description="Hours of data
     """Get picks statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_hours": hours,
             "total_picks": 22,
@@ -8633,6 +8798,7 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
     """Get picks for a specific player"""
     try:
         # Return mock player picks data for now
+
         mock_player_picks = [
             {
                 "id": 1,
@@ -8706,6 +8872,7 @@ async def get_picks_by_game(game_id: int):
     """Get picks for a specific game"""
     try:
         # Return mock game picks data for now
+
         mock_game_picks = [
             {
                 "id": 1,
@@ -8795,6 +8962,7 @@ async def search_picks(query: str = Query(..., description="Search query"),
     """Search picks by player name or stat type"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -8831,6 +8999,7 @@ async def search_picks(query: str = Query(..., description="Search query"),
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -8859,7 +9028,8 @@ async def search_picks(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Player Statistics Tracking Endpoints
+## Player Statistics Tracking Endpoints
+
 @router.get("/player-stats")
 async def get_player_stats(player: str = Query(None, description="Player name to filter"),
                              team: str = Query(None, description="Team name to filter"),
@@ -8869,6 +9039,7 @@ async def get_player_stats(player: str = Query(None, description="Player name to
     """Get player statistics with optional filters"""
     try:
         # Return mock player stats data for now
+
         mock_stats = [
             {
                 "id": 1,
@@ -9003,6 +9174,7 @@ async def get_player_stats(player: str = Query(None, description="Player name to
         ]
 
         # Apply filters
+
         filtered_stats = mock_stats
         if player:
             filtered_stats = [s for s in filtered_stats if player.lower() in s['player_name'].lower()]
@@ -9036,6 +9208,7 @@ async def get_player_statistics(days: int = Query(30, description="Days of data 
     """Get overall player statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_stats": 25,
@@ -9186,6 +9359,7 @@ async def get_player_stats_by_name(player_name: str, days: int = Query(30, descr
     """Get player statistics for a specific player"""
     try:
         # Return mock player stats data for now
+
         mock_player_stats = [
             {
                 "id": 1,
@@ -9250,6 +9424,7 @@ async def get_player_stats_by_team(team: str, days: int = Query(30, description=
     """Get player statistics for a specific team"""
     try:
         # Return mock team stats data for now
+
         mock_team_stats = [
             {
                 "id": 1,
@@ -9314,6 +9489,7 @@ async def get_player_stats_by_stat_type(stat_type: str, days: int = Query(30, de
     """Get player statistics for a specific stat type"""
     try:
         # Return mock stat type stats data for now
+
         mock_stat_stats = [
             {
                 "id": 1,
@@ -9380,6 +9556,7 @@ async def search_player_stats(query: str = Query(..., description="Search query"
     """Search player stats by player name, team, or stat type"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -9410,6 +9587,7 @@ async def search_player_stats(query: str = Query(..., description="Search query"
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -9439,7 +9617,8 @@ async def search_player_stats(query: str = Query(..., description="Search query"
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Shared Betting Cards Tracking Endpoints
+## Shared Betting Cards Tracking Endpoints
+
 @router.get("/shared-cards")
 async def get_shared_cards(platform: str = Query(None, description="Platform to filter"),
                             sport: str = Query(None, description="Sport to filter"),
@@ -9450,6 +9629,7 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
     """Get shared betting cards with optional filters"""
     try:
         # Return mock shared cards data for now
+
         mock_cards = [
             {
                 "id": 1,
@@ -9662,6 +9842,7 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
         ]
 
         # Apply filters
+
         filtered_cards = mock_cards
         if platform:
             filtered_cards = [c for c in filtered_cards if c['platform'].lower() == platform.lower()]
@@ -9671,6 +9852,7 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
             filtered_cards = [c for c in filtered_cards if c['overall_grade'].lower() == grade.lower()]
 
         # Apply sorting
+
         if trending:
             filtered_cards = sorted(filtered_cards, key=lambda x: x['view_count'], reverse=True)
         elif performing:
@@ -9702,6 +9884,7 @@ async def get_shared_cards_statistics(days: int = Query(30, description="Days of
     """Get shared cards statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_cards": 12,
@@ -9875,6 +10058,7 @@ async def get_shared_cards_by_platform(platform: str, limit: int = Query(50, des
     """Get shared cards for a specific platform"""
     try:
         # Return mock platform-specific cards data for now
+
         mock_platform_cards = [
             {
                 "id": 1,
@@ -9952,6 +10136,7 @@ async def get_shared_cards_by_sport(sport: str, limit: int = Query(50, descripti
     """Get shared cards for a specific sport"""
     try:
         # Return mock sport-specific cards data for now
+
         mock_sport_cards = [
             {
                 "id": 1,
@@ -10029,6 +10214,7 @@ async def get_shared_cards_by_grade(grade: str, limit: int = Query(50, descripti
     """Get shared cards by grade"""
     try:
         # Return mock grade-specific cards data for now
+
         mock_grade_cards = [
             {
                 "id": 1,
@@ -10107,6 +10293,7 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
     """Search shared cards by label or legs"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -10163,6 +10350,7 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -10190,7 +10378,8 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Trade Details Tracking Endpoints
+## Trade Details Tracking Endpoints
+
 @router.get("/trade-details")
 async def get_trade_details(trade_id: str = Query(None, description="Trade ID to filter"),
                            team_id: int = Query(None, description="Team ID to filter"),
@@ -10201,6 +10390,7 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
     """Get trade details with optional filters"""
     try:
         # Return mock trade details data for now
+
         mock_trade_details = [
             {
                 "id": 1,
@@ -10349,6 +10539,7 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
         ]
 
         # Apply filters
+
         filtered_trades = mock_trade_details
         if trade_id:
             filtered_trades = [t for t in filtered_trades if t['trade_id'] == trade_id]
@@ -10360,6 +10551,7 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
             filtered_trades = [t for t in filtered_trades if t['asset_type'] == asset_type]
 
         # Apply sorting
+
         if recent:
             filtered_trades = sorted(filtered_trades, key=lambda x: x['created_at'], reverse=True)
 
@@ -10389,6 +10581,7 @@ async def get_trade_details_statistics(days: int = Query(30, description="Days o
     """Get trade details statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_trade_records": 28,
@@ -10502,6 +10695,7 @@ async def get_trade_details_by_trade_id(trade_id: str):
     """Get trade details for a specific trade"""
     try:
         # Return mock trade-specific data for now
+
         mock_trade_summary = {
             "trade_id": trade_id,
             "total_assets": 2,
@@ -10550,6 +10744,7 @@ async def get_trade_details_by_team(team_id: int, role: str = Query("both", desc
     """Get trade details for a specific team"""
     try:
         # Return mock team-specific data for now
+
         mock_team_trades = [
             {
                 "id": 1,
@@ -10578,6 +10773,7 @@ async def get_trade_details_by_team(team_id: int, role: str = Query("both", desc
         ]
 
         # Filter by role
+
         if role == "from":
             mock_team_trades = [t for t in mock_team_trades if t['from_team_id'] == team_id]
         elif role == "to":
@@ -10605,6 +10801,7 @@ async def get_trade_details_by_player(player_id: int):
     """Get trade details for a specific player"""
     try:
         # Return mock player-specific data for now
+
         mock_player_trades = [
             {
                 "id": 1,
@@ -10652,6 +10849,7 @@ async def get_trade_details_by_asset_type(asset_type: str, limit: int = Query(50
     """Get trade details by asset type"""
     try:
         # Return mock asset-type-specific data for now
+
         mock_asset_trades = [
             {
                 "id": 1,
@@ -10702,6 +10900,7 @@ async def search_trade_details(query: str = Query(..., description="Search query
     """Search trade details by player name or trade ID"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -10730,6 +10929,7 @@ async def search_trade_details(query: str = Query(..., description="Search query
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -10756,7 +10956,8 @@ async def search_trade_details(query: str = Query(..., description="Search query
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Master Trade Tracking Endpoints
+## Master Trade Tracking Endpoints
+
 @router.get("/trades")
 async def get_trades(season: int = Query(None, description="Season year to filter"),
                      source: str = Query(None, description="Source to filter"),
@@ -10766,6 +10967,7 @@ async def get_trades(season: int = Query(None, description="Season year to filte
     """Get master trades with optional filters"""
     try:
         # Return mock trades data for now
+
         mock_trades = [
             {
                 "id": 1,
@@ -10890,6 +11092,7 @@ async def get_trades(season: int = Query(None, description="Season year to filte
         ]
 
         # Apply filters
+
         filtered_trades = mock_trades
         if season:
             filtered_trades = [t for t in filtered_trades if t['season_year'] == season]
@@ -10899,6 +11102,7 @@ async def get_trades(season: int = Query(None, description="Season year to filte
             filtered_trades = [t for t in filtered_trades if t['is_applied'] == applied]
 
         # Apply sorting
+
         if recent:
             filtered_trades = sorted(filtered_trades, key=lambda x: x['trade_date'], reverse=True)
 
@@ -10927,6 +11131,7 @@ async def get_trades_statistics(days: int = Query(365, description="Days of data
     """Get master trades statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_trades": 14,
@@ -11028,6 +11233,7 @@ async def get_trades_by_season(season: int):
     """Get trades for a specific season"""
     try:
         # Return mock season-specific data for now
+
         mock_season_trades = [
             {
                 "id": 1,
@@ -11075,6 +11281,7 @@ async def get_trades_by_source(source: str):
     """Get trades from a specific source"""
     try:
         # Return mock source-specific data for now
+
         mock_source_trades = [
             {
                 "id": 1,
@@ -11122,6 +11329,7 @@ async def get_applied_trades():
     """Get applied trades"""
     try:
         # Return mock applied trades data for now
+
         mock_applied_trades = [
             {
                 "id": 1,
@@ -11167,6 +11375,7 @@ async def get_pending_trades():
     """Get pending trades"""
     try:
         # Return mock pending trades data for now
+
         mock_pending_trades = [
             {
                 "id": 11,
@@ -11213,6 +11422,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
     """Search trades by headline or description"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -11241,6 +11451,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -11266,7 +11477,8 @@ async def search_trades(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# User Betting Tracking Endpoints
+## User Betting Tracking Endpoints
+
 @router.get("/user-bets")
 async def get_user_bets(sport: int = Query(None, description="Sport ID to filter"),
                         status: str = Query(None, description="Bet status to filter"),
@@ -11276,6 +11488,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
     """Get user bets with optional filters"""
     try:
         # Return mock user bets data for now
+
         mock_user_bets = [
             {
                 "id": 1,
@@ -11448,6 +11661,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
         ]
 
         # Apply filters
+
         filtered_bets = mock_user_bets
         if sport:
             filtered_bets = [b for b in filtered_bets if b['sport_id'] == sport]
@@ -11457,6 +11671,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
             filtered_bets = [b for b in filtered_bets if b['sportsbook'] == sportsbook]
 
         # Apply sorting
+
         if recent:
             filtered_bets = sorted(filtered_bets, key=lambda x: x['placed_at'], reverse=True)
 
@@ -11485,6 +11700,7 @@ async def get_user_bets_statistics(days: int = Query(30, description="Days of da
     """Get user bets statistics"""
     try:
         # Return mock statistics data for now
+
         mock_stats = {
             "period_days": days,
             "total_bets": 15,
@@ -11680,6 +11896,7 @@ async def get_user_bets_by_sport(sport_id: int):
     """Get user bets for a specific sport"""
     try:
         # Return mock sport-specific data for now
+
         mock_sport_bets = [
             {
                 "id": 1,
@@ -11751,6 +11968,7 @@ async def get_user_bets_by_status(status: str):
     """Get user bets by status"""
     try:
         # Return mock status-specific data for now
+
         mock_status_bets = [
             {
                 "id": 1,
@@ -11822,6 +12040,7 @@ async def get_user_bets_by_sportsbook(sportsbook: str):
     """Get user bets from a specific sportsbook"""
     try:
         # Return mock sportsbook-specific data for now
+
         mock_sportsbook_bets = [
             {
                 "id": 1,
@@ -11894,6 +12113,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
     """Search user bets by market, side, or notes"""
     try:
         # Return mock search results for now
+
         mock_results = [
             {
                 "id": 1,
@@ -11946,6 +12166,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
         ]
 
         # Apply search filter
+
         if query:
             query_lower = query.lower()
             mock_results = [
@@ -11972,12 +12193,14 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-# Brain Anomaly Detection Endpoints
+## Brain Anomaly Detection Endpoints
+
 @router.get("/brain-anomalies")
 async def get_brain_anomalies():
     """Get current brain anomalies"""
     try:
         # Return mock anomaly data for now
+
         mock_anomalies = [
             {
                 "id": 1,
@@ -12027,6 +12250,7 @@ async def get_brain_anomalies_summary():
     """Get brain anomalies summary"""
     try:
         # Return mock summary
+
         return {
             "total_anomalies": 9,
             "active_anomalies": 2,
@@ -12048,9 +12272,10 @@ async def get_brain_anomalies_summary():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-```
+```text
 
 ## File: backend/app/api/model_status_endpoints.py
+
 ```py
 """
 Model Status Endpoint - Production Health Monitoring
@@ -12066,6 +12291,7 @@ async def get_model_status():
     """Get current model performance and status"""
 
     # Check all API keys
+
     has_betstack = bool(os.getenv("BETSTACK_API_KEY"))
     has_odds_api = bool(os.getenv("THE_ODDS_API_KEY"))
     has_roster_api = bool(os.getenv("ROSTER_API_KEY"))
@@ -12079,9 +12305,13 @@ async def get_model_status():
         "last_updated": datetime.now().isoformat(),
         "performance": {
             "hit_rate": 0.54,      # 54%
+
             "avg_ev": 0.032,        # 3.2%
+
             "clv": 0.021,           # +2.1%
+
             "roi": 0.045,           # 4.5%
+
             "total_picks": 150,
             "graded_picks": 120,
             "pending_picks": 30
@@ -12108,9 +12338,10 @@ async def get_model_status():
         }
     }
 
-```
+```text
 
 ## File: backend/app/api/track_record_endpoints.py
+
 ```py
 """
 Track Record Endpoints - Transparent Performance Tracking
@@ -12126,6 +12357,7 @@ async def get_transparent_track_record():
     """Get complete transparent track record"""
     try:
         # Mock implementation to prevent import errors
+
         result = {
             "picks_generated": 150,
             "picks_graded": 120,
@@ -12176,6 +12408,7 @@ async def get_performance_metrics():
     """Get detailed performance metrics"""
     try:
         # Mock implementation to prevent import errors
+
         performance = {
             "hit_rate": 0.54,
             "avg_ev": 0.032,
@@ -12214,6 +12447,7 @@ async def get_recent_picks(limit: int = Query(10, description="Number of recent 
     """Get recent picks with results"""
     try:
         # Mock implementation to prevent import errors
+
         graded_picks = [
             {
                 "id": 1,
@@ -12250,6 +12484,7 @@ async def get_bookmaker_performance():
     """Get performance by bookmaker"""
     try:
         # Mock implementation to prevent import errors
+
         bookmaker_performance = {
             "DraftKings": {
                 "picks": 50,
@@ -12299,6 +12534,7 @@ async def get_performance_metrics():
         performance = result.get("performance_metrics", {})
 
         # Add validation metrics
+
         validation_metrics = {
             "model_validated": performance.get("total_picks", 0) > 0,
             "ev_realistic": 2 <= performance.get("avg_ev", 0) <= 4,
@@ -12366,6 +12602,7 @@ async def get_bookmaker_performance():
         bookmaker_performance = performance.get("bookmaker_performance", {})
 
         # Rank bookmakers by performance
+
         ranked_bookmakers = sorted(
             bookmaker_performance.items(),
             key=lambda x: x[1]["roi"],
@@ -12385,9 +12622,10 @@ async def get_bookmaker_performance():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-```
+```text
 
 ## File: backend/app/api/validation_endpoints.py
+
 ```py
 """
 Validation endpoints for model performance
@@ -12406,6 +12644,7 @@ async def get_validated_picks(
     """Get picks with real data validation"""
     try:
         # Mock implementation to prevent import errors
+
         result = {
             "picks": [
                 {
@@ -12446,6 +12685,7 @@ async def get_validation_performance(days: int = Query(30, description="Days of 
     """Get model validation performance metrics"""
     try:
         # Mock implementation to prevent import errors
+
         performance = {
             "hit_rate": 0.54,
             "avg_ev": 0.032,
@@ -12473,6 +12713,7 @@ async def get_track_record():
     """Get transparent track record"""
     try:
         # Mock implementation to prevent import errors
+
         track_record = {
             "total_picks": 150,
             "won_picks": 81,
@@ -12514,16 +12755,20 @@ async def get_validation_performance(days: int = Query(30, description="Days of 
         performance = result.get("performance", {})
 
         # Add additional metrics
+
         if performance:
             # Calculate additional validation metrics
+
             total_picks = performance.get("total_picks", 0)
             won_picks = performance.get("won_picks", 0)
             hit_rate = performance.get("hit_rate", 0)
 
             # Validation confidence
+
             confidence_score = min(100, (hit_rate - 50) * 2) if hit_rate > 50 else 0
 
             # Model accuracy
+
             model_accuracy = "high" if hit_rate >= 54 else "medium" if hit_rate >= 52 else "low"
 
             performance.update({
@@ -12561,6 +12806,7 @@ async def get_track_record():
         performance = result.get("performance", {})
 
         # Create transparent track record
+
         track_record = {
             "total_picks_graded": len(graded_picks),
             "won_picks": performance.get("won_picks", 0),
@@ -12569,6 +12815,7 @@ async def get_track_record():
             "roi": performance.get("roi", 0),
             "avg_clv": performance.get("avg_clv", 0),
             "recent_picks": graded_picks[-10:],  # Last 10 picks
+
             "performance_breakdown": {
                 "last_7_days": performance,
                 "last_30_days": performance,
@@ -12577,6 +12824,7 @@ async def get_track_record():
             "validation_summary": {
                 "model_validated": True,
                 "ev_realistic": True,  # Now 2-4% instead of 19-21%
+
                 "track_record_verified": len(graded_picks) > 0,
                 "clv_positive": performance.get("avg_clv", 0) > 0
             },
@@ -12591,9 +12839,10 @@ async def get_track_record():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-```
+```text
 
 ## File: backend/app/api/working_parlays.py
+
 ```py
 from fastapi import APIRouter, Depends, Query
 from datetime import datetime, timezone
@@ -12610,6 +12859,7 @@ async def get_working_parlays(
     """Working parlay endpoint - returns sample parlays"""
     try:
         # Sample parlay data
+
         sample_parlays = [
             {
                 'id': 1,
@@ -12721,6 +12971,7 @@ async def get_monte_carlo_simulation(
     """Monte Carlo simulation endpoint"""
     try:
         # Sample Monte Carlo results
+
         simulation_results = {
             'game_id': game_id,
             'sport_id': sport_id,
@@ -12822,9 +13073,10 @@ async def get_monte_carlo_simulation(
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
-```
+```text
 
 ## File: backend/app/api/working_props.py
+
 ```py
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12847,9 +13099,11 @@ async def get_working_player_props(
     """Working player props endpoint - minimal and reliable"""
     try:
         # Get current time
+
         now = datetime.now(timezone.utc)
 
         # Simple query - no CLV columns
+
         query = select(ModelPick).where(
             and_(
                 ModelPick.sport_id == sport_id,
@@ -12864,6 +13118,7 @@ async def get_working_player_props(
         props = []
         for pick in picks:
             # Get related data safely
+
             try:
                 player = await db.get(Player, pick.player_id)
                 game = await db.get(Game, pick.game_id)
@@ -12899,6 +13154,7 @@ async def get_working_player_props(
 
     except Exception as e:
         # Return empty result instead of error
+
         return {
             'items': [],
             'total': 0,
@@ -12906,9 +13162,10 @@ async def get_working_player_props(
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
-```
+```text
 
 ## File: static/css/style.css
+
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -13135,9 +13392,10 @@ h2 {
     .container { padding: 20px; }
 }
 
-```
+```text
 
 ## File: static/js/app.js
+
 ```js
 const API_BASE = window.location.origin;
 
@@ -13244,6 +13502,5 @@ async function testEndpoint(path) {
     }
 }
 
-```
-
+```text
 
