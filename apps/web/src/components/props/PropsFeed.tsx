@@ -21,7 +21,7 @@ export default function PropsFeed({ sport }: { sport: SportKey }) {
         const load = async () => {
             try {
                 // We use the new consolidated props endpoint
-                const res = await api.get<any>(API.props(sport));
+                const res = await API.props(sport);
 
                 if (isMounted && !isApiError(res)) {
                     // Normalize backend data to PropData interface if needed

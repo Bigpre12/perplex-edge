@@ -84,7 +84,7 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
 
             // 3. Sharp/Steam from your backend
             try {
-                const data = await api.get<any>(API.alerts(sport as any));
+                const data = await API.alerts(sport as any);
                 if (!isApiError(data)) {
                     const alerts = Array.isArray(data.alerts) ? data.alerts : (Array.isArray(data) ? data : []);
                     alerts.slice(0, 3).forEach((a: any) => {

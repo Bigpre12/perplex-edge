@@ -130,19 +130,35 @@ export const api = {
             request("/api/brain/decisions", undefined, { sport }),
         parlays: (sport = "basketball_nba") =>
             request("/api/brain/parlay-builder", undefined, { sport }),
-    }
+    },
+
+    // Legacy Aliases for Component Backward Compatibility
+    authMe: () => request("/api/auth/me"),
+    evTop: (sport = "basketball_nba", limit = 50) => request("/api/ev/ev-top", undefined, { sport, limit }),
+    getEV: (sport = "basketball_nba", limit = 50) => request("/api/ev/ev-top", undefined, { sport, limit }),
+    getProps: (sport = "basketball_nba", limit = 25) => request("/api/props", undefined, { sport, limit }),
+    brainMetrics: () => request("/api/metrics"),
+    getHealth: () => request("/api/health"),
+    activeMoves: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
+    steamAlerts: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
+    alerts: (sport = "basketball_nba") => request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
+    wsBaseUrl: API_BASE.replace('http', 'ws'),
+    wsOdds: `${API_BASE.replace('http', 'ws')}/api/ev/ws`,
+    wsKalshi: `${API_BASE.replace('http', 'ws')}/api/kalshi/ws`,
+    share: () => "/api/meta/share",
+    reportingExport: (format: string) => `/api/metrics/export?format=${format}`
 };
 
-// Aliases for backward compatibility
-(api as any).authMe = api.auth.me;
-(api as any).evTop = api.ev.top;
-(api as any).getEV = api.ev.top;
-(api as any).propsScored = api.propsScored;
-(api as any).injuries = api.injuries;
-(api as any).news = api.news;
-(api as any).lineMovement = api.lineMovement;
-(api as any).freshness = api.signals.freshness;
+
 
 export const API = api;
 export const apiFetch = request;
 export default api;
+
+/**
+ * Circuit breaker reset — called by useHealthMonitor when the API comes back
+ * online. Currently a no-op; extend if a real breaker is added in future.
+ */
+export function resetCircuit(): void {
+    // no-op — placeholder for circuit breaker integration
+}
