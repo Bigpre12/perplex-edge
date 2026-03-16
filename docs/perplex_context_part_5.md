@@ -11477,7 +11477,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-## User Betting Tracking Endpoints
+## User Betting Tracking Endpoints (1)
 
 @router.get("/user-bets")
 async def get_user_bets(sport: int = Query(None, description="Sport ID to filter"),
@@ -12193,7 +12193,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-## Brain Anomaly Detection Endpoints
+## Brain Anomaly Detection Endpoints (1)
 
 @router.get("/brain-anomalies")
 async def get_brain_anomalies():
@@ -12272,7 +12272,6 @@ async def get_brain_anomalies_summary():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-```text
 
 ## File: backend/app/api/model_status_endpoints.py
 
@@ -12338,7 +12337,6 @@ async def get_model_status():
         }
     }
 
-```text
 
 ## File: backend/app/api/track_record_endpoints.py
 
@@ -12622,7 +12620,6 @@ async def get_bookmaker_performance():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-```text
 
 ## File: backend/app/api/validation_endpoints.py
 
@@ -12839,7 +12836,6 @@ async def get_track_record():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-```text
 
 ## File: backend/app/api/working_parlays.py
 
@@ -13073,7 +13069,6 @@ async def get_monte_carlo_simulation(
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
-```text
 
 ## File: backend/app/api/working_props.py
 
@@ -13162,7 +13157,6 @@ async def get_working_player_props(
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
-```text
 
 ## File: static/css/style.css
 
@@ -13392,7 +13386,6 @@ h2 {
     .container { padding: 20px; }
 }
 
-```text
 
 ## File: static/js/app.js
 
