@@ -1,17 +1,16 @@
+# apps/api/src/clients/espn_client.py
 import logging
-import asyncio
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from .base_client import ResilientBaseClient
 
 logger = logging.getLogger(__name__)
 
-class EspnClient(ResilientBaseClient):
+class ESPNClient(ResilientBaseClient):
     """
-    ESPN Intelligence Client.
-    Scrapes real-time scoreboard and injury data to enrich prop markets.
-    Uses hidden API endpoints for performance/stability.
+    ESPN scraper — no API key required.
+    Used for: injuries, news, scores, rosters, game schedules.
     """
-    
+
     def __init__(self):
         super().__init__(
             name="ESPN",
@@ -20,47 +19,68 @@ class EspnClient(ResilientBaseClient):
             max_retries=2
         )
 
-    async def get_scoreboard(self, sport: str, league: str) -> Dict[str, Any]:
-        """
-        Fetch the current scoreboard for a given sport/league.
-        Example: sport='basketball', league='nba'
-        """
-        path = f"/{sport}/{league}/scoreboard"
-        try:
-            return await self.request("GET", path)
-        except Exception as e:
-            logger.error(f"[ESPN] Failed to fetch scoreboard for {league}: {str(e)}")
-            return {"events": []}
-
-    async def get_injuries(self, sport: str, league: str) -> List[Dict[str, Any]]:
-        """
-        Fetch injury reports.
-        """
-        # Note: This is a placeholder for the actual scraping logic or API endpoint
-        # usually: https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/injuries
-        path = f"/{sport}/{league}/injuries"
-        try:
-            res = await self.request("GET", path)
-            return res.get("injuries", [])
-        except Exception as e:
-            logger.error(f"[ESPN] Failed to fetch injuries for {league}: {str(e)}")
-            return []
-
-    async def enrich_event(self, event_data: Dict[str, Any], sport: str, league: str) -> Dict[str, Any]:
-        """
-        Enrich a unified event with live score/clock data.
-        """
-        # This will be used by the ingestion service
-        return event_data
-
-    def _map_sport(self, unified_sport: str) -> tuple:
-        """Map Odds API sport string to ESPN (sport, league)"""
+    def _map_sport(self, sport: str) -> tuple:
+        """Map Odds API sport string to ESPN (category, league)"""
         mapping = {
             "basketball_nba": ("basketball", "nba"),
             "americanfootball_nfl": ("football", "nfl"),
             "baseball_mlb": ("baseball", "mlb"),
             "icehockey_nhl": ("hockey", "nhl"),
+            "soccer_usa_mls": ("soccer", "usa.1"),
+            "soccer_epl": ("soccer", "eng.1"),
+            "mma_mixed_martial_arts": ("mma", "ufc"),
             "basketball_ncaab": ("basketball", "mens-college-basketball"),
             "americanfootball_ncaaf": ("football", "college-football")
         }
-        return mapping.get(unified_sport, ("unknown", "unknown"))
+        return mapping.get(sport, ("unknown", "unknown"))
+
+    async def fetch_injuries(self, sport: str) -> list:
+        """ESPN injury feed per sport"""
+        cat, league = self._map_sport(sport)
+        if cat == "unknown": return []
+        
+        path = f"/{cat}/{league}/injuries"
+        res = await self.request("GET", path)
+        return res.get("injuries", [])
+
+    async def fetch_news(self, sport: str) -> list:
+        """ESPN headlines for sport"""
+        cat, league = self._map_sport(sport)
+        if cat == "unknown": return []
+        
+        path = f"/{cat}/{league}/news"
+        res = await self.request("GET", path)
+        return res.get("articles", [])
+
+    async def fetch_scoreboard(self, sport: str) -> list:
+        """Live + today's game scores"""
+        cat, league = self._map_sport(sport)
+        if cat == "unknown": return []
+        
+        path = f"/{cat}/{league}/scoreboard"
+        res = await self.request("GET", path)
+        return res.get("events", [])
+
+    async def fetch_roster(self, sport: str, team_id: str) -> list:
+        """Team roster for player matching"""
+        cat, league = self._map_sport(sport)
+        if cat == "unknown": return []
+        
+        path = f"/{cat}/{league}/teams/{team_id}/roster"
+        res = await self.request("GET", path)
+        return res.get("athletes", [])
+
+    async def fetch_game_odds(self, sport: str) -> list:
+        """ESPN game lines (backup to Odds API)"""
+        events = await self.fetch_scoreboard(sport)
+        odds_list = []
+        for event in events:
+            for comp in event.get("competitions", []):
+                if "odds" in comp:
+                    odds_list.append({
+                        "event_id": event.get("id"),
+                        "odds": comp.get("odds")
+                    })
+        return odds_list
+
+espn_client = ESPNClient()

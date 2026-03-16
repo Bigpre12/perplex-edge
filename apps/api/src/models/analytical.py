@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON
 from sqlalchemy.sql import func
-from database import Base
+from db.base import Base
 
 class WhaleMove(Base):
     __tablename__ = "whale_moves"

@@ -29,31 +29,31 @@ export default function NeuralEngineBrain() {
     const load = async () => {
       try {
         // Props count
-        const props = await API.playerProps(30, 50);
+        const props = await API.getProps("basketball_nba");
         if (!isApiError(props)) {
-          setData(prev => ({ ...prev, props_scored: props?.total ?? props?.items?.length ?? 0 }));
+          setData(prev => ({ ...prev, props_scored: (props as any)?.data?.length ?? 0 }));
         }
         // Injury impacts & Stats
-        const stats = await API.picksStats();
+        const stats = await API.brainMetrics();
         if (!isApiError(stats)) {
           setData(prev => ({ 
             ...prev, 
-            injury_impacts: stats?.injury_impacts ?? stats?.injury_count ?? 0,
-            active_edges: stats?.total_picks ?? 0
+            injury_impacts: (stats as any)?.injury_impacts ?? (stats as any)?.injury_count ?? 0,
+            active_edges: (stats as any)?.total_picks ?? 0
           }));
         }
         // Brain decisions & Health
-        const brain = await API.brainDecisions(5);
+        const brain = await API.brain.decisions("basketball_nba");
         if (!isApiError(brain)) {
-          setData(prev => ({ ...prev, decisions: brain?.items ?? brain?.decisions ?? [] }));
+          setData(prev => ({ ...prev, decisions: (brain as any)?.items ?? (brain as any)?.decisions ?? [] }));
         }
         
-        const health = await API.brainHealth();
+        const health = await API.getHealth();
         if (!isApiError(health)) {
           setData(prev => ({ 
             ...prev, 
-            brain_health: health?.overall_status ?? health?.status ?? 'Active',
-            clv_enabled: health?.clv_tracking ?? true
+            brain_health: (health as any)?.overall_status ?? (health as any)?.status ?? 'Active',
+            clv_enabled: (health as any)?.clv_tracking ?? true
           }));
         }
       } catch (err) {
@@ -67,27 +67,32 @@ export default function NeuralEngineBrain() {
 
   if (!mounted) {
     return (
-      <div className="bg-[#0d1117] border border-white/10 rounded-xl p-6 min-h-[150px] animate-pulse">
-        <div className="h-4 w-32 bg-white/5 rounded mb-4" />
+      <div className="bg-lucrix-surface border border-lucrix-border rounded-xl p-6 min-h-[150px] animate-pulse shadow-card">
+        <div className="h-4 w-32 bg-lucrix-elevated rounded mb-4" />
         <div className="grid grid-cols-3 gap-3">
-          <div className="h-16 bg-white/5 rounded-lg" />
-          <div className="h-16 bg-white/5 rounded-lg" />
-          <div className="h-16 bg-white/5 rounded-lg" />
+          <div className="h-16 bg-lucrix-elevated rounded-lg" />
+          <div className="h-16 bg-lucrix-elevated rounded-lg" />
+          <div className="h-16 bg-lucrix-elevated rounded-lg" />
         </div>
         <div className="grid grid-cols-3 gap-3 mt-3">
-          <div className="h-16 bg-white/5 rounded-lg" />
-          <div className="h-16 bg-white/5 rounded-lg" />
-          <div className="h-16 bg-white/5 rounded-lg" />
+          <div className="h-16 bg-lucrix-elevated rounded-lg" />
+          <div className="h-16 bg-lucrix-elevated rounded-lg" />
+          <div className="h-16 bg-lucrix-elevated rounded-lg" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0d1117] border border-white/10 rounded-xl p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-green-400">⚡</span>
-        <h2 className="text-sm font-bold tracking-widest text-white uppercase">Neural Engine Brain</h2>
+    <div className="bg-lucrix-surface border border-lucrix-border rounded-xl p-6 shadow-card">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+            <span className="text-brand-success animate-pulse">⚡</span>
+            <h2 className="text-sm font-black tracking-widest text-white uppercase font-display">Neural Engine Brain</h2>
+        </div>
+        <span className="text-[9px] bg-brand-success/10 border border-brand-success/20 text-brand-success px-1.5 py-0.5 rounded-sm uppercase tracking-widest font-black shrink-0">
+          Connected
+        </span>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3">
@@ -115,7 +120,7 @@ export default function NeuralEngineBrain() {
         <BrainCard label="INJURY IMPACTS" value={`${data.injury_impacts} Critical`} />
         <BrainCard label="PROPS SCORED"   value={String(data.props_scored)} />
         {isPro ? (
-          <BrainCard label="AI REASONING" value={data.brain_health === 'initializing' ? 'BOOTING...' : data.brain_health?.toUpperCase() || 'ACTIVE'} />
+          <BrainCard label="AI REASONING" value={data.brain_health === 'initializing' ? 'BOOTING...' : String(data.brain_health ?? 'ACTIVE').toUpperCase()} />
         ) : (
           <LockedCard />
         )}
@@ -126,18 +131,18 @@ export default function NeuralEngineBrain() {
 
 function BrainCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-black/30 border border-white/10 rounded-lg p-3 text-center">
-      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-sm font-bold text-white">{value}</p>
+    <div className="bg-lucrix-dark/50 border border-lucrix-border/50 rounded-lg p-3 text-center transition-colors hover:bg-lucrix-elevated">
+      <p className="text-[10px] text-textMuted uppercase tracking-widest mb-1.5 font-bold">{label}</p>
+      <p className="text-sm font-bold text-white font-mono">{value}</p>
     </div>
   );
 }
 
 function LockedCard() {
   return (
-    <div className="bg-black/30 border border-white/10 rounded-lg p-3 text-center">
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">PREMIUM</p>
-      <p className="text-[10px] text-gray-600 mt-0.5">Upgrade to unlock</p>
+    <div className="bg-lucrix-dark/30 border border-lucrix-border/30 rounded-lg p-3 text-center flex flex-col items-center justify-center">
+      <p className="text-[10px] font-black text-textMuted uppercase tracking-widest leading-none mb-1">ELITE</p>
+      <p className="text-[9px] text-textSecondary font-medium leading-none">Upgrade to unlock</p>
     </div>
   );
 }

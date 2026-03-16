@@ -52,53 +52,40 @@ export default function SettingsPage() {
         setList(list.includes(item) ? list.filter(i => i !== item) : [...list, item]);
     };
 
-    const sectionStyle = { background: "#1a1d2e", borderRadius: "12px", padding: "20px", border: "1px solid #2d3748", marginBottom: "16px" };
-    const labelStyle = { fontSize: "11px", color: "#6b7280", fontWeight: 700 as const, letterSpacing: "0.05em", marginBottom: "12px", display: "block" as const };
-    const chipStyle = (active: boolean) => ({
-        padding: "6px 14px", borderRadius: "6px", border: "none",
-        background: active ? "#6366f1" : "#1f2937",
-        color: active ? "#fff" : "#9ca3af",
-        fontSize: "12px", fontWeight: 600 as const, cursor: "pointer" as const,
-    });
-
     return (
-        <div style={{ background: "#0f1117", minHeight: "100vh", padding: "24px", color: "#fff" }}>
-            <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+        <div className="settings-page-wrapper">
+            <div className="settings-inner">
 
-                <h1 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "24px" }}>⚙️ Settings</h1>
+                <h1 className="settings-title">⚙️ Settings</h1>
 
                 {/* Profile */}
-                <div style={sectionStyle}>
-                    <span style={labelStyle}>PROFILE</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                        <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: 800 }}>
+                <div className="settings-card">
+                    <span className="settings-section-label">PROFILE</span>
+                    <div className="settings-profile-row">
+                        <div className="settings-avatar">
                             {user?.email?.[0].toUpperCase() ?? "U"}
                         </div>
                         <div>
-                            <div style={{ fontWeight: 700 }}>{user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? "User"}</div>
-                            <div style={{ fontSize: "12px", color: "#6b7280" }}>{user?.email ?? ""}</div>
+                            <div className="settings-profile-name">{user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? "User"}</div>
+                            <div className="settings-profile-email">{user?.email ?? ""}</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Subscription */}
-                <div style={sectionStyle}>
-                    <span style={labelStyle}>SUBSCRIPTION TIER</span>
-                    <div style={{ display: "flex", gap: "10px" }}>
+                <div className="settings-card">
+                    <span className="settings-section-label">SUBSCRIPTION TIER</span>
+                    <div className="settings-tier-grid">
                         {(["free", "pro", "elite"] as const).map(tier => (
                             <button
                                 key={tier}
                                 onClick={() => setSubscription(tier)}
-                                style={{
-                                    ...chipStyle(subscription === tier),
-                                    flex: 1, padding: "12px",
-                                    border: subscription === tier ? "1px solid #6366f1" : "1px solid #2d3748",
-                                }}
+                                className={`settings-tier-btn ${subscription === tier ? 'settings-tier-btn-active' : ''}`}
                             >
-                                <div style={{ fontSize: "14px", marginBottom: "4px" }}>
+                                <div className="settings-tier-icon-wrap">
                                     {tier === "free" ? "🔓" : tier === "pro" ? "⚡" : "👑"} {tier.toUpperCase()}
                                 </div>
-                                <div style={{ fontSize: "10px", color: subscription === tier ? "#c7d2fe" : "#6b7280" }}>
+                                <div className={`settings-tier-desc ${subscription === tier ? 'settings-tier-desc-active' : ''}`}>
                                     {tier === "free"
                                         ? PRICING.FREE.description
                                         : tier === "pro"
@@ -111,36 +98,32 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Bankroll */}
-                <div style={sectionStyle}>
-                    <span style={labelStyle}>BANKROLL</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        <span style={{ fontSize: "20px", color: "#10b981", fontWeight: 700 }}>$</span>
+                <div className="settings-card">
+                    <span className="settings-section-label">BANKROLL</span>
+                    <div className="settings-bankroll-row">
+                        <span className="settings-currency-symbol">$</span>
                         <input
                             type="number"
                             value={bankroll}
                             onChange={e => setBankroll(e.target.value)}
                             placeholder="Enter your bankroll"
-                            style={{
-                                background: "#0f1117", border: "1px solid #2d3748", borderRadius: "8px",
-                                padding: "10px 14px", color: "#fff", fontSize: "16px", fontWeight: 700,
-                                width: "100%", outline: "none"
-                            }}
+                            className="settings-input-money"
                         />
                     </div>
                     {bankroll && (
-                        <div style={{ marginTop: "10px", fontSize: "12px", color: "#6b7280" }}>
-                            1% unit = <span style={{ color: "#10b981", fontWeight: 700 }}>${(Number(bankroll) * 0.01).toFixed(2)}</span> &nbsp;|&nbsp;
-                            2% unit = <span style={{ color: "#10b981", fontWeight: 700 }}>${(Number(bankroll) * 0.02).toFixed(2)}</span>
+                        <div className="settings-unit-calc">
+                            1% unit = <span className="settings-unit-val">${(Number(bankroll) * 0.01).toFixed(2)}</span> &nbsp;|&nbsp;
+                            2% unit = <span className="settings-unit-val">${(Number(bankroll) * 0.02).toFixed(2)}</span>
                         </div>
                     )}
                 </div>
 
                 {/* Sportsbooks */}
-                <div style={sectionStyle}>
-                    <span style={labelStyle}>MY SPORTSBOOKS</span>
-                    <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "8px" }}>
+                <div className="settings-card">
+                    <span className="settings-section-label">MY SPORTSBOOKS</span>
+                    <div className="settings-chip-group">
                         {SPORTSBOOKS.map(b => (
-                            <button key={b} onClick={() => toggleItem(selectedBooks, setSelectedBooks, b)} style={chipStyle(selectedBooks.includes(b))}>
+                            <button key={b} onClick={() => toggleItem(selectedBooks, setSelectedBooks, b)} className={`settings-chip ${selectedBooks.includes(b) ? 'settings-chip-active' : ''}`}>
                                 {b}
                             </button>
                         ))}
@@ -148,23 +131,24 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Sports */}
-                <div style={sectionStyle}>
-                    <span style={labelStyle}>MY SPORTS</span>
-                    <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "8px" }}>
+                <div className="settings-card">
+                    <span className="settings-section-label">MY SPORTS</span>
+                    <div className="settings-chip-group">
                         {SPORTS.map(s => (
-                            <button key={s} onClick={() => toggleItem(selectedSports, setSelectedSports, s)} style={chipStyle(selectedSports.includes(s))}>
+                            <button key={s} onClick={() => toggleItem(selectedSports, setSelectedSports, s)} className={`settings-chip ${selectedSports.includes(s) ? 'settings-chip-active' : ''}`}>
                                 {s}
                             </button>
                         ))}
                     </div>
                 </div>
+                
 
                 {/* Notifications */}
-                <div style={sectionStyle}>
-                    <span style={labelStyle}>NOTIFICATIONS</span>
+                <div className="settings-card">
+                    <span className="settings-section-label">NOTIFICATIONS</span>
                     {Object.entries(notifications).map(([key, val]) => (
-                        <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #1f2937" }}>
-                            <div style={{ fontSize: "13px", fontWeight: 600 }}>
+                        <div key={key} className="settings-notif-row">
+                            <div className="settings-notif-label">
                                 {{
                                     lineMovement: "📊 Line Movement Alerts",
                                     injuryAlerts: "🚑 Injury Alerts",
@@ -175,17 +159,10 @@ export default function SettingsPage() {
                             </div>
                             <button
                                 onClick={() => setNotifications(n => ({ ...n, [key]: !val }))}
-                                style={{
-                                    width: "44px", height: "24px", borderRadius: "12px", border: "none",
-                                    background: val ? "#6366f1" : "#374151", cursor: "pointer",
-                                    position: "relative" as const, transition: "background 0.2s"
-                                }}
+                                aria-label={`Toggle ${key}`}
+                                className={`settings-toggle-track ${val ? 'settings-toggle-track-active' : ''}`}
                             >
-                                <div style={{
-                                    width: "18px", height: "18px", borderRadius: "50%", background: "#fff",
-                                    position: "absolute" as const, top: "3px",
-                                    left: val ? "23px" : "3px", transition: "left 0.2s"
-                                }} />
+                                <div className={`settings-toggle-thumb ${val ? 'settings-toggle-thumb-active' : ''}`} />
                             </button>
                         </div>
                     ))}
@@ -194,12 +171,7 @@ export default function SettingsPage() {
                 {/* Save */}
                 <button
                     onClick={handleSave}
-                    style={{
-                        width: "100%", padding: "14px", borderRadius: "10px", border: "none",
-                        background: saved ? "#10b981" : "#6366f1",
-                        color: "#fff", fontSize: "15px", fontWeight: 800, cursor: "pointer",
-                        transition: "background 0.3s"
-                    }}
+                    className={`settings-btn-save ${saved ? 'settings-btn-save-success' : ''}`}
                 >
                     {saved ? "✅ Saved!" : "Save Settings"}
                 </button>

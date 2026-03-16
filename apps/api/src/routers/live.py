@@ -1,13 +1,13 @@
 import httpx, logging
 from fastapi import APIRouter, Query
 from typing import Optional
-from services.props_service import fetch_scores, fetch_active_sports
+
 from config.sports_config import ALL_SPORTS, SPORT_DISPLAY
 from real_data_connector import real_data_connector
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["live"])
+router = APIRouter(prefix="/api/live", tags=["live"])
 
 @router.get("/games")
 async def live_games(sport: str = "basketball_nba"):

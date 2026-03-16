@@ -28,7 +28,7 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-@router.websocket("/ws/ev")
+@router.websocket("/ws")
 async def ws_ev(websocket: WebSocket):
     await manager.connect(websocket)
     try:

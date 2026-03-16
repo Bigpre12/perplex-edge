@@ -15,6 +15,7 @@ async def fetch_historical_odds(sport: str, event_id: str) -> dict:
     res = await odds_api.get_player_props(sport, event_id, markets="h2h,spreads,totals", regions="us,us2")
     return res if isinstance(res, dict) else {"bookmakers": res}
 
+@router.get("/")
 @router.get("/track")
 async def track_clv(sport: str = Query("basketball_nba")):
     """

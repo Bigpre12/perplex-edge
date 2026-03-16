@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from config import settings
 from common_deps import get_db, require_elite
 
-router = APIRouter(prefix="/api/stripe", tags=["Stripe Monetization"])
+router = APIRouter(prefix="/stripe", tags=["Stripe Monetization"])
 
 # These should be pulled from secure environment variables in production
 stripe.api_key = settings.STRIPE_SECRET_KEY or os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock_key_only")

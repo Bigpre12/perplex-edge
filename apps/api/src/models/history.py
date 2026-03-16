@@ -1,21 +1,28 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+# apps/api/src/models/history.py
+from sqlalchemy import Column, String, Numeric, DateTime, BigInteger
 from sqlalchemy.sql import func
-from database import Base
+from db.base import Base
+
+class OddsHistory(Base):
+    """
+    Historical odds for line movement tracking.
+    """
+    __tablename__ = "odds_history"
+    
+    id = Column(BigInteger, primary_key=True)
+    sport = Column(String, nullable=False)
+    event_id = Column(String, nullable=False, index=True)
+    market_key = Column(String, nullable=False, index=True)
+    outcome_key = Column(String, nullable=False)
+    bookmaker = Column(String, nullable=False)
+    price = Column(Numeric, nullable=False)
+    line = Column(Numeric, nullable=True)
+    recorded_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 class PropHistory(Base):
+    """Legacy prop history tracking."""
     __tablename__ = "prop_history"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    prop_line_id = Column(Integer, ForeignKey("proplines.id"), index=True)
-    
-    old_line = Column(Float)
-    new_line = Column(Float)
-    
-    old_odds_over = Column(Integer)
-    new_odds_over = Column(Integer)
-    
-    old_odds_under = Column(Integer)
-    new_odds_under = Column(Integer)
-    
-    change_type = Column(String)  # 'line_move', 'odds_move', 'steam'
+    id = Column(BigInteger, primary_key=True)
+    prop_id = Column(String, nullable=False)
+    price = Column(Numeric, nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())

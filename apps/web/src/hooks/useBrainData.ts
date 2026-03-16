@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react'
-import { API, apiFetch, isApiError, api } from '@/lib/api'
+import api, { isApiError, unwrap } from '@/lib/api'
 import { useBackendStatus } from './useBackendStatus'
 import { useLiveData } from './useLiveData'
 import { SportKey } from '@/lib/sports.config'
@@ -49,14 +49,14 @@ export const useBrainData = (sportKey: SportKey = "basketball_nba") => {
 
     // 1. Fetch Decisions
     const { data: decData, loading: decLoading } = useLiveData(
-        () => api.brain.decisions(sportKey, 5),
+        () => api.brain.decisions(sportKey),
         ['brain-decisions', sportKey],
         { enabled: !isDown, refreshInterval: 30000 }
     )
 
     // 2. Fetch Health/Metrics
     const { data: healthData, loading: healthLoading } = useLiveData(
-        () => api.brain.metrics(sportKey),
+        () => api.brain.metrics(),
         ['brain-metrics', sportKey],
         { enabled: !isDown, refreshInterval: 30000 }
     )
@@ -70,15 +70,14 @@ export const useBrainData = (sportKey: SportKey = "basketball_nba") => {
 
     useEffect(() => {
         if (intelData && !isApiError(intelData)) {
-            const data = intelData as { items?: MarketIntelItem[] }
-            setMarketIntel(data.items || [])
+            setMarketIntel(unwrap(intelData))
         }
     }, [intelData])
 
     const loading = decLoading || healthLoading || intelLoading
 
     return {
-        decisions: decData?.decisions || [],
+        decisions: unwrap(decData),
         health: healthData,
         marketIntel,
         loading,

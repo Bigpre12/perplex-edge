@@ -79,23 +79,23 @@ export default function PropsFeed({ sport }: { sport: SportKey }) {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#161625]/50 p-4 rounded-xl border border-[#2a2a3a]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-lucrix-surface p-4 rounded-xl border border-lucrix-border shadow-card">
                 <div className="flex items-center gap-3">
-                    <div className="w-2 h-8 bg-emerald-primary rounded-full shadow-[0_0_12px_rgba(13,242,51,0.4)]" />
+                    <div className="w-2 h-8 bg-brand-cyan rounded-full shadow-glow shadow-brand-cyan/40" />
                     <div>
-                        <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">Market Pulse</h2>
-                        <p className="text-[10px] text-[#9090aa] font-bold uppercase tracking-widest">{filtered.length} Live Opportunities</p>
+                        <h2 className="text-xl font-black text-white italic uppercase tracking-tighter font-display">Market Pulse</h2>
+                        <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest">{filtered.length} Live Opportunities</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-[#0a0a0f] p-1 rounded-lg border border-[#2a2a3a]">
+                <div className="flex items-center gap-2 bg-lucrix-dark p-1 rounded-lg border border-lucrix-border">
                     {(['all', 'sharp', 'top'] as const).map(f => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${filter === f
-                                ? 'bg-emerald-primary text-black shadow-lg shadow-emerald-primary/20'
-                                : 'text-[#55556a] hover:text-[#9090aa]'
+                                ? 'bg-brand-cyan text-black shadow-glow shadow-brand-cyan/30'
+                                : 'text-textSecondary hover:text-white'
                                 }`}
                         >
                             {f === 'sharp' ? '🐋 SHARP' : f === 'top' ? '⭐ ELITE' : 'ALL'}
@@ -105,15 +105,15 @@ export default function PropsFeed({ sport }: { sport: SportKey }) {
             </div>
 
             {filtered.length === 0 ? (
-                <div className="text-center py-20 bg-[#12121e]/50 rounded-2xl border border-dashed border-[#2a2a3a] backdrop-blur-sm">
+                <div className="text-center py-20 bg-lucrix-dark/50 rounded-2xl border border-dashed border-lucrix-border backdrop-blur-sm">
                     <div className="text-3xl mb-4">🔦</div>
-                    <h3 className="text-sm font-black text-[#f0f0ff] uppercase tracking-tighter italic">No Matches Found</h3>
-                    <p className="text-[10px] text-[#9090aa] font-bold uppercase tracking-widest mt-2">
+                    <h3 className="text-sm font-black text-white uppercase tracking-tighter italic">No Matches Found</h3>
+                    <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mt-2">
                         Try adjusting your filters for the current slate.
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filtered.map(prop => (
                         <PropCard key={prop.id} prop={prop} />
                     ))}

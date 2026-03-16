@@ -106,7 +106,7 @@ export default function CommandPalette() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setIsOpen(false)}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
                     />
 
                     {/* Palette Modal */}
@@ -115,34 +115,34 @@ export default function CommandPalette() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-2xl bg-[#0c1416]/95 border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[101] overflow-hidden flex flex-col"
+                        className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-2xl bg-lucrix-surface border border-lucrix-border rounded-2xl shadow-card z-[101] overflow-hidden flex flex-col"
                         onKeyDown={handleModalKeys}
                     >
                         {/* Search Input Header */}
-                        <div className="flex items-center px-4 py-4 border-b border-white/10 bg-white/[0.02]">
-                            <Search size={20} className="text-slate-400 mr-3" />
+                        <div className="flex items-center px-4 py-4 border-b border-lucrix-border bg-lucrix-dark/50">
+                            <Search size={20} className="text-textSecondary mr-3" />
                             <input
                                 autoFocus
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Search apps, commands, or documentation..."
-                                className="flex-1 bg-transparent border-none outline-none text-white text-lg placeholder:text-slate-500 font-medium font-display"
+                                className="flex-1 bg-transparent border-none outline-none text-white text-lg placeholder:text-textMuted font-medium font-display"
                             />
-                            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[10px] text-slate-400 font-bold uppercase tracking-widest shrink-0">
+                            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md bg-lucrix-elevated border border-lucrix-border text-[10px] text-textSecondary font-bold uppercase tracking-widest shrink-0">
                                 <span>ESC</span> to close
                             </div>
                         </div>
 
                         {/* Results Body */}
-                        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2">
+                        <div className="max-h-[60vh] overflow-y-auto scrollbar-none p-2 bg-lucrix-surface">
                             {filteredActions.length === 0 ? (
-                                <div className="p-8 text-center text-slate-500 text-sm">
+                                <div className="p-8 text-center text-textMuted text-sm font-medium">
                                     No commands found. Try searching for "Screener" or "Sync".
                                 </div>
                             ) : (
                                 Object.entries(groupedActions).map(([category, items]) => (
                                     <div key={category} className="mb-4 last:mb-0">
-                                        <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                        <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMuted">
                                             {category}
                                         </div>
                                         <div className="space-y-1">
@@ -163,17 +163,17 @@ export default function CommandPalette() {
                                                                 action.action();
                                                             }
                                                         }}
-                                                        className={`flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-colors ${isActive ? 'bg-primary/10 border-l-2 border-primary' : 'hover:bg-white/[0.02] border-l-2 border-transparent'
+                                                        className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-lucrix-elevated border-l-[3px] border-brand-purple' : 'hover:bg-lucrix-dark border-l-[3px] border-transparent'
                                                             }`}
                                                     >
-                                                        <div className={`p-2 rounded-lg ${isActive ? 'bg-primary/20 text-primary' : 'bg-white/5 text-slate-400'}`}>
+                                                        <div className={`p-2 rounded-md ${isActive ? 'bg-brand-purple/20 text-brand-purple' : 'bg-lucrix-dark text-textSecondary'}`}>
                                                             {action.icon}
                                                         </div>
-                                                        <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                                                        <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-textSecondary'}`}>
                                                             {action.label}
                                                         </span>
                                                         {isActive && (
-                                                            <ArrowRight size={14} className="ml-auto text-primary opacity-50" />
+                                                            <ArrowRight size={14} className="ml-auto text-brand-purple opacity-75" />
                                                         )}
                                                     </div>
                                                 );
@@ -185,14 +185,14 @@ export default function CommandPalette() {
                         </div>
 
                         {/* Footer Hints */}
-                        <div className="px-4 py-3 border-t border-white/5 bg-[#050505] flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        <div className="px-4 py-3 border-t border-lucrix-border bg-lucrix-dark flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-textSecondary">
                             <span className="flex items-center gap-1.5">
-                                <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-300 shadow-sm leading-none">↑</span>
-                                <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-300 shadow-sm leading-none">↓</span>
+                                <span className="px-1.5 py-0.5 rounded border border-lucrix-border bg-lucrix-elevated text-textSecondary shadow-sm leading-none">↑</span>
+                                <span className="px-1.5 py-0.5 rounded border border-lucrix-border bg-lucrix-elevated text-textSecondary shadow-sm leading-none">↓</span>
                                 Navigate
                             </span>
                             <span className="flex items-center gap-1.5">
-                                <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-slate-300 shadow-sm leading-none">↵</span>
+                                <span className="px-1.5 py-0.5 rounded border border-lucrix-border bg-lucrix-elevated text-textSecondary shadow-sm leading-none">↵</span>
                                 Select
                             </span>
                         </div>

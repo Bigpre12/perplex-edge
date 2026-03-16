@@ -3,7 +3,9 @@ import logging
 import uuid
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import select, func, desc, Integer
-from models import ModelPick, BrainLog, SteamSnapshot, WhaleMove
+from models.brain import BrainSystemState, ModelPick, SharpSignal, BrainLog, SteamSnapshot
+from models.signals import InjuryImpact
+from models.unified import UnifiedOdds
 from typing import List, Optional, Dict
 from services.monte_carlo_service import monte_carlo_service
 from services.injury_service import injury_service
@@ -112,35 +114,35 @@ class BrainAdvancedService:
             return []
         
     async def check_steam_moves(self, sport: str, db: AsyncSession) -> List[dict]:
-        """Feature 5: Steam Detector (Real Data)"""
+        """Feature 5: Steam Detector (Layer 1: Sharp Money)"""
         try:
-            stmt = select(SteamSnapshot).where(
-                SteamSnapshot.sport == sport
-            ).order_by(desc(SteamSnapshot.timestamp)).limit(10)
+            stmt = select(SharpSignal).where(
+                SharpSignal.sport == sport,
+                SharpSignal.signal_type == 'steam'
+            ).order_by(desc(SharpSignal.created_at)).limit(10)
             
             res = await db.execute(stmt)
-            snapshots = res.scalars().all()
+            signals = res.scalars().all()
             
-            if snapshots:
+            if signals:
                 return [
                     {
                         "id": s.id,
-                        "timestamp": s.timestamp.isoformat(),
-                        "player": s.player,
-                        "stat_type": s.stat_type,
-                        "line": s.line,
+                        "timestamp": s.created_at.isoformat(),
+                        "player": s.selection,
+                        "stat_type": s.market_key,
+                        "line": s.severity,
                         "move_direction": "URGENT",
-                        "book": s.sportsbook,
+                        "book": s.bookmakers_involved[0] if s.bookmakers_involved else "Multiple",
                         "urgency": "HIGH",
-                        "market_percentage": "85% of sharp volume"
+                        "market_percentage": "Sharp consensus"
                     }
-                    for s in snapshots
+                    for s in signals
                 ]
             
-            # Mock Fallback if no steam moves
+            # Mock Fallback
             return [
-                {"id": "mock_steam_1", "timestamp": datetime.now(timezone.utc).isoformat(), "player": "Jayson Tatum", "stat_type": "Points", "line": 27.5, "move_direction": "URGENT", "book": "Pinnacle", "urgency": "HIGH", "market_percentage": "92% of sharp volume"},
-                {"id": "mock_steam_2", "timestamp": datetime.now(timezone.utc).isoformat(), "player": "Shai Gilgeous-Alexander", "stat_type": "Assists", "line": 6.5, "move_direction": "URGENT", "book": "Circa", "urgency": "HIGH", "market_percentage": "88% of sharp volume"}
+                {"id": "mock_steam_1", "timestamp": datetime.now(timezone.utc).isoformat(), "player": "Jayson Tatum", "stat_type": "Points", "line": 27.5, "move_direction": "URGENT", "book": "Pinnacle", "urgency": "HIGH", "market_percentage": "92% of sharp volume"}
             ]
         except Exception as e:
             logger.error(f"Error in check_steam_moves: {e}")
@@ -173,15 +175,36 @@ class BrainAdvancedService:
             logger.error(f"Error fetching reasoning feed: {e}")
             return []
 
-    async def analyze_injuries(self, sport: str) -> List[dict]:
-        """Feature 4: Injury Impact Analyzer (Real Data)"""
+    async def analyze_injuries(self, sport: str, db: AsyncSession = None) -> List[dict]:
+        """Feature 4: Injury Impact Analyzer (Layer 2: Injury Impact)"""
         try:
-            # Get list of injuries for this sport
-            sport_short = sport.split("_")[-1] if "_" in sport else sport
-            injuries = await injury_service._get_injuries(sport_short)
+            if not db:
+                from database import async_session_maker
+                async with async_session_maker() as session:
+                    return await self.analyze_injuries(sport, session)
+
+            stmt = select(InjuryImpact).where(
+                InjuryImpact.sport == sport
+            ).order_by(desc(InjuryImpact.created_at)).limit(10)
             
-            critical = [i for i in injuries if i.get('impact') in ['high', 'medium']]
-            return critical[:10] # Return top 10 critical injuries
+            res = await db.execute(stmt)
+            impacts = res.scalars().all()
+            
+            if impacts:
+                return [
+                    {
+                        "player": im.player_name,
+                        "team": im.team,
+                        "status": im.status,
+                        "impact": im.impact_description,
+                        "adjustments": im.affected_markets,
+                        "timestamp": im.created_at.isoformat()
+                    }
+                    for im in impacts
+                ]
+
+            # Fallback to older logic if needed or return empty
+            return []
         except Exception as e:
             logger.error(f"Error in analyze_injuries: {e}")
             return []

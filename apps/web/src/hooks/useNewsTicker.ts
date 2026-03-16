@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { API, apiFetch, isApiError } from "@/lib/api";
+import { API, isApiError } from "@/lib/api";
 import { useBackendStatus } from "./useBackendStatus";
 import { SportKey } from "@/lib/sports.config";
 
@@ -25,10 +25,11 @@ export function useNewsTicker(sports: string = "NBA,NFL,MLB", refreshMs: number 
 
     const fetchTicker = async () => {
         if (isDown) return;
-        const result = await apiFetch<any>(API.news((sports.split(',')[0].toLowerCase() === 'nba' ? 'basketball_nba' : 'basketball_nba') as SportKey));
+        const result = await API.news((sports.split(',')[0].toLowerCase() === 'nba' ? 'basketball_nba' : 'basketball_nba') as SportKey);
 
         if (!isApiError(result)) {
-            setItems(result.items || result.data || []);
+            const data = result as any;
+            setItems(data.items || data.data || []);
         } else {
             console.warn("[Ticker] fetch failed:", result.message);
         }

@@ -33,16 +33,16 @@ export default function EVPage() {
 
     return (
         <GateLock feature="edges" reason="The EV+ Live Scanner is reserved for Premium athletes.">
-            <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 text-white pb-24">
+            <div className="pb-24 space-y-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="bg-emerald-500/20 p-2 rounded-lg border border-emerald-500/30">
-                                <TrendingUp size={24} className="text-emerald-500" />
+                            <div className="bg-brand-success/10 p-2 rounded-lg border border-brand-success/20">
+                                <TrendingUp size={24} className="text-brand-success shadow-glow shadow-brand-success/40" />
                             </div>
-                            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">EV+ Live Scanner</h1>
+                            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">EV+ Live Scanner</h1>
                         </div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">High-Edge Market Opportunities</p>
+                        <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mb-4">High-Edge Market Opportunities</p>
                         <FreshnessBadge 
                             oddsTs={freshness?.odds_last_updated || null} 
                             evTs={freshness?.ev_last_updated || null} 
@@ -65,10 +65,10 @@ export default function EVPage() {
                     empty={!loading && (!picks || picks.length === 0)}
                     emptyMessage="No high-EV edges found right now. Markets are stable."
                 >
-                    <div className="bg-[#0D0D14] border border-white/5 rounded-2xl overflow-x-auto shadow-2xl">
+                    <div className="bg-lucrix-surface border border-lucrix-border rounded-xl overflow-x-auto shadow-card">
                         <table className="w-full text-left min-w-[800px]">
                             <thead>
-                                <tr className="bg-white/5 border-b border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                <tr className="bg-lucrix-dark/80 border-b border-lucrix-border text-[9px] font-black uppercase tracking-widest text-textMuted">
                                     <th className="px-6 py-4">Market Pick</th>
                                     <th className="px-6 py-4 text-center">Market Odds</th>
                                     <th className="px-6 py-4 text-center">Model Fair</th>
@@ -77,44 +77,44 @@ export default function EVPage() {
                                     <th className="px-6 py-4 text-right">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-lucrix-border/50">
                                     {(Array.isArray(picks) ? picks : picks?.items || []).map((pick: any, i: number) => (
-                                    <tr key={`${pick.id || pick.event_id || i}-${i}`} className="group hover:bg-white/[0.02] transition-colors">
-                                        <td className="px-6 py-6 font-sans">
+                                    <tr key={`${pick.id || pick.event_id || i}-${i}`} className="group hover:bg-lucrix-dark/50 transition-colors">
+                                        <td className="px-6 py-5">
                                             <div className="flex items-center gap-4">
-                                                <div className="bg-white/5 px-2 py-1 rounded text-[10px] font-black border border-white/10 text-[#F5C518]">
+                                                <div className="bg-brand-warning/10 px-2 py-1 rounded-sm text-[10px] font-black border border-brand-warning/20 text-brand-warning uppercase tracking-widest shadow-glow shadow-brand-warning/10">
                                                     {pick.sport}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-lg group-hover:text-primary transition-colors text-white">{pick.player_name}</div>
-                                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-tight">{pick.stat_type} — {pick.line}</div>
+                                                    <div className="font-black text-lg group-hover:text-brand-success transition-colors text-white font-display italic uppercase tracking-tight">{pick.player_name}</div>
+                                                    <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-0.5">{pick.stat_type} — {pick.line}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-6 text-center">
-                                            <span className="bg-white/5 px-4 py-2 rounded-xl border border-white/10 font-black font-mono text-white text-sm">
+                                        <td className="px-6 py-5 text-center">
+                                            <span className="bg-lucrix-dark px-4 py-2 rounded-lg border border-lucrix-border font-black font-mono text-white text-sm">
                                                 {pick.odds > 0 ? `+${pick.odds}` : pick.odds}
                                             </span>
-                                            <div className="text-[9px] text-slate-500 mt-1 font-bold uppercase">{pick.book}</div>
+                                            <div className="text-[9px] text-textMuted mt-2 font-bold uppercase tracking-widest">{pick.book}</div>
                                         </td>
-                                        <td className="px-6 py-6 text-center">
-                                            <div className="text-sm font-black text-slate-400 font-mono">
+                                        <td className="px-6 py-5 text-center">
+                                            <div className="text-sm font-black text-textSecondary font-mono">
                                                 {pick.fair_odds > 0 ? `+${pick.fair_odds}` : pick.fair_odds}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-6 text-center">
+                                        <td className="px-6 py-5 text-center">
                                             <div className="flex flex-col items-center">
-                                                <span className="text-xl font-black text-emerald-500">+{pick.ev_percentage}%</span>
+                                                <span className="text-xl font-black text-brand-success font-display">+{pick.ev_percentage}%</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-6 text-center">
-                                            <div className="bg-[#F5C51810] text-[#F5C518] px-3 py-1 rounded-lg border border-[#F5C51820] inline-flex items-center gap-1.5">
+                                        <td className="px-6 py-5 text-center">
+                                            <div className="bg-brand-warning/10 text-brand-warning px-3 py-1.5 rounded-lg border border-brand-warning/20 inline-flex items-center gap-1.5 shadow-glow shadow-brand-warning/10">
                                                 <Calculator size={12} />
-                                                <span className="font-black text-sm">{pick.kelly_percentage || 0}%</span>
+                                                <span className="font-black text-sm font-mono">{pick.kelly_percentage || 0}%</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-6 text-right">
-                                            <button className="bg-white hover:bg-[#F5C518] hover:text-black text-black px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">
+                                        <td className="px-6 py-5 text-right">
+                                            <button className="bg-lucrix-dark border border-lucrix-border hover:bg-brand-success hover:border-brand-success hover:text-black text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all shadow-glow hover:shadow-brand-success/20">
                                                 Bet
                                             </button>
                                         </td>
@@ -126,13 +126,13 @@ export default function EVPage() {
                 </PageStates>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-[#0F0F1A] border border-white/5 p-6 rounded-2xl flex items-center gap-4">
-                        <div className="bg-[#F5C51820] p-3 rounded-2xl">
-                            <Info className="text-[#F5C518]" size={24} />
+                    <div className="bg-lucrix-surface border border-lucrix-border p-6 rounded-xl flex items-start gap-4 shadow-card">
+                        <div className="bg-brand-warning/10 p-3 rounded-xl border border-brand-warning/20">
+                            <Info className="text-brand-warning" size={24} />
                         </div>
                         <div>
-                            <h4 className="font-bold text-sm text-white">What is EV+?</h4>
-                            <p className="text-xs text-slate-500 mt-1">Expected Value indicates a bet where the probability is in your favor vs the book odds.</p>
+                            <h4 className="font-black text-sm text-white uppercase tracking-tight font-display italic">What is EV+?</h4>
+                            <p className="text-[11px] text-textSecondary mt-1.5 font-bold leading-relaxed">Expected Value indicates a bet where the probability is in your favor vs the book odds over the long term.</p>
                         </div>
                     </div>
                     {/* Kelly/institutional speed info cards */}

@@ -1,84 +1,101 @@
 import logging
 import json
 from datetime import datetime, timezone, timedelta
-from sqlalchemy import select, update, and_
+from typing import List, Dict, Any
+from sqlalchemy import select, insert, update
 from database import async_session_maker
-from models.props import PropLine, PropOdds
-from models.history import PropHistory
-from models.brain import ModelPick
+from models.unified import UnifiedOdds
+from models.brain import CLVRecord
+from services.cache import cache
 
 logger = logging.getLogger(__name__)
 
 class BrainCLVTracker:
     """
-    Automates performance analysis by tracking Closing Line Value (CLV).
-    Compares initial pick lines vs game-time closing snapshots.
+    Layer 5: CLV Brain
+    Tracks Opening vs Closing lines to prove edge.
     """
 
-    async def track_closing_lines(self, active_props: list, sport_key: str):
+    async def record_opening_line(self, odds_list: List[Any]):
         """
-        Snapshot closing lines as games start.
-        Should be called when a game status moves to 'in_progress' or close to start time.
+        If we haven't seen this selection before, record it as the 'Opening' line.
+        """
+        for odds in odds_list:
+            # Handle both objects and dicts
+            is_dict = isinstance(odds, dict)
+            sport = odds["sport"] if is_dict else odds.sport
+            event_id = odds["event_id"] if is_dict else odds.event_id
+            market_key = odds["market_key"] if is_dict else odds.market_key
+            outcome_key = odds["outcome_key"] if is_dict else odds.outcome_key
+            bookmaker = odds["bookmaker"] if is_dict else odds.bookmaker
+            line = odds["line"] if is_dict else odds.line
+            price = odds["price"] if is_dict else odds.price
+            
+            open_key = f"clv:open:{sport}:{event_id}:{market_key}:{outcome_key}:{bookmaker}"
+            exists = await cache.get(open_key)
+            if not exists:
+                opening_data = {
+                    "line": float(odds.line) if odds.line else 0.0,
+                    "price": float(odds.price),
+                    "ts": datetime.now(timezone.utc).timestamp()
+                }
+                await cache.set(open_key, json.dumps(opening_data), 86400 * 3) # Keep for 3 days
+                logger.debug(f"CLV: Recorded opener for {odds.event_id} {odds.outcome_key}")
+
+    async def record_closing_line(self, sport: str, event_id: str):
+        """
+        Record the current lines as 'Closing' lines. 
+        Usually called right before game start.
         """
         async with async_session_maker() as session:
             try:
-                for p in active_props:
-                    # Handle both PropLine objects and dictionaries
-                    player_name = getattr(p, 'player_name', None) or p.get('player', {}).get('name')
-                    stat_type = getattr(p, 'stat_type', None) or p.get('market', {}).get('stat_type')
-                    
-                    if not player_name or not stat_type:
-                        continue
-
-                    # 1. Find the PropLine in DB
-                    stmt = select(PropLine).where(
-                        PropLine.player_name == player_name,
-                        PropLine.stat_type == stat_type,
-                        PropLine.sport_key == sport_key
-                    )
-                    result = await session.execute(stmt)
-                    db_prop = result.scalar_one_or_none()
-                    
-                    if not db_prop:
-                        continue
-
-                    # 2. Get the last history entry (Closing Line)
-                    hist_stmt = select(PropHistory).where(
-                        PropHistory.prop_line_id == db_prop.id
-                    ).order_by(PropHistory.timestamp.desc()).limit(1)
-                    
-                    hist_result = await session.execute(hist_stmt)
-                    last_hist = hist_result.scalar_one_or_none()
-                    
-                    if last_hist:
-                        closing_line = last_hist.new_line
-                        clv_delta = closing_line - db_prop.line
-                        beat_clv = clv_delta > 0
-                            
-                        # Update DB
-                        db_prop.closing_line = closing_line
-                        db_prop.clv_val = clv_delta
-                        db_prop.beat_closing_line = beat_clv
-                        
-                        # 4. Enrich any associated ModelPicks
-                        pick_stmt = select(ModelPick).where(
-                            ModelPick.player_name == player_name,
-                            ModelPick.stat_type == stat_type,
-                            ModelPick.sport == sport_key,
-                            ModelPick.status == 'pending'
-                        )
-                        pick_result = await session.execute(pick_stmt)
-                        picks = pick_result.scalars().all()
-                        
-                        for pick in picks:
-                            pick.closing_odds = last_hist.new_odds_over or pick.odds
-                            pick.line_movement = clv_delta
-                            pick.clv_percentage = (clv_delta / db_prop.line * 100) if db_prop.line else 0
+                # 1. Get current (closing) odds from DB
+                stmt = select(UnifiedOdds).where(
+                    UnifiedOdds.sport == sport,
+                    UnifiedOdds.event_id == event_id
+                )
+                result = await session.execute(stmt)
+                closing_odds_list = result.scalars().all()
                 
-                await session.commit()
-                logger.info(f"CLV Tracking complete for {len(active_props)} props in {sport_key}")
+                records = []
+                for close_odds in closing_odds_list:
+                    open_key = f"clv:open:{close_odds.sport}:{close_odds.event_id}:{close_odds.market_key}:{close_odds.outcome_key}:{close_odds.bookmaker}"
+                    open_raw = await cache.get(open_key)
+                    
+                    if open_raw:
+                        open_data = json.loads(open_raw)
+                        
+                        close_line = float(close_odds.line) if close_odds.line else 0.0
+                        open_line = open_data["line"]
+                        
+                        # Calculate CLV percentage
+                        clv_percentage = 0.0
+                        if open_line != 0:
+                            clv_percentage = ((close_line - open_line) / open_line) * 100
+                        
+                        # Simplistic beat check for now (over/under logic differs)
+                        clv_beat = close_line > open_line
+                        
+                        records.append({
+                            "sport": sport,
+                            "event_id": event_id,
+                            "market_key": close_odds.market_key,
+                            "selection": close_odds.outcome_key,
+                            "opening_line": open_line,
+                            "opening_price": open_data["price"],
+                            "closing_line": close_line,
+                            "closing_price": float(close_odds.price),
+                            "clv_beat": clv_beat,
+                            "clv_percentage": clv_percentage
+                        })
+
+                if records:
+                    await session.execute(insert(CLVRecord).values(records))
+                    await session.commit()
+                    logger.info(f"CLV: Persisted {len(records)} records for event {event_id}")
+
             except Exception as e:
                 await session.rollback()
-                logger.error(f"CLV Tracking failed: {e}")
+                logger.error(f"CLV: Tracking failed for {event_id}: {e}")
 
 brain_clv_tracker = BrainCLVTracker()

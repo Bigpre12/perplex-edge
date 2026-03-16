@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { clearUser } from "@/lib/auth";
-import { api, isApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Tier } from "@/lib/tier";
 
 interface UserProfile {
@@ -14,6 +14,7 @@ interface UserProfile {
     tier: Tier;
     stripe_customer_id?: string;
     created_at?: string;
+    user_metadata?: { full_name?: string; [key: string]: any };
 }
 
 export function useAuth() {
@@ -30,15 +31,16 @@ export function useAuth() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return null;
 
-            const data = await api.get<UserProfile>("/auth/me");
-            if (isApiError(data)) {
-                if (data.status === 401) return null;
-                throw new Error(data.message);
+            try {
+                const data = await api.me() as UserProfile;
+                return data;
+            } catch (err: any) {
+                if (err?.message?.startsWith("401")) return null;
+                throw err;
             }
-            return data;
         },
         staleTime: 30000,
-        refetchOnWindowFocus: true, // Refresh when user returns to tab
+        refetchOnWindowFocus: true,
     });
 
     const refreshUser = useCallback(() => {

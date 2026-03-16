@@ -9,30 +9,40 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['var(--font-inter)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+        display: ['var(--font-space)', 'sans-serif'],
       },
       colors: {
         lucrix: {
-          gold: '#F5C518',
-          dark: '#080810',
-          surface: '#0F0F1A',
-          card: '#141424',
-          border: '#1E1E35',
-          muted: '#2A2A45',
+          dark: '#0A0A0F',
+          surface: '#111118',
+          elevated: '#1A1A24',
+          border: '#2A2A3A',
+          borderBright: '#3A3A5A',
+        },
+        brand: {
+          purple: '#6C63FF',
+          cyan: '#00D4FF',
+          success: '#00FF88',
+          warning: '#FFB800',
+          danger: '#FF4466',
         },
         background: "var(--background)",
         foreground: "var(--foreground)",
-        primary: "var(--primary)",
-        "primary-dark": "var(--primary-dark)",
-        secondary: "var(--secondary)",
-        "background-dark": "var(--background-dark)",
-        surface: "var(--surface)",
-        "surface-highlight": "var(--surface-highlight)",
-        "accent-green": "var(--accent-green)",
-        "accent-red": "var(--accent-red)",
-        "accent-orange": "var(--accent-orange)",
-        "emerald-primary": "var(--emerald-primary)",
+        textPrimary: '#FFFFFF',
+        textSecondary: '#8888AA',
+        textMuted: '#44445A',
+      },
+      borderRadius: {
+        card: '12px',
+        badge: '6px',
+        btn: '8px',
+      },
+      boxShadow: {
+        card: '0 0 0 1px #2A2A3A, 0 4px 24px rgba(0,0,0,0.4)',
+        glow: '0 0 20px rgba(108,99,255,0.15)',
+        live: '0 0 12px rgba(0,212,255,0.2)',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -40,8 +50,8 @@ const config: Config = {
       },
       keyframes: {
         glow: {
-          from: { boxShadow: '0 0 5px rgba(245, 197, 24, 0.2)' },
-          to: { boxShadow: '0 0 20px rgba(245, 197, 24, 0.4)' },
+          from: { boxShadow: '0 0 5px rgba(108, 99, 255, 0.2)' },
+          to: { boxShadow: '0 0 20px rgba(108, 99, 255, 0.4)' },
         }
       }
     },

@@ -1,15 +1,19 @@
 # apps/api/src/services/unified_ingestion.py
 import logging
 import asyncio
+import json
 import traceback
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
-from sqlalchemy.dialects.postgresql import insert
-from database import async_session_maker
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from database import async_session_maker, engine
 from models.unified import UnifiedOdds
-from services.odds.fetchers import fetch_props_for_sport, fetch_lines_for_sport, SPORT_KEY_MAP
-from real_data_connector import real_data_connector
+from clients.odds_client import odds_api_client
+from services.cache import cache
+from services.odds.fetchers import SPORT_KEY_MAP, SPORT_MARKETS
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,167 +24,178 @@ class UnifiedIngestionService:
             return Decimal(100) / Decimal(american + 100)
         return Decimal(abs(american)) / Decimal(abs(american) + 100)
 
-    async def has_active_events(self, sport: str) -> bool:
-        """Check if there are any games scheduled for today/imminent."""
-        try:
-            games = await real_data_connector.fetch_games_by_sport(sport)
-            return len(games) > 0
-        except Exception as e:
-            logger.error(f"QuotaGuard: Error checking events for {sport}: {e}")
-            return True # Fail open to be safe
-
-    async def ingest_and_compute_ev(self, sport_id: int):
-        """Unified entry point for a sport's periodic sync."""
+    async def run(self, sport_key: str):
+        """
+        Production Ingestion Pipeline:
+        1. Fetch Events (Metadata: Teams, Game Time)
+        2. Fetch Odds (Market Pricing)
+        3. Merge & Normalize
+        4. Bulk Upsert (Idempotent)
+        5. Trigger Brain Layers
+        """
         from workers.ev_engine import ev_engine
         
-        sport_key = SPORT_KEY_MAP.get(sport_id) if isinstance(sport_id, int) else sport_id
-        if not sport_key: return
-
-        # Quota Guard: skip if no games
-        if not await self.has_active_events(sport_key):
-            logger.info(f"QuotaGuard: Skipping {sport_key} — no active events today.")
+        # 1. Fetch metadata (Teams and Times)
+        try:
+            events_raw = await odds_api_client.fetch_events(sport_key)
+            logger.info(f"UnifiedIngestion: Fetched {len(events_raw) if events_raw else 0} events for {sport_key}")
+            if not events_raw:
+                logger.info(f"UnifiedIngestion: No active events for {sport_key}")
+                return
+            
+            # Map event_id -> metadata
+            metadata_map = {
+                e['id']: {
+                    'home_team': e.get('home_team'),
+                    'away_team': e.get('away_team'),
+                    'game_time': datetime.fromisoformat(e['commence_time'].replace('Z', '+00:00')) if e.get('commence_time') else None
+                }
+                for e in events_raw
+            }
+        except Exception as e:
+            logger.error(f"UnifiedIngestion: Failed to fetch events for {sport_key}: {e}")
             return
 
-        # 1. Ingest
-        await self.ingest_sport(sport_id)
-        
-        # 2. Compute EV
-        await ev_engine.run_ev_cycle(sport_key)
-
-    async def ingest_sport(self, sport_id: int):
-        sport_key = SPORT_KEY_MAP.get(sport_id)
-        if not sport_key:
+        # 2. Fetch Pricing
+        try:
+            # Sport-wide endpoint usually only supports main lines reliably
+            markets = ["h2h", "spreads", "totals"]
+            # To fetch props, we should use the per-event endpoint in the future
+            
+            # Deduplicate and Clean
+            markets = list(dict.fromkeys([m.strip().lower() for m in markets if m.strip()]))
+            
+            logger.info(f"UnifiedIngestion: Fetching odds for {sport_key} with markets: {markets}")
+            odds_raw = await odds_api_client.fetch_odds(sport_key, markets=markets)
+            logger.info(f"UnifiedIngestion: Fetched {len(odds_raw) if odds_raw else 0} odds entries for {sport_key}")
+            if not odds_raw:
+                logger.warning(f"UnifiedIngestion: No odds returned for {sport_key}")
+                return
+        except Exception as e:
+            logger.error(f"UnifiedIngestion: Failed to fetch odds for {sport_key}: {e}")
             return
 
-        logger.info(f"UnifiedIngestion: Starting sync for {sport_key}")
+        # 3. Normalize
+        rows = self.normalize_data(odds_raw, metadata_map, sport_key)
         
-        # 1. Fetch Props
-        props = await fetch_props_for_sport(sport_id)
-        prop_rows = self.normalize_props(props, sport_key)
-        await self.upsert_odds(prop_rows)
+        # 4. Upsert
+        await self.upsert_odds(rows)
 
-        # 2. Fetch Game Lines
-        lines = await fetch_lines_for_sport(sport_id)
-        line_rows = self.normalize_lines(lines, sport_key)
-        await self.upsert_odds(line_rows)
+        # 5. Trigger Brain & EV
+        try:
+            from services.brain_sharp_money import sharp_money_brain
+            from services.brain_injury_impact import injury_impact_brain
+            from services.brain_clv_tracker import brain_clv_tracker
+            
+            await sharp_money_brain.detect_signals(sport_key)
+            await brain_clv_tracker.record_opening_line(rows)
+            await injury_impact_brain.analyze_impacts(sport_key)
+            
+            await ev_engine.run_ev_cycle(sport_key)
+        except Exception as e:
+            logger.error(f"UnifiedIngestion: Secondary processing failed: {e}")
 
-    def normalize_props(self, raw_events: List[Dict], sport_key: str) -> List[Dict]:
+    def normalize_data(self, odds_raw: List[Dict], metadata_map: Dict[str, Dict], sport: str) -> List[Dict]:
         rows = []
         now = datetime.now(timezone.utc)
         
-        for event in raw_events:
-            event_id = event.get('id')
-            league = event.get('sport_title')
-            commence_time_str = event.get('commence_time')
-            source_ts = datetime.fromisoformat(commence_time_str.replace('Z', '+00:00')) if commence_time_str else now
+        for event in odds_raw:
+            eid = event.get('id')
+            meta = metadata_map.get(eid, {})
+            league = event.get('sport_title') or sport.split('_')[-1].upper()
             
             for book in event.get('bookmakers', []):
                 book_key = book.get('key')
                 for market in book.get('markets', []):
-                    market_key = market.get('key')
+                    m_key = market.get('key')
                     for outcome in market.get('outcomes', []):
-                        # Outcome keys: 'over', 'under'
-                        outcome_name = outcome.get('name').lower()
-                        # Outcome keys in DB should be standardized
-                        outcome_key = outcome_name
-                        if 'over' in outcome_name: outcome_key = 'over'
-                        elif 'under' in outcome_name: outcome_key = 'under'
-                        
+                        # Outcome name normalization
+                        name = outcome.get('name')
+                        desc = outcome.get('description') # Usually player name for props
                         price = outcome.get('price')
                         line = outcome.get('point')
                         
+                        # Outcome key logic
+                        if m_key in ['h2h', 'spreads', 'totals']:
+                            o_key = name.lower()
+                            p_name = None
+                        else:
+                            # Prop handling
+                            p_name = desc or name
+                            side = name.lower()
+                            if 'over' in side: o_key = 'over'
+                            elif 'under' in side: o_key = 'under'
+                            else: o_key = side
+                            
                         rows.append({
-                            'sport': sport_key,
+                            'sport': sport,
                             'league': league,
-                            'event_id': event_id,
-                            'market_key': market_key,
-                            'outcome_key': f"{outcome.get('description')}:{outcome_key}", # e.g. "LeBron James:over"
+                            'event_id': eid,
+                            'home_team': meta.get('home_team'),
+                            'away_team': meta.get('away_team'),
+                            'game_time': meta.get('game_time'),
+                            'market_key': m_key,
+                            'outcome_key': o_key,
+                            'player_name': p_name,
                             'bookmaker': book_key,
                             'price': Decimal(str(price)),
-                            'implied_prob': self.american_to_implied(price),
                             'line': Decimal(str(line)) if line is not None else None,
-                            'source_ts': source_ts,
-                            'ingested_ts': now
-                        })
-        return rows
-
-    def normalize_lines(self, raw_odds: List[Dict], sport_key: str) -> List[Dict]:
-        rows = []
-        now = datetime.now(timezone.utc)
-        
-        for event in raw_odds:
-            event_id = event.get('id')
-            league = event.get('sport_title')
-            commence_time_str = event.get('commence_time')
-            source_ts = datetime.fromisoformat(commence_time_str.replace('Z', '+00:00')) if commence_time_str else now
-            
-            for book in event.get('bookmakers', []):
-                book_key = book.get('key')
-                for market in book.get('markets', []):
-                    market_key = market.get('key')
-                    for outcome in market.get('outcomes', []):
-                        outcome_name = outcome.get('name')
-                        outcome_key = outcome_name.lower() # 'home', 'away', 'over', 'under'
-                        
-                        price = outcome.get('price')
-                        line = outcome.get('point')
-                        
-                        rows.append({
-                            'sport': sport_key,
-                            'league': league,
-                            'event_id': event_id,
-                            'market_key': market_key,
-                            'outcome_key': outcome_key,
-                            'bookmaker': book_key,
-                            'price': Decimal(str(price)),
-                            'implied_prob': self.american_to_implied(price),
-                            'line': Decimal(str(line)) if line is not None else None,
-                            'source_ts': source_ts,
+                            'implied_prob': self.american_to_implied(int(price)) if isinstance(price, (int, float)) else Decimal('0'),
+                            'source_ts': datetime.fromisoformat(book.get('last_update').replace('Z', '+00:00')) if book.get('last_update') else now,
                             'ingested_ts': now
                         })
         return rows
 
     async def upsert_odds(self, rows: List[Dict]):
-        if not rows:
+        if not rows: 
+            logger.warning("UnifiedIngestion: No rows to upsert.")
             return
-            
+        
+        logger.info(f"UnifiedIngestion: Upserting {len(rows)} rows into odds table.")
         async with async_session_maker() as session:
             try:
-                # Detect dialect for on_conflict handling
-                dialect_name = session.sync_session.bind.dialect.name
+                # Detect dialect
+                is_sqlite = "sqlite" in str(engine.url)
                 
-                if dialect_name == 'sqlite':
-                    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-                    stmt = sqlite_insert(UnifiedOdds).values(rows)
+                ins_obj = sqlite_insert(UnifiedOdds) if is_sqlite else pg_insert(UnifiedOdds)
+                stmt = ins_obj.values(rows)
+                
+                update_cols = {
+                    'price': ins_obj.excluded.price,
+                    'line': ins_obj.excluded.line,
+                    'implied_prob': ins_obj.excluded.implied_prob,
+                    'source_ts': ins_obj.excluded.source_ts,
+                    'ingested_ts': ins_obj.excluded.ingested_ts,
+                    'home_team': ins_obj.excluded.home_team,
+                    'away_team': ins_obj.excluded.away_team,
+                    'game_time': ins_obj.excluded.game_time,
+                    'player_name': ins_obj.excluded.player_name
+                }
+                
+                if is_sqlite:
                     stmt = stmt.on_conflict_do_update(
                         index_elements=['sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker'],
-                        set_={
-                            'price': stmt.excluded.price,
-                            'implied_prob': stmt.excluded.implied_prob,
-                            'line': stmt.excluded.line,
-                            'source_ts': stmt.excluded.source_ts,
-                            'ingested_ts': stmt.excluded.ingested_ts
-                        }
+                        set_=update_cols
                     )
                 else:
-                    from sqlalchemy.dialects.postgresql import insert as pg_insert
-                    stmt = pg_insert(UnifiedOdds).values(rows)
                     stmt = stmt.on_conflict_do_update(
                         constraint='uix_odds_unique',
-                        set_={
-                            'price': stmt.excluded.price,
-                            'implied_prob': stmt.excluded.implied_prob,
-                            'line': stmt.excluded.line,
-                            'source_ts': stmt.excluded.source_ts,
-                            'ingested_ts': stmt.excluded.ingested_ts
-                        }
+                        set_=update_cols
                     )
+                    
+                from sqlalchemy import text
                 await session.execute(stmt)
                 await session.commit()
-                logger.info(f"UnifiedIngestion: Upserted {len(rows)} odds.")
+                
+                # Immediate verification
+                count_res = await session.execute(text("SELECT count(*) FROM odds"))
+                count = count_res.scalar()
+                logger.info(f"UnifiedIngestion: Upsert successful. New odds count: {count}")
+                logger.info(f"UnifiedIngestion: Upserted {len(rows)} rows for {rows[0]['sport']}")
             except Exception as e:
                 await session.rollback()
-                logger.error(f"UnifiedIngestion: Bulk upsert failed: {e}")
-                traceback.print_exc()
+                logger.error(f"UnifiedIngestion: Upsert failed: {e}")
+
+unified_ingestion = UnifiedIngestionService()
 
 unified_ingestion = UnifiedIngestionService()

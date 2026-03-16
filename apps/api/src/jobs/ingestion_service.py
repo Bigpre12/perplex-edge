@@ -52,7 +52,7 @@ async def ingest_all_odds():
         try:
             sport_key = SPORT_KEY_MAP[sport_id]
             logger.info(f"Syncing {sport_key} via UnifiedIngestion...")
-            await unified_ingestion.ingest_and_compute_ev(sport_id)
+            await unified_ingestion.run(sport_key)
         except Exception as e:
             logger.error(f"Ingestion failed for sport {sport_id}: {e}")
             traceback.print_exc()

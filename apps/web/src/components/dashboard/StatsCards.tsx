@@ -16,13 +16,14 @@ export default function StatsCards() {
   useEffect(() => {
     const load = async () => {
       try {
-        // Try picks statistics endpoint
-        const result = await API.picksStats();
+        // Try brain metrics endpoint
+        const result = await API.brainMetrics();
         if (!isApiError(result)) {
+          const data = result as any;
           setStats({
-            hit_rate:    result?.hit_rate ?? result?.win_rate ?? result?.avg_confidence ?? null,
-            avg_ev:      result?.avg_ev ?? null,
-            live_volume: result?.total_picks ?? 0,
+            hit_rate:    data?.hit_rate ?? data?.win_rate ?? data?.avg_confidence ?? null,
+            avg_ev:      data?.avg_ev ?? null,
+            live_volume: data?.total_picks ?? data?.live_volume ?? 0,
           });
         }
       } catch {
@@ -53,12 +54,12 @@ function StatCard({ label, value, badge, loading }: {
   label: string; value: string; badge?: string; loading: boolean;
 }) {
   return (
-    <div className="bg-[#0d1117] border border-white/10 rounded-xl p-5">
+    <div className="bg-lucrix-surface border border-lucrix-border rounded-xl p-5 shadow-sm hover:shadow-card transition-shadow">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-gray-500 uppercase tracking-widest">{label}</p>
-        {badge && <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">{badge}</span>}
+        <p className="text-xs text-textSecondary uppercase tracking-widest font-black leading-none">{label}</p>
+        {badge && <span className="text-[9px] font-black bg-brand-success/10 border border-brand-success/20 text-brand-success px-2 py-0.5 rounded-sm uppercase tracking-widest">{badge}</span>}
       </div>
-      <p className={`text-3xl font-bold text-white ${loading ? "animate-pulse opacity-40" : ""}`}>
+      <p className={`text-3xl font-black text-white font-display mt-3 leading-none ${loading ? "animate-pulse opacity-40 text-transparent bg-lucrix-elevated rounded-md w-24 h-8" : ""}`}>
         {value}
       </p>
     </div>

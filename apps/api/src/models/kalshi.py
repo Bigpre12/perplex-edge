@@ -1,20 +1,40 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean
+# apps/api/src/models/kalshi.py
+from sqlalchemy import Column, String, Numeric, DateTime, BigInteger, Integer
 from sqlalchemy.sql import func
-from database import Base
+from db.base import Base
 
 class KalshiMarket(Base):
-    """Integration for predictive markets on Kalshi"""
-    __tablename__ = "kalshimarkets"
+    """
+    Institutional Kalshi trading markets.
+    """
+    __tablename__ = "kalshi_markets"
     
-    id = Column(Integer, primary_key=True, index=True)
-    ticker = Column(String, unique=True, index=True)
-    title = Column(String)
-    category = Column(String)
+    id = Column(String, primary_key=True)  # Kalshi ticker
+    sport = Column(String, nullable=True)
+    title = Column(String, nullable=False)
+    category = Column(String, nullable=True)
+    yes_price = Column(Numeric, nullable=True)
+    no_price = Column(Numeric, nullable=True)
+    volume = Column(BigInteger, nullable=True)
+    open_interest = Column(BigInteger, nullable=True)
+    status = Column(String, nullable=True)
+    close_time = Column(DateTime(timezone=True), nullable=True)
+    synced_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class KalshiOrder(Base):
+    """
+    Kalshi orders and trade executions.
+    """
+    __tablename__ = "kalshi_orders"
     
-    yes_price = Column(Float)
-    no_price = Column(Float)
-    volume = Column(Integer)
-    
-    is_active = Column(Boolean, default=True)
-    close_date = Column(DateTime(timezone=True))
-    last_updated = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+    id = Column(BigInteger, primary_key=True)
+    user_id = Column(String, nullable=False, index=True)
+    market_id = Column(String, nullable=False)
+    side = Column(String, nullable=False)           # 'yes' or 'no'
+    order_type = Column(String, nullable=False)     # 'market' or 'limit'
+    contracts = Column(Integer, nullable=False)
+    limit_price = Column(Numeric, nullable=True)
+    fill_price = Column(Numeric, nullable=True)
+    status = Column(String, nullable=False)         # 'pending', 'filled', 'cancelled'
+    kalshi_order_id = Column(String, unique=True, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

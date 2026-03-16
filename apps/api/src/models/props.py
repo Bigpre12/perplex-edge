@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, Index
 from sqlalchemy.sql import func
-from database import Base
+from db.base import Base
 
 class PropLine(Base):
     __tablename__ = "proplines"
@@ -112,3 +112,21 @@ class Sport(Base):
 
 
 
+class Prop(Base):
+    __tablename__ = "props"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sport = Column(String, index=True, nullable=False)
+    player = Column(String, index=True, nullable=False)
+    team = Column(String, index=True, nullable=True)
+    market = Column(String, index=True, nullable=False)
+    line = Column(Float, nullable=False)
+    odds = Column(Integer, nullable=False, default=-110)
+    book = Column(String, nullable=False)
+    projection = Column(Float, nullable=True)
+    edge = Column(Float, nullable=True)
+    ev = Column(Float, nullable=True)
+    result = Column(String, nullable=True)
+    actual = Column(Float, nullable=True)
+    is_scored = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

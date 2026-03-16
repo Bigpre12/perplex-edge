@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     APP_NAME: str = os.getenv("APP_NAME", "Lucrix")
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
-    DEVELOPMENT_MODE: bool = True
+    DEVELOPMENT_MODE: bool = os.getenv("DEV_MODE", "true").lower() == "true"
+    ODDS_API_DAILY_CAP: int = int(os.getenv("ODDS_API_DAILY_CAP", "3000"))
+    CACHE_TTL_ODDS: int = int(os.getenv("CACHE_TTL_ODDS", "120"))
+    CACHE_TTL_EV: int = int(os.getenv("CACHE_TTL_EV", "120"))
+    CACHE_TTL_PROPS: int = int(os.getenv("CACHE_TTL_PROPS", "120"))
+    CACHE_TTL_LIVE: int = int(os.getenv("CACHE_TTL_LIVE", "30"))
     PORT: int = int(os.environ.get("PORT") or 8000)
     SECRET_KEY: str = os.environ.get("SECRET_KEY") or os.environ.get("JWT_SECRET_KEY") or os.environ.get("JWT_SECRET") or "lucrix_dev_secret_change_in_production"
     ALGORITHM: str = os.environ.get("ALGORITHM", "HS256")
@@ -20,21 +25,25 @@ class Settings(BaseSettings):
     # Auth
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "")
+    ODDS_API_KEYS: List[str] = os.getenv("ODDS_API_KEYS", "").split(",") if os.getenv("ODDS_API_KEYS") else []
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
     
     # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'perplex_local.db'))}"
+        f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'data', 'perplex_local.db'))}"
     )
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
     CACHE_TTL: int = 300  # 5 minutes default
     
     # Integrations
     ODDS_API_KEY_PRIMARY: str = os.getenv("ODDS_API_KEY_PRIMARY", "e9b6956ba6e50da9cc6a11511cb7e372") # 100k Tier
-    ODDS_API_KEY_BACKUP: str = os.getenv("ODDS_API_KEY_BACKUP", os.getenv("ODDS_API_KEY", "")) # Fallback to existing or explicit
-    ODDS_API_KEY: str = os.getenv("ODDS_API_KEY_PRIMARY", os.getenv("ODDS_API_KEY", "")) 
+    ODDS_API_KEY_BACKUP: str = os.getenv("ODDS_API_KEY_BACKUP", "b94144c89048238eff1856d83c383d9a") # Fallback
+    ODDS_API_KEY: str = os.getenv("ODDS_API_KEY") or os.getenv("ODDS_API_KEY_PRIMARY") or "e9b6956ba6e50da9cc6a11511cb7e372"
+    ODDS_API_KEYS: List[str] = [
+        k.strip() for k in os.getenv("ODDS_API_KEYS", "").split(",") if k.strip()
+    ]
     ESPN_API_BASE: str = os.getenv("ESPN_API_BASE", "https://site.api.espn.com/apis/site/v2/sports")
     
     # Oracle AI

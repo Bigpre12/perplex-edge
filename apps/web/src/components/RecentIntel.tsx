@@ -135,16 +135,16 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
     };
 
     const typeConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-        SHARP: { label: "SHARP", color: "text-[#FF6B35]", bgColor: "bg-[#FF6B35]/10" },
-        INJURY: { label: "INJURY", color: "text-[#EF4444]", bgColor: "bg-[#EF4444]/10" },
-        LINE: { label: "LINE", color: "text-[#3B82F6]", bgColor: "bg-[#3B82F6]/10" },
-        NEWS: { label: "NEWS", color: "text-[#F5C518]", bgColor: "bg-[#F5C518]/10" },
+        SHARP:  { label: "SHARP",  color: "text-brand-orange", bgColor: "bg-brand-orange/10" },
+        INJURY: { label: "INJURY", color: "text-brand-danger", bgColor: "bg-brand-danger/10" },
+        LINE:   { label: "LINE",   color: "text-brand-cyan",   bgColor: "bg-brand-cyan/10" },
+        NEWS:   { label: "NEWS",   color: "text-brand-warning",bgColor: "bg-brand-warning/10" },
     };
 
     if (loading && intel.length === 0) {
         return (
-            <div className="p-6 text-center">
-                <p className="text-[10px] text-[#6B7280] font-black uppercase tracking-widest animate-pulse">
+            <div className="p-6 text-center bg-lucrix-surface h-full">
+                <p className="text-[10px] text-textMuted font-black uppercase tracking-widest animate-pulse">
                     Fetching live intel...
                 </p>
             </div>
@@ -153,8 +153,8 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
 
     if (intel.length === 0) {
         return (
-            <div className="p-6 text-center">
-                <p className="text-[10px] text-[#6B7280] font-black uppercase tracking-widest">
+            <div className="p-6 text-center bg-lucrix-surface h-full">
+                <p className="text-[10px] text-textMuted font-black uppercase tracking-widest">
                     No recent intel found
                 </p>
             </div>
@@ -162,23 +162,23 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
     }
 
     return (
-        <div className="divide-y divide-[#1E1E35]">
+        <div className="divide-y divide-lucrix-border bg-lucrix-surface h-full">
             {intel.map((item) => {
                 const cfg = typeConfig[item.type] ?? typeConfig.NEWS;
                 const time = mounted ? formatTime(item.timestamp) : "—";
 
                 return (
-                    <div key={item.id} className="p-4 hover:bg-white/[0.02] transition-colors group">
+                    <div key={item.id} className="p-4 hover:bg-lucrix-dark transition-colors group">
                         <div className="flex items-start gap-3">
                             <div className="flex flex-col gap-1 min-w-[65px]">
-                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full text-center uppercase tracking-tighter ${cfg.color} ${cfg.bgColor}`}>
+                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-sm text-center uppercase tracking-tighter ${cfg.color} ${cfg.bgColor} border border-transparent`}>
                                     {cfg.label}
                                 </span>
-                                <span className="text-[9px] text-[#6B7280] font-bold text-center uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                <span className="text-[9px] text-textMuted font-bold text-center uppercase tracking-widest opacity-80 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                     {time}
                                 </span>
                             </div>
-                            <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                            <p className="text-[11px] text-textSecondary leading-relaxed font-medium">
                                 {item.message}
                             </p>
                         </div>

@@ -21,7 +21,7 @@ Write-Host "Launching Backend (FastAPI)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "cd 'C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\api\src'; ..\..\..\.venv\Scripts\python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    "cd 'C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\api\src'; ..\..\..\.venv\Scripts\python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
 ) -WindowStyle Normal
 
 Start-Sleep -Seconds 2

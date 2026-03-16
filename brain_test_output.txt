@@ -1,0 +1,863 @@
+﻿.venv\Scripts\python : 
+INFO:services.cache:Att
+empting to connect to 
+Redis at rediss://defau
+lt:gQAAAAAAAQXaAAIncDE5
+MjlkNDQ4MzcwMDY0MDEwYTE
+1YmQzZjZlMjViMjM3NHAxNj
+cwMzQ@dominant-mantis-6
+7034.upstash.io:6379...
+At line:1 char:58
++ ... *>$null 2>&1; 
+.venv\Scripts\python 
+verify_brain_stack.py 
+2>&1 | Out-F ...
++                   ~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (INFO:services   
+ .c...tash.io:6379.    
+..:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+INFO:services.cache:OK 
+- Redis connected 
+(Upstash)
+INFO:services.unified_i
+ngestion:UnifiedIngesti
+on: Cache MISS for 
+basketball_nba ù 
+fetching from 
+TheOddsAPI
+ERROR:services.unified_
+ingestion:UnifiedIngest
+ion: Bulk upsert 
+failed: (sqlite3.Integr
+ityError) NOT NULL 
+constraint failed: 
+odds.id
+[SQL: INSERT INTO odds 
+(sport, league, 
+event_id, market_key, 
+outcome_key, 
+bookmaker, price, 
+implied_prob, line, 
+source_ts, 
+ingested_ts) VALUES 
+(?, ?, ?, ?, ?, ?, ?, 
+?, ?, ?, ?), (?, ?, ?, 
+?, ?, ?, ?, ?, ?, ?, 
+?) ON CONFLICT (sport, 
+event_id, market_key, 
+outcome_key, 
+bookmaker) DO UPDATE 
+SET price = 
+excluded.price, 
+implied_prob = 
+excluded.implied_prob, 
+line = excluded.line, 
+source_ts = 
+excluded.source_ts, 
+ingested_ts = 
+excluded.ingested_ts]
+[parameters: 
+('basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'lakers', 
+'draftkings', -110.0, 
+0.5238095238095238, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.011757', 
+'basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'celtics', 
+'draftkings', 110.0, 
+0.47619047619047616, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.011757')]
+(Background on this 
+error at: https://sqlal
+che.me/e/20/gkpj)
+Traceback (most recent 
+call last):
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1967, in 
+_exec_single_context
+    self.dialect.do_exe
+cute(
+    ~~~~~~~~~~~~~~~~~~~
+~~~~^
+        cursor, 
+str_statement, 
+effective_parameters, 
+context
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\default.py", 
+line 952, in do_execute
+    cursor.execute(stat
+ement, parameters)
+    ~~~~~~~~~~~~~~^^^^^
+^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError:
+ NOT NULL constraint 
+failed: odds.id
+
+The above exception 
+was the direct cause 
+of the following 
+exception:
+
+Traceback (most recent 
+call last):
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+services\unified_ingest
+ion.py", line 248, in 
+upsert_odds
+    await 
+session.execute(stmt)
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+database.py", line 64, 
+in execute
+    res = self.sync_ses
+sion.execute(stmt, 
+*args, **kwargs)
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\o
+rm\session.py", line 
+2351, in execute
+    return 
+self._execute_internal(
+           
+~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        
+_add_event=_add_event,
+        
+^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\o
+rm\session.py", line 
+2249, in 
+_execute_internal
+    result: 
+Result[Any] = compile_s
+tate_cls.orm_execute_st
+atement(
+                       
+   ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\o
+rm\bulk_persistence.py"
+, line 1306, in 
+orm_execute_statement
+    result = 
+conn.execute(
+        statement, 
+params or {}, execution
+_options=execution_opti
+ons
+    )
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1419, in execute
+    return meth(
+        self,
+        
+distilled_parameters,
+        
+execution_options or 
+NO_OPTIONS,
+    )
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\s
+ql\elements.py", line 
+527, in 
+_execute_on_connection
+    return connection._
+execute_clauseelement(
+           ~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~^
+        self, 
+distilled_params, 
+execution_options
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1641, in 
+_execute_clauseelement
+    ret = 
+self._execute_context(
+        dialect,
+    ...<8 lines>...
+        
+cache_hit=cache_hit,
+    )
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1846, in 
+_execute_context
+    return self._exec_s
+ingle_context(
+           ~~~~~~~~~~~~
+~~~~~~~~~~~~~^
+        dialect, 
+context, statement, 
+parameters
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1986, in 
+_exec_single_context
+    self._handle_dbapi_
+exception(
+    ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~^
+        e, 
+str_statement, 
+effective_parameters, 
+cursor, context
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+2363, in 
+_handle_dbapi_exception
+    raise sqlalchemy_ex
+ception.with_traceback(
+exc_info[2]) from e
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1967, in 
+_exec_single_context
+    self.dialect.do_exe
+cute(
+    ~~~~~~~~~~~~~~~~~~~
+~~~~^
+        cursor, 
+str_statement, 
+effective_parameters, 
+context
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\default.py", 
+line 952, in do_execute
+    cursor.execute(stat
+ement, parameters)
+    ~~~~~~~~~~~~~~^^^^^
+^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.Integrit
+yError: (sqlite3.Integr
+ityError) NOT NULL 
+constraint failed: 
+odds.id
+[SQL: INSERT INTO odds 
+(sport, league, 
+event_id, market_key, 
+outcome_key, 
+bookmaker, price, 
+implied_prob, line, 
+source_ts, 
+ingested_ts) VALUES 
+(?, ?, ?, ?, ?, ?, ?, 
+?, ?, ?, ?), (?, ?, ?, 
+?, ?, ?, ?, ?, ?, ?, 
+?) ON CONFLICT (sport, 
+event_id, market_key, 
+outcome_key, 
+bookmaker) DO UPDATE 
+SET price = 
+excluded.price, 
+implied_prob = 
+excluded.implied_prob, 
+line = excluded.line, 
+source_ts = 
+excluded.source_ts, 
+ingested_ts = 
+excluded.ingested_ts]
+[parameters: 
+('basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'lakers', 
+'draftkings', -110.0, 
+0.5238095238095238, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.011757', 
+'basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'celtics', 
+'draftkings', 110.0, 
+0.47619047619047616, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.011757')]
+(Background on this 
+error at: https://sqlal
+che.me/e/20/gkpj)
+ERROR:services.unified_
+ingestion:UnifiedIngest
+ion: Brain Layers 
+failed: 'dict' object 
+has no attribute 'line'
+Traceback (most recent 
+call last):
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+services\unified_ingest
+ion.py", line 147, in 
+run
+    await brain_clv_tra
+cker.record_opening_lin
+e(rows)
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+services\brain_clv_trac
+ker.py", line 38, in 
+record_opening_line
+    "line": 
+float(odds.line) if 
+odds.line else 0.0,
+                       
+         ^^^^^^^^^
+AttributeError: 'dict' 
+object has no 
+attribute 'line'
+INFO:workers.ev_engine:
+EVEngine: Loading 
+latest basketball_nba 
+odds...
+WARNING:workers.ev_engi
+ne:EVEngine: No odds 
+found for 
+basketball_nba to 
+process.
+INFO:services.unified_i
+ngestion:UnifiedIngesti
+on: Cache MISS for 
+basketball_nba ù 
+fetching from 
+TheOddsAPI
+ERROR:services.unified_
+ingestion:UnifiedIngest
+ion: Bulk upsert 
+failed: (sqlite3.Integr
+ityError) NOT NULL 
+constraint failed: 
+odds.id
+[SQL: INSERT INTO odds 
+(sport, league, 
+event_id, market_key, 
+outcome_key, 
+bookmaker, price, 
+implied_prob, line, 
+source_ts, 
+ingested_ts) VALUES 
+(?, ?, ?, ?, ?, ?, ?, 
+?, ?, ?, ?), (?, ?, ?, 
+?, ?, ?, ?, ?, ?, ?, 
+?) ON CONFLICT (sport, 
+event_id, market_key, 
+outcome_key, 
+bookmaker) DO UPDATE 
+SET price = 
+excluded.price, 
+implied_prob = 
+excluded.implied_prob, 
+line = excluded.line, 
+source_ts = 
+excluded.source_ts, 
+ingested_ts = 
+excluded.ingested_ts]
+[parameters: 
+('basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'lakers', 
+'draftkings', -250.0, 
+0.7142857142857143, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.471815', 
+'basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'celtics', 
+'draftkings', 110.0, 
+0.47619047619047616, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.471815')]
+(Background on this 
+error at: https://sqlal
+che.me/e/20/gkpj)
+Traceback (most recent 
+call last):
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1967, in 
+_exec_single_context
+    self.dialect.do_exe
+cute(
+    ~~~~~~~~~~~~~~~~~~~
+~~~~^
+        cursor, 
+str_statement, 
+effective_parameters, 
+context
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\default.py", 
+line 952, in do_execute
+    cursor.execute(stat
+ement, parameters)
+    ~~~~~~~~~~~~~~^^^^^
+^^^^^^^^^^^^^^^^^^
+sqlite3.IntegrityError:
+ NOT NULL constraint 
+failed: odds.id
+
+The above exception 
+was the direct cause 
+of the following 
+exception:
+
+Traceback (most recent 
+call last):
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+services\unified_ingest
+ion.py", line 248, in 
+upsert_odds
+    await 
+session.execute(stmt)
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+database.py", line 64, 
+in execute
+    res = self.sync_ses
+sion.execute(stmt, 
+*args, **kwargs)
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\o
+rm\session.py", line 
+2351, in execute
+    return 
+self._execute_internal(
+           
+~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        
+_add_event=_add_event,
+        
+^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\o
+rm\session.py", line 
+2249, in 
+_execute_internal
+    result: 
+Result[Any] = compile_s
+tate_cls.orm_execute_st
+atement(
+                       
+   ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\o
+rm\bulk_persistence.py"
+, line 1306, in 
+orm_execute_statement
+    result = 
+conn.execute(
+        statement, 
+params or {}, execution
+_options=execution_opti
+ons
+    )
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1419, in execute
+    return meth(
+        self,
+        
+distilled_parameters,
+        
+execution_options or 
+NO_OPTIONS,
+    )
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\s
+ql\elements.py", line 
+527, in 
+_execute_on_connection
+    return connection._
+execute_clauseelement(
+           ~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~^
+        self, 
+distilled_params, 
+execution_options
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1641, in 
+_execute_clauseelement
+    ret = 
+self._execute_context(
+        dialect,
+    ...<8 lines>...
+        
+cache_hit=cache_hit,
+    )
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1846, in 
+_execute_context
+    return self._exec_s
+ingle_context(
+           ~~~~~~~~~~~~
+~~~~~~~~~~~~~^
+        dialect, 
+context, statement, 
+parameters
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1986, in 
+_exec_single_context
+    self._handle_dbapi_
+exception(
+    ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~^
+        e, 
+str_statement, 
+effective_parameters, 
+cursor, context
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+2363, in 
+_handle_dbapi_exception
+    raise sqlalchemy_ex
+ception.with_traceback(
+exc_info[2]) from e
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\base.py", line 
+1967, in 
+_exec_single_context
+    self.dialect.do_exe
+cute(
+    ~~~~~~~~~~~~~~~~~~~
+~~~~^
+        cursor, 
+str_statement, 
+effective_parameters, 
+context
+        ^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\.venv\Lib\sit
+e-packages\sqlalchemy\e
+ngine\default.py", 
+line 952, in do_execute
+    cursor.execute(stat
+ement, parameters)
+    ~~~~~~~~~~~~~~^^^^^
+^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.Integrit
+yError: (sqlite3.Integr
+ityError) NOT NULL 
+constraint failed: 
+odds.id
+[SQL: INSERT INTO odds 
+(sport, league, 
+event_id, market_key, 
+outcome_key, 
+bookmaker, price, 
+implied_prob, line, 
+source_ts, 
+ingested_ts) VALUES 
+(?, ?, ?, ?, ?, ?, ?, 
+?, ?, ?, ?), (?, ?, ?, 
+?, ?, ?, ?, ?, ?, ?, 
+?) ON CONFLICT (sport, 
+event_id, market_key, 
+outcome_key, 
+bookmaker) DO UPDATE 
+SET price = 
+excluded.price, 
+implied_prob = 
+excluded.implied_prob, 
+line = excluded.line, 
+source_ts = 
+excluded.source_ts, 
+ingested_ts = 
+excluded.ingested_ts]
+[parameters: 
+('basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'lakers', 
+'draftkings', -250.0, 
+0.7142857142857143, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.471815', 
+'basketball_nba', 
+'NBA', 
+'test_brain_event_1', 
+'h2h', 'celtics', 
+'draftkings', 110.0, 
+0.47619047619047616, 
+None, '2026-03-15 
+06:54:27.476623', 
+'2026-03-15 
+06:54:28.471815')]
+(Background on this 
+error at: https://sqlal
+che.me/e/20/gkpj)
+ERROR:services.unified_
+ingestion:UnifiedIngest
+ion: Brain Layers 
+failed: 'dict' object 
+has no attribute 'line'
+Traceback (most recent 
+call last):
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+services\unified_ingest
+ion.py", line 147, in 
+run
+    await brain_clv_tra
+cker.record_opening_lin
+e(rows)
+  File "C:\Users\preio\
+OneDrive\Documents\Unti
+tled\perplex_engine\per
+plex-edge\apps\api\src\
+services\brain_clv_trac
+ker.py", line 38, in 
+record_opening_line
+    "line": 
+float(odds.line) if 
+odds.line else 0.0,
+                       
+         ^^^^^^^^^
+AttributeError: 'dict' 
+object has no 
+attribute 'line'
+INFO:workers.ev_engine:
+EVEngine: Loading 
+latest basketball_nba 
+odds...
+WARNING:workers.ev_engi
+ne:EVEngine: No odds 
+found for 
+basketball_nba to 
+process.
+
+--- Verifying Brain Stack (Week 1) ---
+Ensuring database tables exist...
+Clearing test cache keys...
+
+Simulating ingestion cycle (Run 1 - Opening)...
+DEBUG: Loading sport_constants from C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\api\src\app_core\sport_constants.py
+
+CLV Opening Record in Redis: MISSING
+
+Simulating line movement (Run 2 - Steam)...
+
+Verifying Database Records...
+Sharp Signals generated: 0
+Injury Impacts quantified: 0

@@ -5,6 +5,7 @@ from app.services.odds_api_client import odds_api
 
 router = APIRouter(tags=["parlay"])
 
+@router.get("")
 @router.get("/suggestions")
 async def get_parlay_suggestions(
     sport: str = "basketball_nba",

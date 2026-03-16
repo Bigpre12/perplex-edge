@@ -11,6 +11,7 @@ router = APIRouter(tags=["steam"])
 # In-memory store for deduplication across requests
 steam_log: list = []
 
+@router.get("")
 @router.get("/alerts")
 async def steam_alerts(
     sport: Optional[str] = Query("basketball_nba"),

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON
 from sqlalchemy.sql import func
-from database import Base
+from db.base import Base
 
 class BrainSystemState(Base):
     __tablename__ = "brain_system_state"
@@ -86,3 +86,88 @@ class BrainLog(Base):
     reason = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     result = Column(String, default='PENDING')
+
+# --- LAYER 1: SHARP MONEY ---
+class SharpSignal(Base):
+    __tablename__ = "sharp_signals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    event_id = Column(String, index=True)
+    market_key = Column(String)
+    selection = Column(String) # Player name or Team
+    signal_type = Column(String) # 'steam', 'rlm', 'key_cross'
+    severity = Column(Float) # Movement magnitude
+    bookmakers_involved = Column(JSON)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+
+# --- LAYER 4: CORRELATION ---
+class PropCorrelation(Base):
+    __tablename__ = "prop_correlations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    player_a = Column(String)
+    player_b = Column(String)
+    stat_a = Column(String)
+    stat_b = Column(String)
+    correlation_coefficient = Column(Float)
+    recommendation = Column(String) # 'Pair', 'Avoid'
+    updated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- LAYER 5: CLV ---
+class CLVRecord(Base):
+    __tablename__ = "clv_tracking"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    event_id = Column(String, index=True)
+    market_key = Column(String)
+    selection = Column(String)
+    opening_line = Column(Float)
+    opening_price = Column(Float)
+    closing_line = Column(Float)
+    closing_price = Column(Float)
+    clv_beat = Column(Boolean)
+    clv_percentage = Column(Float)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- LAYER 6: KALSHI ARB ---
+class KalshiArbAlert(Base):
+    __tablename__ = "kalshi_arb_alerts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    event_name = Column(String)
+    kalshi_price = Column(Float)
+    bookie_price = Column(Float)
+    bookmaker = Column(String)
+    arb_percentage = Column(Float)
+    is_live = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- LAYER 7: WEATHER/CONTEXT ---
+class ConditionAlert(Base):
+    __tablename__ = "conditions_alerts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(String, index=True)
+    sport = Column(String)
+    condition_type = Column(String) # 'weather', 'venue', 'travel'
+    alert_text = Column(String)
+    impact_score = Column(Float)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- LAYER 8: DIVERGENCE ---
+class DivergenceSignal(Base):
+    __tablename__ = "divergence_signals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    event_id = Column(String, index=True)
+    selection = Column(String)
+    public_percent = Column(Float)
+    line_movement = Column(String) # 'Fading Public', 'Follow Sharps'
+    signal_strength = Column(Float)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

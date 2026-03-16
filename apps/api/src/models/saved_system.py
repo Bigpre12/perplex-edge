@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, JSON, DateTime, ForeignKey
 from datetime import datetime, timezone
-from database import Base
+from db.base import Base
 
 class SavedSystem(Base):
     """

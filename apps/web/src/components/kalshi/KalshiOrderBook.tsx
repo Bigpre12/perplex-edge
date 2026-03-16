@@ -31,7 +31,7 @@ export function KalshiOrderBook({ ticker }: KalshiOrderBookProps) {
     const asks = orderbook?.asks || [];
 
     return (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 h-full">
+        <div className="kalshi-orderbook">
             <h3 className="text-xl font-bold mb-4 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                     <span className="text-purple-400">⚡</span> Order Book
@@ -40,17 +40,14 @@ export function KalshiOrderBook({ ticker }: KalshiOrderBookProps) {
                 {currentPrice && <span className="text-sm font-mono text-purple-400">{currentPrice}¢</span>}
             </h3>
 
-            <div className="grid grid-cols-2 gap-4 h-[300px]">
+            <div className="kalshi-row">
                 {/* Asks (Sellers) */}
                 <div className="flex flex-col-reverse justify-start overflow-y-auto pr-2">
                     {asks.slice(0, 10).map((ask: [number, number], i: number) => (
                         <div key={i} className="flex justify-between items-center text-xs py-1 hover:bg-red-500/10 rounded px-2 transition-colors">
                             <span className="text-red-400 font-bold">{ask[0]}¢</span>
                             <span className="text-white/40">{ask[1]} contracts</span>
-                            <div
-                                className="absolute right-0 h-1 bg-red-500/20 rounded-full"
-                                style={{ width: `${Math.min(ask[1] / 10, 100)}%` }}
-                            />
+                             <div className={`kalshi-depth-bar w-dp-${Math.min(Math.round(ask[1] / 10) * 10 || 10, 100)}`} />
                         </div>
                     ))}
                     <div className="text-[10px] text-red-500/40 uppercase mb-2">Asks / Sell</div>

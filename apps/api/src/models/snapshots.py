@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from sqlalchemy.sql import func
-from database import Base
+from db.base import Base
 
 class LineSnapshot(Base):
     __tablename__ = "line_snapshots"

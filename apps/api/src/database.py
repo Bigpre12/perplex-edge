@@ -106,7 +106,7 @@ async def async_session_maker():
     finally:
         session.close()
 
-Base = declarative_base()
+from db.base import Base
 
 # --- DEPENDENCIES ---
 def get_db():

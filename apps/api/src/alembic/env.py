@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 load_dotenv()
 
-from database import Base
+from db.base import Base
 import models
 
 # this is the Alembic Config object, which provides

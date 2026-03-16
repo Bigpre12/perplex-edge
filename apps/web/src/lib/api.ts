@@ -1,254 +1,148 @@
-import toast from "react-hot-toast";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || BASE_URL.replace("http", "ws");
+type QueryValue = string | number | boolean | undefined | null;
 
-export interface ApiResponse<T = any> {
-  data: T;
-  meta: {
-    sport?: string;
-    generated_at: string;
-    freshness_ms: number;
-    quota_remaining?: number;
-  };
-  errors: string[];
-  status?: number; // Added for isApiError compatibility
-  message?: string; // Added for isApiError compatibility
-}
+export const unwrap = (d: any): any => {
+    if (!d || isApiError(d)) return [];
+    if (Array.isArray(d)) return d;
+    return d.data || d.results || d.items || d.props || d.games || d.decisions || d.injuries || d.alerts || d;
+};
 
-/**
- * Institutional API Circuit Breaker & Type Guard
- */
-export function isApiError(obj: any): obj is { status: number; message?: string; errors?: string[] } {
-  if (!obj) return false;
-  return (
-    typeof obj.status === "number" && (obj.status >= 400 || obj.errors?.length > 0)
-  );
-}
-
-class InstitutionalApiClient {
-  private async request<T>(
-    endpoint: string, 
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    const url = `${BASE_URL}${endpoint}`;
-    
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          ...options.headers,
-        },
-      });
-
-      const json = await response.json();
-
-      // Ensure status is included in the JSON for the type guard
-      if (json && typeof json === 'object') {
-        json.status = response.status;
-      }
-
-      // Handle Tier Exceptions (403)
-      if (response.status === 403) {
-        toast.error("Upgrade to Elite for this alpha.");
-        // We still return the JSON so components can handle the 403
-        return json;
-      }
-
-      // Handle Authentication Exceptions (401)
-      if (response.status === 401) {
-        throw new Error("Unauthorized");
-      }
-
-      if (!response.ok) {
-        const errorMsg = json.errors?.[0] || json.message || "Institutional API Error";
-        toast.error(errorMsg);
-        return json; // Return JSON even on error for component handling
-      }
-
-      return json as ApiResponse<T>;
-    } catch (error: any) {
-      if (error.message === "Failed to fetch") {
-        toast.error("Lucrix Backend Offline");
-      }
-      // Return a simulated API error object instead of throwing
-      return {
-        data: null as any,
-        meta: { generated_at: new Date().toISOString(), freshness_ms: 0 },
-        errors: [error.message],
-        status: 500,
-        message: error.message
-      };
+function buildUrl(path: string, params?: Record<string, QueryValue>) {
+    const url = new URL(`${API_BASE}${path}`);
+    if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                url.searchParams.set(key, String(value));
+            }
+        });
     }
-  }
-
-  // Generic HTTP Methods
-  async get<T>(endpoint: string) { return this.request<T>(endpoint, { method: "GET" }); }
-  async post<T>(endpoint: string, body?: any) { 
-    return this.request<T>(endpoint, { 
-      method: "POST", 
-      body: body ? JSON.stringify(body) : undefined 
-    }); 
-  }
-  async put<T>(endpoint: string, body?: any) { 
-    return this.request<T>(endpoint, { 
-      method: "PUT", 
-      body: body ? JSON.stringify(body) : undefined 
-    }); 
-  }
-  async delete<T>(endpoint: string) { return this.request<T>(endpoint, { method: "DELETE" }); }
-
-  // --- LEGACY & COMPATIBILITY LAYER ---
-  async fetch(endpoint: string) { return this.get(endpoint); }
-  async apiFetch(endpoint: string) { return this.get(endpoint); }
-
-  // --- CORE ENGINE ENDPOINTS ---
-  
-  async getProps(sport: string, market?: string) {
-    const params = new URLSearchParams({ sport });
-    if (market) params.append("market", market);
-    return this.get<any[]>(`/api/props?${params.toString()}`);
-  }
-
-  async getEV(sport?: string, minEdge: number = 2.0) {
-    const params = new URLSearchParams({ min_edge: minEdge.toString() });
-    if (sport) params.append("sport", sport);
-    return this.get<any[]>(`/api/ev?${params.toString()}`);
-  }
-
-  async getSignals(sport?: string) {
-    return this.get<any[]>(sport ? `/api/signals?sport=${sport}` : "/api/signals");
-  }
-
-  async getLive(sport?: string) {
-    return this.get<any[]>(sport ? `/api/live/scoreboard?sport=${sport}` : "/api/live/scoreboard");
-  }
-
-  async getFreshness(sport?: string) {
-    return this.get<any>(sport ? `/api/meta/freshness?sport=${sport}` : "/api/meta/freshness");
-  }
-
-  async getHealth() { return this.get<any>("/api/meta/health"); }
-  async health() { return this.getHealth(); }
-
-  // --- INSTITUTIONAL MODULES ---
-
-  async adminStats(email?: string) { 
-    return this.get<any>(email ? `/api/admin/stats?email=${email}` : "/api/admin/stats"); 
-  }
-
-  async arbitrage(sport: string = "NBA") { return this.get<any[]>(`/api/arbitrage?sport=${sport}`); }
-  async brain(sport: string = "NBA") { return this.get<any>(`/api/brain?sport=${sport}`); }
-  async brainMetrics() { return this.get<any>("/api/brain/metrics"); }
-  
-  async stripeCheckout(priceId: string) { 
-    return this.post<any>("/api/payments/checkout", { price_id: priceId }); 
-  }
-
-  async billingPortal() { return this.get<any>("/api/payments/portal"); }
-  
-  async hitRateSummary() { return this.get<any>("/api/hit-rate/summary"); }
-  async hitRateByPlayer() { return this.get<any>("/api/hit-rate/players"); }
-
-  async affiliateMyLink() { return this.get<any>("/api/affiliate/link"); }
-  
-  async authKeys() { return this.get<any[]>("/api/auth/keys"); }
-  async generateKey() { return this.post<any>("/api/auth/keys/generate"); }
-  async updateWebhooks(url: string) { return this.post<any>("/api/auth/webhooks", { url }); }
-
-  async edgeConfig() { return this.get<any>("/api/settings/edge-config"); }
-  async saveEdgeConfig(config: any) { return this.post<any>("/api/settings/edge-config", config); }
-
-  async backtestRun(params: any) { return this.post<any>("/api/strategy/backtest", params); }
-
-  async ledgerMyBets() { return this.get<any[]>("/api/ledger/my-bets"); }
-  async ledgerStats() { return this.get<any>("/api/ledger/stats"); }
-  async socialShare(betId: string) { return this.post<any>(`/api/ledger/share/${betId}`); }
-
-  async lineMovement(sport: string = "NBA") { return this.get<any[]>(`/api/line-movement?sport=${sport}`); }
-  
-  async getParlays() { return this.get<any[]>("/api/parlays"); }
-  async performance() { return this.get<any>("/api/performance"); }
-  
-  async playerProfile(id: string) { return this.get<any>(`/api/players/${id}`); }
-  async playerTrends(id: string) { return this.get<any>(`/api/players/${id}/trends`); }
-  
-  async slate(sport: string = "NBA") { return this.get<any[]>(`/api/slate?sport=${sport}`); }
-  async trendHunter() { return this.get<any[]>("/api/trend-hunter"); }
-  async whaleSignals(sport?: string) { 
-    return this.get<any[]>(sport ? `/api/whale/signals?sport=${sport}` : "/api/whale/signals"); 
-  }
-  
-  async trackRecordSummary() { return this.get<any>("/api/results/summary"); }
-  async trackRecordRecent() { return this.get<any[]>("/api/results/recent"); }
-
-  async aiChat(message: string) { return this.post<any>("/api/ai/chat", { message }); }
-  async oracle(query: string) { return this.post<any>("/api/ai/oracle", { query }); }
-  async mlPredict(params: any) { return this.post<any>("/api/ml/predict", params); }
-  
-  async autocopy(params: any) { return this.post<any>("/api/autocopy", params); }
-  async globalSearch(query: string) { return this.get<any>(`/api/search?q=${query}`); }
-  
-  async authMe() { return this.get<any>("/api/auth/me"); }
-  async resetCircuit() { return this.post("/api/meta/circuit-reset"); }
-
-  // --- WEBSOCKET REGISTRY ---
-  get wsBaseUrl() { return WS_BASE_URL; }
-  get wsEv() { return `${WS_BASE_URL}/ws/ev`; }
-  get wsKalshi() { return `${WS_BASE_URL}/ws/kalshi`; }
-  get wsOdds() { return `${WS_BASE_URL}/ws/odds`; }
-
-  // --- RECENT INTEL FLOW ---
-  async recentIntel() { return this.get<any[]>("/api/intel/recent"); }
-  async injuries(sport?: string) { return this.get<any[]>(sport ? `/api/intel/injuries?sport=${sport}` : "/api/intel/injuries"); }
-  async sharpMoves() { return this.get<any[]>("/api/intel/sharp-moves"); }
-  async evTop() { return this.get<any[]>("/api/intel/ev-top"); }
-
-  // --- KALSHI INSTITUTIONAL ---
-
-  async getKalshiMarkets(sport: string = "NBA") {
-    return this.get<any[]>(`/api/kalshi/markets?sport=${sport}`);
-  }
-
-  async getKalshiOrderBook(ticker: string) {
-    return this.get<any>(`/api/kalshi/markets/${ticker}/orderbook`);
-  }
-
-  async getKalshiHistory(ticker: string) {
-    return this.get<any[]>(`/api/kalshi/markets/${ticker}/history`);
-  }
-
-  async getKalshiEvents(series?: string) {
-    return this.get<any[]>(series ? `/api/kalshi/events?series=${series}` : "/api/kalshi/events");
-  }
-
-  async getKalshiEV(sport: string = "NBA") {
-    return this.get<any[]>(`/api/kalshi/ev?sport=${sport}`);
-  }
-
-  async getKalshiArb(sport: string = "NBA") {
-    return this.get<any[]>(`/api/kalshi/arb?sport=${sport}`);
-  }
-
-  async getKalshiPortfolio() {
-    return this.get<any>("/api/kalshi/portfolio");
-  }
-
-  async placeKalshiOrder(order: { ticker: string; side: string; count: number; price: number }) {
-    return this.post<any>("/api/kalshi/orders", order);
-  }
-
-  async cancelKalshiOrder(orderId: string) {
-    return this.delete<any>(`/api/kalshi/orders/${orderId}`);
-  }
-
-  readonly pollMs = 30000;
+    return url.toString();
 }
 
-export const api = new InstitutionalApiClient();
-export const API = api; // Capitalized compatibility layer
-export default api;
+async function request<T = any>(
+    path: string,
+    options?: RequestInit,
+    params?: Record<string, QueryValue>
+): Promise<T | Error> {
+    try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+        
+        const res = await fetch(buildUrl(path, params), {
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                ...(options?.headers || {}),
+            },
+            ...options,
+        });
 
-export const resetCircuit = () => api.resetCircuit();
-export function unwrap<T>(res: ApiResponse<T>): T { return res.data; }
+        if (!res.ok) {
+            const text = await res.text();
+            let errorMessage = `${res.status} ${res.statusText}`;
+            try {
+                const json = JSON.parse(text);
+                errorMessage = json.detail || json.message || errorMessage;
+            } catch {
+                if (text && text.length < 100) errorMessage = text;
+            }
+            return new Error(errorMessage);
+        }
+
+        return await res.json();
+    } catch (e: any) {
+        return e instanceof Error ? e : new Error(String(e));
+    }
+}
+
+export function isApiError(val: any): val is Error {
+    return val instanceof Error || (val && typeof val === 'object' && ('error' in val || 'detail' in val));
+}
+
+export const api = {
+    // Generic
+    get: <T = any>(path: string, params?: Record<string, QueryValue>) =>
+        request<T>(path, { method: "GET" }, params),
+    post: <T = any>(path: string, body?: any, params?: Record<string, QueryValue>) =>
+        request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }, params),
+    
+    // Core
+    health: () => request("/api/health"),
+    meta: {
+        health: () => request("/api/meta/health"),
+        summary: () => request("/api/meta/summary"),
+    },
+    auth: {
+        me: () => request("/api/auth/me"),
+        login: (creds: any) => request("/api/auth/login", { method: "POST", body: JSON.stringify(creds) }),
+    },
+
+    // Models
+    props: (sport = "basketball_nba", limit = 25) =>
+        request("/api/props", undefined, { sport, limit }),
+    propsScored: (sport = "basketball_nba", limit = 50) =>
+        request("/api/props/scored", undefined, { sport, limit }),
+
+    // Intel & Signals
+    ev: {
+        top: (sport = "basketball_nba", limit = 50) =>
+            request("/api/ev/ev-top", undefined, { sport, limit }),
+        scanner: (sport = "basketball_nba") =>
+            request("/api/ev/", undefined, { sport }),
+    },
+    clv: (sport = "basketball_nba") =>
+        request("/api/clv/", undefined, { sport }),
+    signals: {
+        sharp: (sport = "basketball_nba") =>
+            request("/api/signals/sharp-moves", undefined, { sport }),
+        freshness: (sport = "basketball_nba") =>
+            request("/api/signals/freshness", undefined, { sport }),
+    },
+    wsEv: `${API_BASE.replace('http', 'ws')}/api/ev/ws`,
+
+    // Features
+    injuries: (sport = "basketball_nba") =>
+        request("/api/injuries", undefined, { sport }),
+    news: (sport = "basketball_nba") =>
+        request("/api/news", undefined, { sport }),
+    lineMovement: (sport = "basketball_nba") =>
+        request("/api/lines", undefined, { sport }),
+    liveGames: (sport = "basketball_nba") =>
+        request("/api/live/games", undefined, { sport }),
+    
+    // Intelligence Tier Aliases (for useBrainData etc)
+    recentIntel: (sport = "basketball_nba") =>
+        request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
+    
+    // Misc
+    metrics: () => request("/api/metrics"),
+    hitRate: (sport = "all") => request("/api/hit-rate", undefined, { sport }),
+    whale: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
+    parlay: (sport = "basketball_nba") => request("/api/parlay", undefined, { sport }),
+    steam: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
+    search: (q: string) => request("/api/search", undefined, { q }),
+
+    // Brain
+    brain: {
+        status: () => request("/api/brain/brain-status"),
+        metrics: () => request("/api/metrics"), // Added alias for useBrainData
+        decisions: (sport = "basketball_nba") => 
+            request("/api/brain/decisions", undefined, { sport }),
+        parlays: (sport = "basketball_nba") =>
+            request("/api/brain/parlay-builder", undefined, { sport }),
+    }
+};
+
+// Aliases for backward compatibility
+(api as any).authMe = api.auth.me;
+(api as any).evTop = api.ev.top;
+(api as any).getEV = api.ev.top;
+(api as any).propsScored = api.propsScored;
+(api as any).injuries = api.injuries;
+(api as any).news = api.news;
+(api as any).lineMovement = api.lineMovement;
+(api as any).freshness = api.signals.freshness;
+
+export const API = api;
+export const apiFetch = request;
+export default api;

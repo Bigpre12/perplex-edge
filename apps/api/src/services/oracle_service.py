@@ -7,7 +7,7 @@ from config import settings
 from services.props_service import props_service
 from services.steam_service import steam_service
 from services.whale_service import detect_whale_signals
-from services.injury_service import fetch_injuries
+from services.injury_service import injury_service
 from services.brain_service import brain_service
 
 # We'll use openai for the streaming implementation as requested
@@ -40,7 +40,7 @@ class OracleService:
             metrics = await brain_service.get_metrics(sport)
             
             # 4. Fetch Injuries
-            injuries = await fetch_injuries(sport)
+            injuries = await injury_service.get_injuries(sport)
             
             # 5. Fetch last 10 steam events from DB
             from database import SessionLocal

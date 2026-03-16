@@ -17,9 +17,9 @@ export function usePrefetchAllTabs() {
         const prefetch = async () => {
             const endpoints = [
                 { key: ['props', activeSport], fn: () => api.props(activeSport) },
-                { key: ['brain-metrics', activeSport], fn: () => api.brainMetrics(activeSport) },
+                { key: ['brain-metrics', activeSport], fn: () => api.brain.metrics() },
                 { key: ['injuries', activeSport], fn: () => api.injuries(activeSport) },
-                { key: ['ev-top', activeSport], fn: () => api.evTop(2, activeSport) },
+                { key: ['ev-top', activeSport], fn: () => api.evTop(activeSport, 2) },
                 { key: ['sharp-moves', activeSport], fn: () => api.sharpMoves(activeSport) },
                 { key: ['line-movement', activeSport], fn: () => api.lineMovement(activeSport) },
                 { key: ['hit-rate-summary', activeSport], fn: () => api.hitRateSummary(activeSport) },

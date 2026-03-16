@@ -70,9 +70,10 @@ class KalshiClient(ResilientBaseClient):
             return ""
 
     async def kalshi_request(self, method: str, path: str, **kwargs) -> Any:
-        # v2 Auth Headers
+        """RSA-PSS signed request for Kalshi v2 Trade API"""
+        full_path = f"/trade-api/v2{path}"
         timestamp = str(int(time.time() * 1000))
-        signature = self._sign_message(timestamp, method, f"/trade-api/v2{path}")
+        signature = self._sign_message(timestamp, method, full_path)
         
         headers = kwargs.get("headers", {})
         headers.update({
@@ -83,7 +84,7 @@ class KalshiClient(ResilientBaseClient):
         })
         kwargs["headers"] = headers
         
-        return await self.request(method, path, **kwargs)
+        return await self.request(method, full_path, **kwargs)
 
     async def get_exchange_status(self) -> Dict[str, Any]:
         return await self.kalshi_request("GET", "/exchange/status")
@@ -99,3 +100,5 @@ class KalshiClient(ResilientBaseClient):
 
     async def get_orderbook(self, ticker: str) -> Dict[str, Any]:
         return await self.kalshi_request("GET", f"/markets/{ticker}/orderbook")
+
+kalshi_client = KalshiClient()

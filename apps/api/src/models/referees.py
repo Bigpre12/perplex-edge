@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from sqlalchemy.sql import func
-from database import Base
+from db.base import Base
 
 class RefereeGame(Base):
     __tablename__ = "refereegames"

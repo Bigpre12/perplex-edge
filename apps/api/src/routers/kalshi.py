@@ -6,7 +6,7 @@ from services.kalshi_arb import detect_arb_opportunities
 from common_deps import require_elite
 from api_utils.auth_supabase import get_current_user_supabase
 
-router = APIRouter()
+router = APIRouter(prefix="/api/kalshi", tags=["kalshi"])
 
 # Middleware-like tier check for Elite features
 async def require_elite_tier(tier: str = Depends(require_elite)):

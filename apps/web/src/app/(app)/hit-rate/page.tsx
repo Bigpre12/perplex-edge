@@ -114,6 +114,7 @@ function HitRateContent() {
                     <select
                         value={sport}
                         onChange={(e) => handleSportChange(e.target.value)}
+                        aria-label="Select sport"
                         className="bg-transparent text-xs font-bold text-gray-300 outline-none cursor-pointer hover:text-white transition-colors"
                     >
                         <option value="all" className="bg-zinc-900">All Sports</option>

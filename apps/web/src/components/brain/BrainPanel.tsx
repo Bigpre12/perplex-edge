@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { API, apiFetch, isApiError } from '@/lib/api';
+import { api, isApiError } from '@/lib/api';
 import { SportKey } from '@/lib/sports.config';
 import { useLucrixStore } from '@/store';
 
@@ -33,18 +33,18 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
         if (!backendOnline) return;
         const load = async () => {
             const [d, m] = await Promise.all([
-                apiFetch<BrainDecision[]>(API.brainDecisions(sport, 5)),
-                apiFetch<BrainMetrics>(API.brainMetrics(sport)),
+                api.brain.decisions(sport, 5),
+                api.brain.metrics(),
             ]);
 
             if (!isApiError(d)) {
-                setDecisions(Array.isArray(d) ? d : []);
+                const data = d as any;
+                setDecisions(Array.isArray(data) ? data : (data.items || data.decisions || []));
             } else {
                 setDecisions([]);
             }
-
             if (!isApiError(m)) {
-                setMetrics(m);
+                setMetrics(m as any);
             } else {
                 setMetrics(null);
             }
@@ -56,31 +56,21 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
 
     return (
         <div className="brain-panel">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1.2rem' }}>🧠</span>
-                    <h3 style={{ fontWeight: 700, fontSize: '1rem', margin: 0 }}>Lucrix Brain</h3>
+            <div className="brain-header">
+                <div className="brain-title-wrap">
+                    <span>🧠</span>
+                    <h3>Lucrix Brain</h3>
                 </div>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <div className="brain-tab-btn-group">
                     <button
                         onClick={() => setTab('live')}
-                        style={{
-                            padding: '5px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-                            border: '1px solid #2a2a3a',
-                            background: tab === 'live' ? '#7c3aed' : 'transparent',
-                            color: tab === 'live' ? 'white' : '#9090aa',
-                        }}
+                        className={`brain-tab-btn ${tab === 'live' ? 'brain-tab-btn-active' : ''}`}
                     >
                         Live Picks
                     </button>
                     <button
                         onClick={() => setTab('metrics')}
-                        style={{
-                            padding: '5px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-                            border: '1px solid #2a2a3a',
-                            background: tab === 'metrics' ? '#7c3aed' : 'transparent',
-                            color: tab === 'metrics' ? 'white' : '#9090aa',
-                        }}
+                        className={`brain-tab-btn ${tab === 'metrics' ? 'brain-tab-btn-active' : ''}`}
                     >
                         Metrics
                     </button>
@@ -88,30 +78,26 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
             </div>
 
             {tab === 'live' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="brain-picks-container">
                     {decisions.length === 0 && (
-                        <p style={{ color: '#9090aa', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>
+                        <p className="brain-empty-state">
                             No active decisions — brain is analyzing...
                         </p>
                     )}
                     {decisions.map(d => (
-                        <div key={d.id} className="decision-card" style={{
-                            borderLeft: `3px solid ${d.result === 'win' ? '#00ff88' : d.result === 'loss' ? '#ff4466' : '#7c3aed'}`,
-                        }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '6px' }}>{d.pick}</div>
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '6px' }}>
-                                <span style={{ fontSize: '0.75rem', color: '#9090aa' }}>
-                                    <span style={{
-                                        display: 'inline-block', height: '6px', width: `${d.confidence * 0.6}px`,
-                                        background: 'linear-gradient(90deg, #7c3aed, #00ff88)',
-                                        borderRadius: '3px', marginRight: '6px', verticalAlign: 'middle',
-                                    }} />
+                        <div key={d.id} className={`decision-card ${d.result === 'win' ? 'decision-card-win' : d.result === 'loss' ? 'decision-card-loss' : 'decision-card-pending'}`}>
+                            <div className="decision-card-pick">{d.pick}</div>
+                            <div className="decision-card-metrics">
+                                <span className="decision-conf-bar-wrap">
+                                    <span 
+                                        className={`decision-conf-bar w-${Math.round(d.confidence / 10) * 10}p`} 
+                                    />
                                     {d.confidence}% conf
                                 </span>
-                                <span style={{ fontSize: '0.75rem', color: '#00ff88', fontWeight: 600 }}>+{d.edge}% edge</span>
+                                <span className="decision-edge-tag">+{d.edge}% edge</span>
                             </div>
-                            <div style={{ fontSize: '0.8rem', color: '#9090aa', lineHeight: 1.4 }}>{d.reasoning}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '6px' }}>
+                            <div className="decision-reasoning">{d.reasoning}</div>
+                            <div className="decision-timestamp">
                                 {new Date(d.timestamp).toLocaleTimeString()}
                             </div>
                         </div>
@@ -120,7 +106,7 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
             )}
 
             {tab === 'metrics' && metrics && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                <div className="brain-metrics-grid">
                     <MetricCard label="Win Rate" value={`${metrics.winRate}%`} good={metrics.winRate > 55} />
                     <MetricCard label="ROI" value={`${metrics.roi}%`} good={metrics.roi > 0} />
                     <MetricCard label="Total Picks" value={metrics.totalPicks} />
@@ -130,7 +116,7 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
             )}
 
             {tab === 'metrics' && !metrics && (
-                <p style={{ color: '#9090aa', fontSize: '0.85rem', textAlign: 'center', padding: '20px' }}>
+                <p className="brain-metrics-empty">
                     No metrics data available
                 </p>
             )}
@@ -141,11 +127,8 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
 function MetricCard({ label, value, good }: { label: string; value: any; good?: boolean }) {
     return (
         <div className="metric-card">
-            <span style={{ fontSize: '0.75rem', color: '#9090aa', display: 'block', marginBottom: '4px' }}>{label}</span>
-            <span style={{
-                fontSize: '1.3rem', fontWeight: 800,
-                color: good === true ? '#00ff88' : good === false ? '#ff4466' : '#f0f0ff',
-            }}>
+            <span className="metric-card-label">{label}</span>
+            <span className={`metric-card-value ${good === true ? 'metric-card-value-good' : good === false ? 'metric-card-value-bad' : ''}`}>
                 {value}
             </span>
         </div>

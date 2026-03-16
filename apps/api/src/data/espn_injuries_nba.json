@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-03-15T16:10:26Z",
+  "status": "success",
+  "season": {
+    "year": 2026,
+    "type": 2,
+    "name": "Regular Season",
+    "displayName": "2025-26"
+  },
+  "injuries": [
+    {
+      "id": "1",
+      "displayName": "Atlanta Hawks",
+      "injuries": [
+        {
+          "id": "-41459",
+          "longComment": "Kuminga will receive a rest day Saturday, but he should be back for Monday's meeting with the Magic. Zaccharie Risacher and Corey Kispert will pick up the slack in Kuminga's absence.",
+          "shortComment": "Kuminga (knee) has been ruled out for Saturday's game against the Bucks.",
+          "status": "Day-To-Day",
+          "date": "2026-03-14T22:02Z",
+          "athlete": {
+            "firstName": "Jonathan",
+            "lastName": "Kuminga",
+            "displayName": "Jonathan Kuminga",
+            "shortName": "J. Kuminga",
+            "position": {
+              "id": "7",
+              "name": "Forward",
+              "displayName": "Forward",
+              "abbreviation": "F",
+              "leaf": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

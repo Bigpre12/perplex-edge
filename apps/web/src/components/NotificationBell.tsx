@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
-import { API, apiFetch, isApiError } from "@/lib/api";
+import { API, isApiError } from "@/lib/api";
 
 import { useLucrixStore } from "@/store";
 import { useLiveData } from "@/hooks/useLiveData";
@@ -9,7 +9,7 @@ import { useLiveData } from "@/hooks/useLiveData";
 export function NotificationBell() {
     const activeSport = useLucrixStore((state: any) => state.activeSport);
     const { data, loading } = useLiveData(
-        () => apiFetch<any>(API.alerts(activeSport === 'all' ? 'basketball_nba' : activeSport)),
+        () => API.alerts(activeSport === 'all' ? 'basketball_nba' : activeSport),
         [activeSport],
         { refreshInterval: 30000 }
     );

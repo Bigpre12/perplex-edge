@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 from common_deps import require_pro, get_user_tier
 from services.brain_advanced_service import brain_advanced_service
 
-router = APIRouter(tags=["brain"])
-user_router = APIRouter(tags=["brain_user"])
+router = APIRouter(prefix="/brain", tags=["Brain Intelligence"])
+user_router = APIRouter()
 
-@user_router.get("/brain-decisions")
+@user_router.get("/decisions")
 async def get_prop_score(sport: str = "basketball_nba", db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
     if tier not in ("pro", "elite"): return []
     try:
@@ -62,7 +62,7 @@ async def get_steam_alerts(sport: str = "basketball_nba", db: AsyncSession = Dep
         logger.error(f"Error in steam-alerts: {e}")
         return []
 
-@user_router.get("/brain-insights")
+@user_router.get("/insights")
 async def get_reasoning_feed(sport: str = "basketball_nba", limit: int = 20, db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
     if tier not in ("pro", "elite"): return []
     try:
@@ -80,7 +80,7 @@ async def get_heatmap(sport: str = "basketball_nba", db: AsyncSession = Depends(
         logger.error(f"Error in heatmap: {e}")
         return []
 
-@user_router.get("/brain-metrics")
+@user_router.get("/metrics")
 async def get_dashboard_metrics(db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
     if tier not in ("pro", "elite"): return {"status": "limited", "message": "Pro required"}
     try:
@@ -92,7 +92,7 @@ async def get_dashboard_metrics(db: AsyncSession = Depends(get_async_db), tier: 
 # Attach user_router to the main exported router
 router.include_router(user_router)
 
-@router.get("/health")
+@router.get("/brain-status")
 async def get_brain_health():
     try:
         return {

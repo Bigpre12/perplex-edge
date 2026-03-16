@@ -11,51 +11,32 @@ import { openBillingPortal } from "@/lib/stripe";
 import APIHealth from "@/components/shared/APIHealth";
 
 const DISPLAY_SPORTS = [
-    { id: 'all', name: 'All', emoji: '🏆' },
+    { id: 'all', name: 'All', emoji: '⚡' },
     { id: 'basketball_nba', name: 'NBA', emoji: '🏀' },
-    { id: 'basketball_wnba', name: 'WNBA', emoji: '🏀' },
+    { id: 'americanfootball_nfl', name: 'NFL', emoji: '🏈' },
+    { id: 'baseball_mlb', name: 'MLB', emoji: '⚾' },
     { id: 'icehockey_nhl', name: 'NHL', emoji: '🏒' },
     { id: 'tennis_atp', name: 'Tennis', emoji: '🎾' },
     { id: 'boxing_boxing', name: 'Boxing', emoji: '🥊' },
-    { id: 'mma_mixed_martial_arts', name: 'MMA', emoji: '🥊' },
+    { id: 'mma_mixed_martial_arts', name: 'MMA', emoji: '🥋' },
     { id: 'soccer_mls', name: 'Soccer', emoji: '⚽' },
+    { id: 'golf_pga', name: 'Golf', emoji: '🏌️' },
 ];
 
 function NavUpgradeButton() {
     const tier = useLucrixStore((state: any) => state.userTier);
 
-    if (tier === "elite") return (
-        <button onClick={() => openBillingPortal()} style={{
-            background: "#f59e0b20", color: "#f59e0b",
-            border: "1px solid #f59e0b40",
-            borderRadius: "8px", padding: "6px 14px",
-            fontSize: "12px", fontWeight: 800, cursor: "pointer",
-        }}>
-            👑 Elite
-        </button>
-    );
+    if (tier === "elite") return null;
 
     if (tier === "pro") return (
-        <a href="/pricing" style={{
-            background: "#6366f120", color: "#818cf8",
-            border: "1px solid #6366f140",
-            borderRadius: "8px", padding: "6px 14px",
-            fontSize: "12px", fontWeight: 800,
-            textDecoration: "none",
-        }}>
-            ⚡ Upgrade to Elite
+        <a href="/pricing" className="ml-2 hidden sm:flex items-center justify-center h-8 px-4 rounded-btn text-white text-xs font-bold leading-none bg-gradient-to-br from-brand-purple to-brand-cyan hover:opacity-90 transition-opacity">
+            Upgrade
         </a>
     );
 
     return (
-        <a href="/pricing" style={{
-            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-            color: "#fff", border: "none",
-            borderRadius: "8px", padding: "6px 14px",
-            fontSize: "12px", fontWeight: 800,
-            textDecoration: "none",
-        }}>
-            Upgrade ⚡
+        <a href="/pricing" className="ml-2 hidden sm:flex items-center justify-center h-8 px-4 rounded-btn text-white text-xs font-bold leading-none bg-gradient-to-br from-brand-purple to-brand-cyan hover:opacity-90 transition-opacity">
+            Upgrade
         </a>
     );
 }
@@ -71,74 +52,66 @@ function TopNavContent() {
         setMounted(true);
     }, []);
 
-    const handleSort = (id: any) => {
+    const handleSort = (id: string) => {
         setActiveSport(id);
         const params = new URLSearchParams(searchParams.toString());
         params.set('sport', id);
         router.push(`?${params.toString()}`, { scroll: false });
     };
 
-    const active = mounted ? activeSport : "";
+    const active = mounted ? activeSport : "all";
 
     return (
-        <nav className="sticky top-0 z-50 bg-[#080810]/90 
-                    backdrop-blur-xl border-b border-[#1E1E35]
-                    px-4 h-14 flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity">
-                <span className="text-[#F5C518] font-bold text-xl tracking-tight">
-                    LUCRIX
-                </span>
-                <span className="hidden xs:inline-block text-[10px] text-[#6B7280] font-mono 
-                         bg-[#1E1E35] px-2 py-0.5 rounded-full">
-                    BETA
-                </span>
-                <div className="hidden sm:block ml-2">
-                    <APIHealth />
-                </div>
-            </Link>
-
-            {/* Navigation Tabs */}
-            <div className="flex gap-4 mx-4 items-center h-full border-r border-white/10 pr-4 hidden lg:flex">
-                <Link href="/whale" className="text-xs font-bold text-slate-400 hover:text-[#F5C518] transition-colors">WHALE</Link>
-                <Link href="/clv" className="text-xs font-bold text-slate-400 hover:text-[#F5C518] transition-colors">CLV</Link>
-                <Link href="/markets" className="text-xs font-bold text-slate-400 hover:text-[#F5C518] transition-colors">MARKETS</Link>
-                <Link href="/books" className="text-xs font-bold text-slate-400 hover:text-[#F5C518] transition-colors">BOOKS</Link>
-                <Link href="/kalshi" className="text-xs font-bold text-slate-400 hover:text-purple-400 transition-colors flex items-center gap-1">
-                    KALSHI <span className="text-[8px] bg-purple-500/20 text-purple-400 px-1 rounded">ELITE</span>
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-lucrix-dark h-14 border-b border-lucrix-border flex items-center justify-between px-4 sm:px-6">
+            
+            {/* Left section: Wordmark + Health */}
+            <div className="flex items-center gap-4 flex-shrink-0 w-48">
+                <Link href="/" className="flex flex-col hover:opacity-80 transition-opacity">
+                    <span className="text-white font-display font-bold text-[20px] tracking-tight leading-none">
+                        LUCRIX
+                    </span>
+                    <div className="flex items-center gap-1 mt-1">
+                        <APIHealth />
+                    </div>
                 </Link>
             </div>
 
-            {/* Sport Pills */}
-            <div className="flex gap-1 overflow-x-auto scrollbar-none mx-4 items-center h-full flex-1">
-                {DISPLAY_SPORTS.map(sport => (
-                    <button key={sport.id}
-                        onClick={() => handleSort(sport.id)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold 
-                        transition-all whitespace-nowrap
-                        ${active === sport.id
-                                ? 'bg-[#F5C518] text-black'
-                                : 'bg-[#1E1E35] text-[#6B7280] hover:text-white'
-                            }`}>
-                        {sport.emoji} {sport.name}
-                    </button>
-                ))}
+            {/* Center section: Sport Pills */}
+            <div className="flex-1 overflow-x-auto scrollbar-none flex items-center justify-center mx-4 max-w-3xl">
+                <div className="flex items-center gap-1 px-2">
+                    {DISPLAY_SPORTS.map(sport => (
+                        <button key={sport.id}
+                            onClick={() => handleSort(sport.id)}
+                            className={`h-8 px-3 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5
+                            ${active === sport.id
+                                    ? 'bg-brand-purple text-white shadow-glow'
+                                    : 'bg-transparent text-textSecondary hover:bg-lucrix-elevated hover:text-white'
+                                }`}>
+                            <span>{sport.emoji}</span> {sport.name}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* User */}
-            <div className="flex-shrink-0 flex items-center gap-2">
-                <NavUpgradeButton />
-                <GlobalSearch />
+            {/* Right section: Search + Actions */}
+            <div className="flex-shrink-0 flex items-center gap-3 w-48 justify-end">
+                <div className="hidden md:block">
+                    <GlobalSearch />
+                </div>
                 <NotificationBell />
-                <UserNav />
+                <NavUpgradeButton />
+                <div className="pl-1">
+                    <UserNav />
+                </div>
             </div>
+            
         </nav>
     )
 }
 
 export function TopNav() {
     return (
-        <Suspense fallback={<div className="h-14 bg-[#080810]/90 border-b border-[#1E1E35]" />}>
+        <Suspense fallback={<div className="fixed top-0 left-0 right-0 z-50 h-14 bg-lucrix-dark border-b border-lucrix-border" />}>
             <TopNavContent />
         </Suspense>
     )

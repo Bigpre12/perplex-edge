@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useReconnectingWs } from "./useReconnectingWs";
-import { API } from "@/lib/api";
+import api, { isApiError } from "@/lib/api";
 
 export type EVSignal = {
     event_id: string;
@@ -22,28 +22,29 @@ export function useEvSignals(sport: string, minEv = 2.0) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
     const load = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await API.getEV(sport, minEv);
+            const res = await api.ev.scanner(sport);
+            if (isApiError(res)) throw res;
+            
             const raw = res.data || [];
             const mapped = raw.map((s: any) => ({
-                event_id: s.event_id,
+                event_id: s.id || s.event_id,
                 sport_key: s.sport,
-                player_name: s.player,
-                market_key: s.market,
+                player_name: s.player_name,
+                market_key: s.stat_type,
                 line: s.line,
-                bookmaker: s.best_book,
-                current_price: s.price,
+                bookmaker: s.book,
+                current_price: s.odds,
                 true_prob: s.true_prob,
-                implied_prob: 1 / s.price,
-                edge_percent: s.edge,
-                confidence_score: s.confidence,
+                implied_prob: 1 / s.odds,
+                edge_percent: s.ev_percentage,
+                confidence_score: s.ev_percentage,
                 updated_at: s.updated_at
             }));
-            setSignals(mapped);
+            const filtered = mapped.filter((s: any) => s.edge_percent >= minEv);
+            setSignals(filtered);
             setError(null);
         } catch (err: any) {
             setError(err.message);
@@ -53,25 +54,24 @@ export function useEvSignals(sport: string, minEv = 2.0) {
     }, [sport, minEv]);
 
     // WebSocket for live updates
-    useReconnectingWs(API.wsEv, (message: any) => {
+    useReconnectingWs(api.wsEv, (message: any) => {
         if (message.type === "ev_signal") {
             const s = message.data;
             const newSignal: EVSignal = {
-                event_id: s.event_id,
+                event_id: s.id || s.event_id,
                 sport_key: s.sport,
-                player_name: s.player,
-                market_key: s.market,
+                player_name: s.player_name,
+                market_key: s.stat_type,
                 line: s.line,
-                bookmaker: s.best_book,
-                current_price: s.price,
+                bookmaker: s.book,
+                current_price: s.odds,
                 true_prob: s.true_prob,
-                implied_prob: 1 / s.price,
-                edge_percent: s.edge,
-                confidence_score: s.confidence,
+                implied_prob: 1 / s.odds,
+                edge_percent: s.ev_percentage,
+                confidence_score: s.ev_percentage,
                 updated_at: s.updated_at
             };
             
-            // Only add if it matches the current sport and minEv threshold
             if (newSignal.sport_key === sport && newSignal.edge_percent >= minEv) {
                 setSignals(prev => {
                     const exists = prev.findIndex(p => 

@@ -172,6 +172,7 @@ export default function ParlayPage() {
                                                 </div>
                                                 <button
                                                     onClick={() => removeLeg(leg.prop_id)}
+                                                    aria-label="Remove leg"
                                                     className="text-slate-700 hover:text-red-500 transition-colors"
                                                 >
                                                     <Trash2 size={14} />

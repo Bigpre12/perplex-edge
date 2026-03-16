@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, Boolean, 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
-from database import Base
+from db.base import Base
 
 class BetResult(str, enum.Enum):
     pending = "pending"
@@ -63,3 +63,16 @@ class BetLog(Base):
     notes = Column(String, nullable=True)
     placed_at = Column(DateTime(timezone=True), server_default=func.now())
     settled_at = Column(DateTime(timezone=True), nullable=True)
+class Bet(Base):
+    __tablename__ = "bets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    player = Column(String, index=True, nullable=False)
+    market = Column(String, nullable=False)
+    pick = Column(String, nullable=False)
+    line = Column(Float, nullable=False)
+    odds = Column(Integer, nullable=False)
+    stake = Column(Float, nullable=False)
+    status = Column(String, default="open", nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -83,12 +83,16 @@ class ResilientBaseClient:
         except (httpx.HTTPStatusError, httpx.RequestError) as e:
             self._on_failure()
             
+            resp_content = ""
+            if isinstance(e, httpx.HTTPStatusError):
+                resp_content = f" | Response: {e.response.text}"
+            
             if retry_count < self.max_retries:
                 wait_time = (2 ** retry_count) # Exponential
-                logger.warning(f"[{self.name}] Request failed: {str(e)}. Retrying in {wait_time}s...")
+                logger.warning(f"[{self.name}] Request failed: {str(e)}{resp_content}. Retrying in {wait_time}s...")
                 return await self._handle_retry(method, path, params, json_data, headers, retry_count, wait=wait_time)
             
-            logger.error(f"[{self.name}] Max retries reached for {path}. Error: {str(e)}")
+            logger.error(f"[{self.name}] Max retries reached for {path}. Error: {str(e)}{resp_content}")
             raise e
 
     def _is_circuit_open(self) -> bool:

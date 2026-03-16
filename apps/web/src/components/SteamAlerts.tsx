@@ -8,7 +8,7 @@ import { useLiveData } from '@/hooks/useLiveData';
 
 export function SteamAlerts({ sport }: { sport: SportKey }) {
     const { data: alertsData, loading } = useLiveData(
-        () => apiFetch<any>(API.alerts(sport)),
+        () => API.steamAlerts(sport),
         [sport],
         { refreshInterval: 15000 }
     );

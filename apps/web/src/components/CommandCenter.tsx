@@ -92,27 +92,7 @@ export default function CommandCenter() {
         <button
             onClick={() => { setOpen(true); setQuery(""); setSelected(0); }}
             title="Command Center (⌘K)"
-            style={{
-                position: "fixed",
-                bottom: "24px",
-                right: "24px",
-                zIndex: 998,
-                width: "48px",
-                height: "48px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                border: "none",
-                color: "#fff",
-                fontSize: "20px",
-                cursor: "pointer",
-                boxShadow: "0 4px 20px rgba(99,102,241,0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "transform 0.2s",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.1)")}
-            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+            className="floating-command-btn"
         >
             ⌘
         </button>
@@ -123,82 +103,41 @@ export default function CommandCenter() {
             {/* Backdrop */}
             <div
                 onClick={() => setOpen(false)}
-                style={{
-                    position: "fixed", inset: 0, zIndex: 999,
-                    background: "rgba(0,0,0,0.7)",
-                    backdropFilter: "blur(4px)",
-                    animation: "fadeIn 0.15s ease",
-                }}
+                className="command-center-backdrop"
             />
 
             {/* Panel */}
-            <div style={{
-                position: "fixed",
-                top: "15%",
-                left: "50%",
-                transform: "translateX(-50%)",
-                zIndex: 1000,
-                width: "min(620px, 92vw)",
-                background: "#0f1117",
-                borderRadius: "16px",
-                border: "1px solid #2d3748",
-                boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.2)",
-                overflow: "hidden",
-                animation: "slideDown 0.2s ease",
-            }}>
+            <div className="command-center-panel">
 
                 {/* Header */}
-                <div style={{
-                    padding: "16px 20px 0",
-                    borderBottom: "1px solid #1f2937",
-                }}>
-                    <div style={{
-                        display: "flex", alignItems: "center", gap: "12px",
-                        marginBottom: "14px",
-                    }}>
-                        <span style={{ fontSize: "20px" }}>⚡</span>
-                        <span style={{ fontWeight: 900, fontSize: "16px", color: "#fff", letterSpacing: "0.02em" }}>
+                <div className="command-center-header">
+                    <div className="command-header-row">
+                        <span>⚡</span>
+                        <span className="command-logo-text">
                             LUCRIX COMMAND CENTER
                         </span>
-                        <span style={{
-                            marginLeft: "auto", fontSize: "10px", color: "#4b5563",
-                            background: "#1f2937", padding: "3px 8px", borderRadius: "6px",
-                            fontWeight: 700, letterSpacing: "0.05em"
-                        }}>ESC to close</span>
+                        <span className="command-esc-tag">ESC to close</span>
                     </div>
 
                     {/* Search */}
-                    <div style={{ position: "relative", marginBottom: "12px" }}>
-                        <span style={{
-                            position: "absolute", left: "12px", top: "50%",
-                            transform: "translateY(-50%)", color: "#4b5563", fontSize: "16px"
-                        }}>🔍</span>
+                    <div className="command-center-search-wrap">
+                        <span className="command-search-icon">🔍</span>
                         <input
                             autoFocus
                             value={query}
                             onChange={e => { setQuery(e.target.value); setSelected(0); }}
                             onKeyDown={handleInputKey}
                             placeholder="Search pages, sports, actions..."
-                            style={{
-                                width: "100%", padding: "10px 12px 10px 38px",
-                                background: "#1a1d2e", border: "1px solid #2d3748",
-                                borderRadius: "10px", color: "#fff", fontSize: "14px",
-                                outline: "none", boxSizing: "border-box",
-                            }}
+                            className="command-center-input"
                         />
-                        <span style={{
-                            position: "absolute", right: "12px", top: "50%",
-                            transform: "translateY(-50%)", fontSize: "10px",
-                            color: "#4b5563", fontWeight: 700,
-                            background: "#111827", padding: "2px 6px", borderRadius: "4px"
-                        }}>⌘K</span>
+                        <span className="command-kbd-tag">⌘K</span>
                     </div>
                 </div>
 
                 {/* Results */}
-                <div style={{ maxHeight: "380px", overflowY: "auto", padding: "8px" }}>
+                <div className="command-center-results">
                     {filtered.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "40px", color: "#4b5563", fontSize: "14px" }}>
+                        <div className="command-empty-state">
                             No results for "{query}"
                         </div>
                     ) : (
@@ -207,34 +146,17 @@ export default function CommandCenter() {
                                 key={cmd.id}
                                 onClick={() => handleSelect(cmd.path)}
                                 onMouseEnter={() => setSelected(i)}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: "12px",
-                                    padding: "10px 12px", borderRadius: "10px", cursor: "pointer",
-                                    background: selected === i ? "#1a1d2e" : "transparent",
-                                    border: selected === i ? "1px solid #2d3748" : "1px solid transparent",
-                                    transition: "all 0.1s",
-                                    marginBottom: "2px",
-                                }}
+                                className={`command-center-item ${selected === i ? 'command-center-item-selected' : ''}`}
                             >
-                                <span style={{
-                                    fontSize: "20px", width: "32px", height: "32px",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    background: "#111827", borderRadius: "8px", flexShrink: 0,
-                                }}>{cmd.icon}</span>
-                                <span style={{ flex: 1, fontWeight: 600, fontSize: "14px", color: "#e5e7eb" }}>
+                                <span className="command-item-icon">{cmd.icon}</span>
+                                <span className="command-item-label">
                                     {cmd.label}
                                 </span>
-                                <span style={{
-                                    fontSize: "10px", fontWeight: 700, padding: "2px 8px",
-                                    borderRadius: "20px", letterSpacing: "0.05em",
-                                    background: `${TAG_COLORS[cmd.tag]}20`,
-                                    color: TAG_COLORS[cmd.tag],
-                                    textTransform: "uppercase",
-                                }}>
+                                <span className={`command-item-tag command-item-tag-${cmd.tag}`}>
                                     {cmd.tag}
                                 </span>
                                 {selected === i && (
-                                    <span style={{ fontSize: "11px", color: "#4b5563", fontWeight: 700 }}>↵</span>
+                                    <span className="command-enter-icon">↵</span>
                                 )}
                             </div>
                         ))
@@ -242,16 +164,11 @@ export default function CommandCenter() {
                 </div>
 
                 {/* Footer */}
-                <div style={{
-                    padding: "10px 20px",
-                    borderTop: "1px solid #1f2937",
-                    display: "flex", gap: "16px",
-                    fontSize: "11px", color: "#4b5563",
-                }}>
+                <div className="command-center-footer">
                     <span>↑↓ Navigate</span>
                     <span>↵ Select</span>
                     <span>ESC Close</span>
-                    <span style={{ marginLeft: "auto" }}>⌘K to reopen anytime</span>
+                    <span className="command-center-footer-hint">⌘K to reopen anytime</span>
                 </div>
             </div>
 

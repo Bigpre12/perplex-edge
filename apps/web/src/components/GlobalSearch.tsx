@@ -41,11 +41,11 @@ export function GlobalSearch() {
         return (
             <button
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-2 bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-500 hover:text-gray-300 px-3 py-1.5 rounded-full text-sm transition"
+                className="flex items-center gap-2 bg-lucrix-surface border border-lucrix-border hover:bg-lucrix-elevated text-textSecondary hover:text-white px-3 py-1.5 rounded-full text-sm transition"
             >
                 <Search size={16} />
                 <span className="hidden sm:inline">Search props...</span>
-                <kbd className="hidden sm:inline ml-2 text-[10px] bg-gray-800 px-1.5 rounded font-mono text-gray-500">⌘K</kbd>
+                <kbd className="hidden sm:inline ml-2 text-[10px] bg-lucrix-border px-1.5 rounded font-mono text-textMuted">⌘K</kbd>
             </button>
         );
     }
@@ -53,51 +53,51 @@ export function GlobalSearch() {
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-start justify-center pt-24 px-4" onClick={() => setOpen(false)}>
             <div
-                className="bg-gray-900 border border-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                className="bg-lucrix-dark border border-lucrix-border w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
                 onClick={e => e.stopPropagation()}
             >
-                <div className="flex items-center p-4 border-b border-gray-800">
-                    <Search className="text-gray-500 mr-3" size={20} />
+                <div className="flex items-center p-4 border-b border-lucrix-border">
+                    <Search className="text-textSecondary mr-3" size={20} />
                     <input
                         autoFocus
                         type="text"
                         placeholder="Search players, teams..."
-                        className="bg-transparent w-full outline-none text-lg text-white placeholder:text-gray-600"
+                        className="bg-transparent w-full outline-none text-lg text-white placeholder:text-textMuted font-display"
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                     />
-                    <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-white transition">
+                    <button onClick={() => setOpen(false)} className="text-textSecondary hover:text-white transition" aria-label="Close search">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="max-h-96 overflow-y-auto w-full p-2 space-y-1">
+                <div className="max-h-96 overflow-y-auto w-full p-2 space-y-1 scrollbar-none">
                     {query.length < 3 ? (
-                        <div className="p-8 text-center text-gray-500 text-sm">Type at least 3 characters to search</div>
+                        <div className="p-8 text-center text-textMuted text-sm font-medium">Type at least 3 characters to search</div>
                     ) : isLoading ? (
-                        <div className="p-8 flex justify-center text-gray-500"><Loader2 className="animate-spin" /></div>
-                    ) : data?.results?.length > 0 ? (
-                        data.results.map((prop: any) => (
-                            <div key={prop.id} className="flex justify-between items-center p-3 hover:bg-gray-800 rounded-xl cursor-pointer group transition">
+                        <div className="p-8 flex justify-center text-textSecondary"><Loader2 className="animate-spin" /></div>
+                    ) : (data as any)?.results?.length > 0 ? (
+                        (data as any).results.map((prop: any) => (
+                            <div key={prop.id} className="flex justify-between items-center p-3 hover:bg-lucrix-elevated rounded-xl cursor-pointer group transition">
                                 <div>
-                                    <h4 className="font-bold text-white group-hover:text-blue-400 transition">{prop.player_name}</h4>
-                                    <p className="text-xs text-gray-500">{prop.team} • {prop.sport}</p>
+                                    <h4 className="font-bold text-white group-hover:text-brand-cyan transition">{prop.player_name}</h4>
+                                    <p className="text-xs text-textSecondary">{prop.team} • {prop.sport}</p>
                                 </div>
                                 <div className="text-right flex items-center gap-4">
                                     {prop.edge_score > 5 && (
-                                        <span className="bg-green-500/20 text-green-400 font-bold px-2 py-0.5 rounded text-xs uppercase tracking-wider hidden sm:inline-block">
+                                        <span className="bg-brand-success/10 text-brand-success font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider hidden sm:inline-block">
                                             {prop.edge_score}% Edge
                                         </span>
                                     )}
                                     <div className="font-mono text-sm leading-tight text-right">
-                                        <div className="text-gray-300">O {prop.line}</div>
-                                        <div className="text-gray-600 text-[10px] uppercase">{prop.prop_type.replace("player_", "")}</div>
+                                        <div className="text-white font-bold">O {prop.line}</div>
+                                        <div className="text-textMuted text-[10px] uppercase">{prop.prop_type.replace("player_", "")}</div>
                                     </div>
                                 </div>
                             </div>
                         ))
                     ) : (
-                        <div className="p-8 text-center text-gray-500 text-sm">No active props found for "{query}"</div>
+                        <div className="p-8 text-center text-textMuted text-sm font-medium">No active props found for "{query}"</div>
                     )}
                 </div>
             </div>
