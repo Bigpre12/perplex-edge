@@ -6,7 +6,7 @@ from schemas.line_move import LineMoveOut
 
 router = APIRouter()
 
-@router.get("/line-movement", response_model=list[LineMoveOut])
+@router.get("", response_model=list[LineMoveOut])
 async def line_movement(
     sport: str = Query("basketball_nba"),
     db: Session = Depends(get_db),
