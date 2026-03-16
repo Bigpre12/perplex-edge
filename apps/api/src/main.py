@@ -1,8 +1,17 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import core.config
+print(f"DEBUG: core.config file: {core.config.__file__}")
 from core.config import APP_NAME, CORS_ORIGINS
+
 from db.base import Base
+import db.session
+print(f"DEBUG: db.session file: {db.session.__file__}")
 from db.session import engine
 
 from routers.health import router as health_router

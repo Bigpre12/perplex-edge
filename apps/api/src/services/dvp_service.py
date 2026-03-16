@@ -6,7 +6,7 @@ Provides real mapping of how well an opposing team defends a specific player pos
 import logging
 from typing import Dict, List, Optional, Any
 from sqlalchemy import select, func
-from models.props import PropLine
+from models.prop import PropLine
 
 logger = logging.getLogger(__name__)
 

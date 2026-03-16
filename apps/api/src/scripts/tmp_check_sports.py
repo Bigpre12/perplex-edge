@@ -1,6 +1,6 @@
 import asyncio
 from sqlalchemy import text
-from database import async_session_maker
+from db.session import async_session_maker
 
 async def check():
     async with async_session_maker() as s:

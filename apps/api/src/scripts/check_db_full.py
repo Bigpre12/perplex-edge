@@ -1,8 +1,8 @@
 import asyncio, os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from database import SessionLocal
-from models.props import PropLine, GameLine
+from db.session import SessionLocal
+from models.prop import PropLine, GameLine
 from models.brain import ModelPick
 from sqlalchemy import func
 

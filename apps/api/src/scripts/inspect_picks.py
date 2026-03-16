@@ -1,5 +1,5 @@
 import asyncio
-from database import async_session_maker
+from db.session import async_session_maker
 from models.brain import ModelPick
 from sqlalchemy import select, func
 

@@ -10,7 +10,7 @@ import redis.asyncio as aioredis
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -179,7 +179,7 @@ class BrainAdvancedService:
         """Feature 4: Injury Impact Analyzer (Layer 2: Injury Impact)"""
         try:
             if not db:
-                from database import async_session_maker
+                from db.session import async_session_maker
                 async with async_session_maker() as session:
                     return await self.analyze_injuries(sport, session)
 

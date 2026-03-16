@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends
 from routers.auth import get_current_user
-from models.users import User
+from models.user import User
 
 TIER_RANK = {"free": 0, "pro": 1, "elite": 2}
 

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import select, func, and_, case
-from database import async_session_maker
+from db.session import async_session_maker
 from models.brain import ModelPick
 
 logger = logging.getLogger(__name__)

@@ -19,7 +19,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 import logging
 
-from app.services.odds_api_client import odds_api
+from services.odds_api_client import odds_api
 from services.espn_client import espn_client
 from services.therundown_client import therundown_client
 from services.balldontlie_client import balldontlie_client
@@ -328,7 +328,7 @@ class RealDataConnector:
         Tailored for Texas users who primarily use Pickem apps.
         """
         # DFS_BOOKMAKERS is now imported here to prevent circularity
-        from app_core.bookmaker_constants import DFS_BOOKMAKERS
+        DFS_BOOKMAKERS = ["draftkings", "fanduel", "prizepicks", "underdog_fantasy"]
         try:
             raw_events = await odds_api.get_player_props(sport_key, game_id, markets=market)
             if not raw_events or not isinstance(raw_events, dict):

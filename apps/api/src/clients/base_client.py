@@ -3,7 +3,7 @@ import logging
 import time
 import httpx
 from typing import Optional, Dict, Any, Callable
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from sqlalchemy import select, and_
-from database import async_session_maker
-from models.props import PropLine
+from db.session import async_session_maker
+from models.prop import PropLine
 from services.brain_clv_tracker import brain_clv_tracker
 
 logger = logging.getLogger("clv_tracker_loop")

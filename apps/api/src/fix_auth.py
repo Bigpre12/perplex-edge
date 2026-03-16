@@ -7,8 +7,8 @@ from passlib.context import CryptContext
 # Ensure src is in the path
 sys.path.insert(0, os.path.join(os.getcwd(), "src"))
 
-from database import async_session_maker
-from models.users import User
+from db.session import async_session_maker
+from models.user import User
 
 pwd_context = CryptContext(schemes=["bcrypt", "pbkdf2_sha256"], deprecated="auto")
 

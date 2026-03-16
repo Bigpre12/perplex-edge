@@ -1,7 +1,7 @@
 import asyncio
 from sqlalchemy import select
-from database import async_session_maker
-from models.props import PropLine
+from db.session import async_session_maker
+from models.prop import PropLine
 from datetime import datetime, timezone
 
 async def check_nba_props():

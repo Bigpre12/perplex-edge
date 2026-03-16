@@ -3,7 +3,7 @@
 import httpx, os, asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session
-from database import SessionLocal
+from db.session import SessionLocal
 from models import PropLine
 
 DISCORD_WEBHOOK = os.getenv('DISCORD_WEBHOOK_URL')

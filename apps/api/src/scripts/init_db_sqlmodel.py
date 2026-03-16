@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from sqlmodel import SQLModel
-from database import async_engine
+from db.session import async_engine
 from models import sql_models # Ensure models are imported for metadata collection
 
 async def init_db():

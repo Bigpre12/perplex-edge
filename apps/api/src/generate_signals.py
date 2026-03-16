@@ -6,7 +6,7 @@ import sys
 # Add src to path
 sys.path.insert(0, os.getcwd())
 
-from database import engine, async_session_maker, DATABASE_URL
+from db.session import engine, async_session_maker, DATABASE_URL
 from workers.ev_engine import ev_engine
 from sqlalchemy import text
 

@@ -8,12 +8,12 @@ from decimal import Decimal
 from typing import List, Dict, Any, Optional
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from database import async_session_maker, engine
+from db.session import async_session_maker, engine
 from models.unified import UnifiedOdds
 from clients.odds_client import odds_api_client
 from services.cache import cache
 from services.odds.fetchers import SPORT_KEY_MAP, SPORT_MARKETS
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

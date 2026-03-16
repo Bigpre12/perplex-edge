@@ -36,7 +36,7 @@ async def get_events(series: Optional[str] = None, user = Depends(require_elite_
 async def get_ev_signals(sport: str = "NBA", user = Depends(require_elite_tier)):
     """Scan and return EV signals merged with real Odds API data"""
     from app.services.odds_api_client import odds_api
-    from config.sports_config import SPORT_MAP, PROP_MARKETS
+    from core.sports_config import SPORT_MAP, PROP_MARKETS
     
     kalshi_sport = sport.upper()
     odds_sport = SPORT_MAP.get(sport.lower(), "basketball_nba")
@@ -77,7 +77,7 @@ async def get_ev_signals(sport: str = "NBA", user = Depends(require_elite_tier))
 async def get_arb_opportunities(sport: str = "NBA", user = Depends(require_elite_tier)):
     """Detect and return arbitrage opportunities using real-time data"""
     from app.services.odds_api_client import odds_api
-    from config.sports_config import SPORT_MAP
+    from core.sports_config import SPORT_MAP
     
     kalshi_sport = sport.upper()
     odds_sport = SPORT_MAP.get(sport.lower(), "basketball_nba")

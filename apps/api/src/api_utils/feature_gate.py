@@ -2,7 +2,7 @@
 # Whop webhook handler + in-app feature gating
 from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.orm import Session
-from database import get_db
+from db.session import get_db
 from models import User
 import hmac, hashlib, os, json
 

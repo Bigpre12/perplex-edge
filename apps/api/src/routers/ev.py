@@ -2,7 +2,7 @@
 import logging
 from fastapi import APIRouter, Query
 from sqlalchemy import select, desc
-from database import async_session_maker
+from db.session import async_session_maker
 from models.unified import UnifiedEVSignal
 
 router = APIRouter(tags=["Brain Intelligence"])
@@ -52,3 +52,6 @@ async def track_clv(
     except Exception as e:
         logger.error(f"EV Router: Error fetching for {sport}: {e}")
         return {"data": [], "error": str(e)}
+
+# Alias for use by intel.py
+get_top_ev = track_clv

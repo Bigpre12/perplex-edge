@@ -3,8 +3,8 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy import insert
-from app.services.odds_api_client import odds_api
-from models.props import PropLine
+from services.odds_api_client import odds_api
+from models.prop import PropLine
 
 logger = logging.getLogger(__name__)
 

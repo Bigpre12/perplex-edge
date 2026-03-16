@@ -3,7 +3,7 @@ import json
 import httpx
 import logging
 from datetime import datetime, timezone, timedelta
-# from .props_service import get_all_props # Moved to local to avoid circularity
+# from .prop_service import get_all_props # Moved to local to avoid circularity
 from .alert_service import alert_service
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class BrainService:
         # Circuit Breaker state
         self._openai_circuit_open = False
         self._last_429_time = 0
-        from config import settings
+        from core.config import settings
         self._cooldown_period = 10 if settings.DEVELOPMENT_MODE else 600 # 10 seconds in dev
         
     def get_confidence_tier(self, edge: float, hit_rate: float) -> str:
@@ -79,7 +79,7 @@ class BrainService:
             # Circuit Breaker Logic
             import time
             current_time = time.time()
-            from config import settings
+            from core.config import settings
             if self._openai_circuit_open and not settings.DEVELOPMENT_MODE:
                 if current_time - self._last_429_time < self._cooldown_period:
                     logger.warning("Secondary LLM Circuit is OPEN (429 Cooldown). Skipping OpenAI fallback.")
@@ -126,7 +126,7 @@ class BrainService:
         Processes a list of props and enriches them with an AI/Math recommendation.
         Utilizes the player_hit_rates table for real historical context.
         """
-        from database import SessionLocal
+        from db.session import SessionLocal
         from sqlalchemy import text
         
         db = SessionLocal()
@@ -285,7 +285,7 @@ class BrainService:
             return {"decisions": []}
             
         # 🔓 LOCK REMOVAL: Increase decision limit in dev mode
-        from config import settings
+        from core.config import settings
         effective_limit = 50 if settings.DEVELOPMENT_MODE else limit
         top_props = sorted(props, key=lambda x: x.get('edge', 0), reverse=True)[:effective_limit]
         
@@ -365,7 +365,7 @@ class BrainService:
 
     async def get_metrics(self, sport: str) -> dict:
         """Pull props and score them for dashboard metrics."""
-        from .props_service import get_all_props
+        from .prop_service import get_all_props
         props = await get_all_props(sport)
         
         # 2. Score them with real intelligence
@@ -397,8 +397,8 @@ class BrainService:
         Calculates the overall engine accuracy based on settled bets in the system.
         Fallbacks to a historical baseline (67.4%) if fewer than 50 bets are settled.
         """
-        from database import SessionLocal
-        from models.bets import BetLog, BetResult
+        from db.session import SessionLocal
+        from models.bet import BetLog, BetResult
         from sqlalchemy import select, func
         
         db = SessionLocal()

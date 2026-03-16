@@ -1,4 +1,4 @@
-from database import engine
+from db.session import engine
 from sqlalchemy import inspect
 
 def check():

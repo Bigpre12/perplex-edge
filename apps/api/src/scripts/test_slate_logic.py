@@ -1,6 +1,6 @@
 import asyncio
 from routers.slate import get_todays_slate
-from database import SessionLocal
+from db.session import SessionLocal
 
 async def test_slate():
     db = SessionLocal()

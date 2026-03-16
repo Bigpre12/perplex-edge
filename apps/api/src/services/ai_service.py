@@ -5,9 +5,9 @@ import httpx
 import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy import select
-from models.props import PropLine
-from models.bets import BetSlip, BetLog
-from models.users import User
+from models.prop import PropLine
+from models.bet import BetSlip, BetLog
+from models.user import User
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
 from sqlalchemy import select, insert
-from database import async_session_maker
+from db.session import async_session_maker
 from models.unified import UnifiedOdds
 from models.brain import SharpSignal
 from services.cache import cache

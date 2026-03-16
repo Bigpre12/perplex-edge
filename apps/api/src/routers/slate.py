@@ -4,10 +4,10 @@ from typing import Optional, List, Dict
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
-from database import get_db
-from models.props import PropLine
+from db.session import get_db
+from models.prop import PropLine
 import logging
-from app.services.real_sports_api import real_data_connector
+from real_data_connector import real_data_connector
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["slate"])

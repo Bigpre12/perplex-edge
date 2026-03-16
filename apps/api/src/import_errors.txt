@@ -1,3 +1,0 @@
-routers.whale.router: No module named 'services.odds_api_client'
-routers.ev_calculator.router: No module named 'services.odds_api_client'
-routers.brain_router.router: No module named 'services.odds_api_client'

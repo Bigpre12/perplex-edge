@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from models.props import Prop
+from models.prop import Prop
 from models.line_move import LineMove
 from models.injury import Injury
 

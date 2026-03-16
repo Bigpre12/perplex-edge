@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from db.session import get_db
-from models.props import Prop
+from models.prop import Prop
 from schemas.prop import PropOut, PropsScoredResponse
 
 router = APIRouter()

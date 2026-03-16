@@ -1,5 +1,5 @@
 import asyncio
-from database import engine, Base
+from db.session import engine, Base
 import models # imports all models so they register with Base
 
 def init_db():

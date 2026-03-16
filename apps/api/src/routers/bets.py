@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.session import get_db
-from models.bets import Bet
+from models.bet import Bet
 from schemas.bet import BetOut, BetCreate
 
 router = APIRouter()

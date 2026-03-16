@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 import stripe, os
-from database import get_db
+from db.session import get_db
 from sqlalchemy.orm import Session
-from config import settings
+from core.config import settings
 from common_deps import get_db, require_elite
 
 router = APIRouter(prefix="/stripe", tags=["Stripe Monetization"])
@@ -67,7 +67,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         user_id = session.get('client_reference_id')
         customer_email = session.get('customer_details', {}).get('email')
         
-        from models.users import User
+        from models.user import User
         from sqlalchemy import update, select
 
         # Search for user to update

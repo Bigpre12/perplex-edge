@@ -1,8 +1,8 @@
 class AsyncSession: pass
 from sqlalchemy import select, desc
 from models.social import SharedIntel
-from models.bets import BetSlip
-from models.users import User
+from models.bet import BetSlip
+from models.user import User
 from typing import List, Optional
 
 class SocialService:

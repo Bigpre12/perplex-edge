@@ -1,6 +1,6 @@
 # apps/api/src/celery_app.py
 from celery import Celery
-from config import settings
+from core.config import settings
 
 celery_app = Celery(
     "lucrix_worker",

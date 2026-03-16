@@ -2,7 +2,7 @@ class AsyncSession: pass
 # apps/api/src/routers/steam.py
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
-from database import get_async_db
+from db.session import get_async_db
 from services.steam_service import steam_service
 from datetime import datetime, timedelta, timezone
 

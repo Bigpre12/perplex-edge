@@ -1,7 +1,7 @@
 class AsyncSession: pass
 from sqlalchemy import select, desc, func
 from models.contests import Contest, ContestEntry
-from models.users import User
+from models.user import User
 from typing import List, Dict, Any
 import logging
 

@@ -3,11 +3,11 @@ import os
 import random
 from datetime import datetime, timezone
 
-# Add current dir to sys.path to import database and models
+# Add current dir to sys.path to import db.session as database and models
 sys.path.append(os.getcwd())
 
-from database import SessionLocal
-from models.props import PropLine
+from db.session import SessionLocal
+from models.prop import PropLine
 from sqlalchemy import select
 
 def settle_demo_props():

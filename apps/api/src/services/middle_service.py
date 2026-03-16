@@ -75,8 +75,8 @@ class MiddleService:
         """
         Scans the PropLine/PropOdds database for middle/arbitrage windows.
         """
-        from database import SessionLocal
-        from models.props import PropLine, PropOdds
+        from db.session import SessionLocal
+        from models.prop import PropLine, PropOdds
         from sqlalchemy import select
         from services.monte_carlo_service import american_to_implied
         

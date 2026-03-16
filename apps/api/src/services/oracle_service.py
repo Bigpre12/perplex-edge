@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, List, Optional, Dict, Any
 
-from config import settings
+from core.config import settings
 from services.props_service import props_service
 from services.steam_service import steam_service
 from services.whale_service import detect_whale_signals
@@ -43,7 +43,7 @@ class OracleService:
             injuries = await injury_service.get_injuries(sport)
             
             # 5. Fetch last 10 steam events from DB
-            from database import SessionLocal
+            from db.session import SessionLocal
             from models.analytical import SteamEvent
             from sqlalchemy import select, desc
             

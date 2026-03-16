@@ -3,9 +3,9 @@ import httpx
 import resend
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
-from database import async_session_maker
+from db.session import async_session_maker
 from sqlalchemy import select
-from models.users import User
+from models.user import User
 from models.brain import ModelPick
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "re_mock_api_key_only")

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, fields
 from enum import Enum
 from sqlalchemy import text, select
-from database import engine, async_session_maker
+from db.session import engine, async_session_maker
 from app_core.sport_constants import get_sport_id
 
 # Configure logging

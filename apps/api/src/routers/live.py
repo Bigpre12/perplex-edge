@@ -2,7 +2,7 @@ import httpx, logging
 from fastapi import APIRouter, Query
 from typing import Optional
 
-from config.sports_config import ALL_SPORTS, SPORT_DISPLAY
+from core.sports_config import ALL_SPORTS, SPORT_DISPLAY
 from real_data_connector import real_data_connector
 
 logger = logging.getLogger(__name__)
@@ -29,9 +29,9 @@ async def live_games(sport: str = "basketball_nba"):
     # 2. Database Fallback (if waterfall yields nothing)
     if not all_games:
         try:
-            from database import SessionLocal
+            from db.session import SessionLocal
             with SessionLocal() as db:
-                from models.props import GameLine
+                from models.prop import GameLine
                 # Get unique games from seeded data
                 seeded_games = db.query(GameLine).filter(GameLine.sport_key == sport).limit(10).all()
                 

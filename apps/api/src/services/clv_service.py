@@ -3,8 +3,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy import select, update, desc
-from models.props import PropLine, PropOdds
-from models.bets import BetLog # BetLog is in models.bets
+from models.prop import PropLine, PropOdds
+from models.bet import BetLog # BetLog is in models.bets
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 import asyncio
 from sqlalchemy import update
-from database import SessionLocal
-from models.props import PropLine
+from db.session import SessionLocal
+from models.prop import PropLine
 from datetime import datetime, timezone, timedelta
 
 async def create_synthetic_today_data():

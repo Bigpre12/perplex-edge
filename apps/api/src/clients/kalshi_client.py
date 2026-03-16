@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from .base_client import ResilientBaseClient
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

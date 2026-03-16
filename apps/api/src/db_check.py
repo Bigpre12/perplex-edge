@@ -1,6 +1,6 @@
 import asyncio
-from database import async_session_maker
-from models.props import PropLine, PropOdds
+from db.session import async_session_maker
+from models.prop import PropLine, PropOdds
 from sqlalchemy import select
 from datetime import datetime, timezone
 

@@ -1,7 +1,7 @@
 import asyncio
 from sqlalchemy import select
-from database import get_async_db
-from models.props import PropLine, GameLine
+from db.session import get_async_db
+from models.prop import PropLine, GameLine
 from datetime import datetime, timezone
 
 async def check():

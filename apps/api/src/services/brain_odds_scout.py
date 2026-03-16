@@ -3,8 +3,8 @@ import json
 from datetime import datetime, timezone
 from sqlalchemy import select, update, desc
 from sqlalchemy.orm import Session
-from database import async_session_maker
-from models.props import PropLine, PropOdds, GameLine, GameLineOdds
+from db.session import async_session_maker
+from models.prop import PropLine, PropOdds, GameLine, GameLineOdds
 from models.history import PropHistory
 
 logger = logging.getLogger(__name__)

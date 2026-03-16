@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 from clients.espn_client import espn_client
 from models.signals import InjuryImpact
 from sqlalchemy import select
-from database import async_session_maker
+from db.session import async_session_maker
 
 logger = logging.getLogger(__name__)
 

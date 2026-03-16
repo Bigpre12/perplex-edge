@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import select, and_
-from models.props import PropLine
+from models.prop import PropLine
 from models.contests import Contest # Assuming result data might be related or in a results table
 # Alternative: Use a mock result generator if actual result table isn't fully populated for all metrics
 from services.risk_service import risk_service

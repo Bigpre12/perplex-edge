@@ -1,5 +1,5 @@
 class AsyncSession: pass
-from database import async_session_maker
+from db.session import async_session_maker
 
 async def get_sqlmodel_session() -> AsyncSession:
     """

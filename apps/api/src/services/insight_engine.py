@@ -2,7 +2,7 @@ import logging
 from typing import Dict, List, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
-from models.props import PropLine
+from models.prop import PropLine
 
 logger = logging.getLogger(__name__)
 

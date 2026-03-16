@@ -1,9 +1,9 @@
 # backend/routers/analytics_router.py
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from database import get_db
-from models.bets import BetLog
-from models.props import PropLine
+from db.session import get_db
+from models.bet import BetLog
+from models.prop import PropLine
 from datetime import datetime, timedelta
 from collections import defaultdict
 from typing import Optional

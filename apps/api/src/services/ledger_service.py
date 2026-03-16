@@ -1,6 +1,6 @@
 class AsyncSession: pass
 from models import BetSlip, BetLog, BetLeg, BetResult
-from models.users import User
+from models.user import User
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 from typing import List
@@ -47,7 +47,7 @@ class LedgerService:
 
     async def get_user_stats(self, db: AsyncSession, user_id: str):
         """Calculate ROI, Win Rate, Heatmaps, and Risk/Reward data."""
-        from models.props import PropLine
+        from models.prop import PropLine
         
         # 1. Fetch all slips for the user
         stmt = select(BetSlip).where(BetSlip.user_id == user_id).options(selectinload(BetSlip.legs))

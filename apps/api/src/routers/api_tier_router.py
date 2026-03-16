@@ -2,9 +2,9 @@
 # White-label/developer API with token auth and rate limiting
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
-from database import get_db
-from models.props import PropLine
-from models.users import APIKey
+from db.session import get_db
+from models.prop import PropLine
+from models.user import APIKey
 from datetime import datetime, timedelta
 from typing import Optional
 

@@ -5,8 +5,8 @@ import sys
 # Add src to path
 sys.path.append(os.getcwd())
 
-from database import async_session_maker
-from models.users import User
+from db.session import async_session_maker
+from models.user import User
 from sqlalchemy import select
 
 async def check():

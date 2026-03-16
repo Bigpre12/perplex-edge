@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
 from services.props_service import get_all_props
-from config.sports_config import SPORT_DISPLAY
+from core.sports_config import SPORT_DISPLAY
 from common_deps import get_user_tier, require_elite
 
 router = APIRouter(tags=["arbitrage"])

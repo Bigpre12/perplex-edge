@@ -4,7 +4,7 @@ import os
 sys.path.append('.')
 
 print("Testing database...", end=' ')
-import database
+import db.session as database
 print("✅ OK")
 
 print("Testing services.cache...", end=' ')

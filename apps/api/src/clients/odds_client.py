@@ -2,7 +2,7 @@ import logging
 import json
 from typing import List, Dict, Any, Optional
 from .base_client import ResilientBaseClient
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 from typing import List, Optional
-from config.sports_config import SPORT_MAP
-from app.services.odds_api_client import odds_api
+from core.sports_config import SPORT_MAP
+from services.odds_api_client import odds_api
 
 router = APIRouter(tags=["parlay"])
 

@@ -2,7 +2,7 @@ class AsyncSession: pass
 # backend/services/sharpmush_service.py
 # LOLA Smart Money — aggregate signal from top-performing community users
 from sqlalchemy import select, func
-from models.bets import BetLog
+from models.bet import BetLog
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 import logging

@@ -3,10 +3,10 @@ import logging
 from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from database import async_session_maker
-from models.bets import BetSlip, BetLog
-from models.props import LiveGameStat
-from models.users import PushSubscription
+from db.session import async_session_maker
+from models.bet import BetSlip, BetLog
+from models.prop import LiveGameStat
+from models.user import PushSubscription
 from services.push_service import push_service
 
 logger = logging.getLogger("live_tracker")

@@ -2,10 +2,10 @@
 import logging
 from typing import Optional, List, Dict
 from sqlalchemy import select
-from database import async_session_maker
+from db.session import async_session_maker
 from models.unified import UnifiedOdds
 from services.cache import cache
-from config.sports_config import SPORT_DISPLAY
+from core.sports_config import SPORT_DISPLAY
 
 logger = logging.getLogger(__name__)
 

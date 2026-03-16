@@ -28,7 +28,7 @@ except ImportError:
     logger.info("redis package not installed — using in-memory cache")
 
 
-from config import settings
+from core.config import settings
 
 class CacheManager:
     """Dual-mode cache: Redis (production) or in-memory dict (local dev)."""

@@ -1,4 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON
+from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, List
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, Column as SAColumn, func
 from sqlalchemy.sql import func
 from db.base import Base
 
@@ -77,4 +80,17 @@ class PlayerStats(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-__all__ = ["WhaleMove", "SteamEvent", "CLVRecord", "HitRateModel", "PlayerStats"]
+__all__ = ["WhaleMove", "SteamEvent", "CLVRecord", "HitRateModel", "PlayerStats", "NeuralEdge"]
+
+# --- Neural Engine Models (SQLModel) ---
+
+class NeuralEdge(SQLModel, table=True):
+    __tablename__ = "edges_v2"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    prop_id: int = Field(foreign_key="props_v2.id", index=True)
+    ev: float = Field(index=True)  # expected value
+    hit_rate: float = Field(index=True)  # % success
+    model_confidence: float = Field(default=0.0)
+    created_at: datetime = Field(sa_column=SAColumn(DateTime(timezone=True), server_default=func.now()))
+    
+    prop: "PropV2" = Relationship(back_populates="edges")

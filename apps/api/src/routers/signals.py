@@ -16,3 +16,6 @@ async def freshness(
     sport: str = Query("basketball_nba"),
 ):
     return {"sport": sport, "status": "fresh", "age_seconds": 0}
+
+# Alias for intel.py import
+get_signals = sharp_moves

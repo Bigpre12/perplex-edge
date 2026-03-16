@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 from sqlalchemy import text
-from database import async_session_maker
+from db.session import async_session_maker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

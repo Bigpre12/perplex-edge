@@ -11,7 +11,7 @@ async def diagnose():
     print("--- Starting Props Diagnosis ---")
     start_time = time.time()
     try:
-        from database import get_db
+        from db.session import get_db
         from services.props_service import get_props_by_sport
         
         db_gen = get_db()

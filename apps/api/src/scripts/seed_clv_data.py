@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv; load_dotenv()
 from datetime import datetime, timezone, timedelta
-from database import engine, SessionLocal
+from db.session import engine, SessionLocal
 from models.analytical import CLVRecord
 
 def seed_clv():

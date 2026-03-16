@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any, Callable
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from database import async_session_maker
+from db.session import async_session_maker
 from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO)

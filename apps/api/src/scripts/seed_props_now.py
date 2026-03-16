@@ -6,7 +6,7 @@ import httpx
 from datetime import datetime, timezone
 
 Path("data").mkdir(exist_ok=True)
-from database import engine, Base, SessionLocal
+from db.session import engine, Base, SessionLocal
 import models.users, models.props, models.brain
 from models.brain import ModelPick
 

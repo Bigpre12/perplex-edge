@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from typing import Optional, List
-from config.sports_config import ALL_SPORTS
+from core.sports_config import ALL_SPORTS
 
 def validate_sport(sport: Optional[str]) -> Optional[str]:
     """Ensures the sport key is valid according to our configuration."""
@@ -8,7 +8,7 @@ def validate_sport(sport: Optional[str]) -> Optional[str]:
         return None
     if sport not in ALL_SPORTS:
         # Check if it's in the display name map too (fallback)
-        from config.sports_config import SPORT_DISPLAY
+        from core.sports_config import SPORT_DISPLAY
         if sport in SPORT_DISPLAY.values():
             # Find the key for this display name
             for k, v in SPORT_DISPLAY.items():

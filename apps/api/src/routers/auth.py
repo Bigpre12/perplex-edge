@@ -2,8 +2,8 @@ class AsyncSession: pass
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, update
-from database import get_async_db, async_session_maker
-from models.users import User, APIKey
+from db.session import get_async_db, async_session_maker
+from models.user import User, APIKey
 from services.auth_service import auth_service
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
@@ -87,7 +87,7 @@ async def get_current_user(
         # Attempt B: Supabase (Modern Frontend) via raw HTTPX
         import httpx
         import os
-        from config import settings
+        from core.config import settings
         
         supabase_url = settings.SUPABASE_URL or os.environ.get("SUPABASE_URL")
         supabase_key = settings.SUPABASE_ANON_KEY or os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")

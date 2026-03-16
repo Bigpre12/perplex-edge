@@ -12,7 +12,7 @@ def fix_file(file_path):
 
     # Add sqlalchemy imports at the top
     if "from sqlalchemy import text" not in content:
-        content = content.replace("import asyncpg", "import asyncpg\nfrom sqlalchemy import text\nfrom database import async_session_maker")
+        content = content.replace("import asyncpg", "import asyncpg\nfrom sqlalchemy import text\nfrom db.session import async_session_maker")
 
     # Fix get_system_performance query mappings
     # result = await conn.fetchrow(...) -> res = await conn.execute(text(...)); row = res.mappings().first()

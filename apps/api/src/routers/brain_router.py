@@ -1,11 +1,17 @@
 class AsyncSession: pass
 from fastapi import APIRouter, HTTPException, Depends
-from database import get_async_db
+from db.session import get_async_db
 from models.brain import BrainSystemState, ModelPick
 try:
     from app.app_core.state import state
 except ImportError:
-    from app_core.state import state
+    try:
+        from app_core.state import state
+    except ImportError:
+        class _State:
+            system_online = True
+            last_updated = None
+        state = _State()
 from datetime import datetime, timezone
 import logging
 

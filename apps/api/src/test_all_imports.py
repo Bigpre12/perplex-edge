@@ -3,8 +3,8 @@ import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 
 modules = [
-    ("config", "from config import settings"),
-    ("database", "from database import engine, Base, async_session_maker"),
+    ("config", "from core.config import settings"),
+    ("database", "from db.session import engine, Base, async_session_maker"),
     ("models.users", "import models.users"),
     ("models.props", "import models.props"),
     ("models.brain", "import models.brain"),

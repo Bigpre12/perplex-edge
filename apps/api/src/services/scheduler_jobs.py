@@ -4,7 +4,7 @@ import httpx
 import os
 from datetime import datetime, timezone, timedelta
 from app.services.odds_api_client import odds_api
-from config.sports_config import SPORT_MAP
+from core.sports_config import SPORT_MAP
 
 logger = logging.getLogger(__name__)
 

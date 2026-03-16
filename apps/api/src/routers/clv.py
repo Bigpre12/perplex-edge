@@ -4,11 +4,11 @@ from fastapi import APIRouter, Query, Depends, Security
 from common_deps import require_pro, require_elite
 from typing import Optional
 import os, httpx, asyncio
-from config.sports_config import ALL_SPORTS, SPORT_DISPLAY
-from database import get_db_connection
+from core.sports_config import ALL_SPORTS, SPORT_DISPLAY
+from db.session import get_db_connection, SessionLocal
 
 router = APIRouter(tags=["clv"])
-from app.services.odds_api_client import odds_api
+from services.odds_api_client import odds_api
 
 async def fetch_historical_odds(sport: str, event_id: str) -> dict:
     """Fetch historical odds using the managed client."""
@@ -22,7 +22,7 @@ async def track_clv(sport: str = Query("basketball_nba")):
     Returns live CLV tracking data from local DB (fallback to Supabase).
     """
     try:
-        from database import SessionLocal
+        from db.session import SessionLocal
         from models.analytical import CLVRecord
         from sqlalchemy import desc
         
@@ -147,8 +147,8 @@ async def get_clv_leaderboard(
     """Top picks ranked by CLV percentage."""
     # This logic is adapted from legacy analysis.py _generate_sample_clv_picks
     from services.clv_service import clv_service
-    from database import async_session_maker
-    from models.props import PropLine, PropHistory
+    from db.session import async_session_maker
+    from models.prop import PropLine, PropHistory
     from sqlalchemy import select
     
     async with async_session_maker() as db:

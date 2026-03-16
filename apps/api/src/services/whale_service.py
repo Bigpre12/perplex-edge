@@ -3,8 +3,8 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Optional
 from sqlalchemy import select, desc
-from database import async_session_maker
-from models.props import PropLine, PropOdds
+from db.session import async_session_maker
+from models.prop import PropLine, PropOdds
 from models import WhaleMove
 
 logger = logging.getLogger(__name__)

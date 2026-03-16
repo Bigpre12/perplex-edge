@@ -5,7 +5,7 @@ from typing import List, Dict
 from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from database import async_session_maker
+from db.session import async_session_maker
 from models.unified import UnifiedOdds, UnifiedEVSignal
 from routers.ws_ev import notify_ev_update
 

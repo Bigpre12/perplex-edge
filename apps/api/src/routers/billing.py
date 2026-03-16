@@ -5,11 +5,11 @@ import stripe
 import logging
 from sqlalchemy import select, update
 
-from database import get_async_db
-from models.users import User
+from db.session import get_async_db
+from models.user import User
 from services.stripe_service import stripe_service
 from routers.auth import get_current_user
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Billing"])

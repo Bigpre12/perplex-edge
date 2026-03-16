@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 from sqlalchemy import select, insert
-from database import async_session_maker
+from db.session import async_session_maker
 from models.signals import InjuryImpact
 from services.injury_service import injury_service
 

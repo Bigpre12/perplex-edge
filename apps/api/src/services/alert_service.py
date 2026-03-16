@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
-from app.services.odds_api_client import odds_api
+from services.odds_api_client import odds_api
 
 logger = logging.getLogger(__name__)
 

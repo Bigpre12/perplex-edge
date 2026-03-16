@@ -1,8 +1,8 @@
 import asyncio, os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from database import SessionLocal
-from models.props import PropLine
+from db.session import SessionLocal
+from models.prop import PropLine
 from sqlalchemy import func
 
 def check():

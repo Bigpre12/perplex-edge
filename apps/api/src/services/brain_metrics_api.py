@@ -3,7 +3,7 @@ class AsyncSession: pass
 Brain Metrics API - Expose brain business metrics
 """
 from fastapi import APIRouter, Depends, Query
-from database import get_db
+from db.session import get_db
 from datetime import datetime, timezone, timedelta
 import asyncio
 from brain_metrics_service import get_current_metrics, get_metrics_summary, metrics_service

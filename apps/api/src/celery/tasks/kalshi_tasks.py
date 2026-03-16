@@ -4,7 +4,7 @@ import random
 from services.kalshi_service import kalshi_service
 from services.kalshi_ev import scan_all_ev_signals
 from services.kalshi_arb import detect_arb_opportunities
-from database import SessionLocal
+from db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 

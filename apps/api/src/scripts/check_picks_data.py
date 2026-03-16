@@ -1,9 +1,9 @@
 import asyncio
 from sqlalchemy import select
-from database import SessionLocal, get_async_db
+from db.session import SessionLocal, get_async_db
 from models.brain import ModelPick
 
-from models.props import PropLine
+from models.prop import PropLine
 from datetime import datetime, timezone
 
 async def check_data():

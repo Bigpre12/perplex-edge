@@ -1,5 +1,5 @@
 # apps/api/src/workers/celery_schedule.py
-from config.sports_config import HIGH_FREQUENCY, MEDIUM_FREQUENCY, LOW_FREQUENCY
+from core.sports_config import HIGH_FREQUENCY, MEDIUM_FREQUENCY, LOW_FREQUENCY
 
 CELERYBEAT_SCHEDULE = {
     **{

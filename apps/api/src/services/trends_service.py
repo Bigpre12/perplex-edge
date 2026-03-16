@@ -33,8 +33,8 @@ MOCK_PLAYERS_BY_SPORT = {
 
 logger = logging.getLogger(__name__)
 
-from database import async_session_maker
-from models.props import PropLine
+from db.session import async_session_maker
+from models.prop import PropLine
 from sqlalchemy import select, and_
 
 logger = logging.getLogger(__name__)

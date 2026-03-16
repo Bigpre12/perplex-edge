@@ -1,12 +1,12 @@
 class AsyncSession: pass
 from fastapi import Header, HTTPException, Depends
 from services.auth_service import auth_service
-from database import get_async_db, get_db
-from models.users import UserOverride
+from db.session import get_async_db, get_db
+from models.user import UserOverride
 from sqlalchemy.future import select
 from datetime import datetime, timezone
 import os
-from config import settings
+from core.config import settings
 
 OWNER_EMAILS = os.getenv("OWNER_EMAILS", "").split(",")
 

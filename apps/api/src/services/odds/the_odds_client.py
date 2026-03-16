@@ -14,7 +14,7 @@ else:
     # Fallback to absolute path search if find_dotenv fails
     load_dotenv()
 
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@
 import asyncio
 import os
 from sqlalchemy import select, func
-from database import async_session_maker
+from db.session import async_session_maker
 from models.unified import UnifiedOdds, UnifiedEVSignal
 
 async def check():

@@ -9,8 +9,8 @@ sys.path.append(os.path.join(os.getcwd(), "src"))
 # Load .env from apps/api/.env
 load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
 
-from database import SessionLocal, engine
-from models.props import PropLine, PropOdds
+from db.session import SessionLocal, engine
+from models.prop import PropLine, PropOdds
 from models.history import PropHistory
 from models.brain import ModelPick
 

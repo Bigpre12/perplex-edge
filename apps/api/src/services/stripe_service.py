@@ -1,7 +1,7 @@
 import stripe
 import os
 import logging
-from config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

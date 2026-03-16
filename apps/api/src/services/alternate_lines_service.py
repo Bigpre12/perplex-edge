@@ -2,7 +2,7 @@
 # Pulls alternate lines from The Odds API and stores in PropOdds with alt_line=True
 import httpx, os
 from datetime import datetime
-from database import SessionLocal
+from db.session import SessionLocal
 from models import PropOdds
 
 from app.services.odds_api_client import odds_api

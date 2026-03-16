@@ -8,9 +8,9 @@ import sys
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from models.users import User
+from models.user import User
 from services.auth_service import auth_service
-from config import settings
+from core.config import settings
 
 async def provision():
     # Standard SQLite path for the app

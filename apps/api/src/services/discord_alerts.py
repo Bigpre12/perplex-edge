@@ -3,7 +3,7 @@ import os
 import logging
 from typing import Dict, Any
 from services.insight_engine import get_top_edges
-from database import SessionLocal
+from db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL")

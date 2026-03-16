@@ -118,7 +118,7 @@ async def fetch_props_for_sport(sport_id: int) -> list:
             return result
 
     # 🔓 LOCK REMOVAL: Fetch more events in dev mode
-    from config import settings
+    from core.config import settings
     event_limit = len(imminent_events) if settings.DEVELOPMENT_MODE else 5
     tasks = [fetch_event_props(e['id']) for e in imminent_events[:event_limit]]
     results = await asyncio.gather(*tasks)

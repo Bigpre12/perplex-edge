@@ -6,8 +6,8 @@ from datetime import datetime, timezone, timedelta
 # Add src to path
 sys.path.append(os.getcwd())
 
-from database import async_session_maker
-from models.props import PropLine, PropOdds
+from db.session import async_session_maker
+from models.prop import PropLine, PropOdds
 from sqlalchemy import select
 
 async def check():

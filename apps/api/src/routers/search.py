@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_
-from database import get_async_db
-from models.props import PropLine
+from db.session import get_async_db
+from models.prop import PropLine
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 

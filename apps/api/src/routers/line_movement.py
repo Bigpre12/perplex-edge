@@ -19,7 +19,7 @@ async def get_line_movement(
     Fetches current odds and compares against stored snapshot to show movement.
     Uses httpx for Supabase REST calls to avoid package dependency issues.
     """
-    from config.sports_config import SPORT_MAP
+    from core.sports_config import SPORT_MAP
     api_sport = SPORT_MAP.get(sport, sport)
     current_events = await odds_api.get_live_odds(api_sport, markets=market)
     if not current_events:
@@ -92,9 +92,9 @@ async def get_line_movement(
     if not movement_data:
         # High-Impact Fallback for Line Movement Scanner
         try:
-            from database import SessionLocal
+            from db.session import SessionLocal
             with SessionLocal() as db:
-                from models.props import PropLine
+                from models.prop import PropLine
                 import random
                 # Grab some seeded proplines and manifest movement
                 seeded = db.query(PropLine).filter(PropLine.sport_key == sport).limit(10).all()
