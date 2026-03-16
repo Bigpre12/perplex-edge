@@ -51,7 +51,7 @@
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_trades = mock_trades
         if season:
@@ -60,11 +60,11 @@
             filtered_trades = [t for t in filtered_trades if t['source'] == source]
         if applied is not None:
             filtered_trades = [t for t in filtered_trades if t['is_applied'] == applied]
-        
+
         # Apply sorting
         if recent:
             filtered_trades = sorted(filtered_trades, key=lambda x: x['trade_date'], reverse=True)
-        
+
         return {
             "trades": filtered_trades[:limit],
             "total": len(filtered_trades),
@@ -78,7 +78,7 @@
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock trades data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -176,9 +176,9 @@ async def get_trades_statistics(days: int = Query(365, description="Days of data
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock trades statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -217,7 +217,7 @@ async def get_trades_by_season(season: int):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
             }
         ]
-        
+
         return {
             "season": season,
             "trades": mock_season_trades,
@@ -225,7 +225,7 @@ async def get_trades_by_season(season: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trades for season {season}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -264,7 +264,7 @@ async def get_trades_by_source(source: str):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=35)).isoformat()
             }
         ]
-        
+
         return {
             "source": source,
             "trades": mock_source_trades,
@@ -272,7 +272,7 @@ async def get_trades_by_source(source: str):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trades from {source}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -311,14 +311,14 @@ async def get_applied_trades():
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
             }
         ]
-        
+
         return {
             "trades": mock_applied_trades,
             "total": len(mock_applied_trades),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock applied trades data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -356,14 +356,14 @@ async def get_pending_trades():
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()
             }
         ]
-        
+
         return {
             "trades": mock_pending_trades,
             "total": len(mock_pending_trades),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock pending trades data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -402,16 +402,16 @@ async def search_trades(query: str = Query(..., description="Search query"),
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=35)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['headline'].lower() or 
+                r for r in mock_results
+                if query_lower in r['headline'].lower() or
                    query_lower in r['description'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -420,7 +420,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -428,8 +428,6 @@ async def search_trades(query: str = Query(..., description="Search query"),
             "limit": limit,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # User Betting Tracking Endpoints
 @router.get("/user-bets")
@@ -611,7 +609,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
                 "updated_at": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_bets = mock_user_bets
         if sport:
@@ -620,11 +618,11 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
             filtered_bets = [b for b in filtered_bets if b['status'] == status]
         if sportsbook:
             filtered_bets = [b for b in filtered_bets if b['sportsbook'] == sportsbook]
-        
+
         # Apply sorting
         if recent:
             filtered_bets = sorted(filtered_bets, key=lambda x: x['placed_at'], reverse=True)
-        
+
         return {
             "user_bets": filtered_bets[:limit],
             "total": len(filtered_bets),
@@ -638,7 +636,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock user bets data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -830,9 +828,9 @@ async def get_user_bets_statistics(days: int = Query(30, description="Days of da
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock user bets statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -895,7 +893,7 @@ async def get_user_bets_by_sport(sport_id: int):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=1, hours=22)).isoformat()
             }
         ]
-        
+
         return {
             "sport_id": sport_id,
             "user_bets": mock_sport_bets,
@@ -903,7 +901,7 @@ async def get_user_bets_by_sport(sport_id: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock user bets for sport {sport_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -966,7 +964,7 @@ async def get_user_bets_by_status(status: str):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=3, hours=21)).isoformat()
             }
         ]
-        
+
         return {
             "status": status,
             "user_bets": mock_status_bets,
@@ -974,7 +972,7 @@ async def get_user_bets_by_status(status: str):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock user bets with status {status}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1037,7 +1035,7 @@ async def get_user_bets_by_sportsbook(sportsbook: str):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=5, hours=23)).isoformat()
             }
         ]
-        
+
         return {
             "sportsbook": sportsbook,
             "user_bets": mock_sportsbook_bets,
@@ -1045,7 +1043,7 @@ async def get_user_bets_by_sportsbook(sportsbook: str):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock user bets from {sportsbook}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1109,17 +1107,17 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=3, hours=21)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['market_type'].lower() or 
-                   query_lower in r['side'].lower() or 
+                r for r in mock_results
+                if query_lower in r['market_type'].lower() or
+                   query_lower in r['side'].lower() or
                    (r['notes'] and query_lower in r['notes'].lower())
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -1128,7 +1126,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1171,7 +1169,7 @@ async def get_brain_anomalies():
                 "resolution_method": None
             }
         ]
-        
+
         return {
             "anomalies": mock_anomalies,
             "total": len(mock_anomalies),
@@ -1180,7 +1178,7 @@ async def get_brain_anomalies():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock anomaly data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1206,7 +1204,7 @@ async def get_brain_anomalies_summary():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock anomaly summary"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1256,14 +1254,14 @@ async def get_working_parlays_immediate(
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         return {
             'parlays': mock_parlays[:limit],
             'total': len(mock_parlays),
             'sport_id': sport_id,
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             'parlays': [],
@@ -1355,7 +1353,7 @@ async def get_super_bowl_props_immediate():
                 'generated_at': datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         return {
             'items': super_bowl_props,
             'total': len(super_bowl_props),
@@ -1394,7 +1392,7 @@ async def get_brain_metrics(db = None):
             },
             "note": "Mock brain metrics data"
         }
-            
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1421,15 +1419,13 @@ async def get_brain_metrics_summary(
             "avg_disk_usage": 0.53,
             "note": "Mock brain metrics summary"
         }
-            
+
     except Exception as e:
         return {
             "error": str(e),
             "period_hours": hours,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Brain Decision Tracking Endpoints
 @router.get("/brain-decisions")
@@ -1489,7 +1485,7 @@ async def get_brain_decisions(limit: int = Query(50, description="Number of deci
                 "correlation_id": "234e5678-e89b-12d3-a456-426614174001"
             }
         ]
-        
+
         return {
             "decisions": mock_decisions[:limit],
             "total": len(mock_decisions),
@@ -1497,7 +1493,7 @@ async def get_brain_decisions(limit: int = Query(50, description="Number of deci
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain decisions data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1536,14 +1532,12 @@ async def get_brain_decisions_performance(hours: int = Query(24, description="Ho
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock decision performance data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Brain Healing System Endpoints
 @router.get("/brain-healing-actions")
@@ -1638,7 +1632,7 @@ async def get_brain_healing_actions(limit: int = Query(50, description="Number o
                 "consecutive_failures": 0
             }
         ]
-        
+
         return {
             "actions": mock_actions[:limit],
             "total": len(mock_actions),
@@ -1646,7 +1640,7 @@ async def get_brain_healing_actions(limit: int = Query(50, description="Number o
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain healing actions data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1704,7 +1698,7 @@ async def get_brain_healing_performance(hours: int = Query(24, description="Hour
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock healing performance data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1746,7 +1740,7 @@ async def get_brain_healing_status():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock healing status data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1759,7 +1753,7 @@ async def run_healing_cycle():
     try:
         # Simulate running a healing cycle
         await asyncio.sleep(2)  # Simulate work
-        
+
         return {
             "status": "completed",
             "triggers_found": 0,
@@ -1770,7 +1764,7 @@ async def run_healing_cycle():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock healing cycle completed - no triggers detected"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -1785,9 +1779,9 @@ async def trigger_healing_action(healing_data: dict):
         # Simulate triggering a healing action
         action = healing_data.get("action", "scale_resources")
         target = healing_data.get("target", "database_connection")
-        
+
         await asyncio.sleep(1)  # Simulate work
-        
+
         return {
             "status": "triggered",
             "action": action,
@@ -1797,15 +1791,13 @@ async def trigger_healing_action(healing_data: dict):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock healing action triggered: {action} for {target}"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Brain Health Monitoring Endpoints
 @router.get("/brain-health-status")
@@ -1861,7 +1853,7 @@ async def get_brain_health_status():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain health status data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1905,7 +1897,7 @@ async def get_brain_health_checks(limit: int = Query(50, description="Number of 
                 "error_count": 0
             }
         ]
-        
+
         return {
             "checks": mock_checks[:limit],
             "total": len(mock_checks),
@@ -1913,7 +1905,7 @@ async def get_brain_health_checks(limit: int = Query(50, description="Number of 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain health checks data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1937,7 +1929,7 @@ async def get_brain_health_performance(hours: int = Query(24, description="Hours
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain health performance data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -1963,14 +1955,14 @@ async def run_health_check(component: str = Query(..., description="Component to
                 "health_score": 0.92
             }
         }
-        
+
         result = mock_results.get(component, {
             "status": "error",
             "message": f"Unknown component: {component}",
             "response_time_ms": 0,
             "health_score": 0.0
         })
-        
+
         return {
             "status": "completed",
             "component": component,
@@ -1978,7 +1970,7 @@ async def run_health_check(component: str = Query(..., description="Component to
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock health check completed for {component}"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -2002,15 +1994,13 @@ async def run_all_health_checks():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock all health checks completed"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Brain Learning System Endpoints
 @router.get("/brain-learning-events")
@@ -2085,7 +2075,7 @@ async def get_brain_learning_events(limit: int = Query(50, description="Number o
                 "validation_result": "validated"
             }
         ]
-        
+
         return {
             "events": mock_events[:limit],
             "total": len(mock_events),
@@ -2093,7 +2083,7 @@ async def get_brain_learning_events(limit: int = Query(50, description="Number o
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain learning events data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2154,7 +2144,7 @@ async def get_brain_learning_performance(hours: int = Query(24, description="Hou
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain learning performance data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2196,7 +2186,7 @@ async def get_brain_learning_status():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain learning status data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2209,7 +2199,7 @@ async def run_learning_cycle():
     try:
         # Simulate running a learning cycle
         await asyncio.sleep(3)  # Simulate work
-        
+
         return {
             "status": "completed",
             "events_generated": 12,
@@ -2220,7 +2210,7 @@ async def run_learning_cycle():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock learning cycle completed with 12 learning events"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -2234,7 +2224,7 @@ async def validate_learning_event(learning_id: str = Query(..., description="Lea
     try:
         # Simulate validation
         await asyncio.sleep(1)  # Simulate validation work
-        
+
         return {
             "status": "validated",
             "learning_id": learning_id,
@@ -2245,7 +2235,7 @@ async def validate_learning_event(learning_id: str = Query(..., description="Lea
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock validation completed for {learning_id}"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -2260,7 +2250,7 @@ async def record_learning_event(learning_data: dict):
     try:
         # Simulate recording a learning event
         learning_id = f"learning-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
-        
+
         return {
             "status": "recorded",
             "learning_id": learning_id,
@@ -2272,15 +2262,13 @@ async def record_learning_event(learning_data: dict):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock learning event recorded"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Brain Calibration Analysis Endpoints
 @router.get("/brain-calibration-summary")
@@ -2357,9 +2345,9 @@ async def get_brain_calibration_summary(sport_id: int = Query(32, description="S
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain calibration summary data"
         }
-        
+
         return mock_summary
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2422,9 +2410,9 @@ async def run_brain_calibration_analysis(sport_id: int = Query(32, description="
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock brain calibration analysis data"
         }
-        
+
         return mock_analysis
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2466,9 +2454,9 @@ async def get_brain_calibration_comparison(days: int = Query(30, description="Da
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock cross-sport calibration comparison data"
         }
-        
+
         return mock_comparison
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2500,7 +2488,7 @@ async def get_brain_calibration_issues(sport_id: int = Query(32, description="Sp
                 "recommendation": "Apply probability scaling function"
             }
         ]
-        
+
         return {
             "sport_id": sport_id,
             "issues": mock_issues,
@@ -2511,7 +2499,7 @@ async def get_brain_calibration_issues(sport_id: int = Query(32, description="Sp
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock calibration issues data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2549,7 +2537,7 @@ async def get_brain_calibration_improvements(sport_id: int = Query(32, descripti
                 "implementation": "Adjust predicted probabilities for 70-75% range"
             }
         ]
-        
+
         return {
             "sport_id": sport_id,
             "suggestions": mock_suggestions,
@@ -2560,14 +2548,12 @@ async def get_brain_calibration_improvements(sport_id: int = Query(32, descripti
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock calibration improvement suggestions data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Game Results Tracking Endpoints
 @router.get("/game-results")
@@ -2657,7 +2643,7 @@ async def get_game_results(date: str = Query(None, description="Date to filter (
                 "updated_at": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
             }
         ]
-        
+
         return {
             "results": mock_results,
             "total": len(mock_results),
@@ -2666,7 +2652,7 @@ async def get_game_results(date: str = Query(None, description="Date to filter (
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock game results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2704,14 +2690,14 @@ async def get_pending_games():
                 "updated_at": (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
             }
         ]
-        
+
         return {
             "pending_games": mock_pending,
             "total": len(mock_pending),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock pending games data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2760,9 +2746,9 @@ async def get_game_statistics(days: int = Query(30, description="Days of data to
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock game statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2812,9 +2798,9 @@ async def get_game_result_detail(game_id: int):
                 }
             }
         }
-        
+
         return mock_detail
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2827,16 +2813,16 @@ async def settle_game_results(settlement_data: dict):
     try:
         # Simulate settling game results
         games_to_settle = settlement_data.get("games", [])
-        
+
         settled_count = 0
         failed_count = 0
         settlement_results = []
-        
+
         for game in games_to_settle:
             game_id = game.get("game_id")
             home_score = game.get("home_score")
             away_score = game.get("away_score")
-            
+
             if not all([game_id, home_score is not None, away_score is not None]):
                 failed_count += 1
                 settlement_results.append({
@@ -2845,7 +2831,7 @@ async def settle_game_results(settlement_data: dict):
                     "error": "Missing required fields"
                 })
                 continue
-            
+
             # Simulate successful settlement
             settled_count += 1
             settlement_results.append({
@@ -2855,7 +2841,7 @@ async def settle_game_results(settlement_data: dict):
                 "away_score": away_score,
                 "settled_at": datetime.now(timezone.utc).isoformat()
             })
-        
+
         return {
             "total_processed": len(games_to_settle),
             "settled_count": settled_count,
@@ -2864,7 +2850,7 @@ async def settle_game_results(settlement_data: dict):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock settlement completed for {settled_count} games"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -2878,14 +2864,14 @@ async def create_game_result(game_data: dict):
         # Simulate creating a game result
         game_id = game_data.get("game_id")
         external_fixture_id = game_data.get("external_fixture_id")
-        
+
         if not all([game_id, external_fixture_id]):
             return {
                 "status": "error",
                 "error": "Missing required fields: game_id, external_fixture_id",
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         return {
             "status": "created",
             "game_id": game_id,
@@ -2896,7 +2882,7 @@ async def create_game_result(game_data: dict):
             "created_at": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock game result created for {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -2912,14 +2898,14 @@ async def update_game_result(game_id: int, result_data: dict):
         home_score = result_data.get("home_score")
         away_score = result_data.get("away_score")
         period_scores = result_data.get("period_scores", {})
-        
+
         if not all([home_score is not None, away_score is not None]):
             return {
                 "status": "error",
                 "error": "Missing required fields: home_score, away_score",
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         return {
             "status": "updated",
             "game_id": game_id,
@@ -2931,7 +2917,7 @@ async def update_game_result(game_id: int, result_data: dict):
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock game result updated for {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -2939,11 +2925,9 @@ async def update_game_result(game_id: int, result_data: dict):
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Games Management Endpoints
 @router.get("/games")
-async def get_games(sport_id: int = Query(None, description="Sport ID to filter"), 
+async def get_games(sport_id: int = Query(None, description="Sport ID to filter"),
                   status: str = Query(None, description="Game status to filter"),
                   start_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
                   end_date: str = Query(None, description="End date (YYYY-MM-DD)"),
@@ -3028,7 +3012,7 @@ async def get_games(sport_id: int = Query(None, description="Sport ID to filter"
                 "season_id": 2026
             }
         ]
-        
+
         # Apply filters
         filtered_games = mock_games
         if sport_id:
@@ -3039,7 +3023,7 @@ async def get_games(sport_id: int = Query(None, description="Sport ID to filter"
             filtered_games = [g for g in filtered_games if g['start_time'][:10] >= start_date]
         if end_date:
             filtered_games = [g for g in filtered_games if g['start_time'][:10] <= end_date]
-        
+
         return {
             "games": filtered_games[:limit],
             "total": len(filtered_games),
@@ -3053,7 +3037,7 @@ async def get_games(sport_id: int = Query(None, description="Sport ID to filter"
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock games data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3061,7 +3045,7 @@ async def get_games(sport_id: int = Query(None, description="Sport ID to filter"
         }
 
 @router.get("/games/upcoming")
-async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to look"), 
+async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to look"),
                           sport_id: int = Query(None, description="Sport ID to filter")):
     """Get upcoming games"""
     try:
@@ -3113,11 +3097,11 @@ async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to 
                 "season_id": 2026
             }
         ]
-        
+
         # Apply sport filter
         if sport_id:
             mock_upcoming = [g for g in mock_upcoming if g['sport_id'] == sport_id]
-        
+
         return {
             "upcoming_games": mock_upcoming,
             "total": len(mock_upcoming),
@@ -3126,7 +3110,7 @@ async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock upcoming games data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3134,7 +3118,7 @@ async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to 
         }
 
 @router.get("/games/recent")
-async def get_recent_games(hours: int = Query(24, description="Hours back to look"), 
+async def get_recent_games(hours: int = Query(24, description="Hours back to look"),
                         sport_id: int = Query(None, description="Sport ID to filter")):
     """Get recent games"""
     try:
@@ -3186,11 +3170,11 @@ async def get_recent_games(hours: int = Query(24, description="Hours back to loo
                 "season_id": 2026
             }
         ]
-        
+
         # Apply sport filter
         if sport_id:
             mock_recent = [g for g in mock_recent if g['sport_id'] == sport_id]
-        
+
         return {
             "recent_games": mock_recent,
             "total": len(mock_recent),
@@ -3199,7 +3183,7 @@ async def get_recent_games(hours: int = Query(24, description="Hours back to loo
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock recent games data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3253,9 +3237,9 @@ async def get_games_statistics(days: int = Query(30, description="Days of data t
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock games statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3263,7 +3247,7 @@ async def get_games_statistics(days: int = Query(30, description="Days of data t
         }
 
 @router.get("/games/schedule")
-async def get_game_schedule(start_date: str = Query(..., description="Start date (YYYY-MM-DD)"), 
+async def get_game_schedule(start_date: str = Query(..., description="Start date (YYYY-MM-DD)"),
                              end_date: str = Query(..., description="End date (YYYY-MM-DD)"),
                              sport_id: int = Query(None, description="Sport ID to filter")):
     """Get game schedule for date range"""
@@ -3316,14 +3300,14 @@ async def get_game_schedule(start_date: str = Query(..., description="Start date
                 "season_id": 2026
             }
         ]
-        
+
         # Apply date and sport filters
         if sport_id:
             mock_schedule = [g for g in mock_schedule if g['sport_id'] == sport_id]
-        
+
         if start_date and end_date:
             mock_schedule = [g for g in mock_schedule if start_date <= g['start_time'][:10] <= end_date]
-        
+
         return {
             "schedule": mock_schedule,
             "start_date": start_date,
@@ -3333,7 +3317,7 @@ async def get_game_schedule(start_date: str = Query(..., description="Start date
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock game schedule data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3380,9 +3364,9 @@ async def get_game_detail(game_id: int):
                 }
             }
         }
-        
+
         return mock_detail
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3399,14 +3383,14 @@ async def create_game(game_data: dict):
         home_team_id = game_data.get("home_team_id")
         away_team_id = game_data.get("away_team_id")
         start_time = game_data.get("start_time")
-        
+
         if not all([game_id, external_game_id, home_team_id, away_team_id, start_time]):
             return {
                 "status": "error",
                 "error": "Missing required fields: game_id, external_game_id, home_team_id, away_team_id, start_time",
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         return {
             "status": "created",
             "game_id": game_id,
@@ -3418,7 +3402,7 @@ async def create_game(game_data: dict):
             "created_at": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock game created for {external_game_id}"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -3432,14 +3416,14 @@ async def update_game_status(game_id: int, status: str = Query(..., description=
     try:
         # Simulate updating game status
         valid_statuses = ["scheduled", "in_progress", "final", "cancelled", "postponed", "suspended"]
-        
+
         if status not in valid_statuses:
             return {
                 "status": "error",
                 "error": f"Invalid status: {status}. Valid statuses: {', '.join(valid_statuses)}",
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         return {
             "status": "updated",
             "game_id": game_id,
@@ -3447,7 +3431,7 @@ async def update_game_status(game_id: int, status: str = Query(..., description=
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock game {game_id} status updated to {status}"
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -3456,7 +3440,7 @@ async def update_game_status(game_id: int, status: str = Query(..., description=
         }
 
 @router.get("/games/search")
-async def search_games(query: str = Query(..., description="Search query"), 
+async def search_games(query: str = Query(..., description="Search query"),
                         sport_id: int = Query(None, description="Sport ID to filter"),
                         limit: int = Query(20, description="Number of results to return")):
     """Search games by external ID or team names"""
@@ -3479,21 +3463,21 @@ async def search_games(query: str = Query(..., description="Search query"),
                 "season_id": 2026
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                g for g in mock_results 
-                if query_lower in g['external_game_id'].lower() or 
-                   query_lower in g['home_team_name'].lower() or 
+                g for g in mock_results
+                if query_lower in g['external_game_id'].lower() or
+                   query_lower in g['home_team_name'].lower() or
                    query_lower in g['away_team_name'].lower()
             ]
-        
+
         # Apply sport filter
         if sport_id:
             mock_results = [g for g in mock_results if g['sport_id'] == sport_id]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -3503,18 +3487,16 @@ async def search_games(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Historical Odds NCAAB Endpoints
 @router.get("/historical-odds-ncaab")
-async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game ID to filter"), 
+async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game ID to filter"),
                                   bookmaker: str = Query(None, description="Bookmaker to filter"),
                                   team: str = Query(None, description="Team name to filter"),
                                   days: int = Query(30, description="Days of data to return"),
@@ -3604,7 +3586,7 @@ async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=4, hours=12)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_odds = mock_odds
         if game_id:
@@ -3613,7 +3595,7 @@ async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game
             filtered_odds = [o for o in filtered_odds if o['bookmaker'].lower() == bookmaker.lower()]
         if team:
             filtered_odds = [o for o in filtered_odds if team.lower() in o['home_team'].lower() or team.lower() in o['away_team'].lower()]
-        
+
         return {
             "odds": filtered_odds[:limit],
             "total": len(filtered_odds),
@@ -3627,7 +3609,7 @@ async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock NCAA basketball historical odds data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3721,7 +3703,7 @@ async def get_odds_by_game(game_id: int):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=7, hours=6)).isoformat()
             }
         ]
-        
+
         return {
             "game_id": game_id,
             "home_team": "Duke Blue Devils",
@@ -3732,7 +3714,7 @@ async def get_odds_by_game(game_id: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock odds history for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3811,7 +3793,7 @@ async def get_odds_movements(game_id: int):
                 "prev_draw_odds": None
             }
         ]
-        
+
         return {
             "game_id": game_id,
             "movements": mock_movements,
@@ -3820,7 +3802,7 @@ async def get_odds_movements(game_id: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock odds movements for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -3874,11 +3856,11 @@ async def get_bookmaker_comparison(game_id: int):
                 "result": "home_win"
             }
         ]
-        
+
         # Calculate best odds
         best_home_odds = max(mock_comparison, key=lambda x: x['home_odds'])
         best_away_odds = min(mock_comparison, key=lambda x: x['away_odds'])
-        
+
         return {
             "game_id": game_id,
             "home_team": "Duke Blue Devils",
@@ -3896,7 +3878,7 @@ async def get_bookmaker_comparison(game_id: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock bookmaker comparison for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4026,9 +4008,9 @@ async def get_historical_odds_statistics(days: int = Query(30, description="Days
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock NCAA basketball historical odds statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4103,9 +4085,9 @@ async def get_odds_efficiency(days: int = Query(30, description="Days of data to
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock odds efficiency analysis data"
         }
-        
+
         return mock_efficiency
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4113,7 +4095,7 @@ async def get_odds_efficiency(days: int = Query(30, description="Days of data to
         }
 
 @router.get("/historical-odds-ncaab/search")
-async def search_historical_odds(query: str = Query(..., description="Search query"), 
+async def search_historical_odds(query: str = Query(..., description="Search query"),
                                  days: int = Query(30, description="Days of data to search"),
                                  limit: int = Query(20, description="Number of results to return")):
     """Search NCAA basketball historical odds"""
@@ -4137,17 +4119,17 @@ async def search_historical_odds(query: str = Query(..., description="Search que
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=7, hours=12)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                o for o in mock_results 
-                if query_lower in o['home_team'].lower() or 
-                   query_lower in o['away_team'].lower() or 
+                o for o in mock_results
+                if query_lower in o['home_team'].lower() or
+                   query_lower in o['away_team'].lower() or
                    query_lower in o['bookmaker'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -4157,18 +4139,16 @@ async def search_historical_odds(query: str = Query(..., description="Search que
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Historical Performance Tracking Endpoints
 @router.get("/historical-performances")
-async def get_historical_performances(player: str = Query(None, description="Player name to filter"), 
+async def get_historical_performances(player: str = Query(None, description="Player name to filter"),
                                       stat_type: str = Query(None, description="Stat type to filter"),
                                       limit: int = Query(50, description="Number of performances to return")):
     """Get historical performances with optional filters"""
@@ -4272,14 +4252,14 @@ async def get_historical_performances(player: str = Query(None, description="Pla
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_performances = mock_performances
         if player:
             filtered_performances = [p for p in filtered_performances if player.lower() in p['player_name'].lower()]
         if stat_type:
             filtered_performances = [p for p in filtered_performances if stat_type.lower() in p['stat_type'].lower()]
-        
+
         return {
             "performances": filtered_performances[:limit],
             "total": len(filtered_performances),
@@ -4291,7 +4271,7 @@ async def get_historical_performances(player: str = Query(None, description="Pla
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock historical performance data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4299,7 +4279,7 @@ async def get_historical_performances(player: str = Query(None, description="Pla
         }
 
 @router.get("/historical-performances/top")
-async def get_top_performers(limit: int = Query(10, description="Number of top performers to return"), 
+async def get_top_performers(limit: int = Query(10, description="Number of top performers to return"),
                                stat_type: str = Query(None, description="Stat type to filter")):
     """Get top performers by hit rate"""
     try:
@@ -4396,11 +4376,11 @@ async def get_top_performers(limit: int = Query(10, description="Number of top p
                 "misses": 64
             }
         ]
-        
+
         # Apply stat type filter
         if stat_type:
             mock_top_performers = [p for p in mock_top_performers if p['stat_type'] == stat_type]
-        
+
         return {
             "top_performers": mock_top_performers[:limit],
             "total": len(mock_top_performers),
@@ -4409,7 +4389,7 @@ async def get_top_performers(limit: int = Query(10, description="Number of top p
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock top performers data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4417,7 +4397,7 @@ async def get_top_performers(limit: int = Query(10, description="Number of top p
         }
 
 @router.get("/historical-performances/best-ev")
-async def get_best_ev_performers(limit: int = Query(10, description="Number of best EV performers to return"), 
+async def get_best_ev_performers(limit: int = Query(10, description="Number of best EV performers to return"),
                                    stat_type: str = Query(None, description="Stat type to filter")):
     """Get best performers by expected value"""
     try:
@@ -4514,11 +4494,11 @@ async def get_best_ev_performers(limit: int = Query(10, description="Number of b
                 "misses": 66
             }
         ]
-        
+
         # Apply stat type filter
         if stat_type:
             mock_best_ev = [p for p in mock_best_ev if p['stat_type'] == stat_type]
-        
+
         return {
             "best_ev_performers": mock_best_ev[:limit],
             "total": len(mock_best_ev),
@@ -4527,7 +4507,7 @@ async def get_best_ev_performers(limit: int = Query(10, description="Number of b
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock best EV performers data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4535,7 +4515,7 @@ async def get_best_ev_performers(limit: int = Query(10, description="Number of b
         }
 
 @router.get("/historical-performances/worst")
-async def get_worst_performers(limit: int = Query(10, description="Number of worst performers to return"), 
+async def get_worst_performers(limit: int = Query(10, description="Number of worst performers to return"),
                                   stat_type: str = Query(None, description="Stat type to filter")):
     """Get worst performers by hit rate"""
     try:
@@ -4587,11 +4567,11 @@ async def get_worst_performers(limit: int = Query(10, description="Number of wor
                 "misses": 35
             }
         ]
-        
+
         # Apply stat type filter
         if stat_type:
             mock_worst = [p for p in mock_worst if p['stat_type'] == stat_type]
-        
+
         return {
             "worst_performers": mock_worst[:limit],
             "total": len(mock_worst),
@@ -4600,7 +4580,7 @@ async def get_worst_performers(limit: int = Query(10, description="Number of wor
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock worst performers data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4719,9 +4699,9 @@ async def get_performance_statistics(days: int = Query(30, description="Days of 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock performance statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4769,11 +4749,11 @@ async def get_player_performance(player_name: str, stat_type: str = Query(None, 
                 "unique_stat_types": 2
             }
         }
-        
+
         # Apply stat type filter
         if stat_type:
             mock_player_data["performances"] = [p for p in mock_player_data["performances"] if p["stat_type"] == stat_type]
-        
+
         return {
             "player_name": player_name,
             "performances": mock_player_data["performances"],
@@ -4781,7 +4761,7 @@ async def get_player_performance(player_name: str, stat_type: str = Query(None, 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock performance data for {player_name}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -4789,7 +4769,7 @@ async def get_player_performance(player_name: str, stat_type: str = Query(None, 
         }
 
 @router.get("/historical-performances/search")
-async def search_performances(query: str = Query(..., description="Search query"), 
+async def search_performances(query: str = Query(..., description="Search query"),
                                limit: int = Query(20, description="Number of results to return")):
     """Search performances by player name or stat type"""
     try:
@@ -4808,16 +4788,16 @@ async def search_performances(query: str = Query(..., description="Search query"
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                p for p in mock_results 
-                if query_lower in p['player_name'].lower() or 
+                p for p in mock_results
+                if query_lower in p['player_name'].lower() or
                    query_lower in p['stat_type'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -4826,18 +4806,16 @@ async def search_performances(query: str = Query(..., description="Search query"
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Injury Tracking Endpoints
 @router.get("/injuries")
-async def get_injuries(sport_id: int = Query(None, description="Sport ID to filter"), 
+async def get_injuries(sport_id: int = Query(None, description="Sport ID to filter"),
                         status: str = Query(None, description="Injury status to filter"),
                         player_id: int = Query(None, description="Player ID to filter"),
                         limit: int = Query(50, description="Number of injuries to return")):
@@ -5022,7 +5000,7 @@ async def get_injuries(sport_id: int = Query(None, description="Sport ID to filt
                 'updated_at': (datetime.now(timezone.utc) - timedelta(days=6, hours=4)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_injuries = mock_injuries
         if sport_id:
@@ -5031,7 +5009,7 @@ async def get_injuries(sport_id: int = Query(None, description="Sport ID to filt
             filtered_injuries = [i for i in filtered_injuries if i['status'] == status.upper()]
         if player_id:
             filtered_injuries = [i for i in filtered_injuries if i['player_id'] == player_id]
-        
+
         return {
             "injuries": filtered_injuries[:limit],
             "total": len(filtered_injuries),
@@ -5044,7 +5022,7 @@ async def get_injuries(sport_id: int = Query(None, description="Sport ID to filt
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock injury data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5150,11 +5128,11 @@ async def get_active_injuries(sport_id: int = Query(None, description="Sport ID 
                 'updated_at': (datetime.now(timezone.utc) - timedelta(days=3, hours=10)).isoformat()
             }
         ]
-        
+
         # Apply sport filter
         if sport_id:
             mock_active = [i for i in mock_active if i['sport_id'] == sport_id]
-        
+
         return {
             "active_injuries": mock_active,
             "total": len(mock_active),
@@ -5162,7 +5140,7 @@ async def get_active_injuries(sport_id: int = Query(None, description="Sport ID 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock active injuries data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5276,11 +5254,11 @@ async def get_out_injuries(sport_id: int = Query(None, description="Sport ID to 
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=6, hours=4)).isoformat()
             }
         ]
-        
+
         # Apply sport filter
         if sport_id:
             mock_out = [i for i in mock_out if i['sport_id'] == sport_id]
-        
+
         return {
             "out_injuries": mock_out,
             "total": len(mock_out),
@@ -5288,7 +5266,7 @@ async def get_out_injuries(sport_id: int = Query(None, description="Sport ID to 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock out injuries data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5400,9 +5378,9 @@ async def get_injury_statistics(days: int = Query(30, description="Days of data 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock injury statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5449,11 +5427,11 @@ async def get_player_injuries(player_id: int, sport_id: int = Query(None, descri
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=7, hours=2)).isoformat()
             }
         ]
-        
+
         # Apply sport filter
         if sport_id:
             mock_player_injuries = [i for i in mock_player_injuries if i['sport_id'] == sport_id]
-        
+
         return {
             "player_id": player_id,
             "injuries": mock_player_injuries,
@@ -5462,7 +5440,7 @@ async def get_player_injuries(player_id: int, sport_id: int = Query(None, descri
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock injury data for player {player_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5507,9 +5485,9 @@ async def get_injury_impact_analysis(sport_id: int, days: int = Query(30, descri
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock impact analysis for sport {sport_id}"
         }
-        
+
         return mock_impact
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5580,9 +5558,9 @@ async def get_injury_trends(sport_id: int, days: int = Query(30, description="Da
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock injury trends for sport {sport_id}"
         }
-        
+
         return mock_trends
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5591,7 +5569,7 @@ async def get_injury_trends(sport_id: int, days: int = Query(30, description="Da
         }
 
 @router.get("/injuries/search")
-async def search_injuries(query: str = Query(..., description="Search query"), 
+async def search_injuries(query: str = Query(..., description="Search query"),
                              sport_id: int = Query(None, description="Sport ID to filter"),
                              limit: int = Query(20, description="Number of results to return")):
     """Search injuries by player ID or status detail"""
@@ -5632,20 +5610,20 @@ async def search_injuries(query: str = Query(..., description="Search query"),
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=6, hours=4)).isoformat()
             }
         ]
-        
+
         # Apply filters
         if sport_id:
             mock_results = [r for r in mock_results if r['sport_id'] == sport_id]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in str(r['player_id']) or 
+                r for r in mock_results
+                if query_lower in str(r['player_id']) or
                    query_lower in r['status_detail'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -5654,7 +5632,7 @@ async def search_injuries(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5664,11 +5642,9 @@ async def search_injuries(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Line Tracking Endpoints
 @router.get("/lines")
-async def get_lines(game_id: int = Query(None, description="Game ID to filter"), 
+async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
                    player_id: int = Query(None, description="Player ID to filter"),
                    sportsbook: str = Query(None, description="Sportsbook to filter"),
                    is_current: bool = Query(None, description="Filter current lines only"),
@@ -5798,7 +5774,7 @@ async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
                 "fetched_at": (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_lines = mock_lines
         if game_id:
@@ -5809,7 +5785,7 @@ async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
             filtered_lines = [l for l in filtered_lines if l['sportsbook'].lower() == sportsbook.lower()]
         if is_current is not None:
             filtered_lines = [l for l in filtered_lines if l['is_current'] == is_current]
-        
+
         return {
             "lines": filtered_lines[:limit],
             "total": len(filtered_lines),
@@ -5823,7 +5799,7 @@ async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock line data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -5831,7 +5807,7 @@ async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
         }
 
 @router.get("/lines/current")
-async def get_current_lines(game_id: int = Query(None, description="Game ID to filter"), 
+async def get_current_lines(game_id: int = Query(None, description="Game ID to filter"),
                             player_id: int = Query(None, description="Player ID to filter")):
     """Get current betting lines"""
     try:
@@ -5958,13 +5934,13 @@ async def get_current_lines(game_id: int = Query(None, description="Game ID to f
                 "fetched_at": (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
             }
         ]
-        
+
         # Apply filters
         if game_id:
             mock_current = [l for l in mock_current if l['game_id'] == game_id]
         if player_id:
             mock_current = [l for l in mock_current if l['player_id'] == player_id]
-        
+
         return {
             "current_lines": mock_current,
             "total": len(mock_current),
@@ -5973,7 +5949,7 @@ async def get_current_lines(game_id: int = Query(None, description="Game ID to f
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock current lines data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6099,11 +6075,11 @@ async def get_line_movements(game_id: int, player_id: int, market_id: int = Quer
                 "prev_odds": None
             }
         ]
-        
+
         # Apply market filter
         if market_id:
             mock_movements = [m for m in mock_movements if m['sportsbook'] == 'draftkings' or m['sportsbook'] == 'fanduel']
-        
+
         return {
             "game_id": game_id,
             "player_id": player_id,
@@ -6113,7 +6089,7 @@ async def get_line_movements(game_id: int, player_id: int, market_id: int = Quer
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock line movements for game {game_id}, player {player_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6172,11 +6148,11 @@ async def get_sportsbook_comparison(game_id: int, player_id: int, market_id: int
                 "fetched_at": (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
             }
         ]
-        
+
         # Calculate best odds
         best_over = max(mock_comparison, key=lambda x: x['odds'] if x['side'] == 'over' else float('inf'))
         best_under = max(mock_comparison, key=lambda x: x['odds'] if x['side'] == 'under' else float('inf'))
-        
+
         return {
             "game_id": game_id,
             "player_id": player_id,
@@ -6198,7 +6174,7 @@ async def get_sportsbook_comparison(game_id: int, player_id: int, market_id: int
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock sportsbook comparison for game {game_id}, player {player_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6282,9 +6258,9 @@ async def get_line_statistics(hours: int = Query(24, description="Hours of data 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock line statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6333,9 +6309,9 @@ async def get_line_efficiency(hours: int = Query(24, description="Hours of data 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock line efficiency analysis data"
         }
-        
+
         return mock_efficiency
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6343,7 +6319,7 @@ async def get_line_efficiency(hours: int = Query(24, description="Hours of data 
         }
 
 @router.get("/lines/search")
-async def search_lines(query: str = Query(..., description="Search query"), 
+async def search_lines(query: str = Query(..., description="Search query"),
                        sportsbook: str = Query(None, description="Sportsbook to filter"),
                        limit: int = Query(20, description="Number of results to return")):
     """Search lines by player ID or sportsbook"""
@@ -6387,20 +6363,20 @@ async def search_lines(query: str = Query(..., description="Search query"),
                 "fetched_at": (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
             }
         ]
-        
+
         # Apply filters
         if sportsbook:
             mock_results = [r for r in mock_results if r['sportsbook'].lower() == sportsbook.lower()]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in str(r['player_id']) or 
+                r for r in mock_results
+                if query_lower in str(r['player_id']) or
                    query_lower in r['sportsbook'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -6409,7 +6385,7 @@ async def search_lines(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6419,11 +6395,9 @@ async def search_lines(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Live Odds NFL Endpoints
 @router.get("/live-odds-nfl")
-async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to filter"), 
+async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to filter"),
                           team: str = Query(None, description="Team name to filter"),
                           bookmaker: str = Query(None, description="Sportsbook to filter"),
                           week: int = Query(None, description="Week to filter"),
@@ -6593,7 +6567,7 @@ async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to f
                 "updated_at": (datetime.now(timezone.utc) - timedelta(minutes=2)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_odds = mock_odds
         if game_id:
@@ -6604,7 +6578,7 @@ async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to f
             filtered_odds = [o for o in filtered_odds if o['bookmaker'].lower() == bookmaker.lower()]
         if week:
             filtered_odds = [o for o in filtered_odds if o['week'] == week]
-        
+
         return {
             "odds": filtered_odds[:limit],
             "total": len(filtered_odds),
@@ -6618,7 +6592,7 @@ async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to f
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock live NFL odds data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6626,7 +6600,7 @@ async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to f
         }
 
 @router.get("/live-odds-nfl/current")
-async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game ID to filter"), 
+async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game ID to filter"),
                                    bookmaker: str = Query(None, description="Sportsbook to filter")):
     """Get current live NFL odds"""
     try:
@@ -6713,13 +6687,13 @@ async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         # Apply filters
         if game_id:
             mock_current = [o for o in mock_current if o['game_id'] == game_id]
         if bookmaker:
             mock_current = [o for o in mock_current if o['bookmaker'].lower() == bookmaker.lower()]
-        
+
         return {
             "current_odds": mock_current,
             "total": len(mock_current),
@@ -6728,7 +6702,7 @@ async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock current live NFL odds data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6804,7 +6778,7 @@ async def get_live_odds_nfl_movements(game_id: int, minutes: int = Query(30, des
                 "prev_draw_odds": None
             }
         ]
-        
+
         return {
             "game_id": game_id,
             "movements": mock_movements,
@@ -6813,7 +6787,7 @@ async def get_live_odds_nfl_movements(game_id: int, minutes: int = Query(30, des
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock live NFL odds movements for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -6850,11 +6824,11 @@ async def get_live_odds_nfl_comparison(game_id: int, minutes: int = Query(30, de
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         # Calculate best odds
         best_home_odds = max(mock_comparison, key=lambda x: x['home_odds'] if x['home_odds'] < 0 else float('inf'))
         best_away_odds = max(mock_comparison, key=lambda x: x['away_odds'] if x['away_odds'] < 0 else float('inf'))
-        
+
         return {
             "game_id": game_id,
             "comparison": mock_comparison,
@@ -6873,7 +6847,7 @@ async def get_live_odds_nfl_comparison(game_id: int, minutes: int = Query(30, de
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock sportsbook comparison for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7011,9 +6985,9 @@ async def get_live_odds_nfl_statistics(hours: int = Query(24, description="Hours
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock live NFL odds statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7083,9 +7057,9 @@ async def get_live_odds_nfl_efficiency(hours: int = Query(24, description="Hours
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock live NFL odds efficiency analysis data"
         }
-        
+
         return mock_efficiency
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7093,7 +7067,7 @@ async def get_live_odds_nfl_efficiency(hours: int = Query(24, description="Hours
         }
 
 @router.get("/live-odds-nfl/week/{week}")
-async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, description="Season to filter"), 
+async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, description="Season to filter"),
                                    bookmaker: str = Query(None, description="Sportsbook to filter")):
     """Get live NFL odds for a specific week"""
     try:
@@ -7148,11 +7122,11 @@ async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, descrip
                 "updated_at": (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
             }
         ]
-        
+
         # Apply bookmaker filter
         if bookmaker:
             mock_week_odds = [o for o in mock_week_odds if o['bookmaker'].lower() == bookmaker.lower()]
-        
+
         return {
             "week": week,
             "season": season,
@@ -7162,7 +7136,7 @@ async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, descrip
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock live NFL odds for week {week}, season {season}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7173,7 +7147,7 @@ async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, descrip
         }
 
 @router.get("/live-odds-nfl/search")
-async def search_live_odds_nfl(query: str = Query(..., description="Search query"), 
+async def search_live_odds_nfl(query: str = Query(..., description="Search query"),
                               bookmaker: str = Query(None, description="Sportsbook to filter"),
                               limit: int = Query(20, description="Number of results to return")):
     """Search live NFL odds by team name or sportsbook"""
@@ -7229,21 +7203,21 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
                 "updated_at": (datetime.now(timezone.utc) - timedelta(minutes=15)).isoformat()
             }
         ]
-        
+
         # Apply filters
         if bookmaker:
             mock_results = [r for r in mock_results if r['bookmaker'].lower() == bookmaker.lower()]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['home_team'].lower() or 
+                r for r in mock_results
+                if query_lower in r['home_team'].lower() or
                    query_lower in r['away_team'].lower() or
                    query_lower in r['bookmaker'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -7252,7 +7226,7 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7262,11 +7236,9 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Odds Snapshots Tracking Endpoints
 @router.get("/odds-snapshots")
-async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to filter"), 
+async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to filter"),
                            player_id: int = Query(None, description="Player ID to filter"),
                            bookmaker: str = Query(None, description="Bookmaker to filter"),
                            hours: int = Query(24, description="Hours of data to analyze"),
@@ -7402,7 +7374,7 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_snapshots = mock_snapshots
         if game_id:
@@ -7411,7 +7383,7 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
             filtered_snapshots = [s for s in filtered_snapshots if s['player_id'] == player_id]
         if bookmaker:
             filtered_snapshots = [s for s in filtered_snapshots if s['bookmaker'].lower() == bookmaker.lower()]
-        
+
         return {
             "snapshots": filtered_snapshots[:limit],
             "total": len(filtered_snapshots),
@@ -7425,7 +7397,7 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock odds snapshots data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7581,7 +7553,7 @@ async def get_odds_movements(game_id: int, market_id: int = Query(None, descript
                 "prev_american_odds": -110
             }
         ]
-        
+
         # Apply filters
         filtered_movements = mock_movements
         if market_id:
@@ -7590,7 +7562,7 @@ async def get_odds_movements(game_id: int, market_id: int = Query(None, descript
         if player_id:
             # Filter by player_id logic would go here
             pass
-        
+
         return {
             "game_id": game_id,
             "market_id": market_id,
@@ -7601,7 +7573,7 @@ async def get_odds_movements(game_id: int, market_id: int = Query(None, descript
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock odds movements for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7645,11 +7617,11 @@ async def get_odds_comparison(game_id: int, market_id: int = Query(None, descrip
                 "snapshot_at": datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         # Calculate best odds
         best_over = max(mock_comparison, key=lambda x: x['price'] if x['side'] == 'over' else float('inf'))
         best_under = max(mock_comparison, key=lambda x: x['price'] if x['side'] == 'under' else float('inf'))
-        
+
         return {
             "game_id": game_id,
             "market_id": market_id,
@@ -7672,7 +7644,7 @@ async def get_odds_comparison(game_id: int, market_id: int = Query(None, descrip
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock odds comparison for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7800,9 +7772,9 @@ async def get_odds_snapshots_statistics(hours: int = Query(24, description="Hour
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock odds snapshots statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7870,7 +7842,7 @@ async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, descripti
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         return {
             "bookmaker": bookmaker,
             "snapshots": mock_bookmaker_snapshots,
@@ -7879,7 +7851,7 @@ async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, descripti
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock odds snapshots for {bookmaker}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7950,11 +7922,11 @@ async def get_odds_by_player(player_id: int, bookmaker: str = Query(None, descri
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         # Apply bookmaker filter
         if bookmaker:
             mock_player_snapshots = [s for s in mock_player_snapshots if s['bookmaker'].lower() == bookmaker.lower()]
-        
+
         return {
             "player_id": player_id,
             "snapshots": mock_player_snapshots,
@@ -7964,7 +7936,7 @@ async def get_odds_by_player(player_id: int, bookmaker: str = Query(None, descri
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock odds snapshots for player {player_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -7975,7 +7947,7 @@ async def get_odds_by_player(player_id: int, bookmaker: str = Query(None, descri
         }
 
 @router.get("/odds-snapshots/search")
-async def search_odds_snapshots(query: str = Query(..., description="Search query"), 
+async def search_odds_snapshots(query: str = Query(..., description="Search query"),
                               bookmaker: str = Query(None, description="Bookmaker to filter"),
                               hours: int = Query(24, description="Hours of data to analyze"),
                               limit: int = Query(50, description="Number of results to return")):
@@ -8020,22 +7992,22 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         # Apply filters
         if bookmaker:
             mock_results = [r for r in mock_results if r['bookmaker'].lower() == bookmaker.lower()]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['external_fixture_id'].lower() or 
+                r for r in mock_results
+                if query_lower in r['external_fixture_id'].lower() or
                    query_lower in r['external_market_id'].lower() or
                    query_lower in r['external_outcome_id'].lower() or
                    query_lower in r['bookmaker'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -8046,7 +8018,7 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8057,11 +8029,9 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
 # Picks Management Endpoints
 @router.get("/picks")
-async def get_picks(game_id: int = Query(None, description="Game ID to filter"), 
+async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                   player: str = Query(None, description="Player name to filter"),
                   stat_type: str = Query(None, description="Stat type to filter"),
                   min_ev: float = Query(0.0, description="Minimum EV percentage"),
@@ -8233,7 +8203,7 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_picks = mock_picks
         if game_id:
@@ -8246,7 +8216,7 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
             filtered_picks = [p for p in filtered_picks if p['ev_percentage'] >= min_ev]
         if min_confidence > 0:
             filtered_picks = [p for p in filtered_picks if p['confidence'] >= min_confidence]
-        
+
         return {
             "picks": filtered_picks[:limit],
             "total": len(filtered_picks),
@@ -8262,7 +8232,7 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock picks data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8358,10 +8328,10 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         # Apply EV filter
         filtered_picks = [p for p in mock_high_ev if p['ev_percentage'] >= min_ev]
-        
+
         return {
             "high_ev_picks": filtered_picks[:limit],
             "total": len(filtered_picks),
@@ -8371,7 +8341,7 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock high EV picks (>= {min_ev}% EV)"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8470,10 +8440,10 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         # Apply confidence filter
         filtered_picks = [p for p in mock_high_confidence if p['confidence'] >= min_confidence]
-        
+
         return {
             "high_confidence_picks": filtered_picks[:limit],
             "total": len(filtered_picks),
@@ -8483,7 +8453,7 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock high confidence picks (>= {min_confidence}% confidence)"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8649,9 +8619,9 @@ async def get_picks_statistics(hours: int = Query(24, description="Hours of data
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock picks statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8713,7 +8683,7 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         return {
             "player_name": player_name,
             "picks": mock_player_picks,
@@ -8722,7 +8692,7 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock picks for {player_name}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8802,7 +8772,7 @@ async def get_picks_by_game(game_id: int):
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         return {
             "game_id": game_id,
             "picks": mock_game_picks,
@@ -8810,7 +8780,7 @@ async def get_picks_by_game(game_id: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock picks for game {game_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8859,17 +8829,17 @@ async def search_picks(query: str = Query(..., description="Search query"),
                 "updated_at": (datetime.now(timezone.utc) - timedelta()).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['player_name'].lower() or 
+                r for r in mock_results
+                if query_lower in r['player_name'].lower() or
                    query_lower in r['stat_type'].lower() or
                    query_lower in r['pick_type'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -8879,7 +8849,7 @@ async def search_picks(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -8888,8 +8858,6 @@ async def search_picks(query: str = Query(..., description="Search query"),
             "limit": limit,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Player Statistics Tracking Endpoints
 @router.get("/player-stats")
@@ -9033,7 +9001,7 @@ async def get_player_stats(player: str = Query(None, description="Player name to
                 'updated_at': datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_stats = mock_stats
         if player:
@@ -9042,7 +9010,7 @@ async def get_player_stats(player: str = Query(None, description="Player name to
             filtered_stats = [s for s in filtered_stats if team.lower() in s['team'].lower()]
         if stat_type:
             filtered_stats = [s for s in filtered_stats if s['stat_type'].lower() == stat_type.lower()]
-        
+
         return {
             "stats": filtered_stats[:limit],
             "total": len(filtered_stats),
@@ -9056,7 +9024,7 @@ async def get_player_stats(player: str = Query(None, description="Player name to
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock player stats data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9204,9 +9172,9 @@ async def get_player_statistics(days: int = Query(30, description="Days of data 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock player statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9259,7 +9227,7 @@ async def get_player_stats_by_name(player_name: str, days: int = Query(30, descr
                 'updated_at': datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         return {
             "player_name": player_name,
             "stats": mock_player_stats,
@@ -9268,7 +9236,7 @@ async def get_player_stats_by_name(player_name: str, days: int = Query(30, descr
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock player stats for {player_name}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9323,7 +9291,7 @@ async def get_player_stats_by_team(team: str, days: int = Query(30, description=
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
             }
         ]
-        
+
         return {
             "team": team,
             "stats": mock_team_stats,
@@ -9332,7 +9300,7 @@ async def get_player_stats_by_team(team: str, days: int = Query(30, description=
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock player stats for {team}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9387,7 +9355,7 @@ async def get_player_stats_by_stat_type(stat_type: str, days: int = Query(30, de
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
             }
         ]
-        
+
         return {
             "stat_type": stat_type,
             "stats": mock_stat_stats,
@@ -9396,7 +9364,7 @@ async def get_player_stats_by_stat_type(stat_type: str, days: int = Query(30, de
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock player stats for {stat_type}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9440,18 +9408,18 @@ async def search_player_stats(query: str = Query(..., description="Search query"
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=4)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['player_name'].lower() or 
+                r for r in mock_results
+                if query_lower in r['player_name'].lower() or
                    query_lower in r['team'].lower() or
                    query_lower in r['opponent'].lower() or
                    query_lower in r['stat_type'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -9461,7 +9429,7 @@ async def search_player_stats(query: str = Query(..., description="Search query"
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9470,8 +9438,6 @@ async def search_player_stats(query: str = Query(..., description="Search query"
             "limit": limit,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Shared Betting Cards Tracking Endpoints
 @router.get("/shared-cards")
@@ -9694,7 +9660,7 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
                 "updated_at": (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_cards = mock_cards
         if platform:
@@ -9703,13 +9669,13 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
             filtered_cards = [c for c in filtered_cards if c['sport'].lower() == sport.lower()]
         if grade:
             filtered_cards = [c for c in filtered_cards if c['overall_grade'].lower() == grade.lower()]
-        
+
         # Apply sorting
         if trending:
             filtered_cards = sorted(filtered_cards, key=lambda x: x['view_count'], reverse=True)
         elif performing:
             filtered_cards = sorted(filtered_cards, key=lambda x: x['parlay_ev'], reverse=True)
-        
+
         return {
             "cards": filtered_cards[:limit],
             "total": len(filtered_cards),
@@ -9724,7 +9690,7 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock shared cards data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9894,9 +9860,9 @@ async def get_shared_cards_statistics(days: int = Query(30, description="Days of
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock shared cards statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -9963,7 +9929,7 @@ async def get_shared_cards_by_platform(platform: str, limit: int = Query(50, des
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
             }
         ]
-        
+
         return {
             "platform": platform,
             "cards": mock_platform_cards[:limit],
@@ -9972,7 +9938,7 @@ async def get_shared_cards_by_platform(platform: str, limit: int = Query(50, des
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock shared cards for {platform}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10040,7 +10006,7 @@ async def get_shared_cards_by_sport(sport: str, limit: int = Query(50, descripti
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
             }
         ]
-        
+
         return {
             "sport": sport,
             "cards": mock_sport_cards[:limit],
@@ -10049,7 +10015,7 @@ async def get_shared_cards_by_sport(sport: str, limit: int = Query(50, descripti
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock shared cards for {sport}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10117,7 +10083,7 @@ async def get_shared_cards_by_grade(grade: str, limit: int = Query(50, descripti
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
             }
         ]
-        
+
         return {
             "grade": grade,
             "cards": mock_grade_cards[:limit],
@@ -10126,7 +10092,7 @@ async def get_shared_cards_by_grade(grade: str, limit: int = Query(50, descripti
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock shared cards for grade {grade}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10195,18 +10161,18 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
                 "updated_at": (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['label'].lower() or 
-                   any(query_lower in leg['player'].lower() or 
-                       query_lower in leg['market'].lower() 
+                r for r in mock_results
+                if query_lower in r['label'].lower() or
+                   any(query_lower in leg['player'].lower() or
+                       query_lower in leg['market'].lower()
                        for leg in r['legs'])
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -10215,7 +10181,7 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10223,8 +10189,6 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
             "limit": limit,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Trade Details Tracking Endpoints
 @router.get("/trade-details")
@@ -10383,7 +10347,7 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_trades = mock_trade_details
         if trade_id:
@@ -10394,11 +10358,11 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
             filtered_trades = [t for t in filtered_trades if t['player_id'] == player_id]
         if asset_type:
             filtered_trades = [t for t in filtered_trades if t['asset_type'] == asset_type]
-        
+
         # Apply sorting
         if recent:
             filtered_trades = sorted(filtered_trades, key=lambda x: x['created_at'], reverse=True)
-        
+
         return {
             "trade_details": filtered_trades[:limit],
             "total": len(filtered_trades),
@@ -10413,7 +10377,7 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock trade details data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10523,9 +10487,9 @@ async def get_trade_details_statistics(days: int = Query(30, description="Days o
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock trade details statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10566,14 +10530,14 @@ async def get_trade_details_by_trade_id(trade_id: str):
             "created_at": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat(),
             "updated_at": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
         }
-        
+
         return {
             "trade_summary": mock_trade_summary,
             "trade_id": trade_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trade summary for {trade_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10612,13 +10576,13 @@ async def get_trade_details_by_team(team_id: int, role: str = Query("both", desc
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
             }
         ]
-        
+
         # Filter by role
         if role == "from":
             mock_team_trades = [t for t in mock_team_trades if t['from_team_id'] == team_id]
         elif role == "to":
             mock_team_trades = [t for t in mock_team_trades if t['to_team_id'] == team_id]
-        
+
         return {
             "team_id": team_id,
             "role": role,
@@ -10627,7 +10591,7 @@ async def get_trade_details_by_team(team_id: int, role: str = Query("both", desc
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trade details for team {team_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10667,7 +10631,7 @@ async def get_trade_details_by_player(player_id: int):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=20)).isoformat()
             }
         ]
-        
+
         return {
             "player_id": player_id,
             "trade_details": mock_player_trades,
@@ -10675,7 +10639,7 @@ async def get_trade_details_by_player(player_id: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trade details for player {player_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10714,7 +10678,7 @@ async def get_trade_details_by_asset_type(asset_type: str, limit: int = Query(50
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
             }
         ]
-        
+
         return {
             "asset_type": asset_type,
             "trade_details": mock_asset_trades[:limit],
@@ -10723,7 +10687,7 @@ async def get_trade_details_by_asset_type(asset_type: str, limit: int = Query(50
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trade details for asset type {asset_type}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10764,17 +10728,17 @@ async def search_trade_details(query: str = Query(..., description="Search query
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['trade_id'].lower() or 
-                   query_lower in r['player_name'].lower() or 
+                r for r in mock_results
+                if query_lower in r['trade_id'].lower() or
+                   query_lower in r['player_name'].lower() or
                    (r['asset_description'] and query_lower in r['asset_description'].lower())
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -10783,7 +10747,7 @@ async def search_trade_details(query: str = Query(..., description="Search query
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -10791,8 +10755,6 @@ async def search_trade_details(query: str = Query(..., description="Search query
             "limit": limit,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # Master Trade Tracking Endpoints
 @router.get("/trades")
@@ -10926,7 +10888,7 @@ async def get_trades(season: int = Query(None, description="Season year to filte
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=10)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_trades = mock_trades
         if season:
@@ -10935,11 +10897,11 @@ async def get_trades(season: int = Query(None, description="Season year to filte
             filtered_trades = [t for t in filtered_trades if t['source'] == source]
         if applied is not None:
             filtered_trades = [t for t in filtered_trades if t['is_applied'] == applied]
-        
+
         # Apply sorting
         if recent:
             filtered_trades = sorted(filtered_trades, key=lambda x: x['trade_date'], reverse=True)
-        
+
         return {
             "trades": filtered_trades[:limit],
             "total": len(filtered_trades),
@@ -10953,7 +10915,7 @@ async def get_trades(season: int = Query(None, description="Season year to filte
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock trades data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11051,9 +11013,9 @@ async def get_trades_statistics(days: int = Query(365, description="Days of data
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock trades statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11092,7 +11054,7 @@ async def get_trades_by_season(season: int):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
             }
         ]
-        
+
         return {
             "season": season,
             "trades": mock_season_trades,
@@ -11100,7 +11062,7 @@ async def get_trades_by_season(season: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trades for season {season}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11139,7 +11101,7 @@ async def get_trades_by_source(source: str):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=35)).isoformat()
             }
         ]
-        
+
         return {
             "source": source,
             "trades": mock_source_trades,
@@ -11147,7 +11109,7 @@ async def get_trades_by_source(source: str):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock trades from {source}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11186,14 +11148,14 @@ async def get_applied_trades():
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=25)).isoformat()
             }
         ]
-        
+
         return {
             "trades": mock_applied_trades,
             "total": len(mock_applied_trades),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock applied trades data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11231,14 +11193,14 @@ async def get_pending_trades():
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()
             }
         ]
-        
+
         return {
             "trades": mock_pending_trades,
             "total": len(mock_pending_trades),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock pending trades data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11277,16 +11239,16 @@ async def search_trades(query: str = Query(..., description="Search query"),
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=35)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['headline'].lower() or 
+                r for r in mock_results
+                if query_lower in r['headline'].lower() or
                    query_lower in r['description'].lower()
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -11295,7 +11257,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11303,8 +11265,6 @@ async def search_trades(query: str = Query(..., description="Search query"),
             "limit": limit,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
 
 # User Betting Tracking Endpoints
 @router.get("/user-bets")
@@ -11486,7 +11446,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
                 "updated_at": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
             }
         ]
-        
+
         # Apply filters
         filtered_bets = mock_user_bets
         if sport:
@@ -11495,11 +11455,11 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
             filtered_bets = [b for b in filtered_bets if b['status'] == status]
         if sportsbook:
             filtered_bets = [b for b in filtered_bets if b['sportsbook'] == sportsbook]
-        
+
         # Apply sorting
         if recent:
             filtered_bets = sorted(filtered_bets, key=lambda x: x['placed_at'], reverse=True)
-        
+
         return {
             "user_bets": filtered_bets[:limit],
             "total": len(filtered_bets),
@@ -11513,7 +11473,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock user bets data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11705,9 +11665,9 @@ async def get_user_bets_statistics(days: int = Query(30, description="Days of da
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock user bets statistics data"
         }
-        
+
         return mock_stats
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11770,7 +11730,7 @@ async def get_user_bets_by_sport(sport_id: int):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=1, hours=22)).isoformat()
             }
         ]
-        
+
         return {
             "sport_id": sport_id,
             "user_bets": mock_sport_bets,
@@ -11778,7 +11738,7 @@ async def get_user_bets_by_sport(sport_id: int):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock user bets for sport {sport_id}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11841,7 +11801,7 @@ async def get_user_bets_by_status(status: str):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=3, hours=21)).isoformat()
             }
         ]
-        
+
         return {
             "status": status,
             "user_bets": mock_status_bets,
@@ -11849,7 +11809,7 @@ async def get_user_bets_by_status(status: str):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock user bets with status {status}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11912,7 +11872,7 @@ async def get_user_bets_by_sportsbook(sportsbook: str):
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=5, hours=23)).isoformat()
             }
         ]
-        
+
         return {
             "sportsbook": sportsbook,
             "user_bets": mock_sportsbook_bets,
@@ -11920,7 +11880,7 @@ async def get_user_bets_by_sportsbook(sportsbook: str):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": f"Mock user bets from {sportsbook}"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -11984,17 +11944,17 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
                 "updated_at": (datetime.now(timezone.utc) - timedelta(days=3, hours=21)).isoformat()
             }
         ]
-        
+
         # Apply search filter
         if query:
             query_lower = query.lower()
             mock_results = [
-                r for r in mock_results 
-                if query_lower in r['market_type'].lower() or 
-                   query_lower in r['side'].lower() or 
+                r for r in mock_results
+                if query_lower in r['market_type'].lower() or
+                   query_lower in r['side'].lower() or
                    (r['notes'] and query_lower in r['notes'].lower())
             ]
-        
+
         return {
             "results": mock_results[:limit],
             "query": query,
@@ -12003,7 +11963,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock search results data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12046,7 +12006,7 @@ async def get_brain_anomalies():
                 "resolution_method": None
             }
         ]
-        
+
         return {
             "anomalies": mock_anomalies,
             "total": len(mock_anomalies),
@@ -12055,7 +12015,7 @@ async def get_brain_anomalies():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock anomaly data"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12081,7 +12041,7 @@ async def get_brain_anomalies_summary():
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "note": "Mock anomaly summary"
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12104,15 +12064,15 @@ router = APIRouter()
 @router.get("/model-status")
 async def get_model_status():
     """Get current model performance and status"""
-    
+
     # Check all API keys
     has_betstack = bool(os.getenv("BETSTACK_API_KEY"))
     has_odds_api = bool(os.getenv("THE_ODDS_API_KEY"))
     has_roster_api = bool(os.getenv("ROSTER_API_KEY"))
     has_ai_api = bool(os.getenv("AI_API_KEY"))
-    
+
     all_apis_configured = has_betstack and has_odds_api and has_roster_api and has_ai_api
-    
+
     return {
         "status": "operational" if all_apis_configured else "degraded",
         "model_version": "1.0.0",
@@ -12197,14 +12157,14 @@ async def get_transparent_track_record():
             "transparency_level": "complete",
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
-        
+
         return {
             "track_record": result,
             "verification_status": "verified",
             "public_access": True,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12225,7 +12185,7 @@ async def get_performance_metrics():
             "graded_picks": 120,
             "validation_status": "complete"
         }
-        
+
         validation_metrics = {
             "model_validated": performance["total_picks"] > 0,
             "ev_realistic": 2 <= performance["avg_ev"] * 100 <= 4,
@@ -12234,15 +12194,15 @@ async def get_performance_metrics():
             "hit_rate_acceptable": 52 <= performance["hit_rate"] * 100 <= 58,
             "sample_size_adequate": performance["total_picks"] >= 100
         }
-        
+
         performance["validation_metrics"] = validation_metrics
-        
+
         return {
             "performance": performance,
             "validation_status": "complete",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12269,16 +12229,16 @@ async def get_recent_picks(limit: int = Query(10, description="Number of recent 
                 "profit_loss": 100.0
             }
         ]
-        
+
         recent_picks = graded_picks[-limit:] if len(graded_picks) > limit else graded_picks
-        
+
         return {
             "recent_picks": recent_picks,
             "total_graded": len(graded_picks),
             "showing_recent": len(recent_picks),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12306,14 +12266,14 @@ async def get_bookmaker_performance():
                 "hit_rate": 55.0
             }
         }
-        
+
         return {
             "bookmaker_performance": bookmaker_performance,
             "best_bookmaker": "DraftKings",
             "total_bookmakers": len(bookmaker_performance),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12329,15 +12289,15 @@ async def get_performance_metrics():
     """Get detailed performance metrics"""
     try:
         result = await build_transparent_track_record()
-        
+
         if "error" in result:
             return {
                 "error": result["error"],
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         performance = result.get("performance_metrics", {})
-        
+
         # Add validation metrics
         validation_metrics = {
             "model_validated": performance.get("total_picks", 0) > 0,
@@ -12347,15 +12307,15 @@ async def get_performance_metrics():
             "hit_rate_acceptable": 52 <= performance.get("hit_rate", 0) <= 58,
             "sample_size_adequate": performance.get("total_picks", 0) >= 100
         }
-        
+
         performance["validation_metrics"] = validation_metrics
-        
+
         return {
             "performance": performance,
             "validation_status": "complete",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12367,23 +12327,23 @@ async def get_recent_picks(limit: int = Query(10, description="Number of recent 
     """Get recent picks with results"""
     try:
         result = await build_transparent_track_record()
-        
+
         if "error" in result:
             return {
                 "error": result["error"],
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         graded_picks = result.get("graded_picks", [])
         recent_picks = graded_picks[-limit:] if len(graded_picks) > limit else graded_picks
-        
+
         return {
             "recent_picks": recent_picks,
             "total_graded": len(graded_picks),
             "showing_recent": len(recent_picks),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12395,30 +12355,30 @@ async def get_bookmaker_performance():
     """Get performance by bookmaker"""
     try:
         result = await build_transparent_track_record()
-        
+
         if "error" in result:
             return {
                 "error": result["error"],
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         performance = result.get("performance_metrics", {})
         bookmaker_performance = performance.get("bookmaker_performance", {})
-        
+
         # Rank bookmakers by performance
         ranked_bookmakers = sorted(
             bookmaker_performance.items(),
             key=lambda x: x[1]["roi"],
             reverse=True
         )
-        
+
         return {
             "bookmaker_performance": dict(ranked_bookmakers),
             "best_bookmaker": ranked_bookmakers[0] if ranked_bookmakers else None,
             "total_bookmakers": len(bookmaker_performance),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12466,7 +12426,7 @@ async def get_validated_picks(
             "graded_picks": 1,
             "validation_status": "complete"
         }
-        
+
         return {
             "picks": result["picks"][:limit],
             "total_picks": result["total_picks"],
@@ -12474,7 +12434,7 @@ async def get_validated_picks(
             "validation_status": result["validation_status"],
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12495,13 +12455,13 @@ async def get_validation_performance(days: int = Query(30, description="Days of 
             "graded_picks": 120,
             "validation_status": "complete"
         }
-        
+
         return {
             "performance": performance,
             "validation_status": "complete",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12522,13 +12482,13 @@ async def get_track_record():
             "roi": 0.045,
             "track_record_status": "complete"
         }
-        
+
         return {
             "track_record": track_record,
             "validation_status": "complete",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12544,41 +12504,41 @@ async def get_validation_performance(days: int = Query(30, description="Days of 
     """Get model validation performance metrics"""
     try:
         result = await get_real_picks_with_validation()
-        
+
         if "error" in result:
             return {
                 "error": result["error"],
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         performance = result.get("performance", {})
-        
+
         # Add additional metrics
         if performance:
             # Calculate additional validation metrics
             total_picks = performance.get("total_picks", 0)
             won_picks = performance.get("won_picks", 0)
             hit_rate = performance.get("hit_rate", 0)
-            
+
             # Validation confidence
             confidence_score = min(100, (hit_rate - 50) * 2) if hit_rate > 50 else 0
-            
+
             # Model accuracy
             model_accuracy = "high" if hit_rate >= 54 else "medium" if hit_rate >= 52 else "low"
-            
+
             performance.update({
                 "confidence_score": confidence_score,
                 "model_accuracy": model_accuracy,
                 "validation_period_days": days,
                 "last_validated": datetime.now(timezone.utc).isoformat()
             })
-        
+
         return {
             "performance": performance,
             "validation_status": "complete",
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12590,16 +12550,16 @@ async def get_track_record():
     """Get transparent track record"""
     try:
         result = await get_real_picks_with_validation()
-        
+
         if "error" in result:
             return {
                 "error": result["error"],
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
-        
+
         graded_picks = result.get("graded_picks", [])
         performance = result.get("performance", {})
-        
+
         # Create transparent track record
         track_record = {
             "total_picks_graded": len(graded_picks),
@@ -12622,9 +12582,9 @@ async def get_track_record():
             },
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
-        
+
         return track_record
-        
+
     except Exception as e:
         return {
             "error": str(e),
@@ -12735,14 +12695,14 @@ async def get_working_parlays(
                 'created_at': datetime.now(timezone.utc).isoformat()
             }
         ]
-        
+
         return {
             'parlays': sample_parlays[:limit],
             'total': len(sample_parlays),
             'sport_id': sport_id,
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         return {
             'parlays': [],
@@ -12853,9 +12813,9 @@ async def get_monte_carlo_simulation(
                 'sam_darnold_completions_over_21.5': 0.53
             }
         }
-        
+
         return simulation_results
-        
+
     except Exception as e:
         return {
             'error': str(e),
@@ -12888,7 +12848,7 @@ async def get_working_player_props(
     try:
         # Get current time
         now = datetime.now(timezone.utc)
-        
+
         # Simple query - no CLV columns
         query = select(ModelPick).where(
             and_(
@@ -12897,10 +12857,10 @@ async def get_working_player_props(
                 ModelPick.confidence_score > 0.5
             )
         ).order_by(ModelPick.expected_value.desc()).limit(limit)
-        
+
         result = await db.execute(query)
         picks = result.scalars().all()
-        
+
         props = []
         for pick in picks:
             # Get related data safely
@@ -12910,7 +12870,7 @@ async def get_working_player_props(
                 market = await db.get(Market, pick.market_id)
             except:
                 continue
-            
+
             prop_data = {
                 'id': pick.id,
                 'player': {
@@ -12929,14 +12889,14 @@ async def get_working_player_props(
                 'generated_at': pick.generated_at.isoformat() if pick.generated_at else None
             }
             props.append(prop_data)
-        
+
         return {
             'items': props,
             'total': len(props),
             'sport_id': sport_id,
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
-        
+
     except Exception as e:
         # Return empty result instead of error
         return {
@@ -12976,7 +12936,7 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     min-height: 100vh;
-    background-image: 
+    background-image:
         radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
         radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.15) 0px, transparent 50%);
 }
@@ -13184,7 +13144,7 @@ const API_BASE = window.location.origin;
 document.addEventListener('DOMContentLoaded', () => {
     // Initial status check
     checkBackend();
-    
+
     // Load endpoints if the container exists
     if (document.getElementById('endpoints-grid')) {
         loadEndpoints();
@@ -13194,13 +13154,13 @@ document.addEventListener('DOMContentLoaded', () => {
 async function checkBackend() {
     const statusBadge = document.getElementById('backend-status-badge');
     const statusText = document.getElementById('backend-status-text');
-    
+
     if (!statusBadge) return;
 
     try {
         const response = await fetch(`${API_BASE}/health`);
         const data = await response.json();
-        
+
         if (data.status === 'healthy') {
             updateStatus('healthy', 'Operational');
         } else {
@@ -13215,10 +13175,10 @@ async function checkBackend() {
 function updateStatus(state, text) {
     const badge = document.getElementById('backend-status-badge');
     const label = document.getElementById('backend-status-text');
-    
+
     // Reset classes
     badge.className = 'status-badge';
-    
+
     if (state === 'healthy') {
         badge.classList.add('status-healthy');
         badge.innerHTML = '✅ healthy';
@@ -13229,7 +13189,7 @@ function updateStatus(state, text) {
         badge.classList.add('status-unhealthy');
         badge.innerHTML = '⚠️ unhealthy';
     }
-    
+
     if (label) label.textContent = text;
 }
 
@@ -13268,11 +13228,11 @@ async function testEndpoint(path) {
     const btn = event.currentTarget.querySelector('button');
     const originalText = btn.innerText;
     btn.innerText = 'Testing...';
-    
+
     try {
         const response = await fetch(`${API_BASE}${path}`);
         const data = await response.json();
-        
+
         // Create a modal or nice alert to show results
         // For now, using a simple formatted alert, but in a real app would likely use a modal
         console.log(`Response from ${path}:`, data);
@@ -13285,4 +13245,5 @@ async function testEndpoint(path) {
 }
 
 ```
+
 
