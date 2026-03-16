@@ -12272,14 +12272,12 @@ async def get_brain_anomalies_summary():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
 ## File: backend/app/api/model_status_endpoints.py
 
-```py
-"""
-Model Status Endpoint - Production Health Monitoring
-"""
-from fastapi import APIRouter
+    """
+    Model Status Endpoint - Production Health Monitoring
+    """
+    from fastapi import APIRouter
 from datetime import datetime
 import os
 
@@ -12337,18 +12335,16 @@ async def get_model_status():
         }
     }
 
-
 ## File: backend/app/api/track_record_endpoints.py
 
-```py
-"""
-Track Record Endpoints - Transparent Performance Tracking
-"""
-from fastapi import APIRouter, Query
-from datetime import datetime, timezone
-import asyncio
+    """
+    Track Record Endpoints - Transparent Performance Tracking
+    """
+    from fastapi import APIRouter, Query
+    from datetime import datetime, timezone
+    import asyncio
 
-router = APIRouter()
+    router = APIRouter()
 
 @router.get("/track-record")
 async def get_transparent_track_record():
@@ -12620,18 +12616,16 @@ async def get_bookmaker_performance():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
 ## File: backend/app/api/validation_endpoints.py
 
-```py
-"""
-Validation endpoints for model performance
-"""
-from fastapi import APIRouter, Query
-from datetime import datetime, timezone
-import asyncio
+    """
+    Validation endpoints for model performance
+    """
+    from fastapi import APIRouter, Query
+    from datetime import datetime, timezone
+    import asyncio
 
-router = APIRouter()
+    router = APIRouter()
 
 @router.get("/picks")
 async def get_validated_picks(
@@ -12836,25 +12830,23 @@ async def get_track_record():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
 ## File: backend/app/api/working_parlays.py
 
-```py
-from fastapi import APIRouter, Depends, Query
-from datetime import datetime, timezone
-from app.database import get_db
+    from fastapi import APIRouter, Depends, Query
+    from datetime import datetime, timezone
+    from app.database import get_db
 
-router = APIRouter()
+    router = APIRouter()
 
-@router.get("/working-parlays")
-async def get_working_parlays(
-    sport_id: int = Query(30, description="Sport ID"),
-    limit: int = Query(5, description="Number of parlays to return"),
-    db = Depends(get_db)
-):
-    """Working parlay endpoint - returns sample parlays"""
-    try:
-        # Sample parlay data
+    @router.get("/working-parlays")
+    async def get_working_parlays(
+        sport_id: int = Query(30, description="Sport ID"),
+        limit: int = Query(5, description="Number of parlays to return"),
+        db = Depends(get_db)
+    ):
+        """Working parlay endpoint - returns sample parlays"""
+        try:
+            # Sample parlay data
 
         sample_parlays = [
             {
@@ -13069,24 +13061,22 @@ async def get_monte_carlo_simulation(
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
-
 ## File: backend/app/api/working_props.py
 
-```py
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
-from datetime import datetime, timezone
-from app.database import get_db
-from app.models.model_pick import ModelPick
-from app.models.player import Player
-from app.models.game import Game
-from app.models.market import Market
+    from fastapi import APIRouter, Depends, Query
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy import select, and_
+    from datetime import datetime, timezone
+    from app.database import get_db
+    from app.models.model_pick import ModelPick
+    from app.models.player import Player
+    from app.models.game import Game
+    from app.models.market import Market
 
-router = APIRouter()
+    router = APIRouter()
 
-@router.get("/working-player-props")
-async def get_working_player_props(
+    @router.get("/working-player-props")
+    async def get_working_player_props(
     sport_id: int = Query(..., description="Sport ID"),
     limit: int = Query(20, description="Number of props to return"),
     db: AsyncSession = Depends(get_db)
@@ -13157,31 +13147,29 @@ async def get_working_player_props(
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
 
-
 ## File: static/css/style.css
 
-```css
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-:root {
-    --bg-color: #0f172a;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --accent-color: #8b5cf6;
-    --accent-hover: #7c3aed;
-    --success-color: #10b981;
-    --error-color: #ef4444;
-    --border-color: rgba(148, 163, 184, 0.1);
-}
+    :root {
+        --bg-color: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.7);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --accent-color: #8b5cf6;
+        --accent-hover: #7c3aed;
+        --success-color: #10b981;
+        --error-color: #ef4444;
+        --border-color: rgba(148, 163, 184, 0.1);
+    }
 
-* {
+    * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
+    }
 
-body {
+    body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-primary);
@@ -13190,22 +13178,22 @@ body {
     background-image:
         radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
         radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.15) 0px, transparent 50%);
-}
+    }
 
-.container {
+    .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 40px 20px;
-}
+    }
 
-/* Header & Hero */
-header {
+    /* Header & Hero */
+    header {
     margin-bottom: 60px;
     text-align: center;
     animation: fadeInDown 0.8s ease-out;
-}
+    }
 
-h1 {
+    h1 {
     font-size: 3.5rem;
     font-weight: 700;
     margin-bottom: 15px;
@@ -13213,16 +13201,16 @@ h1 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.05em;
-}
+    }
 
-.subtitle {
+    .subtitle {
     font-size: 1.25rem;
     color: var(--text-secondary);
     font-weight: 300;
-}
+    }
 
-/* Glassmorphism Cards */
-.card {
+    /* Glassmorphism Cards */
+    .card {
     background: var(--card-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -13232,25 +13220,25 @@ h1 {
     margin-bottom: 30px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
+    }
 
-.card:hover {
+    .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     border-color: rgba(139, 92, 246, 0.3);
-}
+    }
 
-h2 {
+    h2 {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 25px;
     display: flex;
     align-items: center;
     gap: 10px;
-}
+    }
 
-/* Status Indicators */
-.status-item {
+    /* Status Indicators */
+    .status-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -13258,13 +13246,13 @@ h2 {
     background: rgba(255, 255, 255, 0.03);
     border-radius: 12px;
     margin-bottom: 10px;
-}
+    }
 
-.status-label {
+    .status-label {
     color: var(--text-secondary);
-}
+    }
 
-.status-badge {
+    .status-badge {
     padding: 6px 12px;
     border-radius: 9999px;
     font-size: 0.875rem;
@@ -13272,29 +13260,29 @@ h2 {
     display: flex;
     align-items: center;
     gap: 6px;
-}
+    }
 
-.status-healthy {
+    .status-healthy {
     background: rgba(16, 185, 129, 0.2);
     color: #34d399;
     border: 1px solid rgba(16, 185, 129, 0.3);
-}
+    }
 
-.status-unhealthy {
+    .status-unhealthy {
     background: rgba(239, 68, 68, 0.2);
     color: #f87171;
     border: 1px solid rgba(239, 68, 68, 0.3);
-}
+    }
 
-.status-checking {
+    .status-checking {
     background: rgba(148, 163, 184, 0.2);
     color: #cbd5e1;
     border: 1px solid rgba(148, 163, 184, 0.3);
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
+    }
 
-/* Buttons */
-.btn {
+    /* Buttons */
+    .btn {
     background: var(--accent-color);
     color: white;
     padding: 12px 24px;
@@ -13307,33 +13295,33 @@ h2 {
     align-items: center;
     gap: 8px;
     font-size: 0.95rem;
-}
+    }
 
-.btn:hover {
+    .btn:hover {
     background: var(--accent-hover);
     transform: translateY(-1px);
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
-}
+    }
 
-.btn-secondary {
+    .btn-secondary {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
-}
+    }
 
-.btn-secondary:hover {
+    .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.1);
     box-shadow: none;
-}
+    }
 
-/* Endpoints Grid */
-.endpoints-grid {
+    /* Endpoints Grid */
+    .endpoints-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 20px;
     margin-top: 20px;
-}
+    }
 
-.endpoint-card {
+    .endpoint-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-color);
     border-radius: 16px;
@@ -13342,29 +13330,29 @@ h2 {
     cursor: pointer;
     position: relative;
     overflow: hidden;
-}
+    }
 
-.endpoint-card:hover {
+    .endpoint-card:hover {
     background: rgba(255, 255, 255, 0.06);
     border-color: var(--accent-color);
-}
+    }
 
-.endpoint-path {
+    .endpoint-path {
     font-family: 'Monaco', 'Consolas', monospace;
     font-size: 0.85rem;
     color: var(--accent-color);
     margin-bottom: 8px;
     display: block;
-}
+    }
 
-.endpoint-desc {
+    .endpoint-desc {
     font-size: 0.95rem;
     color: var(--text-secondary);
     margin-bottom: 15px;
-}
+    }
 
-/* Animations */
-@keyframes fadeInDown {
+    /* Animations */
+    @keyframes fadeInDown {
     from {
         opacity: 0;
         transform: translateY(-20px);
@@ -13373,26 +13361,25 @@ h2 {
         opacity: 1;
         transform: translateY(0);
     }
-}
+    }
 
-@keyframes pulse {
+    @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: .5; }
-}
+    }
 
-/* Responsive */
-@media (max-width: 768px) {
+    /* Responsive */
+    @media (max-width: 768px) {
     h1 { font-size: 2.5rem; }
     .container { padding: 20px; }
-}
+    }
 
 
 ## File: static/js/app.js
 
-```js
-const API_BASE = window.location.origin;
+    const API_BASE = window.location.origin;
 
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
     // Initial status check
     checkBackend();
 
@@ -13400,9 +13387,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('endpoints-grid')) {
         loadEndpoints();
     }
-});
+    });
 
-async function checkBackend() {
+    async function checkBackend() {
     const statusBadge = document.getElementById('backend-status-badge');
     const statusText = document.getElementById('backend-status-text');
 
@@ -13421,9 +13408,9 @@ async function checkBackend() {
         updateStatus('unhealthy', 'Connection Failed');
         console.error('Backend check failed:', error);
     }
-}
+    }
 
-function updateStatus(state, text) {
+    function updateStatus(state, text) {
     const badge = document.getElementById('backend-status-badge');
     const label = document.getElementById('backend-status-text');
 
@@ -13442,9 +13429,9 @@ function updateStatus(state, text) {
     }
 
     if (label) label.textContent = text;
-}
+    }
 
-function loadEndpoints() {
+    function loadEndpoints() {
     const grid = document.getElementById('endpoints-grid');
     if (!grid) return;
 
@@ -13467,9 +13454,9 @@ function loadEndpoints() {
             </button>
         </div>
     `).join('');
-}
+    }
 
-async function testEndpoint(path) {
+    async function testEndpoint(path) {
     // If it's docs, open in new tab
     if (path === '/docs') {
         window.open(`${API_BASE}/docs`, '_blank');
@@ -13493,7 +13480,6 @@ async function testEndpoint(path) {
     } finally {
         btn.innerText = originalText;
     }
-}
+    }
 
-```text
 
