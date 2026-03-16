@@ -9,9 +9,7 @@ router = APIRouter(tags=["Brain Intelligence"])
 logger = logging.getLogger(__name__)
 
 @router.get("/ev-top")
-@router.get("/")
-@router.get("/track")
-async def track_clv(
+async def get_ev_signals(
     sport: str = Query("basketball_nba", description="e.g. basketball_nba"),
     min_ev: float = Query(2.0, description="Minimum edge percentage"),
     limit: int = Query(50, description="Max results")
@@ -54,4 +52,4 @@ async def track_clv(
         return {"data": [], "error": str(e)}
 
 # Alias for use by intel.py
-get_top_ev = track_clv
+get_top_ev = get_ev_signals

@@ -23,7 +23,6 @@ async def whale_signals(sport: Optional[str] = Query("basketball_nba"), tier: st
     }
 
 @router.get("/active-moves")
-@router.get("/moves")
 async def get_active_moves(sport: str = Query("basketball_nba"), tier: str = Depends(get_user_tier)):
     """
     Returns confirmed whale moves. Returns simulated data for non-elite users.

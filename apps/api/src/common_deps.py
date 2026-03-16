@@ -1,4 +1,6 @@
-class AsyncSession: pass
+from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+logger = logging.getLogger(__name__)
 from fastapi import Header, HTTPException, Depends
 from services.auth_service import auth_service
 from db.session import get_async_db, get_db
@@ -15,7 +17,8 @@ async def get_user_tier(
     db: AsyncSession = Depends(get_async_db)
 ) -> str:
     if settings.DEVELOPMENT_MODE:
-        return "elite"
+        # Don't auto-upgrade to elite in dev, respect DB/JWT tier for testing
+        pass
         
     if not authorization:
         return "free"
@@ -62,7 +65,7 @@ async def get_current_user_supabase(credentials: Optional[HTTPAuthorizationCrede
         if isinstance(sb_response, dict) and 'user' in sb_response:
             return sb_response['user']
     except Exception as e:
-        print(f"Supabase auth error in common_deps: {e}")
+        logger.warning(f"Supabase auth error in common_deps: {e}")
     return None
 
 def require_elite(tier: str = Depends(get_user_tier)):

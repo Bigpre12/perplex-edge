@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE } from "./apiConfig";
+
+const API_BASE_URL = API_BASE;
 
 type QueryValue = string | number | boolean | undefined | null;
 
@@ -95,10 +97,10 @@ export const api = {
     signals: {
         sharp: (sport = "basketball_nba") =>
             request("/api/signals/sharp-moves", undefined, { sport }),
-        freshness: (sport = "basketball_nba") =>
-            request("/api/signals/freshness", undefined, { sport }),
+        scanner: (sport = "basketball_nba") =>
+            request("/api/ev/ev-top", undefined, { sport }),
     },
-    wsEv: `${API_BASE.replace('http', 'ws')}/api/ev/ws`,
+    wsEv: API_BASE.replace(/^http/, 'ws'),
 
     // Features
     injuries: (sport = "basketball_nba") =>
@@ -121,6 +123,9 @@ export const api = {
     parlay: (sport = "basketball_nba") => request("/api/parlay", undefined, { sport }),
     steam: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
     search: (q: string) => request("/api/search", undefined, { q }),
+    ledgerMyBets: () => request("/api/bets"),
+    ledgerStats: (sport = "all") => request("/api/hit-rate", undefined, { sport }),
+    socialShare: (data: any, token: string) => request("/api/meta/share", { method: "POST", body: JSON.stringify(data), headers: { "Authorization": `Bearer ${token}` } }),
 
     // Brain
     brain: {
@@ -142,9 +147,9 @@ export const api = {
     activeMoves: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
     steamAlerts: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
     alerts: (sport = "basketball_nba") => request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
-    wsBaseUrl: API_BASE.replace('http', 'ws'),
-    wsOdds: `${API_BASE.replace('http', 'ws')}/api/ev/ws`,
-    wsKalshi: `${API_BASE.replace('http', 'ws')}/api/kalshi/ws`,
+    wsBaseUrl: API_BASE.replace(/^http/, 'ws'),
+    wsOdds: `${API_BASE.replace(/^http/, 'ws')}/api/ev/ws`,
+    wsKalshi: `${API_BASE.replace(/^http/, 'ws')}/api/kalshi/ws`,
     share: () => "/api/meta/share",
     reportingExport: (format: string) => `/api/metrics/export?format=${format}`
 };

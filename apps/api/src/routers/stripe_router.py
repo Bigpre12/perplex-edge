@@ -23,8 +23,10 @@ class CheckoutRequest(BaseModel):
 @router.post("/create-checkout-session")
 async def create_checkout_session(req: CheckoutRequest):
     try:
-        # If using local mock key, bypass Stripe API entirely and pretend it succeeded
+        # Prevent mock key bypass if not in development mode
         if stripe.api_key == "sk_test_mock_key_only":
+            if not settings.DEVELOPMENT_MODE:
+                raise HTTPException(status_code=400, detail="Stripe Secret Key not configured for production.")
             return {"session_url": settings.FRONTEND_URL + '/institutional/settings?checkout=success&mock=true'}
 
         # Get the latest price ID dynamically at request time

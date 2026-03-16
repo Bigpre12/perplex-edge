@@ -27,7 +27,7 @@ class UnifiedOdds(Base):
     ingested_ts = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     
     __table_args__ = (
-        UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', name='uix_odds_unique'),
+        UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'player_name', name='uix_odds_unique'),
     )
 
 class UnifiedEVSignal(Base):

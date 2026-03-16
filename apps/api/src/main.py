@@ -5,13 +5,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-import core.config
-print(f"DEBUG: core.config file: {core.config.__file__}")
-from core.config import APP_NAME, CORS_ORIGINS
+from core.config import APP_NAME, settings
 
 from db.base import Base
 import db.session
-print(f"DEBUG: db.session file: {db.session.__file__}")
 from db.session import engine
 
 from routers.health import router as health_router
@@ -40,13 +37,13 @@ from routers.slate import router as slate_router
 from routers.ws_ev import router as ws_ev_router
 
 # Initialize database tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine) # DEPRECATED: Use Alembic migrations
 
 app = FastAPI(title=APP_NAME)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,7 +73,7 @@ app.include_router(intel_router,    prefix="/api/intel",        tags=["intel"])
 app.include_router(oracle_router,   prefix="/api/oracle",       tags=["oracle"])
 app.include_router(live_router,     prefix="/api/live",         tags=["live"])
 app.include_router(slate_router,    prefix="/api/slate",        tags=["slate"])
-app.include_router(ws_ev_router,    prefix="/api/ev",           tags=["ws"])
+app.include_router(ws_ev_router,    prefix="/api",              tags=["ws"])
 
 @app.get("/")
 async def root():
@@ -86,4 +83,5 @@ if __name__ == "__main__":
     import uvicorn
     import os
     port = int(os.environ.get("PORT") or 8000)
-    uvicorn.run("main:app", host="127.0.0.1", port=port, reload=True)
+    # Bind to 0.0.0.0 for container/cloud compatibility
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

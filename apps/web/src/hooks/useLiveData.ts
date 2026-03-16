@@ -46,16 +46,16 @@ export function useLiveData<T = any>(
         dataUpdatedAt,
         isStale
     } = useQuery({
-        queryKey: [...deps, fetcher.toString()], // Unique key based on deps and fetcher code
+        queryKey: deps, // Unique key based on deps
         queryFn: async () => {
             const result = await fetcher();
             if (isApiError(result)) {
-                throw new Error(result.error);
+                throw new Error((result as any).error);
             }
             return unwrap(result);
         },
         refetchInterval: refreshInterval,
-        staleTime: 60000, // 1 minute stale time for smoother tab switching
+        staleTime: refreshInterval, // 1 minute stale time for smoother tab switching
         enabled: enabled,
     });
 

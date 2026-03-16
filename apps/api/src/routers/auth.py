@@ -1,4 +1,4 @@
-class AsyncSession: pass
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, update
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["auth"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # Already imported above
 
@@ -58,13 +58,15 @@ async def get_current_user(
     try:
         # 1. Try API Key first (Institutional/Bot execution)
         if x_api_key:
-            stmt = select(User).join(APIKey, User.id == APIKey.user_id).where(APIKey.key_hash == x_api_key)
+            import hashlib
+            key_hash = hashlib.sha256(x_api_key.encode()).hexdigest()
+            stmt = select(User).join(APIKey, User.id == APIKey.user_id).where(APIKey.key_hash == key_hash)
             result = await db.execute(stmt)
             user = result.scalar_one_or_none()
             if user:
                 # Update request count
                 await db.execute(
-                    update(APIKey).where(APIKey.key_hash == x_api_key).values(requests_count=APIKey.requests_count + 1)
+                    update(APIKey).where(APIKey.key_hash == key_hash).values(requests_count=APIKey.requests_count + 1)
                 )
                 await db.commit()
                 return user
@@ -111,8 +113,21 @@ async def get_current_user(
                     
                     if not user:
                         # Provision JIT user if they exist in Supabase but not local DB
+                        base_username = email.split("@")[0]
+                        username = base_username
+                        
+                        # Collision protection: Ensure username is unique
+                        count = 0
+                        while True:
+                            check_stmt = select(User).where(User.username == username)
+                            check_res = await db.execute(check_stmt)
+                            if not check_res.scalar_one_or_none():
+                                break
+                            count += 1
+                            username = f"{base_username}{count}"
+                        
                         user = User(
-                            username=email.split("@")[0],
+                            username=username,
                             email=email,
                             hashed_password="SUPABASE_AUTH_EXTERNAL"
                         )
@@ -202,9 +217,12 @@ async def generate_api_key(
 ):
     """Generate a new secure API Key for the user."""
     new_key = secrets.token_urlsafe(32)
+    import hashlib
+    key_hash = hashlib.sha256(new_key.encode()).hexdigest()
+    
     api_key_entry = APIKey(
         user_id=user.id,
-        key_hash=new_key, # In production we would hash this, but for this dev sprint we use it directly
+        key_hash=key_hash,
         label=label
     )
     db.add(api_key_entry)

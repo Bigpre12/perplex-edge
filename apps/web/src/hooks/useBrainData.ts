@@ -48,21 +48,21 @@ export const useBrainData = (sportKey: SportKey = "basketball_nba") => {
     const { isDown } = useBackendStatus()
 
     // 1. Fetch Decisions
-    const { data: decData, loading: decLoading } = useLiveData(
+    const { data: decData, loading: decLoading, refresh: decRefetch } = useLiveData(
         () => api.brain.decisions(sportKey),
         ['brain-decisions', sportKey],
         { enabled: !isDown, refreshInterval: 30000 }
     )
 
     // 2. Fetch Health/Metrics
-    const { data: healthData, loading: healthLoading } = useLiveData(
+    const { data: healthData, loading: healthLoading, refresh: healthRefetch } = useLiveData(
         () => api.brain.metrics(),
         ['brain-metrics', sportKey],
         { enabled: !isDown, refreshInterval: 30000 }
     )
 
     // 3. Fetch Intel
-    const { data: intelData, loading: intelLoading } = useLiveData(
+    const { data: intelData, loading: intelLoading, refresh: intelRefetch } = useLiveData(
         () => api.recentIntel(sportKey),
         ['recent-intel', sportKey],
         { enabled: !isDown, refreshInterval: 60000 }
@@ -82,11 +82,17 @@ export const useBrainData = (sportKey: SportKey = "basketball_nba") => {
 
     const loading = decLoading || healthLoading || intelLoading
 
+    const refetch = () => {
+        decRefetch();
+        healthRefetch();
+        intelRefetch();
+    };
+
     return {
         decisions: unwrap(decData),
         health,
         marketIntel,
         loading,
-        refetch: () => { }
+        refetch
     }
 }

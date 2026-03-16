@@ -3,7 +3,7 @@ from celery import Celery
 from core.config import settings
 
 celery_app = Celery(
-    "lucrix_worker",
+    "perplex_edge_worker",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
     include=["workers.ev_engine"] # Register tasks here

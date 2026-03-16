@@ -83,23 +83,26 @@ async def fetch_props_for_sport(sport_id: int) -> list:
         logger.warning(f"No active events for {sport_key}")
         return []
 
-    # Filter events: Only games starting within the next 8 hours
+    # Filter events: Only games starting within the configured window
+    from core.config import settings
+    window_hours = getattr(settings, "INGEST_EVENT_WINDOW_HOURS", 36)
+    
     now = datetime.utcnow()
     imminent_events = []
     for e in events:
         try:
             start_time = datetime.fromisoformat(e['commence_time'].replace('Z', '+00:00'))
-            diff = (start_time - now.replace(tzinfo=timezone.utc)).total_seconds()
-            if diff < 129600: # 36 hours
+            diff_hours = (start_time - now.replace(tzinfo=timezone.utc)).total_seconds() / 3600
+            if diff_hours < window_hours:
                 imminent_events.append(e)
         except Exception as err:
             logger.error(f"Error parsing time for event {e.get('id')}: {err}")
             continue
     
-    logger.info(f"DEBUG: Found {len(events)} total events, {len(imminent_events)} imminent.")
+    logger.debug(f"Found {len(events)} total events, {len(imminent_events)} imminent within {window_hours}h.")
 
     # Step 2: Fetch props for each event ID
-    # LIMIT: Only fetch props for the FIRST 5 imminent events per sport to conserve credits
+    # LIMIT: Cap to 5 imminent events in dev mode to conserve credits, fetch ALL in production.
     all_props = []
     markets = SPORT_MARKETS.get(sport_key, "player_points")
     
@@ -117,9 +120,7 @@ async def fetch_props_for_sport(sport_id: int) -> list:
             await asyncio.sleep(0.5)
             return result
 
-    # 🔓 LOCK REMOVAL: Fetch more events in dev mode
-    from core.config import settings
-    event_limit = len(imminent_events) if settings.DEVELOPMENT_MODE else 5
+    event_limit = 5 if settings.DEVELOPMENT_MODE else len(imminent_events)
     tasks = [fetch_event_props(e['id']) for e in imminent_events[:event_limit]]
     results = await asyncio.gather(*tasks)
 
@@ -129,6 +130,7 @@ async def fetch_props_for_sport(sport_id: int) -> list:
 
     if all_props:
         await cache.set(cache_key, json.dumps(all_props), CACHE_TTL)
+        logger.info(f"Ingested {len(all_props)} events with props for {sport_key}")
 
     return all_props
 

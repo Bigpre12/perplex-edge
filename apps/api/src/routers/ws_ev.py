@@ -9,6 +9,7 @@ import redis.asyncio as redis
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ws", tags=["Institutional WebSockets"])
+redis_client = redis.from_url(settings.REDIS_URL)
 
 class WebSocketConnectionManager:
     """
@@ -16,7 +17,7 @@ class WebSocketConnectionManager:
     """
     def __init__(self):
         self.active_connections: List[WebSocket] = []
-        self.redis_client = redis.from_url(settings.REDIS_URL)
+        self.redis_client = redis_client
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()

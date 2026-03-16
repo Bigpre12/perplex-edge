@@ -1,4 +1,4 @@
-class AsyncSession: pass
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Request, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
 import stripe

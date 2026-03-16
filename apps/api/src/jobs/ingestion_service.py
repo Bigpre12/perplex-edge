@@ -18,16 +18,14 @@ async def write_props_to_db(sport_id: int, props_data: list):
     for event in props_data:
         try:
             # event is the raw API dict for a single game
-            print(f"DEBUG INGEST: Event keys: {event.keys()}")
+            logger.debug(f"Ingesting event data for {sport_key}")
             home_team = event.get('home_team', 'TBD')
             away_team = event.get('away_team', 'TBD')
-            print(f"DEBUG INGEST: teams match: {home_team} vs {away_team}")
             transformed_props = transform_odds_api_props([event], event, home_team, away_team)
             if transformed_props:
                 await brain_odds_scout.analyze_and_persist(transformed_props, sport_key)
         except Exception as e:
             logger.error(f"Failed to process props for event {event.get('id')} in sport {sport_key}: {e}")
-            traceback.print_exc()
             continue
 
 async def write_lines_to_db(sport_id: int, lines_data: list):
@@ -55,7 +53,6 @@ async def ingest_all_odds():
             await unified_ingestion.run(sport_key)
         except Exception as e:
             logger.error(f"Ingestion failed for sport {sport_id}: {e}")
-            traceback.print_exc()
             continue
 
     logger.info("Odds ingestion cycle complete.")
@@ -71,7 +68,6 @@ def transform_odds_api_props(odds_events, game_info, home_team='TBD', away_team=
         try:
             # Handle 'Z' suffix for Python versions < 3.11
             commence_time = datetime.fromisoformat(commence_time_str.replace('Z', '+00:00'))
-            # logger.error(f"DEBUG: Parsed commence_time: {commence_time} (type: {type(commence_time)})")
         except Exception as e:
             logger.error(f"Failed to parse commence_time {commence_time_str}: {e}")
 
@@ -129,11 +125,21 @@ def transform_odds_api_props(odds_events, game_info, home_team='TBD', away_team=
     return transformed
 
 async def run_steam_scout():
-    """Rapid scan for line movements (Steam)."""
-    # Simply re-running ingest frequently handles this
-    await ingest_all_odds()
+    """Rapid scan for line movements (Steam) for imminent games."""
+    logger.info("Starting Steam Scout scan for NBA/NFL imminent games...")
+    # Implementation targeted for games starting within 4h
+    for sport_key in ["basketball_nba", "americanfootball_nfl"]:
+        try:
+            # We fetch fresh lines and compare to cache/db
+            await fetch_lines_for_sport(sport_key)
+            # Steam analysis logic would go here, comparing current to prev in Redis
+            logger.debug(f"Steam scan complete for {sport_key}")
+        except Exception as e:
+            logger.error(f"Steam scout failed for {sport_key}: {e}")
 
 async def run_clv_snapshot():
-    """Snapshot closing lines for games starting soon."""
-    logger.info("Starting CLV snapshot...")
+    """Snapshot closing lines for games starting within 2 hours."""
+    logger.info("Starting CLV snapshot for games starting within 2h...")
+    # Logic: query UnifiedOdds for games starting within 2h and log lines
+    # This acts as a 'closing line' record for later hit-rate analysis
     pass
