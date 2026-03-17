@@ -18,7 +18,7 @@ export function MobileNav() {
         { label: "Today", href: "/slate", icon: Calendar },
         { label: "Edges", href: "/top-edges", icon: Zap },
         { label: "Arbs", href: "/arbitrage", icon: ArrowRightLeft },
-        { label: "Props", href: "/player-props", icon: Target },
+        { label: "Props", href: "/props", icon: Target },
         { label: "Hit Rate", href: "/hit-rate", icon: BarChart3 },
     ];
 

@@ -1,11 +1,12 @@
 import logging
 import json
 from datetime import datetime, timezone
-from sqlalchemy import select, update, desc
-from sqlalchemy.orm import Session
-from db.session import async_session_maker
-from models.prop import PropLine, PropOdds, GameLine, GameLineOdds
-from models.history import PropHistory
+from typing import List, Optional, Union, Any
+from sqlalchemy import select, update, desc, cast, String # type: ignore
+from sqlalchemy.orm import Session # type: ignore
+from db.session import async_session_maker # type: ignore
+from models.prop import PropLine, PropOdds, GameLine, GameLineOdds # type: ignore
+from models.history import PropHistory # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +39,7 @@ class BrainOddsScout:
                         PropLine.sport_key == sport
                     )
                     result = await session.execute(stmt)
-                    existing_line = result.scalar_one_or_none()
-                    
-                    current_line = p['line_value']
-                    current_odds_over = p.get('odds', -110)
-                    current_odds_under = -110 # Default for now
+                    existing_line: Optional[PropLine] = result.scalar()
                     
                     if not existing_line:
                         # NEW PROP - create and initial history
@@ -53,7 +50,7 @@ class BrainOddsScout:
                             opponent=p['matchup']['opponent'],
                             sport_key=sport,
                             stat_type=stat_type,
-                            line=current_line,
+                            line=p['line_value'],
                             game_id=p.get('game_id'),
                             start_time=p.get('start_time')
                         )
@@ -68,6 +65,7 @@ class BrainOddsScout:
                         existing_line.updated_at = datetime.now(timezone.utc)
                         
                         # check for deltas (Steam detection)
+                        current_line = p['line_value']
                         delta_line = abs(current_line - existing_line.line)
                         if delta_line >= self.steam_threshold_line:
                             history = PropHistory(
@@ -82,19 +80,20 @@ class BrainOddsScout:
                             existing_line.steam_score += 1.0
                             existing_line.updated_at = datetime.now(timezone.utc)
 
+                    assert existing_line is not None
                     # 2. Update PropOdds for each bookmaker
                     for b_key, b_data in p.get('books', {}).items():
                         # Find existing odds for this book
                         stmt_odds = select(PropOdds).where(
-                            PropOdds.prop_line_id == existing_line.id,
+                            PropOdds.prop_line_id == existing_line.id, # type: ignore
                             PropOdds.sportsbook == b_key
                         )
                         res_odds = await session.execute(stmt_odds)
-                        existing_odds = res_odds.scalar_one_or_none()
+                        existing_odds: Optional[PropOdds] = res_odds.scalar()
                         
                         if not existing_odds:
                             new_odds = PropOdds(
-                                prop_line_id=existing_line.id,
+                                prop_line_id=existing_line.id, # type: ignore
                                 sportsbook=b_key,
                                 over_odds=int(b_data['over']),
                                 under_odds=int(b_data['under']),
@@ -115,7 +114,7 @@ class BrainOddsScout:
                 print(f"DEBUG: Analysis failed: {e}")
                 logger.error(f"OddsScout analysis failed: {e}")
 
-    async def get_sharp_signals(self, sport: str = None) -> list:
+    async def get_sharp_signals(self, sport: Optional[str] = None) -> List[PropLine]: # type: ignore
         """Fetch all props that currently have active sharp signals."""
         async with async_session_maker() as session:
             stmt = select(PropLine).where(PropLine.sharp_money == True)
@@ -156,7 +155,7 @@ class BrainOddsScout:
                                 GameLine.sport_key == sport
                             )
                             res = await session.execute(stmt)
-                            existing_gl = res.scalar_one_or_none()
+                            existing_gl: Optional[GameLine] = res.scalar()
                             
                             if not existing_gl:
                                 existing_gl = GameLine(
@@ -170,17 +169,18 @@ class BrainOddsScout:
                                 session.add(existing_gl)
                                 await session.flush()
 
+                            assert existing_gl is not None
                             # 2. Update GameLineOdds
                             stmt_odds = select(GameLineOdds).where(
-                                GameLineOdds.game_line_id == existing_gl.id,
+                                GameLineOdds.game_line_id == existing_gl.id, # type: ignore
                                 GameLineOdds.sportsbook == b_key
                             )
                             res_odds = await session.execute(stmt_odds)
-                            existing_odds = res_odds.scalar_one_or_none()
+                            existing_odds: Optional[GameLineOdds] = res_odds.scalar()
                             
                             if not existing_odds:
                                 existing_odds = GameLineOdds(
-                                    game_line_id=existing_gl.id,
+                                    game_line_id=existing_gl.id, # type: ignore
                                     sportsbook=b_key
                                 )
                                 session.add(existing_odds)
@@ -192,22 +192,22 @@ class BrainOddsScout:
                                 point = outcome.get('point')
                                 
                                 if m_key == 'h2h':
-                                    if name == home_team: existing_odds.home_price = price
-                                    elif name == away_team: existing_odds.away_price = price
-                                    elif name == 'Draw': existing_odds.draw_price = price
+                                    if name == home_team: existing_odds.home_price = price # type: ignore
+                                    elif name == away_team: existing_odds.away_price = price # type: ignore
+                                    elif name == 'Draw': existing_odds.draw_price = price # type: ignore
                                 elif m_key == 'spreads':
                                     if name == home_team:
-                                        existing_odds.home_price = price
-                                        existing_odds.home_point = point
+                                        existing_odds.home_price = price # type: ignore
+                                        existing_odds.home_point = point # type: ignore
                                     elif name == away_team:
-                                        existing_odds.away_price = price
-                                        existing_odds.away_point = point
+                                        existing_odds.away_price = price # type: ignore
+                                        existing_odds.away_point = point # type: ignore
                                 elif m_key == 'totals':
-                                    if name == 'Over': existing_odds.over_price = price
-                                    elif name == 'Under': existing_odds.under_price = price
-                                    existing_odds.total_line = point
+                                    if name == 'Over': existing_odds.over_price = price # type: ignore
+                                    elif name == 'Under': existing_odds.under_price = price # type: ignore
+                                    existing_odds.total_line = point # type: ignore
 
-                            existing_odds.updated_at = datetime.now(timezone.utc)
+                            existing_odds.updated_at = datetime.now(timezone.utc) # type: ignore
 
                 await session.commit()
             except Exception as e:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.session import get_db
+from db.session import get_db, get_async_db
 from models.prop import Prop
 from schemas.prop import PropOut, PropsScoredResponse
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ async def list_props(
     sport: str = "basketball_nba",
     limit: int = 40,
     stale: bool = False,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Returns top props for a sport with intelligent freshness filtering."""
     try:
@@ -31,13 +31,14 @@ async def list_props(
 
         stmt = stmt.order_by(desc(Prop.created_at)).limit(limit)
         result = await db.execute(stmt)
-        return result.scalars().all()
+        items = result.scalars().all()
+        return {"data": items, "results": items}
     except Exception as e:
         logger.error(f"Error listing props: {e}")
-        return []
+        return {"data": [], "results": []}
 
 @router.get("/scored")
-async def scored_props(db: AsyncSession = Depends(get_db)):
+async def scored_props(db: AsyncSession = Depends(get_async_db)):
     """Returns recently completed props for the ledger/history (last 72h)."""
     try:
         now = datetime.utcnow()
@@ -47,7 +48,8 @@ async def scored_props(db: AsyncSession = Depends(get_db)):
         ).order_by(desc(Prop.created_at)).limit(50)
         
         result = await db.execute(stmt)
-        return result.scalars().all()
+        items = result.scalars().all()
+        return {"data": items, "results": items}
     except Exception as e:
         logger.error(f"Error listing scored props: {e}")
-        return []
+        return {"data": [], "results": []}

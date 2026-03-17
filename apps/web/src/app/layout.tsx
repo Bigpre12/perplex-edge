@@ -58,8 +58,8 @@ export default function RootLayout({
       <head />
       <body className="antialiased bg-lucrix-dark text-textPrimary font-sans selection:bg-brand-purple selection:text-white relative" suppressHydrationWarning>
         <PWASetup />
-        <OnboardingModal />
         <Providers>
+          <OnboardingModal />
           {children}
         </Providers>
         <footer className="lucrix-footer">

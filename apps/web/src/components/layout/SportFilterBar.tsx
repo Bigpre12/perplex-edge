@@ -70,6 +70,8 @@ export function SportFilterBar() {
                             Min Edge %
                             <input 
                                 type="range" 
+                                id="min-edge-slider"
+                                name="min-edge"
                                 min="0" max="10" step="0.5" 
                                 value={minEdge}
                                 aria-label="Minimum Edge Percentage"
@@ -80,6 +82,8 @@ export function SportFilterBar() {
                         </span>
                         
                         <select 
+                            id="bookmaker-select"
+                            name="bookmaker"
                             className="bg-lucrix-dark border border-lucrix-border rounded px-2 py-1 text-textSecondary outline-none min-w-[120px]"
                             aria-label="Select Bookmaker"
                             onChange={(e) => updateFilter('bookmaker', e.target.value)}

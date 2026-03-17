@@ -41,7 +41,11 @@ export interface MarketIntelItem {
     timestamp: string
 }
 
-export const useBrainData = (sportKey: SportKey = "basketball_nba") => {
+import { useSport } from '@/context/SportContext'
+
+export const useBrainData = (requestedSportKey?: SportKey) => {
+    const { selectedSport } = useSport();
+    const sportKey = requestedSportKey || selectedSport;
     const [decisions, setDecisions] = useState<BrainDecision[]>([])
     const [health, setHealth] = useState<SystemHealth | null>(null)
     const [marketIntel, setMarketIntel] = useState<MarketIntelItem[]>([])

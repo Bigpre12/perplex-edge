@@ -5,6 +5,7 @@ import contextlib
 from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from .base import Base
 
 # Use absolute path calculation directly to avoid cyclic/shadowing import issues
 DATABASE_URL = os.getenv(
@@ -43,7 +44,9 @@ class DummyAsyncSession:
     def __init__(self, sync_session):
         self.sync_session = sync_session
     async def execute(self, stmt, *args, **kwargs):
+        # SQLAlchemy 1.4+ / 2.0 sync session execute returns a Result object
         return DummyAsyncResult(self.sync_session.execute(stmt, *args, **kwargs))
+    
     async def commit(self): self.sync_session.commit()
     async def rollback(self): self.sync_session.rollback()
     def add(self, obj): self.sync_session.add(obj)

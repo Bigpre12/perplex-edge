@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 const COMMANDS = [
-    { id: "props", label: "Player Props", icon: "⚡", path: "/player-props", tag: "page" },
+    { id: "props", label: "Player Props", icon: "⚡", path: "/props", tag: "page" },
     { id: "ev", label: "EV+ Edges", icon: "📈", path: "/ev", tag: "page" },
     { id: "sharp", label: "Sharp Money", icon: "🎯", path: "/sharp", tag: "page" },
     { id: "hitrate", label: "Hit Rate Tracker", icon: "📊", path: "/hit-rate", tag: "page" },
@@ -15,11 +15,11 @@ const COMMANDS = [
     { id: "clv", label: "CLV Tracker", icon: "💹", path: "/clv", tag: "page" },
     { id: "tracker", label: "Bet Tracker", icon: "💰", path: "/bet-tracker", tag: "page" },
     { id: "settings", label: "Settings", icon: "⚙️", path: "/settings", tag: "page" },
-    { id: "nba", label: "NBA Props", icon: "🏀", path: "/player-props?sport=basketball_nba", tag: "sport" },
-    { id: "nfl", label: "NFL Props", icon: "🏈", path: "/player-props?sport=americanfootball_nfl", tag: "sport" },
-    { id: "mlb", label: "MLB Props", icon: "⚾", path: "/player-props?sport=baseball_mlb", tag: "sport" },
-    { id: "nhl", label: "NHL Props", icon: "🏒", path: "/player-props?sport=icehockey_nhl", tag: "sport" },
-    { id: "mma", label: "MMA Props", icon: "🥊", path: "/player-props?sport=mma_mixed_martial_arts", tag: "sport" },
+    { id: "nba", label: "NBA Props", icon: "🏀", path: "/props?sport=basketball_nba", tag: "sport" },
+    { id: "nfl", label: "NFL Props", icon: "🏈", path: "/props?sport=americanfootball_nfl", tag: "sport" },
+    { id: "mlb", label: "MLB Props", icon: "⚾", path: "/props?sport=baseball_mlb", tag: "sport" },
+    { id: "nhl", label: "NHL Props", icon: "🏒", path: "/props?sport=icehockey_nhl", tag: "sport" },
+    { id: "mma", label: "MMA Props", icon: "🥊", path: "/props?sport=mma_mixed_martial_arts", tag: "sport" },
 ];
 
 const TAG_COLORS: Record<string, string> = {
@@ -124,6 +124,8 @@ export default function CommandCenter() {
                         <span className="command-search-icon">🔍</span>
                         <input
                             autoFocus
+                            id="command-center-search"
+                            name="command-search"
                             value={query}
                             onChange={e => { setQuery(e.target.value); setSelected(0); }}
                             onKeyDown={handleInputKey}

@@ -87,12 +87,18 @@ class ResilientBaseClient:
             if isinstance(e, httpx.HTTPStatusError):
                 resp_content = f" | Response: {e.response.text}"
             
-            if retry_count < self.max_retries:
+            # Skip retries for auth/not found errors
+            is_auth_error = False
+            if isinstance(e, httpx.HTTPStatusError):
+                if e.response.status_code in [401, 403, 404]:
+                    is_auth_error = True
+            
+            if not is_auth_error and retry_count < self.max_retries:
                 wait_time = (2 ** retry_count) # Exponential
                 logger.warning(f"[{self.name}] Request failed: {str(e)}{resp_content}. Retrying in {wait_time}s...")
                 return await self._handle_retry(method, path, params, json_data, headers, retry_count, wait=wait_time)
             
-            logger.error(f"[{self.name}] Max retries reached for {path}. Error: {str(e)}{resp_content}")
+            logger.error(f"[{self.name}] Max retries reached or non-retryable error for {path}. Error: {str(e)}{resp_content}")
             raise e
 
     def _is_circuit_open(self) -> bool:

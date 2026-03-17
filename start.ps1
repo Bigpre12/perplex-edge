@@ -27,6 +27,9 @@ Start-Process powershell -ArgumentList @(
 Start-Sleep -Seconds 2
 
 # 3. Start Next.js in a new window
+Write-Host "Cleaning Next.js cache..." -ForegroundColor Gray
+Remove-Item -Path "apps\web\.next" -Recurse -Force -ErrorAction SilentlyContinue
+
 Write-Host "Launching Frontend (Next.js)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     "-NoExit",
@@ -34,7 +37,29 @@ Start-Process powershell -ArgumentList @(
     "cd 'C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web'; npm run dev"
 ) -WindowStyle Normal
 
-Write-Host "`nAll servers are starting!" -ForegroundColor Green
-Write-Host "Frontend: http://localhost:3000" -ForegroundColor Yellow # Typical Next.js dev port
-Write-Host "Backend:  http://localhost:8000/api/health" -ForegroundColor Yellow
-Write-Host "Docs:     http://localhost:8000/docs" -ForegroundColor Yellow
+# 4. Wait for Backend Health
+Write-Host "Waiting for Backend Health..." -ForegroundColor Cyan
+$maxRetries = 10
+$retryCount = 0
+$healthy = $false
+
+while ($retryCount -lt $maxRetries -and -not $healthy) {
+    try {
+        $resp = Invoke-WebRequest -Uri "http://localhost:8000/api/health" -UseBasicParsing -ErrorAction Stop
+        if ($resp.StatusCode -eq 200) {
+            $healthy = $true
+        }
+    }
+    catch {
+        $retryCount++
+        Start-Sleep -Seconds 2
+    }
+}
+
+if ($healthy) {
+    Write-Host "`nAll servers are stabilized!" -ForegroundColor Green
+    Write-Host "Frontend: http://localhost:3000" -ForegroundColor Yellow
+    Write-Host "Backend:  http://localhost:8000/api/health" -ForegroundColor Yellow
+} else {
+    Write-Host "`nBackend failed to stabilize. Check server_boot.log" -ForegroundColor Red
+}

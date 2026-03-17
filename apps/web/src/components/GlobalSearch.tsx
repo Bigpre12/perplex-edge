@@ -31,7 +31,7 @@ export function GlobalSearch() {
         queryKey: ["search", debouncedQuery],
         queryFn: async () => {
             if (debouncedQuery.length < 3) return { results: [] };
-            const res = await api.globalSearch(debouncedQuery);
+            const res = await api.search(debouncedQuery);
             return isApiError(res) ? { results: [] } : res;
         },
         enabled: debouncedQuery.length >= 3,
@@ -60,6 +60,8 @@ export function GlobalSearch() {
                     <Search className="text-textSecondary mr-3" size={20} />
                     <input
                         autoFocus
+                        id="global-search-overlay"
+                        name="overlay-search"
                         type="text"
                         placeholder="Search players, teams..."
                         className="bg-transparent w-full outline-none text-lg text-white placeholder:text-textMuted font-display"

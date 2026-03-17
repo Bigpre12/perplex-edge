@@ -68,7 +68,7 @@ export default function TailLink() {
                 </div>
                 <h1 className="text-xl font-bold text-white">Share Link Expired</h1>
                 <p className="text-slate-500">This tail link is no longer active or was moved.</p>
-                <Link href="/player-props" className="mt-4 px-6 py-2 bg-primary text-background-dark font-bold rounded-lg uppercase text-xs tracking-widest">
+                <Link href="/props" className="mt-4 px-6 py-2 bg-primary text-background-dark font-bold rounded-lg uppercase text-xs tracking-widest">
                     Back to Feed
                 </Link>
             </div>
@@ -77,7 +77,7 @@ export default function TailLink() {
 
     return (
         <div className="max-w-2xl mx-auto py-12 px-4 space-y-8">
-            <Link href="/player-props" className="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm font-bold group">
+            <Link href="/props" className="inline-flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm font-bold group">
                 <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Tools
             </Link>
 

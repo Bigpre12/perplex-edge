@@ -24,47 +24,43 @@ export default function AppLayout({
     children: React.ReactNode;
 }) {
     return (
-        <SubscriptionProvider>
-            <SportProvider>
-                <PrefetchWrapper />
-                <OnboardingProvider>
-                    <div className="flex flex-col h-screen w-full overflow-hidden bg-lucrix-dark text-textPrimary font-sans selection:bg-brand-cyan selection:text-black relative">
-                        <StatusBar />
-                        {/* Animated Background Elements */}
-                        <div className="bg-blob-tl animate-pulse-slow"></div>
-                        <div className="bg-blob-br animate-pulse-slow"></div>
+        <>
+            <PrefetchWrapper />
+            <div className="flex flex-col h-screen w-full overflow-hidden bg-lucrix-dark text-textPrimary font-sans selection:bg-brand-cyan selection:text-black relative">
+                <StatusBar />
+                {/* Animated Background Elements */}
+                <div className="bg-blob-tl animate-pulse-slow"></div>
+                <div className="bg-blob-br animate-pulse-slow"></div>
 
-                        {/* Navigation Layer */}
-                        <TopNav />
-                        
-                        {/* Main Container below TopNav */}
-                        <div className="flex flex-1 overflow-hidden pt-14">
-                            <Sidebar />
-                            
-                            <div className="flex-1 flex flex-col md:ml-[240px] w-full overflow-hidden relative">
-                                <SportFilterBar />
-                                <NewsTicker />
-                                <TabBar />
+                {/* Navigation Layer */}
+                <TopNav />
 
-                                {/* Main Content Scroll Area */}
-                                <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-none relative">
-                                    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6">
-                                        <PageTransition>
-                                            {children}
-                                        </PageTransition>
-                                    </div>
-                                </main>
+                {/* Main Container below TopNav */}
+                <div className="flex flex-1 overflow-hidden pt-14">
+                    <Sidebar />
+
+                    <div className="flex-1 flex flex-col md:ml-[240px] w-full overflow-hidden relative">
+                        <SportFilterBar />
+                        <NewsTicker />
+                        <TabBar />
+
+                        {/* Main Content Scroll Area */}
+                        <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-none relative">
+                            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6">
+                                <PageTransition>
+                                    {children}
+                                </PageTransition>
                             </div>
-                        </div>
-
-                        {/* Global Modals & Listeners */}
-                        <CommandCenter />
-                        <OracleChatbot />
-                        <ArbNotificationBanner />
-                        <MobileNav />
+                        </main>
                     </div>
-                </OnboardingProvider>
-            </SportProvider>
-        </SubscriptionProvider>
+                </div>
+
+                {/* Global Modals & Listeners */}
+                <CommandCenter />
+                <OracleChatbot />
+                <ArbNotificationBanner />
+                <MobileNav />
+            </div>
+        </>
     );
 }

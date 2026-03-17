@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { API, isApiError } from "@/lib/api";
+import { useSport } from "@/context/SportContext";
 
 interface BrainData {
   props_scored:    number;
@@ -14,6 +15,7 @@ interface BrainData {
 
 export default function NeuralEngineBrain() {
   const { isPro } = useSubscription();
+  const { selectedSport } = useSport();
   const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<BrainData>({ 
     props_scored: 0, 
@@ -29,7 +31,7 @@ export default function NeuralEngineBrain() {
     const load = async () => {
       try {
         // Props count
-        const props = await API.getProps("basketball_nba");
+        const props = await API.getProps(selectedSport);
         if (!isApiError(props)) {
           setData(prev => ({ ...prev, props_scored: (props as any)?.data?.length ?? 0 }));
         }
@@ -43,7 +45,7 @@ export default function NeuralEngineBrain() {
           }));
         }
         // Brain decisions & Health
-        const brain = await API.brain.decisions("basketball_nba");
+        const brain = await API.brain.decisions(selectedSport);
         if (!isApiError(brain)) {
           setData(prev => ({ ...prev, decisions: (brain as any)?.items ?? (brain as any)?.decisions ?? [] }));
         }
@@ -63,7 +65,7 @@ export default function NeuralEngineBrain() {
     load();
     const interval = setInterval(load, 60000); // Refresh every minute
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedSport]);
 
   if (!mounted) {
     return (

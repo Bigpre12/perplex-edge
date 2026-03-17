@@ -8,7 +8,7 @@ router = APIRouter(tags=["line_movement"])
 ODDS_API_KEY = os.getenv("ODDS_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-from app.services.odds_api_client import odds_api
+from services.odds_api_client import odds_api
 
 @router.get("/line-movement")
 async def get_line_movement(
@@ -47,7 +47,9 @@ async def get_line_movement(
             for book in event.get("bookmakers", []):
                 for mkt in book.get("markets", []):
                     for outcome in mkt.get("outcomes", []):
-                        key = f"{book['key']}_{outcome['name']}"
+                        book_key = book['key']
+                        outcome_name = outcome['name']
+                        key = f"{book_key}_{outcome_name}"
                         current_lines[key] = outcome.get("price", 0)
 
             # Store new snapshot via REST API

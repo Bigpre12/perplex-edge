@@ -3,6 +3,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { useHealthMonitor } from "@/hooks/useHealthMonitor";
+import { SubscriptionProvider } from "@/hooks/useSubscription";
+import { SportProvider } from "@/context/SportContext";
+import { OnboardingProvider } from "./OnboardingProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient({
@@ -20,7 +23,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     return (
         <QueryClientProvider client={queryClient}>
-            {children}
+            <SubscriptionProvider>
+                <SportProvider>
+                    <OnboardingProvider>
+                        {children}
+                    </OnboardingProvider>
+                </SportProvider>
+            </SubscriptionProvider>
         </QueryClientProvider>
     );
 }

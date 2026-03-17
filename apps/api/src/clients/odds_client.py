@@ -71,10 +71,15 @@ class OddsAPIClient(ResilientBaseClient):
                 err_str = str(e).lower()
                 if "401" in err_str or "403" in err_str or "429" in err_str:
                     logger.error(f"OddsAPI key failure ({err_str}). Rotating...")
-                    self._rotate_key()
-                    continue
+                    if len(self.api_keys) > 1:
+                        self._rotate_key()
+                        continue
+                    else:
+                        logger.warning("OddsAPI: No more keys to rotate or single key invalid. Returning empty result.")
+                        return [] if method == "GET" and "/events" in path or "/odds" in path else {}
                 raise e
-        raise Exception("All OddsAPI keys exhausted or invalid.")
+        logger.warning("OddsAPI: All keys exhausted or missing. Returning empty state.")
+        return [] if method == "GET" else {}
 
     async def fetch_sports(self) -> list:
         """GET /sports — returns all active sports"""

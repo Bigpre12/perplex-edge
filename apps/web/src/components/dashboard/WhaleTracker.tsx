@@ -23,7 +23,11 @@ interface WhaleMove {
 import { useFreshness } from '@/hooks/useFreshness';
 import { FreshnessBadge } from './FreshnessBadge';
 
-export function WhaleTracker({ sport = "basketball_nba" }: { sport?: string }) {
+import { useSport } from "@/context/SportContext";
+
+export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
+    const { selectedSport } = useSport();
+    const sport = requestedSport || selectedSport;
     const freshness = useFreshness(sport);
     const [moves, setMoves] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);

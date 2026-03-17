@@ -20,46 +20,24 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
         const fetchIntel = async () => {
             const results: IntelItem[] = [];
 
-            // 1. ESPN Injuries — real GTD/OUT data
+            // 1. Backend Injuries — includes real-time corrections
             try {
-                const injRes = await fetch(
-                    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/injuries"
-                );
-                if (injRes.ok) {
-                    const data = await injRes.json();
-                    // DEBUG: Log raw response to verify structure
-                    console.log("ESPN INJURIES RAW:", JSON.stringify(data, null, 2));
-
-                    // ESPN injuries structure: data.injuries[] each has .team and .injuries[]
-                    const teams = data.injuries ?? [];
-                    let count = 0;
-
-                    for (const teamEntry of teams) {
-                        if (count >= 10) break; // Increased limit to show more data
-                        const teamName = teamEntry.displayName ?? teamEntry.team?.displayName ?? "";
-
-                        for (const inj of (teamEntry.injuries ?? [])) {
-                            if (count >= 10) break;
-                            const player = inj.athlete?.displayName ?? inj.athlete?.shortName ?? "";
-                            const status = inj.status ?? inj.type?.description ?? "GTD";
-                            const comment = inj.shortComment ?? "";
-                            const date = inj.date ?? new Date().toISOString();
-
-                            if (!player) continue;
-
-                            results.push({
-                                id: `inj-${count}-${player}`,
-                                type: "INJURY",
-                                message: comment ? `${comment} (${teamName})` : `${player} (${teamName}) — ${status}. Monitor for line movement.`,
-                                timestamp: date,
-                            });
-                            count++;
-                        }
-                    }
+                const data = await API.get("/intel/injuries", { sport });
+                if (!isApiError(data)) {
+                    const injuries = (data as any).injuries || [];
+                    injuries.slice(0, 10).forEach((inj: any) => {
+                        results.push({
+                            id: `inj-${inj.player}-${inj.team}`,
+                            type: "INJURY",
+                            message: inj.comment ? `${inj.comment} (${inj.team})` : `${inj.player} (${inj.team}) — ${inj.status}. Monitor for line movement.`,
+                            timestamp: new Date().toISOString(), // Backend doesn't always send timestamp down, using current
+                        });
+                    });
                 }
             } catch (e) {
-                console.warn("ESPN Injuries error:", e);
+                console.warn("Backend Injuries error:", e);
             }
+
 
             // 2. ESPN NBA News — real headlines
             try {

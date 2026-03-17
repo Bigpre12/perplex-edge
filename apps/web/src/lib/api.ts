@@ -22,11 +22,27 @@ function buildUrl(path: string, params?: Record<string, QueryValue>) {
     return url.toString();
 }
 
+let failureCount = 0;
+let lastFailureTime = 0;
+const BREAKER_THRESHOLD = 5;
+const BREAKER_COOLDOWN = 30000; // 30s
+
 async function request<T = any>(
     path: string,
     options?: RequestInit,
     params?: Record<string, QueryValue>
 ): Promise<T | Error> {
+    // Circuit Breaker Logic
+    if (failureCount >= BREAKER_THRESHOLD) {
+        const now = Date.now();
+        if (now - lastFailureTime < BREAKER_COOLDOWN) {
+            return new Error("Circuit breaker is open. Request blocked.");
+        } else {
+            // Half-open: allow one request to test the waters
+            failureCount = BREAKER_THRESHOLD - 1;
+        }
+    }
+
     try {
         const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
         
@@ -40,6 +56,8 @@ async function request<T = any>(
         });
 
         if (!res.ok) {
+            failureCount++;
+            lastFailureTime = Date.now();
             const text = await res.text();
             let errorMessage = `${res.status} ${res.statusText}`;
             try {
@@ -51,8 +69,11 @@ async function request<T = any>(
             return new Error(errorMessage);
         }
 
+        failureCount = 0; // Success! Reset breaker
         return await res.json();
     } catch (e: any) {
+        failureCount++;
+        lastFailureTime = Date.now();
         return e instanceof Error ? e : new Error(String(e));
     }
 }
@@ -118,13 +139,14 @@ export const api = {
     
     // Misc
     metrics: () => request("/api/metrics"),
+    picksStats: () => request("/api/metrics/picks-stats"),
     hitRate: (sport = "all") => request("/api/hit-rate", undefined, { sport }),
     whale: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
     parlay: (sport = "basketball_nba") => request("/api/parlay", undefined, { sport }),
     steam: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
     search: (q: string) => request("/api/search", undefined, { q }),
     ledgerMyBets: () => request("/api/bets"),
-    ledgerStats: (sport = "all") => request("/api/hit-rate", undefined, { sport }),
+    ledgerStats: (sport = "all") => request("/api/bets/stats", undefined, { sport }),
     socialShare: (data: any, token: string) => request("/api/meta/share", { method: "POST", body: JSON.stringify(data), headers: { "Authorization": `Bearer ${token}` } }),
 
     // Brain
@@ -165,5 +187,6 @@ export default api;
  * online. Currently a no-op; extend if a real breaker is added in future.
  */
 export function resetCircuit(): void {
-    // no-op — placeholder for circuit breaker integration
+    failureCount = 0;
+    lastFailureTime = 0;
 }

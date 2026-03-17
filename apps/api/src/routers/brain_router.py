@@ -1,17 +1,15 @@
-class AsyncSession: pass
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, HTTPException, Depends
 from db.session import get_async_db
 from models.brain import BrainSystemState, ModelPick
 try:
-    from app.app_core.state import state
+    from core.state import state
 except ImportError:
-    try:
-        from app_core.state import state
-    except ImportError:
-        class _State:
-            system_online = True
-            last_updated = None
-        state = _State()
+    class _State:
+        system_online = True
+        last_updated = None
+        def get_summary(self): return "active (fallback)"
+    state = _State()
 from datetime import datetime, timezone
 import logging
 
@@ -20,17 +18,18 @@ logger = logging.getLogger(__name__)
 from common_deps import require_pro, get_user_tier
 from services.brain_advanced_service import brain_advanced_service
 
-router = APIRouter(prefix="/brain", tags=["Brain Intelligence"])
+router = APIRouter(tags=["Brain Intelligence"])
 user_router = APIRouter()
 
 @user_router.get("/decisions")
 async def get_prop_score(sport: str = "basketball_nba", db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
     if tier not in ("pro", "elite"): return []
     try:
-        return await brain_advanced_service.get_prop_score(sport, db)
+        results = await brain_advanced_service.get_prop_score(sport, db)
+        return {"items": results, "decisions": results}
     except Exception as e:
         logger.error(f"Error in prop-score: {e}")
-        return []
+        return {"items": [], "decisions": []}
 
 @user_router.get("/parlay-builder")
 async def get_parlay_builder(sport: str = "basketball_nba", legs: int = 3, min_score: int = 65, db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
@@ -111,7 +110,7 @@ async def get_brain_health():
         return {"status": "error", "detail": str(e)}
 
 @router.post("/analyze")
-async def run_brain_analysis(payload: dict = None):
+async def run_brain_analysis(payload: dict | None = None):
     return {
         "status": "success",
         "timestamp": datetime.now(timezone.utc).isoformat()

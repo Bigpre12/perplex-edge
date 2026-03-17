@@ -13,6 +13,7 @@ from models.unified import UnifiedOdds
 from clients.odds_client import odds_api_client
 from services.cache import cache
 from services.odds.fetchers import SPORT_KEY_MAP, SPORT_MARKETS
+from services.espn_client import espn_client
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -25,42 +26,52 @@ class UnifiedIngestionService:
         return Decimal(abs(american)) / Decimal(abs(american) + 100)
 
     async def run(self, sport_key: str):
-        """
-        Production Ingestion Pipeline:
-        1. Fetch Events (Metadata: Teams, Game Time)
-        2. Fetch Odds (Market Pricing)
-        3. Merge & Normalize
-        4. Bulk Upsert (Idempotent)
-        5. Trigger Brain Layers
-        """
         from workers.ev_engine import ev_engine
         
         # 1. Fetch metadata (Teams and Times)
         try:
             events_raw = await odds_api_client.fetch_events(sport_key)
-            logger.info(f"UnifiedIngestion: Fetched {len(events_raw) if events_raw else 0} events for {sport_key}")
-            if not events_raw:
-                logger.info(f"UnifiedIngestion: No active events for {sport_key}")
-                return
-            
-            # Map event_id -> metadata
-            metadata_map = {
-                e['id']: {
-                    'home_team': e.get('home_team'),
-                    'away_team': e.get('away_team'),
-                    'game_time': datetime.fromisoformat(e['commence_time'].replace('Z', '+00:00')) if e.get('commence_time') else None
-                }
-                for e in events_raw
-            }
+            logger.info(f"UnifiedIngestion: Fetched {len(events_raw) if events_raw else 0} events from OddsAPI for {sport_key}")
         except Exception as e:
-            logger.error(f"UnifiedIngestion: Failed to fetch events for {sport_key}: {e}")
-            return
+            logger.error(f"UnifiedIngestion: Failed to fetch events from OddsAPI for {sport_key}: {e}")
+            events_raw = None
+
+        if not events_raw:
+            logger.info(f"UnifiedIngestion: Attempting ESPN fallback for {sport_key}...")
+            try:
+                espn_games = await espn_client.get_scoreboard(sport_key)
+                if espn_games:
+                    events_raw = [
+                        {
+                            'id': g['id'],
+                            'home_team': g['home_team_name'],
+                            'away_team': g['away_team_name'],
+                            'commence_time': g['start_time'].isoformat().replace('+00:00', 'Z')
+                        }
+                        for g in espn_games
+                    ]
+                    logger.info(f"UnifiedIngestion: ESPN fallback successful, found {len(events_raw)} games.")
+                else:
+                    logger.warning(f"UnifiedIngestion: ESPN fallback returned no games for {sport_key}")
+                    return
+            except Exception as ex:
+                logger.error(f"UnifiedIngestion: ESPN fallback failed for {sport_key}: {ex}")
+                return
+
+        # Map event_id -> metadata
+        metadata_map = {
+            e['id']: {
+                'home_team': e.get('home_team'),
+                'away_team': e.get('away_team'),
+                'game_time': datetime.fromisoformat(e['commence_time'].replace('Z', '+00:00')) if e.get('commence_time') else None
+            }
+            for e in events_raw
+        }
 
         # 2. Fetch Pricing
         try:
             # Sport-wide endpoint usually only supports main lines reliably
             markets = ["h2h", "spreads", "totals"]
-            # To fetch props, we should use the per-event endpoint in the future
             
             # Deduplicate and Clean
             markets = list(dict.fromkeys([m.strip().lower() for m in markets if m.strip()]))
@@ -68,15 +79,35 @@ class UnifiedIngestionService:
             logger.info(f"UnifiedIngestion: Fetching odds for {sport_key} with markets: {markets}")
             odds_raw = await odds_api_client.fetch_odds(sport_key, markets=markets)
             logger.info(f"UnifiedIngestion: Fetched {len(odds_raw) if odds_raw else 0} odds entries for {sport_key}")
-            if not odds_raw:
-                logger.warning(f"UnifiedIngestion: No odds returned for {sport_key}")
-                return
         except Exception as e:
-            logger.error(f"UnifiedIngestion: Failed to fetch odds for {sport_key}: {e}")
-            return
+            logger.error(f"UnifiedIngestion: Failed to fetch odds from OddsAPI for {sport_key}: {e}")
+            odds_raw = None
 
-        # 3. Normalize
-        rows = self.normalize_data(odds_raw, metadata_map, sport_key)
+        if not odds_raw:
+            logger.info(f"UnifiedIngestion: No odds for {sport_key}, creating placeholders from metadata.")
+            rows = []
+            now = datetime.now(timezone.utc)
+            for eid, meta in metadata_map.items():
+                rows.append({
+                    'sport': sport_key,
+                    'league': sport_key.split('_')[-1].upper(),
+                    'event_id': eid,
+                    'home_team': meta.get('home_team'),
+                    'away_team': meta.get('away_team'),
+                    'game_time': meta.get('game_time'),
+                    'market_key': 'h2h',
+                    'outcome_key': 'home',
+                    'player_name': None,
+                    'bookmaker': 'espn_fallback',
+                    'price': Decimal('0'),
+                    'line': None,
+                    'implied_prob': Decimal('0'),
+                    'source_ts': now,
+                    'ingested_ts': now
+                })
+        else:
+            # 3. Normalize
+            rows = self.normalize_data(odds_raw, metadata_map, sport_key)
         
         # 4. Upsert
         await self.upsert_odds(rows)

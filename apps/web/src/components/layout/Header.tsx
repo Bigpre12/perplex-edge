@@ -24,6 +24,8 @@ export default function Header() {
                         <Search size={18} />
                     </div>
                     <input
+                        id="global-search-header"
+                        name="header-search"
                         className="bg-surface border border-slate-700 text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-64 pl-10 p-2 placeholder-secondary/50 transition-all hover:bg-surface-highlight"
                         placeholder="Search models, odds, or events..."
                         type="text"
@@ -35,7 +37,11 @@ export default function Header() {
 
                 <PushSubscriber />
 
-                <button className="p-2 text-secondary hover:text-white transition-colors rounded-lg hover:bg-surface-highlight">
+                <button 
+                    className="p-2 text-secondary hover:text-white transition-colors rounded-lg hover:bg-surface-highlight"
+                    aria-label="Help"
+                    title="Help"
+                >
                     <HelpCircle size={20} />
                 </button>
             </div>

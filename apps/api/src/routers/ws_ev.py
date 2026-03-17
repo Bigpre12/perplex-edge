@@ -74,3 +74,16 @@ async def websocket_ev_endpoint(websocket: WebSocket):
 # Background Task Starter (to be called in main.py)
 async def start_websocket_broadcast():
     asyncio.create_task(manager.broadcast_from_redis())
+
+async def notify_ev_update(sport: str):
+    """Publish a notification to Redis for the WebSocket manager to broadcast."""
+    try:
+        payload = json.dumps({
+            "type": "ev_update",
+            "sport": sport,
+            "timestamp": asyncio.get_event_loop().time()
+        })
+        await redis_client.publish("updates:ev", payload)
+        logger.debug(f"[WS] Published ev_update for {sport}")
+    except Exception as e:
+        logger.error(f"[WS] Failed to publish ev_update: {e}")

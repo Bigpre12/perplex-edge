@@ -112,5 +112,3 @@ class EVEngine:
                 logger.error(f"EVEngine: Signal upsert failed: {e}")
 
 ev_engine = EVEngine()
-
-ev_engine = EVEngine()
