@@ -1,11 +1,11 @@
 import asyncio
 from sqlalchemy import select
-from db.session import get_async_db
+from db.session import get_db
 from models.prop import PropLine, GameLine
 from datetime import datetime, timezone
 
 async def check():
-    async for db in get_async_db():
+    async for db in get_db():
         now = datetime.now(timezone.utc)
         
         props_stmt = select(PropLine).limit(10)

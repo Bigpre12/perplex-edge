@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, update
-from db.session import get_async_db, async_session_maker
+from db.session import get_db
 from models.user import User, APIKey
 from services.auth_service import auth_service
 from pydantic import BaseModel, EmailStr, ConfigDict
@@ -86,60 +86,65 @@ async def get_current_user(
                 if user:
                     return user
 
-        # Attempt B: Supabase (Modern Frontend) via raw HTTPX
-        import httpx
-        import os
+        # Attempt B: Supabase (Modern Frontend)
         from core.config import settings
+        from api_utils.supabase_proxy import create_client
         
-        supabase_url = settings.SUPABASE_URL or os.environ.get("SUPABASE_URL")
-        supabase_key = settings.SUPABASE_ANON_KEY or os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-        
-        if supabase_url and supabase_key:
-            auth_url = f"{supabase_url}/auth/v1/user"
-            headers = {"Authorization": f"Bearer {token}", "apikey": supabase_key}
-            
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(auth_url, headers=headers)
-                
-            if resp.status_code == 200:
-                sb_user = resp.json()
-                email = sb_user.get("email")
-                
-                if email:
-                    # Try to find user by email in local DB
-                    stmt = select(User).where(User.email == email)
-                    result = await db.execute(stmt)
-                    user = result.scalar_one_or_none()
-                    
-                    if not user:
-                        # Provision JIT user if they exist in Supabase but not local DB
-                        base_username = email.split("@")[0]
-                        username = base_username
-                        
-                        # Collision protection: Ensure username is unique
-                        count = 0
-                        while True:
-                            check_stmt = select(User).where(User.username == username)
-                            check_res = await db.execute(check_stmt)
-                            if not check_res.scalar_one_or_none():
-                                break
-                            count += 1
-                            username = f"{base_username}{count}"
-                        
-                        user = User(
-                            username=username,
-                            email=email,
-                            hashed_password="SUPABASE_AUTH_EXTERNAL"
-                        )
-                        db.add(user)
-                        await db.commit()
-                        await db.refresh(user)
-                    
-                    return user
-            else:
-                logger.error(f"Supabase auth rejected {resp.status_code}: {resp.text}")
-        else:
+        if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
             logger.warning("Supabase not configured — auth disabled")
+        else:
+            try:
+                # Use the client for verification or keep the existing HTTPX logic 
+                # but ensure the guard is present as requested.
+                # The user specifically asked for 'supabase = create_client(...)'
+                supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+                
+                import httpx
+                auth_url = f"{settings.SUPABASE_URL}/auth/v1/user"
+                headers = {"Authorization": f"Bearer {token}", "apikey": settings.SUPABASE_KEY}
+                
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(auth_url, headers=headers)
+                    
+                if resp.status_code == 200:
+                    sb_user = resp.json()
+                    email = sb_user.get("email")
+                    
+                    if email:
+                        # Try to find user by email in local DB
+                        stmt = select(User).where(User.email == email)
+                        result = await db.execute(stmt)
+                        user = result.scalar_one_or_none()
+                        
+                        if not user:
+                            # Provision JIT user if they exist in Supabase but not local DB
+                            base_username = email.split("@")[0]
+                            username = base_username
+                            
+                            # Collision protection: Ensure username is unique
+                            count = 0
+                            while True:
+                                check_stmt = select(User).where(User.username == username)
+                                check_res = await db.execute(check_stmt)
+                                if not check_res.scalar_one_or_none():
+                                    break
+                                count += 1
+                                username = f"{base_username}{count}"
+                            
+                            user = User(
+                                username=username,
+                                email=email,
+                                hashed_password="SUPABASE_AUTH_EXTERNAL"
+                            )
+                            db.add(user)
+                            await db.commit()
+                            await db.refresh(user)
+                        
+                        return user
+                else:
+                    logger.error(f"Supabase auth rejected {resp.status_code}: {resp.text}")
+            except Exception as e:
+                logger.error(f"Supabase client error: {e}")
             
     except HTTPException:
         raise

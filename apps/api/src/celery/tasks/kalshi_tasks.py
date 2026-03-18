@@ -4,7 +4,7 @@ import random
 from services.kalshi_service import kalshi_service
 from services.kalshi_ev import scan_all_ev_signals
 from services.kalshi_arb import detect_arb_opportunities
-from db.session import SessionLocal
+from db.session import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ async def sync_kalshi_markets():
         logger.info("Syncing Kalshi markets...")
         markets = await call_with_backoff(kalshi_service.get_kalshi_sports_markets, "NBA")
         
-        async with SessionLocal() as session:
+        async with AsyncSessionLocal() as session:
             from models.kalshi import KalshiMarket
             from sqlalchemy import select
             

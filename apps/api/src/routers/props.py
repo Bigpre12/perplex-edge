@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.session import get_db, get_async_db
+from db.session import get_db
 from models.prop import Prop
 from schemas.prop import PropOut, PropsScoredResponse
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ async def list_props(
     sport: str = "basketball_nba",
     limit: int = 40,
     stale: bool = False,
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Returns top props for a sport with intelligent freshness filtering."""
     try:
@@ -38,7 +38,7 @@ async def list_props(
         return {"data": [], "results": []}
 
 @router.get("/scored")
-async def scored_props(db: AsyncSession = Depends(get_async_db)):
+async def scored_props(db: AsyncSession = Depends(get_db)):
     """Returns recently completed props for the ledger/history (last 72h)."""
     try:
         now = datetime.utcnow()

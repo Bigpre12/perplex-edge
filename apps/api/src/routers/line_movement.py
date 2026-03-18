@@ -94,12 +94,17 @@ async def get_line_movement(
     if not movement_data:
         # High-Impact Fallback for Line Movement Scanner
         try:
-            from db.session import SessionLocal
-            with SessionLocal() as db:
-                from models.prop import PropLine
-                import random
+            from db.session import get_db
+            from sqlalchemy.ext.asyncio import AsyncSession
+            from models.prop import PropLine
+            from sqlalchemy import select
+            
+            # Use get_db() directly as an async generator for the script-like block
+            async for db in get_db():
                 # Grab some seeded proplines and manifest movement
-                seeded = db.query(PropLine).filter(PropLine.sport_key == sport).limit(10).all()
+                stmt = select(PropLine).where(PropLine.sport_key == sport).limit(10)
+                result = await db.execute(stmt)
+                seeded = result.scalars().all()
                 for p in seeded:
                     movement_data.append({
                         "event_id": p.game_id or f"sim_{p.id}",

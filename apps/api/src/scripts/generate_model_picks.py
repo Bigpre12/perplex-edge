@@ -8,7 +8,7 @@ sys.path.append(os.path.join(os.getcwd(), "apps", "api", "src"))
 os.environ["DEVELOPMENT_MODE"] = "1"
 
 from services.brain_service import brain_service
-from db.session import get_async_db, async_session_maker
+from db.session import get_db
 
 async def generate_picks():
     print("🧠 Triggering Brain analysis to generate ModelPicks...")

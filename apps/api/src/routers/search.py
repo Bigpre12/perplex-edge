@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import select, or_
-from db.session import get_async_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from db.session import get_db
 from models.prop import PropLine
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 
 @router.get("/")
-async def search_props(q: str, db = Depends(get_async_db)):
+async def search_props(q: str, db: AsyncSession = Depends(get_db)):
     if not q or len(q) < 3:
         return {"results": []}
         

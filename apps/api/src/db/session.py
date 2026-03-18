@@ -3,56 +3,52 @@ import logging
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from .base import Base
 
-# Use absolute path calculation directly to avoid cyclic/shadowing import issues
+# --- CONFIGURATION ---
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"sqlite+aiosqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'perplex_local.db'))}"
 )
 
+# Fix connection string for asyncpg/aiosqlite
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+asyncpg://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("sqlite://"):
+    DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://", 1)
+
 logger = logging.getLogger(__name__)
 
-# --- ENGINE SETUP ---
-async_url = DATABASE_URL
-if async_url.startswith("postgres://"):
-    async_url = async_url.replace("postgres://", "postgresql+asyncpg://")
-elif async_url.startswith("postgresql://") and not async_url.startswith("postgresql+asyncpg://"):
-    async_url = async_url.replace("postgresql://", "postgresql+asyncpg://")
-elif async_url.startswith("sqlite://"):
-    async_url = async_url.replace("sqlite://", "sqlite+aiosqlite://")
+# --- ASYNC ENGINE SETUP ---
+connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+engine = create_async_engine(DATABASE_URL, connect_args=connect_args)
 
-connect_args = {"check_same_thread": False} if async_url.startswith("sqlite") else {}
-
-engine = create_async_engine(async_url, connect_args=connect_args)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+# AsyncSessionLocal is the primary session factory
+AsyncSessionLocal = sessionmaker(
+    engine, 
+    class_=AsyncSession, 
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False
+)
 
 # --- DEPENDENCIES ---
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency for async database sessions."""
     async with AsyncSessionLocal() as session:
         yield session
 
 async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    """Alias for get_db for backward compatibility."""
     async with AsyncSessionLocal() as session:
         yield session
 
-def get_db_connection():
-    """Legacy cursor-based connection shim for backward compatibility."""
-    import sqlite3
-    from urllib.parse import urlparse
-    parsed = urlparse(sync_url)
-    if parsed.scheme.startswith("postgresql"):
-        try:
-            import psycopg2
-            from psycopg2.extras import RealDictConnection
-            return psycopg2.connect(
-                dbname=parsed.path[1:], user=parsed.username,
-                password=parsed.password, host=parsed.hostname, port=parsed.port,
-                connection_factory=RealDictConnection
-            )
-        except Exception:
-            pass
-    db_path = parsed.path.lstrip("/")
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Legacy shim for SessionLocal if needed by external scripts (minimizing usage)
+# In a pure async app, this should eventually be removed.
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker as sync_sessionmaker
+
+sync_url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://").replace("sqlite+aiosqlite://", "sqlite://")
+sync_engine = create_engine(sync_url, connect_args=connect_args if "sqlite" in sync_url else {})
+SessionLocal = sync_sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)

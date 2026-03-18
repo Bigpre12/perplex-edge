@@ -5,7 +5,7 @@ import stripe
 import logging
 from sqlalchemy import select, update
 
-from db.session import get_async_db
+from db.session import get_db
 from models.user import User
 from services.stripe_service import stripe_service
 from routers.auth import get_current_user
@@ -78,7 +78,7 @@ async def billing_status(current_user: User = Depends(get_current_user)):
     return await stripe_service.get_subscription_status(current_user.stripe_customer_id)
 
 @router.post("/webhook")
-async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_async_db)):
+async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
 

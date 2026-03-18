@@ -28,6 +28,9 @@ class Settings:
         self.SUPABASE_ANON_KEY: str = self.SUPABASE_KEY
         self.SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
         
+        # Ensure default values are set for Pydantic-like compatibility if needed
+        # although this class is not inherited from pydantic.BaseSettings here.
+        
         # Odds API Configuration
         self.ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
         self.ODDS_API_KEY_PRIMARY = self.ODDS_API_KEY

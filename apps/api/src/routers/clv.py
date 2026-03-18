@@ -15,21 +15,22 @@ async def fetch_historical_odds(sport: str, event_id: str) -> dict:
     res = await odds_api.get_player_props(sport, event_id, markets="h2h,spreads,totals", regions="us,us2")
     return res if isinstance(res, dict) else {"bookmakers": res}
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from db.session import get_db
+
 @router.get("/")
 @router.get("/track")
-async def track_clv(sport: str = Query("basketball_nba")):
+async def track_clv(sport: str = Query("basketball_nba"), db: AsyncSession = Depends(get_db)):
     """
     Returns live CLV tracking data from local DB (fallback to Supabase).
     """
     try:
-        from db.session import SessionLocal
         from models.analytical import CLVRecord
-        from sqlalchemy import desc
+        from sqlalchemy import select, desc
         
-        db = SessionLocal()
-        # Look for local records first
-        records = db.query(CLVRecord).order_by(desc(CLVRecord.created_at)).limit(50).all()
-        db.close()
+        stmt = select(CLVRecord).order_by(desc(CLVRecord.created_at)).limit(50)
+        result = await db.execute(stmt)
+        records = result.scalars().all()
         
         if records:
             return [{
@@ -45,20 +46,18 @@ async def track_clv(sport: str = Query("basketball_nba")):
 
         # FALLBACK: Supabase
         import httpx
-        import os
-        SUPABASE_URL = os.getenv("SUPABASE_URL")
-        SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+        from core.config import settings
         
-        if not SUPABASE_URL or not SUPABASE_KEY:
+        if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
             return []
 
         headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}"
+            "apikey": settings.SUPABASE_KEY,
+            "Authorization": f"Bearer {settings.SUPABASE_KEY}"
         }
         
         async with httpx.AsyncClient() as client:
-            url = f"{SUPABASE_URL}/rest/v1/clv_snapshots?sport=eq.{sport}&limit=50&order=recorded_at.desc"
+            url = f"{settings.SUPABASE_URL}/rest/v1/clv_snapshots?sport=eq.{sport}&limit=50&order=recorded_at.desc"
             r = await client.get(url, headers=headers)
             snapshots = r.json() if r.status_code == 200 else []
             
@@ -79,33 +78,30 @@ async def track_clv(sport: str = Query("basketball_nba")):
 @router.get("/summary")
 async def get_clv(
     sport: Optional[str] = Query(None),
-    user: dict = Depends(get_current_user_supabase)
+    user: dict = Depends(get_current_user_supabase),
+    db: AsyncSession = Depends(get_db)
 ):
     sport = validate_sport(sport)
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    query = """
+    
+    # Using text() or select() is better than raw query in the new paradigm
+    from sqlalchemy import text
+    query = text("""
         SELECT id, player_name, sport, stat_type, line,
                pick, odds as open_odds, game_time,
                hit, result, event_id
         FROM picks
-        WHERE user_id = ? AND open_odds IS NOT NULL
-    """
-    params = [user["id"]]
+        WHERE user_id = :user_id AND open_odds IS NOT NULL
+        """ + (" AND sport = :sport" if sport else "") + " ORDER BY game_time DESC LIMIT 200")
+    
+    params = {"user_id": user["id"]}
     if sport:
-        query += " AND sport = ?"
-        params.append(sport)
-    query += " ORDER BY game_time DESC LIMIT 200"
-
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
+        params["sport"] = sport
+        
+    result = await db.execute(query, params)
+    rows = result.mappings().all()
 
     clv_entries = []
     for row in rows:
-        # Calculate CLV: compare open odds to close odds
-        # Note: In a real implementation, you'd fetch the actual close odds from API or DB
         open_odds = row["open_odds"]
         close_odds = row["open_odds"] # fallback if can't fetch
         
@@ -142,22 +138,20 @@ async def get_clv(
 @router.get("/leaderboard", dependencies=[Depends(require_pro)])
 async def get_clv_leaderboard(
     limit: int = Query(20, description="Number of picks to return"),
-    sport: Optional[str] = Query(None, description="Filter by sport")
+    sport: Optional[str] = Query(None, description="Filter by sport"),
+    db: AsyncSession = Depends(get_db)
 ):
     """Top picks ranked by CLV percentage."""
-    # This logic is adapted from legacy analysis.py _generate_sample_clv_picks
     from services.clv_service import clv_service
-    from db.session import async_session_maker
     from models.prop import PropLine, PropHistory
     from sqlalchemy import select
     
-    async with async_session_maker() as db:
-        stmt = select(PropLine).join(PropHistory).distinct().limit(50)
-        if sport:
-            stmt = stmt.where(PropLine.sport_key == sport)
-            
-        result = await db.execute(stmt)
-        lines = result.scalars().all()
+    stmt = select(PropLine).join(PropHistory).distinct().limit(50)
+    if sport:
+        stmt = stmt.where(PropLine.sport_key == sport)
+        
+    result = await db.execute(stmt)
+    lines = result.scalars().all()
         
         picks = []
         for line in lines:

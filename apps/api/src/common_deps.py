@@ -14,7 +14,7 @@ OWNER_EMAILS = os.getenv("OWNER_EMAILS", "").split(",")
 
 async def get_user_tier(
     authorization: str = Header(None),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db)
 ) -> str:
     if settings.DEVELOPMENT_MODE:
         # Don't auto-upgrade to elite in dev, respect DB/JWT tier for testing

@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 from sqlalchemy import select, func
-from db.session import DummyAsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from models.prop import Prop
 from models.line_move import LineMove
 from models.injury import Injury
 
-async def get_dashboard_metrics(db: DummyAsyncSession):
+async def get_dashboard_metrics(db: AsyncSession):
     # 1. Props Scored
     props_scored_stmt = select(func.count(Prop.id)).where(Prop.is_scored.is_(True))
     props_scored = (await db.execute(props_scored_stmt)).scalar() or 0

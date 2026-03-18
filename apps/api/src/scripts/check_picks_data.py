@@ -1,13 +1,14 @@
+```python
 import asyncio
 from sqlalchemy import select
-from db.session import SessionLocal, get_async_db
+from db.session import get_db
 from models.brain import ModelPick
 
 from models.prop import PropLine
 from datetime import datetime, timezone
 
 async def check_data():
-    async for db in get_async_db():
+    async for db in get_db():
         now = datetime.now(timezone.utc)
         print(f"Current UTC time: {now}")
         

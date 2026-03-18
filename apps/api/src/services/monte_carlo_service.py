@@ -7,17 +7,15 @@ Provides statistically rigorous simulation of:
 - Bankroll trajectory over N picks (drawdown, ruin probability)
 - Kelly criterion stake sizing
 
-Uses stdlib random for Railway compatibility; numpy optional for speed.
+Uses NumPy for high-performance vectorized simulations.
 """
 import math
-import random
 import logging
 import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
-HAS_NUMPY = True
 
 
 # ─── Utility ─────────────────────────────────────────────────────────────────
@@ -49,42 +47,28 @@ def run_prop_simulation(
     distribution: str = "normal",
 ) -> Dict[str, Any]:
     """
-    Monte Carlo simulation for a single player prop.
-
-    Generates n_sims random outcomes from the player's statistical
-    distribution, then checks how many clear the line.
-
-    Args:
-        mean: Expected stat value (e.g., 25.3 points)
-        std_dev: Standard deviation of the stat
-        line: The prop line (e.g., 24.5)
-        side: "over" or "under"
-        n_sims: Number of simulations to run
-        distribution: "normal" or "poisson" (for counting stats like TDs)
-
-    Returns:
-        Dict with hit_rate, percentiles, distribution_stats, raw summary
+    Monte Carlo simulation for a single player prop using NumPy.
     """
     if n_sims < 100:
         n_sims = 100
     if n_sims > 100000:
         n_sims = 100000
 
-    # Generate simulated outcomes
+    # Generate simulated outcomes using NumPy
     if distribution == "poisson" and mean > 0:
         outcomes = np.random.poisson(mean, n_sims).astype(float)
     else:
         outcomes = np.random.normal(mean, max(std_dev, 0.01), n_sims)
 
-    # Count hits
+    # Count hits using NumPy vectorization
     if side.lower() == "over":
-        hits = sum(1 for o in outcomes if o > line)
+        hits = int(np.sum(outcomes > line))
     else:
-        hits = sum(1 for o in outcomes if o < line)
+        hits = int(np.sum(outcomes < line))
 
     hit_rate = hits / n_sims
 
-    # Distribution statistics
+    # Distribution statistics using NumPy
     stats = _compute_distribution_stats(outcomes)
 
     return {
@@ -107,19 +91,7 @@ def run_parlay_simulation(
     correlation_matrix: Optional[List[List[float]]] = None,
 ) -> Dict[str, Any]:
     """
-    Monte Carlo simulation for a multi-leg parlay.
-
-    Each leg needs: mean, std_dev, line, side, odds.
-    Optionally accepts a correlation matrix for correlated legs
-    (e.g., same-game props).
-
-    Args:
-        legs: List of dicts, each with mean, std_dev, line, side, odds
-        n_sims: Number of simulations
-        correlation_matrix: NxN correlation matrix (None = independent)
-
-    Returns:
-        Dict with combined hit rate, individual leg rates, EV, risk metrics
+    Monte Carlo simulation for a multi-leg parlay using NumPy.
     """
     n_legs = len(legs)
     if n_legs == 0:
@@ -129,12 +101,10 @@ def run_parlay_simulation(
     if n_sims > 100000:
         n_sims = 100000
 
-    # Generate correlated or independent outcomes
+    # Generate correlated or independent outcomes using NumPy
     if correlation_matrix and len(correlation_matrix) == n_legs:
-        # Correlated simulation using Cholesky decomposition
         outcomes_matrix = _generate_correlated_outcomes(legs, n_sims, correlation_matrix)
     else:
-        # Independent simulation
         outcomes_matrix = []
         for leg in legs:
             mean = leg.get("mean", 0)
@@ -148,25 +118,25 @@ def run_parlay_simulation(
 
             outcomes_matrix.append(sims)
 
-    # Evaluate each simulation
-    parlay_hits = 0
-    leg_hits = [0] * n_legs
+    # Evaluate parlay hits using NumPy matrix operations for speed
+    outcomes_array = np.array(outcomes_matrix)
+    hit_mask = np.ones(n_sims, dtype=bool)
+    leg_hits = []
 
-    for sim_idx in range(n_sims):
-        all_hit = True
-        for leg_idx, leg in enumerate(legs):
-            outcome = outcomes_matrix[leg_idx][sim_idx]
-            line = leg.get("line", 0)
-            side = leg.get("side", "over").lower()
+    for i, leg in enumerate(legs):
+        line = leg.get("line", 0)
+        side = leg.get("side", "over").lower()
+        
+        if side == "over":
+            leg_hit = outcomes_array[i] > line
+        else:
+            leg_hit = outcomes_array[i] < line
+            
+        leg_hits.append(int(np.sum(leg_hit)))
+        hit_mask &= leg_hit
 
-            hit = (outcome > line) if side == "over" else (outcome < line)
-            if hit:
-                leg_hits[leg_idx] += 1
-            else:
-                all_hit = False
-
-        if all_hit:
-            parlay_hits += 1
+    parlay_hits = int(np.sum(hit_mask))
+    parlay_hit_rate = parlay_hits / n_sims
 
     # Calculate combined odds and EV
     combined_decimal = 1.0
@@ -174,7 +144,6 @@ def run_parlay_simulation(
         odds = leg.get("odds", -110)
         combined_decimal *= american_to_decimal(odds)
 
-    parlay_hit_rate = parlay_hits / n_sims
     parlay_ev = (parlay_hit_rate * (combined_decimal - 1)) - ((1 - parlay_hit_rate) * 1)
 
     # Individual leg results
@@ -212,69 +181,53 @@ def simulate_bankroll(
     n_sims: int = 5000,
 ) -> Dict[str, Any]:
     """
-    Simulate bankroll trajectory over a sequence of picks.
-
-    Each pick needs: win_probability, odds (American).
-    Uses fractional Kelly for stake sizing.
-
-    Args:
-        picks: List of dicts with win_probability and odds
-        kelly_fraction: Fraction of full Kelly to use (0.25 = quarter Kelly)
-        initial_bankroll: Starting bankroll
-        n_sims: Number of full-trajectory simulations
-
-    Returns:
-        Dict with final bankroll stats, max drawdown, ruin probability
+    Simulate bankroll trajectory over a sequence of picks using NumPy.
     """
     if not picks:
         return {"error": "No picks provided"}
     if n_sims > 10000:
         n_sims = 10000
 
-    final_bankrolls = []
-    max_drawdowns = []
-    ruin_count = 0
-    ruin_threshold = initial_bankroll * 0.05  # 5% of initial = "ruin"
+    # Pre-generate random outcomes for all simulations at once for speed
+    # Shape: (n_picks, n_sims)
+    random_outcomes = np.random.random((len(picks), n_sims))
+    
+    # We'll iterate through picks but vectorise across simulations
+    bankrolls = np.full(n_sims, initial_bankroll)
+    peaks = np.full(n_sims, initial_bankroll)
+    max_dds = np.zeros(n_sims)
+    ruined = np.zeros(n_sims, dtype=bool)
+    ruin_threshold = initial_bankroll * 0.05
 
-    for _ in range(n_sims):
-        bankroll = initial_bankroll
-        peak = bankroll
-        max_dd = 0.0
+    for i, pick in enumerate(picks):
+        win_prob = pick.get("win_probability", 0.5)
+        odds = pick.get("odds", -110)
+        
+        # Kelly stake calculation (already vectorized in thought, but simpler to apply per pick)
+        kelly = calculate_kelly_stake(win_prob, odds)
+        stake_pct = min(max(kelly * kelly_fraction, 0), 0.25)
+        
+        # Only bet on non-ruined bankrolls
+        active = ~ruined
+        stakes = bankrolls[active] * stake_pct
+        
+        wins = random_outcomes[i, active] < win_prob
+        payouts = stakes * (american_to_decimal(odds) - 1)
+        
+        # Update bankrolls
+        bankrolls[active] += np.where(wins, payouts, -stakes)
+        
+        # Update ruin status
+        ruined[active] = bankrolls[active] <= ruin_threshold
+        
+        # Update peaks and drawdowns
+        peaks = np.maximum(peaks, bankrolls)
+        current_dds = (peaks - bankrolls) / peaks
+        max_dds = np.maximum(max_dds, current_dds)
 
-        for pick in picks:
-            if bankroll <= ruin_threshold:
-                ruin_count += 1
-                break
-
-            win_prob = pick.get("win_probability", 0.5)
-            odds = pick.get("odds", -110)
-
-            # Kelly stake
-            kelly = calculate_kelly_stake(win_prob, odds)
-            stake_pct = max(kelly * kelly_fraction, 0)
-            stake_pct = min(stake_pct, 0.25)  # Cap at 25% of bankroll
-            stake = bankroll * stake_pct
-
-            # Simulate outcome
-            if np.random.random() < win_prob:
-                payout = stake * (american_to_decimal(odds) - 1)
-                bankroll += payout
-            else:
-                bankroll -= stake
-
-            # Track drawdown
-            if bankroll > peak:
-                peak = bankroll
-            dd = (peak - bankroll) / peak if peak > 0 else 0
-            if dd > max_dd:
-                max_dd = dd
-
-        final_bankrolls.append(bankroll)
-        max_drawdowns.append(max_dd)
-
-    # Compute summary statistics
-    final_stats = _compute_distribution_stats(final_bankrolls)
-    dd_stats = _compute_distribution_stats(max_drawdowns)
+    # Compute summary statistics using NumPy
+    final_stats = _compute_distribution_stats(bankrolls)
+    dd_stats = _compute_distribution_stats(max_dds)
 
     return {
         "initial_bankroll": initial_bankroll,
@@ -283,32 +236,20 @@ def simulate_bankroll(
         "simulations": n_sims,
         "final_bankroll": {
             **final_stats,
-            "profit_probability": round(
-                sum(1 for b in final_bankrolls if b > initial_bankroll) / n_sims, 4
-            ),
+            "profit_probability": round(float(np.sum(bankrolls > initial_bankroll) / n_sims), 4),
         },
         "max_drawdown": {
             "mean": dd_stats["mean"],
             "median": dd_stats["median"],
             "worst_case_90th": dd_stats["percentiles"]["90"],
         },
-        "ruin_probability": round(ruin_count / n_sims, 4),
+        "ruin_probability": round(float(np.sum(ruined) / n_sims), 4),
     }
 
 
 def calculate_kelly_stake(win_prob: float, odds: float) -> float:
     """
     Calculate the Kelly criterion optimal stake fraction.
-
-    Kelly% = (bp - q) / b
-    where b = decimal odds - 1, p = win probability, q = 1 - p
-
-    Args:
-        win_prob: Probability of winning (0-1)
-        odds: American odds
-
-    Returns:
-        Optimal stake as a fraction of bankroll (can be negative = no bet)
     """
     if win_prob <= 0 or win_prob >= 1:
         return 0.0
@@ -321,66 +262,34 @@ def calculate_kelly_stake(win_prob: float, odds: float) -> float:
     q = 1 - p
 
     kelly = (b * p - q) / b
-    return round(max(kelly, 0), 6)  # Floor at 0 (don't bet if negative edge)
+    return round(float(max(kelly, 0)), 6)
 
 
 # ─── Internal Helpers ─────────────────────────────────────────────────────────
 
 def _compute_distribution_stats(values) -> Dict[str, Any]:
-    """Compute mean, median, std_dev, percentiles from a list of values."""
-    if HAS_NUMPY:
-        arr = np.array(values, dtype=float)
-        return {
-            "mean": round(float(np.mean(arr)), 4),
-            "median": round(float(np.median(arr)), 4),
-            "std_dev": round(float(np.std(arr)), 4),
-            "min": round(float(np.min(arr)), 4),
-            "max": round(float(np.max(arr)), 4),
-            "percentiles": {
-                "10": round(float(np.percentile(arr, 10)), 4),
-                "25": round(float(np.percentile(arr, 25)), 4),
-                "50": round(float(np.percentile(arr, 50)), 4),
-                "75": round(float(np.percentile(arr, 75)), 4),
-                "90": round(float(np.percentile(arr, 90)), 4),
-            },
-        }
-    else:
-        sorted_v = sorted(values)
-        n = len(sorted_v)
-        if n == 0:
-            return {"mean": 0, "median": 0, "std_dev": 0, "min": 0, "max": 0, "percentiles": {}}
-
-        mean_val = sum(sorted_v) / n
-        variance = sum((x - mean_val) ** 2 for x in sorted_v) / n
-        std_dev = math.sqrt(variance)
-
-        def percentile(pct):
-            idx = (pct / 100) * (n - 1)
-            lower = int(math.floor(idx))
-            upper = min(lower + 1, n - 1)
-            frac = idx - lower
-            return sorted_v[lower] * (1 - frac) + sorted_v[upper] * frac
-
-        return {
-            "mean": round(mean_val, 4),
-            "median": round(percentile(50), 4),
-            "std_dev": round(std_dev, 4),
-            "min": round(sorted_v[0], 4),
-            "max": round(sorted_v[-1], 4),
-            "percentiles": {
-                "10": round(percentile(10), 4),
-                "25": round(percentile(25), 4),
-                "50": round(percentile(50), 4),
-                "75": round(percentile(75), 4),
-                "90": round(percentile(90), 4),
-            },
-        }
+    """Compute mean, median, std_dev, percentiles using NumPy."""
+    arr = np.array(values, dtype=float)
+    return {
+        "mean": round(float(np.mean(arr)), 4),
+        "median": round(float(np.median(arr)), 4),
+        "std_dev": round(float(np.std(arr)), 4),
+        "min": round(float(np.min(arr)), 4),
+        "max": round(float(np.max(arr)), 4),
+        "percentiles": {
+            "10": round(float(np.percentile(arr, 10)), 4),
+            "25": round(float(np.percentile(arr, 25)), 4),
+            "50": round(float(np.percentile(arr, 50)), 4),
+            "75": round(float(np.percentile(arr, 75)), 4),
+            "90": round(float(np.percentile(arr, 90)), 4),
+        },
+    }
 
 
 def _generate_correlated_outcomes(
     legs: List[Dict], n_sims: int, corr_matrix: List[List[float]]
 ) -> List:
-    """Generate correlated normal outcomes using Cholesky decomposition."""
+    """Generate correlated normal outcomes using NumPy multivariate_normal."""
     n = len(legs)
     means = [leg.get("mean", 0) for leg in legs]
     stds = [max(leg.get("std_dev", 1), 0.01) for leg in legs]
@@ -394,19 +303,6 @@ def _generate_correlated_outcomes(
 
     # Return as list of arrays (one per leg)
     return [samples[:, i] for i in range(n)]
-
-
-def _poisson_sample(lam: float) -> float:
-    """Stdlib Poisson sampling using inverse transform."""
-    L = math.exp(-lam)
-    k = 0
-    p = 1.0
-    while True:
-        k += 1
-        p *= random.random()
-        if p < L:
-            break
-    return float(k - 1)
 
 
 # ─── Service Wrapper ──────────────────────────────────────────────────────────
