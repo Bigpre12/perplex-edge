@@ -32,7 +32,7 @@ class Settings:
         # although this class is not inherited from pydantic.BaseSettings here.
         
         # Odds API Configuration
-        self.ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
+        self.ODDS_API_KEY = os.getenv("ODDS_API_KEY", os.getenv("THE_ODDS_API_KEY", ""))
         self.ODDS_API_KEY_PRIMARY = self.ODDS_API_KEY
         raw_keys = os.getenv("ODDS_API_KEYS", "")
         self.ODDS_API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
@@ -45,7 +45,12 @@ class Settings:
         self.STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
         
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-        self.GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+        self.GROQ_API_KEY = os.getenv("GROQ_API_KEY", os.getenv("AI_API_KEY", ""))
+        self.BETSTACK_API_KEY = os.getenv("BETSTACK_API_KEY", "")
+        self.ODDSPAPI_API_KEY = os.getenv("ODDSPAPI_API_KEY", "")
+        self.ROSTER_API_KEY = os.getenv("ROSTER_API_KEY", "")
+        self.DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+        
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
         
         # CORS Setup

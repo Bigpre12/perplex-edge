@@ -14,13 +14,15 @@ from services.balldontlie_client import balldontlie_client
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from core.config import settings
+
 class RealSportsAPI:
     def __init__(self):
-        # API Keys from environment
-        self.betstack_api_key = os.getenv("BETSTACK_API_KEY")
-        self.odds_api_key = os.getenv("THE_ODDS_API_KEY")
-        self.roster_api_key = os.getenv("ROSTER_API_KEY")
-        self.ai_api_key = os.getenv("AI_API_KEY")
+        # API Keys from centralized settings
+        self.betstack_api_key = settings.BETSTACK_API_KEY
+        self.odds_api_key = settings.ODDS_API_KEY
+        self.roster_api_key = settings.ROSTER_API_KEY
+        self.ai_api_key = settings.GROQ_API_KEY
         
         # API Base URLs
         self.betstack_base_url = "https://api.betstack.com/v1"
