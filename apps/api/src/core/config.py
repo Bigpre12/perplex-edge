@@ -57,15 +57,11 @@ class Settings:
         self.validate()
 
     def validate(self):
-        """Fail fast if critical configuration is missing."""
+        """Log warnings if critical configuration is missing, but do not crash."""
         required = ["SUPABASE_URL", "SUPABASE_ANON_KEY"]
         missing = [k for k in required if not getattr(self, k)]
         if missing:
-            error_msg = f"CRITICAL: Missing required configuration: {', '.join(missing)}"
-            logging.critical(error_msg)
-            # In production, we might want to raise an exception. 
-            # In dev, we alert the user prominently.
-            if not self.DEVELOPMENT_MODE:
-                raise ValueError(error_msg)
+            error_msg = f"WARNING: Missing Supabase configuration: {', '.join(missing)}. Auth features will be disabled."
+            logging.warning(error_msg)
 
 settings = Settings()
