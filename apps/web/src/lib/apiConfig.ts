@@ -24,12 +24,20 @@ if (typeof window !== "undefined") {
 }
 
 /**
- * The validated API Base URL. 
+ * The validated API host URL (no trailing slash).
  * Falls back to localhost:8000 during development if no env var is set.
  */
-export const API_BASE = !isMissing && !isPlaceholder 
-    ? rawApiUrl.replace(/\/$/, "") 
+export const API_HOST = !isMissing && !isPlaceholder
+    ? rawApiUrl.replace(/\/$/, "")
     : "http://localhost:8000";
+
+/**
+ * Browser requests should use same-origin `/api/*` so Next.js rewrites can proxy
+ * to the backend without triggering browser CORS.
+ *
+ * Server-side requests (Node) need an absolute URL.
+ */
+export const API_BASE = typeof window !== "undefined" ? "" : API_HOST;
 
 /**
  * Helper to check if the production API is correctly configured.

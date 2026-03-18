@@ -8,10 +8,7 @@ export default function SystemStatusBanner() {
 
   const check = useCallback(async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/health`,
-        { signal: AbortSignal.timeout(4000) }
-      );
+      const res = await fetch("/api/health", { signal: AbortSignal.timeout(4000) });
       setStatus(res.ok ? "online" : "offline");
     } catch {
       setStatus("offline");

@@ -37,7 +37,7 @@ export default function PageStates({ loading, error, empty, emptyMessage, childr
                 <p className="text-white font-black uppercase">{emptyMessage || "No data available right now"}</p>
                 <p className="text-slate-500 text-xs max-w-xs mx-auto font-medium">Check back closer to game time or verify API connection</p>
             </div>
-            <a href="http://localhost:8000/api/health" target="_blank" rel="noopener noreferrer" className="text-primary text-xs font-black uppercase underline block mt-4">
+            <a href="/api/health" target="_blank" rel="noopener noreferrer" className="text-primary text-xs font-black uppercase underline block mt-4">
                 Run API diagnostics →
             </a>
         </div>

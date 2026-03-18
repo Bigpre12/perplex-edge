@@ -54,8 +54,9 @@ class Settings:
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
         
         # CORS Setup
-        raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+        raw_origins = os.getenv("ALLOWED_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"))
         self.CORS_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
+        self.CORS_ORIGIN_REGEX = os.getenv("CORS_ORIGIN_REGEX", r"^https://.*\.vercel\.app$")
 
         class Config:
             extra = "ignore"

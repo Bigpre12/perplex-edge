@@ -47,7 +47,7 @@ class WebhookUpdate(BaseModel):
 async def get_current_user(
     token: Optional[str] = Depends(oauth2_scheme), 
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db)
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -158,7 +158,7 @@ async def get_current_user(
 # ── Routes ──
 
 @router.post("/signup", response_model=UserResponse)
-async def signup(user_data: UserSignup, db: AsyncSession = Depends(get_async_db)):
+async def signup(user_data: UserSignup, db: AsyncSession = Depends(get_db)):
     # Check if user already exists
     stmt = select(User).where((User.username == user_data.username) | (User.email == user_data.email))
     result = await db.execute(stmt)
@@ -187,7 +187,7 @@ class UserLogin(BaseModel):
     password: str
 
 @router.post("/login", response_model=Token)
-async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db)):
+async def login(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     stmt = select(User).where(User.email == login_data.email)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -218,7 +218,7 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db))
 async def generate_api_key(
     label: str,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Generate a new secure API Key for the user."""
     new_key = secrets.token_urlsafe(32)
@@ -237,7 +237,7 @@ async def generate_api_key(
 @router.get("/keys")
 async def list_api_keys(
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """List all API keys for the current user."""
     stmt = select(APIKey).where(APIKey.user_id == user.id)
@@ -249,7 +249,7 @@ async def list_api_keys(
 async def update_webhooks(
     data: WebhookUpdate,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """Update the user's webhook configurations for signal dispatch."""
     if data.discord_webhook_url is not None:
@@ -285,7 +285,7 @@ async def refresh_token(current_user: User = Depends(get_current_user)):
     }
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_async_db)):
+async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Fetch the latest user data directly from the DB, ensuring tier status is fresh."""
     try:
         stmt = select(User).where(User.id == current_user.id)

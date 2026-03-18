@@ -5,7 +5,6 @@ from common_deps import require_pro, require_elite
 from typing import Optional
 import os, httpx, asyncio
 from core.sports_config import ALL_SPORTS, SPORT_DISPLAY
-from db.session import get_db_connection, SessionLocal
 
 router = APIRouter(tags=["clv"])
 from services.odds_api_client import odds_api
@@ -152,40 +151,41 @@ async def get_clv_leaderboard(
         
     result = await db.execute(stmt)
     lines = result.scalars().all()
-        
-        picks = []
-        for line in lines:
-            hist_stmt = select(PropHistory).where(PropHistory.prop_line_id == line.id).order_by(PropHistory.created_at)
-            hist_res = await db.execute(hist_stmt)
-            history = hist_res.scalars().all()
-            
-            if not history: continue
-            
-            hist_data = [
-                {"line_value": h.old_line, "timestamp": h.created_at.isoformat()},
-                {"line_value": h.new_line, "timestamp": h.created_at.isoformat()}
-            ]
-            
-            clv_res = clv_service.compute_for_pick(
-                pick_data={"odds": -110}, 
-                odds_history=hist_data
-            )
-            
-            picks.append({
-                "id": line.id,
-                "player_name": line.player_name,
-                "stat_type": line.stat_type,
-                "sport": line.sport_key.split("_")[-1].upper() if "_" in line.sport_key else line.sport_key.upper(),
-                "line": line.line,
-                "odds": -110,
-                **clv_res
-            })
-            
-        # Sort by CLV descending
-        ranked = sorted(
-            [p for p in picks if p.get("clv_percentage") is not None],
-            key=lambda p: p["clv_percentage"],
-            reverse=True,
+
+    picks = []
+    for line in lines:
+        hist_stmt = select(PropHistory).where(PropHistory.prop_line_id == line.id).order_by(PropHistory.created_at)
+        hist_res = await db.execute(hist_stmt)
+        history = hist_res.scalars().all()
+
+        if not history:
+            continue
+
+        hist_data = [
+            {"line_value": h.old_line, "timestamp": h.created_at.isoformat()},
+            {"line_value": h.new_line, "timestamp": h.created_at.isoformat()},
+        ]
+
+        clv_res = clv_service.compute_for_pick(
+            pick_data={"odds": -110},
+            odds_history=hist_data,
         )
-        
-        return {"leaderboard": ranked[:limit], "total": len(ranked)}
+
+        picks.append({
+            "id": line.id,
+            "player_name": line.player_name,
+            "stat_type": line.stat_type,
+            "sport": line.sport_key.split("_")[-1].upper() if "_" in line.sport_key else line.sport_key.upper(),
+            "line": line.line,
+            "odds": -110,
+            **clv_res,
+        })
+
+    # Sort by CLV descending
+    ranked = sorted(
+        [p for p in picks if p.get("clv_percentage") is not None],
+        key=lambda p: p["clv_percentage"],
+        reverse=True,
+    )
+
+    return {"leaderboard": ranked[:limit], "total": len(ranked)}

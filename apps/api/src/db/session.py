@@ -33,6 +33,9 @@ AsyncSessionLocal = sessionmaker(
     autocommit=False
 )
 
+# Backward-compatible name used by some routers/services
+async_session_maker = AsyncSessionLocal
+
 # --- DEPENDENCIES ---
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for async database sessions."""

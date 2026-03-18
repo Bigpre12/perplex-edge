@@ -1,4 +1,4 @@
-import { API_BASE } from "./apiConfig";
+import { API_BASE, API_HOST } from "./apiConfig";
 
 const API_BASE_URL = API_BASE;
 
@@ -11,12 +11,24 @@ export const unwrap = (d: any): any => {
 };
 
 function buildUrl(path: string, params?: Record<string, QueryValue>) {
-    const url = new URL(`${API_BASE}${path}`);
+    const base = API_BASE;
+
+    // In the browser we intentionally use relative `/api/*` so Next rewrites can proxy.
+    if (!base) {
+        if (!params) return path;
+        const sp = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) sp.set(key, String(value));
+        });
+        const qs = sp.toString();
+        return qs ? `${path}?${qs}` : path;
+    }
+
+    // On the server we need an absolute URL.
+    const url = new URL(`${base}${path}`);
     if (params) {
         Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                url.searchParams.set(key, String(value));
-            }
+            if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
         });
     }
     return url.toString();
@@ -121,7 +133,7 @@ export const api = {
         scanner: (sport = "basketball_nba") =>
             request("/api/ev/ev-top", undefined, { sport }),
     },
-    wsEv: API_BASE.replace(/^http/, 'ws'),
+    wsEv: API_HOST.replace(/^http/, 'ws'),
 
     // Features
     injuries: (sport = "basketball_nba") =>
@@ -169,9 +181,9 @@ export const api = {
     activeMoves: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
     steamAlerts: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
     alerts: (sport = "basketball_nba") => request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
-    wsBaseUrl: API_BASE.replace(/^http/, 'ws'),
-    wsOdds: `${API_BASE.replace(/^http/, 'ws')}/api/ev/ws`,
-    wsKalshi: `${API_BASE.replace(/^http/, 'ws')}/api/kalshi/ws`,
+    wsBaseUrl: API_HOST.replace(/^http/, 'ws'),
+    wsOdds: `${API_HOST.replace(/^http/, 'ws')}/api/ev/ws`,
+    wsKalshi: `${API_HOST.replace(/^http/, 'ws')}/api/kalshi/ws`,
     share: () => "/api/meta/share",
     reportingExport: (format: string) => `/api/metrics/export?format=${format}`,
 

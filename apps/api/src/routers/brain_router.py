@@ -22,7 +22,7 @@ router = APIRouter(tags=["Brain Intelligence"])
 user_router = APIRouter()
 
 @user_router.get("/decisions")
-async def get_prop_score(sport: str = "basketball_nba", db: AsyncSession = Depends(get_db), tier: str = Depends(get_user_tier)):
+async def get_prop_score(sport: str = "basketball_nba", db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
     if tier not in ("pro", "elite"): return []
     try:
         results = await brain_advanced_service.get_prop_score(sport, db)

@@ -4,7 +4,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
     try {
-        const res = await fetch("http://127.0.0.1:8000/api/user/tier", {
+        const backendUrl = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+        const res = await fetch(`${backendUrl}/api/user/tier`, {
             headers: {
                 "Content-Type": "application/json",
                 // forward auth header if present

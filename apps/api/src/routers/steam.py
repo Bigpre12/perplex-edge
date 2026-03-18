@@ -15,7 +15,7 @@ steam_log: list = []
 @router.get("/alerts")
 async def steam_alerts(
     sport: Optional[str] = Query("basketball_nba"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Returns live steam and sharp money alerts with server-side deduplication.

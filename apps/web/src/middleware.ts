@@ -5,7 +5,7 @@ const PUBLIC_PATHS = [
     '/login',
     '/signup',
     '/pricing',
-    '/api/health',
+    '/api',
     '/_next',
     '/favicon',
     '/icon',
@@ -16,6 +16,11 @@ const PUBLIC_PATHS = [
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
+
+    // Never block CORS preflight requests
+    if (request.method === 'OPTIONS') {
+        return NextResponse.next();
+    }
 
     // Always allow public paths
     if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {

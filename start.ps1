@@ -1,6 +1,8 @@
 # start.ps1
 Write-Host "Starting Perplex Edge..." -ForegroundColor Cyan
 
+$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+
 # 1. Kill any existing processes on ports 8000 and 3300
 Write-Host "Cleaning up ports 8000 and 3300..." -ForegroundColor Gray
 $ports = @(3300, 3000, 8000)
@@ -21,20 +23,20 @@ Write-Host "Launching Backend (FastAPI)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "cd 'C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\api\src'; ..\..\..\.venv\Scripts\python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+    "cd '$repoRoot'; py run_api.py"
 ) -WindowStyle Normal
 
 Start-Sleep -Seconds 2
 
 # 3. Start Next.js in a new window
 Write-Host "Cleaning Next.js cache..." -ForegroundColor Gray
-Remove-Item -Path "apps\web\.next" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path (Join-Path $repoRoot "apps\web\.next") -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Launching Frontend (Next.js)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "cd 'C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\web'; npm run dev"
+    "cd '$repoRoot'; npm run web"
 ) -WindowStyle Normal
 
 # 4. Wait for Backend Health
