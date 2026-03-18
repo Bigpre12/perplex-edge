@@ -22,7 +22,7 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
 
             // 1. Backend Injuries — includes real-time corrections
             try {
-                const data = await API.get("/intel/injuries", { sport });
+                const data = await API.get("/api/intel/injuries", { sport });
                 if (!isApiError(data)) {
                     const injuries = (data as any).injuries || [];
                     injuries.slice(0, 10).forEach((inj: any) => {

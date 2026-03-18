@@ -3,7 +3,7 @@ Write-Host "Starting Perplex Edge..." -ForegroundColor Cyan
 
 # 1. Kill any existing processes on ports 8000 and 3300
 Write-Host "Cleaning up ports 8000 and 3300..." -ForegroundColor Gray
-$ports = @(3300, 3000, 8000)
+$ports = @(3300, 3000, 8080)
 foreach ($port in $ports) {
     $proc = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
     if ($proc) {
@@ -21,7 +21,7 @@ Write-Host "Launching Backend (FastAPI)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "cd 'C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\api\src'; ..\..\..\.venv\Scripts\python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
+    "cd 'C:\Users\preio\OneDrive\Documents\Untitled\perplex_engine\perplex-edge\apps\api\src'; ..\..\..\.venv\Scripts\python -m uvicorn main:app --host 127.0.0.1 --port 8080 --reload"
 ) -WindowStyle Normal
 
 Start-Sleep -Seconds 2
@@ -59,7 +59,7 @@ while ($retryCount -lt $maxRetries -and -not $healthy) {
 if ($healthy) {
     Write-Host "`nAll servers are stabilized!" -ForegroundColor Green
     Write-Host "Frontend: http://localhost:3000" -ForegroundColor Yellow
-    Write-Host "Backend:  http://localhost:8000/api/health" -ForegroundColor Yellow
+    Write-Host "Backend:  http://localhost:8080/api/health" -ForegroundColor Yellow
 } else {
     Write-Host "`nBackend failed to stabilize. Check server_boot.log" -ForegroundColor Red
 }

@@ -4,6 +4,9 @@
  */
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+if (typeof window !== "undefined") {
+    console.log(`[DEBUG] process.env.NEXT_PUBLIC_API_URL: "${process.env.NEXT_PUBLIC_API_URL}"`);
+}
 
 // Check for missing or placeholder values
 const isPlaceholder = rawApiUrl.includes("<your-cloud-run-domain>") || rawApiUrl === "REPLACE_WITH_ACTUAL_BACKEND_URL";
@@ -12,7 +15,7 @@ const isMissing = !rawApiUrl;
 if (typeof window !== "undefined") {
     if (isMissing) {
         console.error(
-            "CRITICAL: NEXT_PUBLIC_API_URL is missing! Every API call will fallback to localhost:8000. " +
+            "CRITICAL: NEXT_PUBLIC_API_URL is missing! Every API call will fallback to localhost:8080. " +
             "Please set this in Vercel Dashboard -> Settings -> Environment Variables."
         );
     } else if (isPlaceholder) {
@@ -25,11 +28,11 @@ if (typeof window !== "undefined") {
 
 /**
  * The validated API Base URL. 
- * Falls back to localhost:8000 during development if no env var is set.
+ * Falls back to localhost:8080 during development if no env var is set.
  */
-export const API_BASE = !isMissing && !isPlaceholder 
+export const API_BASE = (!isMissing && !isPlaceholder && rawApiUrl.trim().length > 0)
     ? rawApiUrl.replace(/\/$/, "") 
-    : "http://localhost:8000";
+    : "http://localhost:8080";
 
 /**
  * Helper to check if the production API is correctly configured.
