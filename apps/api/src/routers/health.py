@@ -4,7 +4,11 @@ router = APIRouter()
 
 @router.get("/health")
 async def meta_health():
-    return {"status": "healthy"}
+    from datetime import datetime, timezone
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
 
 @router.get("/summary")
 async def meta_summary():

@@ -4,6 +4,9 @@ from fastapi import APIRouter, Query
 from services.injury_service import injury_service
 from .ev import get_top_ev
 from .signals import get_signals
+from .whale import whale_signals
+from common_deps import get_user_tier
+from fastapi import Depends
 
 router = APIRouter(tags=["search"])
 logger = logging.getLogger(__name__)
@@ -39,10 +42,18 @@ async def get_intel_injuries(sport: str = Query("basketball_nba")):
                         "source": "ESPN"
                     })
                     
+        if not result:
+            return {"injuries": [], "sport": sport_short, "last_updated": None}
+            
         return {"injuries": result, "count": len(result), "sport": sport.upper()}
     except Exception as e:
         logger.error(f"Intel Injuries Error: {e}")
-        return {"injuries": [], "error": str(e)}
+        return {"injuries": [], "sport": sport, "last_updated": None}
+
+@router.get("/whale")
+async def get_intel_whale(sport: str = Query("basketball_nba"), tier: str = Depends(get_user_tier)):
+    """Intel-prefixed whale signals (alias)."""
+    return await whale_signals(sport=sport, tier=tier)
 
 @router.get("/ev-top")
 async def get_intel_ev_top(

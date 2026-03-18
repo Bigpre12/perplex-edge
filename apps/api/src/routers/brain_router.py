@@ -33,12 +33,15 @@ async def get_prop_score(sport: str = "basketball_nba", db: AsyncSession = Depen
 
 @user_router.get("/parlay-builder")
 async def get_parlay_builder(sport: str = "basketball_nba", legs: int = 3, min_score: int = 65, db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
-    if tier not in ("pro", "elite"): return []
+    if tier not in ("pro", "elite"): return {"legs": [], "sport": sport, "message": "Pro or Elite subscription required"}
     try:
-        return await brain_advanced_service.build_parlay(sport, legs, min_score, db)
+        res = await brain_advanced_service.build_parlay(sport, legs, min_score, db)
+        if not res or not isinstance(res, list) or not res[0].get("legs"):
+            return {"legs": [], "sport": sport, "message": "No high-confidence props qualify right now"}
+        return res[0] # Return the first parlay object instead of a list containing one object
     except Exception as e:
         logger.error(f"Error in parlay-builder: {e}")
-        return []
+        return {"legs": [], "sport": sport, "message": "No high-confidence props qualify right now", "error": str(e)}
 
 @user_router.get("/live-analysis")
 async def get_live_analysis(sport: str = "basketball_nba", tier: str = Depends(get_user_tier)):

@@ -14,52 +14,60 @@ async def get_parlay_suggestions(
     """
     Suggests high-EV parlay legs for the selected sport.
     """
-    api_sport = SPORT_MAP.get(sport, sport)
-    # Fetch live odds and pick the top 'legs' based on some criteria
-    data = await odds_api.get_live_odds(api_sport, markets="h2h")
+    import logging
+    logger = logging.getLogger(__name__)
     
-    if not data:
-        return []
+    try:
+        api_sport = SPORT_MAP.get(sport, sport)
+        # Fetch live odds and pick the top 'legs' based on some criteria
+        data = await odds_api.get_live_odds(api_sport, markets="h2h")
         
-    suggestions = []
-    # Simplified: Pick first N games/legs
-    for event in data[:legs]:
-        bookmakers = event.get("bookmakers", [])
-        if not bookmakers: continue
-        book = bookmakers[0]
-        
-        markets = book.get("markets", [])
-        if not markets: continue
-        market = markets[0]
-        
-        outcomes = market.get("outcomes", [])
-        if not outcomes: continue
-        outcome = outcomes[0]
-        
-        suggestions.append({
-            "player": outcome.get("name"),
-            "prop": market.get("key"),
-            "line": outcome.get("point", "ML"),
-            "odds": outcome.get("price"),
-            "game": f"{event.get('away_team', 'Away')} @ {event.get('home_team', 'Home')}"
-        })
-        
-    # Calculate combined odds (multiplier)
-    multiplier = 1.0
-    for s in suggestions:
-        price = s["odds"]
-        if price > 0:
-            multiplier *= (price / 100 + 1)
-        else:
-            multiplier *= (100 / abs(price) + 1)
+        if not data:
+            logger.warning(f"No data returned from odds_api for sport: {api_sport}")
+            return {"suggestions": [], "error": "No live data available for this sport, try again later."}
             
-    combined_american = round((multiplier - 1) * 100) if multiplier >= 2 else round(-100 / (multiplier - 1))
-    
-    return {
-        "legs": suggestions,
-        "combined_odds": f"+{combined_american}" if combined_american > 0 else str(combined_american),
-        "payout_estimate_100": round(100 * multiplier, 2)
-    }
+        suggestions = []
+        # Simplified: Pick first N games/legs
+        for event in data[:legs]:
+            bookmakers = event.get("bookmakers", [])
+            if not bookmakers: continue
+            book = bookmakers[0]
+            
+            markets = book.get("markets", [])
+            if not markets: continue
+            market = markets[0]
+            
+            outcomes = market.get("outcomes", [])
+            if not outcomes: continue
+            outcome = outcomes[0]
+            
+            suggestions.append({
+                "player": outcome.get("name"),
+                "prop": market.get("key"),
+                "line": outcome.get("point", "ML"),
+                "odds": outcome.get("price"),
+                "game": f"{event.get('away_team', 'Away')} @ {event.get('home_team', 'Home')}"
+            })
+            
+        # Calculate combined odds (multiplier)
+        multiplier = 1.0
+        for s in suggestions:
+            price = s["odds"]
+            if price > 0:
+                multiplier *= (price / 100 + 1)
+            else:
+                multiplier *= (100 / abs(price) + 1)
+                
+        combined_american = round((multiplier - 1) * 100) if multiplier >= 2 else round(-100 / (multiplier - 1))
+        
+        return {
+            "legs": suggestions,
+            "combined_odds": f"+{combined_american}" if combined_american > 0 else str(combined_american),
+            "payout_estimate_100": round(100 * multiplier, 2)
+        }
+    except Exception as e:
+        logger.error(f"Error in parlay suggestions: {e}")
+        return {"suggestions": [], "error": "Internal error, try again"}
 
 @router.get("/history")
 async def get_parlay_history():
