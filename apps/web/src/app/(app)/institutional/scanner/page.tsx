@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Radar, Zap, Activity, Server, Globe, Share2, CheckCircle2 } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
@@ -11,7 +11,7 @@ import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 import { useSport } from "@/context/SportContext";
 
-export default function InstitutionalScanner() {
+function InstitutionalScannerContent() {
     const { selectedSport: sport } = useSport();
     const { data: allProps, loading, error, lastUpdated, isStale, refresh } = useLiveData<any[]>(
         () => api.props(sport || "basketball_nba"),
@@ -109,6 +109,14 @@ export default function InstitutionalScanner() {
                 </PageStates>
             </div>
         </GateLock>
+    );
+}
+
+export default function InstitutionalScanner() {
+    return (
+        <Suspense fallback={<div className="p-12 flex items-center gap-4 text-secondary"><Radar className="animate-pulse" /> Scanning Command Center...</div>}>
+            <InstitutionalScannerContent />
+        </Suspense>
     );
 }
 

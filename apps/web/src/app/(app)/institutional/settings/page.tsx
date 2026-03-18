@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Settings, Cpu, ShieldAlert, Save, TrendingUp, Loader2, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { api, isApiError } from "@/lib/api";
@@ -8,7 +8,7 @@ import { api, isApiError } from "@/lib/api";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 
-export default function EdgeSettingsPage() {
+function EdgeSettingsContent() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [config, setConfig] = useState({
@@ -217,5 +217,13 @@ export default function EdgeSettingsPage() {
                 </div>
             </div>
         </GateLock>
+    );
+}
+
+export default function EdgeSettingsPage() {
+    return (
+        <Suspense fallback={<div className="p-12 flex items-center gap-4 text-secondary"><Loader2 className="animate-spin" /> Loading Core Connectors...</div>}>
+            <EdgeSettingsContent />
+        </Suspense>
     );
 }
