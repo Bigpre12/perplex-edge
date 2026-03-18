@@ -24,113 +24,117 @@ class WhaleService:
         """
         signals = []
         
-        async with async_session_maker() as session:
-            # 1. Fetch persisted whale moves
-            stmt_persisted = select(WhaleMove).where(WhaleMove.sport == sport).order_by(desc(WhaleMove.created_at)).limit(50)
-            res_persisted = await session.execute(stmt_persisted)
-            persisted_moves = res_persisted.scalars().all()
-            
-            for pm in persisted_moves:
-                signals.append({
-                    "id": str(pm.id),
-                    "type": "WHALE_MOVE",
-                    "signal": pm.move_type,
-                    "player": pm.player_name,
-                    "stat": (pm.stat_type or "").replace("_", " ").title(),
-                    "pick": "DETECTED",
-                    "line": pm.line,
-                    "sharp_side": "WHALE",
-                    "market_value": round(pm.amount_estimate) if pm.amount_estimate else 0,
-                    "confidence": 95 if pm.severity == 'High' else 80,
-                    "game": "Live Market",
-                    "game_time": pm.created_at.isoformat() if pm.created_at else datetime.now(timezone.utc).isoformat(),
-                    "whale_label": pm.whale_label,
-                    "description": f"Persisted Whale Intel: {pm.whale_label} movement on {pm.player_name}",
-                    "alert_time": pm.created_at.isoformat() if pm.created_at else datetime.now(timezone.utc).isoformat(),
-                    "books_involved": pm.books_involved.split(",") if pm.books_involved else ["Multiple"]
-                })
-
-            # 2. Real-time detection from PropLines
-            stmt = select(PropLine).where(PropLine.sport_key == sport, PropLine.is_active == True)
-            result = await session.execute(stmt)
-            proplines = result.scalars().all()
-            
-            book_lines: Dict[str, Dict] = {}
-            if proplines:
-                for pl in proplines:
-                    stmt_odds = select(PropOdds).where(PropOdds.prop_line_id == pl.id)
-                    res_odds = await session.execute(stmt_odds)
-                    odds_list = res_odds.scalars().all()
-                    
-                    for o in odds_list:
-                        book = o.sportsbook.lower()
-                        if book not in book_lines: book_lines[book] = {}
-                        
-                        over_key = f"{pl.player_name}:{pl.stat_type}:over"
-                        book_lines[book][over_key] = {
-                            "odds": o.over_odds,
-                            "line": pl.line,
-                            "player": pl.player_name,
-                            "stat": pl.stat_type,
-                            "pick": "over",
-                            "game_id": pl.game_id,
-                            "commence_time": pl.start_time,
-                            "matchup": f"{pl.team} vs {pl.opponent}"
-                        }
-                        
-                        under_key = f"{pl.player_name}:{pl.stat_type}:under"
-                        book_lines[book][under_key] = {
-                            "odds": o.under_odds,
-                            "line": pl.line,
-                            "player": pl.player_name,
-                            "stat": pl.stat_type,
-                            "pick": "under",
-                            "game_id": pl.game_id,
-                            "commence_time": pl.start_time,
-                            "matchup": f"{pl.team} vs {pl.opponent}"
-                        }
-
-            # 3. Analyze for Pinnacle splits or Market outliers
-            new_signals = self.analyze_db_signals(book_lines)
-            
-            # 4. Filter and persist (Deduplicated)
-            if new_signals:
-                six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
-                for s in new_signals:
-                    if s["confidence"] >= 85:
-                        try:
-                            # Check if similar move already persisted recently
-                            stmt_check = select(WhaleMove).where(
-                                WhaleMove.player_name == s["player"],
-                                WhaleMove.stat_type == s["stat"],
-                                WhaleMove.side == s["pick"],
-                                WhaleMove.created_at >= six_hours_ago
-                            )
-                            res_check = await session.execute(stmt_check)
-                            if res_check.scalars().first():
-                                logger.info(f"WhaleService: Skipping duplicate for {s['player']}")
-                                continue
-
-                            new_whale = WhaleMove(
-                                sport=sport,
-                                player_name=s["player"],
-                                stat_type=s["stat"],
-                                line=s["line"],
-                                move_type=s["type"],
-                                side=s["pick"].upper(),
-                                severity="High" if s["confidence"] >= 90 else "Medium",
-                                amount_estimate=float(s["market_value"]),
-                                sportsbook=s["books_involved"][0] if s["books_involved"] else "Market",
-                                books_involved=",".join(s["books_involved"]) if s["books_involved"] else "Market",
-                                whale_label=s["whale_label"],
-                                created_at=datetime.now(timezone.utc)
-                            )
-                            session.add(new_whale)
-                        except Exception as e:
-                            logger.error(f"Failed to persist whale move: {e}")
+        try:
+            async with async_session_maker() as session:
+                # 1. Fetch persisted whale moves
+                stmt_persisted = select(WhaleMove).where(WhaleMove.sport == sport).order_by(desc(WhaleMove.created_at)).limit(50)
+                res_persisted = await session.execute(stmt_persisted)
+                persisted_moves = res_persisted.scalars().all()
                 
-                await session.commit()
-                signals.extend(new_signals)
+                for pm in persisted_moves:
+                    signals.append({
+                        "id": str(pm.id),
+                        "type": "WHALE_MOVE",
+                        "signal": pm.move_type,
+                        "player": pm.player_name,
+                        "stat": (pm.stat_type or "").replace("_", " ").title(),
+                        "pick": "DETECTED",
+                        "line": pm.line,
+                        "sharp_side": "WHALE",
+                        "market_value": round(pm.amount_estimate) if pm.amount_estimate else 0,
+                        "confidence": 95 if pm.severity == 'High' else 80,
+                        "game": "Live Market",
+                        "game_time": pm.created_at.isoformat() if pm.created_at else datetime.now(timezone.utc).isoformat(),
+                        "whale_label": pm.whale_label,
+                        "description": f"Persisted Whale Intel: {pm.whale_label} movement on {pm.player_name}",
+                        "alert_time": pm.created_at.isoformat() if pm.created_at else datetime.now(timezone.utc).isoformat(),
+                        "books_involved": pm.books_involved.split(",") if pm.books_involved else ["Multiple"]
+                    })
+
+                # 2. Real-time detection from PropLines
+                stmt = select(PropLine).where(PropLine.sport_key == sport, PropLine.is_active == True)
+                result = await session.execute(stmt)
+                proplines = result.scalars().all()
+                
+                book_lines: Dict[str, Dict] = {}
+                if proplines:
+                    for pl in proplines:
+                        stmt_odds = select(PropOdds).where(PropOdds.prop_line_id == pl.id)
+                        res_odds = await session.execute(stmt_odds)
+                        odds_list = res_odds.scalars().all()
+                        
+                        for o in odds_list:
+                            book = o.sportsbook.lower()
+                            if book not in book_lines: book_lines[book] = {}
+                            
+                            over_key = f"{pl.player_name}:{pl.stat_type}:over"
+                            book_lines[book][over_key] = {
+                                "odds": o.over_odds,
+                                "line": pl.line,
+                                "player": pl.player_name,
+                                "stat": pl.stat_type,
+                                "pick": "over",
+                                "game_id": pl.game_id,
+                                "commence_time": pl.start_time,
+                                "matchup": f"{pl.team} vs {pl.opponent}"
+                            }
+                            
+                            under_key = f"{pl.player_name}:{pl.stat_type}:under"
+                            book_lines[book][under_key] = {
+                                "odds": o.under_odds,
+                                "line": pl.line,
+                                "player": pl.player_name,
+                                "stat": pl.stat_type,
+                                "pick": "under",
+                                "game_id": pl.game_id,
+                                "commence_time": pl.start_time,
+                                "matchup": f"{pl.team} vs {pl.opponent}"
+                            }
+
+                # 3. Analyze for Pinnacle splits or Market outliers
+                new_signals = self.analyze_db_signals(book_lines)
+                
+                # 4. Filter and persist (Deduplicated)
+                if new_signals:
+                    six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
+                    for s in new_signals:
+                        if s["confidence"] >= 85:
+                            try:
+                                # Check if similar move already persisted recently
+                                stmt_check = select(WhaleMove).where(
+                                    WhaleMove.player_name == s["player"],
+                                    WhaleMove.stat_type == s["stat"],
+                                    WhaleMove.side == s["pick"],
+                                    WhaleMove.created_at >= six_hours_ago
+                                )
+                                res_check = await session.execute(stmt_check)
+                                if res_check.scalars().first():
+                                    logger.info(f"WhaleService: Skipping duplicate for {s['player']}")
+                                    continue
+
+                                new_whale = WhaleMove(
+                                    sport=sport,
+                                    player_name=s["player"],
+                                    stat_type=s["stat"],
+                                    line=s["line"],
+                                    move_type=s["type"],
+                                    side=s["pick"].upper(),
+                                    severity="High" if s["confidence"] >= 90 else "Medium",
+                                    amount_estimate=float(s["market_value"]),
+                                    sportsbook=s["books_involved"][0] if s["books_involved"] else "Market",
+                                    books_involved=",".join(s["books_involved"]) if s["books_involved"] else "Market",
+                                    whale_label=s["whale_label"],
+                                    created_at=datetime.now(timezone.utc)
+                                )
+                                session.add(new_whale)
+                            except Exception as e:
+                                logger.error(f"Failed to persist whale move: {e}")
+                    
+                    await session.commit()
+                    signals.extend(new_signals)
+        except Exception as e:
+            logger.error(f"WhaleService database failure: {e}")
+            signals = [] # Ensure it falls through to mock data fallback
 
         if not signals:
             logger.info("WhaleService: No real-time signals found, returning high-quality mock fallback")

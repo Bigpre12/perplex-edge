@@ -24,16 +24,24 @@ async def get_parlay_suggestions(
     suggestions = []
     # Simplified: Pick first N games/legs
     for event in data[:legs]:
-        book = event.get("bookmakers", [{}])[0]
-        market = book.get("markets", [{}])[0]
-        outcome = market.get("outcomes", [{}])[0]
+        bookmakers = event.get("bookmakers", [])
+        if not bookmakers: continue
+        book = bookmakers[0]
+        
+        markets = book.get("markets", [])
+        if not markets: continue
+        market = markets[0]
+        
+        outcomes = market.get("outcomes", [])
+        if not outcomes: continue
+        outcome = outcomes[0]
         
         suggestions.append({
             "player": outcome.get("name"),
             "prop": market.get("key"),
             "line": outcome.get("point", "ML"),
             "odds": outcome.get("price"),
-            "game": f"{event['away_team']} @ {event['home_team']}"
+            "game": f"{event.get('away_team', 'Away')} @ {event.get('home_team', 'Home')}"
         })
         
     # Calculate combined odds (multiplier)
