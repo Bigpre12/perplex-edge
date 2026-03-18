@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Terminal,
@@ -10,7 +10,7 @@ import {
     Send,
     RefreshCw,
     ShieldCheck,
-    AlertCircle,
+    Loader2,
     Activity,
     Code,
     Plus,
@@ -25,9 +25,8 @@ import { api, isApiError } from "@/lib/api";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 
-export default function ExecutionHub() {
+function ExecutionContent() {
     const [apiKeys, setApiKeys] = useState<any[]>([]);
-    // ... rest of state ...
     const [loading, setLoading] = useState(true);
     const [newKeyLabel, setNewKeyLabel] = useState("");
     const [justGeneratedKey, setJustGeneratedKey] = useState<string | null>(null);
@@ -130,7 +129,6 @@ export default function ExecutionHub() {
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                    {/* ... (rest of the grid content) ... */}
                     <div className="xl:col-span-2 space-y-6">
                         <div className="glass-panel p-8 rounded-3xl border-white/[0.05]">
                             <div className="flex items-center justify-between mb-8">
@@ -333,5 +331,18 @@ function ExecutionHealth({ label, status, latency }: any) {
                 <span className="text-[10px] font-black text-white italic uppercase">{status}</span>
             </div>
         </div>
+    );
+}
+
+export default function ExecutionHub() {
+    return (
+        <Suspense fallback={
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-primary">
+                <Loader2 size={40} className="animate-spin" />
+                <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Loading Execution Node...</p>
+            </div>
+        }>
+            <ExecutionContent />
+        </Suspense>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Copy, Users, Link2, DollarSign, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 import { getUser } from "@/lib/auth";
@@ -9,7 +9,7 @@ import { api, isApiError } from "@/lib/api";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 
-export default function AffiliateDashboard() {
+function AffiliateContent() {
     const [referralData, setReferralData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
@@ -138,5 +138,18 @@ export default function AffiliateDashboard() {
                 </div>
             </div>
         </GateLock>
+    );
+}
+
+export default function AffiliateDashboard() {
+    return (
+        <Suspense fallback={
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-primary">
+                <Loader2 size={40} className="animate-spin" />
+                <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Security Clearance Active...</p>
+            </div>
+        }>
+            <AffiliateContent />
+        </Suspense>
     );
 }

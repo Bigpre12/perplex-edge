@@ -1,10 +1,10 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
-export function SportFilterBar() {
+function SportFilterBarContent() {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -125,5 +125,13 @@ export function SportFilterBar() {
                 )}
             </div>
         </div>
+    );
+}
+
+export function SportFilterBar() {
+    return (
+        <Suspense fallback={<div className="h-11 bg-lucrix-surface border-b border-lucrix-border hidden md:flex" />}>
+            <SportFilterBarContent />
+        </Suspense>
     );
 }

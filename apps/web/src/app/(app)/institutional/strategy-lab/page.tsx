@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Scale, Zap, Cpu, Download, ArrowRight, Filter, Target, ShieldAlert, TrendingUp, History, Timer, Play, Settings2, BarChart3, LineChart, FlaskConical } from "lucide-react";
+import { Scale, Zap, Cpu, Download, ArrowRight, Filter, Target, ShieldAlert, TrendingUp, History, Timer, Play, Settings2, BarChart3, LineChart, FlaskConical, Loader2 } from "lucide-react";
 import {
     Area,
     AreaChart,
@@ -18,7 +18,7 @@ import { api, isApiError } from "@/lib/api";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 
-export default function StrategyLab() {
+function StrategyContent() {
     const [loading, setLoading] = useState(false);
     const [backtestResult, setBacktestResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -285,5 +285,18 @@ function PlaceholderTip({ icon, label }: any) {
             </div>
             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{label}</span>
         </div>
+    );
+}
+
+export default function StrategyLab() {
+    return (
+        <Suspense fallback={
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-primary">
+                <Loader2 size={40} className="animate-spin" />
+                <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Simulation Engine Initializing...</p>
+            </div>
+        }>
+            <StrategyContent />
+        </Suspense>
     );
 }
