@@ -22,8 +22,11 @@ class Settings:
         self.STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "")
         self.STRIPE_ELITE_PRICE_ID = os.getenv("STRIPE_ELITE_PRICE_ID", "")
         self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-        self.SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL", "")
-        self.SUPABASE_ANON_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+        
+        self.SUPABASE_URL: str = os.getenv("SUPABASE_URL", os.getenv("NEXT_PUBLIC_SUPABASE_URL", ""))
+        self.SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY", ""))
+        self.SUPABASE_ANON_KEY: str = self.SUPABASE_KEY
+        self.SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
         
         # Odds API Configuration
         self.ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
@@ -45,6 +48,11 @@ class Settings:
         # CORS Setup
         raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
         self.CORS_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
+
+        class Config:
+            extra = "ignore"
+            
+        self.Config = Config
 
         self.validate()
 

@@ -1,76 +1,39 @@
-print(f"DEBUG: db.session is initializing...")
 import os
 import logging
-import contextlib
-from typing import Generator
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 from .base import Base
 
 # Use absolute path calculation directly to avoid cyclic/shadowing import issues
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'perplex_local.db'))}"
+    f"sqlite+aiosqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'perplex_local.db'))}"
 )
 
 logger = logging.getLogger(__name__)
 
 # --- ENGINE SETUP ---
-# Ensure we use psycopg2 for stability on Windows if using Postgres
-sync_url = DATABASE_URL.replace("postgres://", "postgresql://").replace("postgresql+asyncpg://", "postgresql://")
-if sync_url.startswith("postgresql://") and not sync_url.startswith("postgresql+psycopg2://"):
-    sync_url = sync_url.replace("postgresql://", "postgresql+psycopg2://")
+async_url = DATABASE_URL
+if async_url.startswith("postgres://"):
+    async_url = async_url.replace("postgres://", "postgresql+asyncpg://")
+elif async_url.startswith("postgresql://") and not async_url.startswith("postgresql+asyncpg://"):
+    async_url = async_url.replace("postgresql://", "postgresql+asyncpg://")
+elif async_url.startswith("sqlite://"):
+    async_url = async_url.replace("sqlite://", "sqlite+aiosqlite://")
 
-connect_args = {"check_same_thread": False} if sync_url.startswith("sqlite") else {
-    "keepalives": 1,
-    "keepalives_idle": 30,
-    "keepalives_interval": 10,
-    "keepalives_count": 5
-}
+connect_args = {"check_same_thread": False} if async_url.startswith("sqlite") else {}
 
-engine = create_engine(sync_url, connect_args=connect_args, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
-
-# --- ASYNC SHIM (for Windows/Legacy support) ---
-class DummyAsyncResult:
-    def __init__(self, sync_result):
-        self._sync_result = sync_result
-    def scalars(self): return self._sync_result.scalars()
-    def scalar(self): return self._sync_result.scalar()
-    def all(self): return self._sync_result.all()
-    def __iter__(self): return iter(self._sync_result)
-
-class DummyAsyncSession:
-    def __init__(self, sync_session):
-        self.sync_session = sync_session
-    async def execute(self, stmt, *args, **kwargs):
-        # SQLAlchemy 1.4+ / 2.0 sync session execute returns a Result object
-        return DummyAsyncResult(self.sync_session.execute(stmt, *args, **kwargs))
-    
-    async def commit(self): self.sync_session.commit()
-    async def rollback(self): self.sync_session.rollback()
-    def add(self, obj): self.sync_session.add(obj)
-    async def flush(self): self.sync_session.flush()
-    async def close(self): self.sync_session.close()
-
-@contextlib.asynccontextmanager
-async def async_session_maker():
-    session = SessionLocal()
-    try:
-        yield DummyAsyncSession(session)
-    finally:
-        session.close()
+engine = create_async_engine(async_url, connect_args=connect_args)
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # --- DEPENDENCIES ---
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        yield session
 
-async def get_async_db():
-    async with async_session_maker() as session:
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
         yield session
 
 def get_db_connection():

@@ -12,18 +12,12 @@ Uses stdlib random for Railway compatibility; numpy optional for speed.
 import math
 import random
 import logging
+import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
-
-# Try numpy for performance; fall back to stdlib
-try:
-    import numpy as np
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    logger.info("numpy not available, using stdlib random for Monte Carlo sims")
+HAS_NUMPY = True
 
 
 # ─── Utility ─────────────────────────────────────────────────────────────────
@@ -77,16 +71,10 @@ def run_prop_simulation(
         n_sims = 100000
 
     # Generate simulated outcomes
-    if HAS_NUMPY:
-        if distribution == "poisson" and mean > 0:
-            outcomes = np.random.poisson(mean, n_sims).astype(float)
-        else:
-            outcomes = np.random.normal(mean, max(std_dev, 0.01), n_sims)
+    if distribution == "poisson" and mean > 0:
+        outcomes = np.random.poisson(mean, n_sims).astype(float)
     else:
-        if distribution == "poisson" and mean > 0:
-            outcomes = [_poisson_sample(mean) for _ in range(n_sims)]
-        else:
-            outcomes = [random.gauss(mean, max(std_dev, 0.01)) for _ in range(n_sims)]
+        outcomes = np.random.normal(mean, max(std_dev, 0.01), n_sims)
 
     # Count hits
     if side.lower() == "over":
@@ -142,7 +130,7 @@ def run_parlay_simulation(
         n_sims = 100000
 
     # Generate correlated or independent outcomes
-    if correlation_matrix and HAS_NUMPY and len(correlation_matrix) == n_legs:
+    if correlation_matrix and len(correlation_matrix) == n_legs:
         # Correlated simulation using Cholesky decomposition
         outcomes_matrix = _generate_correlated_outcomes(legs, n_sims, correlation_matrix)
     else:
@@ -153,16 +141,10 @@ def run_parlay_simulation(
             std = leg.get("std_dev", 1)
             dist = leg.get("distribution", "normal")
 
-            if HAS_NUMPY:
-                if dist == "poisson" and mean > 0:
-                    sims = np.random.poisson(mean, n_sims).astype(float)
-                else:
-                    sims = np.random.normal(mean, max(std, 0.01), n_sims)
+            if dist == "poisson" and mean > 0:
+                sims = np.random.poisson(mean, n_sims).astype(float)
             else:
-                if dist == "poisson" and mean > 0:
-                    sims = [_poisson_sample(mean) for _ in range(n_sims)]
-                else:
-                    sims = [random.gauss(mean, max(std, 0.01)) for _ in range(n_sims)]
+                sims = np.random.normal(mean, max(std, 0.01), n_sims)
 
             outcomes_matrix.append(sims)
 
@@ -173,7 +155,7 @@ def run_parlay_simulation(
     for sim_idx in range(n_sims):
         all_hit = True
         for leg_idx, leg in enumerate(legs):
-            outcome = outcomes_matrix[leg_idx][sim_idx] if HAS_NUMPY else outcomes_matrix[leg_idx][sim_idx]
+            outcome = outcomes_matrix[leg_idx][sim_idx]
             line = leg.get("line", 0)
             side = leg.get("side", "over").lower()
 
@@ -274,7 +256,7 @@ def simulate_bankroll(
             stake = bankroll * stake_pct
 
             # Simulate outcome
-            if random.random() < win_prob:
+            if np.random.random() < win_prob:
                 payout = stake * (american_to_decimal(odds) - 1)
                 bankroll += payout
             else:

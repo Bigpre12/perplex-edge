@@ -139,7 +139,7 @@ async def get_current_user(
             else:
                 logger.error(f"Supabase auth rejected {resp.status_code}: {resp.text}")
         else:
-            logger.error("Missing SUPABASE_URL or SUPABASE_ANON_KEY in settings")
+            logger.warning("Supabase not configured — auth disabled")
             
     except HTTPException:
         raise
