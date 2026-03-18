@@ -6,7 +6,7 @@ import { User, Lock, ArrowRight, ShieldCheck, Cpu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/lib/auth";
-import { API } from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -23,10 +23,10 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const data: any = await API.authLogin(
-                formData.email,
-                formData.password
-            );
+            const data: any = await api.auth.login({
+                email: formData.email,
+                password: formData.password
+            });
 
             // Backend may return accessToken (simple) or access_token (legacy)
             const token = data?.accessToken || data?.access_token;

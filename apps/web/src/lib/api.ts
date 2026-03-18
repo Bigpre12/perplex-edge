@@ -173,7 +173,27 @@ export const api = {
     wsOdds: `${API_BASE.replace(/^http/, 'ws')}/api/ev/ws`,
     wsKalshi: `${API_BASE.replace(/^http/, 'ws')}/api/kalshi/ws`,
     share: () => "/api/meta/share",
-    reportingExport: (format: string) => `/api/metrics/export?format=${format}`
+    reportingExport: (format: string) => `/api/metrics/export?format=${format}`,
+
+    // Institutional / Execution
+    authKeys: () => request("/api/auth/keys"),
+    generateKey: (label: string) =>
+        request("/api/auth/keys", { method: "POST", body: JSON.stringify({ label }) }),
+    updateWebhooks: (data: any) =>
+        request("/api/settings/webhooks", { method: "POST", body: JSON.stringify(data) }),
+    edgeConfig: () => request("/api/settings/edge-config"),
+    saveEdgeConfig: (config: any) =>
+        request("/api/settings/edge-config", { method: "POST", body: JSON.stringify(config) }),
+    backtestRun: (params: any) =>
+        request("/api/backtest/run", { method: "POST", body: JSON.stringify(params) }),
+
+    // Hit Rate & Trends
+    hitRateSummary: (sport = "all") =>
+        request("/api/hit-rate/summary", undefined, { sport }),
+    hitRateByPlayer: (sport = "all", slateOnly = false) =>
+        request("/api/hit-rate/by-player", undefined, { sport, slate_only: slateOnly }),
+    trendHunter: (sport = "basketball_nba", timeframe = "10g") =>
+        request("/api/trends/hunter", undefined, { sport, timeframe }),
 };
 
 

@@ -110,6 +110,7 @@ function EdgeSettingsContent() {
                                     min="1" max="15" step="0.5"
                                     value={config.min_edge_percent}
                                     onChange={e => setConfig({ ...config, min_edge_percent: parseFloat(e.target.value) })}
+                                    aria-label="Minimum Edge Requirement"
                                     className="w-full accent-primary bg-slate-800 rounded-lg cursor-pointer"
                                 />
                                 <p className="text-[10px] text-slate-500 mt-2 font-medium">Blocks props with an EV return lower than {config.min_edge_percent}%.</p>
@@ -125,6 +126,7 @@ function EdgeSettingsContent() {
                                     min="20" max="60" step="1.0"
                                     value={config.max_edge_percent}
                                     onChange={e => setConfig({ ...config, max_edge_percent: parseFloat(e.target.value) })}
+                                    aria-label="Maximum Outlier Ceiling"
                                     className="w-full accent-accent-orange bg-slate-800 rounded-lg cursor-pointer"
                                 />
                                 <p className="text-[10px] text-slate-500 mt-2 font-medium">Caps the EV scale to avoid corrupted data-points (e.g., glitch lines showing {config.max_edge_percent}%+).</p>
@@ -140,6 +142,7 @@ function EdgeSettingsContent() {
                                     min="-180" max="-105" step="5"
                                     value={config.max_juice}
                                     onChange={e => setConfig({ ...config, max_juice: parseFloat(e.target.value) })}
+                                    aria-label="Maximum Allowed Juice"
                                     className="w-full accent-white bg-slate-800 rounded-lg cursor-pointer"
                                 />
                                 <p className="text-[10px] text-slate-500 mt-2 font-medium">Filters out heavily juiced outcomes past {config.max_juice}.</p>
@@ -182,6 +185,7 @@ function EdgeSettingsContent() {
                             </div>
                             <button
                                 onClick={() => setConfig({ ...config, include_main_lines: !config.include_main_lines })}
+                                title="Toggle main betting lines"
                                 className={`w-14 h-7 rounded-full transition-colors relative ${config.include_main_lines ? 'bg-primary' : 'bg-slate-700'}`}
                             >
                                 <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform ${config.include_main_lines ? 'translate-x-8' : 'translate-x-1'}`}></div>

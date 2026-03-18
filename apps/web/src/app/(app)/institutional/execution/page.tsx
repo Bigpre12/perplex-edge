@@ -193,10 +193,10 @@ function ExecutionContent() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all">
+                                            <button title="View activity" className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all">
                                                 <Activity size={16} />
                                             </button>
-                                            <button className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-500 transition-all">
+                                            <button title="Delete API key" className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-500 transition-all">
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>

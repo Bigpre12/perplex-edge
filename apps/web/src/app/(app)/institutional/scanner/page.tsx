@@ -154,12 +154,14 @@ function ScannerRow({ prop, onQuickTrack, onSignal }: any) {
                 <div className="flex items-center justify-end gap-3">
                     <button
                         onClick={() => onQuickTrack(prop)}
+                        title="Quick track prop"
                         className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg text-emerald-500 transition-all"
                     >
                         <CheckCircle2 size={16} />
                     </button>
                     <button
                         onClick={() => onSignal(prop)}
+                        title="Send signal"
                         className="p-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg text-primary transition-all"
                     >
                         <Share2 size={16} />

@@ -111,6 +111,7 @@ function StrategyContent() {
                                     className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-xs text-white focus:outline-none"
                                     value={params.bet_sizing_model}
                                     onChange={(e) => setParams({ ...params, bet_sizing_model: e.target.value })}
+                                    aria-label="Wagering Model"
                                 >
                                     <option value="fixed">Fixed Unit (Initial)</option>
                                     <option value="kelly">Full Kelly</option>
