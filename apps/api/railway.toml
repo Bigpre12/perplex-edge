@@ -1,9 +1,0 @@
-[build]
-builder = "dockerfile"
-dockerfile = "Dockerfile"
-
-[deploy]
-healthcheckPath = "/api/health"
-healthcheckTimeout = 120
-restartPolicyType = "on-failure"
-maxRestartCount = 3
