@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/health")
+@router.get("/")
 async def meta_health():
     from datetime import datetime, timezone
     return {

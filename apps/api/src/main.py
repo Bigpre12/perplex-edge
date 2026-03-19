@@ -50,7 +50,7 @@ app.add_middleware(
 )
 
 # Standardized API Routes
-app.include_router(health_router,   prefix="/api",              tags=["health"])
+app.include_router(health_router,   prefix="/api/health",       tags=["health"])
 app.include_router(meta_router,     prefix="/api/meta",         tags=["meta"])
 app.include_router(auth_router,     prefix="/api/auth",         tags=["auth"])
 app.include_router(props_router,    prefix="/api/props",        tags=["props"])
