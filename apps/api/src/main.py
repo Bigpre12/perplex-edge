@@ -35,6 +35,18 @@ from routers.oracle import router as oracle_router
 from routers.live import router as live_router
 from routers.slate import router as slate_router
 from routers.ws_ev import router as ws_ev_router
+try:
+    from routers.arbitrage import router as arbitrage_router
+except ImportError:
+    arbitrage_router = None
+try:
+    from routers.kalshi import router as kalshi_router
+except ImportError:
+    kalshi_router = None
+try:
+    from routers.kalshi_ws_proxy import router as kalshi_ws_router
+except ImportError:
+    kalshi_ws_router = None
 
 # Initialize database tables
 # Base.metadata.create_all(bind=engine) # DEPRECATED: Use Alembic migrations
@@ -44,6 +56,8 @@ app = FastAPI(title=APP_NAME)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    # Match any Vercel preview/branch deploy for this project
+    allow_origin_regex=r"https://perplex-edge[\w-]*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,6 +88,12 @@ app.include_router(oracle_router,   prefix="/api/oracle",       tags=["oracle"])
 app.include_router(live_router,     prefix="/api/live",         tags=["live"])
 app.include_router(slate_router,    prefix="/api/slate",        tags=["slate"])
 app.include_router(ws_ev_router,    prefix="/api",              tags=["ws"])
+if arbitrage_router:
+    app.include_router(arbitrage_router, prefix="/api/arbitrage", tags=["arbitrage"])
+if kalshi_router:
+    app.include_router(kalshi_router,    prefix="/api/kalshi",    tags=["kalshi"])
+if kalshi_ws_router:
+    app.include_router(kalshi_ws_router, prefix="/api",           tags=["kalshi-ws"])
 
 @app.get("/")
 async def root():
