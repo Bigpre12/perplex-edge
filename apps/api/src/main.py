@@ -1,14 +1,10 @@
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from core.config import APP_NAME, settings
-
 from db.base import Base
-import db.session
 from db.session import engine
 
 from routers.health import router as health_router
@@ -35,78 +31,65 @@ from routers.oracle import router as oracle_router
 from routers.live import router as live_router
 from routers.slate import router as slate_router
 from routers.ws_ev import router as ws_ev_router
-try:
-    from routers.arbitrage import router as arbitrage_router
-except ImportError:
-    arbitrage_router = None
-try:
-    from routers.kalshi import router as kalshi_router
-except ImportError:
-    kalshi_router = None
-try:
-    from routers.kalshi_ws_proxy import router as kalshi_ws_router
-except ImportError:
-    kalshi_ws_router = None
 
-# Initialize database tables
-# Base.metadata.create_all(bind=engine) # DEPRECATED: Use Alembic migrations
+try:
+        from routers.arbitrage import router as arbitrage_router
+except ImportError:
+        arbitrage_router = None
 
-app = FastAPI(title=APP_NAME)
+try:
+        from routers.kalshi import router as kalshi_router
+except ImportError:
+        kalshi_router = None
 
-# CORS: allow all origins during deployment stabilization.
-# Tighten to settings.CORS_ORIGINS once Vercel + Railway are confirmed working.
+try:
+        from routers.kalshi_ws_proxy import router as kalshi_ws_router
+except ImportError:
+        kalshi_ws_router = None
+
+app = FastAPI(title=APP_NAME, redirect_slashes=False)
+
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,  # must be False when allow_origins=["*"]
-    allow_methods=["*"],
-    allow_headers=["*"],
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
 )
 
-# Standardized API Routes
-app.include_router(health_router,   prefix="/api/health",       tags=["health"])
-app.include_router(meta_router,     prefix="/api/meta",         tags=["meta"])
-app.include_router(auth_router,     prefix="/api/auth",         tags=["auth"])
-app.include_router(props_router,    prefix="/api/props",        tags=["props"])
-app.include_router(ev_router,       prefix="/api/ev",           tags=["ev"])
-app.include_router(clv_router,      prefix="/api/clv",          tags=["clv"])
-app.include_router(brain_router,    prefix="/api/brain",        tags=["brain"])
-app.include_router(bets_router,     prefix="/api/bets",         tags=["bets"])
-app.include_router(injuries_router, prefix="/api/injuries",     tags=["injuries"])
-app.include_router(news_router,     prefix="/api/news",         tags=["news"])
-app.include_router(signals_router,  prefix="/api/signals",      tags=["signals"])
-app.include_router(lines_router,    prefix="/api/lines",        tags=["lines"])
-app.include_router(metrics_router,  prefix="/api/metrics",      tags=["metrics"])
-app.include_router(hit_rate_router, prefix="/api/hit-rate",     tags=["hit-rate"])
-app.include_router(whale_router,    prefix="/api/whale",        tags=["whale"])
-app.include_router(parlay_router,   prefix="/api/parlay",       tags=["parlay"])
-app.include_router(steam_router,    prefix="/api/steam",        tags=["steam"])
-app.include_router(stripe_router,   prefix="/api/stripe",       tags=["stripe"])
-app.include_router(search_router,   prefix="/api/search",       tags=["search"])
-app.include_router(intel_router,    prefix="/api/intel",        tags=["intel"])
-app.include_router(oracle_router,   prefix="/api/oracle",       tags=["oracle"])
-app.include_router(live_router,     prefix="/api/live",         tags=["live"])
-app.include_router(slate_router,    prefix="/api/slate",        tags=["slate"])
-app.include_router(ws_ev_router,    prefix="/api",              tags=["ws"])
+app.include_router(health_router, prefix="/api/health", tags=["health"])
+app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
+app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+app.include_router(props_router, prefix="/api/props", tags=["props"])
+app.include_router(ev_router, prefix="/api/ev", tags=["ev"])
+app.include_router(clv_router, prefix="/api/clv", tags=["clv"])
+app.include_router(brain_router, prefix="/api/brain", tags=["brain"])
+app.include_router(bets_router, prefix="/api/bets", tags=["bets"])
+app.include_router(injuries_router, prefix="/api/injuries", tags=["injuries"])
+app.include_router(news_router, prefix="/api/news", tags=["news"])
+app.include_router(signals_router, prefix="/api/signals", tags=["signals"])
+app.include_router(lines_router, prefix="/api/lines", tags=["lines"])
+app.include_router(metrics_router, prefix="/api/metrics", tags=["metrics"])
+app.include_router(hit_rate_router, prefix="/api/hit_rate", tags=["hit_rate"])
+app.include_router(whale_router, prefix="/api/whale", tags=["whale"])
+app.include_router(parlay_router, prefix="/api/parlay", tags=["parlay"])
+app.include_router(steam_router, prefix="/api/steam", tags=["steam"])
+app.include_router(stripe_router, prefix="/api/stripe", tags=["stripe"])
+app.include_router(search_router, prefix="/api/search", tags=["search"])
+app.include_router(intel_router, prefix="/api/intel", tags=["intel"])
+app.include_router(oracle_router, prefix="/api/oracle", tags=["oracle"])
+app.include_router(live_router, prefix="/api/live", tags=["live"])
+app.include_router(slate_router, prefix="/api/slate", tags=["slate"])
+app.include_router(ws_ev_router, prefix="/api/ws_ev", tags=["ws_ev"])
+
 if arbitrage_router:
-    app.include_router(arbitrage_router, prefix="/api/arbitrage", tags=["arbitrage"])
-if kalshi_router:
-    app.include_router(kalshi_router,    prefix="/api/kalshi",    tags=["kalshi"])
-if kalshi_ws_router:
-    app.include_router(kalshi_ws_router, prefix="/api",           tags=["kalshi-ws"])
-
-@app.on_event("startup")
-async def startup_event():
-    import logging
-    logging.getLogger(__name__).info(f"🚀 {APP_NAME} started — CORS origins: {['*']} (open during stabilization)")
-
-@app.get("/")
-async def root():
-    return {"name": APP_NAME, "status": "healthy", "cors": "open"}
+        app.include_router(arbitrage_router, prefix="/api/arbitrage", tags=["arbitrage"])
+    if kalshi_router:
+            app.include_router(kalshi_router, prefix="/api/kalshi", tags=["kalshi"])
+        if kalshi_ws_router:
+                app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
 
 if __name__ == "__main__":
-    import uvicorn
-    import os
-    port = int(os.environ.get("PORT") or 8000)
-    # Bind to 0.0.0.0 for container/cloud compatibility
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+        import uvicorn
+        uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8080)), log_level="info")
+    
