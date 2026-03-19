@@ -7,7 +7,13 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     async rewrites() {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
+        
+        // Ensure https:// is present for production domains
+        if (apiUrl && !apiUrl.startsWith("http")) {
+            apiUrl = `https://${apiUrl}`;
+        }
+
         return [
             {
                 source: "/api/:path*",
