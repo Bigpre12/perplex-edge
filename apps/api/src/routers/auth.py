@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, update
-from db.session import get_db
+from db.session import get_db, get_async_db
 from models.user import User, APIKey
 from services.auth_service import auth_service
 from pydantic import BaseModel, EmailStr, ConfigDict

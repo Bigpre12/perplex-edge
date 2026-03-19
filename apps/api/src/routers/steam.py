@@ -1,8 +1,8 @@
-class AsyncSession: pass
 # apps/api/src/routers/steam.py
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
-from db.session import get_async_db
+from db.session import get_db, get_async_db
 from services.steam_service import steam_service
 from datetime import datetime, timedelta, timezone
 
