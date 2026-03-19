@@ -53,12 +53,12 @@ except ImportError:
 
 app = FastAPI(title=APP_NAME)
 
+# CORS: allow all origins during deployment stabilization.
+# Tighten to settings.CORS_ORIGINS once Vercel + Railway are confirmed working.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    # Match any Vercel preview/branch deploy for this project
-    allow_origin_regex=r"https://perplex-edge[\w-]*\.vercel\.app",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,  # must be False when allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -95,9 +95,14 @@ if kalshi_router:
 if kalshi_ws_router:
     app.include_router(kalshi_ws_router, prefix="/api",           tags=["kalshi-ws"])
 
+@app.on_event("startup")
+async def startup_event():
+    import logging
+    logging.getLogger(__name__).info(f"🚀 {APP_NAME} started — CORS origins: {['*']} (open during stabilization)")
+
 @app.get("/")
 async def root():
-    return {"name": APP_NAME, "status": "healthy"}
+    return {"name": APP_NAME, "status": "healthy", "cors": "open"}
 
 if __name__ == "__main__":
     import uvicorn
