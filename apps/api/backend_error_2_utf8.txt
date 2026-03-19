@@ -1,0 +1,41 @@
+﻿2026-03-18 11:45:33,882 [INFO] boot: Starting API import...
+2026-03-18 11:45:36,806 [INFO] boot: API imported successfully!
+2026-03-18 11:45:36,806 [INFO] boot: Running uvicorn on port 8000
+py : INFO:     Started 
+server process [43792]
+At line:1 char:1
++ py run_api.py > 
+backend_output_2.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : 
+NotSpecified:     
+(INFO:     Started s   
+ erver process [43792  
+  ]:String) [], Remote 
+   Exception
+    + 
+FullyQualifiedErro    
+rId : NativeCommandE   
+ rror
+ 
+INFO:     Waiting for 
+application startup.
+INFO:     Application 
+startup complete.
+ERROR:    [Errno 
+10048] error while 
+attempting to bind on 
+address ('127.0.0.1', 
+8000): [winerror 
+10048] only one usage 
+of each socket address 
+(protocol/network 
+address/port) is 
+normally permitted
+INFO:     Waiting for 
+application shutdown.
+INFO:     Application 
+shutdown complete.
