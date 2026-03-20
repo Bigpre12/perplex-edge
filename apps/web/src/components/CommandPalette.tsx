@@ -23,7 +23,7 @@ export default function CommandPalette() {
     // The Global Action Dictionary
     const actions: Action[] = [
         { id: '1', label: "Go to Live Engine Screener", icon: <Compass size={16} />, route: "/institutional/strategy-lab", category: "Navigation" },
-        { id: '2', label: "Go to Player Props Grid", icon: <Users size={16} />, route: "/props", category: "Navigation" },
+        { id: '2', label: "Go to Player Props Grid", icon: <Users size={16} />, route: "/player-props", category: "Navigation" },
         { id: '3', label: "Go to Affiliate Dashboard", icon: <Sparkles size={16} />, route: "/institutional/affiliate", category: "Navigation" },
         { id: '4', label: "Go to Engine Settings", icon: <Settings size={16} />, route: "/institutional/settings", category: "Navigation" },
         { id: '5', label: "Go to Admin Command Center", icon: <ShieldCheck size={16} />, route: "/admin", category: "System" },

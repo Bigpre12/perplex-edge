@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from db.session import get_async_db
 from routers.schemas.ev import EvEdge
+from models import EdgeEVHistory, Injury
 from services.db import db
 
 router = APIRouter()
@@ -61,5 +62,16 @@ async def get_ev_history(
     
     return {
         "status": "success",
-        "data": [EvEdgeSchema.model_validate(h) for h in history]
+        "data": [EvEdge.model_validate(h) for h in history]
     }
+
+@router.get("/injuries", response_model=Dict[str, Any])
+async def proxy_injuries(
+    sport: str = Query("basketball_nba"),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Proxy for /api/injuries/live to satisfy frontend legacy/intel calls."""
+    stmt = select(Injury).filter(Injury.sport == sport).order_by(desc(Injury.created_at)).limit(50)
+    result = await db.execute(stmt)
+    rows = result.scalars().all()
+    return {"status": "success", "injuries": rows}

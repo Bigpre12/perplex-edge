@@ -6,5 +6,6 @@ from .brain import (
     PropHistory, EdgeEVHistory, UnifiedOdds
 )
 from .user import User, APIKey, UserOverride, PushSubscription
+from .injury import Injury
 from .prop import Prop, PropLine, PropOdds, GameLine, GameLineOdds, LiveGameStat, Market, Sport
 from .bet import Bet, BetSlip, BetLeg, BetLog, BetResult
