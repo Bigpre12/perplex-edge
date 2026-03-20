@@ -42,3 +42,5 @@ groq>=0.4.0
 pywebpush>=1.14.0
 resend>=0.6.0
 numpy>=1.26.0
+
+gunicorn==22.0.0
