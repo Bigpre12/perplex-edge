@@ -1,27 +1,23 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/request'
 
-// Auth is bypassed — all routes are publicly accessible.
-// To re-enable auth, uncomment the token check block below.
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/pricing', '/api']
+
 export function middleware(request: NextRequest) {
-    return NextResponse.next();
+  const { pathname } = request.nextUrl
+  const isPublic = PUBLIC_PATHS.some(p => pathname.startsWith(p))
+  
+  // Look for our specific session token
+  const token = request.cookies.get('lucrix_token')?.value || request.cookies.get('auth-token')?.value
 
-    // --- ORIGINAL AUTH GATE (DISABLED) ---
-    // const PUBLIC_PATHS = [
-    //     '/login', '/signup', '/pricing', '/api/health',
-    //     '/_next', '/favicon', '/icon', '/manifest', '/robots', '/api/auth',
-    // ];
-    // const { pathname } = request.nextUrl;
-    // if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return NextResponse.next();
-    // const token = request.cookies.get('lucrix_token')?.value;
-    // if (!token && pathname !== '/') {
-    //     const loginUrl = new URL('/login', request.url);
-    //     loginUrl.searchParams.set('from', pathname);
-    //     return NextResponse.redirect(loginUrl);
-    // }
-    // return NextResponse.next();
+  // Use temporary bypass for now as requested
+  // if (!isPublic && !token) {
+  //   return NextResponse.redirect(new URL(`/login?from=${pathname}`, request.url))
+  // }
+  
+  return NextResponse.next()
 }
 
 export const config = {
-    matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
-};
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}
