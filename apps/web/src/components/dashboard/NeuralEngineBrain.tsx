@@ -30,18 +30,14 @@ export default function NeuralEngineBrain() {
     setMounted(true);
     const load = async () => {
       try {
-        // Props count
-        const props = await API.getProps(selectedSport);
-        if (!isApiError(props)) {
-          setData(prev => ({ ...prev, props_scored: (props as any)?.data?.length ?? 0 }));
-        }
         // Injury impacts & Stats
         const stats = await API.brainMetrics();
         if (!isApiError(stats)) {
           setData(prev => ({ 
             ...prev, 
+            props_scored: (stats as any)?.props_scored_today ?? 0,
             injury_impacts: (stats as any)?.injury_impacts ?? (stats as any)?.injury_count ?? 0,
-            active_edges: (stats as any)?.total_picks ?? 0
+            active_edges: (stats as any)?.elite_signals ?? (stats as any)?.total_picks ?? 0
           }));
         }
         // Brain decisions & Health
@@ -106,7 +102,7 @@ export default function NeuralEngineBrain() {
         )}
         {/* Card 2 — also tier-gated */}
         {isPro ? (
-          <BrainCard label="ACTIVE EDGES" value={data.active_edges > 0 ? String(data.active_edges) : "Scanning..."} />
+          <BrainCard label="ACTIVE EDGES" value={data.active_edges > 0 ? String(data.active_edges) : "Awaiting..."} />
         ) : (
           <LockedCard />
         )}
@@ -119,10 +115,10 @@ export default function NeuralEngineBrain() {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <BrainCard label="INJURY IMPACTS" value={`${data.injury_impacts} Critical`} />
-        <BrainCard label="PROPS SCORED"   value={String(data.props_scored)} />
+        <BrainCard label="INJURY IMPACTS" value={data.injury_impacts > 0 ? `${data.injury_impacts} Critical` : "Awaiting..."} />
+        <BrainCard label="PROPS SCORED"   value={data.props_scored > 0 ? String(data.props_scored) : "Awaiting..."} />
         {isPro ? (
-          <BrainCard label="AI REASONING" value={data.brain_health === 'initializing' ? 'BOOTING...' : String(data.brain_health ?? 'ACTIVE').toUpperCase()} />
+          <BrainCard label="AI REASONING" value={data.brain_health === 'initializing' ? 'AWAITING...' : String(data.brain_health ?? 'ACTIVE').toUpperCase()} />
         ) : (
           <LockedCard />
         )}

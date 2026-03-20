@@ -42,6 +42,11 @@ class OracleService:
             # 4. Fetch Injuries
             injuries = await injury_service.get_injuries(sport)
             
+            # 5. Fetch Top EV Signals (Fix #11 logic)
+            from routers.ev import get_top_ev
+            ev_data = await get_top_ev(sport=sport, limit=15)
+            ev_signals = ev_data.get("data", [])
+            
             # 5. Fetch last 10 steam events from DB using async session
             from db.session import async_session_maker
             from models.analytical import SteamEvent
@@ -61,11 +66,11 @@ class OracleService:
             except Exception as steam_err:
                 logger.warning(f"Oracle: could not fetch steam events: {steam_err}")
 
-            
             context = {
                 "sport": sport,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "top_props": top_props_sample,
+                "ev_signals": ev_signals, # Fix #11
                 "brain_metrics": metrics,
                 "whale_signals": whale_signals[:10],
                 "steam_events": steam_events,
@@ -99,6 +104,9 @@ CURRENT TIME: {context['timestamp']}
 
 TOP PROPS RIGHT NOW:
 {json.dumps(context['top_props'], indent=2)}
+
+POSITIVE EV SIGNALS (Sharp Edge):
+{json.dumps(context['ev_signals'], indent=2)}
 
 INJURIES:
 {json.dumps(context['injuries'], indent=2)}

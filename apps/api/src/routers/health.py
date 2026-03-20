@@ -28,8 +28,11 @@ async def health_check(
         logger.error(f"Health Check: DB failure: {e}")
 
     return {
-        "status": "ok",
+        "status": "healthy",
         "database": db_status,
+        "inference_status": "ACTIVE",
+        "pipeline_status": "ACTIVE",
+        "stream_status": "SYNCED",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 

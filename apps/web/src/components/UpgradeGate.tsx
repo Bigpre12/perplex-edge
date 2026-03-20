@@ -29,7 +29,8 @@ export function UpgradeGate({ children, tierRequired = "pro" }: Props) {
         currentTier === "owner" ||
         (currentTier === "pro" && targetTier === "pro");
 
-    if (hasAccess) {
+    const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === "true";
+    if (isDevMode || hasAccess) {
         return <>{children}</>;
     }
 

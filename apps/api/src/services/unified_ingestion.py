@@ -117,12 +117,17 @@ class UnifiedIngestionService:
             from services.brain_sharp_money import sharp_money_brain
             from services.brain_injury_impact import injury_impact_brain
             from services.brain_clv_tracker import brain_clv_tracker
+            from services.brain_advanced_service import brain_advanced_service
             
             await sharp_money_brain.detect_signals(sport_key)
             await brain_clv_tracker.record_opening_line(rows)
             await injury_impact_brain.analyze_impacts(sport_key)
             
             await ev_engine.run_ev_cycle(sport_key)
+            
+            # Promote EV signals to ModelPicks for the dashboard
+            async with async_session_maker() as session:
+                await brain_advanced_service.generate_model_picks(sport_key, session)
         except Exception as e:
             logger.error(f"UnifiedIngestion: Secondary processing failed: {e}")
 

@@ -55,20 +55,14 @@ async def live_games(sport: str = "basketball_nba"):
         except Exception as db_e:
             logger.error(f"Seeded game fallback error: {db_e}")
 
-    # 3. Final Mock Fallback (if DB is also empty)
+    # 3. Final State Check
     if not all_games:
-        all_games = [{
-            "id": "sim_1",
-            "home_team": "Golden State Warriors",
-            "away_team": "Los Angeles Lakers",
-            "home_score": 102,
-            "away_score": 98,
-            "status": "live",
-            "period": 4,
-            "clock": "2:14",
-            "commence_time": datetime.now(timezone.utc).isoformat(),
-            "source": "hardcoded_fallback"
-        }]
+        return {
+            "count": 0, 
+            "games": [], 
+            "status": "awaiting_ingest",
+            "message": "No live data yet. Ingest job is running in the background."
+        }
 
     # 4. Standardize for frontend
     formatted_games = []
@@ -112,4 +106,9 @@ async def get_live_scores(sport: str = "basketball_nba"):
         return {"data": formatted_games, "count": len(formatted_games)}
     except Exception as e:
         logger.error(f"Error fetching scores for {sport}: {e}")
-        return {"data": [], "error": str(e)}
+        return {
+            "data": [], 
+            "count": 0, 
+            "status": "awaiting_ingest",
+            "error_msg": str(e)
+        }

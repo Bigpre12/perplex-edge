@@ -9,7 +9,9 @@ from db.base import Base # Re-export Base for convenience
 # --- CONFIGURATION ---
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./data/perplex_local.db")
 
-if DATABASE_URL.startswith("postgres://"):
+if DATABASE_URL.startswith("sqlite") and "aiosqlite" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://", 1)
+elif DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 elif DATABASE_URL.startswith("postgresql://") and "asyncpg" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)

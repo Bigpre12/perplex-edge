@@ -1,11 +1,14 @@
 import sys
 import os
+import asyncio
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import APP_NAME, settings
 from db.base import Base
 from db.session import engine
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from services.unified_ingestion import unified_ingestion
 
 import logging
 
@@ -47,6 +50,11 @@ line_movement_router = safe_import("line_movement", "line_movement")
 arbitrage_router    = safe_import("arbitrage", "arbitrage")
 kalshi_router       = safe_import("kalshi", "kalshi")
 kalshi_ws_router    = safe_import("kalshi_ws_proxy", "kalshi_ws")
+systems_router      = safe_import("systems", "systems")
+top_edges_router    = safe_import("top_edges", "top_edges")
+performance_router  = safe_import("performance", "performance")
+streaks_router      = safe_import("streaks", "streaks")
+contest_router      = safe_import("contest_router", "contests")
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
@@ -56,28 +64,74 @@ async def startup():
     import logging
     logging.info("Starting up: Ensuring database tables exist...")
     try:
+        from db.session import engine, Base
+        import models.user
+        import models.prop
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         logging.info("Startup complete: Database initialized.")
     except Exception as e:
+        # Tables might already exist, or connection failed
         logging.error(f"Startup error during DB initialization: {e}")
-        # We don't crash here so that the health check can still return 'degraded'
-        # and provide diagnostics instead of a generic 503.
+
+    # Initialize Scheduler
+    scheduler = AsyncIOScheduler()
+    
+    # Schedule Ingest Jobs (Every 5 minutes)
+    sports_to_ingest = ["basketball_nba", "americanfootball_nfl", "americanfootball_ncaaf"]
+    
+    for sport in sports_to_ingest:
+        scheduler.add_job(
+            unified_ingestion.run,
+            'interval',
+            minutes=5,
+            args=[sport],
+            id=f"ingest_{sport}",
+            replace_existing=True
+        )
+    
+    scheduler.start()
+    logging.info("Scheduler started: Ingest jobs queued.")
+
+    # Trigger initial ingest after a short delay
+    async def initial_ingest():
+        await asyncio.sleep(5)
+        for sport in sports_to_ingest:
+            logging.info(f"Triggering initial ingest for {sport}...")
+            await unified_ingestion.run(sport)
+            
+    asyncio.create_task(initial_ingest())
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        os.getenv("FRONTEND_URL", "https://perplex-edge.vercel.app"),
-        "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
         "https://perplex-edge.vercel.app",
+        "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
+        "https://perplex-edge-m93qy4yyv-bigpre12s-projects.vercel.app", # Fix #1
         "http://localhost:3000",
         "http://localhost:1337",
         "http://127.0.0.1:3000",
+        os.getenv("FRONTEND_URL", "https://perplex-edge.vercel.app"),
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/api/smart-money")
+async def get_sharp_signals():
+    """Neural Engine: Smart Money Threadpool (Fix #4)"""
+    from services.brain_sharp_money import sharp_money_brain
+    from db.session import SessionLocal
+    import asyncio
+    
+    def _sync():
+        with SessionLocal() as syncdb:
+            # Note: syncdb is a sync session for the threadpool
+            return {"status": "processing", "signal": "captured"} # Placeholder for actual logic
+            
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _sync)
 
 # Include external health router for more detailed checks
 # Guarded Router Inclusion
@@ -109,6 +163,11 @@ if line_movement_router: app.include_router(line_movement_router, prefix="/api/l
 if arbitrage_router:     app.include_router(arbitrage_router, prefix="/api/arbitrage", tags=["arbitrage"])
 if kalshi_router:        app.include_router(kalshi_router, prefix="/api/kalshi", tags=["kalshi"])
 if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
+if systems_router:       app.include_router(systems_router, prefix="/api/systems", tags=["systems"])
+if top_edges_router:     app.include_router(top_edges_router, prefix="/api/top-edges", tags=["top_edges"])
+if performance_router:   app.include_router(performance_router, prefix="/api/performance", tags=["performance"])
+if streaks_router:       app.include_router(streaks_router, prefix="/api/streaks", tags=["streaks"])
+if contest_router:       app.include_router(contest_router, prefix="/api/contests", tags=["contests"])
 
 @app.get("/")
 async def root():

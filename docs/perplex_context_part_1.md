@@ -9,22 +9,25 @@
 ## 🏗️ Full Stack Layout
 
 ### **Frontend** (Client-Side)
+
 - **Technology**: Vanilla HTML5, CSS3, JavaScript (ES6+).
 - **Styling**: Custom "Premium" Dark Mode (Glassmorphism, Inter Typography).
 - **Structure**:
-    - `index.html`: Single Page Application (SPA) entry point.
-    - `static/css/style.css`: Centralized styling variables and components.
-    - `static/js/app.js`: Dynamic DOM manipulation and API integration.
+  - `index.html`: Single Page Application (SPA) entry point.
+  - `static/css/style.css`: Centralized styling variables and components.
+  - `static/js/app.js`: Dynamic DOM manipulation and API integration.
 
 ### **Backend** (Server-Side)
+
 - **Framework**: FastAPI (Python).
 - **Entry Points**:
-    - `app/main.py`: Main application runner (serves frontend + API).
-    - `backend/app/main.py`: Core backend logic API (likely merged or referenced).
+  - `app/main.py`: Main application runner (serves frontend + API).
+  - `backend/app/main.py`: Core backend logic API (likely merged or referenced).
 - **Database**: SQLAlchemy (Async) with SQLite/Postgres support.
 - **ORM**: Declarative models for clean database abstraction.
 
 ### **Data & Intelligence Layer** ("The Brain")
+
 - **Location**: Root & `backend/` directories.
 - **Architecture**: Service-oriented architecture with specialized modules for different analytical tasks.
 
@@ -33,12 +36,14 @@
 ## 🚀 Features & Capabilities
 
 ### **1. Core Betting Intelligence**
+
 - **Live Odds Tracking**: Real-time monitoring of NFL, NCAAB, and NBA lines (`live_odds_*_service.py`).
 - **Historical Analysis**: Archival of past odds and performance for backtesting (`historical_odds_*`).
 - **Prop Bets**: Specialized analysis for player props (`player_stats_service.py`).
 - **Closing Line Value (CLV)**: Tracking line movement to measure bet quality (`verify_clv_columns.py`).
 
 ### **2. "The Brain" (AI/ML System)**
+
 - **Decision Engine**: Automated logic for generating betting picks (`brain_decision_tracker.py`).
 - **Self-Healing**: Automated detection and repair of system anomalies (`brain_healing_service.py`).
 - **Health Monitoring**: Continuous system status checks (`brain_health_monitor.py`).
@@ -46,11 +51,13 @@
 - **Metric Tracking**: KPIs for model performance and system reliability (`brain_metrics_service.py`).
 
 ### **3. Data Management**
+
 - **Automated Populators**: Scripts to fetch and store data for Games, Rosters, Injuries, and Stats (`populate_*.py`).
 - **Market Analysis**: Tools to analyze market efficiency and hit rates (`analyze_markets.py`).
 - **Sync Metadata**: Tracking freshness and source of data (`analyze_sync_metadata.py`).
 
 ### **4. User Interface**
+
 - **Dashboard**: Interactive view of system health and active modules.
 - **Real-Time Status**: Visual indicators for backend connectivity and model states.
 - **Module Testing**: Built-in tools to test API endpoints directly from the UI.
@@ -64,35 +71,39 @@
 ## 🛠️ Technology Stack & Dependencies
 
 ### **Core Framework (Backend)**
+
 - **Language**: Python 3.10+
 - **Web Framework**: `FastAPI` (v0.104.1)
-    - High-performance async web framework.
-    - Automatic OpenAPI (Swagger) documentation.
+  - High-performance async web framework.
+  - Automatic OpenAPI (Swagger) documentation.
 - **ASGI Server**: `Uvicorn` (v0.24.0) [Standard]
-    - Lightning-fast ASGI server implementation.
+  - Lightning-fast ASGI server implementation.
 - **Data Validation**: `Pydantic` (v2.5.0)
-    - Type hints and data parsing.
+  - Type hints and data parsing.
 
 ### **Database & ORM**
+
 - **ORM**: `SQLAlchemy` (v2.0.23)
-    - Modern, async-capable Object Relational Mapper.
+  - Modern, async-capable Object Relational Mapper.
 - **Drivers**:
-    - `asyncpg` (v0.29.0): For PostgreSQL (Production).
-    - `aiosqlite`: For SQLite (Development/Local).
+  - `asyncpg` (v0.29.0): For PostgreSQL (Production).
+  - `aiosqlite`: For SQLite (Development/Local).
 
 ### **Utilities**
+
 - **HTTP Client**: `httpx` (v0.25.2)
-    - Async HTTP client for fetching external odds/stats.
+  - Async HTTP client for fetching external odds/stats.
 - **Date Parsing**: `python-dateutil` (v2.8.2)
-    - Powerful extensions to the standard datetime module.
+  - Powerful extensions to the standard datetime module.
 - **File Uploads**: `python-multipart` (v0.0.6)
-    - Handling multipart/form-data requests.
+  - Handling multipart/form-data requests.
 
 ### **Frontend**
+
 - **Core**: HTML5, CSS3, JavaScript (ES6+ Modules).
 - **Styling**: Vanilla CSS with Custom Properties (Variables).
-    - Theme: Dark Mode / Glassmorphism.
-    - Typography: 'Inter' (Google Fonts).
+  - Theme: Dark Mode / Glassmorphism.
+  - Typography: 'Inter' (Google Fonts).
 - **Assets**: Served statically via FastAPI `StaticFiles`.
 
 ---
@@ -100,6 +111,7 @@
 ## 📂 Project Structure Manifesto
 
 ### **Root Directory** (`/`)
+
 - `requirements.txt`: Python package dependencies.
 - `ai_studio_context.md`: **COMPLETE SOURCE CODE DUMP** (for AI Context).
 - `aggregate_codebase.py`: Utility script to regenerate the context file.
@@ -107,41 +119,47 @@
 - `simple_*.py`: Various standalone scripts for quick testing and database status checks.
 
 ### **Application Core** (`/app`)
+
 - `main.py`: **Entry Point**. Configures FastAPI, routes, and static file serving.
 - `database.py`: Database engine configuration (Async session maker).
 - `index.html`: The main user interface file.
 
 ### **Static Assets** (`/static`)
+
 - `css/style.css`: All visual styling, animations, and responsive rules.
 - `js/app.js`: Frontend logic, API calls, and UI updates.
 
 ### **Backend Module** (`/backend`)
+
 *(Note: This directory contains the specific business logic services)*
+
 - **Data Services**:
-    - `games_service.py`: Managing game schedules/metadata.
-    - `player_stats_service.py`: Player performance data.
-    - `injury_service.py`: Tracking player injury status.
+  - `games_service.py`: Managing game schedules/metadata.
+  - `player_stats_service.py`: Player performance data.
+  - `injury_service.py`: Tracking player injury status.
 - **Odds Integration**:
-    - `live_odds_nfl_service.py`, `live_odds_ncaab_service.py`.
-    - `line_service.py`: Handling betting lines and movements.
+  - `live_odds_nfl_service.py`, `live_odds_ncaab_service.py`.
+  - `line_service.py`: Handling betting lines and movements.
 - **"The Brain" (AI Services)**:
-    - `brain_decision_tracker.py`: Logic for making betting picks.
-    - `brain_health_monitor.py`: System self-diagnostics.
-    - `brain_learning_service.py`: Feedback loops for model improvement.
-    - `brain_healing_service.py`: Automated error recovery.
+  - `brain_decision_tracker.py`: Logic for making betting picks.
+  - `brain_health_monitor.py`: System self-diagnostics.
+  - `brain_learning_service.py`: Feedback loops for model improvement.
+  - `brain_healing_service.py`: Automated error recovery.
 - **Population Scripts** (`populate_*.py`):
-    - Scripts to seed the database with initial data (e.g., `populate_games.py`).
+  - Scripts to seed the database with initial data (e.g., `populate_games.py`).
 
 ---
 
 ## 🔗 Key Integration Points
 
 1.  **API Endpoints**:
+
     - `/health`: System status check.
     - `/immediate/*`: Real-time data feeds (Props, Metrics, Picks).
     - `/static/*`: Serves CSS/JS assets.
 
 2.  **Data Flow**:
+
     - **Ingest**: `populate_*.py` scripts fetch data -> `backend/app/database.py` saves to DB.
     - **Process**: "Brain" services analyze DB data -> Generate Metrics/Decisions.
     - **Serve**: FastAPI exposes analyzed data via JSON API -> Frontend (`app.js`) renders it.
@@ -149,6 +167,7 @@
 ---
 
 ## File: add_brain_calibration_endpoints.py
+
 ```py
 
 #!/usr/bin/env python3
@@ -488,6 +507,7 @@ if __name__ == "__main__":
 ```
 
 ## File: add_brain_decisions.py
+
 ```py
 
 #!/usr/bin/env python3
@@ -787,6 +807,7 @@ print("Brain decisions endpoints added to immediate working router")
 ```
 
 ## File: add_brain_decisions_fixed.py
+
 ```py
 
 #!/usr/bin/env python3
@@ -950,6 +971,7 @@ if __name__ == "__main__":
 ```
 
 ## File: add_brain_healing_endpoints.py
+
 ```py
 
 #!/usr/bin/env python3
@@ -12562,6 +12584,7 @@ if __name__ == "__main__":
 ```
 
 ## File: analyze_markets.py
+
 ```py
 
 #!/usr/bin/env python3
@@ -14531,6 +14554,7 @@ if __name__ == "__main__":
 ```
 
 ## File: analyze_sync_metadata.py
+
 ```py
 
 #!/usr/bin/env python3

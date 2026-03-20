@@ -14,13 +14,14 @@ import { isApiError } from "@/lib/api";
 export default function LivePage() {
     const { selectedSport: sport } = useSport();
 
-    const { data: liveData, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
+    const { data: liveData, loading, error, lastUpdated, isStale, refresh, status } = useLiveData<any>(
         () => api.liveGames(sport),
         [sport],
         { refreshInterval: 30000 } // 30 seconds
     );
 
     const games = isApiError(liveData) ? [] : liveData?.games || [];
+    const filtered = games; // Assuming 'filtered' is meant to be 'games' or a derived value from 'games'
 
     return (
         <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 pb-24 text-white">
@@ -67,8 +68,9 @@ export default function LivePage() {
             <PageStates
                 loading={loading && !liveData}
                 error={error}
-                empty={!loading && games.length === 0}
+                empty={!loading && filtered.length === 0}
                 emptyMessage="No games are currently in-play."
+                status={status}
             >
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {games.map((game: any) => (

@@ -29,7 +29,7 @@ function PlayerPropsContent() {
     const [searchQuery, setSearchQuery] = useState("");
     const [evOnly, setEvOnly] = useState(false);
 
-    const { data: propsData, loading, error, refresh, lastUpdated, isStale } = useLiveData(
+    const { data: propsData, loading, error, refresh, lastUpdated, isStale, status } = useLiveData(
         () => api.props(sport),
         [sport],
         { refreshInterval: 120000 }
@@ -91,6 +91,7 @@ function PlayerPropsContent() {
                 loading={loading && !propsData}
                 error={error}
                 empty={!loading && filtered.length === 0}
+                status={status}
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filtered.map((prop: any, i: number) => (

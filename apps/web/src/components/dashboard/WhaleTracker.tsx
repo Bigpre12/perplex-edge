@@ -149,7 +149,7 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
                 ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center gap-2 opacity-80">
                         <TrendingUp size={24} className="text-textMuted" />
-                        <p className="text-[10px] font-black text-textSecondary uppercase tracking-[0.2em]">Monitoring Sharp Books</p>
+                        <p className="text-[10px] font-black text-textSecondary uppercase tracking-[0.2em]">Awaiting whale signals...</p>
                     </div>
                 )}
             </div>

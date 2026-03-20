@@ -81,7 +81,7 @@ async def notify_ev_update(sport: str):
         payload = json.dumps({
             "type": "ev_update",
             "sport": sport,
-            "timestamp": asyncio.get_event_loop().time()
+            "timestamp": asyncio.get_running_loop().time()
         })
         await redis_client.publish("updates:ev", payload)
         logger.debug(f"[WS] Published ev_update for {sport}")

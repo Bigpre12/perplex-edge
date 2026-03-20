@@ -5,10 +5,11 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy import select, func, desc, Integer
 from models.brain import BrainSystemState, ModelPick, SharpSignal, BrainLog, SteamSnapshot
 from models.signals import InjuryImpact
-from models.unified import UnifiedOdds
+from models.unified import UnifiedOdds, UnifiedEVSignal
 from typing import List, Optional, Dict
 from services.monte_carlo_service import monte_carlo_service
 from services.injury_service import injury_service
+from services.brain_service import brain_service
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +231,113 @@ class BrainAdvancedService:
         except Exception as e:
             logger.error(f"Error in analyze_injuries: {e}")
             return []
+
+    async def generate_model_picks(self, sport: str, db: AsyncSession):
+        """Processes UnifiedEVSignal entries and promotes them to ModelPick with AI reasoning."""
+        try:
+            # 1. Get recent EV signals for this sport
+            stmt = select(UnifiedEVSignal).where(
+                UnifiedEVSignal.sport == sport
+            ).order_by(desc(UnifiedEVSignal.created_at)).limit(50)
+            
+            res = await db.execute(stmt)
+            signals = res.scalars().all()
+            
+            if not signals:
+                logger.info(f"Brain: No EV signals found for {sport} to generate picks.")
+                return 0
+            
+            picks_to_insert = []
+            for s in signals:
+                # 2. Heuristic for confidence and hit rate (since mc_service needs mean/std_dev)
+                # In production, this would use real projections.
+                edge = float(s.edge_percent) / 100.0
+                implied = float(s.implied_prob)
+                true_prob = float(s.true_prob)
+                
+                # Confidence is higher when edge is large and price is reasonable
+                confidence = min(0.95, true_prob + (edge * 0.5))
+                
+                # 3. Create ModelPick entry
+                pick = ModelPick(
+                    game_id=s.event_id,
+                    player_name=s.player_name,
+                    stat_type=s.market_key,
+                    line=float(s.line) if s.line else 0.0,
+                    side=s.outcome_key,
+                    odds=float(s.price),
+                    ev_percentage=float(s.edge_percent),
+                    confidence=confidence,
+                    hit_rate=true_prob,
+                    sportsbook=s.bookmaker,
+                    sport_key=s.sport,
+                    status='active'
+                )
+                picks_to_insert.append(pick)
+                
+                # 4. Also record a BrainLog for the reasoning feed
+                decision = await brain_service.generate_decision(
+                    player_name=s.player_name or "Unknown",
+                    stat_type=s.market_key,
+                    line=float(s.line) if s.line else 0.0,
+                    side=s.outcome_key,
+                    odds=int(s.price),
+                    edge=edge,
+                    hit_rate=true_prob
+                )
+                
+                from models.brain import BrainLog
+                import uuid
+                brain_log = BrainLog(
+                    id=str(uuid.uuid4()),
+                    sport=s.sport,
+                    player=s.player_name or "Unknown",
+                    stat_type=s.market_key,
+                    line=float(s.line) if s.line else 0.0,
+                    signal=s.outcome_key.upper(),
+                    brain_score=int(confidence * 100),
+                    reason=decision.get("reasoning", "Strong mathematical edge identified."),
+                    result='PENDING'
+                )
+                db.add(brain_log)
+
+            # 5. Bulk insert picks
+            # For simplicity in this logic, we add one by one or use merge
+            for p in picks_to_insert:
+                # Check for existing pick to avoid duplicates
+                check_stmt = select(ModelPick).where(
+                    ModelPick.game_id == p.game_id,
+                    ModelPick.player_name == p.player_name,
+                    ModelPick.stat_type == p.stat_type,
+                    ModelPick.side == p.side,
+                    ModelPick.sportsbook == p.sportsbook
+                )
+                existing = (await db.execute(check_stmt)).scalar()
+                if not existing:
+                    db.add(p)
+                else:
+                    existing.ev_percentage = p.ev_percentage
+                    existing.confidence = p.confidence
+                    existing.hit_rate = p.hit_rate
+                    existing.odds = p.odds
+            
+            await db.commit()
+            logger.info(f"Brain: Generated {len(picks_to_insert)} ModelPicks and logs for {sport}.")
+            return len(picks_to_insert)
+            
+        except Exception as e:
+            logger.error(f"Error in generate_model_picks: {e}")
+            await db.rollback()
+            return 0
+
+    async def analyze_all_props(self, sport_id: int):
+        """Compatibility method for scripts/generate_model_picks.py"""
+        # Map sport_id back to key if needed, or just use the id
+        # For NBA (30)
+        sport_key = "basketball_nba" if sport_id == 30 else "americanfootball_nfl"
+        from db.session import async_session_maker
+        async with async_session_maker() as session:
+            return await self.generate_model_picks(sport_key, session)
 
     async def get_dashboard_metrics(self, db: AsyncSession) -> dict:
         """Feature 6: Brain Dashboard Panel (Aggregated Real Data)"""

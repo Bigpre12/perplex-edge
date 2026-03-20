@@ -72,7 +72,7 @@ function DashboardContent() {
 
                     {/* WhaleTracker only shown to pro+ */}
                     {mounted ? (
-                        isPro ? (
+                        (isPro || isDev || process.env.NEXT_PUBLIC_DEV_MODE === 'true') ? (
                             <WhaleTracker />
                         ) : (
                             <UpgradeCTA feature="Whale Intel" description="Tracks high-stakes positions in real-time." />
@@ -142,7 +142,7 @@ function DashboardContent() {
                             <Activity size={14} className="text-brand-success" /> Neural Status
                         </h4>
                         <div className="space-y-4">
-                            <InternalHealthItem label="Inference Engine" status={(healthData as any)?.inference_status || (healthData?.status === 'healthy' ? 'STABLE' : 'WARN')} />
+                            <InternalHealthItem label="Inference Engine" status={(healthData as any)?.inference_status || (healthData as any)?.status?.toUpperCase() || "IDLE"} />
                             <InternalHealthItem label="Data Pipeline" status={(healthData as any)?.pipeline_status || "ACTIVE"} />
                             <InternalHealthItem label="Odds Stream" status={(healthData as any)?.stream_status || "SYNCED"} />
                         </div>
@@ -191,7 +191,7 @@ function DashboardContent() {
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-[9px] text-textMuted text-center uppercase font-black py-4">No critical injuries reported</p>
+                                <p className="text-[9px] text-textMuted text-center uppercase font-black py-4">Awaiting injury sync</p>
                             )}
                         </div>
                     </div>

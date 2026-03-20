@@ -11,8 +11,14 @@ interface GateProps {
 
 export default function Gate({ feature, children, quiet = false }: GateProps) {
     const { can, loading } = useSubscription();
+    const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === "true";
+
     if (loading) return null;
-    if (can(feature)) return <>{children}</>;
+    const hasAccess = can(feature); // Define hasAccess here
+
+    if (isDevMode || hasAccess) {
+        return <>{children}</>;
+    }
     if (quiet) return null;
 
     const required = getRequiredTier(feature);

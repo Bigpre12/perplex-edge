@@ -9,6 +9,7 @@ interface UseLiveDataOptions {
 
 interface UseLiveDataResult<T> {
     data: T | any[] | null;
+    status: string | null;
     loading: boolean;
     error: string | null;
     lastUpdated: Date | null;
@@ -50,9 +51,12 @@ export function useLiveData<T = any>(
         queryFn: async () => {
             const result = await fetcher();
             if (isApiError(result)) {
-                throw new Error((result as any).error);
+                throw new Error((result as any).error || (result as Error).message);
             }
-            return unwrap(result);
+            return {
+                data: unwrap(result),
+                status: (result as any)?.status || "ok"
+            };
         },
         refetchInterval: refreshInterval,
         staleTime: refreshInterval, // 1 minute stale time for smoother tab switching
@@ -63,6 +67,7 @@ export function useLiveData<T = any>(
     if (!mounted) {
         return {
             data: null,
+            status: null,
             loading: true,
             error: null,
             lastUpdated: null,
@@ -72,7 +77,8 @@ export function useLiveData<T = any>(
     }
 
     return {
-        data: queryData ?? null,
+        data: queryData?.data ?? null,
+        status: queryData?.status ?? null,
         loading: isLoading,
         error: queryError ? (queryError as Error).message : null,
         lastUpdated: dataUpdatedAt ? new Date(dataUpdatedAt) : null,

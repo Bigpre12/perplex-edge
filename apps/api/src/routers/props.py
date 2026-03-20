@@ -33,10 +33,24 @@ async def list_props(
         stmt = stmt.order_by(desc(Prop.created_at)).limit(limit)
         result = await db.execute(stmt)
         items = result.scalars().all()
-        return {"data": items, "results": items}
+        
+        if not items:
+            return {
+                "data": [],
+                "results": [],
+                "status": "awaiting_ingest",
+                "message": "Awaiting first odds ingest or stale data filtered."
+            }
+            
+        return {"data": items, "results": items, "status": "ok"}
     except Exception as e:
         logger.error(f"Error listing props: {e}")
-        return {"data": [], "results": []}
+        return {
+            "data": [],
+            "results": [],
+            "status": "error",
+            "message": str(e)
+        }
 
 @router.get("/scored")
 async def scored_props(db: AsyncSession = Depends(get_db)):

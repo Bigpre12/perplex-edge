@@ -6,6 +6,7 @@ interface Props {
     error: string | null;
     empty: boolean;
     emptyMessage?: string;
+    status?: string | null;
     children: React.ReactNode;
 }
 
@@ -30,16 +31,27 @@ export default function PageStates({ loading, error, empty, emptyMessage, childr
         </div>
     );
 
-    if (empty) return (
-        <div className="text-center py-24 space-y-4 border border-white/5 bg-white/2 rounded-3xl">
-            <div className="text-4xl opacity-20">📭</div>
-            <div className="space-y-1">
-                <p className="text-white font-black uppercase">{emptyMessage || "No data available right now"}</p>
-                <p className="text-slate-500 text-xs max-w-xs mx-auto font-medium">Check back closer to game time or verify API connection</p>
+    if (empty || status === "awaiting_ingest") return (
+        <div className="text-center py-24 space-y-4 border border-white/5 bg-white/2 rounded-3xl backdrop-blur-sm">
+            <div className="text-4xl opacity-40 animate-pulse">📡</div>
+            <div className="space-y-1 px-4">
+                <p className="text-white font-black uppercase tracking-tighter text-xl">
+                    {status === "awaiting_ingest" ? "Awaiting Data Ingest" : (emptyMessage || "No data available")}
+                </p>
+                <p className="text-slate-500 text-xs max-w-xs mx-auto font-bold uppercase tracking-widest leading-relaxed">
+                    {status === "awaiting_ingest" 
+                        ? "The brain is currently seeding new odds. This typically takes 2-3 minutes. Hang tight."
+                        : "Check back closer to game time or verify API connection"}
+                </p>
             </div>
-            <a href="http://localhost:8000/api/health" target="_blank" rel="noopener noreferrer" className="text-primary text-xs font-black uppercase underline block mt-4">
-                Run API diagnostics →
-            </a>
+            <div className="flex flex-col items-center gap-4 mt-6">
+                <button onClick={() => window.location.reload()} className="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all">
+                    Sync Engine Now
+                </button>
+                <a href="http://localhost:8000/api/health" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary text-[9px] font-black uppercase tracking-widest underline transition-colors">
+                    System Health Check →
+                </a>
+            </div>
         </div>
     );
 

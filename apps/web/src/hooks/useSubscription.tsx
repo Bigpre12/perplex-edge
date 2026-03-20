@@ -5,7 +5,7 @@ import { canAccess, FeatureKey, Tier } from "@/lib/permissions";
 import { api, isApiError } from "@/lib/api";
 import { useLucrixStore } from "@/store";
 
-const BYPASS = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+const BYPASS = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NEXT_PUBLIC_DEV_MODE === "true";
 
 const BYPASS_SUBSCRIPTION = {
     tier: "elite" as Tier,
@@ -77,8 +77,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
                   window.location.hostname.startsWith('192.168.') || 
                   window.location.hostname.startsWith('172.'));
 
-    const effectiveTier = mounted ? (isDev ? "elite" : tier) : "free";
-    const effectiveLoading = mounted ? (isDev ? false : loading) : true;
+    const effectiveTier = mounted ? (isDev || BYPASS ? "elite" : tier) : "free";
+    const effectiveLoading = mounted ? (isDev || BYPASS ? false : loading) : true;
 
     return (
         <SubscriptionContext.Provider value={{
