@@ -42,24 +42,25 @@ class OracleService:
             # 4. Fetch Injuries
             injuries = await injury_service.get_injuries(sport)
             
-            # 5. Fetch last 10 steam events from DB
-            from db.session import SessionLocal
+            # 5. Fetch last 10 steam events from DB using async session
+            from db.session import async_session_maker
             from models.analytical import SteamEvent
             from sqlalchemy import select, desc
             
-            db = SessionLocal()
             steam_events = []
             try:
-                stmt = select(SteamEvent).where(SteamEvent.sport == sport).order_by(desc(SteamEvent.created_at)).limit(10)
-                res = db.execute(stmt).scalars().all()
-                steam_events = [{
-                    "player": s.player_name,
-                    "move": s.description,
-                    "severity": s.severity,
-                    "time": s.created_at.isoformat() if s.created_at else ""
-                } for s in res]
-            finally:
-                db.close()
+                async with async_session_maker() as session:
+                    stmt = select(SteamEvent).where(SteamEvent.sport == sport).order_by(desc(SteamEvent.created_at)).limit(10)
+                    res = await session.execute(stmt)
+                    steam_events = [{
+                        "player": s.player_name,
+                        "move": s.description,
+                        "severity": s.severity,
+                        "time": s.created_at.isoformat() if s.created_at else ""
+                    } for s in res.scalars().all()]
+            except Exception as steam_err:
+                logger.warning(f"Oracle: could not fetch steam events: {steam_err}")
+
             
             context = {
                 "sport": sport,

@@ -1,11 +1,7 @@
 # apps/api/src/routers/slate.py
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query
 from typing import Optional, List, Dict
 from datetime import datetime, timezone, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import select, func
-from db.session import get_db
-from models.prop import PropLine
 import logging
 from real_data_connector import real_data_connector
 
@@ -15,11 +11,10 @@ router = APIRouter(tags=["slate"])
 @router.get("/today")
 async def get_todays_slate(
     sport: Optional[str] = Query(None),
-    session: Session = Depends(get_db)
 ):
     """
     Returns today's games grouped by sport, including game identifiers.
-    Now using real_data_connector for live, up-to-date schedule.
+    Uses real_data_connector for live, up-to-date schedule.
     """
     try:
         # Map sport key if numeric sport_id passed (backward compat)

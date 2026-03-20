@@ -1,4 +1,4 @@
-class AsyncSession: pass
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
