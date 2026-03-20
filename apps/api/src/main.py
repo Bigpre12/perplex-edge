@@ -58,15 +58,12 @@ bets_router         = safe_import("bets", "bets")
 injuries_router     = safe_import("injuries", "injuries")
 news_router         = safe_import("news", "news")
 signals_router      = safe_import("signals", "signals")
-lines_router        = safe_import("lines", "lines")
 metrics_router      = safe_import("metrics", "metrics")
 hit_rate_router     = safe_import("hit_rate", "hit_rate")
 whale_router        = safe_import("whale", "whale")
-parlay_router       = safe_import("parlay_suggestions", "parlay")
 steam_router        = safe_import("steam", "steam")
 stripe_router       = safe_import("stripe_router", "stripe")
 search_router       = safe_import("search", "search")
-intel_router        = safe_import("intel", "intel")
 oracle_router       = safe_import("oracle", "oracle")
 live_router         = safe_import("live", "live")
 slate_router        = safe_import("slate", "slate")
@@ -76,7 +73,6 @@ arbitrage_router    = safe_import("arbitrage", "arbitrage")
 kalshi_router       = safe_import("kalshi", "kalshi")
 kalshi_ws_router    = safe_import("kalshi_ws_proxy", "kalshi_ws")
 systems_router      = safe_import("systems", "systems")
-top_edges_router    = safe_import("top_edges", "top_edges")
 performance_router  = safe_import("performance", "performance")
 streaks_router      = safe_import("streaks", "streaks")
 contest_router      = safe_import("contest_router", "contests")
@@ -166,15 +162,7 @@ async def startup():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://perplex-edge.vercel.app",
-        "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
-        "https://perplex-edge-m93qy4yyv-bigpre12s-projects.vercel.app", # Fix #1
-        "http://localhost:3000",
-        "http://localhost:1337",
-        "http://127.0.0.1:3000",
-        os.getenv("FRONTEND_URL", "https://perplex-edge.vercel.app"),
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -195,10 +183,8 @@ async def get_sharp_signals():
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _sync)
 
-if True:
-    simulate_router = safe_import("simulate", "simulate")
-    if simulate_router:
-        app.include_router(simulate_router, prefix="/api/simulate", tags=["simulate"])
+if simulate_router:
+    app.include_router(simulate_router, prefix="/api/simulate", tags=["simulate"])
 
 # Include external health router for more detailed checks
 # Guarded Router Inclusion
@@ -213,15 +199,12 @@ if bets_router:          app.include_router(bets_router, prefix="/api/bets", tag
 if injuries_router:      app.include_router(injuries_router, prefix="/api/injuries", tags=["injuries"])
 if news_router:          app.include_router(news_router, prefix="/api/news", tags=["news"])
 if signals_router:       app.include_router(signals_router, prefix="/api/signals", tags=["signals"])
-if lines_router:         app.include_router(lines_router, prefix="/api/lines", tags=["lines"])
 if metrics_router:       app.include_router(metrics_router, prefix="/api/metrics", tags=["metrics"])
 if hit_rate_router:      app.include_router(hit_rate_router, prefix="/api/hit-rate", tags=["hit-rate"])
 if whale_router:         app.include_router(whale_router, prefix="/api/whale", tags=["whale"])
-if parlay_router:        app.include_router(parlay_router, prefix="/api/parlay", tags=["parlay"])
 if steam_router:         app.include_router(steam_router, prefix="/api/steam", tags=["steam"])
 if stripe_router:        app.include_router(stripe_router, prefix="/api/stripe", tags=["stripe"])
 if search_router:        app.include_router(search_router, prefix="/api/search", tags=["search"])
-if intel_router:         app.include_router(intel_router, prefix="/api/intel", tags=["intel"])
 if oracle_router:        app.include_router(oracle_router, prefix="/api/oracle", tags=["oracle"])
 if live_router:          app.include_router(live_router, prefix="/api/live", tags=["live"])
 if slate_router:         app.include_router(slate_router, prefix="/api/slate", tags=["slate"])
@@ -231,7 +214,6 @@ if arbitrage_router:     app.include_router(arbitrage_router, prefix="/api/arbit
 if kalshi_router:        app.include_router(kalshi_router, prefix="/api/kalshi", tags=["kalshi"])
 if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
 if systems_router:       app.include_router(systems_router, prefix="/api/systems", tags=["systems"])
-if top_edges_router:     app.include_router(top_edges_router, prefix="/api/top-edges", tags=["top_edges"])
 if performance_router:   app.include_router(performance_router, prefix="/api/performance", tags=["performance"])
 if streaks_router:       app.include_router(streaks_router, prefix="/api/streaks", tags=["streaks"])
 if contest_router:       app.include_router(contest_router, prefix="/api/contests", tags=["contests"])

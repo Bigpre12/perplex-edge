@@ -294,5 +294,3 @@ class UnifiedIngestionService:
                 logger.error(f"UnifiedIngestion: Upsert failed: {e}")
 
 unified_ingestion = UnifiedIngestionService()
-
-unified_ingestion = UnifiedIngestionService()

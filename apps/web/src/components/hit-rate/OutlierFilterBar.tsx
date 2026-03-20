@@ -25,6 +25,7 @@ export function OutlierFilterBar({ filters, onChange }: FilterBarProps) {
                     value={filters.window}
                     onChange={(e) => onChange("window", Number(e.target.value))}
                     className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer hover:text-brand-cyan transition-colors"
+                    title="Select game window"
                 >
                     <option value={5}>Last 5 Games</option>
                     <option value={10}>Last 10 Games</option>
@@ -40,6 +41,7 @@ export function OutlierFilterBar({ filters, onChange }: FilterBarProps) {
                     value={filters.min_hit_rate}
                     onChange={(e) => onChange("min_hit_rate", Number(e.target.value))}
                     className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer hover:text-brand-success transition-colors"
+                    title="Select minimum hit rate"
                 >
                     <option value={0.70}>70%+ Hit Rate</option>
                     <option value={0.75}>75%+ Hit Rate</option>
@@ -55,6 +57,7 @@ export function OutlierFilterBar({ filters, onChange }: FilterBarProps) {
                     value={filters.market}
                     onChange={(e) => onChange("market", e.target.value)}
                     className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer hover:text-brand-purple transition-colors"
+                    title="Select market type"
                 >
                     <option value="all">All Markets</option>
                     <option value="points">Points</option>
