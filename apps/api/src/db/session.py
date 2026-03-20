@@ -6,41 +6,23 @@ from sqlalchemy.orm import sessionmaker
 from db.base import Base # Re-export Base for convenience
 
 # --- CONFIGURATION ---
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    f"sqlite+aiosqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'perplex_local.db'))}"
-)
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./data/perplex_local.db")
 
-# Fix connection string for asyncpg/aiosqlite
+# Railway injects postgres:// — fix scheme if needed
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+asyncpg://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("sqlite://"):
-    DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://", 1)
-
-logger = logging.getLogger(__name__)
 
 # --- ASYNC ENGINE SETUP ---
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+
 engine = create_async_engine(
     DATABASE_URL, 
+    echo=False,
     connect_args=connect_args,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=1800,
-    pool_pre_ping=True,
+    pool_pre_ping=True if "sqlite" not in DATABASE_URL else False
 )
 
-# AsyncSessionLocal is the primary session factory
-AsyncSessionLocal = sessionmaker(
-    engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False,
-    autoflush=False,
-    autocommit=False
-)
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # Standard exports for various utilities
 __all__ = ["engine", "AsyncSessionLocal", "get_db", "get_async_db", "Base", "SessionLocal"]
