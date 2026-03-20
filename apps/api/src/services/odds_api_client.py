@@ -33,4 +33,5 @@ class OddsApiClient:
             logger.warning(f"get_odds({sport}) failed: {e}")
             return []
 
-odds_api = OddsApiClient()
+odds_api_client = OddsApiClient()
+odds_api = odds_api_client
