@@ -1,5 +1,6 @@
 import os
 import logging
+logger = logging.getLogger(__name__)
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -14,12 +15,18 @@ elif DATABASE_URL.startswith("postgresql://") and "asyncpg" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 # Redacted logging for debugging
-try:
-    from urllib.parse import urlparse
-    parsed = urlparse(DATABASE_URL.replace("postgresql+asyncpg://", "http://")) # urlparse handles http better
-    logging.info(f"Database Connection: Connecting to host={parsed.hostname} port={parsed.port} (scheme={parsed.scheme})")
-except Exception:
-    logging.info("Database Connection: Could not parse DATABASE_URL for logging.")
+db_url = os.environ.get("DATABASE_URL", "NOT SET")
+if db_url != "NOT SET":
+    # host-only log to prevent leaking secrets in deployment logs
+    try:
+        from urllib.parse import urlparse
+        # urlparse handles http:// better for simple host extraction
+        parsed = urlparse(db_url.replace("postgresql+asyncpg://", "http://").replace("postgresql://", "http://"))
+        logger.info(f"Database Initialization: Attempting connection to host={parsed.hostname} user={parsed.username} port={parsed.port}")
+    except Exception:
+        logger.info(f"Database Initialization: Connecting to redacted URL (Parsing failed)")
+else:
+    logger.warning("Database Initialization: DATABASE_URL is NOT SET in current environment!")
 
 # --- ASYNC ENGINE SETUP ---
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
