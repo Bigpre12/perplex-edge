@@ -3,6 +3,19 @@ import { useState, useEffect, createContext, useContext, useCallback, ReactNode 
 import { supabase } from "@/lib/supabaseClient";
 import { canAccess, FeatureKey, Tier } from "@/lib/permissions";
 import { api, isApiError } from "@/lib/api";
+import { useLucrixStore } from "@/store";
+
+const BYPASS = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+
+const BYPASS_SUBSCRIPTION = {
+    tier: "elite" as Tier,
+    status: "active",
+    loading: false,
+    can: (_feature: FeatureKey) => true,
+    isPro: true,
+    isElite: true,
+    refresh: () => { },
+};
 
 interface SubContext {
     tier: Tier;
@@ -19,8 +32,6 @@ const SubscriptionContext = createContext<SubContext>({
     can: () => false, isPro: false, isElite: false,
     refresh: () => { },
 });
-
-import { useLucrixStore } from "@/store";
 
 export function SubscriptionProvider({ children }: { children: ReactNode }): JSX.Element {
     const tier = useLucrixStore((state: any) => state.userTier);
@@ -84,4 +95,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
     );
 }
 
-export const useSubscription = () => useContext(SubscriptionContext);
+export const useSubscription = () => {
+    const context = useContext(SubscriptionContext);
+    if (BYPASS) return BYPASS_SUBSCRIPTION;
+    return context;
+};
