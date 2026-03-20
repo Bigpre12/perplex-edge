@@ -165,6 +165,9 @@ class OddsApiClient:
     async def get_odds(self, sport: str, regions: str = "us", markets: str = "h2h,spreads") -> List[Dict]:
         return await self.get_live_odds(sport, regions, markets)
 
+    async def fetch_odds(self, sport: str, regions: str = "us", markets: str = "h2h,spreads") -> List[Dict]:
+        return await self.get_live_odds(sport, regions, markets)
+
     async def fetch_events(self, sport: str) -> List[Dict]:
         return await self.get_events(sport)
 
