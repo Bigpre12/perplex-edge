@@ -8,9 +8,11 @@ from db.base import Base # Re-export Base for convenience
 # --- CONFIGURATION ---
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./data/perplex_local.db")
 
-# Railway injects postgres:// — fix scheme if needed
+# Fix scheme for asyncpg
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql://") and "asyncpg" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 # --- ASYNC ENGINE SETUP ---
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
