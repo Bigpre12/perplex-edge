@@ -101,8 +101,6 @@ class SharpSignal(Base):
     bookmakers_involved = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-
-
 # --- LAYER 4: CORRELATION ---
 class PropCorrelation(Base):
     __tablename__ = "prop_correlations"

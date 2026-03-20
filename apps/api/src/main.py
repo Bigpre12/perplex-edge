@@ -183,9 +183,6 @@ async def get_sharp_signals():
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _sync)
 
-if simulate_router:
-    app.include_router(simulate_router, prefix="/api/simulate", tags=["simulate"])
-
 # Include external health router for more detailed checks
 # Guarded Router Inclusion
 if health_router:        app.include_router(health_router, prefix="/api/health", tags=["health"])
@@ -195,7 +192,7 @@ if props_router:         app.include_router(props_router, prefix="/api/props", t
 if ev_router:            app.include_router(ev_router, prefix="/api/ev", tags=["ev"])
 if clv_router:           app.include_router(clv_router, prefix="/api/clv", tags=["clv"])
 if brain_router:         app.include_router(brain_router, prefix="/api/brain", tags=["brain"])
-if bets_router:          app.include_router(bets_router, prefix="/api/bets", tags=["bets"])
+if bets_router:          app.include_router(brain_router, prefix="/api/bets", tags=["bets"])
 if injuries_router:      app.include_router(injuries_router, prefix="/api/injuries", tags=["injuries"])
 if news_router:          app.include_router(news_router, prefix="/api/news", tags=["news"])
 if signals_router:       app.include_router(signals_router, prefix="/api/signals", tags=["signals"])
@@ -225,4 +222,3 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), log_level="info")
-    
