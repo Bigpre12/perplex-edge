@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+import logging
 from typing import List
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession

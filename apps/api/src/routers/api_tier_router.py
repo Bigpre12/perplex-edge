@@ -1,6 +1,8 @@
 # backend/routers/api_tier_router.py
 # White-label/developer API with token auth and rate limiting
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from db.session import get_db
 from models.prop import PropLine
