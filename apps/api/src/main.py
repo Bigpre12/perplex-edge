@@ -68,9 +68,9 @@ async def startup():
     import logging
     logging.info("Starting up: Ensuring database tables exist...")
     try:
-        from db.session import engine, Base
-        import models.user
-        import models.prop
+        from db.session import engine
+        import db.base
+        from db.base import Base
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         logging.info("Startup complete: Database initialized.")

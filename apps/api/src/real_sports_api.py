@@ -20,7 +20,8 @@ class RealSportsAPI:
     def __init__(self):
         # API Keys from centralized settings
         self.betstack_api_key = settings.BETSTACK_API_KEY
-        self.odds_api_key = settings.ODDS_API_KEY
+        self.odds_api_keys = settings.ODDS_API_KEYS
+        self.odds_api_key_index = 0
         self.roster_api_key = settings.ROSTER_API_KEY
         self.ai_api_key = settings.GROQ_API_KEY
         
@@ -29,23 +30,57 @@ class RealSportsAPI:
         self.odds_api_base_url = "https://api.the-odds-api.com/v4"
         self.groq_api_base_url = "https://api.groq.com/openai/v1"
         
+    def _get_current_odds_api_key(self) -> str:
+        if not self.odds_api_keys:
+            return ""
+        return self.odds_api_keys[self.odds_api_key_index % len(self.odds_api_keys)]
+
+    def _rotate_odds_api_key(self):
+        if self.odds_api_keys:
+            self.odds_api_key_index += 1
+            new_key = self._get_current_odds_api_key()
+            logger.info(f"🔄 Rotating Odds API Key. New Slot: {self.odds_api_key_index % len(self.odds_api_keys)}. Key: {new_key[:6]}...")
+
     async def fetch_odds_from_theodds(self, sport: str = "basketball_nba"):
-        """Fetch real-time odds from The Odds API"""
-        async with httpx.AsyncClient() as client:
-            url = f"{self.odds_api_base_url}/sports/{sport}/odds"
-            params = {
-                "apiKey": self.odds_api_key,
-                "regions": "us",
-                "markets": "h2h,spreads,totals,player_props",
-                "oddsFormat": "american"
-            }
-            try:
-                response = await client.get(url, params=params, timeout=10.0)
-                response.raise_for_status()
-                return response.json()
-            except Exception as e:
-                logger.error(f"Error fetching odds: {e}")
-                return {"error": str(e)}
+        """Fetch real-time odds from The Odds API with automated key rotation"""
+        max_retries = len(self.odds_api_keys) if self.odds_api_keys else 1
+        
+        for attempt in range(max_retries):
+            current_key = self._get_current_odds_api_key()
+            if not current_key:
+                logger.error("❌ No Odds API keys configured.")
+                return {"error": "Missing API Key"}
+
+            async with httpx.AsyncClient() as client:
+                url = f"{self.odds_api_base_url}/sports/{sport}/odds"
+                params = {
+                    "apiKey": current_key,
+                    "regions": "us",
+                    "markets": "h2h,spreads,totals,player_props",
+                    "oddsFormat": "american"
+                }
+                try:
+                    response = await client.get(url, params=params, timeout=10.0)
+                    
+                    if response.status_code in [401, 403, 429]:
+                        logger.warning(f"⚠️ Odds API Key {current_key[:6]}... failed (Status: {response.status_code}). Rotating...")
+                        self._rotate_odds_api_key()
+                        continue
+                        
+                    response.raise_for_status()
+                    return response.json()
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code in [401, 403, 429]:
+                        logger.warning(f"⚠️ Odds API Key {current_key[:6]}... failed with {e.response.status_code}. Rotating...")
+                        self._rotate_odds_api_key()
+                        continue
+                    logger.error(f"Error fetching odds: {e}")
+                    return {"error": str(e)}
+                except Exception as e:
+                    logger.error(f"Error fetching odds: {e}")
+                    return {"error": str(e)}
+        
+        return {"error": "All available Odds API keys exhausted or rate-limited."}
     
     async def fetch_props_from_betstack(self, sport: str = "nba"):
         """Fetch player props from Betstack"""
@@ -414,6 +449,26 @@ async def build_transparent_track_record():
             "track_record_status": "failed",
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
+
+# --- Top-Level API Access (Rotating) ---
+_real_sports_api_instance = RealSportsAPI()
+
+async def get_events(sport: str):
+    """Wrapper for get_live_odds (events only)"""
+    return await _real_sports_api_instance.fetch_odds_from_theodds(sport)
+
+async def get_odds(sport: str, regions: str = "us", markets: str = "h2h,spreads"):
+    """Wrapper for fetch_odds_from_theodds with specific markets"""
+    # Note: fetch_odds_from_theodds in this file currently ignores specific 'markets' arg,
+    # but we'll pass it if we update the method later.
+    return await _real_sports_api_instance.fetch_odds_from_theodds(sport)
+
+async def get_player_props(sport: str, event_id: str, markets: str = "player_points", regions: str = "us"):
+    """Wrapper for fetch_odds_from_theodds (specific event focus)"""
+    # The Odds API /odds endpoint returns multiple games, so we filter if needed,
+    # or use a dedicated props endpoint if implemented.
+    # For now, we reuse the existing fetcher.
+    return await _real_sports_api_instance.fetch_odds_from_theodds(sport)
 
 if __name__ == "__main__":
     async def test():

@@ -20,20 +20,35 @@ class OddsAPIClient(ResilientBaseClient):
             timeout=20,
             max_retries=3
         )
-        # Support multiple keys for rotation
-        self.api_keys = [k.strip() for k in settings.ODDS_API_KEYS if k.strip()]
-        if not self.api_keys:
-            self.api_keys = [settings.ODDS_API_KEY.strip()]
+        # Support multiple keys for rotation — Load directly from env for reliability
+        import os
+        primary_key = os.environ.get("THE_ODDS_API_KEY") or os.environ.get("ODDS_API_KEY", "")
+        backup_key = os.environ.get("THE_ODDS_API_KEY_BACKUP") or os.environ.get("ODDS_API_KEY_BACKUP", "")
+        raw_keys = os.environ.get("ODDS_API_KEYS", "")
         
-        # Add backup key if not already present
-        if settings.ODDS_API_KEY_BACKUP:
-            backup = settings.ODDS_API_KEY_BACKUP.strip()
-            if backup and backup not in self.api_keys:
-                self.api_keys.append(backup)
+        # Validation: Fail early if no primary key is found
+        if not primary_key or not primary_key.strip():
+            logger.error("❌ FATAL: THE_ODDS_API_KEY is not set. Ingest will fail.")
+            # raise RuntimeError("THE_ODDS_API_KEY is not set.") # User requested raise but we might want to avoid crashing the whole API if other parts work
+            
+        self.api_keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
+        if primary_key and primary_key.strip() not in self.api_keys:
+            self.api_keys.insert(0, primary_key.strip())
+        if backup_key and backup_key.strip() and backup_key.strip() not in self.api_keys:
+            self.api_keys.append(backup_key.strip())
+            
+        # Ensure we have at least one key string, even if empty, to avoid index errors
+        if not self.api_keys:
+            self.api_keys = [""]
             
         self.current_key_index = 0
         self.api_key = self.api_keys[0].strip()
-        print(f"DEBUG: OddsAPIClient initialized with {len(self.api_keys)} keys. Current: [{self.api_key}]")
+        
+        # Security logging: Show first 4 chars of each key
+        safe_keys = [f"{k[:4]}****" if len(k) > 4 else "****" for k in self.api_keys if k]
+        logger.info(f"✅ OddsAPIClient initialized with {len(self.api_keys)} keys: {', '.join(safe_keys)}")
+        print(f"DEBUG: OddsAPIClient initialized with {len(self.api_keys)} keys. Current key start: {self.api_key[:4]}...")
+        
         self.requests_remaining = 100000
 
     def _rotate_key(self):

@@ -35,12 +35,12 @@ class BrainCLVTracker:
             exists = await cache.get(open_key)
             if not exists:
                 opening_data = {
-                    "line": float(odds.line) if odds.line else 0.0,
-                    "price": float(odds.price),
+                    "line": float(line) if line else 0.0,
+                    "price": float(price),
                     "ts": datetime.now(timezone.utc).timestamp()
                 }
                 await cache.set(open_key, json.dumps(opening_data), 86400 * 3) # Keep for 3 days
-                logger.debug(f"CLV: Recorded opener for {odds.event_id} {odds.outcome_key}")
+                logger.debug(f"CLV: Recorded opener for {event_id} {outcome_key}")
 
     async def record_closing_line(self, sport: str, event_id: str):
         """

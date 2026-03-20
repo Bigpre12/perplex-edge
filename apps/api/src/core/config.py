@@ -38,12 +38,22 @@ class Settings:
         # Ensure default values are set for Pydantic-like compatibility if needed
         # although this class is not inherited from pydantic.BaseSettings here.
         
-        # Odds API Configuration
-        self.ODDS_API_KEY = os.getenv("ODDS_API_KEY", os.getenv("THE_ODDS_API_KEY", ""))
+        # Odds API Configuration - Centralized for Rotation
+        primary = os.getenv("ODDS_API_KEY", os.getenv("THE_ODDS_API_KEY", ""))
+        backup = os.getenv("ODDS_API_KEY_BACKUP", "")
+        raw_list = os.getenv("ODDS_API_KEYS", "")
+        
+        # Aggregate all unique keys
+        all_keys = [k.strip() for k in raw_list.split(",") if k.strip()]
+        if primary and primary not in all_keys:
+            all_keys.insert(0, primary)
+        if backup and backup not in all_keys:
+            all_keys.append(backup)
+            
+        self.ODDS_API_KEYS = all_keys
+        self.ODDS_API_KEY = all_keys[0] if all_keys else ""
         self.ODDS_API_KEY_PRIMARY = self.ODDS_API_KEY
-        raw_keys = os.getenv("ODDS_API_KEYS", "")
-        self.ODDS_API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
-        self.ODDS_API_KEY_BACKUP = os.getenv("ODDS_API_KEY_BACKUP", "")
+        self.ODDS_API_KEY_BACKUP = backup
         
         self.DEVELOPMENT_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
         self.DEBUG = os.getenv("DEBUG", "false").lower() == "true"

@@ -77,12 +77,12 @@ function TopNavContent() {
             </div>
 
             {/* Center section: Sport Pills */}
-            <div className="flex-1 overflow-x-auto scrollbar-none flex items-center justify-center mx-4 max-w-3xl">
-                <div className="flex items-center gap-1 px-2">
+            <div className="flex-1 overflow-x-auto scrollbar-hide flex items-center mx-4 max-w-3xl">
+                <div className="flex items-center gap-2 px-4 whitespace-nowrap">
                     {DISPLAY_SPORTS.map(sport => (
                         <button key={sport.id}
                             onClick={() => handleSort(sport.id)}
-                            className={`h-8 px-3 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5
+                            className={`h-8 px-4 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0
                             ${active === sport.id
                                     ? 'bg-brand-purple text-white shadow-glow'
                                     : 'bg-transparent text-textSecondary hover:bg-lucrix-elevated hover:text-white'

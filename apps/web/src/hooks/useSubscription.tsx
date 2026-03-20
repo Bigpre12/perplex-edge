@@ -96,6 +96,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
 }
 
 export const useSubscription = () => {
+    if (process.env.NEXT_PUBLIC_DEV_MODE === "true") {
+        return { tier: "elite" as Tier, status: "active", loading: false, can: () => true, isPro: true, isElite: true, refresh: () => { } };
+    }
     const context = useContext(SubscriptionContext);
     if (BYPASS) return BYPASS_SUBSCRIPTION;
     return context;

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from db.session import get_db
-from models.user import SavedSystem
+from models.saved_system import SavedSystem
 from schemas.user import SystemCreate, SystemOut
 import logging
 
