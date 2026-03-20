@@ -49,7 +49,7 @@ class OracleService:
             
             # 5. Fetch last 10 steam events from DB using async session
             from db.session import async_session_maker
-            from models.analytical import SteamEvent
+            from models.brain import SteamEvent
             from sqlalchemy import select, desc
             
             steam_events = []

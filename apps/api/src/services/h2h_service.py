@@ -1,7 +1,7 @@
 # backend/services/h2h_service.py
 # Head-to-Head historical splits and Back-to-Back detection
 from sqlalchemy.orm import Session
-from models.analytical import PlayerStats
+from models.brain import PlayerStats
 from models.schedule import Schedule
 from datetime import datetime, timedelta
 from typing import Optional

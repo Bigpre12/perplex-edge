@@ -1,6 +1,15 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, Column as SAColumn
+from sqlalchemy.orm import Relationship
 from sqlalchemy.sql import func
 from db.base import Base
+from typing import Optional, List
+from datetime import datetime as dt
+try:
+    from sqlmodel import SQLModel, Field
+except ImportError:
+    # Fallback if sqlmodel is not available
+    class SQLModel: pass
+    def Field(**kwargs): return None
 
 class BrainSystemState(Base):
     __tablename__ = "brain_system_state"
@@ -118,18 +127,24 @@ class PropCorrelation(Base):
 # --- LAYER 5: CLV ---
 class CLVRecord(Base):
     __tablename__ = "clv_tracking"
+    __table_args__ = {"extend_existing": True}
     
     id = Column(Integer, primary_key=True, index=True)
     sport = Column(String, index=True)
     event_id = Column(String, index=True)
+    user_id = Column(String, index=True, nullable=True) # From analytical
+    bet_id = Column(Integer, index=True, nullable=True) # From analytical
     market_key = Column(String)
     selection = Column(String)
+    player_name = Column(String, index=True, nullable=True) # Alias for selection
+    stat_type = Column(String, nullable=True) # Alias for market_key
     opening_line = Column(Float)
     opening_price = Column(Float)
     closing_line = Column(Float)
     closing_price = Column(Float)
     clv_beat = Column(Boolean)
     clv_percentage = Column(Float)
+    clv_label = Column(String, nullable=True) # From analytical
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # --- LAYER 6: KALSHI ARB ---
@@ -186,19 +201,29 @@ class WhaleMove(Base):
     Consolidated Sharp/Whale activity with before/after state.
     """
     __tablename__ = "whale_moves"
+    __table_args__ = {"extend_existing": True}
     
     id = Column(Integer, primary_key=True, index=True)
     sport = Column(String, index=True)
-    event_id = Column(String, index=True)
-    market_key = Column(String)
-    selection = Column(String)
-    bookmaker = Column(String)
-    price_before = Column(Float)
-    price_after = Column(Float)
+    event_id = Column(String, index=True, nullable=True)
+    player_name = Column(String, index=True, nullable=True) # From analytical
+    market_key = Column(String, nullable=True)
+    stat_type = Column(String, nullable=True) # From analytical
+    selection = Column(String, nullable=True)
+    bookmaker = Column(String, nullable=True)
+    books_involved = Column(String, nullable=True) # From analytical
+    price_before = Column(Float, nullable=True)
+    price_after = Column(Float, nullable=True)
+    line = Column(Float, nullable=True) # From analytical
     line_before = Column(Float, nullable=True)
     line_after = Column(Float, nullable=True)
-    whale_rating = Column(Float) # 0-10 intensity
-    move_size = Column(String) # 'significant', 'wormhole', etc.
+    side = Column(String, nullable=True) # From analytical
+    move_type = Column(String, nullable=True) # From analytical
+    whale_rating = Column(Float, nullable=True) # 0-10 intensity
+    whale_label = Column(String, nullable=True) # From analytical
+    move_size = Column(String, nullable=True) # 'significant', 'wormhole', etc.
+    amount_estimate = Column(Float, nullable=True) # From analytical
+    severity = Column(String, nullable=True) # From analytical (string variant)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 class InjuryImpactEvent(Base):
@@ -216,3 +241,73 @@ class InjuryImpactEvent(Base):
     impact_score = Column(Float)   # Quantified line impact (e.g. -2.5 points)
     affected_markets = Column(JSON) # e.g. ['spread', 'total']
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+# --- MIGRATED FROM ANALYTICAL.PY ---
+
+class SteamEvent(Base):
+    __tablename__ = "steam_events"
+    __table_args__ = {"extend_existing": True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    player_name = Column(String, index=True)
+    stat_type = Column(String)
+    side = Column(String)
+    line = Column(Float)
+    movement = Column(Float)
+    book_count = Column(Integer)
+    severity = Column(Float)
+    description = Column(String)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class HitRateModel(Base):
+    __tablename__ = "player_hit_rates"
+    __table_args__ = {"extend_existing": True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    player_name = Column(String, index=True)
+    stat_type = Column(String, index=True) # e.g. 'points', 'rebounds'
+    
+    # Hit rates as percentages (0-100)
+    l5_hit_rate = Column(Float, default=0.0)
+    l10_hit_rate = Column(Float, default=0.0)
+    l20_hit_rate = Column(Float, default=0.0)
+    
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class PlayerStats(Base):
+    """Historical player stats for H2H and Trend analysis"""
+    __tablename__ = "player_stats_v2" # Using v2 to avoid conflicts with old stubs
+    __table_args__ = {"extend_existing": True}
+    
+    id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(String, index=True)
+    player_name = Column(String, index=True)
+    game_date = Column(DateTime(timezone=True), index=True)
+    stat_category = Column(String, index=True) # e.g. 'points'
+    value = Column(Float)
+    opponent_team = Column(String)
+    is_home = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+if hasattr(SQLModel, "metadata"):
+    class NeuralEdge(SQLModel, table=True):
+        __tablename__ = "edges_v2"
+        id: Optional[int] = Field(default=None, primary_key=True)
+        # Using String for foreign key if table not perfectly synced in metadata
+        prop_id: int = Field(index=True) 
+        ev: float = Field(index=True)  # expected value
+        hit_rate: float = Field(index=True)  # % success
+        model_confidence: float = Field(default=0.0)
+        created_at: dt = Field(sa_column=SAColumn(DateTime(timezone=True), server_default=func.now()))
+else:
+    class NeuralEdge(Base):
+        __tablename__ = "edges_v2"
+        __table_args__ = {"extend_existing": True}
+        id = Column(Integer, primary_key=True, index=True)
+        prop_id = Column(Integer, index=True)
+        ev = Column(Float, index=True)
+        hit_rate = Column(Float, index=True)
+        model_confidence = Column(Float, default=0.0)
+        created_at = Column(DateTime(timezone=True), server_default=func.now())

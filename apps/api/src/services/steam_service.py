@@ -113,7 +113,7 @@ class SteamService:
             }
             
             # Persist to steam_events
-            from models.analytical import SteamEvent
+            from models.brain import SteamEvent
             stmt = insert(SteamEvent).values(**alert_data)
             await db.execute(stmt)
             await db.commit()
