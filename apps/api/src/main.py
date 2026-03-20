@@ -51,8 +51,17 @@ app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """Ensure database tables are created on startup."""
+    import logging
+    logging.info("Starting up: Ensuring database tables exist...")
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logging.info("Startup complete: Database initialized.")
+    except Exception as e:
+        logging.error(f"Startup error during DB initialization: {e}")
+        # We don't crash here so that the health check can still return 'degraded'
+        # and provide diagnostics instead of a generic 503.
 
 app.add_middleware(
     CORSMiddleware,
