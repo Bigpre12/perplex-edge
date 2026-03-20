@@ -60,9 +60,20 @@ class Settings:
         
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
         
-        # CORS Setup
+        # CORS Setup — allow Vercel preview/production domains automatically
         raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
         self.CORS_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
+        # Always allow the configured FRONTEND_URL
+        if self.FRONTEND_URL and self.FRONTEND_URL not in self.CORS_ORIGINS:
+            self.CORS_ORIGINS.append(self.FRONTEND_URL)
+        # Auto-allow all Vercel preview URLs for this project
+        vercel_patterns = [
+            "https://perplex-edge.vercel.app",
+            "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
+        ]
+        for vp in vercel_patterns:
+            if vp not in self.CORS_ORIGINS:
+                self.CORS_ORIGINS.append(vp)
 
         class Config:
             extra = "ignore"

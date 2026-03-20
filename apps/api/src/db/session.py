@@ -59,6 +59,15 @@ async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
 
+# Legacy alias: many routers/services still import async_session_maker
+import contextlib
+
+@contextlib.asynccontextmanager
+async def async_session_maker():
+    """Backward-compatible async context manager for sessions."""
+    async with AsyncSessionLocal() as session:
+        yield session
+
 # Legacy shim for SessionLocal if needed by external scripts (minimizing usage)
 # In a pure async app, this should eventually be removed.
 from sqlalchemy import create_engine

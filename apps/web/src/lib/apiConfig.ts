@@ -3,7 +3,8 @@
  * Ensures that the frontend doesn't silently fail due to missing environment variables.
  */
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+// .trim() to strip trailing newlines that Vercel dashboard can inject
+const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
 if (typeof window !== "undefined") {
     console.log(`[DEBUG] process.env.NEXT_PUBLIC_API_URL: "${process.env.NEXT_PUBLIC_API_URL}"`);
 }
@@ -30,9 +31,9 @@ if (typeof window !== "undefined") {
  * The validated API Base URL. 
  * Falls back to localhost:8080 during development if no env var is set.
  */
-export const API_BASE = (!isMissing && !isPlaceholder && rawApiUrl.trim().length > 0)
+export const API_BASE = (!isMissing && !isPlaceholder && rawApiUrl.length > 0)
     ? rawApiUrl.replace(/\/$/, "") 
-    : "http://localhost:8080";
+    : "http://localhost:8000";
 
 /**
  * Helper to check if the production API is correctly configured.
