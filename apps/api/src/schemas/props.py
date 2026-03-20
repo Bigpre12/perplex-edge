@@ -13,6 +13,8 @@ class PropRecord(BaseModel):
     player_id: Optional[str] = None
     player_name: Optional[str] = None
     team: Optional[str] = None
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
     market_key: str
     market_label: Optional[str] = None
     line: Optional[Decimal] = None

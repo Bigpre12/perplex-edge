@@ -61,6 +61,8 @@ class OddsMapper:
                                 "league": league,
                                 "game_id": eid,
                                 "game_start_time": meta.get('game_time'),
+                                "home_team": meta.get('home_team'),
+                                "away_team": meta.get('away_team'),
                                 "player_name": p_name,
                                 "market_key": m_key,
                                 "line": Decimal(str(line)) if line is not None else None,
