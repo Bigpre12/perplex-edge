@@ -8,6 +8,9 @@ from db.session import async_session_maker # type: ignore
 from models.prop import PropLine, PropOdds, GameLine, GameLineOdds # type: ignore
 from models.history import PropHistory # type: ignore
 
+from services.ev_utils import american_to_implied
+from services.ev_persistence import insert_edges_ev_history
+
 logger = logging.getLogger(__name__)
 
 class BrainOddsScout:
@@ -28,6 +31,8 @@ class BrainOddsScout:
         """
         async with async_session_maker() as session:
             try:
+                ev_rows: List[Dict[str, Any]] = []
+
                 for p in props:
                     player_name = p['player']['name']
                     stat_type = p['market']['stat_type']
@@ -91,22 +96,74 @@ class BrainOddsScout:
                         res_odds = await session.execute(stmt_odds)
                         existing_odds: Optional[PropOdds] = res_odds.scalar()
                         
+                        over_odds = int(b_data['over'])
+                        under_odds = int(b_data['under'])
+
                         if not existing_odds:
-                            new_odds = PropOdds(
+                            existing_odds = PropOdds(
                                 prop_line_id=existing_line.id, # type: ignore
                                 sportsbook=b_key,
-                                over_odds=int(b_data['over']),
-                                under_odds=int(b_data['under']),
+                                over_odds=over_odds,
+                                under_odds=under_odds,
                                 updated_at=datetime.now(timezone.utc)
                             )
-                            session.add(new_odds)
+                            session.add(existing_odds)
                         else:
-                            existing_odds.over_odds = int(b_data['over'])
-                            existing_odds.under_odds = int(b_data['under'])
+                            existing_odds.over_odds = over_odds
+                            existing_odds.under_odds = under_odds
                             existing_odds.updated_at = datetime.now(timezone.utc)
 
+                        # --- NEW: EV calculation (placeholder model prob for now) ---
+                        implied_over = american_to_implied(over_odds)
+                        implied_under = american_to_implied(under_odds)
+
+                        # TODO: plug in actual model probabilities here
+                        model_prob_over = implied_over  # temporary: neutral model
+                        model_prob_under = implied_under
+
+                        edge_over = (model_prob_over - implied_over) * 100.0
+                        edge_under = (model_prob_under - implied_under) * 100.0
+
+                        # store on PropOdds for internal analytics
+                        existing_odds.ev_percent = max(edge_over, edge_under)
+
+                        # prepare edges_ev_history rows (both sides)
+                        base_row = {
+                            "sport": sport,
+                            "league": "NBA",  # TODO: derive per sport_key
+                            "game_id": existing_line.game_id or "",
+                            "game_start_time": existing_line.start_time or datetime.now(timezone.utc),
+                            "player_id": existing_line.player_id,
+                            "player_name": existing_line.player_name,
+                            "team": existing_line.team or "",
+                            "market_key": existing_line.stat_type,
+                            "market_label": existing_line.stat_type,
+                            "line": existing_line.line,
+                            "book": b_key,
+                        }
+
+                        ev_rows.append({
+                            **base_row,
+                            "side": "over",
+                            "odds": over_odds,
+                            "model_prob": model_prob_over,
+                            "implied_prob": implied_over,
+                            "edge_pct": edge_over,
+                        })
+                        ev_rows.append({
+                            **base_row,
+                            "side": "under",
+                            "odds": under_odds,
+                            "model_prob": model_prob_under,
+                            "implied_prob": implied_under,
+                            "edge_pct": edge_under,
+                        })
+
                 await session.commit()
-                print("DEBUG: Session committed successfully")
+                # after DB commit, write EV history to Supabase
+                if ev_rows:
+                    await insert_edges_ev_history(ev_rows)
+                print("DEBUG: Session committed and EV history persisted successfully")
             except Exception as e:
                 await session.rollback()
                 import traceback

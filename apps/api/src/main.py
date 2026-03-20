@@ -76,6 +76,7 @@ systems_router      = safe_import("systems", "systems")
 performance_router  = safe_import("performance", "performance")
 streaks_router      = safe_import("streaks", "streaks")
 intel_router        = safe_import("intel", "router")
+props_history_router = safe_import("props_history", "router")
 contest_router      = safe_import("contest_router", "contests")
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
@@ -126,7 +127,7 @@ async def startup():
     
     for sport in sports_to_ingest:
         scheduler.add_job(
-            unified_ingestion.run,
+            unified_ingestion.run_with_retries,
             'interval',
             minutes=5,
             args=[sport],
@@ -152,7 +153,7 @@ async def startup():
         await asyncio.sleep(5)
         for sport in sports_to_ingest:
             logging.info(f"Triggering initial ingest for {sport}...")
-            await unified_ingestion.run(sport)
+            await unified_ingestion.run_with_retries(sport)
             
     asyncio.create_task(initial_ingest())
 
@@ -194,7 +195,7 @@ if props_router:         app.include_router(props_router, prefix="/api/props", t
 if ev_router:            app.include_router(ev_router, prefix="/api/ev", tags=["ev"])
 if clv_router:           app.include_router(clv_router, prefix="/api/clv", tags=["clv"])
 if brain_router:         app.include_router(brain_router, prefix="/api/brain", tags=["brain"])
-if bets_router:          app.include_router(brain_router, prefix="/api/bets", tags=["bets"])
+if bets_router:          app.include_router(bets_router, prefix="/api/bets", tags=["bets"])
 if injuries_router:      app.include_router(injuries_router, prefix="/api/injuries", tags=["injuries"])
 if news_router:          app.include_router(news_router, prefix="/api/news", tags=["news"])
 if signals_router:       app.include_router(signals_router, prefix="/api/signals", tags=["signals"])
@@ -215,6 +216,7 @@ if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalsh
 if systems_router:       app.include_router(systems_router, prefix="/api/systems", tags=["systems"])
 if performance_router:   app.include_router(performance_router, prefix="/api/performance", tags=["performance"])
 if streaks_router:       app.include_router(streaks_router, prefix="/api/streaks", tags=["streaks"])
+if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
 if contest_router:       app.include_router(contest_router, prefix="/api/contests", tags=["contests"])
 
 @app.get("/")

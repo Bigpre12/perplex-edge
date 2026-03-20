@@ -101,21 +101,23 @@ export const api = {
     },
 
     // Models
-    props: (sport = "basketball_nba", market?: string, minEv?: number, limit = 50) =>
-        request("/api/props", undefined, { sport, market, min_ev: minEv, limit }),
+    props: (sport = "basketball_nba", market?: string, minEv?: number, limit = 50, isHistorical = false) =>
+        request(`/api/props${isHistorical ? '/history' : '/live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport, market, min_ev: minEv, limit }),
     propsScored: (sport = "basketball_nba", limit = 50) =>
-        request("/api/props/scored", undefined, { sport, limit }),
+        request("/api/props/scored", { cache: 'no-store' }, { sport, limit }),
+    hero: (player: string, sport = "basketball_nba") =>
+        request(`/api/props/hero/${encodeURIComponent(player)}`, { cache: 'no-store' }, { sport }),
 
     // Intel & Signals
     ev: {
-        top: (sport = "basketball_nba", limit = 50) =>
-            request("/api/ev/ev-top", undefined, { sport, limit }),
+        top: (sport = "basketball_nba", limit = 50, isHistorical = false) =>
+            request(`/api/intel/ev-${isHistorical ? 'history' : 'top'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport, limit }),
         scanner: (sport = "basketball_nba") =>
-            request("/api/ev/", undefined, { sport }),
+            request("/api/ev/", { cache: 'no-store' }, { sport }),
     },
-    clv: (sport = "basketball_nba") =>
-        request("/api/clv/", undefined, { sport }),
-    clvLeaderboard: () => request("/api/clv/leaderboard"),
+    clv: (sport = "basketball_nba", isHistorical = false) =>
+        request(`/api/clv/${isHistorical ? 'history' : 'live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport }),
+    clvLeaderboard: () => request("/api/clv/leaderboard", { cache: 'no-store' }),
     signals: {
         sharp: (sport = "basketball_nba") =>
             request("/api/signals/sharp-moves", undefined, { sport }),
@@ -124,12 +126,12 @@ export const api = {
     },
     
     // Features
-    injuries: (sport = "basketball_nba") =>
-        request("/api/injuries", undefined, { sport }),
+    injuries: (sport = "basketball_nba", isHistorical = false) =>
+        request(`/api/injuries${isHistorical ? '/history' : '/live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport }),
     news: (sport = "basketball_nba") =>
-        request("/api/news", undefined, { sport }),
+        request("/api/news", { cache: 'no-store' }, { sport }),
     lineMovement: (sport = "basketball_nba") =>
-        request("/api/line-movement", undefined, { sport }),
+        request("/api/line-movement", { cache: 'no-store' }, { sport }),
     liveGames: (sport = "basketball_nba") =>
         request("/api/live/games", undefined, { sport }),
     slate: (sport = "basketball_nba") =>
@@ -151,14 +153,16 @@ export const api = {
     hitRate: (sport = "all") => request("/api/hit-rate", undefined, { sport }),
     hitRateSummary: (sport = "all") => request("/api/hit-rate/summary", undefined, { sport }),
     hitRateByPlayer: (sport = "all", slate_only = false) => request("/api/hit-rate/by-player", undefined, { sport, slate_only }),
-    hitRateTrends: (sport = "all") => request("/api/hit-rate/trends", undefined, { sport }),
+    hitRateTrends: (sport = "all") => request("/api/hit-rate/trends", { cache: 'no-store' }, { sport }),
     hitRateOutliers: (params: { sport?: string; min_hit_rate?: number; window?: number; market?: string; limit?: number }) => 
-        request("/api/hit-rate/outliers", undefined, params),
-    whale: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
-    whaleSignals: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
-    parlay: (sport = "basketball_nba") => request("/api/parlay", undefined, { sport }),
-    steam: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
-    sharpMoves: (sport = "basketball_nba") => request("/api/signals/sharp-moves", undefined, { sport }),
+        request("/api/hit-rate/outliers", { cache: 'no-store' }, params),
+    whale: (sport = "basketball_nba", isHistorical = false) => 
+        request(`/api/whale/${isHistorical ? 'history' : 'live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport }),
+    whaleSignals: (sport = "basketball_nba", isHistorical = false) => 
+        request(`/api/whale/${isHistorical ? 'history' : 'live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport }),
+    parlay: (sport = "basketball_nba") => request("/api/parlay", { cache: 'no-store' }, { sport }),
+    steam: (sport = "basketball_nba") => request("/api/steam", { cache: 'no-store' }, { sport }),
+    sharpMoves: (sport = "basketball_nba") => request("/api/signals/sharp-moves", { cache: 'no-store' }, { sport }),
     search: (q: string) => request("/api/search", undefined, { q }),
     globalSearch: (q: string) => request("/api/search", undefined, { q }),
     ledgerMyBets: () => request("/api/bets"),

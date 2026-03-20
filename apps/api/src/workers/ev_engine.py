@@ -6,7 +6,8 @@ from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker
-from models.unified import UnifiedOdds, UnifiedEVSignal
+from models.unified import UnifiedOdds, PropLive, UnifiedEVSignal
+from services.ev_persistence import insert_edges_ev_history
 from routers.ws_ev import notify_ev_update
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,9 @@ class EVEngine:
 
             # Grouping: (eid, mkey, line, p_name) -> outcome -> book -> (price, imp)
             grouped = {}
+            meta_map = {} # eid -> (league, game_time)
             for o in all_odds:
+                meta_map[o.event_id] = (o.league, o.game_time)
                 key = (o.event_id, o.market_key, o.line, o.player_name)
                 if key not in grouped: grouped[key] = {}
                 if o.outcome_key not in grouped[key]: grouped[key][o.outcome_key] = {}
@@ -59,6 +62,8 @@ class EVEngine:
                         if edge > 0:
                             signals.append({
                                 'sport': sport,
+                                'league': meta_map[eid][0],
+                                'game_start_time': meta_map[eid][1],
                                 'event_id': eid,
                                 'market_key': mkey,
                                 'outcome_key': outcome,
@@ -106,6 +111,31 @@ class EVEngine:
                         set_=update_cols
                     )
                 await session.execute(stmt)
+                
+                # 2. Historical Snapshot (Standardized)
+                edge_history = [
+                    {
+                        'sport': s['sport'],
+                        'league': s.get('league'),
+                        'game_id': s['event_id'],
+                        'player_name': s['player_name'],
+                        'market_key': s['market_key'],
+                        'line': s['line'],
+                        'book': s['bookmaker'],
+                        'side': s['outcome_key'],
+                        'odds': s['price'],
+                        'model_prob': s['true_prob'],
+                        'implied_prob': s['implied_prob'],
+                        'edge_pct': s['edge_percent'],
+                        'snapshot_at': func.now(),
+                        'source': 'brain_ev'
+                    }
+                    for s in signals if s['edge_percent'] > 0
+                ]
+                
+                if edge_history:
+                    await insert_edges_ev_history(edge_history)
+                
                 await session.commit()
             except Exception as e:
                 await session.rollback()

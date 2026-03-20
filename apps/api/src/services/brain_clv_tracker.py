@@ -6,6 +6,7 @@ from sqlalchemy import select, insert, update
 from db.session import async_session_maker
 from models.unified import UnifiedOdds
 from models.brain import CLVRecord
+from services.persistence_helpers import insert_clv_trades
 from services.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -150,8 +151,24 @@ class BrainCLVTracker:
                         clv_beat=beat, clv_percentage=perc
                     ))
             if records:
-                session.add_all(records)
-                await session.commit()
+                # Convert Pydantic/dataclass instance to dict if necessary, 
+                # but CLVRecord is an Alchemist model, so we need dicts for insert_clv_records
+                # helper uses ins_obj.values(records) which expects dicts.
+                record_dicts = []
+                for r in records:
+                    record_dicts.append({
+                        "sport": r.sport,
+                        "event_id": r.event_id,
+                        "market_key": r.market_key,
+                        "selection": r.selection,
+                        "opening_line": r.opening_line,
+                        "opening_price": r.opening_price,
+                        "closing_line": r.closing_line,
+                        "closing_price": r.closing_price,
+                        "clv_beat": r.clv_beat,
+                        "clv_percentage": r.clv_percentage
+                    })
+                await insert_clv_trades(record_dicts)
 
 brain_clv_tracker = BrainCLVTracker()
 

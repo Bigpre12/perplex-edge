@@ -99,31 +99,23 @@ class RealSportsAPI:
     async def fetch_roster_data(self, team: str, sport: str = "nba"):
         """Fetch roster data using BallDontLie API with fallback logic"""
         if sport.lower() != "nba":
-            return self._get_mock_roster(team, sport)
+            logger.warning(f"RealSportsAPI: Roster fetching only supported for NBA. Requested: {sport}")
+            return []
 
         if not balldontlie_client.available:
-            logger.warning(f"BallDontLie API key missing. Returning mock roster for {team}")
-            return self._get_mock_roster(team, sport)
+            logger.warning(f"RealSportsAPI: BallDontLie API key missing. Cannot fetch roster for {team}")
+            return []
 
         try:
             roster = await balldontlie_client.get_team_roster(team)
             if not roster:
-                return self._get_mock_roster(team, sport)
+                return []
             return roster
         except Exception as e:
-            logger.error(f"Error fetching roster for {team} from BallDontLie: {e}")
-            return self._get_mock_roster(team, sport)
+            logger.error(f"RealSportsAPI: Error fetching roster for {team} from BallDontLie: {e}")
+            return []
 
-    def _get_mock_roster(self, team: str, sport: str) -> List[Dict]:
-        """Provide a healthy mock roster for seeding when API is unavailable"""
-        mock_players = [
-            {"player_name": f"{team} Star 1", "position": "Star", "jersey": 1, "is_active": True},
-            {"player_name": f"{team} Star 2", "position": "Star", "jersey": 2, "is_active": True},
-            {"player_name": f"{team} Role 1", "position": "Role", "jersey": 10, "is_active": True},
-            {"player_name": f"{team} Role 2", "position": "Role", "jersey": 11, "is_active": True},
-            {"player_name": f"{team} Bench 1", "position": "Bench", "jersey": 20, "is_active": True},
-        ]
-        return mock_players
+    # _get_mock_roster removed for production.
 
     async def fetch_league_rosters(self, sport: str = "nba") -> Dict[str, List[Dict]]:
         """Fetch rosters for all major teams in a league for seeding pipeline"""

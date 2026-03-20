@@ -180,3 +180,39 @@ class InferenceLog(Base):
     confidence = Column(Float, nullable=True)
     sport = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class WhaleMove(Base):
+    """
+    Consolidated Sharp/Whale activity with before/after state.
+    """
+    __tablename__ = "whale_moves"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    event_id = Column(String, index=True)
+    market_key = Column(String)
+    selection = Column(String)
+    bookmaker = Column(String)
+    price_before = Column(Float)
+    price_after = Column(Float)
+    line_before = Column(Float, nullable=True)
+    line_after = Column(Float, nullable=True)
+    whale_rating = Column(Float) # 0-10 intensity
+    move_size = Column(String) # 'significant', 'wormhole', etc.
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+class InjuryImpactEvent(Base):
+    """
+    Live player status changes and their quantified line impact.
+    """
+    __tablename__ = "injury_impact_events"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    event_id = Column(String, index=True)
+    player_name = Column(String, index=True)
+    status_before = Column(String) # 'healthy', 'questionable'
+    status_after = Column(String)  # 'out', 'active'
+    impact_score = Column(Float)   # Quantified line impact (e.g. -2.5 points)
+    affected_markets = Column(JSON) # e.g. ['spread', 'total']
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

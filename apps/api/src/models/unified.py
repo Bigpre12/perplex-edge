@@ -1,5 +1,5 @@
 # apps/api/src/models/unified.py
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, UniqueConstraint, BigInteger
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, UniqueConstraint, BigInteger, Boolean
 from sqlalchemy.sql import func
 from db.base import Base
 
@@ -72,3 +72,106 @@ class LineTick(Base):
     price = Column(Numeric, nullable=False)
     line = Column(Numeric, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+class UnifiedEVSignalHistory(Base):
+    """
+    Historical record of EV signals for trend analysis.
+    """
+    __tablename__ = "ev_signals_history"
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    event_id = Column(String, nullable=False, index=True)
+    market_key = Column(String, nullable=False, index=True)
+    outcome_key = Column(String, nullable=False)
+    player_name = Column(String, nullable=True)
+    bookmaker = Column(String, nullable=False, index=True)
+    price = Column(Numeric, nullable=False)
+    line = Column(Numeric, nullable=True)
+    edge_percent = Column(Numeric, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+class PropLive(Base):
+    """
+    Market-based live props (Over/Under consolidated).
+    """
+    __tablename__ = "props_live"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    league = Column(String, nullable=True)
+    game_id = Column(String, nullable=False, index=True)
+    game_start_time = Column(DateTime(timezone=True), nullable=True)
+    player_id = Column(String, nullable=True, index=True)
+    player_name = Column(String, nullable=True, index=True)
+    team = Column(String, nullable=True)
+    market_key = Column(String, nullable=False, index=True)
+    market_label = Column(String, nullable=True)
+    line = Column(Numeric, nullable=False)
+    book = Column(String, nullable=False, index=True)
+    odds_over = Column(Numeric, nullable=True)
+    odds_under = Column(Numeric, nullable=True)
+    implied_over = Column(Numeric, nullable=True)
+    implied_under = Column(Numeric, nullable=True)
+    last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('sport', 'game_id', 'player_name', 'market_key', 'book', name='uix_props_live_unique'),
+    )
+
+class PropHistory(Base):
+    """
+    Historical record of prop snapshots (Over/Under consolidated).
+    """
+    __tablename__ = "props_history"
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    snapshot_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    sport = Column(String, nullable=False, index=True)
+    league = Column(String, nullable=True)
+    game_id = Column(String, nullable=False, index=True)
+    game_start_time = Column(DateTime(timezone=True), nullable=True)
+    player_id = Column(String, nullable=True, index=True)
+    player_name = Column(String, nullable=True, index=True)
+    team = Column(String, nullable=True)
+    market_key = Column(String, nullable=False, index=True)
+    market_label = Column(String, nullable=True)
+    line = Column(Numeric, nullable=False)
+    book = Column(String, nullable=False, index=True)
+    odds_over = Column(Numeric, nullable=True)
+    odds_under = Column(Numeric, nullable=True)
+    implied_over = Column(Numeric, nullable=True)
+    implied_under = Column(Numeric, nullable=True)
+    source = Column(String, nullable=True)
+    run_id = Column(String, nullable=True)
+    is_close = Column(Boolean, default=False)
+
+    # Note: Using SQLAlchemy's Boolean from common types
+    from sqlalchemy import Boolean
+
+class EdgeEVHistory(Base):
+    """
+    Historical record of EV edges found by the brain.
+    """
+    __tablename__ = "edges_ev_history"
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    league = Column(String, nullable=True)
+    game_id = Column(String, nullable=False, index=True)
+    game_start_time = Column(DateTime(timezone=True), nullable=True)
+    player_id = Column(String, nullable=True, index=True)
+    player_name = Column(String, nullable=True, index=True)
+    team = Column(String, nullable=True)
+    market_key = Column(String, nullable=False, index=True)
+    market_label = Column(String, nullable=True)
+    line = Column(Numeric, nullable=False)
+    book = Column(String, nullable=False, index=True)
+    side = Column(String, nullable=False) # 'over', 'under', 'home', etc.
+    odds = Column(Numeric, nullable=False)
+    model_prob = Column(Numeric, nullable=True)
+    implied_prob = Column(Numeric, nullable=False)
+    edge_pct = Column(Numeric, nullable=False)
+    snapshot_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    source = Column(String, nullable=True)
+    run_id = Column(String, nullable=True)

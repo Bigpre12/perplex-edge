@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { History, TrendingUp, ShieldCheck, Target, Zap, Info } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
 import { api } from "@/lib/api";
@@ -6,10 +7,12 @@ import PageStates from "@/components/PageStates";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import GateLock from "@/components/GateLock";
 import SportSelector from "@/components/shared/SportSelector";
+import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggle";
 import { clsx } from "clsx";
 
 export default function CLVTrackerPage() {
     const activeSport = useLucrixStore((state: any) => state.activeSport);
+    const [isHistorical, setIsHistorical] = useState(false);
     
     // 1. Summary Stats
     const { data: summaryData, loading: summaryLoading } = useLiveData<any>(
@@ -19,9 +22,9 @@ export default function CLVTrackerPage() {
 
     // 2. Track List
     const { data: trackData, loading: trackLoading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.get(`/api/clv?sport=${activeSport}`),
-        [activeSport],
-        { refreshInterval: 300000 }
+        () => api.clv(activeSport.toLowerCase(), isHistorical),
+        [activeSport, isHistorical],
+        { refreshInterval: isHistorical ? 600000 : 300000 }
     );
 
     const metrics = summaryData?.metrics || { total_tracked: 0, beat_rate_pct: 0, avg_clv_pct: 0, edge_proven: false };
@@ -43,9 +46,10 @@ export default function CLVTrackerPage() {
                     </p>
                 </div>
 
-                <div className="flex flex-col space-y-2">
+                <div className="flex flex-col space-y-4 items-end">
                     <SportSelector />
-                    <div className="flex justify-end">
+                    <div className="flex items-center gap-4">
+                        <LiveHistoricalToggle isHistorical={isHistorical} onChange={setIsHistorical} />
                         <LiveStatusBar
                             lastUpdated={lastUpdated}
                             isStale={isStale}
@@ -143,8 +147,8 @@ export default function CLVTrackerPage() {
                                                     "flex items-center gap-2 font-black italic text-lg",
                                                     item.beat ? "text-emerald-500" : "text-red-500"
                                                 )}>
-                                                    {item.beat ? <Zap size={14} className="fill-current" /> : null}
-                                                    {item.clv_value > 0 ? `+${item.clv_value.toFixed(2)}%` : `${item.clv_value.toFixed(2)}%`}
+                                                    {(item.beat || item.clv_value > 0) ? <Zap size={14} className="fill-current" /> : null}
+                                                    {item.clv_value !== undefined ? (item.clv_value > 0 ? `+${item.clv_value.toFixed(2)}%` : `${item.clv_value.toFixed(2)}%`) : "TBD"}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5 text-right">

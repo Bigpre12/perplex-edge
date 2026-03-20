@@ -5,7 +5,8 @@ from typing import List, Dict, Any
 from sqlalchemy import select, insert
 from db.session import async_session_maker
 from models.unified import UnifiedOdds
-from models.brain import SharpSignal
+from models.brain import SharpSignal, WhaleMove
+from services.persistence_helpers import insert_whale_moves
 from services.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -78,20 +79,46 @@ class SharpMoneyBrain:
                                     "bookmakers_involved": [odds.bookmaker]
                                 })
                                 logger.info(f"SharpBrain: detected STEAM on {odds.sport} {odds.event_id} {odds.outcome_key}")
+                                
+                                # 3b. Create WhaleMove if threshold is high (Whale intensity)
+                                whale_rating = (line_delta * 4) if odds.line else (price_delta * 15)
+                                if whale_rating >= 6.0:
+                                    signals_to_create.append({
+                                        "__table__": WhaleMove,
+                                        "sport": odds.sport,
+                                        "event_id": odds.event_id,
+                                        "market_key": odds.market_key,
+                                        "selection": odds.outcome_key,
+                                        "bookmaker": odds.bookmaker,
+                                        "price_before": float(prev_state["price"]),
+                                        "price_after": float(current_state["price"]),
+                                        "line_before": float(prev_state["line"]) if odds.line else None,
+                                        "line_after": float(current_state["line"]) if odds.line else None,
+                                        "whale_rating": min(whale_rating, 10.0),
+                                        "move_size": "wormhole" if whale_rating > 8.5 else "significant"
+                                    })
 
                     # 4. Update Redis for next time
                     await cache.set(track_key, json.dumps(current_state), 3600) # Keep tracking state for an hour
 
                 # 5. Persist signals if any
                 if signals_to_create:
-                    # Insert ignoring duplicates for now or just bulk add
-                    # For simplicity, we create a new entry for each distinct move
-                    await session.execute(insert(SharpSignal).values(signals_to_create))
+                    sharp_signals = [s for s in signals_to_create if s.get("__table__") != WhaleMove]
+                    whale_moves = [s for s in signals_to_create if s.get("__table__") == WhaleMove]
+                    
+                    for s in whale_moves: s.pop("__table__", None)
+                    
+                    if sharp_signals:
+                        await session.execute(insert(SharpSignal).values(sharp_signals))
+                    
+                    if whale_moves:
+                        await insert_whale_moves(whale_moves)
+                        
                     await session.commit()
-                    logger.info(f"SharpBrain: Persisted {len(signals_to_create)} sharp signals.")
+                    logger.info(f"SharpBrain: Persisted {len(sharp_signals)} sharp signals and {len(whale_moves)} whale moves.")
 
             except Exception as e:
                 await session.rollback()
                 logger.error(f"SharpBrain: Detection failed: {e}")
 
-sharp_money_brain = SharpMoneyBrain()
+# sharp_money_brain = SharpMoneyBrain() # Handled as singleton in services/brains.py

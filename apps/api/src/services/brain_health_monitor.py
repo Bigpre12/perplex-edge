@@ -137,81 +137,18 @@ class BrainHealthMonitor:
             )
     
     async def _get_component_metrics(self, component: str) -> Dict[str, Any]:
-        """Get current metrics for a component"""
-        # This would connect to actual monitoring systems
-        # For now, return mock data based on component
+        """Get current metrics for a component. Real implementations should be added here."""
+        # TODO: Integrate with Prometheus, CloudWatch, or local os/psutil for real metrics.
+        logger.warning(f"HealthMonitor: Real metrics not implemented for {component}. Returning baseline.")
         
-        mock_metrics = {
-            "database_connection_pool": {
-                "active_connections": 8,
-                "max_connections": 20,
-                "pool_utilization": 0.40,
-                "avg_response_time_ms": 45,
-                "connection_timeout_rate": 0.01,
-                "error_count": 0
-            },
-            "api_response_time": {
-                "avg_response_time_ms": 95,
-                "p95_response_time_ms": 180,
-                "requests_per_second": 45.2,
-                "cache_hit_rate": 0.78,
-                "error_count": 0
-            },
-            "memory_usage": {
-                "current_usage": 0.42,
-                "max_acceptable": 0.85,
-                "available_memory_gb": 11.6,
-                "total_memory_gb": 20,
-                "gc_pressure": "low",
-                "error_count": 0
-            },
-            "cpu_usage": {
-                "current_usage": 0.45,
-                "max_acceptable": 0.80,
-                "cpu_cores": 8,
-                "load_average": [0.42, 0.48, 0.45, 0.43],
-                "process_count": 45,
-                "error_count": 0
-            },
-            "disk_space": {
-                "current_usage": 0.78,
-                "max_acceptable": 0.90,
-                "available_space_gb": 4.4,
-                "total_space_gb": 20,
-                "disk_io_utilization": 0.35,
-                "error_count": 0
-            },
-            "model_accuracy": {
-                "current_accuracy": 0.71,
-                "minimum_acceptable": 0.65,
-                "model_type": "passing_yards_predictor",
-                "validation_accuracy": 0.69,
-                "error_count": 0
-            },
-            "external_apis": {
-                "provider": "sportsdata_io",
-                "response_time_ms": 145,
-                "timeout_rate": 0.01,
-                "success_rate": 0.99,
-                "error_count": 0
-            },
-            "brain_decision_system": {
-                "decisions_per_hour": 45,
-                "avg_decision_time_ms": 426,
-                "success_rate": 0.75,
-                "active_healing_actions": 0,
-                "error_count": 0
-            },
-            "brain_healing_system": {
-                "auto_healing_enabled": True,
-                "last_healing_cycle": (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat(),
-                "healing_success_rate": 0.889,
-                "active_monitors": 8,
-                "error_count": 0
-            }
+        # Return neutral/baseline metrics so we don't trigger false positives while 'mock' is removed
+        baseline = {
+            "error_count": 0,
+            "avg_response_time_ms": 0,
+            "current_usage": 0.0,
+            "success_rate": 1.0
         }
-        
-        return mock_metrics.get(component, {"error_count": 1})
+        return baseline
     
     def _evaluate_health(self, component: str, metrics: Dict[str, Any]) -> tuple[HealthStatus, str, Dict[str, Any], float]:
         """Evaluate health based on metrics and thresholds"""

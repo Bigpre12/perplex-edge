@@ -39,19 +39,11 @@ class BrainAdvancedService:
                     for p in picks
                 ]
             
-            # Mock Fallback if no real scores
-            return [
-                {"player": "Kevin Durant", "stat_type": "Points", "line": 26.5, "brain_score": 92, "confidence": "HIGH", "signal": "OVER", "reason": "Neural projection indicates elite scoring efficiency tonight."},
-                {"player": "Luka Doncic", "stat_type": "Assists", "line": 9.5, "brain_score": 88, "confidence": "HIGH", "signal": "OVER", "reason": "Matchup data suggests high assist-to-turnover ratio."},
-                {"player": "Rudy Gobert", "stat_type": "Rebounds", "line": 12.5, "brain_score": 85, "confidence": "HIGH", "signal": "OVER", "reason": "Elite rebounding metrics against current opponent."}
-            ]
+            # Hard-remove mock fallback
+            return []
         except Exception as e:
             logger.error(f"Error in get_prop_score: {e}")
-            return [
-                {"player": "Kevin Durant", "stat_type": "Points", "line": 26.5, "brain_score": 92, "confidence": "HIGH", "signal": "OVER", "reason": "Neural projection indicates elite scoring efficiency tonight."},
-                {"player": "Luka Doncic", "stat_type": "Assists", "line": 9.5, "brain_score": 88, "confidence": "HIGH", "signal": "OVER", "reason": "Matchup data suggests high assist-to-turnover ratio."},
-                {"player": "Rudy Gobert", "stat_type": "Rebounds", "line": 12.5, "brain_score": 85, "confidence": "HIGH", "signal": "OVER", "reason": "Elite rebounding metrics against current opponent."}
-            ]
+            return []
         
     async def build_parlay(self, sport: str, legs: int, min_score: int, db: AsyncSession) -> List[dict]:
         """Feature 2: Parlay Brain (Monte Carlo Integration)"""
@@ -96,43 +88,11 @@ class BrainAdvancedService:
                     }
                 }]
             
-            # Mock Fallback if no real picks for parlay
-            return [{
-                "legs": [
-                    {"player": "Stephen Curry", "stat_type": "3-PT Made", "side": "OVER", "line": 4.5},
-                    {"player": "Giannis Antetokounmpo", "stat_type": "Points", "side": "OVER", "line": 31.5}
-                ],
-                "combined_odds": "+260",
-                "estimated_payout_100": 360,
-                "hit_probability": "Est. 68% hit rate",
-                "brain_rating": "ELITE",
-                "analysis": {
-                    "sgp_grade": "A-",
-                    "total_correlation_score": 1.2,
-                    "correlations": [
-                        {"leg_a": "Curry 3-PT", "leg_b": "Giannis Points", "label": "POSITIVE"}
-                    ]
-                }
-            }]
+            # Hard-remove mock fallback
+            return []
         except Exception as e:
             logger.error(f"Error in build_parlay: {e}")
-            return [{
-                "legs": [
-                    {"player": "Stephen Curry", "stat_type": "3-PT Made", "side": "OVER", "line": 4.5},
-                    {"player": "Giannis Antetokounmpo", "stat_type": "Points", "side": "OVER", "line": 31.5}
-                ],
-                "combined_odds": "+260",
-                "estimated_payout_100": 360,
-                "hit_probability": "Est. 68% hit rate",
-                "brain_rating": "ELITE",
-                "analysis": {
-                    "sgp_grade": "A-",
-                    "total_correlation_score": 1.2,
-                    "correlations": [
-                        {"leg_a": "Curry 3-PT", "leg_b": "Giannis Points", "label": "POSITIVE"}
-                    ]
-                }
-            }]
+            return []
         
     async def check_steam_moves(self, sport: str, db: AsyncSession) -> List[dict]:
         """Feature 5: Steam Detector (Layer 1: Sharp Money)"""
@@ -161,15 +121,11 @@ class BrainAdvancedService:
                     for s in signals
                 ]
             
-            # Mock Fallback
-            return [
-                {"id": "mock_steam_1", "timestamp": datetime.now(timezone.utc).isoformat(), "player": "Jayson Tatum", "stat_type": "Points", "line": 27.5, "move_direction": "URGENT", "book": "Pinnacle", "urgency": "HIGH", "market_percentage": "92% of sharp volume"}
-            ]
+            # Hard-remove mock fallback
+            return []
         except Exception as e:
             logger.error(f"Error in check_steam_moves: {e}")
-            return [
-                {"id": "mock_steam_1", "timestamp": datetime.now(timezone.utc).isoformat(), "player": "Jayson Tatum", "stat_type": "Points", "line": 27.5, "move_direction": "URGENT", "book": "Pinnacle", "urgency": "HIGH", "market_percentage": "92% of sharp volume"}
-            ]
+            return []
         
     async def get_reasoning_feed(self, sport: str, limit: int, db: AsyncSession) -> List[dict]:
         """Feature 7: AI Reasoning Feed (Real Data)"""
@@ -388,7 +344,7 @@ class BrainAdvancedService:
             logger.error(f"Error in get_dashboard_metrics: {e}")
             return {"props_scored_today": 0, "elite_signals": 0}
 
-brain_advanced_service = BrainAdvancedService()
+# brain_advanced_service = BrainAdvancedService() # Handled as singleton in services/brains.py
 get_prop_score = brain_advanced_service.get_prop_score
 build_parlay = brain_advanced_service.build_parlay
 check_steam_moves = brain_advanced_service.check_steam_moves

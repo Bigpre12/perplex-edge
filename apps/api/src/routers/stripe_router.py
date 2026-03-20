@@ -9,12 +9,12 @@ from common_deps import get_db, require_elite
 router = APIRouter(tags=["Stripe Monetization"])
 
 # These should be pulled from secure environment variables in production
-stripe.api_key = settings.STRIPE_SECRET_KEY or os.environ.get("STRIPE_SECRET_KEY", "sk_test_mock_key_only")
-STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "whsec_mock_secret")
+stripe.api_key = settings.STRIPE_SECRET_KEY or os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
 # Note: settings doesn't cleanly export STRIPE_WEBHOOK_SECRET today, fallback to OS
 
 # The price ID from your Stripe Dashboard for the "Pro Subscription" product.
-PRO_PRICE_ID = getattr(settings, "STRIPE_PRO_PRICE_ID", os.environ.get("STRIPE_PRO_PRICE_ID", "price_mock_id"))
+PRO_PRICE_ID = getattr(settings, "STRIPE_PRO_PRICE_ID", os.environ.get("STRIPE_PRO_PRICE_ID"))
 
 class CheckoutRequest(BaseModel):
     user_email: str
@@ -24,13 +24,13 @@ class CheckoutRequest(BaseModel):
 async def create_checkout_session(req: CheckoutRequest):
     try:
         # Prevent mock key bypass if not in development mode
-        if stripe.api_key == "sk_test_mock_key_only":
+        if not stripe.api_key:
             if not settings.DEVELOPMENT_MODE:
                 raise HTTPException(status_code=400, detail="Stripe Secret Key not configured for production.")
             return {"session_url": settings.FRONTEND_URL + '/institutional/settings?checkout=success&mock=true'}
 
         # Get the latest price ID dynamically at request time
-        price_id = os.environ.get("STRIPE_PRO_PRICE_ID", "price_mock_id")
+        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
         # Create a new Stripe Checkout Session
         session = stripe.checkout.Session.create(

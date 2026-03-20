@@ -1,7 +1,8 @@
 // apps/web/src/app/(app)/ev/page.tsx
 "use client";
 import React, { useState, useCallback } from "react";
-import { TrendingUp, Calculator, Info, Zap } from "lucide-react";
+import { TrendingUp, Calculator, Info, Zap, Filter, Search, BookOpen } from "lucide-react";
+import { Sparklines, SparklinesLine, SparklinesSpots } from "react-sparklines";
 import { useLiveData } from "@/hooks/useLiveData";
 import { api, isApiError, unwrap } from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
@@ -12,24 +13,34 @@ import { useLucrixStore } from "@/store";
 import { useFreshness } from "@/hooks/useFreshness";
 import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
 import SportSelector from "@/components/shared/SportSelector";
+import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggle";
+import { Clock } from "lucide-react";
 
 export default function EVPage() {
     const sport = useLucrixStore((state: any) => state.activeSport);
     const freshness = useFreshness(sport);
-
-    const fetcher = useCallback(
-        async () => {
-            const data = await api.ev.top(sport);
-            return unwrap(data);
-        },
-        [sport]
-    );
+    const [isHistorical, setIsHistorical] = useState(false);
 
     const { data: picks, loading, error, lastUpdated, isStale, refresh } = useLiveData<any[]>(
-        fetcher,
-        [sport],
-        { refreshInterval: 180000 }
+        () => api.ev.top(sport, 50, isHistorical),
+        [sport, isHistorical],
+        { refreshInterval: isHistorical ? 600000 : 180000 }
     );
+
+    const [minEv, setMinEv] = useState(2);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedBook, setSelectedBook] = useState("all");
+
+    const fullPicks = unwrap(picks) || [];
+    const filteredPicks = fullPicks.filter((p: any) => {
+        const matchesSearch = p.player_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             p.market_key?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesEv = (p.ev_percentage || p.edge_pct || 0) >= minEv;
+        const matchesBook = selectedBook === "all" || p.bookmaker === selectedBook || p.book === selectedBook;
+        return matchesSearch && matchesEv && matchesBook;
+    });
+
+    const books = Array.from(new Set(fullPicks.map((p: any) => p.bookmaker || p.book))).filter(Boolean);
 
     return (
         <GateLock feature="edges" reason="The EV+ Live Scanner is reserved for Premium athletes.">
@@ -54,14 +65,60 @@ export default function EVPage() {
                         />
                     </div>
 
-                    <LiveStatusBar
-                        lastUpdated={lastUpdated}
-                        isStale={isStale}
-                        loading={loading}
-                        error={error}
-                        onRefresh={refresh}
-                        refreshInterval={120}
-                    />
+                    <div className="flex items-center gap-4">
+                        <LiveHistoricalToggle isHistorical={isHistorical} onChange={setIsHistorical} />
+                        <LiveStatusBar
+                            lastUpdated={lastUpdated}
+                            isStale={isStale}
+                            loading={loading}
+                            error={error}
+                            onRefresh={refresh}
+                            refreshInterval={120}
+                        />
+                    </div>
+                </div>
+
+                <div className="bg-lucrix-surface/50 border border-lucrix-border rounded-xl p-4 flex flex-wrap items-center gap-6 shadow-sm">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={14} />
+                        <input 
+                            type="text" 
+                            placeholder="Search Player or Market..." 
+                            className="w-full bg-lucrix-dark/50 border border-lucrix-border rounded-lg py-2 pl-10 pr-4 text-xs font-bold text-white focus:border-brand-success/50 outline-none transition-all"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-lucrix-dark/50 border border-lucrix-border rounded-lg px-3 py-1.5">
+                            <Filter size={14} className="text-textMuted" />
+                            <span className="text-[10px] font-black text-textMuted uppercase tracking-widest">Min EV:</span>
+                            <input 
+                                type="range" min="0" max="15" step="0.5" 
+                                aria-label="Minimum EV Percentage"
+                                title="Minimum EV Percentage"
+                                className="w-24 accent-brand-success cursor-pointer" 
+                                value={minEv}
+                                onChange={(e) => setMinEv(parseFloat(e.target.value))}
+                            />
+                            <span className="text-xs font-black text-brand-success w-8 font-mono">{minEv}%</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-lucrix-dark/50 border border-lucrix-border rounded-lg px-3 py-1.5 focus-within:border-brand-success/50 transition-all">
+                            <BookOpen size={14} className="text-textMuted" />
+                            <select 
+                                aria-label="Select Sportsbook"
+                                title="Select Sportsbook"
+                                className="bg-transparent text-xs font-black uppercase text-white outline-none cursor-pointer"
+                                value={selectedBook}
+                                onChange={(e) => setSelectedBook(e.target.value)}
+                            >
+                                <option value="all" className="bg-lucrix-surface">All Books</option>
+                                {books.map((b: any) => <option key={b} value={b} className="bg-lucrix-surface">{b}</option>)}
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <PageStates
@@ -75,15 +132,14 @@ export default function EVPage() {
                             <thead>
                                 <tr className="bg-lucrix-dark/80 border-b border-lucrix-border text-[9px] font-black uppercase tracking-widest text-textMuted">
                                     <th className="px-6 py-4">Market Pick</th>
+                                    <th className="px-6 py-4 text-center">Trend</th>
                                     <th className="px-6 py-4 text-center">Market Odds</th>
-                                    <th className="px-6 py-4 text-center">Model Fair</th>
                                     <th className="px-6 py-4 text-center">Edge (EV%)</th>
-                                    <th className="px-6 py-4 text-center">Kelly (%)</th>
                                     <th className="px-6 py-4 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-lucrix-border/50">
-                                    {(Array.isArray(picks) ? picks : picks?.items || []).map((pick: any, i: number) => (
+                                    {(filteredPicks).map((pick: any, i: number) => (
                                     <tr key={`${pick.id || pick.event_id || i}-${i}`} className="group hover:bg-lucrix-dark/50 transition-colors">
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-4">
@@ -96,32 +152,50 @@ export default function EVPage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-center">
-                                            <span className="bg-lucrix-dark px-4 py-2 rounded-lg border border-lucrix-border font-black font-mono text-white text-sm">
-                                                {pick.odds > 0 ? `+${pick.odds}` : pick.odds}
-                                            </span>
-                                            <div className="text-[9px] text-textMuted mt-2 font-bold uppercase tracking-widest">{pick.book}</div>
-                                        </td>
-                                        <td className="px-6 py-5 text-center">
-                                            <div className="text-sm font-black text-textSecondary font-mono">
-                                                {pick.fair_odds > 0 ? `+${pick.fair_odds}` : pick.fair_odds}
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-3 h-10 w-24 mx-auto">
+                                                {pick.trend && pick.trend.length > 1 ? (
+                                                    <Sparklines data={pick.trend} width={100} height={30}>
+                                                        <SparklinesLine color="#0df233" style={{ strokeWidth: 3 }} />
+                                                        <SparklinesSpots size={3} />
+                                                    </Sparklines>
+                                                ) : (
+                                                    <div className="text-[8px] font-black text-textMuted uppercase italic mx-auto">Stable</div>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-center">
                                             <div className="flex flex-col items-center">
-                                                <span className="text-xl font-black text-brand-success font-display">+{pick.ev_percentage}%</span>
+                                                <span className="bg-lucrix-dark px-4 py-2 rounded-lg border border-lucrix-border font-black font-mono text-white text-sm">
+                                                    {pick.odds > 0 ? `+${pick.odds}` : pick.odds}
+                                                </span>
+                                                <div className="text-[8px] text-textMuted mt-1.5 font-black uppercase tracking-widest">{pick.bookmaker || pick.book}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-center">
-                                            <div className="bg-brand-warning/10 text-brand-warning px-3 py-1.5 rounded-lg border border-brand-warning/20 inline-flex items-center gap-1.5 shadow-glow shadow-brand-warning/10">
-                                                <Calculator size={12} />
-                                                <span className="font-black text-sm font-mono">{pick.kelly_percentage || 0}%</span>
+                                            <div className="flex flex-col items-center">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xl font-black text-brand-success font-display">+{pick.ev_percentage || pick.edge_pct}%</span>
+                                                    {(pick.ev_percentage || pick.edge_pct) > 5 && (
+                                                        <Zap size={14} className="text-brand-success fill-brand-success animate-pulse" />
+                                                    )}
+                                                </div>
+                                                <div className="text-[9px] font-black text-textMuted uppercase tracking-tighter mt-1">
+                                                    Fair: {pick.fair_odds > 0 ? `+${pick.fair_odds}` : pick.fair_odds} | Kelly: {pick.kelly_percentage || 0}%
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5 text-right">
-                                            <button className="bg-lucrix-dark border border-lucrix-border hover:bg-brand-success hover:border-brand-success hover:text-black text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all shadow-glow hover:shadow-brand-success/20">
-                                                Bet
-                                            </button>
+                                            {isHistorical ? (
+                                                <div className="text-[10px] font-black text-textMuted uppercase tracking-widest flex items-center justify-end gap-1.5">
+                                                    <Clock size={12} className="text-blue-400" />
+                                                    {new Date(pick.created_at).toLocaleDateString()}
+                                                </div>
+                                            ) : (
+                                                <button className="bg-lucrix-dark border border-lucrix-border hover:bg-brand-success hover:border-brand-success hover:text-black text-white px-6 py-2.5 rounded-lg font-black uppercase tracking-widest text-[10px] transition-all shadow-glow hover:shadow-brand-success/20">
+                                                    Bet
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

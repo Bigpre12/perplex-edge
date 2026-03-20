@@ -2,19 +2,53 @@ from fastapi import APIRouter, Query, Depends
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
-from db.session import get_db
+from db.session import get_db, get_async_db
 from models.brain import CLVRecord
+from schemas.unified import ClvTradeSchema
 from models.prop import PropLine
 from common_deps import get_user_tier
+from datetime import datetime, timezone, timedelta
 
 router = APIRouter(tags=["clv"])
 
-@router.get("")
-@router.get("/")
-async def get_clv_tracking(
+@router.get("/live", response_model=Dict[str, Any])
+@router.get("", response_model=Dict[str, Any])
+async def get_clv_live(
+    sport: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Returns fresh CLV beats from the last 24h.
+    """
+    stmt = select(CLVRecord).where(CLVRecord.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
+    if sport:
+        stmt = stmt.where(CLVRecord.sport == sport)
+    stmt = stmt.order_by(desc(CLVRecord.created_at)).limit(20)
+    
+    res = await db.execute(stmt)
+    records = res.scalars().all()
+    
+    return {
+        "status": "success",
+        "data": [ClvTradeSchema.model_validate({
+            "id": r.id,
+            "player": r.selection,
+            "sport": r.sport,
+            "market": r.market_key,
+            "open_line": float(r.opening_line),
+            "close_line": float(r.closing_line),
+            "clv_value": float(r.clv_percentage),
+            "beat": r.clv_beat,
+            "timestamp": r.created_at
+        }) for r in records],
+        "total": len(records)
+    }
+
+@router.get("/history", response_model=Dict[str, Any])
+async def get_clv_history(
     sport: Optional[str] = Query(None),
     limit: int = 50,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     tier: str = Depends(get_user_tier)
 ):
     """
@@ -37,11 +71,11 @@ async def get_clv_tracking(
             "player": r.selection,
             "sport": r.sport,
             "market": r.market_key,
-            "open_line": r.opening_line,
-            "close_line": r.closing_line,
-            "clv_value": r.clv_percentage,
+            "open_line": float(r.opening_line),
+            "close_line": float(r.closing_line),
+            "clv_value": float(r.clv_percentage),
             "beat": r.clv_beat,
-            "timestamp": r.created_at.isoformat()
+            "timestamp": r.created_at
         })
 
     # 2. Fetch from PropLine (Player Props)
@@ -55,15 +89,15 @@ async def get_clv_tracking(
     
     for p in props:
         results.append({
-            "id": f"prop_{p.id}",
+            "id": p.id,
             "player": p.player_name,
             "sport": p.sport_key,
             "market": p.stat_type,
-            "open_line": p.line,
-            "close_line": p.closing_line,
-            "clv_value": p.clv_val,
+            "open_line": float(p.line),
+            "close_line": float(p.closing_line),
+            "clv_value": float(p.clv_val),
             "beat": p.beat_closing_line,
-            "timestamp": p.created_at.isoformat()
+            "timestamp": p.created_at
         })
 
     # Sort combined results by timestamp
@@ -71,7 +105,7 @@ async def get_clv_tracking(
     
     return {
         "status": "active",
-        "data": results[:limit],
+        "data": [ClvTradeSchema.model_validate(r) for r in results[:limit]],
         "count": len(results)
     }
 

@@ -6,26 +6,52 @@ import traceback
 from datetime import datetime, timezone
 from services.odds.fetchers import fetch_props_for_sport, fetch_lines_for_sport, SPORT_KEY_MAP
 from services.brain_odds_scout import brain_odds_scout
+from services.props_models import PropRecord
+from services.props_persistence import (
+    prop_group_to_records,
+    records_to_rows,
+    upsert_props_live,
+    insert_props_history,
+)
 
 logger = logging.getLogger(__name__)
 
 async def write_props_to_db(sport_id: int, props_data: list):
-    """Placeholder or adapter for persisting props."""
+    """Persist props to DB and pass grouped data to BrainOddsScout."""
     sport_key = SPORT_KEY_MAP.get(sport_id)
     if not sport_key or not props_data:
         return
-        
+
+    league = "NBA"  # TODO: derive per sport_key
+
     for event in props_data:
         try:
-            # event is the raw API dict for a single game
             logger.debug(f"Ingesting event data for {sport_key}")
-            home_team = event.get('home_team', 'TBD')
-            away_team = event.get('away_team', 'TBD')
-            transformed_props = transform_odds_api_props([event], event, home_team, away_team)
-            if transformed_props:
-                await brain_odds_scout.analyze_and_persist(transformed_props, sport_key)
+            home_team = event.get("home_team", "TBD")
+            away_team = event.get("away_team", "TBD")
+
+            # existing grouped format for brain
+            grouped_props = transform_odds_api_props([event], event, home_team, away_team)
+
+            # NEW: map grouped_props -> PropRecords -> DB rows
+            all_records: list[PropRecord] = []
+            for gp in grouped_props:
+                all_records.extend(prop_group_to_records(gp, sport_key=sport_key, league=league))
+
+            rows = records_to_rows(all_records)
+            if rows:
+                await upsert_props_live(rows)
+                await insert_props_history(rows)
+
+            # keep existing brain behaviour
+            if grouped_props:
+                await brain_odds_scout.analyze_and_persist(grouped_props, sport_key)
+
         except Exception as e:
-            logger.error(f"Failed to process props for event {event.get('id')} in sport {sport_key}: {e}")
+            logger.error(
+                f"Failed to process props for event {event.get('id')} in sport {sport_key}: {e}"
+            )
+            logger.debug(traceback.format_exc())
             continue
 
 async def write_lines_to_db(sport_id: int, lines_data: list):

@@ -3,33 +3,7 @@ import random
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from services.player_splits_service import get_full_splits
-# Mock data for fallback when real data is unavailable
-MOCK_PLAYERS_BY_SPORT = {
-    "basketball_nba": [
-        {"name": "LeBron James"}, {"name": "Stephen Curry"}, {"name": "Luka Doncic"},
-        {"name": "Joel Embiid"}, {"name": "Nikola Jokic"}, {"name": "Giannis Antetokounmpo"},
-        {"name": "Jayson Tatum"}, {"name": "Kevin Durant"}, {"name": "Anthony Davis"},
-        {"name": "Tyrese Haliburton"}
-    ],
-    "americanfootball_nfl": [
-        {"name": "Patrick Mahomes"}, {"name": "Christian McCaffrey"}, {"name": "Tyreek Hill"},
-        {"name": "Lamar Jackson"}, {"name": "Josh Allen"}, {"name": "Justin Jefferson"},
-        {"name": "Travis Kelce"}, {"name": "CeeDee Lamb"}, {"name": "A.J. Brown"},
-        {"name": "Jalen Hurts"}
-    ],
-    "icehockey_nhl": [
-        {"name": "Connor McDavid"}, {"name": "Nathan MacKinnon"}, {"name": "Auston Matthews"},
-        {"name": "Nikita Kucherov"}, {"name": "Cale Makar"}, {"name": "Connor Bedard"}
-    ],
-    "baseball_mlb": [
-        {"name": "Shohei Ohtani"}, {"name": "Ronald Acuna Jr."}, {"name": "Aaron Judge"},
-        {"name": "Mookie Betts"}, {"name": "Freddie Freeman"}, {"name": "Juan Soto"}
-    ],
-    "soccer_usa_mls": [
-        {"name": "Lionel Messi"}, {"name": "Luis Suarez"}, {"name": "Cucho Hernandez"},
-        {"name": "Luciano Acosta"}, {"name": "Denis Bouanga"}, {"name": "Hany Mukhtar"}
-    ]
-}
+# Mock data removed for production.
 
 logger = logging.getLogger(__name__)
 

@@ -136,46 +136,7 @@ class WhaleService:
             signals = [] # Ensure it falls through to mock data fallback
 
         if not signals:
-            logger.info("WhaleService: No real-time signals found, returning high-quality mock fallback")
-            now = datetime.now(timezone.utc)
-            return [
-                {
-                    "id": "mock_whale_1",
-                    "type": "WHALE_MOVE",
-                    "signal": "ULTRA WHALE",
-                    "player": "Nikola Jokic",
-                    "stat": "Points",
-                    "pick": "OVER",
-                    "line": 28.5,
-                    "sharp_side": "WHALE",
-                    "market_value": 450,
-                    "confidence": 98,
-                    "game": "Denver Nuggets vs Dallas Mavericks",
-                    "game_time": (now + timedelta(hours=2)).isoformat(),
-                    "whale_label": "🐋 ULTRA WHALE MOVE",
-                    "description": "Institutional-sized entry detected at Pinnacle Sharp. Market moving rapidly.",
-                    "alert_time": now.isoformat(),
-                    "books_involved": ["Pinnacle", "Circa", "Bookmaker"]
-                },
-                {
-                    "id": "mock_whale_2",
-                    "type": "WHALE_MOVE",
-                    "signal": "SHARP ENTRY",
-                    "player": "LeBron James",
-                    "stat": "Assists",
-                    "pick": "OVER",
-                    "line": 8.5,
-                    "sharp_side": "VALUE",
-                    "market_value": 250,
-                    "confidence": 92,
-                    "game": "LA Lakers vs Golden State Warriors",
-                    "game_time": (now + timedelta(hours=3)).isoformat(),
-                    "whale_label": "📉 SHARP MOVE",
-                    "description": "Heavy sharp volume hitting Over 8.5 Assists. Line expected to move to 9.5.",
-                    "alert_time": now.isoformat(),
-                    "books_involved": ["Pinnacle", "DraftKings"]
-                }
-            ]
+            return []
 
         return sorted(signals, key=lambda x: x["confidence"], reverse=True)
 

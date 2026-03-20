@@ -6,24 +6,23 @@ import { useLiveData } from "@/hooks/useLiveData";
 import { api, API, isApiError } from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
+import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggle";
+import { Clock, TrendingUp } from "lucide-react";
 
 export default function InjuriesPage() {
     const [sport, setSport] = useState("NBA");
     const [query, setQuery] = useState("");
+    const [isHistorical, setIsHistorical] = useState(false);
 
     const { data: injuries, loading, error, lastUpdated, isStale, refresh } = useLiveData<any[]>(
-        async () => {
-            const res = await api.get<any[]>(API.injuries(sport.toLowerCase() as any));
-            if (isApiError(res)) throw new Error(res.message);
-            return res;
-        },
-        [sport],
-        { refreshInterval: 600000 } // 10 minutes
+        () => api.injuries(sport.toLowerCase() as any, isHistorical),
+        [sport, isHistorical],
+        { refreshInterval: isHistorical ? 600000 : 300000 }
     );
 
-    const filtered = (injuries || []).filter(i =>
-        i.player.toLowerCase().includes(query.toLowerCase()) ||
-        i.team.toLowerCase().includes(query.toLowerCase())
+    const filtered = (injuries || []).filter((i: any) =>
+        i.player?.toLowerCase().includes(query.toLowerCase()) ||
+        i.team?.toLowerCase().includes(query.toLowerCase())
     );
 
     return (
@@ -40,24 +39,17 @@ export default function InjuriesPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <LiveHistoricalToggle isHistorical={isHistorical} onChange={setIsHistorical} />
                     <div className="relative group">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280] group-focus-within:text-primary transition-colors" />
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280] group-focus-within:text-white transition-colors" />
                         <input
                             type="text"
                             placeholder="Filter roster..."
-                            className="bg-[#0D0D14] border border-white/5 rounded-xl pl-10 pr-4 py-2 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all w-48 shadow-2xl"
+                            className="bg-[#0D0D14] border border-white/5 rounded-xl pl-10 pr-4 py-2 text-xs font-black text-white focus:outline-none focus:border-blue-500/50 transition-all w-48 shadow-2xl"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                         />
                     </div>
-                    <LiveStatusBar
-                        lastUpdated={lastUpdated}
-                        isStale={isStale}
-                        loading={loading}
-                        error={error}
-                        onRefresh={refresh}
-                        refreshInterval={600}
-                    />
                 </div>
             </div>
 
@@ -81,31 +73,45 @@ export default function InjuriesPage() {
                 emptyMessage={`No active injuries reported for ${sport}.`}
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filtered.map((injury: any, i: number) => (
-                        <div key={i} className="bg-[#0D0D14] border border-white/5 rounded-2xl p-6 hover:border-red-500/30 transition-all shadow-2xl group relative overflow-hidden">
+                    {filtered.map((item: any, i: number) => (
+                        <div key={i} className={`bg-[#0D0D14] border border-white/5 rounded-2xl p-6 transition-all shadow-2xl group relative overflow-hidden ${isHistorical ? 'hover:border-blue-500/30' : 'hover:border-red-500/30'}`}>
                             <div className="flex justify-between items-start mb-6">
                                 <div>
-                                    <div className="text-sm font-black text-white italic truncate max-w-[120px]">{injury.player}</div>
-                                    <div className="text-[10px] font-black text-[#6B7280] uppercase mt-0.5">{injury.team}</div>
+                                    <div className="text-sm font-black text-white italic truncate max-w-[120px] uppercase font-display">{item.player || item.player_name}</div>
+                                    <div className="text-[10px] font-black text-textMuted uppercase mt-0.5">{item.team || 'Global Intel'}</div>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${injury.status === 'OUT' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                    injury.status === 'GTD' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                                        'bg-white/5 text-[#6B7280] border-white/10'
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border ${(item.status === 'OUT' || item.status_after === 'OUT') ? 'bg-red-500/10 text-red-500 border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.1)]' :
+                                    (item.status === 'GTD' || item.status_after === 'GTD') ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                        'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                     }`}>
-                                    {injury.status}
+                                    {item.status || item.status_after}
                                 </span>
                             </div>
 
-                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 mb-4">
-                                <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-1">Diagnosis</p>
-                                <p className="text-xs font-bold text-white italic leading-relaxed line-clamp-2">{injury.detail}</p>
-                            </div>
+                            {isHistorical ? (
+                                <div className="bg-blue-500/[0.03] border border-blue-500/10 rounded-xl p-4 mb-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-1">
+                                            <TrendingUp size={10} /> Impact Score
+                                        </p>
+                                        <span className="text-sm font-black text-white">{(item.impact_value * 10).toFixed(1)}</span>
+                                    </div>
+                                    <p className="text-[11px] font-bold text-textSecondary italic leading-tight">
+                                        Market adjustment: {item.status_before} → {item.status_after} detected.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 mb-4">
+                                    <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Diagnosis</p>
+                                    <p className="text-[11px] font-bold text-textSecondary italic leading-relaxed line-clamp-2">{item.detail || item.note || 'No additional details.'}</p>
+                                </div>
+                            )}
 
                             <div className="flex items-center justify-between opacity-50">
-                                <div className="flex items-center gap-1.5 text-[9px] font-black text-[#6B7280] uppercase tracking-widest">
-                                    <Calendar size={12} /> {injury.date || 'Today'}
+                                <div className="flex items-center gap-1.5 text-[9px] font-black text-textMuted uppercase tracking-widest">
+                                    <Clock size={12} /> {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Today'}
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-black text-[#6B7280] uppercase tracking-widest">
+                                <div className="flex items-center gap-1.5 text-[9px] font-black text-textMuted uppercase tracking-widest">
                                     <Activity size={12} /> VERIFIED
                                 </div>
                             </div>
