@@ -124,15 +124,30 @@ async def startup():
     
     # Schedule Ingest Jobs (Every 5 minutes)
     sports_to_ingest = [
-        "basketball_nba",
+        # American Football
         "americanfootball_nfl",
         "americanfootball_ncaaf",
+
+        # Basketball
+        "basketball_nba",
+
+        # Baseball
         "baseball_mlb",
+
+        # Hockey
         "icehockey_nhl",
-        "mma_mixed_martial_arts",
+
+        # Soccer (a few high-value comps)
         "soccer_usa_mls",
-        "soccer_epl",
         "soccer_uefa_champs_league",
+        "soccer_epl",
+
+        # MMA
+        "mma_mixed_martial_arts",
+
+        # Aussie Rules / Rugby (optional)
+        "aussierules_afl",
+        "rugbyleague_nrl",
     ]
     
     for sport in sports_to_ingest:
