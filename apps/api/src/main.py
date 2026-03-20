@@ -31,6 +31,7 @@ from routers.oracle import router as oracle_router
 from routers.live import router as live_router
 from routers.slate import router as slate_router
 from routers.ws_ev import router as ws_ev_router
+from routers.line_movement import router as line_movement_router
 # --- OPTIONAL ROUTER IMPORTS (SAFE LOADING) ---
 try:
     from routers.arbitrage import router as arbitrage_router
@@ -66,6 +67,7 @@ async def startup():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        os.getenv("FRONTEND_URL", "https://perplex-edge.vercel.app"),
         "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
         "https://perplex-edge.vercel.app",
         "http://localhost:3000",
@@ -102,6 +104,7 @@ app.include_router(oracle_router, prefix="/api/oracle", tags=["oracle"])
 app.include_router(live_router, prefix="/api/live", tags=["live"])
 app.include_router(slate_router, prefix="/api/slate", tags=["slate"])
 app.include_router(ws_ev_router, prefix="/api/ws_ev", tags=["ws_ev"])
+app.include_router(line_movement_router, prefix="/api/line-movement", tags=["line_movement"])
 
 # Optional Routers (Fix 2: Independent registration)
 if arbitrage_router:

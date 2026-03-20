@@ -18,6 +18,7 @@ async def fetch_historical_odds(sport: str, event_id: str) -> dict:
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.session import get_db
 
+@router.get("")
 @router.get("/")
 @router.get("/track")
 async def track_clv(sport: str = Query("basketball_nba"), db: AsyncSession = Depends(get_db)):

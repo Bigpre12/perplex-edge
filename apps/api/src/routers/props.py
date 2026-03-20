@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+@router.get("")
 @router.get("/")
 async def list_props(
     sport: str = "basketball_nba",

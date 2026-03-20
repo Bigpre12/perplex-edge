@@ -27,12 +27,14 @@ async def get_history(ticker: str, user = Depends(require_elite_tier)):
     """Get market price history"""
     return await kalshi_service.get_kalshi_market_history(ticker)
 
+@router.get("/events")
 @router.get("/")
+@router.get("")
 async def get_events(series: Optional[str] = None, user = Depends(require_elite_tier)):
     """Get all open Kalshi events"""
     return await kalshi_service.get_kalshi_events(series)
 
-@router.get("/")
+@router.get("/signals")
 async def get_ev_signals(sport: str = "NBA", user = Depends(require_elite_tier)):
     """Scan and return EV signals merged with real Odds API data"""
     from app.services.odds_api_client import odds_api

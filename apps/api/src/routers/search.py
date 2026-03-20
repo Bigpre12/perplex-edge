@@ -7,6 +7,7 @@ from models.prop import PropLine
 
 router = APIRouter(tags=["search"])
 
+@router.get("")
 @router.get("/")
 async def search_props(q: str, db: AsyncSession = Depends(get_db)):
     if not q or len(q) < 3:

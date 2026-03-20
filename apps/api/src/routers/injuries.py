@@ -7,6 +7,7 @@ from schemas.injury import InjuryOut
 router = APIRouter()
 
 @router.get("")
+@router.get("/")
 async def news(
     sport: str = Query("basketball_nba"),
     db: Session = Depends(get_db),

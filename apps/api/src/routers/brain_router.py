@@ -136,6 +136,7 @@ async def get_brain_metrics_post(db: AsyncSession = Depends(get_async_db)):
         logger.error(f"Brain Metrics Error: {e}")
         return {"status": "warming_up", "note": str(e)}
 
+@router.post("")
 @router.post("/")
 async def brain_query(payload: dict, db: AsyncSession = Depends(get_async_db)):
     query = payload.get("query")

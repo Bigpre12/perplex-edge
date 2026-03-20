@@ -1,10 +1,10 @@
 # Part 1 of Perplex Engine Context
 
-# Perplex Engine - Complete Context for AI
+## Perplex Engine - Complete Context for AI
 
 ## Documentation: project_overview.md
 
-# Perplex Engine - Project Overview
+## Perplex Engine - Project Overview
 
 ## 🏗️ Full Stack Layout
 
@@ -12,15 +12,15 @@
 - **Technology**: Vanilla HTML5, CSS3, JavaScript (ES6+).
 - **Styling**: Custom "Premium" Dark Mode (Glassmorphism, Inter Typography).
 - **Structure**:
-    -   `index.html`: Single Page Application (SPA) entry point.
-    -   `static/css/style.css`: Centralized styling variables and components.
-    -   `static/js/app.js`: Dynamic DOM manipulation and API integration.
+    - `index.html`: Single Page Application (SPA) entry point.
+    - `static/css/style.css`: Centralized styling variables and components.
+    - `static/js/app.js`: Dynamic DOM manipulation and API integration.
 
 ### **Backend** (Server-Side)
 - **Framework**: FastAPI (Python).
 - **Entry Points**:
-    -   `app/main.py`: Main application runner (serves frontend + API).
-    -   `backend/app/main.py`: Core backend logic API (likely merged or referenced).
+    - `app/main.py`: Main application runner (serves frontend + API).
+    - `backend/app/main.py`: Core backend logic API (likely merged or referenced).
 - **Database**: SQLAlchemy (Async) with SQLite/Postgres support.
 - **ORM**: Declarative models for clean database abstraction.
 
@@ -33,125 +33,124 @@
 ## 🚀 Features & Capabilities
 
 ### **1. Core Betting Intelligence**
--   **Live Odds Tracking**: Real-time monitoring of NFL, NCAAB, and NBA lines (`live_odds_*_service.py`).
--   **Historical Analysis**: Archival of past odds and performance for backtesting (`historical_odds_*`).
--   **Prop Bets**: Specialized analysis for player props (`player_stats_service.py`).
--   **Closing Line Value (CLV)**: Tracking line movement to measure bet quality (`verify_clv_columns.py`).
+- **Live Odds Tracking**: Real-time monitoring of NFL, NCAAB, and NBA lines (`live_odds_*_service.py`).
+- **Historical Analysis**: Archival of past odds and performance for backtesting (`historical_odds_*`).
+- **Prop Bets**: Specialized analysis for player props (`player_stats_service.py`).
+- **Closing Line Value (CLV)**: Tracking line movement to measure bet quality (`verify_clv_columns.py`).
 
 ### **2. "The Brain" (AI/ML System)**
--   **Decision Engine**: Automated logic for generating betting picks (`brain_decision_tracker.py`).
--   **Self-Healing**: Automated detection and repair of system anomalies (`brain_healing_service.py`).
--   **Health Monitoring**: Continuous system status checks (`brain_health_monitor.py`).
--   **Adaptive Learning**: Feedback loops to improve prediction models (`brain_learning_service.py`).
--   **Metric Tracking**: KPIs for model performance and system reliability (`brain_metrics_service.py`).
+- **Decision Engine**: Automated logic for generating betting picks (`brain_decision_tracker.py`).
+- **Self-Healing**: Automated detection and repair of system anomalies (`brain_healing_service.py`).
+- **Health Monitoring**: Continuous system status checks (`brain_health_monitor.py`).
+- **Adaptive Learning**: Feedback loops to improve prediction models (`brain_learning_service.py`).
+- **Metric Tracking**: KPIs for model performance and system reliability (`brain_metrics_service.py`).
 
 ### **3. Data Management**
--   **Automated Populators**: Scripts to fetch and store data for Games, Rosters, Injuries, and Stats (`populate_*.py`).
--   **Market Analysis**: Tools to analyze market efficiency and hit rates (`analyze_markets.py`).
--   **Sync Metadata**: Tracking freshness and source of data (`analyze_sync_metadata.py`).
+- **Automated Populators**: Scripts to fetch and store data for Games, Rosters, Injuries, and Stats (`populate_*.py`).
+- **Market Analysis**: Tools to analyze market efficiency and hit rates (`analyze_markets.py`).
+- **Sync Metadata**: Tracking freshness and source of data (`analyze_sync_metadata.py`).
 
 ### **4. User Interface**
--   **Dashboard**: Interactive view of system health and active modules.
--   **Real-Time Status**: Visual indicators for backend connectivity and model states.
--   **Module Testing**: Built-in tools to test API endpoints directly from the UI.
-
+- **Dashboard**: Interactive view of system health and active modules.
+- **Real-Time Status**: Visual indicators for backend connectivity and model states.
+- **Module Testing**: Built-in tools to test API endpoints directly from the UI.
 
 ---
 
 ## Documentation: stack_inventory.md
 
-# Perplex Engine - Full Stack Inventory
+## Perplex Engine - Full Stack Inventory
 
 ## 🛠️ Technology Stack & Dependencies
 
 ### **Core Framework (Backend)**
--   **Language**: Python 3.10+
--   **Web Framework**: `FastAPI` (v0.104.1)
-    -   High-performance async web framework.
-    -   Automatic OpenAPI (Swagger) documentation.
--   **ASGI Server**: `Uvicorn` (v0.24.0) [Standard]
-    -   Lightning-fast ASGI server implementation.
--   **Data Validation**: `Pydantic` (v2.5.0)
-    -   Type hints and data parsing.
+- **Language**: Python 3.10+
+- **Web Framework**: `FastAPI` (v0.104.1)
+    - High-performance async web framework.
+    - Automatic OpenAPI (Swagger) documentation.
+- **ASGI Server**: `Uvicorn` (v0.24.0) [Standard]
+    - Lightning-fast ASGI server implementation.
+- **Data Validation**: `Pydantic` (v2.5.0)
+    - Type hints and data parsing.
 
 ### **Database & ORM**
--   **ORM**: `SQLAlchemy` (v2.0.23)
-    -   Modern, async-capable Object Relational Mapper.
--   **Drivers**:
-    -   `asyncpg` (v0.29.0): For PostgreSQL (Production).
-    -   `aiosqlite`: For SQLite (Development/Local).
+- **ORM**: `SQLAlchemy` (v2.0.23)
+    - Modern, async-capable Object Relational Mapper.
+- **Drivers**:
+    - `asyncpg` (v0.29.0): For PostgreSQL (Production).
+    - `aiosqlite`: For SQLite (Development/Local).
 
 ### **Utilities**
--   **HTTP Client**: `httpx` (v0.25.2)
-    -   Async HTTP client for fetching external odds/stats.
--   **Date Parsing**: `python-dateutil` (v2.8.2)
-    -   Powerful extensions to the standard datetime module.
--   **File Uploads**: `python-multipart` (v0.0.6)
-    -   Handling multipart/form-data requests.
+- **HTTP Client**: `httpx` (v0.25.2)
+    - Async HTTP client for fetching external odds/stats.
+- **Date Parsing**: `python-dateutil` (v2.8.2)
+    - Powerful extensions to the standard datetime module.
+- **File Uploads**: `python-multipart` (v0.0.6)
+    - Handling multipart/form-data requests.
 
 ### **Frontend**
--   **Core**: HTML5, CSS3, JavaScript (ES6+ Modules).
--   **Styling**: Vanilla CSS with Custom Properties (Variables).
-    -   Theme: Dark Mode / Glassmorphism.
-    -   Typography: 'Inter' (Google Fonts).
--   **Assets**: Served statically via FastAPI `StaticFiles`.
+- **Core**: HTML5, CSS3, JavaScript (ES6+ Modules).
+- **Styling**: Vanilla CSS with Custom Properties (Variables).
+    - Theme: Dark Mode / Glassmorphism.
+    - Typography: 'Inter' (Google Fonts).
+- **Assets**: Served statically via FastAPI `StaticFiles`.
 
 ---
 
 ## 📂 Project Structure Manifesto
 
 ### **Root Directory** (`/`)
--   `requirements.txt`: Python package dependencies.
--   `ai_studio_context.md`: **COMPLETE SOURCE CODE DUMP** (for AI Context).
--   `aggregate_codebase.py`: Utility script to regenerate the context file.
--   `setup_brain_metrics.py`: Script to initialize database tables for metrics.
--   `simple_*.py`: Various standalone scripts for quick testing and database status checks.
+- `requirements.txt`: Python package dependencies.
+- `ai_studio_context.md`: **COMPLETE SOURCE CODE DUMP** (for AI Context).
+- `aggregate_codebase.py`: Utility script to regenerate the context file.
+- `setup_brain_metrics.py`: Script to initialize database tables for metrics.
+- `simple_*.py`: Various standalone scripts for quick testing and database status checks.
 
 ### **Application Core** (`/app`)
--   `main.py`: **Entry Point**. Configures FastAPI, routes, and static file serving.
--   `database.py`: Database engine configuration (Async session maker).
--   `index.html`: The main user interface file.
+- `main.py`: **Entry Point**. Configures FastAPI, routes, and static file serving.
+- `database.py`: Database engine configuration (Async session maker).
+- `index.html`: The main user interface file.
 
 ### **Static Assets** (`/static`)
--   `css/style.css`: All visual styling, animations, and responsive rules.
--   `js/app.js`: Frontend logic, API calls, and UI updates.
+- `css/style.css`: All visual styling, animations, and responsive rules.
+- `js/app.js`: Frontend logic, API calls, and UI updates.
 
 ### **Backend Module** (`/backend`)
 *(Note: This directory contains the specific business logic services)*
--   **Data Services**:
-    -   `games_service.py`: Managing game schedules/metadata.
-    -   `player_stats_service.py`: Player performance data.
-    -   `injury_service.py`: Tracking player injury status.
--   **Odds Integration**:
-    -   `live_odds_nfl_service.py`, `live_odds_ncaab_service.py`.
-    -   `line_service.py`: Handling betting lines and movements.
--   **"The Brain" (AI Services)**:
-    -   `brain_decision_tracker.py`: Logic for making betting picks.
-    -   `brain_health_monitor.py`: System self-diagnostics.
-    -   `brain_learning_service.py`: Feedback loops for model improvement.
-    -   `brain_healing_service.py`: Automated error recovery.
--   **Population Scripts** (`populate_*.py`):
-    -   Scripts to seed the database with initial data (e.g., `populate_games.py`).
+- **Data Services**:
+    - `games_service.py`: Managing game schedules/metadata.
+    - `player_stats_service.py`: Player performance data.
+    - `injury_service.py`: Tracking player injury status.
+- **Odds Integration**:
+    - `live_odds_nfl_service.py`, `live_odds_ncaab_service.py`.
+    - `line_service.py`: Handling betting lines and movements.
+- **"The Brain" (AI Services)**:
+    - `brain_decision_tracker.py`: Logic for making betting picks.
+    - `brain_health_monitor.py`: System self-diagnostics.
+    - `brain_learning_service.py`: Feedback loops for model improvement.
+    - `brain_healing_service.py`: Automated error recovery.
+- **Population Scripts** (`populate_*.py`):
+    - Scripts to seed the database with initial data (e.g., `populate_games.py`).
 
 ---
 
 ## 🔗 Key Integration Points
 
 1.  **API Endpoints**:
-    -   `/health`: System status check.
-    -   `/immediate/*`: Real-time data feeds (Props, Metrics, Picks).
-    -   `/static/*`: Serves CSS/JS assets.
+    - `/health`: System status check.
+    - `/immediate/*`: Real-time data feeds (Props, Metrics, Picks).
+    - `/static/*`: Serves CSS/JS assets.
 
 2.  **Data Flow**:
-    -   **Ingest**: `populate_*.py` scripts fetch data -> `backend/app/database.py` saves to DB.
-    -   **Process**: "Brain" services analyze DB data -> Generate Metrics/Decisions.
-    -   **Serve**: FastAPI exposes analyzed data via JSON API -> Frontend (`app.js`) renders it.
-
+    - **Ingest**: `populate_*.py` scripts fetch data -> `backend/app/database.py` saves to DB.
+    - **Process**: "Brain" services analyze DB data -> Generate Metrics/Decisions.
+    - **Serve**: FastAPI exposes analyzed data via JSON API -> Frontend (`app.js`) renders it.
 
 ---
 
 ## File: add_brain_calibration_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD BRAIN CALIBRATION ENDPOINTS - Add brain calibration analysis endpoints
@@ -179,6 +178,7 @@ async def add_brain_calibration_endpoints():
 async def get_brain_calibration_summary(sport_id: int = Query(32, description="Sport ID"), days: int = Query(30, description="Days of data to analyze")):
     """Get brain calibration summary for a sport"""
     try:
+
         # Return mock calibration summary data for now
         mock_summary = {
             "sport_id": sport_id,
@@ -262,6 +262,7 @@ async def get_brain_calibration_summary(sport_id: int = Query(32, description="S
 async def run_brain_calibration_analysis(sport_id: int = Query(32, description="Sport ID"), days: int = Query(30, description="Days of data to analyze")):
     """Run complete brain calibration analysis"""
     try:
+
         # Return mock calibration analysis data for now
         mock_analysis = {
             "sport_id": sport_id,
@@ -327,6 +328,7 @@ async def run_brain_calibration_analysis(sport_id: int = Query(32, description="
 async def get_brain_calibration_comparison(days: int = Query(30, description="Days of data to compare")):
     """Get cross-sport calibration comparison"""
     try:
+
         # Return mock comparison data for now
         mock_comparison = {
             "period_days": days,
@@ -371,6 +373,7 @@ async def get_brain_calibration_comparison(days: int = Query(30, description="Da
 async def get_brain_calibration_issues(sport_id: int = Query(32, description="Sport ID")):
     """Get calibration issues for a sport"""
     try:
+
         # Return mock issues data for now
         mock_issues = [
             {
@@ -414,6 +417,7 @@ async def get_brain_calibration_issues(sport_id: int = Query(32, description="Sp
 async def get_brain_calibration_improvements(sport_id: int = Query(32, description="Sport ID")):
     """Get calibration improvement suggestions"""
     try:
+
         # Return mock suggestions data for now
         mock_suggestions = [
             {
@@ -464,6 +468,7 @@ async def get_brain_calibration_improvements(sport_id: int = Query(32, descripti
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", brain_calibration_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += brain_calibration_code
     
@@ -484,6 +489,7 @@ if __name__ == "__main__":
 
 ## File: add_brain_decisions.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD BRAIN DECISIONS TO IMMEDIATE WORKING ROUTER
@@ -504,6 +510,7 @@ brain_decisions_endpoints = """
 async def get_brain_decisions(limit: int = Query(50, description="Number of decisions to return")):
     """Get recent brain decisions"""
     try:
+
         # Return mock decision data for now
         mock_decisions = [
             {
@@ -613,6 +620,7 @@ async def get_brain_decisions(limit: int = Query(50, description="Number of deci
 async def get_brain_decisions_performance(hours: int = Query(24, description="Hours of data to analyze")):
     """Get brain decision performance metrics"""
     try:
+
         # Return mock performance data
         return {
             "period_hours": hours,
@@ -666,6 +674,7 @@ async def get_brain_decisions_performance(hours: int = Query(24, description="Ho
 async def get_brain_decisions_timeline(hours: int = Query(24, description="Hours of timeline data")):
     """Get brain decisions timeline"""
     try:
+
         # Return mock timeline data
         return {
             "period_hours": hours,
@@ -714,6 +723,7 @@ async def get_brain_decisions_timeline(hours: int = Query(24, description="Hours
 async def record_brain_decision(decision_data: dict):
     """Record a new brain decision"""
     try:
+
         # Simulate recording a decision
         correlation_id = f"mock-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         
@@ -760,9 +770,11 @@ async def update_decision_outcome(correlation_id: str, outcome: str = Query(...,
 
 # Add the endpoints to the file
 if "# Brain Anomaly Detection Endpoints" in content:
+
     # Add before the anomaly endpoints
     content = content.replace("# Brain Anomaly Detection Endpoints", brain_decisions_endpoints + "\n# Brain Anomaly Detection Endpoints")
 else:
+
     # Add at the end
     content += brain_decisions_endpoints
 
@@ -776,6 +788,7 @@ print("Brain decisions endpoints added to immediate working router")
 
 ## File: add_brain_decisions_fixed.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD BRAIN DECISIONS ENDPOINTS - Add brain decision tracking endpoints
@@ -803,6 +816,7 @@ async def add_brain_decisions_endpoints():
 async def get_brain_decisions(limit: int = Query(50, description="Number of decisions to return")):
     """Get recent brain decisions"""
     try:
+
         # Return mock decision data for now
         mock_decisions = [
             {
@@ -875,6 +889,7 @@ async def get_brain_decisions(limit: int = Query(50, description="Number of deci
 async def get_brain_decisions_performance(hours: int = Query(24, description="Hours of data to analyze")):
     """Get brain decision performance metrics"""
     try:
+
         # Return mock performance data
         return {
             "period_hours": hours,
@@ -915,6 +930,7 @@ async def get_brain_decisions_performance(hours: int = Query(24, description="Ho
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", brain_decisions_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += brain_decisions_code
     
@@ -935,6 +951,7 @@ if __name__ == "__main__":
 
 ## File: add_brain_healing_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD BRAIN HEALING ENDPOINTS - Add brain healing system endpoints
@@ -962,6 +979,7 @@ async def add_brain_healing_endpoints():
 async def get_brain_healing_actions(limit: int = Query(50, description="Number of actions to return")):
     """Get recent brain healing actions"""
     try:
+
         # Return mock healing action data for now
         mock_actions = [
             {
@@ -1069,6 +1087,7 @@ async def get_brain_healing_actions(limit: int = Query(50, description="Number o
 async def get_brain_healing_performance(hours: int = Query(24, description="Hours of data to analyze")):
     """Get brain healing performance metrics"""
     try:
+
         # Return mock performance data
         return {
             "period_hours": hours,
@@ -1169,6 +1188,7 @@ async def get_brain_healing_status():
 async def run_healing_cycle():
     """Run a brain healing cycle"""
     try:
+
         # Simulate running a healing cycle
         await asyncio.sleep(2)  # Simulate work
         
@@ -1194,6 +1214,7 @@ async def run_healing_cycle():
 async def trigger_healing_action(healing_data: dict):
     """Manually trigger a healing action"""
     try:
+
         # Simulate triggering a healing action
         action = healing_data.get("action", "scale_resources")
         target = healing_data.get("target", "database_connection")
@@ -1222,6 +1243,7 @@ async def trigger_healing_action(healing_data: dict):
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", brain_healing_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += brain_healing_code
     
@@ -1242,6 +1264,7 @@ if __name__ == "__main__":
 
 ## File: add_brain_health_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 <arg_value>ADD BRAIN HEALTH MONITORING ENDPOINTS - Add brain health monitoring endpoints
 """
@@ -1268,6 +1291,7 @@ async def add_brain_health_endpoints():
 async def get_brain_health_status():
     """Get overall brain system health status"""
     try:
+
         # Return mock health status data for now
         return {
             "status": "healthy",
@@ -1353,6 +1377,7 @@ async def get_brain_health_status():
 async def get_brain_health_checks(limit: int = Query(50, description="Number of checks to return")):
     """Get recent brain health checks"""
     try:
+
         # Return mock health check data for now
         mock_checks = [
             {
@@ -1531,6 +1556,7 @@ async def get_brain_health_checks(limit: int = Query(50, description="Number of 
 async def get_brain_health_performance(hours: int = Query(24, description="Hours of data to analyze")):
     """Get brain health performance metrics"""
     try:
+
         # Return mock performance data
         return {
             "period_hours": hours,
@@ -1638,6 +1664,7 @@ async def get_brain_health_performance(hours: int = Query(24, description="Hours
 async def run_health_check(component: str = Query(..., description="Component to check")):
     """Run a health check for a specific component"""
     try:
+
         # Simulate running a health check
         await asyncio.sleep(0.1)  # Simulate work
         
@@ -1707,6 +1734,7 @@ async def run_health_check(component: str = Query(..., description="Component to
 async def run_all_health_checks():
     """Run health checks for all components"""
     try:
+
         # Simulate running all health checks
         await asyncio.sleep(0.5)  # Simulate work
         
@@ -1735,6 +1763,7 @@ async def run_all_health_checks():
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", brain_health_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += brain_health_code
     
@@ -1755,6 +1784,7 @@ if __name__ == "__main__":
 
 ## File: add_brain_health_endpoints_fixed.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD BRAIN HEALTH ENDPOINTS - Add brain health monitoring endpoints (fixed)
@@ -1918,6 +1948,7 @@ async def get_brain_health_performance(hours: int = Query(24, description="Hours
 async def run_health_check(component: str = Query(..., description="Component to check")):
     """Run a health check for a specific component"""
     try:
+
         # Mock health check result
         mock_results = {
             "database_connection_pool": {
@@ -1985,6 +2016,7 @@ async def run_all_health_checks():
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", brain_health_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += brain_health_code
     
@@ -2005,6 +2037,7 @@ if __name__ == "__main__":
 
 ## File: add_brain_learning_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD BRAIN LEARNING ENDPOINTS - Add brain learning system endpoints
@@ -2032,6 +2065,7 @@ async def add_brain_learning_endpoints():
 async def get_brain_learning_events(limit: int = Query(50, description="Number of events to return")):
     """Get recent brain learning events"""
     try:
+
         # Return mock learning event data for now
         mock_events = [
             {
@@ -2119,6 +2153,7 @@ async def get_brain_learning_events(limit: int = Query(50, description="Number o
 async def get_brain_learning_performance(hours: int = Query(24, description="Hours of data to analyze")):
     """Get brain learning performance metrics"""
     try:
+
         # Return mock performance data
         return {
             "period_hours": hours,
@@ -2222,6 +2257,7 @@ async def get_brain_learning_status():
 async def run_learning_cycle():
     """Run a brain learning cycle"""
     try:
+
         # Simulate running a learning cycle
         await asyncio.sleep(3)  # Simulate work
         
@@ -2247,6 +2283,7 @@ async def run_learning_cycle():
 async def validate_learning_event(learning_id: str = Query(..., description="Learning event ID to validate")):
     """Validate a specific learning event"""
     try:
+
         # Simulate validation
         await asyncio.sleep(1)  # Simulate validation work
         
@@ -2273,6 +2310,7 @@ async def validate_learning_event(learning_id: str = Query(..., description="Lea
 async def record_learning_event(learning_data: dict):
     """Record a new learning event"""
     try:
+
         # Simulate recording a learning event
         learning_id = f"learning-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         
@@ -2300,6 +2338,7 @@ async def record_learning_event(learning_data: dict):
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", brain_learning_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += brain_learning_code
     
@@ -2320,6 +2359,7 @@ if __name__ == "__main__":
 
 ## File: add_games_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD GAMES ENDPOINTS - Add games management endpoints
@@ -2351,6 +2391,7 @@ async def get_games(sport_id: int = Query(None, description="Sport ID to filter"
                   limit: int = Query(50, description="Number of games to return")):
     """Get games with optional filters"""
     try:
+
         # Return mock games data for now
         mock_games = [
             {
@@ -2466,6 +2507,7 @@ async def get_upcoming_games(hours: int = Query(24, description="Hours ahead to 
                           sport_id: int = Query(None, description="Sport ID to filter")):
     """Get upcoming games"""
     try:
+
         # Return mock upcoming games data for now
         mock_upcoming = [
             {
@@ -2539,6 +2581,7 @@ async def get_recent_games(hours: int = Query(24, description="Hours back to loo
                         sport_id: int = Query(None, description="Sport ID to filter")):
     """Get recent games"""
     try:
+
         # Return mock recent games data for now
         mock_recent = [
             {
@@ -2611,6 +2654,7 @@ async def get_recent_games(hours: int = Query(24, description="Hours back to loo
 async def get_games_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get games statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -2669,6 +2713,7 @@ async def get_game_schedule(start_date: str = Query(..., description="Start date
                              sport_id: int = Query(None, description="Sport ID to filter")):
     """Get game schedule for date range"""
     try:
+
         # Return mock schedule data for now
         mock_schedule = [
             {
@@ -2745,6 +2790,7 @@ async def get_game_schedule(start_date: str = Query(..., description="Start date
 async def get_game_detail(game_id: int):
     """Get detailed game information"""
     try:
+
         # Return mock detailed game data for now
         mock_detail = {
             "id": game_id,
@@ -2794,6 +2840,7 @@ async def get_game_detail(game_id: int):
 async def create_game(game_data: dict):
     """Create a new game"""
     try:
+
         # Simulate creating a game
         game_id = game_data.get("game_id")
         external_game_id = game_data.get("external_game_id")
@@ -2831,6 +2878,7 @@ async def create_game(game_data: dict):
 async def update_game_status(game_id: int, status: str = Query(..., description="New game status")):
     """Update game status"""
     try:
+
         # Simulate updating game status
         valid_statuses = ["scheduled", "in_progress", "final", "cancelled", "postponed", "suspended"]
         
@@ -2862,6 +2910,7 @@ async def search_games(query: str = Query(..., description="Search query"),
                         limit: int = Query(20, description="Number of results to return")):
     """Search games by external ID or team names"""
     try:
+
         # Return mock search results
         mock_results = [
             {
@@ -2916,6 +2965,7 @@ async def search_games(query: str = Query(..., description="Search query"),
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", games_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += games_code
     
@@ -2936,6 +2986,7 @@ if __name__ == "__main__":
 
 ## File: add_game_results_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD GAME RESULTS ENDPOINTS - Add game results tracking endpoints
@@ -2963,6 +3014,7 @@ async def add_game_results_endpoints():
 async def get_game_results(date: str = Query(None, description="Date to filter (YYYY-MM-DD)"), sport_id: int = Query(None, description="Sport ID to filter")):
     """Get game results for a specific date"""
     try:
+
         # Return mock game results data for now
         mock_results = [
             {
@@ -3066,6 +3118,7 @@ async def get_game_results(date: str = Query(None, description="Date to filter (
 async def get_pending_games():
     """Get all pending games"""
     try:
+
         # Return mock pending games data for now
         mock_pending = [
             {
@@ -3111,6 +3164,7 @@ async def get_pending_games():
 async def get_game_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get game statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -3162,6 +3216,7 @@ async def get_game_statistics(days: int = Query(30, description="Days of data to
 async def get_game_result_detail(game_id: int):
     """Get detailed game result by ID"""
     try:
+
         # Return mock detailed game result data for now
         mock_detail = {
             "id": 1,
@@ -3214,6 +3269,7 @@ async def get_game_result_detail(game_id: int):
 async def settle_game_results(settlement_data: dict):
     """Settle game results"""
     try:
+
         # Simulate settling game results
         games_to_settle = settlement_data.get("games", [])
         
@@ -3264,6 +3320,7 @@ async def settle_game_results(settlement_data: dict):
 async def create_game_result(game_data: dict):
     """Create a new game result record"""
     try:
+
         # Simulate creating a game result
         game_id = game_data.get("game_id")
         external_fixture_id = game_data.get("external_fixture_id")
@@ -3297,6 +3354,7 @@ async def create_game_result(game_data: dict):
 async def update_game_result(game_id: int, result_data: dict):
     """Update game result with scores"""
     try:
+
         # Simulate updating game result
         home_score = result_data.get("home_score")
         away_score = result_data.get("away_score")
@@ -3333,6 +3391,7 @@ async def update_game_result(game_id: int, result_data: dict):
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", game_results_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += game_results_code
     
@@ -3353,6 +3412,7 @@ if __name__ == "__main__":
 
 ## File: add_historical_odds_ncaab_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD HISTORICAL ODDS NCAAB ENDPOINTS - Add NCAA basketball historical odds endpoints
@@ -3384,6 +3444,7 @@ async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game
                                   limit: int = Query(50, description="Number of odds to return")):
     """Get NCAA basketball historical odds with optional filters"""
     try:
+
         # Return mock historical odds data for now
         mock_odds = [
             {
@@ -3501,6 +3562,7 @@ async def get_historical_odds_ncaab(game_id: int = Query(None, description="Game
 async def get_odds_by_game(game_id: int):
     """Get odds history for a specific game"""
     try:
+
         # Return mock odds history for a specific game
         mock_odds_history = [
             {
@@ -3606,6 +3668,7 @@ async def get_odds_by_game(game_id: int):
 async def get_odds_movements(game_id: int):
     """Get odds movements for a specific game"""
     try:
+
         # Return mock odds movements data
         mock_movements = [
             {
@@ -3694,6 +3757,7 @@ async def get_odds_movements(game_id: int):
 async def get_bookmaker_comparison(game_id: int):
     """Compare odds across bookmakers for a specific game"""
     try:
+
         # Return mock bookmaker comparison data
         mock_comparison = [
             {
@@ -3770,6 +3834,7 @@ async def get_bookmaker_comparison(game_id: int):
 async def get_historical_odds_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get NCAA basketball historical odds statistics"""
     try:
+
         # Return mock statistics data
         mock_stats = {
             "period_days": days,
@@ -3902,6 +3967,7 @@ async def get_historical_odds_statistics(days: int = Query(30, description="Days
 async def get_odds_efficiency(days: int = Query(30, description="Days of data to analyze")):
     """Analyze odds efficiency and accuracy"""
     try:
+
         # Return mock efficiency analysis data
         mock_efficiency = {
             "period_days": days,
@@ -3981,6 +4047,7 @@ async def search_historical_odds(query: str = Query(..., description="Search que
                                  limit: int = Query(20, description="Number of results to return")):
     """Search NCAA basketball historical odds"""
     try:
+
         # Return mock search results
         mock_results = [
             {
@@ -4032,6 +4099,7 @@ async def search_historical_odds(query: str = Query(..., description="Search que
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", historical_odds_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += historical_odds_code
     
@@ -4052,6 +4120,7 @@ if __name__ == "__main__":
 
 ## File: add_historical_performances_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD HISTORICAL PERFORMANCES ENDPOINTS - Add historical performance tracking endpoints
@@ -4081,6 +4150,7 @@ async def get_historical_performances(player: str = Query(None, description="Pla
                                       limit: int = Query(50, description="Number of performances to return")):
     """Get historical performances with optional filters"""
     try:
+
         # Return mock historical performance data for now
         mock_performances = [
             {
@@ -4211,6 +4281,7 @@ async def get_top_performers(limit: int = Query(10, description="Number of top p
                                stat_type: str = Query(None, description="Stat type to filter")):
     """Get top performers by hit rate"""
     try:
+
         # Return mock top performers data
         mock_top_performers = [
             {
@@ -4329,6 +4400,7 @@ async def get_best_ev_performers(limit: int = Query(10, description="Number of b
                                    stat_type: str = Query(None, description="Stat type to filter")):
     """Get best performers by expected value"""
     try:
+
         # Return mock best EV performers data
         mock_best_ev = [
             {
@@ -4447,6 +4519,7 @@ async def get_worst_performers(limit: int = Query(10, description="Number of wor
                                   stat_type: str = Query(None, description="Stat type to filter")):
     """Get worst performers by hit rate"""
     try:
+
         # Return mock worst performers data
         mock_worst = [
             {
@@ -4519,6 +4592,7 @@ async def get_worst_performers(limit: int = Query(10, description="Number of wor
 async def get_performance_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get performance statistics"""
     try:
+
         # Return mock statistics data
         mock_stats = {
             "period_days": days,
@@ -4640,6 +4714,7 @@ async def get_performance_statistics(days: int = Query(30, description="Days of 
 async def get_player_performance(player_name: str, stat_type: str = Query(None, description="Stat type to filter")):
     """Get performance for a specific player"""
     try:
+
         # Return mock player performance data
         mock_player_data = {
             "player_name": player_name,
@@ -4701,6 +4776,7 @@ async def search_performances(query: str = Query(..., description="Search query"
                                limit: int = Query(20, description="Number of results to return")):
     """Search performances by player name or stat type"""
     try:
+
         # Return mock search results
         mock_results = [
             {
@@ -4746,6 +4822,7 @@ async def search_performances(query: str = Query(..., description="Search query"
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", historical_performance_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += historical_performance_code
     
@@ -4766,6 +4843,7 @@ if __name__ == "__main__":
 
 ## File: add_injury_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD INJURY TRACKING ENDPOINTS - Add injury tracking endpoints
@@ -4796,6 +4874,7 @@ async def get_injuries(sport_id: int = Query(None, description="Sport ID to filt
                         limit: int = Query(50, description="Number of injuries to return")):
     """Get injuries with optional filters"""
     try:
+
         # Return mock injury data for now
         mock_injuries = [
             {
@@ -5012,6 +5091,7 @@ async def get_injuries(sport_id: int = Query(None, description="Sport ID to filt
 async def get_active_injuries(sport_id: int = Query(None, description="Sport ID to filter")):
     """Get currently active injuries"""
     try:
+
         # Return mock active injuries data for now
         mock_active = [
             {
@@ -5127,6 +5207,7 @@ async def get_active_injuries(sport_id: int = Query(None, description="Sport ID 
 async def get_out_injuries(sport_id: int = Query(None, description="Sport ID to filter")):
     """Get players who are out"""
     try:
+
         # Return mock out injuries data for now
         mock_out = [
             {
@@ -5253,6 +5334,7 @@ async def get_out_injuries(sport_id: int = Query(None, description="Sport ID to 
 async def get_injury_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get injury statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -5366,6 +5448,7 @@ async def get_injury_statistics(days: int = Query(30, description="Days of data 
 async def get_player_injuries(player_id: int, sport_id: int = Query(None, description="Sport ID to filter")):
     """Get injuries for a specific player"""
     try:
+
         # Return mock player injury data for now
         mock_player_injuries = [
             {
@@ -5428,6 +5511,7 @@ async def get_player_injuries(player_id: int, sport_id: int = Query(None, descri
 async def get_injury_impact_analysis(sport_id: int, days: int = Query(30, description="Days of data to analyze")):
     """Analyze injury impact on team performance"""
     try:
+
         # Return mock impact analysis data for now
         mock_impact = {
             "sport_id": sport_id,
@@ -5474,6 +5558,7 @@ async def get_injury_impact_analysis(sport_id: int, days: int = Query(30, descri
 async def get_injury_trends(sport_id: int, days: int = Query(30, description="Days of data to analyze")):
     """Analyze injury trends over time"""
     try:
+
         # Return mock trend analysis data for now
         mock_trends = {
             "sport_id": sport_id,
@@ -5549,6 +5634,7 @@ async def search_injuries(query: str = Query(..., description="Search query"),
                              limit: int = Query(20, description="Number of results to return")):
     """Search injuries by player ID or status detail"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -5622,6 +5708,7 @@ async def search_injuries(query: str = Query(..., description="Search query"),
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", injury_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += injury_code
     
@@ -5642,6 +5729,7 @@ if __name__ == "__main__":
 
 ## File: add_line_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD LINE TRACKING ENDPOINTS - Add line tracking endpoints
@@ -5673,6 +5761,7 @@ async def get_lines(game_id: int = Query(None, description="Game ID to filter"),
                    limit: int = Query(50, description="Number of lines to return")):
     """Get betting lines with optional filters"""
     try:
+
         # Return mock line data for now
         mock_lines = [
             {
@@ -5833,6 +5922,7 @@ async def get_current_lines(game_id: int = Query(None, description="Game ID to f
                             player_id: int = Query(None, description="Player ID to filter")):
     """Get current betting lines"""
     try:
+
         # Return mock current lines data for now
         mock_current = [
             {
@@ -5984,6 +6074,7 @@ async def get_current_lines(game_id: int = Query(None, description="Game ID to f
 async def get_line_movements(game_id: int, player_id: int, market_id: int = Query(None, description="Market ID to filter")):
     """Get line movements for a specific game/player"""
     try:
+
         # Return mock line movements data for now
         mock_movements = [
             {
@@ -6125,6 +6216,7 @@ async def get_line_movements(game_id: int, player_id: int, market_id: int = Quer
 async def get_sportsbook_comparison(game_id: int, player_id: int, market_id: int = Query(None, description="Market ID to filter")):
     """Compare lines across sportsbooks"""
     try:
+
         # Return mock comparison data for now
         mock_comparison = [
             {
@@ -6210,6 +6302,7 @@ async def get_sportsbook_comparison(game_id: int, player_id: int, market_id: int
 async def get_line_statistics(hours: int = Query(24, description="Hours of data to analyze")):
     """Get line statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_hours": hours,
@@ -6293,6 +6386,7 @@ async def get_line_statistics(hours: int = Query(24, description="Hours of data 
 async def get_line_efficiency(hours: int = Query(24, description="Hours of data to analyze")):
     """Analyze line efficiency and market efficiency"""
     try:
+
         # Return mock efficiency analysis data for now
         mock_efficiency = {
             "period_hours": hours,
@@ -6346,6 +6440,7 @@ async def search_lines(query: str = Query(..., description="Search query"),
                        limit: int = Query(20, description="Number of results to return")):
     """Search lines by player ID or sportsbook"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -6422,6 +6517,7 @@ async def search_lines(query: str = Query(..., description="Search query"),
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", line_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += line_code
     
@@ -6442,6 +6538,7 @@ if __name__ == "__main__":
 
 ## File: add_live_odds_nfl_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD LIVE ODDS NFL ENDPOINTS - Add live odds NFL endpoints
@@ -6473,6 +6570,7 @@ async def get_live_odds_nfl(game_id: int = Query(None, description="Game ID to f
                           limit: int = Query(50, description="Number of odds to return")):
     """Get live NFL odds with optional filters"""
     try:
+
         # Return mock live NFL odds data for now
         mock_odds = [
             {
@@ -6673,6 +6771,7 @@ async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game
                                    bookmaker: str = Query(None, description="Sportsbook to filter")):
     """Get current live NFL odds"""
     try:
+
         # Return mock current live NFL odds data for now
         mock_current = [
             {
@@ -6784,6 +6883,7 @@ async def get_current_live_odds_nfl(game_id: int = Query(None, description="Game
 async def get_live_odds_nfl_movements(game_id: int, minutes: int = Query(30, description="Minutes of data to analyze")):
     """Get live NFL odds movements for a specific game"""
     try:
+
         # Return mock movements data for now
         mock_movements = [
             {
@@ -6869,6 +6969,7 @@ async def get_live_odds_nfl_movements(game_id: int, minutes: int = Query(30, des
 async def get_live_odds_nfl_comparison(game_id: int, minutes: int = Query(30, description="Minutes of data to analyze")):
     """Compare live NFL odds across sportsbooks for a specific game"""
     try:
+
         # Return mock comparison data for now
         mock_comparison = [
             {
@@ -6929,6 +7030,7 @@ async def get_live_odds_nfl_comparison(game_id: int, minutes: int = Query(30, de
 async def get_live_odds_nfl_statistics(hours: int = Query(24, description="Hours of data to analyze")):
     """Get live NFL odds statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_hours": hours,
@@ -7067,6 +7169,7 @@ async def get_live_odds_nfl_statistics(hours: int = Query(24, description="Hours
 async def get_live_odds_nfl_efficiency(hours: int = Query(24, description="Hours of data to analyze")):
     """Analyze live NFL odds market efficiency and arbitrage opportunities"""
     try:
+
         # Return mock efficiency analysis data for now
         mock_efficiency = {
             "period_hours": hours,
@@ -7140,6 +7243,7 @@ async def get_live_odds_nfl_by_week(week: int, season: int = Query(2026, descrip
                                    bookmaker: str = Query(None, description="Sportsbook to filter")):
     """Get live NFL odds for a specific week"""
     try:
+
         # Return mock week data for now
         mock_week_odds = [
             {
@@ -7221,6 +7325,7 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
                               limit: int = Query(20, description="Number of results to return")):
     """Search live NFL odds by team name or sportsbook"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -7310,6 +7415,7 @@ async def search_live_odds_nfl(query: str = Query(..., description="Search query
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", live_odds_nfl_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += live_odds_nfl_code
     
@@ -7330,6 +7436,7 @@ if __name__ == "__main__":
 
 ## File: add_odds_snapshots_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD ODDS SNAPSHOTS ENDPOINTS - Add odds snapshots tracking endpoints
@@ -7361,6 +7468,7 @@ async def get_odds_snapshots(game_id: int = Query(None, description="Game ID to 
                            limit: int = Query(50, description="Number of snapshots to return")):
     """Get odds snapshots with optional filters"""
     try:
+
         # Return mock odds snapshots data for now
         mock_snapshots = [
             {
@@ -7526,6 +7634,7 @@ async def get_odds_movements(game_id: int, market_id: int = Query(None, descript
                            hours: int = Query(24, description="Hours of data to analyze")):
     """Get odds movements for a specific game"""
     try:
+
         # Return mock movements data for now
         mock_movements = [
             {
@@ -7673,9 +7782,11 @@ async def get_odds_movements(game_id: int, market_id: int = Query(None, descript
         # Apply filters
         filtered_movements = mock_movements
         if market_id:
+
             # Filter by market_id logic would go here
             pass
         if player_id:
+
             # Filter by player_id logic would go here
             pass
         
@@ -7706,6 +7817,7 @@ async def get_odds_comparison(game_id: int, market_id: int = Query(None, descrip
                             hours: int = Query(1, description="Hours of data to analyze")):
     """Compare odds across bookmakers for a specific game"""
     try:
+
         # Return mock comparison data for now
         mock_comparison = [
             {
@@ -7775,6 +7887,7 @@ async def get_odds_comparison(game_id: int, market_id: int = Query(None, descrip
 async def get_odds_snapshots_statistics(hours: int = Query(24, description="Hours of data to analyze")):
     """Get odds snapshots statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_hours": hours,
@@ -7901,6 +8014,7 @@ async def get_odds_snapshots_statistics(hours: int = Query(24, description="Hour
 async def get_odds_by_bookmaker(bookmaker: str, hours: int = Query(24, description="Hours of data to analyze")):
     """Get odds snapshots from a specific bookmaker"""
     try:
+
         # Return mock bookmaker data for now
         mock_bookmaker_snapshots = [
             {
@@ -7981,6 +8095,7 @@ async def get_odds_by_player(player_id: int, bookmaker: str = Query(None, descri
                             hours: int = Query(24, description="Hours of data to analyze")):
     """Get odds snapshots for a specific player"""
     try:
+
         # Return mock player data for now
         mock_player_snapshots = [
             {
@@ -8069,6 +8184,7 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
                               limit: int = Query(50, description="Number of results to return")):
     """Search odds snapshots by external IDs or bookmaker"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -8150,6 +8266,7 @@ async def search_odds_snapshots(query: str = Query(..., description="Search quer
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", odds_snapshots_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += odds_snapshots_code
     
@@ -8170,6 +8287,7 @@ if __name__ == "__main__":
 
 ## File: add_picks_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD PICKS ENDPOINTS - Add picks management endpoints
@@ -8203,6 +8321,7 @@ async def get_picks(game_id: int = Query(None, description="Game ID to filter"),
                   limit: int = Query(50, description="Number of picks to return")):
     """Get picks with optional filters"""
     try:
+
         # Return mock picks data for now
         mock_picks = [
             {
@@ -8408,6 +8527,7 @@ async def get_high_ev_picks(min_ev: float = Query(5.0, description="Minimum EV p
                            limit: int = Query(20, description="Number of picks to return")):
     """Get picks with high expected value"""
     try:
+
         # Return mock high EV picks data for now
         mock_high_ev = [
             {
@@ -8520,6 +8640,7 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
                                    limit: int = Query(20, description="Number of picks to return")):
     """Get picks with high confidence"""
     try:
+
         # Return mock high confidence picks data for now
         mock_high_confidence = [
             {
@@ -8630,6 +8751,7 @@ async def get_high_confidence_picks(min_confidence: float = Query(80.0, descript
 async def get_picks_statistics(hours: int = Query(24, description="Hours of data to analyze")):
     """Get picks statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_hours": hours,
@@ -8795,6 +8917,7 @@ async def get_picks_statistics(hours: int = Query(24, description="Hours of data
 async def get_picks_by_player(player_name: str, hours: int = Query(24, description="Hours of data to analyze")):
     """Get picks for a specific player"""
     try:
+
         # Return mock player picks data for now
         mock_player_picks = [
             {
@@ -8868,6 +8991,7 @@ async def get_picks_by_player(player_name: str, hours: int = Query(24, descripti
 async def get_picks_by_game(game_id: int):
     """Get picks for a specific game"""
     try:
+
         # Return mock game picks data for now
         mock_game_picks = [
             {
@@ -8957,6 +9081,7 @@ async def search_picks(query: str = Query(..., description="Search query"),
                       limit: int = Query(20, description="Number of results to return")):
     """Search picks by player name or stat type"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -9027,6 +9152,7 @@ async def search_picks(query: str = Query(..., description="Search query"),
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", picks_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += picks_code
     
@@ -9047,6 +9173,7 @@ if __name__ == "__main__":
 
 ## File: add_player_stats_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD PLAYER STATS ENDPOINTS - Add player statistics tracking endpoints
@@ -9078,6 +9205,7 @@ async def get_player_stats(player: str = Query(None, description="Player name to
                              limit: int = Query(50, description="Number of stats to return")):
     """Get player statistics with optional filters"""
     try:
+
         # Return mock player stats data for now
         mock_stats = [
             {
@@ -9245,6 +9373,7 @@ async def get_player_stats(player: str = Query(None, description="Player name to
 async def get_player_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get overall player statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -9395,6 +9524,7 @@ async def get_player_statistics(days: int = Query(30, description="Days of data 
 async def get_player_stats_by_name(player_name: str, days: int = Query(30, description="Days of data to analyze")):
     """Get player statistics for a specific player"""
     try:
+
         # Return mock player stats data for now
         mock_player_stats = [
             {
@@ -9459,6 +9589,7 @@ async def get_player_stats_by_name(player_name: str, days: int = Query(30, descr
 async def get_player_stats_by_team(team: str, days: int = Query(30, description="Days of data to analyze")):
     """Get player statistics for a specific team"""
     try:
+
         # Return mock team stats data for now
         mock_team_stats = [
             {
@@ -9523,6 +9654,7 @@ async def get_player_stats_by_team(team: str, days: int = Query(30, description=
 async def get_player_stats_by_stat_type(stat_type: str, days: int = Query(30, description="Days of data to analyze")):
     """Get player statistics for a specific stat type"""
     try:
+
         # Return mock stat type stats data for now
         mock_stat_stats = [
             {
@@ -9589,6 +9721,7 @@ async def search_player_stats(query: str = Query(..., description="Search query"
                               limit: int = Query(20, description="Number of results to return")):
     """Search player stats by player name, team, or stat type"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -9654,6 +9787,7 @@ async def search_player_stats(query: str = Query(..., description="Search query"
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", player_stats_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += player_stats_code
     
@@ -9674,6 +9808,7 @@ if __name__ == "__main__":
 
 ## File: add_shared_cards_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD SHARED CARDS ENDPOINTS - Add shared betting cards tracking endpoints
@@ -9706,6 +9841,7 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
                             limit: int = Query(50, description="Number of cards to return")):
     """Get shared betting cards with optional filters"""
     try:
+
         # Return mock shared cards data for now
         mock_cards = [
             {
@@ -9958,6 +10094,7 @@ async def get_shared_cards(platform: str = Query(None, description="Platform to 
 async def get_shared_cards_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get shared cards statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -10131,6 +10268,7 @@ async def get_shared_cards_statistics(days: int = Query(30, description="Days of
 async def get_shared_cards_by_platform(platform: str, limit: int = Query(50, description="Number of cards to return")):
     """Get shared cards for a specific platform"""
     try:
+
         # Return mock platform-specific cards data for now
         mock_platform_cards = [
             {
@@ -10208,6 +10346,7 @@ async def get_shared_cards_by_platform(platform: str, limit: int = Query(50, des
 async def get_shared_cards_by_sport(sport: str, limit: int = Query(50, description="Number of cards to return")):
     """Get shared cards for a specific sport"""
     try:
+
         # Return mock sport-specific cards data for now
         mock_sport_cards = [
             {
@@ -10285,6 +10424,7 @@ async def get_shared_cards_by_sport(sport: str, limit: int = Query(50, descripti
 async def get_shared_cards_by_grade(grade: str, limit: int = Query(50, description="Number of cards to return")):
     """Get shared cards by grade"""
     try:
+
         # Return mock grade-specific cards data for now
         mock_grade_cards = [
             {
@@ -10363,6 +10503,7 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
                               limit: int = Query(20, description="Number of results to return")):
     """Search shared cards by label or legs"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -10452,6 +10593,7 @@ async def search_shared_cards(query: str = Query(..., description="Search query"
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", shared_cards_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += shared_cards_code
     
@@ -10472,6 +10614,7 @@ if __name__ == "__main__":
 
 ## File: add_trades_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD TRADES ENDPOINTS - Add master trade tracking endpoints
@@ -10503,6 +10646,7 @@ async def get_trades(season: int = Query(None, description="Season year to filte
                      limit: int = Query(50, description="Number of trades to return")):
     """Get master trades with optional filters"""
     try:
+
         # Return mock trades data for now
         mock_trades = [
             {
@@ -10664,6 +10808,7 @@ async def get_trades(season: int = Query(None, description="Season year to filte
 async def get_trades_statistics(days: int = Query(365, description="Days of data to analyze")):
     """Get master trades statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -10765,6 +10910,7 @@ async def get_trades_statistics(days: int = Query(365, description="Days of data
 async def get_trades_by_season(season: int):
     """Get trades for a specific season"""
     try:
+
         # Return mock season-specific data for now
         mock_season_trades = [
             {
@@ -10812,6 +10958,7 @@ async def get_trades_by_season(season: int):
 async def get_trades_by_source(source: str):
     """Get trades from a specific source"""
     try:
+
         # Return mock source-specific data for now
         mock_source_trades = [
             {
@@ -10859,6 +11006,7 @@ async def get_trades_by_source(source: str):
 async def get_applied_trades():
     """Get applied trades"""
     try:
+
         # Return mock applied trades data for now
         mock_applied_trades = [
             {
@@ -10904,6 +11052,7 @@ async def get_applied_trades():
 async def get_pending_trades():
     """Get pending trades"""
     try:
+
         # Return mock pending trades data for now
         mock_pending_trades = [
             {
@@ -10950,6 +11099,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
                         limit: int = Query(20, description="Number of results to return")):
     """Search trades by headline or description"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -11009,6 +11159,7 @@ async def search_trades(query: str = Query(..., description="Search query"),
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", trades_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += trades_code
     
@@ -11029,6 +11180,7 @@ if __name__ == "__main__":
 
 ## File: add_trade_details_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD TRADE DETAILS ENDPOINTS - Add trade tracking endpoints
@@ -11061,6 +11213,7 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
                            limit: int = Query(50, description="Number of trade details to return")):
     """Get trade details with optional filters"""
     try:
+
         # Return mock trade details data for now
         mock_trade_details = [
             {
@@ -11249,6 +11402,7 @@ async def get_trade_details(trade_id: str = Query(None, description="Trade ID to
 async def get_trade_details_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get trade details statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -11362,6 +11516,7 @@ async def get_trade_details_statistics(days: int = Query(30, description="Days o
 async def get_trade_details_by_trade_id(trade_id: str):
     """Get trade details for a specific trade"""
     try:
+
         # Return mock trade-specific data for now
         mock_trade_summary = {
             "trade_id": trade_id,
@@ -11410,6 +11565,7 @@ async def get_trade_details_by_trade_id(trade_id: str):
 async def get_trade_details_by_team(team_id: int, role: str = Query("both", description="Team role: from, to, or both")):
     """Get trade details for a specific team"""
     try:
+
         # Return mock team-specific data for now
         mock_team_trades = [
             {
@@ -11465,6 +11621,7 @@ async def get_trade_details_by_team(team_id: int, role: str = Query("both", desc
 async def get_trade_details_by_player(player_id: int):
     """Get trade details for a specific player"""
     try:
+
         # Return mock player-specific data for now
         mock_player_trades = [
             {
@@ -11512,6 +11669,7 @@ async def get_trade_details_by_player(player_id: int):
 async def get_trade_details_by_asset_type(asset_type: str, limit: int = Query(50, description="Number of trade details to return")):
     """Get trade details by asset type"""
     try:
+
         # Return mock asset-type-specific data for now
         mock_asset_trades = [
             {
@@ -11562,6 +11720,7 @@ async def search_trade_details(query: str = Query(..., description="Search query
                               limit: int = Query(20, description="Number of results to return")):
     """Search trade details by player name or trade ID"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -11622,6 +11781,7 @@ async def search_trade_details(query: str = Query(..., description="Search query
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", trade_details_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += trade_details_code
     
@@ -11642,6 +11802,7 @@ if __name__ == "__main__":
 
 ## File: add_user_bets_endpoints.py
 ```py
+
 #!/usr/bin/env python3
 """
 ADD USER BETS ENDPOINTS - Add user betting tracking endpoints
@@ -11673,6 +11834,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
                         limit: int = Query(50, description="Number of bets to return")):
     """Get user bets with optional filters"""
     try:
+
         # Return mock user bets data for now
         mock_user_bets = [
             {
@@ -11882,6 +12044,7 @@ async def get_user_bets(sport: int = Query(None, description="Sport ID to filter
 async def get_user_bets_statistics(days: int = Query(30, description="Days of data to analyze")):
     """Get user bets statistics"""
     try:
+
         # Return mock statistics data for now
         mock_stats = {
             "period_days": days,
@@ -12077,6 +12240,7 @@ async def get_user_bets_statistics(days: int = Query(30, description="Days of da
 async def get_user_bets_by_sport(sport_id: int):
     """Get user bets for a specific sport"""
     try:
+
         # Return mock sport-specific data for now
         mock_sport_bets = [
             {
@@ -12148,6 +12312,7 @@ async def get_user_bets_by_sport(sport_id: int):
 async def get_user_bets_by_status(status: str):
     """Get user bets by status"""
     try:
+
         # Return mock status-specific data for now
         mock_status_bets = [
             {
@@ -12219,6 +12384,7 @@ async def get_user_bets_by_status(status: str):
 async def get_user_bets_by_sportsbook(sportsbook: str):
     """Get user bets from a specific sportsbook"""
     try:
+
         # Return mock sportsbook-specific data for now
         mock_sportsbook_bets = [
             {
@@ -12291,6 +12457,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
                            limit: int = Query(20, description="Number of results to return")):
     """Search user bets by market, side, or notes"""
     try:
+
         # Return mock search results for now
         mock_results = [
             {
@@ -12375,6 +12542,7 @@ async def search_user_bets(query: str = Query(..., description="Search query"),
     if "# Brain Anomaly Detection Endpoints" in content:
         content = content.replace("# Brain Anomaly Detection Endpoints", user_bets_code + "\n# Brain Anomaly Detection Endpoints")
     else:
+
         # Add at the end
         content += user_bets_code
     
@@ -12395,6 +12563,7 @@ if __name__ == "__main__":
 
 ## File: analyze_markets.py
 ```py
+
 #!/usr/bin/env python3
 """
 MARKETS ANALYSIS - Comprehensive analysis of the markets table and betting market types
@@ -12652,6 +12821,7 @@ if __name__ == "__main__":
 
 ## File: analyze_pick_results.py
 ```py
+
 #!/usr/bin/env python3
 """
 PICK RESULTS ANALYSIS - Comprehensive analysis of the pick_results table
@@ -12938,6 +13108,7 @@ if __name__ == "__main__":
 
 ## File: analyze_players.py
 ```py
+
 #!/usr/bin/env python3
 """
 PLAYERS ANALYSIS - Comprehensive analysis of the players table
@@ -13176,6 +13347,7 @@ if __name__ == "__main__":
 
 ## File: analyze_player_game_stats.py
 ```py
+
 #!/usr/bin/env python3
 """
 PLAYER GAME STATS ANALYSIS - Comprehensive analysis of the player_game_stats table
@@ -13470,6 +13642,7 @@ if __name__ == "__main__":
 
 ## File: analyze_player_hit_rates.py
 ```py
+
 #!/usr/bin/env python3
 """
 PLAYER HIT RATES ANALYSIS - Comprehensive analysis of the player_hit_rates table
@@ -13784,6 +13957,7 @@ if __name__ == "__main__":
 
 ## File: analyze_player_market_hit_rates.py
 ```py
+
 #!/usr/bin/env python3
 """
 PLAYER MARKET HIT RATES ANALYSIS - Comprehensive analysis of the player_market_hit_rates table
@@ -14095,6 +14269,7 @@ if __name__ == "__main__":
 
 ## File: analyze_sports.py
 ```py
+
 #!/usr/bin/env python3
 """
 SPORTS ANALYSIS - Comprehensive analysis of the sports table
@@ -14357,6 +14532,7 @@ if __name__ == "__main__":
 
 ## File: analyze_sync_metadata.py
 ```py
+
 #!/usr/bin/env python3
 """
 SYNC METADATA ANALYSIS - Comprehensive analysis of the sync_metadata table
@@ -14679,6 +14855,7 @@ if __name__ == "__main__":
 
 ## File: analyze_teams.py
 ```py
+
 #!/usr/bin/env python3
 """
 TEAMS ANALYSIS - Comprehensive analysis of the teams table
@@ -14981,6 +15158,7 @@ if __name__ == "__main__":
 
 ## File: analyze_users.py
 ```py
+
 #!/usr/bin/env python3
 """
 USERS ANALYSIS - Comprehensive analysis of the users table
