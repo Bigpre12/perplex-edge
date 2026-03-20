@@ -6,7 +6,7 @@ from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker
-from models.unified import UnifiedOdds, PropLive, UnifiedEVSignal
+from models import UnifiedOdds, PropLive, UnifiedEVSignal
 from services.ev_persistence import insert_edges_ev_history
 from routers.ws_ev import notify_ev_update
 

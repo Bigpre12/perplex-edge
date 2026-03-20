@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker, engine
-from models.unified import PropLive, PropHistory, EdgeEVHistory
+from models import PropLive, PropHistory, EdgeEVHistory
 from models.brain import WhaleMove, CLVRecord, InjuryImpactEvent
 from schemas.props import PropRecord
 

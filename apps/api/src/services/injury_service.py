@@ -3,7 +3,7 @@ import os
 import logging
 from typing import List, Dict, Any
 from clients.espn_client import espn_client # type: ignore
-from models.signals import InjuryImpact # type: ignore
+from models import InjuryImpact
 from sqlalchemy import select # type: ignore
 from db.session import async_session_maker # type: ignore
 

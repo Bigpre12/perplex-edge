@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, Column as SAColumn
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, BigInteger, Numeric, UniqueConstraint, Column as SAColumn
 from sqlalchemy.orm import Relationship
 from sqlalchemy.sql import func
 from db.base import Base
@@ -127,7 +127,6 @@ class PropCorrelation(Base):
 # --- LAYER 5: CLV ---
 class CLVRecord(Base):
     __tablename__ = "clv_tracking"
-    __table_args__ = {"extend_existing": True}
     
     id = Column(Integer, primary_key=True, index=True)
     sport = Column(String, index=True)
@@ -201,7 +200,6 @@ class WhaleMove(Base):
     Consolidated Sharp/Whale activity with before/after state.
     """
     __tablename__ = "whale_moves"
-    __table_args__ = {"extend_existing": True}
     
     id = Column(Integer, primary_key=True, index=True)
     sport = Column(String, index=True)
@@ -246,7 +244,6 @@ class InjuryImpactEvent(Base):
 
 class SteamEvent(Base):
     __tablename__ = "steam_events"
-    __table_args__ = {"extend_existing": True}
     
     id = Column(Integer, primary_key=True, index=True)
     sport = Column(String, index=True)
@@ -262,7 +259,6 @@ class SteamEvent(Base):
 
 class HitRateModel(Base):
     __tablename__ = "player_hit_rates"
-    __table_args__ = {"extend_existing": True}
     
     id = Column(Integer, primary_key=True, index=True)
     player_name = Column(String, index=True)
@@ -278,7 +274,6 @@ class HitRateModel(Base):
 class PlayerStats(Base):
     """Historical player stats for H2H and Trend analysis"""
     __tablename__ = "player_stats_v2" # Using v2 to avoid conflicts with old stubs
-    __table_args__ = {"extend_existing": True}
     
     id = Column(Integer, primary_key=True, index=True)
     player_id = Column(String, index=True)
@@ -291,23 +286,223 @@ class PlayerStats(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-if hasattr(SQLModel, "metadata"):
-    class NeuralEdge(SQLModel, table=True):
-        __tablename__ = "edges_v2"
-        id: Optional[int] = Field(default=None, primary_key=True)
-        # Using String for foreign key if table not perfectly synced in metadata
-        prop_id: int = Field(index=True) 
-        ev: float = Field(index=True)  # expected value
-        hit_rate: float = Field(index=True)  # % success
-        model_confidence: float = Field(default=0.0)
-        created_at: dt = Field(sa_column=SAColumn(DateTime(timezone=True), server_default=func.now()))
-else:
-    class NeuralEdge(Base):
-        __tablename__ = "edges_v2"
-        __table_args__ = {"extend_existing": True}
-        id = Column(Integer, primary_key=True, index=True)
-        prop_id = Column(Integer, index=True)
-        ev = Column(Float, index=True)
-        hit_rate = Column(Float, index=True)
-        model_confidence = Column(Float, default=0.0)
-        created_at = Column(DateTime(timezone=True), server_default=func.now())
+class NeuralEdge(Base):
+    __tablename__ = "edges_v2"
+    id = Column(Integer, primary_key=True, index=True)
+    prop_id = Column(Integer, index=True)
+    ev = Column(Float, index=True)
+    hit_rate = Column(Float, index=True)
+    model_confidence = Column(Float, default=0.0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- MIGRATED FROM REFEREES.PY ---
+class RefereeGame(Base):
+    __tablename__ = "refereegames"
+    id = Column(Integer, primary_key=True, index=True)
+    ref_name = Column(String, index=True)
+    game_id = Column(String, index=True)
+    total_fouls = Column(Integer, default=0)
+    pace = Column(Float, default=0.0)
+    total_points = Column(Integer, default=0)
+    fta = Column(Integer, default=0) # Free Throw Attempts
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- MIGRATED FROM SCHEDULE.PY ---
+class Schedule(Base):
+    __tablename__ = "schedules"
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(String, unique=True, index=True)
+    sport = Column(String)
+    home_team = Column(String)
+    away_team = Column(String)
+    commence_time = Column(DateTime(timezone=True))
+    referee_crew = Column(String, nullable=True) # Sprint 17: Comma-separated crew names
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- MIGRATED FROM SIGNALS.PY ---
+class Signal(Base):
+    """Sharp, Steam, Whale, and RLM signals."""
+    __tablename__ = "signals"
+    id = Column(BigInteger, primary_key=True)
+    sport = Column(String, nullable=False, index=True)
+    event_id = Column(String, nullable=False, index=True)
+    signal_type = Column(String, nullable=False, index=True)  # 'steam', 'sharp', 'whale', 'rlm', 'clv'
+    market_key = Column(String, nullable=False)
+    outcome_key = Column(String, nullable=False)
+    player_name = Column(String, nullable=True, index=True)
+    book_origin = Column(String, nullable=True)
+    line_open = Column(Numeric, nullable=True)
+    line_current = Column(Numeric, nullable=True)
+    line_delta = Column(Numeric, nullable=True)
+    sharp_pct = Column(Numeric, nullable=True)
+    public_pct = Column(Numeric, nullable=True)
+    confidence = Column(Numeric, nullable=True)
+    detail = Column(JSON, nullable=True)
+    detected_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+
+class InjuryImpact(Base):
+    """Quantified impact of player injuries."""
+    __tablename__ = "injury_impacts"
+    id = Column(BigInteger, primary_key=True)
+    sport = Column(String, index=True)
+    player_name = Column(String, index=True)
+    team = Column(String)
+    status = Column(String) # 'Out', 'Questionable'
+    impact_description = Column(String)
+    affected_markets = Column(JSON) # e.g. [{"market": "points", "adjustment": -2.5}]
+    teammate_boosts = Column(JSON) # e.g. [{"player": "Teammate A", "boost": 0.15}]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class LinePrediction(Base):
+    """Predicted line movements."""
+    __tablename__ = "line_predictions"
+    id = Column(BigInteger, primary_key=True)
+    sport = Column(String, index=True)
+    event_id = Column(String, index=True)
+    market_key = Column(String)
+    current_line = Column(Numeric)
+    predicted_line = Column(Numeric)
+    confidence = Column(Numeric)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# --- MIGRATED FROM UNIFIED.PY ---
+class UnifiedOdds(Base):
+    """Unified Odds Table: Single source of truth for all markets across all sports."""
+    __tablename__ = "odds"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    league = Column(String, nullable=False)
+    event_id = Column(String, nullable=False, index=True)
+    home_team = Column(String, nullable=True)
+    away_team = Column(String, nullable=True)
+    game_time = Column(DateTime(timezone=True), nullable=True)
+    market_key = Column(String, nullable=False, index=True)
+    outcome_key = Column(String, nullable=False)
+    player_name = Column(String, nullable=True, index=True)
+    bookmaker = Column(String, nullable=False, index=True)
+    price = Column(Numeric, nullable=False)
+    line = Column(Numeric, nullable=True)
+    implied_prob = Column(Numeric, nullable=False)
+    source_ts = Column(DateTime(timezone=True), nullable=False)
+    ingested_ts = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'player_name', name='uix_odds_unique'),)
+
+class UnifiedEVSignal(Base):
+    """Unified EV Signals: Computed betting edges from the EV engine."""
+    __tablename__ = "ev_signals"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    event_id = Column(String, nullable=False, index=True)
+    market_key = Column(String, nullable=False, index=True)
+    outcome_key = Column(String, nullable=False)
+    player_name = Column(String, nullable=True)
+    bookmaker = Column(String, nullable=False, index=True)
+    price = Column(Numeric, nullable=False)
+    line = Column(Numeric, nullable=True)
+    true_prob = Column(Numeric, nullable=False)
+    edge_percent = Column(Numeric, nullable=False)
+    implied_prob = Column(Numeric, nullable=False)
+    engine_version = Column(String, nullable=False, server_default='v1')
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
+    __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', name='uix_ev_unique'),)
+
+class LineTick(Base):
+    """Line Ticks: Historical record of price/line changes for movement analysis."""
+    __tablename__ = "line_ticks"
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    event_id = Column(String, nullable=False, index=True)
+    market_key = Column(String, nullable=False, index=True)
+    outcome_key = Column(String, nullable=False)
+    player_name = Column(String, nullable=True, index=True)
+    bookmaker = Column(String, nullable=False, index=True)
+    price = Column(Numeric, nullable=False)
+    line = Column(Numeric, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+class UnifiedEVSignalHistory(Base):
+    """Historical record of EV signals for trend analysis."""
+    __tablename__ = "ev_signals_history"
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    event_id = Column(String, nullable=False, index=True)
+    market_key = Column(String, nullable=False, index=True)
+    outcome_key = Column(String, nullable=False)
+    player_name = Column(String, nullable=True)
+    bookmaker = Column(String, nullable=False, index=True)
+    price = Column(Numeric, nullable=False)
+    line = Column(Numeric, nullable=True)
+    edge_percent = Column(Numeric, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+class PropLive(Base):
+    """Market-based live props (Over/Under consolidated)."""
+    __tablename__ = "props_live"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    league = Column(String, nullable=True)
+    game_id = Column(String, nullable=False, index=True)
+    game_start_time = Column(DateTime(timezone=True), nullable=True)
+    player_id = Column(String, nullable=True, index=True)
+    player_name = Column(String, nullable=True, index=True)
+    team = Column(String, nullable=True)
+    market_key = Column(String, nullable=False, index=True)
+    market_label = Column(String, nullable=True)
+    line = Column(Numeric, nullable=False)
+    book = Column(String, nullable=False, index=True)
+    odds_over = Column(Numeric, nullable=True)
+    odds_under = Column(Numeric, nullable=True)
+    implied_over = Column(Numeric, nullable=True)
+    implied_under = Column(Numeric, nullable=True)
+    last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    __table_args__ = (UniqueConstraint('sport', 'game_id', 'player_name', 'market_key', 'book', name='uix_props_live_unique'),)
+
+class PropHistory(Base):
+    """Historical record of prop snapshots (Over/Under consolidated)."""
+    __tablename__ = "props_history"
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    snapshot_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    sport = Column(String, nullable=False, index=True)
+    league = Column(String, nullable=True)
+    game_id = Column(String, nullable=False, index=True)
+    game_start_time = Column(DateTime(timezone=True), nullable=True)
+    player_id = Column(String, nullable=True, index=True)
+    player_name = Column(String, nullable=True, index=True)
+    team = Column(String, nullable=True)
+    market_key = Column(String, nullable=False, index=True)
+    market_label = Column(String, nullable=True)
+    line = Column(Numeric, nullable=False)
+    book = Column(String, nullable=False, index=True)
+    odds_over = Column(Numeric, nullable=True)
+    odds_under = Column(Numeric, nullable=True)
+    implied_over = Column(Numeric, nullable=True)
+    implied_under = Column(Numeric, nullable=True)
+    source = Column(String, nullable=True)
+    run_id = Column(String, nullable=True)
+    is_close = Column(Boolean, default=False)
+
+class EdgeEVHistory(Base):
+    """Historical record of EV edges found by the brain."""
+    __tablename__ = "edges_ev_history"
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    league = Column(String, nullable=True)
+    game_id = Column(String, nullable=False, index=True)
+    game_start_time = Column(DateTime(timezone=True), nullable=True)
+    player_id = Column(String, nullable=True, index=True)
+    player_name = Column(String, nullable=True, index=True)
+    team = Column(String, nullable=True)
+    market_key = Column(String, nullable=False, index=True)
+    market_label = Column(String, nullable=True)
+    line = Column(Numeric, nullable=False)
+    book = Column(String, nullable=False, index=True)
+    side = Column(String, nullable=False) # 'over', 'under', 'home', etc.
+    odds = Column(Numeric, nullable=False)
+    model_prob = Column(Numeric, nullable=True)
+    implied_prob = Column(Numeric, nullable=False)
+    edge_pct = Column(Numeric, nullable=False)
+    snapshot_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    source = Column(String, nullable=True)
+    run_id = Column(String, nullable=True)

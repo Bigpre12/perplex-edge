@@ -11,7 +11,7 @@ async def metrics(db: AsyncSession = Depends(get_async_db)):
     """Returns core system metrics and health diagnostics."""
     try:
         from sqlalchemy import select, func, text
-        from models.unified import UnifiedOdds, UnifiedEVSignal
+        from models import UnifiedOdds, UnifiedEVSignal
         from datetime import datetime, timezone
         
         # 1. Basic Health Check

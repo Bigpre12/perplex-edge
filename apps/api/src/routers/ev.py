@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Query
 from sqlalchemy import select, desc
 from db.session import async_session_maker
-from models.unified import UnifiedEVSignal
+from models import UnifiedEVSignal
 
 router = APIRouter(tags=["Brain Intelligence"])
 logger = logging.getLogger(__name__)

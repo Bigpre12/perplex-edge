@@ -80,7 +80,7 @@ class BrainCLVTracker:
         """
         Called by background loop to snapshot closing lines for current props.
         """
-        from models.unified import UnifiedOdds
+        from models import UnifiedOdds
         async with async_session_maker() as session:
             try:
                 for p in props:

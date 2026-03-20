@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any
 from sqlalchemy import select, insert
 from db.session import async_session_maker
-from models.signals import InjuryImpact
+from models import InjuryImpact
 from models.brain import InjuryImpactEvent
 from services.persistence_helpers import insert_injury_events
 from services.injury_service import injury_service

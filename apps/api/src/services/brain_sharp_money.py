@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
 from sqlalchemy import select, insert
 from db.session import async_session_maker
-from models.unified import UnifiedOdds
+from models import UnifiedOdds
 from models.brain import SharpSignal, WhaleMove
 from services.persistence_helpers import insert_whale_moves
 from services.cache import cache

@@ -3,7 +3,7 @@ import logging
 from typing import Optional, List, Dict
 from sqlalchemy import select
 from db.session import async_session_maker
-from models.unified import UnifiedOdds
+from models import UnifiedOdds
 from services.cache import cache
 from core.sports_config import SPORT_DISPLAY
 
@@ -15,7 +15,7 @@ class PropsService:
         Query UnifiedOdds joined with UnifiedEVSignal for player props.
         Groups by (player_name, market_key) to find best lines and attaches EV recommendations.
         """
-        from models.unified import UnifiedEVSignal
+        from models import UnifiedEVSignal
         from sqlalchemy import outerjoin
 
         async with async_session_maker() as session:

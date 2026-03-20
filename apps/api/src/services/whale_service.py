@@ -52,7 +52,7 @@ class WhaleService:
                     })
 
                 # 2. Market Steam Detection (from LineTicks)
-                from models.unified import LineTick
+                from models import LineTick
                 fifteen_mins_ago = datetime.now(timezone.utc) - timedelta(minutes=15)
                 stmt_ticks = select(LineTick).where(
                     LineTick.sport_key == sport,

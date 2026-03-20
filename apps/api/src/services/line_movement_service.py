@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any
 from sqlalchemy import select, func, and_
 from db.session import async_session_maker
-from models.unified import LineTick
+from models import LineTick
 
 logger = logging.getLogger(__name__)
 

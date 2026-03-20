@@ -2,7 +2,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.session import get_db, get_async_db
 from models.prop import Prop
-from models.unified import LineTick, PropLive, PropHistory
+from models import LineTick, PropLive, PropHistory
 from schemas.unified import PropLiveSchema, PropHistorySchema
 from schemas.prop import PropOut, PropsScoredResponse
 from datetime import datetime, timedelta, timezone
