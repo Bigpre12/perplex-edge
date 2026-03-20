@@ -123,7 +123,17 @@ async def startup():
     scheduler = AsyncIOScheduler()
     
     # Schedule Ingest Jobs (Every 5 minutes)
-    sports_to_ingest = ["basketball_nba", "americanfootball_nfl", "americanfootball_ncaaf"]
+    sports_to_ingest = [
+        "basketball_nba",
+        "americanfootball_nfl",
+        "americanfootball_ncaaf",
+        "baseball_mlb",
+        "icehockey_nhl",
+        "mma_mixed_martial_arts",
+        "soccer_usa_mls",
+        "soccer_epl",
+        "soccer_uefa_champs_league",
+    ]
     
     for sport in sports_to_ingest:
         scheduler.add_job(
