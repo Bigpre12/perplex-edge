@@ -31,24 +31,21 @@ from routers.oracle import router as oracle_router
 from routers.live import router as live_router
 from routers.slate import router as slate_router
 from routers.ws_ev import router as ws_ev_router
-from routers.arbitrage import router as arbitrage_router
-from routers.kalshi import router as kalshi_router
-from routers.kalshi_ws_proxy import router as kalshi_ws_router
+# --- OPTIONAL ROUTER IMPORTS (SAFE LOADING) ---
+try:
+    from routers.arbitrage import router as arbitrage_router
+except ImportError:
+    arbitrage_router = None
 
 try:
-        from routers.arbitrage import router as arbitrage_router
+    from routers.kalshi import router as kalshi_router
 except ImportError:
-        arbitrage_router = None
+    kalshi_router = None
 
 try:
-        from routers.kalshi import router as kalshi_router
+    from routers.kalshi_ws_proxy import router as kalshi_ws_router
 except ImportError:
-        kalshi_router = None
-
-try:
-        from routers.kalshi_ws_proxy import router as kalshi_ws_router
-except ImportError:
-        kalshi_ws_router = None
+    kalshi_ws_router = None
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
@@ -71,12 +68,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/health")
-@app.get("/api/health/")
-async def health_check_direct():
-    """Direct health check endpoint to avoid redirects."""
-    return {"status": "ok", "service": "perplex-edge-api"}
-
+# Include external health router for more detailed checks
 app.include_router(health_router, prefix="/api/health", tags=["health"])
 app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])

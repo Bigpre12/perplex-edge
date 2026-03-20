@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 router = APIRouter()
 
 @router.get("/")
+@router.get("")
 async def health_check():
     from db.session import AsyncSessionLocal
     from sqlalchemy import text
