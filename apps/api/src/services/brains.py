@@ -8,6 +8,9 @@ from services.brain_advanced_service import (
     brain_advanced_service,
 )
 
+
+logger = logging.getLogger(__name__)
+
 # Re-export singletons for application-wide use
 # (Instances are already initialized in their respective files)
 
