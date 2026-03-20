@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { History, TrendingUp, ShieldCheck, Target, Zap, Info } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";

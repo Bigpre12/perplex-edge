@@ -1,3 +1,5 @@
+"use client";
+
 import { Activity, Shield, Zap, Info, TrendingUp, TrendingDown, Clock, Search } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
 import { api } from "@/lib/api";
