@@ -30,29 +30,17 @@ export default function NeuralEngineBrain() {
     setMounted(true);
     const load = async () => {
       try {
-        // Injury impacts & Stats
-        const stats = await API.brainMetrics();
-        if (!isApiError(stats)) {
-          setData(prev => ({ 
-            ...prev, 
-            props_scored: (stats as any)?.props_scored_today ?? 0,
-            injury_impacts: (stats as any)?.injury_impacts ?? (stats as any)?.injury_count ?? 0,
-            active_edges: (stats as any)?.elite_signals ?? (stats as any)?.total_picks ?? 0
-          }));
-        }
-        // Brain decisions & Health
-        const brain = await API.brain.decisions(selectedSport);
-        if (!isApiError(brain)) {
-          setData(prev => ({ ...prev, decisions: (brain as any)?.items ?? (brain as any)?.decisions ?? [] }));
-        }
-        
-        const health = await API.getHealth();
-        if (!isApiError(health)) {
-          setData(prev => ({ 
-            ...prev, 
-            brain_health: (health as any)?.overall_status ?? (health as any)?.status ?? 'Active',
-            clv_enabled: (health as any)?.clv_tracking ?? true
-          }));
+        const brainStatus = await API.brain.status();
+        if (!isApiError(brainStatus)) {
+          const stats = (brainStatus as any).metrics || {};
+          setData({
+            props_scored: stats.props_scored_today ?? 0,
+            injury_impacts: stats.injury_impacts ?? 0,
+            decisions: stats.decisions ?? [],
+            active_edges: stats.active_edges ?? stats.elite_signals ?? 0,
+            clv_enabled: stats.clv_enabled ?? true,
+            brain_health: (brainStatus as any).inference_engine ?? 'IDLE'
+          });
         }
       } catch (err) {
         console.error("Brain data load error:", err);

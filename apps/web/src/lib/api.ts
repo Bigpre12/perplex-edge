@@ -170,7 +170,8 @@ export const api = {
     
     // Brain
     brain: {
-        status: () => request("/api/brain/brain-status"),
+        status: () => request("/api/brain/status"),
+        brainStatus: () => request("/api/brain/status"),
         metrics: () => request("/api/brain/metrics"),
         decisions: (sport = "basketball_nba") => 
             request("/api/brain/decisions", undefined, { sport }),

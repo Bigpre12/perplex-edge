@@ -73,7 +73,29 @@ async def startup():
         from db.base import Base
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        logging.info("Startup complete: Database initialized.")
+            
+            # Migration check for ev_signals.sport
+            from sqlalchemy import text
+            async def check_ev_sport(connection):
+                # Using text() for raw SQL check
+                res = await connection.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='ev_signals' AND column_name='sport'"))
+                if not res.fetchone():
+                    logging.warning("⚠️ Column 'sport' missing in 'ev_signals'. Attempting migration...")
+                    await connection.execute(text("ALTER TABLE ev_signals ADD COLUMN sport VARCHAR"))
+                    logging.info("✅ Migration successful: Added 'sport' to 'ev_signals'.")
+            
+            # Since we are in run_sync context for create_all, we need a separate way or just run it after
+            # Actually engine.begin() provides a connection.
+        
+        # Run migration after create_all
+        async with engine.begin() as conn:
+            # information_schema check is for postgres. For sqlite (dev) we might skip or use pragma.
+            is_sqlite = "sqlite" in str(engine.url)
+            if not is_sqlite:
+                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR"))
+                logging.info("Startup complete: EV Signal schema verified.")
+            else:
+                logging.info("Startup complete: Database initialized (SQLite).")
     except Exception as e:
         # Tables might already exist, or connection failed
         logging.error(f"Startup error during DB initialization: {e}")
@@ -94,8 +116,18 @@ async def startup():
             replace_existing=True
         )
     
+    # Schedule Grading Job (Every 10 minutes)
+    from services.grading_service import grading_service
+    scheduler.add_job(
+        grading_service.run_grading_cycle,
+        'interval',
+        minutes=10,
+        id="auto_grading",
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logging.info("Scheduler started: Ingest jobs queued.")
+    logging.info("Scheduler started: Ingest and Grading jobs queued.")
 
     # Trigger initial ingest after a short delay
     async def initial_ingest():

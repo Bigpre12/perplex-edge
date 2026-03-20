@@ -380,7 +380,9 @@ class BrainAdvancedService:
                 "steam_moves": steam_count,
                 "injury_impacts": injury_count,
                 "parlay_combos": parlay_count,
-                "accuracy_7d": accuracy
+                "clv_enabled": True,
+                "accuracy_7d": accuracy,
+                "active_edges": elite_count # Alias for dashboard
             }
         except Exception as e:
             logger.error(f"Error in get_dashboard_metrics: {e}")

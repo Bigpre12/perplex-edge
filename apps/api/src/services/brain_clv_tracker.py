@@ -21,15 +21,18 @@ class BrainCLVTracker:
         If we haven't seen this selection before, record it as the 'Opening' line.
         """
         for odds in odds_list:
-            # Handle both objects and dicts
-            is_dict = isinstance(odds, dict)
-            sport = odds["sport"] if is_dict else odds.sport
-            event_id = odds["event_id"] if is_dict else odds.event_id
-            market_key = odds["market_key"] if is_dict else odds.market_key
-            outcome_key = odds["outcome_key"] if is_dict else odds.outcome_key
-            bookmaker = odds["bookmaker"] if is_dict else odds.bookmaker
-            line = odds["line"] if is_dict else odds.line
-            price = odds["price"] if is_dict else odds.price
+            # Handle both objects and dicts robustly
+            def get_val(obj, key):
+                if isinstance(obj, dict): return obj.get(key)
+                return getattr(obj, key, None)
+
+            sport = get_val(odds, "sport")
+            event_id = get_val(odds, "event_id")
+            market_key = get_val(odds, "market_key")
+            outcome_key = get_val(odds, "outcome_key")
+            bookmaker = get_val(odds, "bookmaker")
+            line = get_val(odds, "line")
+            price = get_val(odds, "price")
             
             open_key = f"clv:open:{sport}:{event_id}:{market_key}:{outcome_key}:{bookmaker}"
             exists = await cache.get(open_key)

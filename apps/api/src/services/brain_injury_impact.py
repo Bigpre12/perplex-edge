@@ -22,14 +22,28 @@ class InjuryImpactBrain:
         # 1. Fetch live injury data
         # 'basketball_nba' -> 'nba'
         sport_short = sport.split("_")[-1] if "_" in sport else sport
-        injuries = await injury_service.fetch_injuries(sport_short)
+        team_groups = await injury_service.get_injuries(sport)
         
+        # Flatten team groups into a single injury list
+        injuries = []
+        for tg in team_groups:
+            team_name = tg.get("displayName", "Unknown")
+            for inj_raw in tg.get("injuries", []):
+                athlete = inj_raw.get("athlete", {})
+                injuries.append({
+                    "player": athlete.get("displayName", "Unknown"),
+                    "team": team_name,
+                    "status": inj_raw.get("status", "Unknown"),
+                    "impact": inj_raw.get("impact", "low"),
+                    "description": inj_raw.get("shortComment", "No description")
+                })
+
         async with async_session_maker() as session:
             try:
                 impacts_to_save = []
                 
                 for inj in injuries:
-                    if inj['impact'] not in ['high', 'medium']:
+                    if inj['impact'].lower() not in ['high', 'medium', 'critical']:
                         continue
                     
                     # 2. Quantification Logic (Heuristics for now)
