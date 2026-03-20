@@ -9,9 +9,8 @@ from api_utils.auth_supabase import get_current_user_supabase
 router = APIRouter(tags=["oracle"])
 
 class ChatRequest(BaseModel):
-    message: str
+    messages: List[Dict]
     sport: str = "basketball_nba"
-    history: List[Dict] = []
 
 class PropAnalysisRequest(BaseModel):
     prop_id: str
@@ -27,7 +26,7 @@ async def oracle_chat(
     """
     async def event_generator():
         async for chunk in oracle_service.chat(
-            body.message, body.sport, body.history, user.get("id")
+            body.messages, body.sport, user.get("id")
         ):
             # Format as SSE
             yield f"data: {json.dumps({'content': chunk})}\n\n"

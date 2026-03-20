@@ -13,15 +13,14 @@ logger = logging.getLogger(__name__)
 class BrainCLVTracker:
     """
     Layer 5: CLV Brain
-    Tracks Opening vs Closing lines to prove edge.
+    Tracks Opening vs Closing lines to prove institutional-grade edge.
     """
 
     async def record_opening_line(self, odds_list: List[Any]):
         """
-        If we haven't seen this selection before, record it as the 'Opening' line.
+        Records the first seen odds for a selection as the 'Opening' line.
         """
         for odds in odds_list:
-            # Handle both objects and dicts robustly
             def get_val(obj, key):
                 if isinstance(obj, dict): return obj.get(key)
                 return getattr(obj, key, None)
@@ -29,12 +28,16 @@ class BrainCLVTracker:
             sport = get_val(odds, "sport")
             event_id = get_val(odds, "event_id")
             market_key = get_val(odds, "market_key")
-            outcome_key = get_val(odds, "outcome_key")
+            outcome_key = get_val(odds, "outcome_key") # over/under
             bookmaker = get_val(odds, "bookmaker")
             line = get_val(odds, "line")
             price = get_val(odds, "price")
+            player_name = get_val(odds, "player_name")
             
-            open_key = f"clv:open:{sport}:{event_id}:{market_key}:{outcome_key}:{bookmaker}"
+            # Key includes player name if it exists (for props)
+            player_slug = player_name.replace(" ", "_").lower() if player_name else "team"
+            open_key = f"clv:open:{sport}:{event_id}:{market_key}:{outcome_key}:{player_slug}:{bookmaker}"
+            
             exists = await cache.get(open_key)
             if not exists:
                 opening_data = {
@@ -42,63 +45,114 @@ class BrainCLVTracker:
                     "price": float(price),
                     "ts": datetime.now(timezone.utc).timestamp()
                 }
-                await cache.set(open_key, json.dumps(opening_data), 86400 * 3) # Keep for 3 days
-                logger.debug(f"CLV: Recorded opener for {event_id} {outcome_key}")
+                await cache.set(open_key, json.dumps(opening_data), 86400 * 3)
+                logger.debug(f"CLV: Recorded opener for {event_id} {player_slug} {outcome_key}")
 
-    async def record_closing_line(self, sport: str, event_id: str):
+    def _calculate_clv(self, open_line, open_price, close_line, close_price, side):
         """
-        Record the current lines as 'Closing' lines. 
-        Usually called right before game start.
+        Institutional CLV Logic:
+        1. If line moved in our favor (e.g. Over 10 -> Over 9.5), thats a beat.
+        2. If line is the same, but price improved (e.g. -110 -> +100), thats a beat.
         """
+        side = side.lower()
+        beat = False
+        
+        # Line Movement check
+        if side == "over" or side == "home" or side == "away":
+            # For 'Over', a lower closing line is better for the gambler 
+            # (Wait, usually CLV is Closing vs Opening. If closing is 10.5 and opening was 9.5, 
+            # and we bet Over 9.5, we beat the closing line by 1.0)
+            if open_line < close_line: beat = True
+            elif open_line == close_line and close_price < open_price: beat = True
+        elif side == "under":
+            # For 'Under', a higher closing line is better
+            if open_line > close_line: beat = True
+            elif open_line == close_line and close_price < open_price: beat = True
+            
+        # CLV % calculation (simplistic delta)
+        diff = abs(close_line - open_line)
+        perc = (diff / open_line * 100) if open_line != 0 else 0.0
+        
+        return beat, perc
+
+    async def track_closing_lines(self, props: List[Any], mode: str = "multi"):
+        """
+        Called by background loop to snapshot closing lines for current props.
+        """
+        from models.unified import UnifiedOdds
         async with async_session_maker() as session:
             try:
-                # 1. Get current (closing) odds from DB
-                stmt = select(UnifiedOdds).where(
-                    UnifiedOdds.sport == sport,
-                    UnifiedOdds.event_id == event_id
-                )
-                result = await session.execute(stmt)
-                closing_odds_list = result.scalars().all()
-                
-                records = []
-                for close_odds in closing_odds_list:
-                    open_key = f"clv:open:{close_odds.sport}:{close_odds.event_id}:{close_odds.market_key}:{close_odds.outcome_key}:{close_odds.bookmaker}"
-                    open_raw = await cache.get(open_key)
+                for p in props:
+                    # Find Pinnacle (sharp) closing odds for this prop
+                    stmt = select(UnifiedOdds).where(
+                        and_(
+                            UnifiedOdds.event_id == p.game_id,
+                            UnifiedOdds.market_key == p.stat_type,
+                            UnifiedOdds.player_name == p.player_name
+                        )
+                    )
+                    res = await session.execute(stmt)
+                    odds = res.scalars().all()
                     
-                    if open_raw:
-                        open_data = json.loads(open_raw)
+                    if not odds: continue
+                    
+                    # We look for the 'opening' record from our cache
+                    # Note: props usually only have one side per entry or handled by DB 
+                    # For now, we compare the current DB state (odds) against the opener
+                    for o in odds:
+                        player_slug = o.player_name.replace(" ", "_").lower() if o.player_name else "team"
+                        open_key = f"clv:open:{o.sport}:{o.event_id}:{o.market_key}:{o.outcome_key}:{player_slug}:{o.bookmaker}"
+                        open_raw = await cache.get(open_key)
                         
-                        close_line = float(close_odds.line) if close_odds.line else 0.0
-                        open_line = open_data["line"]
-                        
-                        # Calculate CLV percentage
-                        clv_percentage = 0.0
-                        if open_line != 0:
-                            clv_percentage = ((close_line - open_line) / open_line) * 100
-                        
-                        # Simplistic beat check for now (over/under logic differs)
-                        clv_beat = close_line > open_line
-                        
-                        records.append({
-                            "sport": sport,
-                            "event_id": event_id,
-                            "market_key": close_odds.market_key,
-                            "selection": close_odds.outcome_key,
-                            "opening_line": open_line,
-                            "opening_price": open_data["price"],
-                            "closing_line": close_line,
-                            "closing_price": float(close_odds.price),
-                            "clv_beat": clv_beat,
-                            "clv_percentage": clv_percentage
-                        })
-
-                if records:
-                    await session.execute(insert(CLVRecord).values(records))
-                    await session.commit()
-                    logger.info(f"CLV: Persisted {len(records)} records for event {event_id}")
-
+                        if open_raw:
+                            open_data = json.loads(open_raw)
+                            beat, perc = self._calculate_clv(
+                                open_data["line"], open_data["price"],
+                                float(o.line) if o.line else 0.0, float(o.price),
+                                o.outcome_key
+                            )
+                            
+                            # Update the PropLine entry
+                            p.closing_line = float(o.line) if o.line else 0.0
+                            p.clv_val = perc
+                            p.beat_closing_line = beat
+                
+                await session.commit()
+                logger.info(f"CLV: Batch tracking completed for {len(props)} items")
             except Exception as e:
                 await session.rollback()
-                logger.error(f"CLV: Tracking failed for {event_id}: {e}")
+                logger.error(f"CLV: Batch tracking failed: {e}")
+
+    async def record_closing_line(self, sport: str, event_id: str):
+        # Legacy method for main markets, updated to use new logic
+        async with async_session_maker() as session:
+            stmt = select(UnifiedOdds).where(UnifiedOdds.event_id == event_id)
+            res = await session.execute(stmt)
+            odds = res.scalars().all()
+            
+            records = []
+            for o in odds:
+                player_slug = o.player_name.replace(" ", "_").lower() if o.player_name else "team"
+                open_key = f"clv:open:{o.sport}:{o.event_id}:{o.market_key}:{o.outcome_key}:{player_slug}:{o.bookmaker}"
+                open_raw = await cache.get(open_key)
+                if open_raw:
+                    open_data = json.loads(open_raw)
+                    beat, perc = self._calculate_clv(
+                        open_data["line"], open_data["price"],
+                        float(o.line) if o.line else 0.0, float(o.price),
+                        o.outcome_key
+                    )
+                    records.append(CLVRecord(
+                        sport=o.sport, event_id=o.event_id, market_key=o.market_key,
+                        selection=o.player_name or o.outcome_key,
+                        opening_line=open_data["line"], opening_price=open_data["price"],
+                        closing_line=float(o.line) if o.line else 0.0, closing_price=float(o.price),
+                        clv_beat=beat, clv_percentage=perc
+                    ))
+            if records:
+                session.add_all(records)
+                await session.commit()
+
+brain_clv_tracker = BrainCLVTracker()
 
 brain_clv_tracker = BrainCLVTracker()

@@ -49,38 +49,40 @@ async def get_arbitrage(
     props = await get_all_props(sport_filter=sport)
 
     arb_opps = []
+    SHARP_BOOKS = ["Pinnacle", "Bookmaker.eu", "Circa Sports", "BetCris", "Lowvig.ag"]
     
     for prop in props:
-        # Each prop from props_service has 'all_books' with 'over' and 'under' lists
-        all_books = prop.get("all_books", {})
-        overs = all_books.get("over", [])
-        unders = all_books.get("under", [])
+        # Each prop from props_service has 'over' and 'under' lists directly
+        overs = prop.get("over", [])
+        unders = prop.get("under", [])
         
         if not overs or not unders:
             continue
             
-        # Find best over and best under
+        # Find best over and best under by odds
         best_over = max(overs, key=lambda x: x["odds"])
         best_under = max(unders, key=lambda x: x["odds"])
         
         # Skip if same book (not true arb)
         if best_over["book"] == best_under["book"]:
-            # If there are multiple books, try to find the next best that isn't the same
-            # but for simplicity in this fallback, we'll just check if they differ.
             continue
             
         arb = find_arb(best_over["odds"], best_under["odds"])
         
         if arb:
+            # Identify if it's a Sharp vs Square opportunity
+            is_sharp_v_square = (best_over["book"] in SHARP_BOOKS) != (best_under["book"] in SHARP_BOOKS)
+            
             arb_opps.append({
                 "player_name": prop["player_name"],
-                "sport": prop["sport"],
+                "sport": prop.get("sport_key", "all"),
                 "stat_type": prop["stat_type"],
                 "line": prop.get("line") or best_over["line"],
                 "over_book": best_over["book"],
                 "over_odds": best_over["odds"],
                 "under_book": best_under["book"],
                 "under_odds": best_under["odds"],
+                "is_sharp_v_square": is_sharp_v_square,
                 **arb,
             })
 

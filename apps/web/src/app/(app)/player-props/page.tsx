@@ -11,6 +11,8 @@ import PropsEmptyState from "@/components/PropsEmptyState";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
 import { api, unwrap } from "@/lib/api";
+import { useSearchParams } from "next/navigation";
+import SportSelector from "@/components/shared/SportSelector";
 import { useFreshness } from "@/hooks/useFreshness";
 import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
 
@@ -26,13 +28,17 @@ function PlayerPropsContent() {
     const sport = useLucrixStore((state: any) => state.activeSport);
     const tier = useLucrixStore((state: any) => state.userTier);
     const freshness = useFreshness(sport);
+    const searchParams = useSearchParams();
+    
+    // Filters from URL (controlled by SportFilterBar)
+    const market = searchParams.get("market");
+    const minEv = parseFloat(searchParams.get("minEdge") || "0");
     const [searchQuery, setSearchQuery] = useState("");
-    const [evOnly, setEvOnly] = useState(false);
 
     const { data: propsData, loading, error, refresh, lastUpdated, isStale, status } = useLiveData(
-        () => api.props(sport),
-        [sport],
-        { refreshInterval: 120000 }
+        () => api.props(sport, market || undefined, minEv),
+        [sport, market, minEv],
+        { refreshInterval: 60000 }
     );
 
     const fullData = unwrap(propsData);
@@ -45,7 +51,8 @@ function PlayerPropsContent() {
     const limitedData = isDev ? fullData : fullData.slice(0, propsLimit);
 
     const filtered = limitedData.filter((p: any) =>
-        p.player_name?.toLowerCase().includes(searchQuery.toLowerCase())
+        (p.player_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p.market_key?.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     return (
@@ -59,6 +66,11 @@ function PlayerPropsContent() {
                         <h1 className="text-3xl font-black italic tracking-tighter uppercase font-display text-white">Pick Intel</h1>
                     </div>
                     <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mb-4">Elite Player Prop Decisioning</p>
+                    
+                    <div className="mb-6">
+                        <SportSelector />
+                    </div>
+
                     <div className="mb-6">
                         <FreshnessBadge 
                             oddsTs={freshness?.odds_last_updated || null} 
@@ -140,6 +152,9 @@ function PropCard({ prop }: { prop: any }) {
             line: (rec?.side === "under" ? under?.line : over?.line) || 0,
             stat_category: prop.stat_type,
             odds: (rec?.side === "under" ? under?.odds : over?.odds) || 0,
+            over_price: over?.odds || -110,
+            under_price: under?.odds || -110,
+            historical_hit_rate: prop.hit_rate_l10 ? prop.hit_rate_l10 / 100 : 0.5,
             game_id: prop.game_id
         };
 

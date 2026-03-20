@@ -223,7 +223,13 @@ class HitRateService:
                             "last_updated": data["last_updated"].isoformat() if data["last_updated"] else None
                         })
                 
-                outliers.sort(key=lambda x: (x["hit_rate"], x["streak"]), reverse=True)
+                outliers.sort(key=lambda x: (x["hit_rate"], x["streak"], x["total"]), reverse=True)
+                
+                # Add a 'heat_index' for visual ranking
+                for i, o in enumerate(outliers):
+                    o["rank"] = i + 1
+                    o["is_hot"] = o["hit_rate"] >= 80 and o["streak"] >= 2
+                
                 return outliers[:limit]
             except Exception as e:
                 logger.error(f"HitRateService outliers failed: {e}")

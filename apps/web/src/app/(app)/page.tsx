@@ -202,7 +202,7 @@ function DashboardContent() {
 }
 
 function InternalHealthItem({ label, status }: any) {
-    const isGood = ['STABLE', 'SYNCED', 'ACTIVE'].includes(status);
+    const isGood = ['STABLE', 'SYNCED', 'ACTIVE', 'HEALTHY', 'CONNECTED'].includes(status);
     return (
         <div className="flex items-center justify-between border-b border-lucrix-border pb-2 last:border-0 last:pb-0">
             <span className="text-xs text-textSecondary font-semibold">{label}</span>

@@ -5,18 +5,18 @@ import { Loader2, TrendingUp, Users, Activity, Calendar, AreaChart, Filter, Chev
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { useLucrixStore } from "@/store";
+import SportSelector from "@/components/shared/SportSelector";
 import { OutlierCard } from "@/components/hit-rate/OutlierCard";
 import { OutlierFilterBar } from "@/components/hit-rate/OutlierFilterBar";
 import { OutlierHero } from "@/components/hit-rate/OutlierHero";
 import { OutlierLeaderboard } from "@/components/hit-rate/OutlierLeaderboard";
 
 function HitRateContent() {
+    const activeSport = useLucrixStore((state: any) => state.activeSport);
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    const initialSport = searchParams.get("sport") || "all";
-    const [sport, setSport] = useState(initialSport);
-    
     // Outlier Filters
     const [filters, setFilters] = useState({
         window: 10,
@@ -24,6 +24,7 @@ function HitRateContent() {
         market: "all"
     });
 
+    const [searchQuery, setSearchQuery] = useState("");
     const [outliers, setOutliers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -32,19 +33,12 @@ function HitRateContent() {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleSportChange = (newSport: string) => {
-        setSport(newSport);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("sport", newSport);
-        router.push(`/hit-rate?${params.toString()}`, { scroll: false });
-    };
-
     useEffect(() => {
         async function fetchOutliers() {
             setLoading(true);
             try {
                 const res = await api.hitRateOutliers({
-                    sport: sport === "all" ? undefined : sport,
+                    sport: activeSport === "all" ? undefined : activeSport,
                     ...filters,
                     market: filters.market === "all" ? undefined : filters.market
                 });
@@ -61,7 +55,7 @@ function HitRateContent() {
             }
         }
         fetchOutliers();
-    }, [sport, filters]);
+    }, [activeSport, filters]);
 
     if (error) {
         return (
@@ -75,6 +69,11 @@ function HitRateContent() {
             </div>
         );
     }
+
+    const filteredOutliers = outliers.filter(o => 
+        o.player_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.market.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="p-4 md:p-6 text-white max-w-7xl mx-auto space-y-8 pb-32">
@@ -90,30 +89,31 @@ function HitRateContent() {
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-2 bg-lucrix-surface/50 p-1 rounded-xl border border-lucrix-border">
-                    {['all', 'basketball_nba', 'americanfootball_nfl', 'icehockey_nhl', 'baseball_mlb'].map(s => (
-                        <button
-                            key={s}
-                            onClick={() => handleSportChange(s)}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${sport === s
-                                ? "bg-brand-cyan text-black shadow-glow shadow-brand-cyan/20"
-                                : "text-textMuted hover:text-white"
-                            }`}
-                        >
-                            {s === 'all' ? 'All' : s.split('_')[1]}
-                        </button>
-                    ))}
+                <div className="w-full md:w-auto">
+                    <SportSelector />
                 </div>
             </div>
 
-            <OutlierHero count={outliers.length} lastSync="Live" />
+            <OutlierHero count={filteredOutliers.length} lastSync="Live" />
 
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
-                    <h2 className="text-xl font-black uppercase italic font-display text-white flex items-center gap-2">
-                        <TrendingUp size={20} className="text-brand-success" />
-                        Hot Streaks (70%+)
-                    </h2>
+                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                        <h2 className="text-xl font-black uppercase italic font-display text-white flex items-center gap-2 shrink-0">
+                            <TrendingUp size={20} className="text-brand-success" />
+                            Hot Streaks (70%+)
+                        </h2>
+                        <div className="relative w-full md:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={16} />
+                            <input 
+                                type="text"
+                                placeholder="Search player or market..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-lucrix-surface border border-lucrix-border rounded-lg pl-10 pr-4 py-2 text-xs font-bold focus:border-brand-cyan outline-none transition-colors"
+                            />
+                        </div>
+                    </div>
                     <OutlierFilterBar filters={filters} onChange={handleFilterChange} />
                 </div>
 
@@ -126,12 +126,12 @@ function HitRateContent() {
                 ) : (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {outliers.slice(0, 12).map((o, i) => (
+                            {filteredOutliers.slice(0, 12).map((o, i) => (
                                 <OutlierCard key={i} data={o} />
                             ))}
                         </div>
 
-                        {outliers.length === 0 && (
+                        {filteredOutliers.length === 0 && (
                             <div className="py-24 text-center space-y-6 bg-lucrix-surface/30 rounded-3xl border border-dashed border-lucrix-border">
                                 <div className="mx-auto size-20 bg-white/5 rounded-full flex items-center justify-center text-textMuted border border-white/10">
                                     <Search size={40} />

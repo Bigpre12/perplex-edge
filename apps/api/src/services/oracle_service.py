@@ -87,13 +87,16 @@ class OracleService:
             logger.error(f"Error building Oracle context: {e}")
             return {"sport": sport, "error": "Context build failed", "timestamp": datetime.now(timezone.utc).isoformat()}
 
-    async def chat(self, message: str, sport: str, history: List[Dict], user_id: Optional[str] = None) -> AsyncGenerator[str, None]:
+    async def chat(self, messages: List[Dict], sport: str, user_id: Optional[str] = None) -> AsyncGenerator[str, None]:
         """Stream response from LLM with injected context"""
         if not self.client:
             yield "Oracle is currently unavailable (API client not configured)."
             return
 
         context = await self.build_context(sport, user_id)
+        
+        # Extract last user message for specific data fetching if needed
+        # (Already happening in build_context for the general sport)
         
         system_prompt = f"""
 You are Oracle, the AI assistant built into Lucrix, a professional sports betting analytics platform.
@@ -114,6 +117,9 @@ INJURIES:
 BRAIN METRICS:
 {json.dumps(context['brain_metrics'], indent=2)}
 
+WHALE SIGNALS (Sharp Money):
+{json.dumps(context['whale_signals'], indent=2)}
+
 RULES:
 - Refer to yourself as Oracle. Never reveal you are an AI or LLM.
 - Be direct, confident, and data-driven. Use real numbers from the context.
@@ -123,15 +129,16 @@ RULES:
 - Keep responses concise but information-dense.
 - If data is missing for a specific query, state it clearly rather than guessing.
 """
-
         try:
+            # We insert the system prompt at the beginning of the conversation
+            full_messages = [
+                {"role": "system", "content": system_prompt},
+                *messages[-10:] # Limit to last 10 for tokens
+            ]
+
             stream = await self.client.chat.completions.create(
                 model=settings.ORACLE_MODEL,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    *history[-5:], # Last 5 messages for context
-                    {"role": "user", "content": message}
-                ],
+                messages=full_messages,
                 stream=True,
                 max_tokens=settings.ORACLE_MAX_TOKENS,
                 temperature=settings.ORACLE_TEMPERATURE

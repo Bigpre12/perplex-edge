@@ -11,8 +11,29 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from services.unified_ingestion import unified_ingestion
 
 import logging
+import os
 
-# Define safe_import inside main.py for early availability
+logger = logging.getLogger(__name__)
+
+def validate_env():
+    """Fail fast if critical environment variables are missing."""
+    critical_vars = [
+        "DATABASE_URL",
+        "THE_ODDS_API_KEY",
+        "SUPABASE_URL",
+        "SUPABASE_KEY"
+    ]
+    missing = [v for v in critical_vars if not os.getenv(v)]
+    if missing:
+        msg = f"❌ CRITICAL ERROR: Missing environment variables: {', '.join(missing)}"
+        logger.error(msg)
+        # In production, we want to fail fast. In local dev, we might just warn.
+        if os.getenv("RAILWAY_ENVIRONMENT_NAME"):
+            raise RuntimeError(msg)
+        else:
+            logger.warning("⚠️ Running in LOCAL mode with missing variables. Some features will fail.")
+
+validate_env()
 def safe_import(module_path, alias):
     try:
         # FastAPI routers are typically named 'router' in their respective modules
@@ -138,6 +159,11 @@ async def startup():
             
     asyncio.create_task(initial_ingest())
 
+    # Start CLV Tracking Loop
+    from services.brain_clv_tracker_loop import start_clv_tracker
+    await start_clv_tracker() 
+    logging.info("CLV Tracker started.")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -168,6 +194,11 @@ async def get_sharp_signals():
             
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _sync)
+
+if True:
+    simulate_router = safe_import("simulate", "simulate")
+    if simulate_router:
+        app.include_router(simulate_router, prefix="/api/simulate", tags=["simulate"])
 
 # Include external health router for more detailed checks
 # Guarded Router Inclusion

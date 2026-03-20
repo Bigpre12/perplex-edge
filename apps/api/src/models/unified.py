@@ -55,3 +55,20 @@ class UnifiedEVSignal(Base):
     __table_args__ = (
         UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', name='uix_ev_unique'),
     )
+
+class LineTick(Base):
+    """
+    Line Ticks: Historical record of price/line changes for movement analysis.
+    """
+    __tablename__ = "line_ticks"
+    
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    sport = Column(String, nullable=False, index=True)
+    event_id = Column(String, nullable=False, index=True)
+    market_key = Column(String, nullable=False, index=True)
+    outcome_key = Column(String, nullable=False)
+    player_name = Column(String, nullable=True, index=True)
+    bookmaker = Column(String, nullable=False, index=True)
+    price = Column(Numeric, nullable=False)
+    line = Column(Numeric, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

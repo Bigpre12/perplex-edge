@@ -17,8 +17,7 @@ async def get_user_tier(
     db: AsyncSession = Depends(get_db)
 ) -> str:
     if settings.DEVELOPMENT_MODE:
-        # Don't auto-upgrade to elite in dev, respect DB/JWT tier for testing
-        pass
+        return "elite"
         
     if not authorization:
         return "free"

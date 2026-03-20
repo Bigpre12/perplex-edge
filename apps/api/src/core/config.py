@@ -62,6 +62,10 @@ class Settings:
         self.STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
         
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+        self.ORACLE_MODEL = os.getenv("ORACLE_MODEL", "gpt-4o")
+        self.ORACLE_MAX_TOKENS = int(os.getenv("ORACLE_MAX_TOKENS", "1000"))
+        self.ORACLE_TEMPERATURE = float(os.getenv("ORACLE_TEMPERATURE", "0.2"))
+        
         self.GROQ_API_KEY = os.getenv("GROQ_API_KEY", os.getenv("AI_API_KEY", ""))
         self.BETSTACK_API_KEY = os.getenv("BETSTACK_API_KEY", "")
         self.ODDSPAPI_API_KEY = os.getenv("ODDSPAPI_API_KEY", "")

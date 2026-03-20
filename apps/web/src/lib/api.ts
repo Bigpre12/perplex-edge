@@ -101,8 +101,8 @@ export const api = {
     },
 
     // Models
-    props: (sport = "basketball_nba", limit = 25) =>
-        request("/api/props", undefined, { sport, limit }),
+    props: (sport = "basketball_nba", market?: string, minEv?: number, limit = 50) =>
+        request("/api/props", undefined, { sport, market, min_ev: minEv, limit }),
     propsScored: (sport = "basketball_nba", limit = 50) =>
         request("/api/props/scored", undefined, { sport, limit }),
 
@@ -221,6 +221,8 @@ export const api = {
     wsOdds: `${API_BASE.replace(/^http/, 'ws')}/api/ws/ev`,
     wsKalshi: `${API_BASE.replace(/^http/, 'ws')}/api/ws/kalshi`,
     edges: (sport = "basketball_nba") => request("/api/ev/ev-top", undefined, { sport }),
+    simulate: (legs: any[], stake = 100, simulations = 10000) => 
+        request("/api/simulate", { method: "POST", body: JSON.stringify({ legs, stake, simulations }) }),
 };
 
 export const API = api;

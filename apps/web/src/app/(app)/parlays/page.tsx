@@ -5,7 +5,7 @@ import { Link2, Trash2, Zap, Target, BarChart3, ShieldCheck } from "lucide-react
 import { clsx } from "clsx";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
-import { api } from "@/lib/api";
+import { api, isApiError } from "@/lib/api";
 
 interface Leg {
     prop_id: string; // Changed to match backend SGPLeg model
@@ -45,24 +45,43 @@ export default function ParlayPage() {
     };
 
     const runAnalysis = async () => {
+        if (legs.length === 0) return;
         setLoading(true);
         try {
-            // Updated to use the new Neurral Engine Brain Parlay Builder
-            const result = await api.brain.parlayBuilder(sport || 'basketball_nba', legs.length, 65);
-            // Since the new Brain Builder returns a list of suggestions, we grab the first one's analysis
-            if (result && result.length > 0) {
-                setAnalysis(result[0].analysis);
-            } else {
+            // Map legs to simulation format
+            const simLegs = legs.map(leg => ({
+                player_name: leg.player_name,
+                market: leg.stat_category,
+                line: leg.line,
+                side: leg.side.toLowerCase(),
+                // If over_price and under_price aren't stored yet, we fallback to the known odds
+                // but for real simulations we should update the storage to include both.
+                // Assuming for now they might be added to the storage in a next step.
+                over_price: (leg as any).over_price || (leg.side.toLowerCase() === 'over' ? leg.odds : -110),
+                under_price: (leg as any).under_price || (leg.side.toLowerCase() === 'under' ? leg.odds : -110),
+                historical_hit_rate: (leg as any).historical_hit_rate || 0.5
+            }));
+
+            const result = await api.simulate(simLegs, 100, 10000);
+            
+            if (result && !isApiError(result)) {
                 setAnalysis({
-                    sgp_grade: "B+",
-                    total_correlation_score: 1.5,
-                    correlations: [
-                        { leg_a: legs[0]?.player_name || 'Leg 1', leg_b: legs[1]?.player_name || 'Leg 2', label: "POSITIVE" }
-                    ]
+                    sgp_grade: result.roi > 5 ? "S" : result.roi > 2 ? "A" : result.roi > 0 ? "B" : "C",
+                    total_correlation_score: result.edge.toFixed(2),
+                    edge: (result.edge * 100).toFixed(1),
+                    win_rate: (result.win_rate * 100).toFixed(1),
+                    ev: result.expected_value,
+                    roi: result.roi,
+                    max_drawdown: result.max_drawdown,
+                    confidence: result.confidence.toUpperCase(),
+                    true_prob: (result.true_probability * 100).toFixed(1),
+                    correlations: simLegs.length > 1 ? [
+                        { leg_a: "Simulation", leg_b: "Results", label: result.confidence.toUpperCase() }
+                    ] : []
                 });
             }
         } catch (e) {
-            console.error("Analysis failed:", e);
+            console.error("Simulation failed:", e);
         } finally {
             setLoading(false);
         }
@@ -100,35 +119,48 @@ export default function ParlayPage() {
                             <div className="bg-[#0F0F1A] border border-primary/30 rounded-3xl p-8 space-y-6">
                                 <div className="flex justify-between items-center bg-primary/10 p-6 rounded-2xl border border-primary/20">
                                     <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">SGP Grade</div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">Sim Grade</div>
                                         <div className="text-5xl font-black italic text-primary leading-none">{analysis.sgp_grade}</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Correlation Score</div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Expected ROI</div>
                                         <div className={clsx(
                                             "text-3xl font-black",
-                                            analysis.total_correlation_score > 0 ? "text-emerald-500" : "text-slate-400"
+                                            analysis.roi > 0 ? "text-emerald-500" : "text-rose-500"
                                         )}>
-                                            {analysis.total_correlation_score > 0 ? "+" : ""}{analysis.total_correlation_score}
+                                            {analysis.roi > 0 ? "+" : ""}{analysis.roi}%
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">Correlation Breakdown</h4>
-                                    {analysis.correlations?.map((c: any, i: number) => (
-                                        <div key={i} className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/5">
-                                            <div className="text-xs">
-                                                <span className="font-bold">{c.leg_a}</span> & <span className="font-bold">{c.leg_b}</span>
-                                            </div>
-                                            <div className={clsx(
-                                                "text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded",
-                                                c.label === "POSITIVE" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-500/10 text-slate-500"
-                                            )}>
-                                                {c.label}
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Win Probability</div>
+                                        <div className="text-lg font-black text-white">{analysis.win_rate}%</div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">True Edge</div>
+                                        <div className="text-lg font-black text-emerald-500">+{analysis.edge}%</div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Expected EV</div>
+                                        <div className="text-lg font-black text-white">${analysis.ev}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Max Drawdown</div>
+                                        <div className="text-lg font-black text-rose-500">-{analysis.max_drawdown}u</div>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <ShieldCheck size={14} className="text-primary" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Simulation Confidence</span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 font-bold">
+                                        Based on 10,000 Monte Carlo trials using sharp vig removal and blended historical performance. 
+                                        Confidence Level: <span className="text-white">{analysis.confidence}</span>
+                                    </p>
                                 </div>
                             </div>
                         ) : legs.length === 0 ? (

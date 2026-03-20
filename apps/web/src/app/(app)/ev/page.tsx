@@ -11,6 +11,7 @@ import GateLock from "@/components/GateLock";
 import { useLucrixStore } from "@/store";
 import { useFreshness } from "@/hooks/useFreshness";
 import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
+import SportSelector from "@/components/shared/SportSelector";
 
 export default function EVPage() {
     const sport = useLucrixStore((state: any) => state.activeSport);
@@ -42,6 +43,11 @@ export default function EVPage() {
                             <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">EV+ Live Scanner</h1>
                         </div>
                         <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mb-4">High-Edge Market Opportunities</p>
+                        
+                        <div className="mb-6">
+                            <SportSelector />
+                        </div>
+
                         <FreshnessBadge 
                             oddsTs={freshness?.odds_last_updated || null} 
                             evTs={freshness?.ev_last_updated || null} 

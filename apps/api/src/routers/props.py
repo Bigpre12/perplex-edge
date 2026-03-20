@@ -16,35 +16,46 @@ router = APIRouter()
 @router.get("/")
 async def list_props(
     sport: str = "basketball_nba",
-    limit: int = 40,
-    stale: bool = False,
-    db: AsyncSession = Depends(get_db)
+    market: Optional[str] = None,
+    min_ev: float = 0.0,
+    search: Optional[str] = None,
+    limit: int = 50,
 ):
-    """Returns top props for a sport with intelligent freshness filtering."""
+    """Returns top props for a sport using the enhanced PropsService (Market + EV)."""
+    from services.props_service import get_all_props
     try:
-        now = datetime.utcnow()
-        stmt = select(Prop).where(Prop.sport == sport)
+        # Get all props for the sport with EV data
+        items = await get_all_props(sport_filter=sport)
         
-        # Freshness filter: only show games that haven't started recently
-        if not stale:
-            # Prop doesn't have game_start_time, it has created_at
-            stmt = stmt.where(Prop.created_at >= now - timedelta(hours=24))
-
-        stmt = stmt.order_by(desc(Prop.created_at)).limit(limit)
-        result = await db.execute(stmt)
-        items = result.scalars().all()
+        # 1. Market Filter
+        if market:
+            items = [p for p in items if p.get("market_key") == market]
+            
+        # 2. EV Filter
+        if min_ev > 0:
+            items = [p for p in items if (p.get("recommendation") or {}).get("ev", 0.0) >= min_ev]
+            
+        # 3. Search Filter
+        if search:
+            search_low = search.lower()
+            items = [p for p in items if 
+                search_low in (p.get("player_name") or "").lower() or 
+                search_low in (p.get("market_key") or "").lower()]
+                
+        # 4. Limit
+        items = items[:limit]
         
         if not items:
             return {
                 "data": [],
                 "results": [],
                 "status": "awaiting_ingest",
-                "message": "Awaiting first odds ingest or stale data filtered."
+                "message": "No live props match these filters right now."
             }
             
-        return {"data": items, "results": items, "status": "ok"}
+        return {"data": items, "results": items, "status": "ok", "count": len(items)}
     except Exception as e:
-        logger.error(f"Error listing props: {e}")
+        logger.error(f"Error listing props for {sport}: {e}")
         return {
             "data": [],
             "results": [],

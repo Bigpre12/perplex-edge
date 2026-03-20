@@ -12,25 +12,41 @@ logger = logging.getLogger(__name__)
 class PropsService:
     async def get_all_props(self, sport_filter: Optional[str] = None) -> List[Dict]:
         """
-        Query UnifiedOdds for player props.
-        Groups by (player_name, market_key) to find best lines.
+        Query UnifiedOdds joined with UnifiedEVSignal for player props.
+        Groups by (player_name, market_key) to find best lines and attaches EV recommendations.
         """
+        from models.unified import UnifiedEVSignal
+        from sqlalchemy import outerjoin
+
         async with async_session_maker() as session:
-            # Query non-game lines
-            stmt = select(UnifiedOdds).where(
+            # Query UnifiedOdds joined with UnifiedEVSignal
+            stmt = select(UnifiedOdds, UnifiedEVSignal).select_from(
+                outerjoin(UnifiedOdds, UnifiedEVSignal, 
+                    and_(
+                        UnifiedOdds.sport == UnifiedEVSignal.sport,
+                        UnifiedOdds.event_id == UnifiedEVSignal.event_id,
+                        UnifiedOdds.market_key == UnifiedEVSignal.market_key,
+                        UnifiedOdds.outcome_key == UnifiedEVSignal.outcome_key,
+                        UnifiedOdds.bookmaker == UnifiedEVSignal.bookmaker
+                    )
+                )
+            ).where(
                 UnifiedOdds.market_key.notin_(['h2h', 'spreads', 'totals'])
             )
+            
             if sport_filter:
                 stmt = stmt.where(UnifiedOdds.sport == sport_filter)
             
             result = await session.execute(stmt)
-            odds = result.scalars().all()
+            # Fetch all rows (pairs of UnifiedOdds, UnifiedEVSignal)
+            rows = result.all()
             
-            if not odds: return []
+            if not rows: return []
 
-            # Grouping: (eid, player, mkey) -> outcome -> book -> (line, price)
+            # Grouping: (eid, player, mkey) -> outcome -> book -> (line, price, ev)
             grouped = {}
-            for o in odds:
+            for odds_item, signal in rows:
+                o = odds_item
                 key = (o.event_id, o.player_name, o.market_key)
                 if key not in grouped:
                     grouped[key] = {
@@ -44,17 +60,33 @@ class PropsService:
                         "market_key": o.market_key,
                         "stat_type": o.market_key.replace("player_", "").replace("_", " ").title(),
                         "over": [],
-                        "under": []
+                        "under": [],
+                        "max_edge": 0.0,
+                        "recommendation": None
                     }
+                
+                ev_val = float(signal.edge_percent) if signal else 0.0
                 
                 if o.outcome_key in ['over', 'under']:
                     grouped[key][o.outcome_key].append({
                         "line": float(o.line) if o.line else 0.0,
                         "odds": int(o.price),
-                        "book": o.bookmaker
+                        "book": o.bookmaker,
+                        "ev": ev_val
                     })
+                    
+                    # Update best recommendation for this prop group
+                    if ev_val > grouped[key]["max_edge"]:
+                        grouped[key]["max_edge"] = ev_val
+                        tier = "S" if ev_val >= 5 else "A" if ev_val >= 3 else "B" if ev_val >= 1 else "C"
+                        grouped[key]["recommendation"] = {
+                            "side": o.outcome_key,
+                            "tier": tier,
+                            "ev": ev_val,
+                            "reason": f"{o.player_name} {o.outcome_key} {o.line} shows a {ev_val}% edge vs market average."
+                        }
 
-            # Finalize: Find best over/under
+            # Finalize: Find best over/under lines for display
             final_props = []
             for item in grouped.values():
                 if item["over"]:
@@ -63,8 +95,18 @@ class PropsService:
                     item["best_under"] = min(item["under"], key=lambda x: (x["line"], -x["odds"]))
                 
                 if "best_over" in item or "best_under" in item:
+                    # Provide an empty recommendation if none was found
+                    if not item["recommendation"]:
+                        item["recommendation"] = {
+                            "side": "over",
+                            "tier": "C",
+                            "ev": 0.0,
+                            "reason": "No significant market edge detected."
+                        }
                     final_props.append(item)
             
+            # Sort by max edge (hottest props first)
+            final_props.sort(key=lambda x: x.get("max_edge", 0), reverse=True)
             return final_props
 
     async def get_team_props(self, sport_filter: Optional[str] = None) -> List[Dict]:

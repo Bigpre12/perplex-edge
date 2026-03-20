@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker, engine
-from models.unified import UnifiedOdds
+from models.unified import UnifiedOdds, LineTick
 from clients.odds_client import odds_api_client
 from services.cache import cache
 from services.odds.fetchers import SPORT_KEY_MAP, SPORT_MARKETS
@@ -142,51 +142,85 @@ class UnifiedIngestionService:
         rows = []
         now = datetime.now(timezone.utc)
         
+        if not isinstance(odds_raw, list):
+            logger.error(f"UnifiedIngestion: odds_raw is not a list: {type(odds_raw)}")
+            return []
+
         for event in odds_raw:
-            eid = event.get('id')
-            meta = metadata_map.get(eid, {})
-            league = event.get('sport_title') or sport.split('_')[-1].upper()
-            
-            for book in event.get('bookmakers', []):
-                book_key = book.get('key')
-                for market in book.get('markets', []):
-                    m_key = market.get('key')
-                    for outcome in market.get('outcomes', []):
-                        # Outcome name normalization
-                        name = outcome.get('name')
-                        desc = outcome.get('description') # Usually player name for props
-                        price = outcome.get('price')
-                        line = outcome.get('point')
+            try:
+                if not isinstance(event, dict):
+                    logger.warning(f"UnifiedIngestion: Skipping non-dict event: {event}")
+                    continue
+
+                eid = event.get('id')
+                if not eid:
+                    continue
+
+                meta = metadata_map.get(eid, {})
+                league = event.get('sport_title') or sport.split('_')[-1].upper()
+                
+                bookmakers = event.get('bookmakers', [])
+                if not isinstance(bookmakers, list):
+                    continue
+
+                for book in bookmakers:
+                    if not isinstance(book, dict): continue
+                    book_key = book.get('key')
+                    
+                    markets = book.get('markets', [])
+                    if not isinstance(markets, list): continue
+
+                    for market in markets:
+                        if not isinstance(market, dict): continue
+                        m_key = market.get('key')
                         
-                        # Outcome key logic
-                        if m_key in ['h2h', 'spreads', 'totals']:
-                            o_key = name.lower()
-                            p_name = None
-                        else:
-                            # Prop handling
-                            p_name = desc or name
-                            side = name.lower()
-                            if 'over' in side: o_key = 'over'
-                            elif 'under' in side: o_key = 'under'
-                            else: o_key = side
+                        outcomes = market.get('outcomes', [])
+                        if not isinstance(outcomes, list): continue
+
+                        for outcome in outcomes:
+                            if not isinstance(outcome, dict): continue
+                            # Outcome name normalization
+                            name = outcome.get('name')
+                            desc = outcome.get('description') # Usually player name for props
+                            price = outcome.get('price')
+                            line = outcome.get('point')
                             
-                        rows.append({
-                            'sport': sport,
-                            'league': league,
-                            'event_id': eid,
-                            'home_team': meta.get('home_team'),
-                            'away_team': meta.get('away_team'),
-                            'game_time': meta.get('game_time'),
-                            'market_key': m_key,
-                            'outcome_key': o_key,
-                            'player_name': p_name,
-                            'bookmaker': book_key,
-                            'price': Decimal(str(price)),
-                            'line': Decimal(str(line)) if line is not None else None,
-                            'implied_prob': self.american_to_implied(int(price)) if isinstance(price, (int, float)) else Decimal('0'),
-                            'source_ts': datetime.fromisoformat(book.get('last_update').replace('Z', '+00:00')) if book.get('last_update') else now,
-                            'ingested_ts': now
-                        })
+                            if name is None or price is None:
+                                continue
+
+                            # Outcome key logic
+                            if m_key in ['h2h', 'spreads', 'totals']:
+                                o_key = name.lower()
+                                p_name = None
+                            else:
+                                # Prop handling
+                                p_name = desc or name
+                                side = name.lower()
+                                if 'over' in side: o_key = 'over'
+                                elif 'under' in side: o_key = 'under'
+                                else: o_key = side
+                                
+                            rows.append({
+                                'sport': sport,
+                                'league': league,
+                                'event_id': eid,
+                                'home_team': meta.get('home_team'),
+                                'away_team': meta.get('away_team'),
+                                'game_time': meta.get('game_time'),
+                                'market_key': m_key,
+                                'outcome_key': o_key,
+                                'player_name': p_name,
+                                'bookmaker': book_key,
+                                'price': Decimal(str(price)),
+                                'line': Decimal(str(line)) if line is not None else None,
+                                'implied_prob': self.american_to_implied(int(price)) if isinstance(price, (int, float)) else Decimal('0'),
+                                'source_ts': datetime.fromisoformat(book.get('last_update').replace('Z', '+00:00')) if book.get('last_update') else now,
+                                'ingested_ts': now
+                            })
+            except Exception as e:
+                logger.error(f"UnifiedIngestion: Error normalizing event {event.get('id') if isinstance(event, dict) else 'unknown'}: {e}")
+                continue
+
         return rows
 
     async def upsert_odds(self, rows: List[Dict]):
@@ -228,13 +262,33 @@ class UnifiedIngestionService:
                     
                 from sqlalchemy import text
                 await session.execute(stmt)
+                
+                # 2. Record Ticks for Movement Analysis
+                # Filter rows to only record meaningful data (e.g. price > 0)
+                tick_rows = [
+                    {
+                        "sport": r["sport"],
+                        "event_id": r["event_id"],
+                        "market_key": r["market_key"],
+                        "outcome_key": r["outcome_key"],
+                        "player_name": r["player_name"],
+                        "bookmaker": r["bookmaker"],
+                        "price": r["price"],
+                        "line": r["line"]
+                    }
+                    for r in rows if r["price"] != 0
+                ]
+                
+                if tick_rows:
+                    await session.execute(pg_insert(LineTick).values(tick_rows) if not is_sqlite else sqlite_insert(LineTick).values(tick_rows))
+                
                 await session.commit()
                 
                 # Immediate verification
                 count_res = await session.execute(text("SELECT count(*) FROM odds"))
                 count = count_res.scalar()
                 logger.info(f"UnifiedIngestion: Upsert successful. New odds count: {count}")
-                logger.info(f"UnifiedIngestion: Upserted {len(rows)} rows for {rows[0]['sport']}")
+                logger.info(f"UnifiedIngestion: Upserted {len(rows)} rows and recorded {len(tick_rows)} ticks for {rows[0]['sport']}")
             except Exception as e:
                 await session.rollback()
                 logger.error(f"UnifiedIngestion: Upsert failed: {e}")
