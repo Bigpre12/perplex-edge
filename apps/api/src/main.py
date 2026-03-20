@@ -75,6 +75,7 @@ kalshi_ws_router    = safe_import("kalshi_ws_proxy", "kalshi_ws")
 systems_router      = safe_import("systems", "systems")
 performance_router  = safe_import("performance", "performance")
 streaks_router      = safe_import("streaks", "streaks")
+intel_router        = safe_import("intel", "router")
 contest_router      = safe_import("contest_router", "contests")
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
@@ -186,6 +187,7 @@ async def get_sharp_signals():
 # Include external health router for more detailed checks
 # Guarded Router Inclusion
 if health_router:        app.include_router(health_router, prefix="/api/health", tags=["health"])
+if intel_router:         app.include_router(intel_router, prefix="/api/intel", tags=["intel"])
 if meta_router:          app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
 if auth_router:          app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 if props_router:         app.include_router(props_router, prefix="/api/props", tags=["props"])

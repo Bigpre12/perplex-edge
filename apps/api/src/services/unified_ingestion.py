@@ -14,6 +14,10 @@ from clients.odds_client import odds_api_client
 from services.cache import cache
 from services.odds.fetchers import SPORT_KEY_MAP, SPORT_MARKETS
 from services.espn_client import espn_client
+from services.brain_sharp_money import sharp_money_brain
+from services.brain_clv_tracker_loop import brain_clv_tracker
+from services.brain_injury_impact import injury_impact_brain
+from services.brain_advanced_service import brain_advanced_service
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -122,10 +126,9 @@ class UnifiedIngestionService:
 
         for name, task_fn in secondary_tasks:
             try:
-                if asyncio.iscoroutinefunction(task_fn) or asyncio.iscoroutine(task_fn):
-                    await task_fn()
-                else:
-                    task_fn()
+                res = task_fn()
+                if asyncio.iscoroutine(res):
+                    await res
                 logger.info(f"UnifiedIngestion: Successfully completed {name}")
             except Exception as e:
                 logger.error(f"UnifiedIngestion: Secondary processing failed for {name}: {e}")
