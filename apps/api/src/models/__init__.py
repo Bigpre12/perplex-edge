@@ -3,7 +3,7 @@ from .brain import (
     WhaleMove, CLVRecord, SteamEvent, HitRateModel, PlayerStats, InjuryImpactEvent, 
     NeuralEdge, RefereeGame, Schedule, Signal, InjuryImpact, LinePrediction, 
     UnifiedOdds, UnifiedEVSignal, LineTick, UnifiedEVSignalHistory, PropLive, 
-    PropHistory, EdgeEVHistory
+    PropHistory, EdgeEVHistory, UnifiedOdds
 )
 from .user import User, APIKey, UserOverride, PushSubscription
 from .prop import Prop, PropLine, PropOdds, GameLine, GameLineOdds, LiveGameStat, Market, Sport

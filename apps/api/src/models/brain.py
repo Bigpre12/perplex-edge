@@ -367,26 +367,8 @@ class LinePrediction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # --- MIGRATED FROM UNIFIED.PY ---
-class UnifiedOdds(Base):
-    """Unified Odds Table: Single source of truth for all markets across all sports."""
-    __tablename__ = "odds"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    sport = Column(String, nullable=False, index=True)
-    league = Column(String, nullable=False)
-    event_id = Column(String, nullable=False, index=True)
-    home_team = Column(String, nullable=True)
-    away_team = Column(String, nullable=True)
-    game_time = Column(DateTime(timezone=True), nullable=True)
-    market_key = Column(String, nullable=False, index=True)
-    outcome_key = Column(String, nullable=False)
-    player_name = Column(String, nullable=True, index=True)
-    bookmaker = Column(String, nullable=False, index=True)
-    price = Column(Numeric, nullable=False)
-    line = Column(Numeric, nullable=True)
-    implied_prob = Column(Numeric, nullable=False)
-    source_ts = Column(DateTime(timezone=True), nullable=False)
-    ingested_ts = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'player_name', name='uix_odds_unique'),)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', name='uix_unified_odds_unique'),)
 
 class UnifiedEVSignal(Base):
     """Unified EV Signals: Computed betting edges from the EV engine."""

@@ -13,6 +13,7 @@ from services.odds_mapping import odds_mapper
 from services.persistence_helpers import upsert_props_live, insert_props_history
 from core.config import settings
 from services.brains import sharp_money_brain, brain_clv_tracker, injury_impact_brain, brain_advanced_service
+from services.unified_odds_persistence import upsert_unified_odds
 from services.odds_api_client import odds_api_client
 
 logger = logging.getLogger(__name__)
@@ -85,6 +86,21 @@ class UnifiedIngestionService:
         await upsert_props_live(records)
         await insert_props_history(records)
         metrics["rows_upserted"] = len(records)
+        
+        # 4b. Sync with UnifiedOdds for Brains
+        unified_rows = []
+        for r in records:
+            unified_rows.append({
+                "sport": r.sport,
+                "event_id": r.game_id,
+                "market_key": r.market_key,
+                "outcome_key": r.market_label or r.market_key, # crude but unblocks
+                "bookmaker": r.book,
+                "line": float(r.line) if r.line else None,
+                "price": 2.0, # Placeholder or map from odds_over/under
+                # Note: UnifiedOdds expects price. We might need a better mapping.
+            })
+        await upsert_unified_odds(unified_rows)
 
         # 5. Trigger Brain & EV
         secondary_tasks = [
