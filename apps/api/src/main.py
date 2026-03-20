@@ -71,6 +71,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/health")
+@app.get("/api/health/")
+async def health_check_direct():
+    """Direct health check endpoint to avoid redirects."""
+    return {"status": "ok", "service": "perplex-edge-api"}
+
 app.include_router(health_router, prefix="/api/health", tags=["health"])
 app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
