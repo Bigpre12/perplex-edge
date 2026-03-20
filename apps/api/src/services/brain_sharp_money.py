@@ -2,7 +2,7 @@ import logging
 import json
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, and_
 from db.session import async_session_maker
 from models import UnifiedOdds
 from models.brain import SharpSignal, WhaleMove

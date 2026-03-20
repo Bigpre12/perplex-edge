@@ -1,7 +1,7 @@
 # apps/api/src/services/props_service.py
 import logging
 from typing import Optional, List, Dict
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from db.session import async_session_maker
 from models import UnifiedOdds
 from services.cache import cache
