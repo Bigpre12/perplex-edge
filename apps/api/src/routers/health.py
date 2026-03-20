@@ -20,7 +20,7 @@ async def health_check(
     Reports DB, Odds API, Cache, and Kalshi status.
     """
     import os
-    from clients.odds_client import odds_api_client
+    from services.odds_api_client import odds_api_client
     
     # 1. Database Check
     try:
