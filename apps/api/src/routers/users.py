@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.session import get_db
 from models.user import User
 
+router = APIRouter()
+
 @router.get("/me")
 async def me(db: AsyncSession = Depends(get_db)):
     try:
