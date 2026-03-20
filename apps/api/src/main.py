@@ -17,9 +17,13 @@ def safe_import(module_path, alias):
     try:
         # FastAPI routers are typically named 'router' in their respective modules
         mod = __import__(f"routers.{module_path}", fromlist=["router"])
-        return mod.router
+        if hasattr(mod, "router"):
+            return mod.router
+        # Fallback to alias if 'router' is not found
+        return getattr(mod, alias)
     except Exception as e:
-        logging.warning(f"⚠️ Skipping router '{module_path}': {e}")
+        import traceback
+        logging.error(f"❌ Error importing router '{module_path}': {e}\n{traceback.format_exc()}")
         return None
 
 health_router       = safe_import("health", "health")
