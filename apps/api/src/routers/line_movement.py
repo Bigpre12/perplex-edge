@@ -10,7 +10,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 from services.odds_api_client import odds_api
 
-@router.get("/line-movement")
+@router.get("/")
 async def get_line_movement(
     sport: str = "basketball_nba",
     market: str = "h2h"

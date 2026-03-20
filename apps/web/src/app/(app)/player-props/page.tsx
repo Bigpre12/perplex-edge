@@ -35,7 +35,7 @@ function PlayerPropsContent() {
         { refreshInterval: 120000 }
     );
 
-    const fullData = (propsData as any)?.items || [];
+    const fullData = unwrap(propsData);
     const { tier: activeTier, propsLimit } = useGate();
     
     // In dev, show everything regardless of tier slicing

@@ -61,7 +61,7 @@ class Settings:
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
         
         # CORS Setup — allow Vercel preview/production domains automatically
-        raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+        raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:1337")
         self.CORS_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
         # Always allow the configured FRONTEND_URL
         if self.FRONTEND_URL and self.FRONTEND_URL not in self.CORS_ORIGINS:

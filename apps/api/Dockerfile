@@ -25,10 +25,5 @@ ENV PYTHONPATH=/app/src
 # Railway injects $PORT automatically
 EXPOSE ${PORT:-8000}
 
-<<<<<<< HEAD
 # Production entry point
-CMD ["sh", "-c", "echo Starting on port ${PORT:-8000} && gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 30 --access-logfile - --error-logfile - main:app"]
-=======
-# Production: gunicorn + uvicorn workers
-CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 120 --access-logfile - main:app"]
->>>>>>> f64e8d8167c22f2db5be4c20b757dac1a282d2cb
+CMD ["sh", "-c", "echo Starting on port ${PORT:-8000} && gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 120 --access-logfile - --error-logfile - main:app"]

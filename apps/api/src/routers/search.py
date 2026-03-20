@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.session import get_db
 from models.prop import PropLine
 
-router = APIRouter(prefix="/api/search", tags=["search"])
+router = APIRouter(tags=["search"])
 
 @router.get("/")
 async def search_props(q: str, db: AsyncSession = Depends(get_db)):

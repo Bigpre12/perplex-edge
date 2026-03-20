@@ -53,20 +53,12 @@ except ImportError:
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
 app.add_middleware(
-<<<<<<< HEAD
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_origin_regex=r"https://perplex-edge.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-=======
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
->>>>>>> f64e8d8167c22f2db5be4c20b757dac1a282d2cb
 )
 
 app.include_router(health_router, prefix="/api/health", tags=["health"])
@@ -82,7 +74,7 @@ app.include_router(news_router, prefix="/api/news", tags=["news"])
 app.include_router(signals_router, prefix="/api/signals", tags=["signals"])
 app.include_router(lines_router, prefix="/api/lines", tags=["lines"])
 app.include_router(metrics_router, prefix="/api/metrics", tags=["metrics"])
-app.include_router(hit_rate_router, prefix="/api/hit_rate", tags=["hit_rate"])
+app.include_router(hit_rate_router, prefix="/api/hit-rate", tags=["hit-rate"])
 app.include_router(whale_router, prefix="/api/whale", tags=["whale"])
 app.include_router(parlay_router, prefix="/api/parlay", tags=["parlay"])
 app.include_router(steam_router, prefix="/api/steam", tags=["steam"])
@@ -94,28 +86,19 @@ app.include_router(live_router, prefix="/api/live", tags=["live"])
 app.include_router(slate_router, prefix="/api/slate", tags=["slate"])
 app.include_router(ws_ev_router, prefix="/api/ws_ev", tags=["ws_ev"])
 
-<<<<<<< HEAD
 # Optional Routers (Fix 2: Independent registration)
-if 'arbitrage_router' in globals():
+if arbitrage_router:
     app.include_router(arbitrage_router, prefix="/api/arbitrage", tags=["arbitrage"])
-if 'kalshi_router' in globals():
+if kalshi_router:
     app.include_router(kalshi_router, prefix="/api/kalshi", tags=["kalshi"])
-if 'kalshi_ws_router' in globals():
+if kalshi_ws_router:
     app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
 
 @app.get("/")
 async def root():
     return {"name": APP_NAME, "status": "healthy"}
-=======
-if arbitrage_router:
-        app.include_router(arbitrage_router, prefix="/api/arbitrage", tags=["arbitrage"])
-    if kalshi_router:
-            app.include_router(kalshi_router, prefix="/api/kalshi", tags=["kalshi"])
-        if kalshi_ws_router:
-                app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
->>>>>>> f64e8d8167c22f2db5be4c20b757dac1a282d2cb
 
 if __name__ == "__main__":
-        import uvicorn
-        uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8080)), log_level="info")
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), log_level="info")
     

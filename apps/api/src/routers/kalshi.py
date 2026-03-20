@@ -6,7 +6,7 @@ from services.kalshi_arb import detect_arb_opportunities
 from common_deps import require_elite
 from api_utils.auth_supabase import get_current_user_supabase
 
-router = APIRouter(prefix="/api/kalshi", tags=["kalshi"])
+router = APIRouter(tags=["live"])
 
 # Middleware-like tier check for Elite features
 async def require_elite_tier(tier: str = Depends(require_elite)):
@@ -27,12 +27,12 @@ async def get_history(ticker: str, user = Depends(require_elite_tier)):
     """Get market price history"""
     return await kalshi_service.get_kalshi_market_history(ticker)
 
-@router.get("/events")
+@router.get("/")
 async def get_events(series: Optional[str] = None, user = Depends(require_elite_tier)):
     """Get all open Kalshi events"""
     return await kalshi_service.get_kalshi_events(series)
 
-@router.get("/ev")
+@router.get("/")
 async def get_ev_signals(sport: str = "NBA", user = Depends(require_elite_tier)):
     """Scan and return EV signals merged with real Odds API data"""
     from app.services.odds_api_client import odds_api
@@ -73,7 +73,8 @@ async def get_ev_signals(sport: str = "NBA", user = Depends(require_elite_tier))
                         
     return scan_all_ev_signals(markets, real_props)
 
-@router.get("/arb")
+@router.get("/players")
+@router.get("/by-player")
 async def get_arb_opportunities(sport: str = "NBA", user = Depends(require_elite_tier)):
     """Detect and return arbitrage opportunities using real-time data"""
     from app.services.odds_api_client import odds_api

@@ -14,6 +14,7 @@ async def hit_rate_summary(sport: str = Query("all")):
     }
 
 @router.get("/players")
+@router.get("/by-player")
 async def hit_rate_players(
     sport: str = Query("all"),
     slate_only: bool = Query(False),

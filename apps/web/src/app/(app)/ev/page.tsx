@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { TrendingUp, Calculator, Info, Zap } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
-import { api, isApiError } from "@/lib/api";
+import { api, isApiError, unwrap } from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
 import GateLock from "@/components/GateLock";
@@ -18,9 +18,8 @@ export default function EVPage() {
 
     const fetcher = useCallback(
         async () => {
-            const data = await api.get(`/api/ev?sport=${sport}`);
-            if (isApiError(data)) return [];
-            return Array.isArray(data) ? data : (data.items || []);
+            const data = await api.ev.top(sport);
+            return unwrap(data);
         },
         [sport]
     );

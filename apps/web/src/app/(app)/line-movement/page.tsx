@@ -4,7 +4,7 @@ import { TrendingUp, Activity, ArrowUpRight, ArrowDownRight, Clock } from "lucid
 import { clsx } from "clsx";
 import GateLock from "@/components/GateLock";
 import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
 import { useSport } from "@/context/SportContext";
@@ -20,7 +20,7 @@ export default function LineMovementPage() {
         { refreshInterval: 300000 }
     );
 
-    const movementData = data?.data || [];
+    const movementData = unwrap(data);
 
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-8 text-white pb-24">

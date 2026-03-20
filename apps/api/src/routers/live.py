@@ -7,7 +7,7 @@ from real_data_connector import real_data_connector
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/live", tags=["live"])
+router = APIRouter(tags=["live"])
 
 @router.get("/games")
 async def live_games(sport: str = "basketball_nba"):

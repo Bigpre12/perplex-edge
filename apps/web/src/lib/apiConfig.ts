@@ -16,7 +16,7 @@ const isMissing = !rawApiUrl;
 if (typeof window !== "undefined") {
     if (isMissing) {
         console.error(
-            "CRITICAL: NEXT_PUBLIC_API_URL is missing! Every API call will fallback to localhost:8080. " +
+            "CRITICAL: NEXT_PUBLIC_API_URL is missing! Every API call will fallback to localhost:8000. " +
             "Please set this in Vercel Dashboard -> Settings -> Environment Variables."
         );
     } else if (isPlaceholder) {
@@ -29,7 +29,7 @@ if (typeof window !== "undefined") {
 
 /**
  * The validated API Base URL. 
- * Falls back to localhost:8080 during development if no env var is set.
+ * Falls back to localhost:8000 during development if no env var is set.
  */
 export const API_BASE = (!isMissing && !isPlaceholder && rawApiUrl.length > 0)
     ? rawApiUrl.replace(/\/$/, "") 

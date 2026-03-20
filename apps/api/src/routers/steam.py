@@ -2,11 +2,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
-<<<<<<< HEAD
-from db.session import get_db
-=======
 from db.session import get_db, get_async_db
->>>>>>> f64e8d8167c22f2db5be4c20b757dac1a282d2cb
 from services.steam_service import steam_service
 from datetime import datetime, timedelta, timezone
 

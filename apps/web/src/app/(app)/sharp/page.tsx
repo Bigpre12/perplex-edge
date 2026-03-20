@@ -4,7 +4,7 @@ import { Zap, AlertTriangle, ShieldCheck, ArrowRightLeft } from "lucide-react";
 import { clsx } from "clsx";
 import GateLock from "@/components/GateLock";
 import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
 
@@ -13,7 +13,7 @@ import { useSport } from "@/context/SportContext";
 export default function SharpMoneyPage() {
     const { selectedSport: sport } = useSport();
     const { data, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.sharpMoves(),
+        () => api.sharpMoves(sport),
         [sport],
         { refreshInterval: 300000 }
     );
@@ -24,7 +24,7 @@ export default function SharpMoneyPage() {
         { refreshInterval: 60000 }
     );
 
-    const signals = data?.signals || [];
+    const signals = unwrap(data);
     const steamAlerts = steamData || [];
 
     return (

@@ -36,7 +36,7 @@ export default function Sidebar() {
     // Navigation items based on spec
     const navItems = [
         { href: "/", icon: <Home size={20} />, label: "Home" },
-        { href: "/props", icon: <Target size={20} />, label: "Props" },
+        { href: "/player-props", icon: <Target size={20} />, label: "Props" },
         { href: "/ev", icon: <Zap size={20} />, label: "EV+" },
         { href: "/sharp", icon: <Zap size={20} />, label: "Sharp" },
         { href: "/hit-rate", icon: <BarChart2 size={20} />, label: "Hit Rate" },

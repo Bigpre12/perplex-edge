@@ -42,11 +42,8 @@ AsyncSessionLocal = sessionmaker(
     autocommit=False
 )
 
-# Export as async_session_maker for backward compatibility with existing services
-async_session_maker = AsyncSessionLocal
-
 # Standard exports for various utilities
-__all__ = ["engine", "AsyncSessionLocal", "async_session_maker", "get_db", "get_async_db", "Base", "SessionLocal"]
+__all__ = ["engine", "AsyncSessionLocal", "get_db", "get_async_db", "Base", "SessionLocal"]
 
 # --- DEPENDENCIES ---
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
