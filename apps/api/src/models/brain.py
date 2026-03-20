@@ -171,3 +171,14 @@ class DivergenceSignal(Base):
     line_movement = Column(String) # 'Fading Public', 'Follow Sharps'
     signal_strength = Column(Float)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class InferenceLog(Base):
+    __tablename__ = "inference_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    model_name = Column(String, nullable=True)
+    input_summary = Column(String, nullable=True)
+    output_summary = Column(String, nullable=True)
+    confidence = Column(Float, nullable=True)
+    sport = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
