@@ -129,7 +129,7 @@ export default function LineMovementPage() {
                                             <div className="text-[9px] font-black text-textMuted uppercase mb-1">Velocity</div>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-blue-500 shadow-glow shadow-blue-500/50" style={{ width: `${move.intensity}%` }} />
+                                                    <div className={clsx("h-full bg-blue-500 shadow-glow shadow-blue-500/50", `w-dp-${Math.round((move.intensity || 0) / 10) * 10}`)} />
                                                 </div>
                                             </div>
                                         </div>
