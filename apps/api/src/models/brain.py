@@ -384,6 +384,10 @@ class UnifiedOdds(Base):
 
     line = Column(Float, nullable=True)          # numeric line if applicable
     price = Column(Float, nullable=False)        # decimal odds (not American)
+    league = Column(String, nullable=True)
+    game_time = Column(DateTime(timezone=True), nullable=True)
+    home_team = Column(String, nullable=True)
+    away_team = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', name='uix_unified_odds_unique'),)
@@ -456,6 +460,8 @@ class PropLive(Base):
     odds_under = Column(Numeric, nullable=True)
     implied_over = Column(Numeric, nullable=True)
     implied_under = Column(Numeric, nullable=True)
+    source_ts = Column(DateTime(timezone=True), nullable=True)
+    ingested_ts = Column(DateTime(timezone=True), nullable=True)
     last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     __table_args__ = (UniqueConstraint('sport', 'game_id', 'player_name', 'market_key', 'book', name='uix_props_live_unique'),)
 
@@ -479,6 +485,8 @@ class PropHistory(Base):
     odds_under = Column(Numeric, nullable=True)
     implied_over = Column(Numeric, nullable=True)
     implied_under = Column(Numeric, nullable=True)
+    source_ts = Column(DateTime(timezone=True), nullable=True)
+    ingested_ts = Column(DateTime(timezone=True), nullable=True)
     source = Column(String, nullable=True)
     run_id = Column(String, nullable=True)
     is_close = Column(Boolean, default=False)

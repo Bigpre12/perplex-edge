@@ -92,13 +92,16 @@ class UnifiedIngestionService:
         for r in records:
             unified_rows.append({
                 "sport": r.sport,
+                "league": r.league,
                 "event_id": r.game_id,
+                "game_time": r.game_start_time,
+                "home_team": r.home_team,
+                "away_team": r.away_team,
                 "market_key": r.market_key,
                 "outcome_key": r.market_label or r.market_key, # crude but unblocks
                 "bookmaker": r.book,
                 "line": float(r.line) if r.line else None,
                 "price": 2.0, # Placeholder or map from odds_over/under
-                # Note: UnifiedOdds expects price. We might need a better mapping.
             })
         await upsert_unified_odds(unified_rows)
 

@@ -109,12 +109,13 @@ class BrainCLVTracker:
                             open_data = json.loads(open_raw)
                             beat, perc = self._calculate_clv(
                                 open_data["line"], open_data["price"],
-                                float(o.line) if o.line else 0.0, float(o.price),
+                                float(o.line) if o.line is not None else 0.0, 
+                                float(o.price) if o.price is not None else 0.0,
                                 o.outcome_key
                             )
                             
                             # Update the PropLine entry
-                            p.closing_line = float(o.line) if o.line else 0.0
+                            p.closing_line = float(o.line) if o.line is not None else 0.0
                             p.clv_val = perc
                             p.beat_closing_line = beat
                 
@@ -140,14 +141,16 @@ class BrainCLVTracker:
                     open_data = json.loads(open_raw)
                     beat, perc = self._calculate_clv(
                         open_data["line"], open_data["price"],
-                        float(o.line) if o.line else 0.0, float(o.price),
+                        float(o.line) if o.line is not None else 0.0, 
+                        float(o.price) if o.price is not None else 0.0,
                         o.outcome_key
                     )
                     records.append(CLVRecord(
                         sport=o.sport, event_id=o.event_id, market_key=o.market_key,
                         selection=o.player_name or o.outcome_key,
                         opening_line=open_data["line"], opening_price=open_data["price"],
-                        closing_line=float(o.line) if o.line else 0.0, closing_price=float(o.price),
+                        closing_line=float(o.line) if o.line is not None else 0.0, 
+                        closing_price=float(o.price) if o.price is not None else 0.0,
                         clv_beat=beat, clv_percentage=perc
                     ))
             if records:
