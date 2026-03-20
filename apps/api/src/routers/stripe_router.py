@@ -49,8 +49,11 @@ async def create_checkout_session(req: CheckoutRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 @router.post("/webhook")
-async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
@@ -70,18 +73,21 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         customer_email = session.get('customer_details', {}).get('email')
         
         from models.user import User
-        from sqlalchemy import update, select
 
         # Search for user to update
         user = None
         if user_id and user_id.isdigit():
-            user = db.query(User).filter(User.id == int(user_id)).first()
+            stmt = select(User).where(User.id == int(user_id))
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
         elif customer_email:
-            user = db.query(User).filter(User.email == customer_email).first()
+            stmt = select(User).where(User.email == customer_email)
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
 
         if user:
             user.subscription_tier = "pro"
-            db.commit()
+            await db.commit()
             print(f"✅ Subscription tier updated to pro for user {user.email}")
         else:
             print(f"⚠️ User not found for Stripe completion: ID={user_id}, Email={customer_email}")

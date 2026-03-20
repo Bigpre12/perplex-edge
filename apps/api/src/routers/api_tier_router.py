@@ -10,8 +10,10 @@ from typing import Optional
 
 router = APIRouter(tags=['api_tier'])
 
-def verify_api_key(x_api_key: str = Header(...), db: Session = Depends(get_db)) -> APIKey:
-    key = db.query(APIKey).filter(APIKey.key == x_api_key, APIKey.is_active == True).first()
+async def verify_api_key(x_api_key: str = Header(...), db: AsyncSession = Depends(get_db)) -> APIKey:
+    stmt = select(APIKey).filter(APIKey.key == x_api_key, APIKey.is_active == True)
+    result = await db.execute(stmt)
+    key = result.scalar_one_or_none()
     if not key:
         raise HTTPException(status_code=401, detail='Invalid or inactive API key')
     if key.expires_at and key.expires_at < datetime.utcnow():
@@ -26,19 +28,23 @@ def verify_api_key(x_api_key: str = Header(...), db: Session = Depends(get_db)) 
     key.requests_this_hour = (key.requests_this_hour or 0) + 1
     key.total_requests = (key.total_requests or 0) + 1
     key.last_used = datetime.utcnow()
-    db.commit()
+    await db.commit()
     return key
 
 @router.get('/props')
-def api_get_props(sport: Optional[str] = None, min_confidence: int = Query(default=0),
+async def api_get_props(sport: Optional[str] = None, min_confidence: int = Query(default=0),
                   limit: int = Query(default=50), api_key: APIKey = Depends(verify_api_key),
-                  db: Session = Depends(get_db)):
-    q = db.query(PropLine)
+                  db: AsyncSession = Depends(get_db)):
+    stmt = select(PropLine)
     if sport:
-        q = q.filter(PropLine.sport == sport)
+        stmt = stmt.where(PropLine.sport == sport)
     if min_confidence:
-        q = q.filter(PropLine.confidence_score >= min_confidence)
-    props = q.order_by(PropLine.confidence_score.desc()).limit(limit).all()
+        stmt = stmt.where(PropLine.confidence_score >= min_confidence)
+    stmt = stmt.order_by(PropLine.confidence_score.desc()).limit(limit)
+    
+    result = await db.execute(stmt)
+    props = result.scalars().all()
+    
     return {
         'count': len(props),
         'api_key_tier': api_key.tier,
@@ -54,14 +60,18 @@ def api_get_props(sport: Optional[str] = None, min_confidence: int = Query(defau
     }
 
 @router.get('/top-picks')
-def api_top_picks(sport: Optional[str] = None, limit: int = Query(default=10),
-                  api_key: APIKey = Depends(verify_api_key), db: Session = Depends(get_db)):
+async def api_top_picks(sport: Optional[str] = None, limit: int = Query(default=10),
+                  api_key: APIKey = Depends(verify_api_key), db: AsyncSession = Depends(get_db)):
     if api_key.tier not in ['pro', 'enterprise']:
         raise HTTPException(status_code=403, detail='Pro or Enterprise plan required')
-    q = db.query(PropLine).filter(PropLine.confidence_score >= 65)
+    stmt = select(PropLine).where(PropLine.confidence_score >= 65)
     if sport:
-        q = q.filter(PropLine.sport == sport)
-    props = q.order_by(PropLine.confidence_score.desc()).limit(limit).all()
+        stmt = stmt.where(PropLine.sport == sport)
+    stmt = stmt.order_by(PropLine.confidence_score.desc()).limit(limit)
+    
+    result = await db.execute(stmt)
+    props = result.scalars().all()
+    
     return {'top_picks': [{'player': p.player_name, 'stat': p.stat_category, 'line': p.line,
                             'confidence': getattr(p, 'confidence_score', None),
                             'ev_pct': getattr(p, 'ev_pct', None)} for p in props]}
