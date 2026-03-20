@@ -153,7 +153,7 @@ export default function LedgerPage() {
                             <h3 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-widest">
                                 <Brain size={16} className="text-primary" /> Recent Placement Log
                             </h3>
-                            <button onClick={() => window.location.href = '/props'} className="flex items-center gap-1 px-3 py-1 bg-primary text-background-dark font-bold rounded-lg text-xs hover:bg-primary/90 transition-all">
+                            <button onClick={() => window.location.href = '/player-props'} className="flex items-center gap-1 px-3 py-1 bg-primary text-background-dark font-bold rounded-lg text-xs hover:bg-primary/90 transition-all">
                                 <Plus size={14} /> Add Bet
                             </button>
                         </div>
