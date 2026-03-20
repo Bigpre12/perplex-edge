@@ -121,4 +121,4 @@ class SharpMoneyBrain:
                 await session.rollback()
                 logger.error(f"SharpBrain: Detection failed: {e}")
 
-# sharp_money_brain = SharpMoneyBrain() # Handled as singleton in services/brains.py
+sharp_money_brain = SharpMoneyBrain()

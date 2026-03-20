@@ -171,5 +171,3 @@ class BrainCLVTracker:
                 await insert_clv_trades(record_dicts)
 
 brain_clv_tracker = BrainCLVTracker()
-
-brain_clv_tracker = BrainCLVTracker()

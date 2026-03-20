@@ -343,7 +343,7 @@ class BrainAdvancedService:
             logger.error(f"Error in get_dashboard_metrics: {e}")
             return {"props_scored_today": 0, "elite_signals": 0}
 
-# brain_advanced_service = BrainAdvancedService() # Handled as singleton in services/brains.py
+brain_advanced_service = BrainAdvancedService()
 get_prop_score = brain_advanced_service.get_prop_score
 build_parlay = brain_advanced_service.build_parlay
 check_steam_moves = brain_advanced_service.check_steam_moves

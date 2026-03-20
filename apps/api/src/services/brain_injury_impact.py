@@ -111,4 +111,4 @@ class InjuryImpactBrain:
                 await session.rollback()
                 logger.error(f"InjuryBrain: Analysis failed: {e}")
 
-# injury_impact_brain = InjuryImpactBrain() # Handled as singleton in services/brains.py
+injury_impact_brain = InjuryImpactBrain()
