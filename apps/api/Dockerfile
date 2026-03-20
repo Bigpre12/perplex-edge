@@ -28,4 +28,4 @@ WORKDIR /workspace/src
 ENV PYTHONPATH=/workspace/src:/workspace
 
 # Production entry point
-CMD ["sh", "-c", "gunicorn -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120 main:app"]
+CMD ["sh", "-c", "echo Starting on port ${PORT:-8000} && gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 30 --access-logfile - --error-logfile - main:app"]

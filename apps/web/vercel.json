@@ -1,6 +1,10 @@
 {
   "version": 2,
   "framework": "nextjs",
+  "rootDirectory": "apps/web",
   "buildCommand": "npm run build",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://perplex-edge-backend-production.up.railway.app"
+  }
 }

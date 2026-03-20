@@ -18,7 +18,14 @@ class Settings:
         self.DATABASE_URL = DATABASE_URL
         self.PORT = PORT
         self.REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-        self.SECRET_KEY = os.environ.get("SECRET_KEY", "lucrix_dev_secret")
+        self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        
+        # FIX 4: Secure defaults for production
+        secret = os.environ.get("SECRET_KEY", "")
+        if not secret:
+            logging.critical("FATAL: SECRET_KEY environment variable is not set. Using insecure default.")
+            secret = "CHANGE_ME_IN_PRODUCTION"
+        self.SECRET_KEY = secret
         self.STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "")
         self.STRIPE_ELITE_PRICE_ID = os.getenv("STRIPE_ELITE_PRICE_ID", "")
         self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
@@ -38,8 +45,8 @@ class Settings:
         self.ODDS_API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
         self.ODDS_API_KEY_BACKUP = os.getenv("ODDS_API_KEY_BACKUP", "")
         
-        self.DEVELOPMENT_MODE = os.getenv("DEV_MODE", "true").lower() == "true"
-        self.DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+        self.DEVELOPMENT_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
+        self.DEBUG = os.getenv("DEBUG", "false").lower() == "true"
         self.ALGORITHM = os.getenv("ALGORITHM", "HS256")
         self.STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
         self.STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")

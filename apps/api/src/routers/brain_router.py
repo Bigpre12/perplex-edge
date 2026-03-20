@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, HTTPException, Depends
-from db.session import get_async_db
+from db.session import get_db, get_async_db
 from models.brain import BrainSystemState, ModelPick
 try:
     from core.state import state

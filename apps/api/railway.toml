@@ -1,9 +1,9 @@
 [build]
-builder = "dockerfile"
-dockerfile = "Dockerfile"
+dockerfilePath = "apps/api/Dockerfile"
 
 [deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
 healthcheckPath = "/api/health"
-healthcheckTimeout = 120
-restartPolicyType = "on-failure"
-maxRestartCount = 3
+healthcheckTimeout = 30
+startCommand = "gunicorn -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --timeout 30 --access-logfile - main:app"

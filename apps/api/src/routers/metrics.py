@@ -1,12 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from db.session import get_db
+from db.session import get_db as get_async_db # standardizing on get_db but keeping name for compatibility
 from services.dashboard import get_dashboard_metrics
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from db.session import get_async_db
 
 @router.get("")
 async def metrics(db: AsyncSession = Depends(get_async_db)):

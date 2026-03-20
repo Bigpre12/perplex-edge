@@ -3,6 +3,7 @@ import logging
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from db.base import Base # Re-export Base for convenience
 
 # --- CONFIGURATION ---
 DATABASE_URL = os.getenv(
@@ -22,7 +23,15 @@ logger = logging.getLogger(__name__)
 
 # --- ASYNC ENGINE SETUP ---
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-engine = create_async_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_async_engine(
+    DATABASE_URL, 
+    connect_args=connect_args,
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800,
+    pool_pre_ping=True,
+)
 
 # AsyncSessionLocal is the primary session factory
 AsyncSessionLocal = sessionmaker(
@@ -32,6 +41,12 @@ AsyncSessionLocal = sessionmaker(
     autoflush=False,
     autocommit=False
 )
+
+# Export as async_session_maker for backward compatibility with existing services
+async_session_maker = AsyncSessionLocal
+
+# Standard exports for various utilities
+__all__ = ["engine", "AsyncSessionLocal", "async_session_maker", "get_db", "get_async_db", "Base", "SessionLocal"]
 
 # --- DEPENDENCIES ---
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
