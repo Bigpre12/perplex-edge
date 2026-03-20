@@ -7,4 +7,4 @@ from models.user import User, PushSubscription, APIKey, UserOverride
 from models.saved_system import SavedSystem
 from models.unified import UnifiedOdds, UnifiedEVSignal
 from models.line_move import LineMove
-from models.brain import ModelPick, InferenceLog
+from models.brain import ModelPick
