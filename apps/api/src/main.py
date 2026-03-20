@@ -54,8 +54,13 @@ app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=r"https://perplex-edge.*\.vercel\.app",
+    allow_origins=[
+        "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
+        "https://perplex-edge.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:1337",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
