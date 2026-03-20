@@ -1,20 +1,13 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from db.session import get_db
-from models.injury import Injury
-from schemas.injury import InjuryOut
+from sqlalchemy import select, desc
+from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter()
 
 @router.get("")
 @router.get("/")
 async def news(
     sport: str = Query("basketball_nba"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    return (
-        db.query(Injury)
-        .filter(Injury.sport == sport)
-        .order_by(Injury.created_at.desc())
-        .all()
-    )
+    stmt = select(Injury).filter(Injury.sport == sport).order_by(desc(Injury.created_at))
+    result = await db.execute(stmt)
+    return result.scalars().all()

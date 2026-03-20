@@ -40,30 +40,34 @@ async def get_line_movement(
             game_label = f"{event['away_team']} @ {event['home_team']}"
 
             # Pull stored snapshot from Supabase via REST API
-            query_url = f"{SUPABASE_URL}/rest/v1/OddsSnapshot?event_id=eq.{event_id}&order=created_at.desc&limit=1"
-            snap_r = await client.get(query_url, headers=headers)
-            snap_data = snap_r.json() if snap_r.status_code == 200 else []
+            try:
+                query_url = f"{SUPABASE_URL}/rest/v1/OddsSnapshot?event_id=eq.{event_id}&order=created_at.desc&limit=1"
+                snap_r = await client.get(query_url, headers=headers)
+                snap_data = snap_r.json() if snap_r.status_code == 200 else []
 
-            current_lines = {}
-            for book in event.get("bookmakers", []):
-                for mkt in book.get("markets", []):
-                    for outcome in mkt.get("outcomes", []):
-                        book_key = book['key']
-                        outcome_name = outcome['name']
-                        key = f"{book_key}_{outcome_name}"
-                        current_lines[key] = outcome.get("price", 0)
+                current_lines = {}
+                for book in event.get("bookmakers", []):
+                    for mkt in book.get("markets", []):
+                        for outcome in mkt.get("outcomes", []):
+                            book_key = book['key']
+                            outcome_name = outcome['name']
+                            key = f"{book_key}_{outcome_name}"
+                            current_lines[key] = outcome.get("price", 0)
 
-            # Store new snapshot via REST API
-            insert_data = {
-                "event_id": event_id,
-                "sport": api_sport,
-                "game": game_label,
-                "market": market,
-                "lines": current_lines,
-                "commence_time": event.get("commence_time"),
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await client.post(f"{SUPABASE_URL}/rest/v1/OddsSnapshot", headers=headers, json=insert_data)
+                # Store new snapshot via REST API
+                insert_data = {
+                    "event_id": event_id,
+                    "sport": api_sport,
+                    "game": game_label,
+                    "market": market,
+                    "lines": current_lines,
+                    "commence_time": event.get("commence_time"),
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await client.post(f"{SUPABASE_URL}/rest/v1/OddsSnapshot", headers=headers, json=insert_data)
+            except Exception as e:
+                print(f"Supabase REST error for event {event_id}: {e}")
+                snap_data = [] # Continue with current data only
 
             if snap_data:
                 old_lines = snap_data[0].get("lines", {})
