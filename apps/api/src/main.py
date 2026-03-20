@@ -217,7 +217,9 @@ if systems_router:       app.include_router(systems_router, prefix="/api/systems
 if performance_router:   app.include_router(performance_router, prefix="/api/performance", tags=["performance"])
 if streaks_router:       app.include_router(streaks_router, prefix="/api/streaks", tags=["streaks"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
-if contest_router:       app.include_router(contest_router, prefix="/api/contests", tags=["contests"])
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
 
 @app.get("/")
 async def root():
