@@ -131,8 +131,102 @@ class HitRateService:
             except Exception as e:
                 logger.error(f"HitRateService trends failed: {e}")
                 return []
+    async def get_outliers(
+        self, 
+        sport: str = "all", 
+        min_hit_rate: float = 0.70, 
+        window: int = 10,
+        market: str = None,
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """
+        Premium Prop Outliers Engine.
+        Finds players hitting specific markets at high rates.
+        """
+        async with async_session_maker() as session:
+            try:
+                from models.prop import PropLine
+                
+                # 1. Query settled prop lines for historical performance
+                filters = [PropLine.is_settled == True]
+                if sport != "all":
+                    filters.append(PropLine.sport_key == sport)
+                if market:
+                    filters.append(PropLine.stat_type == market)
+                
+                # Fetch recent historical data
+                stmt = select(PropLine).where(and_(*filters)).order_by(desc(PropLine.start_time)).limit(2000)
+                res = await session.execute(stmt)
+                all_settled = res.scalars().all()
+                
+                # 2. Group and Calculate Hit Rates
+                player_groups = {}
+                for p in all_settled:
+                    key = (p.player_name, p.stat_type, p.line)
+                    if key not in player_groups:
+                        player_groups[key] = {
+                            "player_name": p.player_name,
+                            "team": p.team,
+                            "sport": p.sport_key,
+                            "market": p.stat_type,
+                            "line": p.line,
+                            "results": [],
+                            "last_updated": p.created_at
+                        }
+                    player_groups[key]["results"].append(p.hit)
+                
+                outliers = []
+                for key, data in player_groups.items():
+                    results = data["results"][:window] # Only take the desired window
+                    if not results: continue
+                    
+                    hits = sum(1 for r in results if r)
+                    total = len(results)
+                    hit_rate = hits / total
+                    
+                    if hit_rate >= min_hit_rate and total >= min(window, 5): 
+                        # Calculate Streak
+                        streak = 0
+                        for r in results:
+                            if r: streak += 1
+                            else: break
+                        
+                        # Calculate Trend
+                        trend = "stable"
+                        if len(results) >= 4:
+                            recent = results[:len(results)//2]
+                            older = results[len(results)//2:]
+                            r_rate = sum(1 for r in recent if r) / len(recent)
+                            o_rate = sum(1 for r in older if r) / len(older)
+                            if r_rate > o_rate: trend = "up"
+                            elif r_rate < o_rate: trend = "down"
+                        
+                        # Confidence
+                        if total >= 15: conf = "high"
+                        elif total >= 8: conf = "reliable"
+                        elif total >= 4: conf = "early"
+                        else: conf = "limited"
+                        
+                        outliers.append({
+                            "player_name": data["player_name"],
+                            "team": data["team"],
+                            "sport": data["sport"],
+                            "market": data["market"],
+                            "line": data["line"],
+                            "hit_rate": round(hit_rate * 100, 1),
+                            "hits": hits,
+                            "total": total,
+                            "streak": streak,
+                            "trend": trend,
+                            "results": results, 
+                            "confidence": conf,
+                            "last_updated": data["last_updated"].isoformat() if data["last_updated"] else None
+                        })
+                
+                outliers.sort(key=lambda x: (x["hit_rate"], x["streak"]), reverse=True)
+                return outliers[:limit]
+            except Exception as e:
+                logger.error(f"HitRateService outliers failed: {e}")
+                return []
 
 hit_rate_service = HitRateService()
-get_summary = hit_rate_service.get_summary
-get_player_breakdown = hit_rate_service.get_player_breakdown
-get_trend_data = hit_rate_service.get_trend_data

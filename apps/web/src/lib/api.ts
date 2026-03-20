@@ -152,6 +152,8 @@ export const api = {
     hitRateSummary: (sport = "all") => request("/api/hit-rate/summary", undefined, { sport }),
     hitRateByPlayer: (sport = "all", slate_only = false) => request("/api/hit-rate/by-player", undefined, { sport, slate_only }),
     hitRateTrends: (sport = "all") => request("/api/hit-rate/trends", undefined, { sport }),
+    hitRateOutliers: (params: { sport?: string; min_hit_rate?: number; window?: number; market?: string; limit?: number }) => 
+        request("/api/hit-rate/outliers", undefined, params),
     whale: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
     whaleSignals: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
     parlay: (sport = "basketball_nba") => request("/api/parlay", undefined, { sport }),

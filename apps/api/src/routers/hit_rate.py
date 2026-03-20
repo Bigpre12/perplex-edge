@@ -22,3 +22,14 @@ async def hit_rate_players(
 async def hit_rate_trends(sport: str = Query("all")):
     """Return performance trend data for charts."""
     return await hit_rate_service.get_trend_data(sport)
+
+@router.get("/outliers")
+async def hit_rate_outliers(
+    sport: str = Query("all"),
+    min_hit_rate: float = Query(0.70),
+    window: int = Query(10),
+    market: str = Query(None),
+    limit: int = Query(50)
+):
+    """Return premium player prop outliers (70%+ hit rate)."""
+    return await hit_rate_service.get_outliers(sport, min_hit_rate, window, market, limit)
