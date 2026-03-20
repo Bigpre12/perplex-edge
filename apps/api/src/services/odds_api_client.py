@@ -17,6 +17,8 @@ class OddsApiClient:
             logger.warning(f"get_events({sport}) failed: {e}")
             return []
 
+    fetch_events = get_events
+
     async def get_player_props(self, sport: str, event_id: str, markets: str = "player_points", regions: str = "us") -> dict:
         try:
             from real_sports_api import get_player_props

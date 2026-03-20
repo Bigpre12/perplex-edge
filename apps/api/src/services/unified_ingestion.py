@@ -38,7 +38,7 @@ class UnifiedIngestionService:
         
         # 1. Fetch metadata (Teams and Times)
         try:
-            events_raw = await odds_api_client.fetch_events(sport_key)
+            events_raw = await odds_api_client.get_events(sport_key)
             metrics["events_count"] = len(events_raw) if events_raw else 0
             logger.info(f"UnifiedIngestion: Fetched {metrics['events_count']} events from OddsAPI for {sport_key}")
         except Exception as e:
