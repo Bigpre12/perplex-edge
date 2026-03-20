@@ -367,6 +367,24 @@ class LinePrediction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # --- MIGRATED FROM UNIFIED.PY ---
+class UnifiedOdds(Base):
+    """
+    Unified odds snapshot used by SharpMoneyBrain and CLV tracker.
+    Source of truth should be your odds ingestion (props + game lines)
+    writing into this table or a view.
+    """
+    __tablename__ = "unified_odds"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sport = Column(String, index=True)
+    event_id = Column(String, index=True)        # game id or event id
+    market_key = Column(String, index=True)      # e.g. 'player_points'
+    outcome_key = Column(String, index=True)     # e.g. 'LeBron_over_27.5'
+    bookmaker = Column(String, index=True)
+
+    line = Column(Float, nullable=True)          # numeric line if applicable
+    price = Column(Float, nullable=False)        # decimal odds (not American)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', name='uix_unified_odds_unique'),)
 
