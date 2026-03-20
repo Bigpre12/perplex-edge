@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { API_BASE } from "@/lib/apiConfig";
 interface Props {
     loading: boolean;
     error: string | null;
@@ -25,7 +26,7 @@ export default function PageStates({ loading, error, empty, emptyMessage, childr
             <div className="text-4xl">⚠️</div>
             <div className="space-y-1">
                 <p className="text-white font-black uppercase">{error?.includes("Failed to fetch") ? "Backend Offline" : "Data Error"}</p>
-                <p className="text-slate-500 text-xs max-w-xs mx-auto">{error || "Ensure the backend is running on port 8000"}</p>
+                <p className="text-slate-500 text-xs max-w-xs mx-auto">{error || "Ensure the backend API is online"}</p>
             </div>
             <button onClick={() => window.location.reload()} className="text-primary text-xs font-black uppercase underline">Retry Connection</button>
         </div>
@@ -48,7 +49,7 @@ export default function PageStates({ loading, error, empty, emptyMessage, childr
                 <button onClick={() => window.location.reload()} className="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all">
                     Sync Engine Now
                 </button>
-                <a href="http://localhost:8000/api/health" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary text-[9px] font-black uppercase tracking-widest underline transition-colors">
+                <a href={`${API_BASE}/api/health`} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary text-[9px] font-black uppercase tracking-widest underline transition-colors">
                     System Health Check →
                 </a>
             </div>
