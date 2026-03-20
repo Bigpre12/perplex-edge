@@ -75,7 +75,32 @@ class UnifiedIngestionService:
             odds_raw = None
 
         if not odds_raw:
-            logger.warning(f"UnifiedIngestion: No odds found for {sport_key}. Skipping persistence.")
+            logger.warning(f"UnifiedIngestion: No bulk odds found for {sport_key}. Initializing empty list.")
+            odds_raw = []
+
+        # 2b. Fetch Player Props (Requires per-event calls)
+        prop_markets = ["player_points", "player_rebounds", "player_assists", "player_threes", "player_double_double"]
+        if sport_key == "basketball_nba":
+            active_events = [e['id'] for e in events_raw[:15]] # Limit to avoid excessive API usage in one cycle
+            logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} events...")
+            
+            for eid in active_events:
+                try:
+                    event_props = await odds_api_client.get_player_props(
+                        sport=sport_key,
+                        event_id=eid,
+                        markets=",".join(prop_markets)
+                    )
+                    if event_props and "bookmakers" in event_props:
+                        # Normalize into the same structure as bulk odds for the mapper
+                        # Bulk odds: [{"id": eid, "bookmakers": [...]}, ...]
+                        # Single event props: {"id": eid, "bookmakers": [...]}
+                        odds_raw.append(event_props)
+                except Exception as e:
+                    logger.error(f"UnifiedIngestion: Failed to fetch props for event {eid}: {e}")
+
+        if not odds_raw:
+            logger.warning(f"UnifiedIngestion: No odds (bulk or props) found for {sport_key}. Skipping persistence.")
             return
 
         # 3. Normalize into PropRecords
