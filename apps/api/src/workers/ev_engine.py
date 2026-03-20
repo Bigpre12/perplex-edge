@@ -28,7 +28,11 @@ class EVEngine:
             result = await session.execute(stmt)
             all_odds = result.scalars().all()
             
-            if not all_odds: return
+            if not all_odds:
+                logger.info(f"EV Engine: No odds found in unified_odds for sport={sport}")
+                return
+
+            logger.info(f"EV Engine: Processing {len(all_odds)} rows for sport={sport}")
 
             # Grouping: (eid, mkey, line, p_name) -> outcome -> book -> (price, imp)
             grouped = {}
@@ -38,7 +42,13 @@ class EVEngine:
                 key = (o.event_id, o.market_key, o.line, o.player_name)
                 if key not in grouped: grouped[key] = {}
                 if o.outcome_key not in grouped[key]: grouped[key][o.outcome_key] = {}
-                grouped[key][o.outcome_key][o.bookmaker] = (o.price, o.implied_prob)
+                
+                # Guard against missing implied_prob or price
+                price = float(o.price) if o.price is not None else 0.0
+                prob = float(o.implied_prob) if o.implied_prob is not None else 0.0
+                
+                if price > 0 and prob > 0:
+                    grouped[key][o.outcome_key][o.bookmaker] = (price, prob)
 
             # 2. Compute Signals
             signals = []
@@ -79,8 +89,11 @@ class EVEngine:
 
             # 4. Upsert
             if signals:
+                logger.info(f"EV Engine: Generated {len(signals)} edges for sport={sport}")
                 await self.upsert_ev_signals(signals)
                 await notify_ev_update(sport)
+            else:
+                logger.info(f"EV Engine: No edges found for sport={sport}")
 
     async def upsert_ev_signals(self, signals: List[Dict]):
         async with async_session_maker() as session:

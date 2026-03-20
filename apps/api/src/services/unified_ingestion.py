@@ -87,10 +87,11 @@ class UnifiedIngestionService:
         await insert_props_history(records)
         metrics["rows_upserted"] = len(records)
         
-        # 4b. Sync with UnifiedOdds for Brains
+        # 4b. Sync with UnifiedOdds for Brains (Split into discrete outcomes)
         unified_rows = []
         for r in records:
-            unified_rows.append({
+            # Common metadata
+            base = {
                 "sport": r.sport,
                 "league": r.league,
                 "event_id": r.game_id,
@@ -98,11 +99,31 @@ class UnifiedIngestionService:
                 "home_team": r.home_team,
                 "away_team": r.away_team,
                 "market_key": r.market_key,
-                "outcome_key": r.market_label or r.market_key, # crude but unblocks
+                "player_name": r.player_name,
                 "bookmaker": r.book,
                 "line": float(r.line) if r.line else None,
-                "price": 2.0, # Placeholder or map from odds_over/under
-            })
+            }
+
+            # Over Outcome
+            if r.odds_over is not None or r.implied_over is not None:
+                over_row = base.copy()
+                over_row.update({
+                    "outcome_key": "over",
+                    "price": float(r.odds_over) if r.odds_over else 2.0,
+                    "implied_prob": float(r.implied_over) if r.implied_over else None
+                })
+                unified_rows.append(over_row)
+
+            # Under Outcome
+            if r.odds_under is not None or r.implied_under is not None:
+                under_row = base.copy()
+                under_row.update({
+                    "outcome_key": "under",
+                    "price": float(r.odds_under) if r.odds_under else 2.0,
+                    "implied_prob": float(r.implied_under) if r.implied_under else None
+                })
+                unified_rows.append(under_row)
+
         await upsert_unified_odds(unified_rows)
 
         # 5. Trigger Brain & EV

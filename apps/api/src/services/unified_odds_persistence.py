@@ -23,16 +23,19 @@ async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
     query = """
     INSERT INTO public.unified_odds (
       sport, event_id, market_key, outcome_key, bookmaker,
-      line, price, league, game_time, home_team, away_team, created_at
+      line, price, implied_prob, player_name,
+      league, game_time, home_team, away_team, created_at
     )
     VALUES (
       :sport, :event_id, :market_key, :outcome_key, :bookmaker,
-      :line, :price, :league, :game_time, :home_team, :away_team, :created_at
+      :line, :price, :implied_prob, :player_name,
+      :league, :game_time, :home_team, :away_team, :created_at
     )
-    ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker)
+    ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, player_name)
     DO UPDATE SET
       line = EXCLUDED.line,
       price = EXCLUDED.price,
+      implied_prob = EXCLUDED.implied_prob,
       league = EXCLUDED.league,
       game_time = EXCLUDED.game_time,
       home_team = EXCLUDED.home_team,

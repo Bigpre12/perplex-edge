@@ -384,6 +384,8 @@ class UnifiedOdds(Base):
 
     line = Column(Float, nullable=True)          # numeric line if applicable
     price = Column(Float, nullable=False)        # decimal odds (not American)
+    implied_prob = Column(Float, nullable=True)   # percentage (0-1)
+    player_name = Column(String, index=True, nullable=True)
     league = Column(String, nullable=True)
     game_time = Column(DateTime(timezone=True), nullable=True)
     home_team = Column(String, nullable=True)

@@ -41,13 +41,17 @@ class BrainCLVTracker:
             
             exists = await cache.get(open_key)
             if not exists:
+                if line is None or price is None:
+                    logger.warning(f"CLV: Skipping opener for {event_id} due to missing data (line={line}, price={price})")
+                    continue
+
                 opening_data = {
-                    "line": float(line) if line else 0.0,
+                    "line": float(line),
                     "price": float(price),
                     "ts": datetime.now(timezone.utc).timestamp()
                 }
                 await cache.set(open_key, json.dumps(opening_data), 86400 * 3)
-                logger.debug(f"CLV: Recorded opener for {event_id} {player_slug} {outcome_key}")
+                logger.info(f"CLV: Recorded opener for {event_id} {player_slug} {outcome_key}")
 
     def _calculate_clv(self, open_line, open_price, close_line, close_price, side):
         """
@@ -107,15 +111,18 @@ class BrainCLVTracker:
                         
                         if open_raw:
                             open_data = json.loads(open_raw)
+                            # Guard against None in UnifiedOdds fields
+                            curr_line = float(o.line) if o.line is not None else 0.0
+                            curr_price = float(o.price) if o.price is not None else 0.0
+                            
                             beat, perc = self._calculate_clv(
                                 open_data["line"], open_data["price"],
-                                float(o.line) if o.line is not None else 0.0, 
-                                float(o.price) if o.price is not None else 0.0,
+                                curr_line, curr_price,
                                 o.outcome_key
                             )
                             
                             # Update the PropLine entry
-                            p.closing_line = float(o.line) if o.line is not None else 0.0
+                            p.closing_line = curr_line
                             p.clv_val = perc
                             p.beat_closing_line = beat
                 
