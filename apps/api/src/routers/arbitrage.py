@@ -18,13 +18,13 @@ def find_arb(over_odds: int, under_odds: int) -> Optional[dict]:
     arb_pct = (1 / over_dec) + (1 / under_dec)
     
     if arb_pct < 1.0:
-        profit_pct = round((1 - arb_pct) * 100, 2)
+        profit_pct = float(f"{float((1 - arb_pct) * 100):.2f}")
         stake = 100
         # Correctly calculate stakes for $100 total
-        over_stake = round((1 / over_dec) / arb_pct * stake, 2)
-        under_stake = round(stake - over_stake, 2)
+        over_stake = float(f"{float((1 / over_dec) / arb_pct * stake):.2f}")
+        under_stake = float(f"{float(stake - over_stake):.2f}")
         return {
-            "arb_percentage": round(arb_pct * 100, 2),
+            "arb_percentage": float(f"{float(arb_pct * 100):.2f}"),
             "profit_percentage": profit_pct,
             "over_stake": over_stake,
             "under_stake": under_stake,

@@ -6,7 +6,7 @@ import { Sparklines, SparklinesLine, SparklinesSpots } from "react-sparklines";
 import { useLiveData } from "@/hooks/useLiveData";
 import { api, isApiError, unwrap } from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
-import PageStates from "@/components/PageStates";
+import { UniversalDataGate, DataStatus } from "@/components/shared/UniversalDataGate";
 import GateLock from "@/components/GateLock";
 
 import { useLucrixStore } from "@/store";
@@ -32,6 +32,13 @@ export default function EVPage() {
     const [selectedBook, setSelectedBook] = useState("all");
 
     const fullPicks = unwrap(picks) || [];
+    const currentStatus = (picks as any)?.status || (loading ? "loading" : "ok");
+    const debugInfo = (picks as any)?.meta ? {
+        source: (picks as any).meta.source,
+        rows: (picks as any).meta.db_rows,
+        last_sync: (picks as any).meta.last_sync,
+        request_id: (picks as any).meta.request_id
+    } : undefined;
     const filteredPicks = fullPicks.filter((p: any) => {
         const matchesSearch = p.player_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              p.market_key?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -121,11 +128,12 @@ export default function EVPage() {
                     </div>
                 </div>
 
-                <PageStates
-                    loading={loading && !picks}
-                    error={error}
-                    empty={!loading && (!picks || picks.length === 0)}
-                    emptyMessage="No high-EV edges found right now. Markets are stable."
+                <UniversalDataGate
+                    status={currentStatus as DataStatus}
+                    isLoading={loading && !picks}
+                    data={filteredPicks}
+                    debugInfo={debugInfo}
+                    onRetry={refresh}
                 >
                     <div className="bg-lucrix-surface border border-lucrix-border rounded-xl overflow-x-auto shadow-card">
                         <table className="w-full text-left min-w-[800px]">
@@ -202,7 +210,7 @@ export default function EVPage() {
                             </tbody>
                         </table>
                     </div>
-                </PageStates>
+                </UniversalDataGate>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-lucrix-surface border border-lucrix-border p-6 rounded-xl flex items-start gap-4 shadow-card">

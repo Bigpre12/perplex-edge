@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, List, Optional, Dict, Any
+from itertools import islice
 
 from core.config import settings
 from services.props_service import props_service
@@ -31,7 +32,7 @@ class OracleService:
             # Note: We use the already built async services
             top_props = await props_service.get_all_props(sport)
             # Limit context size
-            top_props_sample = top_props[:15] if top_props else []
+            top_props_sample = list(islice(top_props, 15)) if top_props else []
             
             # 2. Fetch live signals (Whale & Steam)
             whale_signals = await detect_whale_signals(sport)
@@ -72,9 +73,9 @@ class OracleService:
                 "top_props": top_props_sample,
                 "ev_signals": ev_signals, # Fix #11
                 "brain_metrics": metrics,
-                "whale_signals": whale_signals[:10],
+                "whale_signals": list(islice(whale_signals, 10)) if isinstance(whale_signals, list) else [],
                 "steam_events": steam_events,
-                "injuries": injuries[:10] if isinstance(injuries, list) else [],
+                "injuries": list(islice(injuries, 10)) if isinstance(injuries, list) else [],
                 "note": "All data is real-time from the Lucrix pipeline. Whale signals indicate heavy sharp money."
             }
             
@@ -130,15 +131,20 @@ RULES:
 - If data is missing for a specific query, state it clearly rather than guessing.
 """
         try:
-            # We insert the system prompt at the beginning of the conversation
-            full_messages = [
-                {"role": "system", "content": system_prompt},
-                *messages[-10:] # Limit to last 10 for tokens
-            ]
+            # Final safety check before calling client
+            if not self.client or not hasattr(self.client, 'chat'):
+                yield "Oracle is currently unavailable (API client not configured)."
+                return
 
+            # Use islice to avoid slice operator issues
+            msg_list: List[Dict[str, str]] = list(islice(messages, max(0, len(messages)-10), len(messages)))
+            
             stream = await self.client.chat.completions.create(
                 model=settings.ORACLE_MODEL,
-                messages=full_messages,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    *msg_list
+                ],
                 stream=True,
                 max_tokens=settings.ORACLE_MAX_TOKENS,
                 temperature=settings.ORACLE_TEMPERATURE

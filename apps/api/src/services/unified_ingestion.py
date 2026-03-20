@@ -14,7 +14,7 @@ from services.persistence_helpers import upsert_props_live, insert_props_history
 from core.config import settings
 from services.brains import sharp_money_brain, brain_clv_tracker, injury_impact_brain, brain_advanced_service
 from services.unified_odds_persistence import upsert_unified_odds
-from services.odds_api_client import odds_api_client
+from services.heartbeat_service import HeartbeatService
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,8 @@ class UnifiedIngestionService:
 
         if not events_raw:
             logger.error(f"UnifiedIngestion: No events found for {sport_key}. Ingestion cycle aborted.")
+            async with async_session_maker() as session:
+                await HeartbeatService.log_heartbeat(session, f"ingest_{sport_key}", status="upstream_error", meta={"error": "No events found"})
             return
 
         # Map event_id -> metadata
@@ -101,6 +103,8 @@ class UnifiedIngestionService:
 
         if not odds_raw:
             logger.warning(f"UnifiedIngestion: No odds (bulk or props) found for {sport_key}. Skipping persistence.")
+            async with async_session_maker() as session:
+                await HeartbeatService.log_heartbeat(session, f"ingest_{sport_key}", status="upstream_error", meta={"error": "No odds found"})
             return
 
         # 3. Normalize into PropRecords
@@ -179,6 +183,16 @@ class UnifiedIngestionService:
 
         metrics["status"] = "completed" if not metrics["errors"] else "partial_success"
         logger.info(f"🏁 UnifiedIngestion Cycle Complete: {json.dumps(metrics)}")
+        
+        async with async_session_maker() as session:
+            await HeartbeatService.log_heartbeat(
+                session, 
+                f"ingest_{sport_key}", 
+                status="ok" if not metrics["errors"] else "error",
+                rows_written=metrics.get("rows_upserted", 0),
+                error_count=len(metrics["errors"]),
+                meta={"metrics": metrics}
+            )
 
     async def run_with_retries(self, sport_key: str, retries: int = 3):
         """Robust entrypoint with exponential backoff for transient API failures."""
@@ -194,5 +208,12 @@ class UnifiedIngestionService:
                     await asyncio.sleep(wait)
                 else:
                     logger.critical(f"UnifiedIngestion: ALL ATTEMPTS FAILED for {sport_key}")
+                    async with async_session_maker() as session:
+                        await HeartbeatService.log_heartbeat(
+                            session, 
+                            f"ingest_{sport_key}", 
+                            status="pipeline_error",
+                            meta={"error": str(e), "attempts": retries}
+                        )
 
 unified_ingestion = UnifiedIngestionService()

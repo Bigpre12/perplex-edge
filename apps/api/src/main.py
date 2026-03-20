@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import APP_NAME, settings
+from middleware.request_id import RequestIDMiddleware
 from db.base import Base
 from db.session import engine
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -194,6 +195,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestIDMiddleware)
 
 @app.get("/api/smart-money")
 async def get_sharp_signals():

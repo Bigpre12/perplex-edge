@@ -8,6 +8,7 @@ from schemas.unified import ClvTradeSchema
 from models.prop import PropLine
 from common_deps import get_user_tier
 from datetime import datetime, timezone, timedelta
+from itertools import islice
 
 router = APIRouter(tags=["clv"])
 
@@ -105,7 +106,7 @@ async def get_clv_history(
     
     return {
         "status": "active",
-        "data": [ClvTradeSchema.model_validate(r) for r in results[:limit]],
+        "data": [ClvTradeSchema.model_validate(r) for r in list(islice(results, limit))],
         "count": len(results)
     }
 
@@ -129,9 +130,9 @@ async def get_clv_summary(
     res = await db.execute(stmt)
     summary = res.fetchone()
     
-    total = summary.total or 0
-    beats = summary.beats or 0
-    avg_clv = float(summary.avg_clv or 0.0)
+    total = summary.total if summary and summary.total else 0
+    beats = summary.beats if summary and summary.beats else 0
+    avg_clv = float(summary.avg_clv) if summary and summary.avg_clv else 0.0
     
     beat_rate = (beats / total * 100) if total > 0 else 0.0
     
@@ -139,8 +140,8 @@ async def get_clv_summary(
         "status": "active",
         "metrics": {
             "total_tracked": total,
-            "beat_rate_pct": round(beat_rate, 2),
-            "avg_clv_pct": round(avg_clv, 2),
+            "beat_rate_pct": float(f"{float(beat_rate):.2f}"),
+            "avg_clv_pct": float(f"{float(avg_clv):.2f}"),
             "edge_proven": avg_clv > 2.0 # Institutional benchmark
         }
     }

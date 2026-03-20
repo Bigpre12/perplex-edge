@@ -9,10 +9,10 @@ import { useLucrixStore } from "@/store";
 import GateLock from "@/components/GateLock";
 import PropsEmptyState from "@/components/PropsEmptyState";
 import LiveStatusBar from "@/components/LiveStatusBar";
-import PageStates from "@/components/PageStates";
 import { api, unwrap } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
 import SportSelector from "@/components/shared/SportSelector";
+import { UniversalDataGate, DataStatus } from "@/components/shared/UniversalDataGate";
 import { useFreshness } from "@/hooks/useFreshness";
 import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
 import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggle";
@@ -49,8 +49,16 @@ function PlayerPropsContent() {
 
     const [selectedHero, setSelectedHero] = useState<string | null>(null);
 
-    const fullData = unwrap(propsData);
+    const fullData = unwrap(propsData) || [];
     const { tier: activeTier, propsLimit } = useGate();
+
+    const currentStatus = (propsData as any)?.status || (loading ? "loading" : "ok");
+    const debugInfo = (propsData as any)?.meta ? {
+        source: (propsData as any).meta.source,
+        rows: (propsData as any).meta.db_rows,
+        last_sync: (propsData as any).meta.last_sync,
+        request_id: (propsData as any).meta.request_id
+    } : undefined;
     
     // Grouping for Historical Mode
     const historicalGroups = isHistorical ? fullData.reduce((acc: any, tick: any) => {
@@ -128,11 +136,12 @@ function PlayerPropsContent() {
                 />
             </div>
 
-            <PageStates
-                loading={loading && !propsData}
-                error={error}
-                empty={!loading && filtered.length === 0}
-                status={status}
+            <UniversalDataGate
+                status={currentStatus as DataStatus}
+                isLoading={loading && !propsData}
+                data={filtered}
+                debugInfo={debugInfo}
+                onRetry={refresh}
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filtered.map((item: any, i: number) => (
@@ -165,7 +174,7 @@ function PlayerPropsContent() {
                         <div className="absolute inset-0 bg-brand-cyan/5 blur-3xl rounded-full scale-50 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                 )}
-            </PageStates>
+            </UniversalDataGate>
         </div>
     );
 }

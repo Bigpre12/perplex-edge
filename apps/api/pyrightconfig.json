@@ -1,0 +1,13 @@
+{
+  "include": ["src"],
+  "exclude": ["**/__pycache__"],
+  "venvPath": "../../",
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": "src"
+    }
+  ],
+  "pythonVersion": "3.10",
+  "typeCheckingMode": "basic"
+}

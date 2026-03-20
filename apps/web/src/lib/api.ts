@@ -6,6 +6,7 @@ type QueryValue = string | number | boolean | undefined | null;
 
 export const unwrap = (d: any): any => {
     if (!d || isApiError(d)) return [];
+    if (d.status && d.data !== undefined) return d.data; // New UniversalResponse shape
     if (Array.isArray(d)) return d;
     return d.data || d.results || d.items || d.props || d.games || d.decisions || d.injuries || d.alerts || d;
 };
@@ -46,9 +47,12 @@ async function request<T = any>(
     try {
         const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
         
+        const requestId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11);
+        
         const res = await fetch(buildUrl(path, params), {
             headers: {
                 "Content-Type": "application/json",
+                "x-request-id": requestId,
                 ...(token ? { "Authorization": `Bearer ${token}` } : {}),
                 ...(options?.headers || {}),
             },

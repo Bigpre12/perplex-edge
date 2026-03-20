@@ -4,6 +4,7 @@ from sqlalchemy import select, func, desc, and_, case, Integer
 from db.session import async_session_maker
 from models.brain import ModelPick
 from typing import List, Dict, Any
+from itertools import islice
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,8 @@ class HitRateService:
     """
 
     async def get_summary(self, sport: str = "all") -> Dict[str, Any]:
-        async with async_session_maker() as session:
-            try:
+        try:
+            async with async_session_maker() as session:
                 # 1. Base query for graded picks
                 filters = [ModelPick.won != None]
                 if sport != "all":
@@ -37,8 +38,8 @@ class HitRateService:
                 profit = summary["net_profit"] or 0.0
                 
                 # Accuracy & ROI
-                win_rate = round((wins / total * 100), 1) if total > 0 else 0
-                roi = round((profit / total * 100), 1) if total > 0 else 0 # Assuming 1 unit per bet
+                win_rate = float(f"{(wins / total * 100):.1f}") if total > 0 else 0.0
+                roi = float(f"{(profit / total * 100):.1f}") if total > 0 else 0.0 # Assuming 1 unit per bet
                 
                 # 3. Current Streak (Last 10)
                 streak_stmt = select(ModelPick.won).where(and_(*filters)).order_by(desc(ModelPick.created_at)).limit(10)
@@ -56,13 +57,14 @@ class HitRateService:
                     "status": "healthy" if total > 0 else "awaiting_ingest",
                     "last_updated": datetime.now(timezone.utc).isoformat()
                 }
-            except Exception as e:
-                logger.error(f"HitRateService summary failed: {e}")
-                return {"error": str(e), "status": "error"}
+        except Exception as e:
+            logger.error(f"HitRateService summary failed: {e}")
+            return {"error": str(e), "status": "error"}
+        return {} # Fallback
 
     async def get_player_breakdown(self, sport: str = "all", slate_only: bool = False) -> List[Dict[str, Any]]:
-        async with async_session_maker() as session:
-            try:
+        try:
+            async with async_session_maker() as session:
                 # Basic breakdown grouping by player and market
                 filters = [ModelPick.won != None]
                 if sport != "all":
@@ -81,7 +83,7 @@ class HitRateService:
                 
                 results = []
                 for r in rows:
-                    win_rate = round((r.wins / r.sample_size * 100), 1)
+                    win_rate = float(f"{(r.wins / r.sample_size * 100):.1f}")
                     
                     # Confidence Tier
                     if r.sample_size >= 100:
@@ -103,14 +105,15 @@ class HitRateService:
                     })
                 
                 return results
-            except Exception as e:
-                logger.error(f"HitRateService breakdown failed: {e}")
-                return []
+        except Exception as e:
+            logger.error(f"HitRateService breakdown failed: {e}")
+            return []
+        return [] # Fallback
 
     async def get_trend_data(self, sport: str = "all") -> List[Dict[str, Any]]:
         """Provides daily win-rate trend for charts."""
-        async with async_session_maker() as session:
-            try:
+        try:
+            async with async_session_maker() as session:
                 # Group by day
                 stmt = select(
                     func.date_trunc('day', ModelPick.created_at).label('day'),
@@ -124,13 +127,14 @@ class HitRateService:
                 return [
                     {
                         "date": r.day.strftime("%Y-%m-%d") if r.day else "Unknown",
-                        "win_rate": round((r.wins / r.total * 100), 1) if r.total > 0 else 0
+                        "win_rate": float(f"{(r.wins / r.total * 100):.1f}") if r.total > 0 else 0.0
                     }
                     for r in rows
                 ]
-            except Exception as e:
-                logger.error(f"HitRateService trends failed: {e}")
-                return []
+        except Exception as e:
+            logger.error(f"HitRateService trends failed: {e}")
+            return []
+        return [] # Fallback
     async def get_outliers(
         self, 
         sport: str = "all", 
@@ -143,8 +147,8 @@ class HitRateService:
         Premium Prop Outliers Engine.
         Finds players hitting specific markets at high rates.
         """
-        async with async_session_maker() as session:
-            try:
+        try:
+            async with async_session_maker() as session:
                 from models.prop import PropLine
                 
                 # 1. Query settled prop lines for historical performance
@@ -176,8 +180,11 @@ class HitRateService:
                     player_groups[key]["results"].append(p.hit)
                 
                 outliers = []
-                for key, data in player_groups.items():
-                    results = data["results"][:window] # Only take the desired window
+                for key, data_val in player_groups.items():
+                    # Help type checker understand data_val is a dict
+                    data: Dict[str, Any] = data_val
+                    # Use islice to avoid slice operator issues with some type checkers
+                    results = list(islice(data["results"], window))
                     if not results: continue
                     
                     hits = sum(1 for r in results if r)
@@ -194,8 +201,9 @@ class HitRateService:
                         # Calculate Trend
                         trend = "stable"
                         if len(results) >= 4:
-                            recent = results[:len(results)//2]
-                            older = results[len(results)//2:]
+                            half = len(results) // 2
+                            recent = list(islice(results, half))
+                            older = list(islice(results, half, len(results)))
                             r_rate = sum(1 for r in recent if r) / len(recent)
                             o_rate = sum(1 for r in older if r) / len(older)
                             if r_rate > o_rate: trend = "up"
@@ -213,14 +221,14 @@ class HitRateService:
                             "sport": data["sport"],
                             "market": data["market"],
                             "line": data["line"],
-                            "hit_rate": round(hit_rate * 100, 1),
+                            "hit_rate": float(f"{(hit_rate * 100):.1f}"),
                             "hits": hits,
                             "total": total,
                             "streak": streak,
                             "trend": trend,
                             "results": results, 
                             "confidence": conf,
-                            "last_updated": data["last_updated"].isoformat() if data["last_updated"] else None
+                            "last_updated": str(data["last_updated"].isoformat()) if hasattr(data.get("last_updated"), "isoformat") else None
                         })
                 
                 outliers.sort(key=lambda x: (x["hit_rate"], x["streak"], x["total"]), reverse=True)
@@ -230,9 +238,11 @@ class HitRateService:
                     o["rank"] = i + 1
                     o["is_hot"] = o["hit_rate"] >= 80 and o["streak"] >= 2
                 
-                return outliers[:limit]
-            except Exception as e:
-                logger.error(f"HitRateService outliers failed: {e}")
-                return []
+                # Use islice for the final limit
+                return list(islice(outliers, limit))
+        except Exception as e:
+            logger.error(f"HitRateService outliers failed: {e}")
+            return []
+        return [] # Fallback
 
 hit_rate_service = HitRateService()
