@@ -52,6 +52,11 @@ except ImportError:
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
+@app.on_event("startup")
+async def startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
