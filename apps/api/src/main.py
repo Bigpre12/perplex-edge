@@ -112,8 +112,17 @@ async def startup():
             # information_schema check is for postgres. For sqlite (dev) we might skip or use pragma.
             is_sqlite = "sqlite" in str(engine.url)
             if not is_sqlite:
+                # Essential migrations for new canonical endpoints
                 await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR"))
+                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS true_prob FLOAT"))
+                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS edge_percent FLOAT"))
+                
+                await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS sport VARCHAR"))
                 await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT"))
+                
+                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sport VARCHAR"))
+                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ"))
+                
                 logging.info("Startup complete: Schema verified.")
             else:
                 logging.info("Startup complete: Database initialized (SQLite).")
