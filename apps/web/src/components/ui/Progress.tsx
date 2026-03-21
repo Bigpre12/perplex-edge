@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { clsx } from "clsx";
 
 interface ProgressProps {
@@ -11,6 +11,14 @@ interface ProgressProps {
 }
 
 export function Progress({ value, className, color = "success", showGlow = true }: ProgressProps) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.width = `${value}%`;
+    }
+  }, [value]);
+
   const colorClasses = {
     success: "bg-brand-success",
     warning: "bg-brand-warning",
@@ -26,6 +34,9 @@ export function Progress({ value, className, color = "success", showGlow = true 
   };
 
   return (
-    <div className={clsx("h-full transition-all duration-1000", colorClasses[color], showGlow && glowClasses[color], className)} style={{ width: `${value}%` } as React.CSSProperties} />
+    <div 
+      ref={ref}
+      className={clsx("h-full transition-all duration-1000", colorClasses[color], showGlow && glowClasses[color], className)} 
+    />
   );
 }
