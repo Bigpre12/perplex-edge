@@ -34,26 +34,40 @@ def _calculate_kelly(price: int, prob: float) -> float:
     quarter_kelly = (f_star * 0.25) * 100
     return round(max(0, quarter_kelly), 2)
 
-@router.get("/{sport}")
+# Legacy EV Endpoints
+@router.get("/ev-top")
 @router.get("")
 @router.get("/")
-@router.get("/ev-top")
-async def get_ev_signals(
+async def get_ev_signals_legacy(
     sport: str = Query("all", description="e.g. basketball_nba or all"),
     min_ev: float = Query(0.0, description="Minimum edge percentage"),
     limit: int = Query(50, description="Max results")
 ):
-    """
-    Returns top EV signals utilizing the canonical props format.
-    Strictly database-driven.
-    """
+    """Legacy endpoint supporting query params."""
     from services.props_service import get_canonical_props
     from datetime import datetime
     try:
         data = await get_canonical_props(sport=sport, min_ev=min_ev if min_ev > 0 else None, only_ev=True)
         return data
     except Exception as e:
-        logger.error(f"EV Router: Error fetching for {sport}: {e}")
+        logger.error(f"EV Router: Error fetching logic for {sport}: {e}")
+        return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
+
+# Phase 6 Canonical Board Endpoint
+@router.get("/{sport_path}")
+async def get_ev_signals_by_sport(
+    sport_path: str,
+    min_ev: float = Query(0.0, description="Minimum edge percentage"),
+    limit: int = Query(50, description="Max results")
+):
+    """Strict Canonical format by sport path var."""
+    from services.props_service import get_canonical_props
+    from datetime import datetime
+    try:
+        data = await get_canonical_props(sport=sport_path, min_ev=min_ev if min_ev > 0 else None, only_ev=True)
+        return data
+    except Exception as e:
+        logger.error(f"EV Router: Error fetching for {sport_path}: {e}")
         return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
 
 # Alias for use by intel.py

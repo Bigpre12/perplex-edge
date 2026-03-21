@@ -42,11 +42,11 @@ async def get_props_live(
         data=rows
     )
 
-@router.get("/{sport}")
+# Legacy Endpoint
 @router.get("")
 @router.get("/")
-async def list_props(
-    sport: str = "basketball_nba",
+async def list_props_legacy(
+    sport: str = Query("basketball_nba"),
     market: Optional[str] = None,
     min_ev: float = 0.0,
     search: Optional[str] = None,
@@ -55,14 +55,33 @@ async def list_props(
 ):
     """
     Returns canonical props for a sport utilizing the new get_canonical_props service method.
-    Shape matches what is expected by the frontend.
+    Shape matches what is expected by the frontend. Legacy query parameter fallback.
     """
     from services.props_service import get_canonical_props
     try:
         data = await get_canonical_props(sport=sport, min_ev=min_ev if min_ev > 0 else None, only_ev=False)
         return data
     except Exception as e:
-        logger.error(f"Error listing props for {sport}: {e}")
+        logger.error(f"Error listing props logic for {sport}: {e}")
+        return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
+
+# Phase 6 Canonical Board Endpoint
+@router.get("/{sport_path}")
+async def list_props_by_sport(
+    sport_path: str,
+    market: Optional[str] = None,
+    min_ev: float = 0.0,
+    search: Optional[str] = None,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Strict Canonical format by sport path var."""
+    from services.props_service import get_canonical_props
+    try:
+        data = await get_canonical_props(sport=sport_path, min_ev=min_ev if min_ev > 0 else None, only_ev=False)
+        return data
+    except Exception as e:
+        logger.error(f"Error listing props for {sport_path}: {e}")
         return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
 
 @router.get("/scored")

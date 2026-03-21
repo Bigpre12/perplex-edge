@@ -25,7 +25,7 @@ function LineMovementContent() {
 
   const { data: slate, isLoading: slateLoading, error: slateError, refetch: refetchSlate } = useQuery({
     queryKey: ['slate', sport],
-    queryFn: () => fetch(`${API_BASE}/api/slate?sport=${sport}`).then(r => r.json()),
+    queryFn: () => fetch(`${API_BASE}/api/slate/today?sport=${sport}`).then(r => r.json()),
     refetchInterval: 300_000,
   });
 
