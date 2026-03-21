@@ -218,7 +218,7 @@ async def startup():
     from services.brain_clv_tracker_loop import start_clv_tracker
     logging.info("CLV Tracker started.")
     
-app.add_middleware(RequestIDMiddleware)
+# app.add_middleware(RequestIDMiddleware) # Temporarily disabled to debug CORS stripping
 
 @app.get("/api/smart-money")
 async def get_sharp_signals():
