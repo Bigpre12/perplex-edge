@@ -404,11 +404,11 @@ class UnifiedEVSignal(Base):
     outcome_key = Column(String, nullable=False)
     player_name = Column(String, nullable=True)
     bookmaker = Column(String, nullable=False, index=True)
-    price = Column(Numeric, nullable=False)
-    line = Column(Numeric, nullable=True)
-    true_prob = Column(Numeric, nullable=False)
-    edge_percent = Column(Numeric, nullable=False)
-    implied_prob = Column(Numeric, nullable=False)
+    price = Column(Float, nullable=False)
+    line = Column(Float, nullable=True)
+    true_prob = Column(Float, nullable=False)
+    edge_percent = Column(Float, nullable=False)
+    implied_prob = Column(Float, nullable=False)
     engine_version = Column(String, nullable=False, server_default='v1')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
@@ -464,6 +464,11 @@ class PropLive(Base):
     implied_under = Column(Numeric, nullable=True)
     source_ts = Column(DateTime(timezone=True), nullable=True)
     ingested_ts = Column(DateTime(timezone=True), nullable=True)
+    is_best_over = Column(Boolean, default=False)
+    is_best_under = Column(Boolean, default=False)
+    is_soft_book = Column(Boolean, default=False)
+    is_sharp_book = Column(Boolean, default=False)
+    confidence = Column(Float, nullable=True) # 0.0 to 1.0
     last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     __table_args__ = (UniqueConstraint('sport', 'game_id', 'player_name', 'market_key', 'book', name='uix_props_live_unique'),)
 
@@ -492,11 +497,16 @@ class PropHistory(Base):
     source = Column(String, nullable=True)
     run_id = Column(String, nullable=True)
     is_close = Column(Boolean, default=False)
+    is_best_over = Column(Boolean, default=False)
+    is_best_under = Column(Boolean, default=False)
+    is_soft_book = Column(Boolean, default=False)
+    is_sharp_book = Column(Boolean, default=False)
+    confidence = Column(Float, nullable=True)
 
 class EdgeEVHistory(Base):
     """Historical record of EV edges found by the brain."""
     __tablename__ = "edges_ev_history"
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     sport = Column(String, nullable=False, index=True)
     league = Column(String, nullable=True)
     game_id = Column(String, nullable=False, index=True)

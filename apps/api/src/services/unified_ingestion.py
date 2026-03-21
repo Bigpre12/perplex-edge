@@ -116,6 +116,9 @@ class UnifiedIngestionService:
 
         # 3. Normalize into PropRecords
         records = odds_mapper.map_theodds_props_to_records(odds_raw, metadata_map, sport_key)
+        
+        # 3b. Market Intelligence: Best Odds, Soft/Sharp flagging
+        records = self.enrich_with_market_intel(records)
         metrics["odds_count"] = len(records)
         
         # 4. Standardized Persistence
@@ -222,5 +225,41 @@ class UnifiedIngestionService:
                             status="pipeline_error",
                             meta={"error": str(e), "attempts": retries}
                         )
+
+    def enrich_with_market_intel(self, records: List[PropRecord]) -> List[PropRecord]:
+        """
+        Flag Best Book and Sharp/Soft categorization.
+        """
+        if not records: return []
+        
+        # Grouping by (game_id, market_key, player_name, line)
+        groups: Dict[tuple, List[PropRecord]] = {}
+        for r in records:
+            # We use float(line) to group different Representations of the same numeric line
+            key = (r.game_id, r.market_key, r.player_name, float(r.line))
+            if key not in groups: groups[key] = []
+            groups[key].append(r)
+            
+        for key, prop_group in groups.items():
+            # Best Over (Max price / Min Implied)
+            best_over = max((r.odds_over for r in prop_group if r.odds_over is not None), default=None)
+            # Best Under (Max price / Min Implied)
+            best_under = max((r.odds_under for r in prop_group if r.odds_under is not None), default=None)
+            
+            for r in prop_group:
+                if best_over is not None and r.odds_over == best_over:
+                    r.is_best_over = True
+                if best_under is not None and r.odds_under == best_under:
+                    r.is_best_under = True
+                
+                # Book category
+                book_lower = r.book.lower()
+                r.is_sharp_book = any(s in book_lower for s in settings.SHARP_BOOKMAKERS)
+                r.is_soft_book = any(s in book_lower for s in settings.SOFT_BOOKMAKERS)
+                
+                # Simple confidence metric based on book counts for this line
+                r.confidence = float(min(len(prop_group) / 10.0, 1.0))
+                
+        return records
 
 unified_ingestion = UnifiedIngestionService()

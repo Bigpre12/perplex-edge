@@ -74,6 +74,11 @@ def records_to_rows(records: List[PropRecord]) -> List[Dict[str, Any]]:
                 "source": "live_ingest",
                 "run_id": None,
                 "is_close": False,
+                "is_best_over": r.is_best_over,
+                "is_best_under": r.is_best_under,
+                "is_soft_book": r.is_soft_book,
+                "is_sharp_book": r.is_sharp_book,
+                "confidence": r.confidence,
             }
         )
     return rows
@@ -88,7 +93,9 @@ async def upsert_props_live(rows: List[Dict[str, Any]]) -> None:
       market_key, market_label, line,
       book, odds_over, odds_under,
       implied_over, implied_under,
-      last_updated_at
+      is_best_over, is_best_under,
+      is_soft_book, is_sharp_book,
+      confidence, last_updated_at
     )
     values (
       :sport, :league, :game_id, :game_start_time,
@@ -96,7 +103,9 @@ async def upsert_props_live(rows: List[Dict[str, Any]]) -> None:
       :market_key, :market_label, :line,
       :book, :odds_over, :odds_under,
       :implied_over, :implied_under,
-      :last_updated_at
+      :is_best_over, :is_best_under,
+      :is_soft_book, :is_sharp_book,
+      :confidence, :last_updated_at
     )
     on conflict (sport, game_id, player_id, market_key, book)
     do update set
@@ -105,6 +114,11 @@ async def upsert_props_live(rows: List[Dict[str, Any]]) -> None:
       odds_under = excluded.odds_under,
       implied_over = excluded.implied_over,
       implied_under = excluded.implied_under,
+      is_best_over = excluded.is_best_over,
+      is_best_under = excluded.is_best_under,
+      is_soft_book = excluded.is_soft_book,
+      is_sharp_book = excluded.is_sharp_book,
+      confidence = excluded.confidence,
       last_updated_at = excluded.last_updated_at;
     """
     # Note: Using :param style for SQLAlchemy text() execution in my DBWrapper
@@ -121,7 +135,10 @@ async def insert_props_history(rows: List[Dict[str, Any]]) -> None:
       market_key, market_label, line,
       book, odds_over, odds_under,
       implied_over, implied_under,
-      source, run_id, is_close
+      source, run_id, is_close,
+      is_best_over, is_best_under,
+      is_soft_book, is_sharp_book,
+      confidence
     )
     values (
       :snapshot_at,
@@ -130,7 +147,10 @@ async def insert_props_history(rows: List[Dict[str, Any]]) -> None:
       :market_key, :market_label, :line,
       :book, :odds_over, :odds_under,
       :implied_over, :implied_under,
-      :source, :run_id, :is_close
+      :source, :run_id, :is_close,
+      :is_best_over, :is_best_under,
+      :is_soft_book, :is_sharp_book,
+      :confidence
     );
     """
     await db.executemany(query, rows)

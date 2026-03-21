@@ -1,8 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { API, isApiError } from "@/lib/api";
 import { useSport } from "@/context/SportContext";
+import { motion, AnimatePresence } from "framer-motion";
+import { Cpu, Zap, Shield, Activity, BarChart, Lock } from "lucide-react";
 
 interface BrainData {
   props_scored:    number;
@@ -52,23 +55,16 @@ export default function NeuralEngineBrain() {
       }
     };
     load();
-    const interval = setInterval(load, 60000); // Refresh every minute
+    const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
   }, [selectedSport]);
 
   if (!mounted) {
     return (
-      <div className="bg-lucrix-surface border border-lucrix-border rounded-xl p-6 min-h-[150px] animate-pulse shadow-card">
-        <div className="h-4 w-32 bg-lucrix-elevated rounded mb-4" />
-        <div className="grid grid-cols-3 gap-3">
-          <div className="h-16 bg-lucrix-elevated rounded-lg" />
-          <div className="h-16 bg-lucrix-elevated rounded-lg" />
-          <div className="h-16 bg-lucrix-elevated rounded-lg" />
-        </div>
-        <div className="grid grid-cols-3 gap-3 mt-3">
-          <div className="h-16 bg-lucrix-elevated rounded-lg" />
-          <div className="h-16 bg-lucrix-elevated rounded-lg" />
-          <div className="h-16 bg-lucrix-elevated rounded-lg" />
+      <div className="bg-lucrix-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 min-h-[250px] animate-pulse space-y-6">
+        <div className="h-6 w-48 bg-white/5 rounded-lg" />
+        <div className="grid grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-20 bg-white/5 rounded-2xl" />)}
         </div>
       </div>
     );
@@ -77,65 +73,90 @@ export default function NeuralEngineBrain() {
   const showAll = isPro || isDev;
 
   return (
-    <div className="bg-lucrix-surface border border-lucrix-border rounded-xl p-6 shadow-card">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-            <span className="text-brand-success animate-pulse">⚡</span>
-            <h2 className="text-sm font-black tracking-widest text-white uppercase font-display">Neural Engine Brain</h2>
+    <div className="bg-lucrix-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
+      {/* Background Decorator */}
+      <div className="absolute top-0 right-0 w-64 h-64 -mr-32 -mt-32 bg-brand-primary/10 rounded-full blur-[100px] animate-pulse" />
+      
+      <div className="flex items-center justify-between mb-8 relative z-10">
+        <div className="flex items-center gap-3">
+            <div className="p-2 bg-brand-primary/20 rounded-xl border border-brand-primary/30 shadow-glow shadow-brand-primary/10">
+                <Cpu size={20} className="text-brand-primary animate-pulse" />
+            </div>
+            <div>
+                <h2 className="text-lg font-black italic tracking-tighter text-white uppercase leading-none mb-1">Neural Core</h2>
+                <p className="text-[10px] text-textMuted font-black uppercase tracking-widest italic">Quantum Inference Matrix</p>
+            </div>
         </div>
-        <span className="text-[9px] bg-brand-success/10 border border-brand-success/20 text-brand-success px-1.5 py-0.5 rounded-sm uppercase tracking-widest font-black shrink-0">
-          Connected
-        </span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-success/10 border border-brand-success/20">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-brand-success animate-ping" />
+            <span className="text-[9px] font-black text-brand-success uppercase tracking-widest">Connected</span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-3">
-        {/* Card 1 — Brain Decisions (tier-gated) */}
-        {showAll ? (
-          <BrainCard label="BRAIN DECISIONS" value={String(data.decisions.length)} />
-        ) : (
-          <LockedCard />
-        )}
-        {/* Card 2 — also tier-gated */}
-        {showAll ? (
-          <BrainCard label="ACTIVE EDGES" value={data.active_edges > 0 ? String(data.active_edges) : "Awaiting..."} />
-        ) : (
-          <LockedCard />
-        )}
-        {/* Card 3 — tier-gated */}
-        {showAll ? (
-          <BrainCard label="CLV TRACKED" value={data.clv_enabled ? "ON" : "OFF"} />
-        ) : (
-          <LockedCard />
-        )}
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <BrainCard label="INJURY IMPACTS" value={data.injury_impacts > 0 ? `${data.injury_impacts} Critical` : "Awaiting..."} />
-        <BrainCard label="PROPS SCORED"   value={data.props_scored > 0 ? String(data.props_scored) : "Awaiting..."} />
-        {showAll ? (
-          <BrainCard label="AI REASONING" value={data.brain_health === 'initializing' ? 'AWAITING...' : String(data.brain_health ?? 'ACTIVE').toUpperCase()} />
-        ) : (
-          <LockedCard />
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+        <BrainCard 
+            label="BRAIN DECISIONS" 
+            value={showAll ? String(data.decisions.length) : null} 
+            icon={<Zap size={14} className="text-brand-primary" />}
+            isLocked={!showAll}
+        />
+        <BrainCard 
+            label="ACTIVE EDGES" 
+            value={showAll ? (data.active_edges > 0 ? String(data.active_edges) : "0") : null} 
+            icon={<BarChart size={14} className="text-brand-cyan" />}
+            isLocked={!showAll}
+        />
+        <BrainCard 
+            label="CLV ENGINE" 
+            value={showAll ? (data.clv_enabled ? "OPTIMIZED" : "STBY") : null} 
+            icon={<Shield size={14} className="text-brand-success" />}
+            isLocked={!showAll}
+        />
+        <BrainCard 
+            label="INJURY IMPACT" 
+            value={data.injury_impacts > 0 ? `${data.injury_impacts} ACT` : "NOMINAL"} 
+            icon={<Activity size={14} className="text-brand-danger" />}
+            color="text-brand-danger"
+        />
+        <BrainCard 
+            label="PROPS SCORED"   
+            value={data.props_scored > 0 ? String(data.props_scored) : "0"} 
+            icon={<Activity size={14} className="text-brand-purple" />}
+            color="text-brand-purple"
+        />
+        <BrainCard 
+            label="AI REASONING" 
+            value={showAll ? (data.brain_health === 'initializing' ? 'INITIALIZING' : String(data.brain_health ?? 'ACTIVE').toUpperCase()) : null} 
+            icon={<Cpu size={14} className="text-brand-cyan" />}
+            isLocked={!showAll}
+        />
       </div>
     </div>
   );
 }
 
-function BrainCard({ label, value }: { label: string; value: string }) {
+function BrainCard({ label, value, icon, isLocked, color = "text-white" }: { label: string; value: string | null; icon: React.ReactNode; isLocked?: boolean; color?: string }) {
   return (
-    <div className="bg-lucrix-dark/50 border border-lucrix-border/50 rounded-lg p-3 text-center transition-colors hover:bg-lucrix-elevated">
-      <p className="text-[10px] text-textMuted uppercase tracking-widest mb-1.5 font-bold">{label}</p>
-      <p className="text-sm font-bold text-white font-mono">{value}</p>
-    </div>
-  );
-}
+    <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="relative p-4 rounded-2xl bg-lucrix-dark/40 border border-white/5 hover:border-white/10 hover:bg-white/5 transition-all overflow-hidden group/card"
+    >
+        <div className="flex items-center gap-2 mb-3">
+            {icon}
+            <p className="text-[9px] text-textMuted uppercase tracking-widest font-black italic">{label}</p>
+        </div>
+        
+        {isLocked ? (
+            <div className="flex items-center gap-2">
+                <Lock size={12} className="text-white/20" />
+                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">ELITE-ONLY</span>
+            </div>
+        ) : (
+            <p className={`text-lg font-black italic tracking-tight uppercase ${color}`}>{value || "---"}</p>
+        )}
 
-function LockedCard() {
-  return (
-    <div className="bg-lucrix-dark/30 border border-lucrix-border/30 rounded-lg p-3 text-center flex flex-col items-center justify-center">
-      <p className="text-[10px] font-black text-textMuted uppercase tracking-widest leading-none mb-1">ELITE</p>
-      <p className="text-[9px] text-textSecondary font-medium leading-none">Upgrade to unlock</p>
-    </div>
+        {/* Hover Glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity" />
+    </motion.div>
   );
 }

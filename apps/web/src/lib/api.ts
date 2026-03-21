@@ -1,98 +1,41 @@
 import { API_BASE } from "./apiConfig";
-import { UniversalResponse, PropLiveSchema } from "../types";
+import { UniversalResponse, PropLiveSchema, EvEdgeSchema, WhaleEventSchema, ClvTradeSchema } from "../types";
+import { apiClient, api as client, APIError } from "./apiClient";
+
 export { API_BASE };
-
-const API_BASE_URL = API_BASE;
-
-type QueryValue = string | number | boolean | undefined | null;
 
 export const unwrap = (d: any): any => {
     if (!d || isApiError(d)) return [];
-    if (d.status && d.data !== undefined) return d.data; // New UniversalResponse shape
+    if (d.status && d.data !== undefined) return d.data;
     if (Array.isArray(d)) return d;
     return d.data || d.results || d.items || d.props || d.games || d.decisions || d.injuries || d.alerts || d;
 };
 
-function buildUrl(path: string, params?: Record<string, QueryValue>) {
-    const url = new URL(`${API_BASE}${path}`);
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                url.searchParams.set(key, String(value));
-            }
-        });
-    }
-    return url.toString();
-}
-
-let failureCount = 0;
-let lastFailureTime = 0;
-const BREAKER_THRESHOLD = 5;
-const BREAKER_COOLDOWN = 30000; // 30s
-
+/**
+ * Legacy request wrapper for compatibility.
+ * Redirects to the new robust apiClient.
+ */
 async function request<T = any>(
     path: string,
     options?: RequestInit,
-    params?: Record<string, QueryValue>
+    params?: Record<string, any>
 ): Promise<T | Error> {
-    // Circuit Breaker Logic
-    if (failureCount >= BREAKER_THRESHOLD) {
-        const now = Date.now();
-        if (now - lastFailureTime < BREAKER_COOLDOWN) {
-            return new Error("Circuit breaker is open. Request blocked.");
-        } else {
-            // Half-open: allow one request to test the waters
-            failureCount = BREAKER_THRESHOLD - 1;
-        }
-    }
-
     try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
-        
-        const requestId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11);
-        
-        const res = await fetch(buildUrl(path, params), {
-            headers: {
-                "Content-Type": "application/json",
-                "x-request-id": requestId,
-                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-                ...(options?.headers || {}),
-            },
-            ...options,
-        });
-
-        if (!res.ok) {
-            failureCount++;
-            lastFailureTime = Date.now();
-            const text = await res.text();
-            let errorMessage = `${res.status} ${res.statusText}`;
-            try {
-                const json = JSON.parse(text);
-                errorMessage = json.detail || json.message || errorMessage;
-            } catch {
-                if (text && text.length < 100) errorMessage = text;
-            }
-            return new Error(errorMessage);
-        }
-
-        failureCount = 0; // Success! Reset breaker
-        return await res.json();
+        return await apiClient<T>(path, { ...options, params });
     } catch (e: any) {
-        failureCount++;
-        lastFailureTime = Date.now();
         return e instanceof Error ? e : new Error(String(e));
     }
 }
 
-export function isApiError(val: any): val is Error {
+export function isApiError(val: any): val is Error | APIError {
     return val instanceof Error || (val && typeof val === 'object' && ('error' in val || 'detail' in val));
 }
 
 export const api = {
     // Generic
-    get: <T = any>(path: string, params?: Record<string, QueryValue>) =>
+    get: <T = any>(path: string, params?: Record<string, any>) =>
         request<T>(path, { method: "GET" }, params),
-    post: <T = any>(path: string, body?: any, params?: Record<string, QueryValue>) =>
+    post: <T = any>(path: string, body?: any, params?: Record<string, any>) =>
         request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }, params),
     
     // Core
@@ -113,6 +56,12 @@ export const api = {
         request("/api/props/scored", { cache: 'no-store' }, { sport, limit }),
     hero: (player: string, sport = "basketball_nba") =>
         request(`/api/props/hero/${encodeURIComponent(player)}`, { cache: 'no-store' }, { sport }),
+        
+    // Canonical Board Endpoints (Phase 6)
+    propsBoard: (sport = "basketball_nba", minEv?: number) =>
+        request(`/api/props/${sport}`, { cache: 'no-store' }, minEv ? { min_ev: minEv } : undefined),
+    evBoard: (sport = "basketball_nba", minEv?: number) =>
+        request(`/api/ev/${sport}`, { cache: 'no-store' }, minEv ? { min_ev: minEv } : undefined),
 
     // Intel & Signals
     ev: {
@@ -272,10 +221,8 @@ export const apiFetch = request;
 export default api;
 
 /**
- * Circuit breaker reset — called by useHealthMonitor when the API comes back
- * online. Currently a no-op; extend if a real breaker is added in future.
+ * Circuit breaker reset — now a no-op as the new apiClient handles retries internally.
  */
 export function resetCircuit(): void {
-    failureCount = 0;
-    lastFailureTime = 0;
+    // Legacy support
 }

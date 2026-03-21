@@ -25,6 +25,11 @@ class PropRecord(BaseModel):
     implied_under: Optional[Decimal] = None
     source_ts: datetime
     ingested_ts: datetime = Field(default_factory=datetime.now)
+    is_best_over: bool = False
+    is_best_under: bool = False
+    is_soft_book: bool = False
+    is_sharp_book: bool = False
+    confidence: Optional[float] = None
 
     class Config:
         from_attributes = True

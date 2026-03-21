@@ -24,3 +24,9 @@ class PropRecord:
 
     implied_over: Optional[float]
     implied_under: Optional[float]
+    
+    is_best_over: bool = False
+    is_best_under: bool = False
+    is_soft_book: bool = False
+    is_sharp_book: bool = False
+    confidence: Optional[float] = None

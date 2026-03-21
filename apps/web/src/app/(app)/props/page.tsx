@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSport } from "@/hooks/useSport";
-import { useTierGate } from "@/hooks/useTierGate";
-import { API_BASE } from "@/lib/apiConfig";
+import { usePropsBoard, CanonicalProp } from "@/hooks/usePropsBoard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
-import { Trophy, Star, Zap, Clock } from "lucide-react";
+import { Trophy, Search, Clock, ShieldAlert, BarChart3, Info } from "lucide-react";
 import { clsx } from "clsx";
 
 export default function PropsPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING INTEL...</div>}>
+    <Suspense fallback={<div className="p-6 text-white text-center py-24 animate-pulse uppercase tracking-widest font-black italic">BOOTING INTEL...</div>}>
       <PropsPageContent />
     </Suspense>
   );
@@ -24,138 +22,286 @@ function PropsPageContent() {
   const { sport } = useSport();
   const searchParams = useSearchParams();
   
-  const market = searchParams.get("market") || "";
-  const date = searchParams.get("date") || new Date().toISOString().split('T')[0];
+  // Custom states for filters
+  const [search, setSearch] = useState("");
+  const [minEv, setMinEv] = useState<number>(-5);
+  const [statType, setStatType] = useState<string>("All");
+  const [quickChip, setQuickChip] = useState<string>("All");
 
-  const { data: propsData, isLoading, error, refetch } = useQuery({
-    queryKey: ['props', sport, market, date],
-    queryFn: () => fetch(`${API_BASE}/api/props?sport=${sport}&market=${market}&date=${date}`).then(async (r) => {
-      if (!r.ok) {
-        if (r.status === 403) throw new Error("403");
-        throw new Error(`API Error: ${r.statusText}`);
-      }
-      return r.json();
-    }),
-    refetchInterval: 60_000,
-    staleTime: 30_000
-  });
+  const { data, isLoading, error, refetch } = usePropsBoard(sport, minEv > 0 ? minEv : undefined);
 
-  const { data: limitedData, isLocked, isLoading: isGateLoading } = useTierGate(
-    { data: propsData, isLoading, error },
-    { requiredTier: "pro" }
-  );
+  const propsList = data?.props || [];
 
-  // If free tier, we only show top 10 if not locked by API
-  const displayData = isLocked ? [] : (limitedData?.slice(0, 50) || propsData?.slice(0, 10) || []);
+  // Derive unique stat types for the dropdown
+  const statTypes = useMemo(() => {
+    const types = new Set<string>();
+    propsList.forEach(p => types.add(p.stat_type));
+    return ["All", ...Array.from(types).sort()];
+  }, [propsList]);
 
-  if (isLoading || isGateLoading) {
+  // Filter and Sort logic
+  const filteredProps = useMemo(() => {
+    let result = [...propsList];
+
+    // Source data EV slider filter (handled locally if minEv < 0, else API did it)
+    if (minEv > -5) {
+      result = result.filter(p => p.ev_percentage >= minEv);
+    }
+
+    // Stat Type filter
+    if (statType !== "All") {
+      result = result.filter(p => p.stat_type === statType);
+    }
+
+    // Search filter
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter(p => 
+        p.player_name.toLowerCase().includes(s) || 
+        p.team.toLowerCase().includes(s) || 
+        p.opponent.toLowerCase().includes(s)
+      );
+    }
+
+    // Quick Chips filtering and sorting
+    if (quickChip === "+EV only") {
+      result = result.filter(p => p.ev_percentage > 0);
+      result.sort((a, b) => b.ev_percentage - a.ev_percentage);
+    } else if (quickChip === "High confidence") {
+      result = result.filter(p => p.confidence >= 70);
+      result.sort((a, b) => b.confidence - a.confidence);
+    } else if (quickChip === "Soonest start") {
+      result = result.filter(p => p.start_time);
+      result.sort((a, b) => new Date(a.start_time!).getTime() - new Date(b.start_time!).getTime());
+    } else {
+      // Default: sort by EV desc
+      result.sort((a, b) => b.ev_percentage - a.ev_percentage);
+    }
+
+    return result;
+  }, [propsList, minEv, statType, search, quickChip]);
+
+  if (isLoading) {
     return (
       <div className="space-y-6 pt-6 px-4">
         <div className="flex justify-between items-center mb-8">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="space-y-4">
           {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-64 w-full rounded-2xl" />
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
           ))}
         </div>
       </div>
     );
   }
 
-  if (error && !isLocked) {
-    return <div className="p-6"><ErrorBanner message={error?.message} onRetry={refetch} /></div>;
+  if (error) {
+    return <div className="p-6"><ErrorBanner message={error.message} onRetry={refetch} /></div>;
   }
 
   return (
-    <div className="pb-24 space-y-8 pt-6 px-4">
+    <div className="pb-24 pt-6 px-4 max-w-7xl mx-auto space-y-8">
+      {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="flex-1">
+        <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-brand-cyan/10 p-2 rounded-lg border border-brand-cyan/20">
               <Trophy size={24} className="text-brand-cyan shadow-glow shadow-brand-cyan" />
             </div>
-            <h1 className="text-3xl font-black italic tracking-tighter uppercase font-display text-white">Props Board</h1>
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase font-display text-white">Props Dashboard</h1>
           </div>
-          <p className="text-[10px] text-textMuted font-black uppercase tracking-widest mb-4 italic">Institutional Player Prop Decisioning</p>
+          <p className="text-[10px] text-textMuted font-black uppercase tracking-widest mb-4 italic">Institutional Edge Discovery · Live Updates</p>
           <SportSelector />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {displayData.map((prop: any, i: number) => (
-          <PropCard key={i} prop={prop} />
-        ))}
+      {/* Control Panel: Filters, Search, Chips */}
+      <div className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-4 md:p-6 space-y-6 shadow-card">
+        <div className="flex flex-col md:flex-row gap-6 md:items-end">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search player or team..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-lucrix-dark border border-lucrix-border rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-brand-cyan transition-colors"
+            />
+          </div>
+
+          {/* Stat Type */}
+          <div className="w-full md:w-48">
+            <label className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-2 block">Stat Type</label>
+            <select 
+              value={statType}
+              onChange={(e) => setStatType(e.target.value)}
+              className="w-full bg-lucrix-dark border border-lucrix-border rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-brand-cyan transition-colors appearance-none"
+            >
+              {statTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+
+          {/* Slider */}
+          <div className="w-full md:w-64">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-textMuted">Min EV Threshold</label>
+              <span className={clsx("text-xs font-mono font-black", minEv > 0 ? "text-brand-success" : "text-textMuted")}>{minEv}%</span>
+            </div>
+            <input 
+              type="range" 
+              min="-5" max="20" step="0.5"
+              value={minEv}
+              onChange={(e) => setMinEv(parseFloat(e.target.value))}
+              className="w-full accent-brand-cyan"
+            />
+          </div>
+        </div>
+
+        {/* Quick Chips */}
+        <div className="flex flex-wrap gap-2">
+          {["All", "+EV only", "High confidence", "Soonest start"].map(chip => (
+            <button 
+              key={chip}
+              onClick={() => setQuickChip(chip)}
+              className={clsx(
+                "px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all",
+                quickChip === chip 
+                  ? "bg-brand-cyan text-black shadow-glow shadow-brand-cyan/30" 
+                  : "bg-lucrix-dark text-textMuted border border-lucrix-border hover:border-textMuted"
+              )}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {isLocked && (
-        <div className="mt-12 p-12 text-center bg-gradient-to-b from-brand-cyan/10 to-transparent border border-brand-cyan/20 rounded-2xl relative overflow-hidden group cursor-pointer" onClick={() => window.location.href = "/subscription"}>
-          <div className="relative z-10">
-            <Star size={40} className="mx-auto text-brand-cyan mb-4 animate-pulse shadow-glow shadow-brand-cyan" />
-            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-2 text-white font-display">
-              Advanced Intel Locked
-            </h3>
-            <p className="text-textSecondary text-sm max-w-md mx-auto mb-8 font-bold">
-              Upgrade to Pro or Elite to Reveal All sharp edges and model predictions for player props.
-            </p>
-            <button className="bg-brand-cyan hover:bg-brand-cyan/90 text-black px-10 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-glow shadow-brand-cyan/50">
-              Unlock All Intel →
-            </button>
+      {/* Top Summary Strip */}
+      {data && (
+        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-textMuted px-2">
+          <div>
+            <span className="text-white">{filteredProps.length}</span> Props Found
+            {filteredProps.length > 0 && ` · Max EV: `}
+            {filteredProps.length > 0 && <span className="text-brand-success">{Math.max(...filteredProps.map(p => p.ev_percentage)).toFixed(1)}%</span>}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock size={10} />
+            Updated {new Date(data.updated).toLocaleTimeString()}
           </div>
         </div>
       )}
+
+      {/* Main Table View */}
+      <div className="bg-lucrix-surface border border-lucrix-border rounded-2xl overflow-x-auto shadow-card">
+        {filteredProps.length === 0 ? (
+          <div className="p-12 text-center text-textMuted font-bold text-sm">
+            No props available matching your criteria. Try adjusting filters or EV threshold.
+          </div>
+        ) : (
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="border-b border-lucrix-border">
+                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-textMuted whitespace-nowrap">Player & Matchup</th>
+                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-textMuted">Stat & Line</th>
+                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-textMuted">Best Odds</th>
+                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-textMuted">EV%</th>
+                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-textMuted">Confidence</th>
+                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-textMuted text-right">Intel</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-lucrix-border/50">
+              {filteredProps.map(prop => (
+                <PropRow key={prop.id} prop={prop} />
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      
+      {/* Disclaimer */}
+      <div className="text-center text-[10px] font-bold text-textMuted/50 max-w-2xl mx-auto flex items-center justify-center gap-2">
+        <Info size={12} />
+        EV% and Confidence are model-based estimations and not guaranteed outcomes. <a href="#" className="underline">View Track Record</a>
+      </div>
     </div>
   );
 }
 
-function PropCard({ prop }: { prop: any }) {
+function PropRow({ prop }: { prop: CanonicalProp }) {
+  const isPositiveEv = prop.ev_percentage > 0;
+  
   return (
-    <div className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-6 transition-all group shadow-card hover:border-brand-cyan/30 flex flex-col justify-between">
-      <div>
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <div className="text-lg font-black tracking-tight text-white font-display italic uppercase">{prop.player_name}</div>
-            <div className="text-[10px] font-black uppercase text-brand-cyan tracking-widest mt-1">
-              {prop.market || prop.stat_type?.replace('_', ' ') || "POINTS"}
-            </div>
+    <tr className="group hover:bg-lucrix-dark/50 transition-colors">
+      <td className="p-4 py-5 align-middle">
+        <div className="flex flex-col">
+          <span className="text-sm font-black italic uppercase tracking-tighter text-white font-display">{prop.player_name}</span>
+          <span className="text-[10px] font-bold text-textSecondary">{prop.team} vs {prop.opponent}</span>
+        </div>
+      </td>
+      <td className="p-4 align-middle">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black uppercase tracking-widest text-brand-cyan">{prop.stat_type}</span>
+          <span className="text-lg font-black font-display text-white leading-none mt-1">{prop.line}</span>
+        </div>
+      </td>
+      <td className="p-4 align-middle">
+        <div className="flex gap-2">
+          <div className="flex flex-col items-center bg-lucrix-dark border border-lucrix-border p-1.5 rounded-lg px-2">
+            <span className="text-[8px] font-black text-textMuted uppercase mb-0.5">Ovr</span>
+            <span className={clsx("text-xs font-mono font-black", prop.over_odds > 0 ? "text-brand-success" : "text-white")}>
+              {prop.over_odds > 0 ? `+${prop.over_odds}` : prop.over_odds}
+            </span>
           </div>
-          <div className="text-right">
-            <div className="text-[8px] font-black text-textMuted uppercase tracking-widest">Slate</div>
-            <div className="text-xs font-bold text-textSecondary">{prop.sport?.toUpperCase()}</div>
+          <div className="flex flex-col items-center bg-lucrix-dark border border-lucrix-border p-1.5 rounded-lg px-2">
+            <span className="text-[8px] font-black text-textMuted uppercase mb-0.5">Und</span>
+            <span className={clsx("text-xs font-mono font-black", prop.under_odds > 0 ? "text-brand-success" : "text-white")}>
+              {prop.under_odds > 0 ? `+${prop.under_odds}` : prop.under_odds}
+            </span>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <PriceBox side="OVER" line={prop.line} odds={prop.over_odds} book={prop.best_over_book} />
-          <PriceBox side="UNDER" line={prop.line} odds={prop.under_odds} book={prop.best_under_book} />
+      </td>
+      <td className="p-4 align-middle relative">
+        <div className="group/tooltip inline-block relative cursor-help">
+          <div className={clsx(
+            "px-3 py-1 rounded-full text-xs font-black tracking-widest whitespace-nowrap border",
+            isPositiveEv ? "bg-brand-success/10 text-brand-success border-brand-success/20" : "bg-brand-danger/10 text-brand-danger border-brand-danger/20 text-opacity-80"
+          )}>
+            {prop.ev_percentage > 0 ? "+" : ""}{prop.ev_percentage.toFixed(1)}%
+          </div>
+          {/* Tooltip */}
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-lucrix-background border border-lucrix-border p-3 rounded-lg shadow-xl w-48 text-[10px] text-textSecondary opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-opacity z-50">
+            <div className="font-bold text-white mb-1 uppercase tracking-widest">Edge Explanation</div>
+            <div>Model Fair Prob: {(prop.model_probability * 100).toFixed(1)}%</div>
+            <div>Implied Prob: {(prop.implied_probability * 100).toFixed(1)}%</div>
+            <div className="mt-1 text-brand-cyan text-[8px] italic">{prop.steam_signal ? 'Steam action detected.' : ''}</div>
+          </div>
         </div>
-      </div>
-
-      <div className="mt-6 pt-4 border-t border-lucrix-border flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[9px] font-black text-textMuted uppercase tracking-widest">
-          <Clock size={10} />
-          {prop.last_updated ? new Date(prop.last_updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'LIVE'}
+      </td>
+      <td className="p-4 align-middle">
+        <div className="flex items-center gap-2">
+          <BarChart3 size={14} className={prop.confidence > 75 ? "text-brand-cyan" : "text-textMuted"} />
+          <span className="text-xs font-mono font-black text-white">{prop.confidence.toFixed(1)}</span>
         </div>
-        <button className="text-[9px] font-black uppercase tracking-widest text-brand-cyan border border-brand-cyan/20 bg-brand-cyan/10 px-2 py-1 rounded-sm">
-          Edge: {prop.edge || '0.0%'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function PriceBox({ side, line, odds, book }: any) {
-  return (
-    <div className="bg-lucrix-dark border border-lucrix-border/50 rounded-xl p-3">
-      <div className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">{side}</div>
-      <div className="text-xl font-black text-white font-display leading-none mb-1">{line || '—'}</div>
-      <div className="flex items-center justify-between">
-        <span className={clsx("font-mono font-black text-xs", odds > 0 ? "text-brand-success" : "text-brand-danger")}>
-          {odds > 0 ? `+${odds}` : odds || '—'}
-        </span>
-        <span className="text-[8px] font-black uppercase text-textMuted tracking-tighter truncate max-w-[40px]">{book || 'PINN'}</span>
-      </div>
-    </div>
+      </td>
+      <td className="p-4 align-middle text-right">
+        <div className="flex justify-end gap-1.5">
+          {prop.steam_signal && (
+            <span className="bg-lucrix-dark border border-brand-primary text-brand-primary text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Steam</span>
+          )}
+          {prop.whale_signal && (
+            <span className="bg-lucrix-dark border border-purple-400 text-purple-400 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Whale</span>
+          )}
+          {isPositiveEv && (
+            <span className="bg-lucrix-dark border border-brand-cyan text-brand-cyan text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded flex items-center gap-1">
+              <ShieldAlert size={8} /> EDGE
+            </span>
+          )}
+          {(!prop.steam_signal && !prop.whale_signal && !isPositiveEv) && <span className="text-textMuted text-xs">—</span>}
+        </div>
+      </td>
+    </tr>
   );
 }

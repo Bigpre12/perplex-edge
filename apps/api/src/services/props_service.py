@@ -158,6 +158,215 @@ class PropsService:
             return []
         return [] # Fallback
 
+    async def get_canonical_props(self, sport: str, min_ev: float = None, only_ev: bool = False) -> Dict[str, Any]:
+        """
+        Returns the canonical props structure requested by the new UI.
+        Shape matches EXACTLY what is expected by the frontend.
+        """
+        from models import UnifiedEVSignal, UnifiedOdds
+        from sqlalchemy import text
+        from datetime import datetime, timezone
+        import uuid
+        
+        try:
+            async with async_session_maker() as session:
+                # Optimized query: fetch all UnifiedOdds joined with UnifiedEVSignal
+                sql = """
+                SELECT 
+                    o.id as odds_id,
+                    o.event_id, 
+                    o.sport,
+                    o.league,
+                    o.home_team,
+                    o.away_team,
+                    o.game_time,
+                    o.player_name,
+                    o.market_key,
+                    o.outcome_key,
+                    o.line,
+                    o.price,
+                    o.bookmaker,
+                    o.implied_prob,
+                    o.updated_at,
+                    e.true_prob,
+                    e.edge_percent
+                FROM unified_odds o
+                LEFT JOIN ev_signals e ON 
+                    o.event_id = e.event_id AND 
+                    o.sport = e.sport AND 
+                    o.market_key = e.market_key AND 
+                    o.outcome_key = e.outcome_key AND 
+                    o.bookmaker = e.bookmaker
+                WHERE o.sport = :sport AND o.market_key NOT IN ('h2h', 'spreads', 'totals')
+                """
+                
+                # Check DB dialect
+                engine_url = str(session.bind.url)
+                if "sqlite" in engine_url:
+                    # SQLite fallback query without left join on ev table schema matching strict PG rules
+                    # This builds a basic ORM query
+                    stmt = select(UnifiedOdds, UnifiedEVSignal).select_from(
+                        UnifiedOdds.__table__.outerjoin(
+                            UnifiedEVSignal.__table__, 
+                            and_(
+                                UnifiedOdds.sport == UnifiedEVSignal.sport,
+                                UnifiedOdds.event_id == UnifiedEVSignal.event_id,
+                                UnifiedOdds.market_key == UnifiedEVSignal.market_key,
+                                UnifiedOdds.outcome_key == UnifiedEVSignal.outcome_key,
+                                UnifiedOdds.bookmaker == UnifiedEVSignal.bookmaker
+                            )
+                        )
+                    ).where(
+                        UnifiedOdds.sport == sport,
+                        UnifiedOdds.market_key.notin_(['h2h', 'spreads', 'totals'])
+                    )
+                    result = await session.execute(stmt)
+                    raw_rows = []
+                    for o, e in result.all():
+                        raw_rows.append({
+                            'odds_id': o.id,
+                            'event_id': o.event_id,
+                            'sport': o.sport,
+                            'league': o.league,
+                            'home_team': o.home_team,
+                            'away_team': o.away_team,
+                            'game_time': o.game_time,
+                            'player_name': o.player_name,
+                            'market_key': o.market_key,
+                            'outcome_key': o.outcome_key,
+                            'line': float(o.line) if o.line else 0.0,
+                            'price': o.price,
+                            'bookmaker': o.bookmaker,
+                            'implied_prob': float(o.implied_prob) if o.implied_prob else 0.0,
+                            'updated_at': o.updated_at,
+                            'true_prob': float(e.true_prob) if e else None,
+                            'edge_percent': float(e.edge_percent) if e else None
+                        })
+                else:
+                    from sqlalchemy import text
+                    result = await session.execute(text(sql), {"sport": sport})
+                    raw_rows = [dict(r._mapping) for r in result.all()]
+                
+                # Group by Unique Prop Entity: Event + Player + Market + Line
+                grouped = {}
+                global_updated = None
+                
+                for row_dict in raw_rows:
+                    if not row_dict['line']: continue # Ignore zero lines
+                    r = row_dict
+                    key = (r['event_id'], r['player_name'], r['market_key'], float(r['line']))
+                    
+                    if key not in grouped:
+                        grouped[key] = {
+                            "id": f"{r['event_id']}_{r['player_name'].replace(' ','')}_{r['market_key']}_{float(r['line'])}",
+                            "game_id": r['event_id'],
+                            "sport": (r['sport'] or "").upper().replace("BASKETBALL_",""),
+                            "league": (r['league'] or "").upper().replace("BASKETBALL_",""),
+                            "player_name": r['player_name'],
+                            "team": r['home_team'], # Approximated, full metadata needed for exact team
+                            "opponent": r['away_team'], # Approximated
+                            "start_time": r['game_time'].isoformat() + "Z" if r.get('game_time') else None,
+                            "stat_type": r['market_key'].replace("player_", "").replace("_", " ").title(),
+                            "line": float(r['line']),
+                            "over_odds": None,
+                            "under_odds": None,
+                            "best_book": None,
+                            "books": [],
+                            "implied_probability": 0.0,
+                            "model_probability": 0.0,
+                            "ev_percentage": 0.0,
+                            "confidence": 0.0,
+                            "steam_signal": False,
+                            "whale_signal": False,
+                            "sharp_conflict": False,
+                            "last_updated": r['updated_at'].isoformat() + "Z" if r.get('updated_at') else dt.utcnow().isoformat() + "Z",
+                            
+                            # Helpers for calculating best odds
+                            "_max_over": -10000,
+                            "_max_under": -10000,
+                            "_max_ev": -999.0,
+                        }
+                    
+                    group = grouped[key]
+                    
+                    # Track global updated
+                    if r.get("updated_at"):
+                        if not global_updated or r["updated_at"] > global_updated:
+                            global_updated = r["updated_at"]
+                            
+                    # Add to books array
+                    group["books"].append({
+                        "book": r["bookmaker"],
+                        "side": r["outcome_key"],
+                        "odds": int(r["price"] or 0)
+                    })
+                    
+                    # Update Over/Under best odds
+                    if r["outcome_key"] == "over" and r.get("price"):
+                        price = int(r["price"])
+                        if price > group["_max_over"]:
+                            group["_max_over"] = price
+                            group["over_odds"] = price
+                            # Approximate best book if it's the over
+                            if group["_max_ev"] <= 0:
+                                group["best_book"] = r["bookmaker"]
+                                
+                    if r["outcome_key"] == "under" and r.get("price"):
+                        price = int(r["price"])
+                        if price > group["_max_under"]:
+                            group["_max_under"] = price
+                            group["under_odds"] = price
+                            
+                    # Update EV metrics
+                    if r.get("edge_percent") and float(r["edge_percent"]) > group["_max_ev"]:
+                        group["_max_ev"] = float(r["edge_percent"])
+                        group["ev_percentage"] = round(float(r["edge_percent"]), 2)
+                        group["model_probability"] = round(float(r["true_prob"]), 3) if r.get("true_prob") else 0.0
+                        group["implied_probability"] = round(float(r["implied_prob"]), 3) if r.get("implied_prob") else 0.0
+                        group["best_book"] = r["bookmaker"]
+                        # Set confidence based loosely on Ev or hardcoded for now
+                        group["confidence"] = min(100.0, max(50.0, 50.0 + (float(r["edge_percent"]) * 3)))
+                
+                # Final filtering and cleanup
+                final_props = []
+                for g in grouped.values():
+                    # Cleanup internal Helpers
+                    del g["_max_over"]
+                    del g["_max_under"]
+                    del g["_max_ev"]
+                    
+                    # Apply Filters
+                    if only_ev and g["ev_percentage"] <= 0:
+                        continue
+                    if min_ev is not None and g["ev_percentage"] < min_ev:
+                        continue
+                        
+                    # Default values for missing fields to avoid frontend crashes
+                    g["team"] = g["team"] or "UNK"
+                    g["opponent"] = g["opponent"] or "UNK"
+                    g["over_odds"] = g["over_odds"] or -110
+                    g["under_odds"] = g["under_odds"] or -110
+                    g["best_book"] = g["best_book"] or "Average"
+                    
+                    final_props.append(g)
+                
+                # Sort if only_ev
+                if only_ev:
+                    final_props.sort(key=lambda x: x["ev_percentage"], reverse=True)
+                
+                now_str = datetime.utcnow().isoformat() + "Z"
+                return {
+                    "props": final_props,
+                    "count": len(final_props),
+                    "updated": global_updated.isoformat() + "Z" if global_updated else now_str
+                }
+                
+        except Exception as e:
+            logger.error(f"Error in get_canonical_props: {e}")
+            now_str = datetime.utcnow().isoformat() + "Z"
+            return {"props": [], "count": 0, "updated": now_str}
+
 props_service = PropsService()
 get_all_props = props_service.get_all_props
 get_team_props = props_service.get_team_props
+get_canonical_props = props_service.get_canonical_props

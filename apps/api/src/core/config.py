@@ -80,6 +80,12 @@ class Settings:
         
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
         
+        # Betting Engine Configuration
+        self.SHARP_BOOKMAKERS = ["pinnacle", "betonline_ag", "bookmaker", "circa_sports", "lowvig"]
+        self.SOFT_BOOKMAKERS = ["draftkings", "fanduel", "betmgm", "caesars", "pointsbet", "williamhill_us", "betrivers", "unibet_us"]
+        self.EV_MIN_THRESHOLD = float(os.getenv("EV_MIN_THRESHOLD", "1.0"))
+        self.MAJOR_LINE_MOVE_THRESHOLD = float(os.getenv("MAJOR_LINE_MOVE_THRESHOLD", "5.0")) # cents/ticks
+        
         # CORS Setup — allow Vercel preview/production domains automatically
         raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:1337")
         self.CORS_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]

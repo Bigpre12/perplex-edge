@@ -33,6 +33,11 @@ async def upsert_props_live(records: List[PropRecord]):
                 "odds_under": ins_obj.excluded.odds_under,
                 "implied_over": ins_obj.excluded.implied_over,
                 "implied_under": ins_obj.excluded.implied_under,
+                "is_best_over": ins_obj.excluded.is_best_over,
+                "is_best_under": ins_obj.excluded.is_best_under,
+                "is_soft_book": ins_obj.excluded.is_soft_book,
+                "is_sharp_book": ins_obj.excluded.is_sharp_book,
+                "confidence": ins_obj.excluded.confidence,
                 "source_ts": ins_obj.excluded.source_ts,
                 "ingested_ts": ins_obj.excluded.ingested_ts,
                 "last_updated_at": ins_obj.excluded.last_updated_at

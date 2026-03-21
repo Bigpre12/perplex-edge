@@ -17,6 +17,11 @@ class PropLiveSchema(BaseModel):
     implied_over: Optional[float] = None
     implied_under: Optional[float] = None
     last_updated_at: Optional[datetime] = None
+    is_best_over: bool = False
+    is_best_under: bool = False
+    is_soft_book: bool = False
+    is_sharp_book: bool = False
+    confidence: Optional[float] = None
 
     model_config = {"from_attributes": True}
 
@@ -25,6 +30,11 @@ class PropHistorySchema(BaseModel):
     line: float
     odds_over: Optional[float] = None
     odds_under: Optional[float] = None
+    is_best_over: bool = False
+    is_best_under: bool = False
+    is_soft_book: bool = False
+    is_sharp_book: bool = False
+    confidence: Optional[float] = None
     
     model_config = {"from_attributes": True}
 

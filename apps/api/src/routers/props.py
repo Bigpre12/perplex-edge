@@ -42,8 +42,9 @@ async def get_props_live(
         data=rows
     )
 
-@router.get("", response_model=UniversalResponse[Dict[str, Any]])
-@router.get("/", response_model=UniversalResponse[Dict[str, Any]])
+@router.get("/{sport}")
+@router.get("")
+@router.get("/")
 async def list_props(
     sport: str = "basketball_nba",
     market: Optional[str] = None,
@@ -52,46 +53,17 @@ async def list_props(
     limit: int = 50,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """Returns top props for a sport using the enhanced PropsService (Market + EV)."""
-    from services.props_service import get_all_props
+    """
+    Returns canonical props for a sport utilizing the new get_canonical_props service method.
+    Shape matches what is expected by the frontend.
+    """
+    from services.props_service import get_canonical_props
     try:
-        items = await get_all_props(sport_filter=sport)
-        
-        if market:
-            items = [p for p in items if p.get("market_key") == market]
-        if min_ev > 0:
-            items = [p for p in items if (p.get("recommendation") or {}).get("ev", 0.0) >= min_ev]
-        if search:
-            search_low = search.lower()
-            items = [p for p in items if 
-                search_low in (p.get("player_name") or "").lower() or 
-                search_low in (p.get("market_key") or "").lower()]
-                
-        items = items[:limit]
-        
-        heartbeat = await HeartbeatService.get_heartbeat(db, f"ingest_{sport}")
-        status = "ok" if items else "no_data"
-        if heartbeat and heartbeat.status == "error":
-            status = "pipeline_error"
-            
-        return UniversalResponse(
-            status=status,
-            meta=ResponseMeta(
-                source="theoddsapi",
-                db_rows=len(items),
-                last_sync=heartbeat.last_success_at if heartbeat else None,
-                request_id=get_request_id()
-            ),
-            data=items
-        )
+        data = await get_canonical_props(sport=sport, min_ev=min_ev if min_ev > 0 else None, only_ev=False)
+        return data
     except Exception as e:
         logger.error(f"Error listing props for {sport}: {e}")
-        return UniversalResponse(
-            status="pipeline_error",
-            message=str(e),
-            meta=ResponseMeta(request_id=get_request_id()),
-            data=[]
-        )
+        return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
 
 @router.get("/scored")
 async def scored_props(db: AsyncSession = Depends(get_db)):
