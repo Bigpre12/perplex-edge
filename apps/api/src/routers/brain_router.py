@@ -134,6 +134,25 @@ async def get_brain_overall_status(db: AsyncSession = Depends(get_async_db)):
 async def get_brain_health_legacy(db: AsyncSession = Depends(get_async_db)):
     return await get_brain_overall_status(db)
 
+@router.get("")
+@router.get("/")
+async def get_brain_dashboard_root(sport: str = "basketball_nba", db: AsyncSession = Depends(get_db), tier: str = Depends(get_user_tier)):
+    """Primary entry point for the Neural Engine (Brain) Page."""
+    if tier not in ("pro", "elite"): 
+        return {"props": [], "status": "limited", "message": "Pro or Elite subscription required"}
+    try:
+        decisions = await brain_advanced_service.get_prop_score(sport, db)
+        status = await get_brain_overall_status(db)
+        return {
+            "props": decisions,
+            "decisions": decisions,
+            "status": status,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error in brain dashboard root: {e}")
+        return {"props": [], "decisions": [], "error": str(e)}
+
 @router.post("/analyze")
 async def run_brain_analysis(payload: dict | None = None):
     return {

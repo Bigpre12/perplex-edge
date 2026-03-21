@@ -15,6 +15,7 @@ router = APIRouter(tags=["whale"])
 @router.get("", response_model=Dict[str, Any])
 async def whale_signals(
     sport: Optional[str] = Query("basketball_nba"), 
+    min_units: int = Query(0, description="Minimum units threshold"),
     tier: str = Depends(get_user_tier),
     db: AsyncSession = Depends(get_async_db)
 ):
@@ -25,6 +26,9 @@ async def whale_signals(
         return {"status": "limited", "data": [], "message": "Elite subscription required"}
         
     stmt = select(WhaleMove).where(WhaleMove.sport == sport)
+    if min_units > 0:
+        stmt = stmt.where(WhaleMove.units >= min_units)
+        
     stmt = stmt.where(WhaleMove.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
     stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(20)
     
@@ -35,7 +39,8 @@ async def whale_signals(
         "status": "success",
         "data": [WhaleEventSchema.model_validate(m) for m in moves],
         "total": len(moves),
-        "sport": sport
+        "sport": sport,
+        "min_units": min_units
     }
 
 @router.get("/history", response_model=Dict[str, Any])

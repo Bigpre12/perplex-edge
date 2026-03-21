@@ -111,10 +111,10 @@ export const api = {
     hitRateTrends: (sport = "all") => request("/api/hit-rate/trends", { cache: 'no-store' }, { sport }),
     hitRateOutliers: (params: { sport?: string; min_hit_rate?: number; window?: number; market?: string; limit?: number }) => 
         request("/api/hit-rate/outliers", { cache: 'no-store' }, params),
-    whale: (sport = "basketball_nba", isHistorical = false) => 
-        request(`/api/whale/${isHistorical ? 'history' : 'live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport }),
-    whaleSignals: (sport = "basketball_nba", isHistorical = false) => 
-        request(`/api/whale/${isHistorical ? 'history' : 'live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport }),
+    whale: (sport = "basketball_nba", min_units = 0, isHistorical = false) => 
+        request(`/api/whale/${isHistorical ? 'history' : 'live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport, min_units }),
+    whaleSignals: (sport = "basketball_nba", min_units = 0, isHistorical = false) => 
+        request(`/api/whale/${isHistorical ? 'history' : 'live'}`, { cache: isHistorical ? 'default' : 'no-store' }, { sport, min_units }),
     parlay: (sport = "basketball_nba") => request("/api/parlay", { cache: 'no-store' }, { sport }),
     steam: (sport = "basketball_nba") => request("/api/steam", { cache: 'no-store' }, { sport }),
     sharpMoves: (sport = "basketball_nba") => request("/api/signals/sharp-moves", { cache: 'no-store' }, { sport }),
@@ -173,7 +173,7 @@ export const api = {
     getProps: (sport = "basketball_nba", limit = 25) => request("/api/props", undefined, { sport, limit }),
     brainMetrics: () => request("/api/brain/metrics"),
     getHealth: () => request("/api/health"),
-    activeMoves: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
+    activeMoves: (sport = "basketball_nba", min_units = 0) => request("/api/whale", undefined, { sport, min_units }),
     steamAlerts: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
     alerts: (sport = "basketball_nba") => request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
     wsBaseUrl: API_BASE.replace(/^http/, 'ws'),

@@ -3,7 +3,7 @@
 import React, { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
-import { API_BASE } from "@/lib/api";
+import { API, isApiError } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
@@ -24,13 +24,21 @@ function BrainContent() {
 
   const { data: brainData, isLoading: brainLoading, error: brainError, refetch: refetchBrain } = useQuery({
     queryKey: ['brain', sport],
-    queryFn: () => fetch(`${API_BASE}/api/brain?sport=${sport}`).then(r => r.json()),
+    queryFn: async () => {
+      const res = await API.get(`/api/brain`, { sport });
+      if (isApiError(res)) throw res;
+      return res;
+    },
     refetchInterval: 60_000,
   });
 
   const { data: smartMoney, isLoading: smartLoading } = useQuery({
     queryKey: ['smart-money', sport],
-    queryFn: () => fetch(`${API_BASE}/api/smart-money?sport=${sport}`).then(r => r.json()),
+    queryFn: async () => {
+      const res = await API.get('/api/smart-money', { sport });
+      if (isApiError(res)) return { aligned_props: [] };
+      return res.data || res;
+    },
     refetchInterval: 60_000,
   });
 
@@ -67,8 +75,17 @@ function BrainContent() {
           <SportSelector />
         </div>
         <div className="flex gap-4">
-          <StatBadge label="Active Models" value="12" icon={<Activity size={12} />} />
-          <StatBadge label="Data Points/Sec" value="4.2k" icon={<Zap size={12} />} color="text-brand-warning" />
+          <StatBadge 
+            label="Active Models" 
+            value={brainData?.status?.overall_status === "ACTIVE" ? "12" : "DOWN"} 
+            icon={<Activity size={12} />} 
+          />
+          <StatBadge 
+            label="Live Data Volume" 
+            value={brainData?.status?.metrics?.live_volume ? `${(brainData.status.metrics.live_volume / 100).toFixed(1)}k` : "0"} 
+            icon={<Zap size={12} />} 
+            color="text-brand-warning" 
+          />
         </div>
       </div>
 

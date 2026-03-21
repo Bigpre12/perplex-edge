@@ -34,11 +34,23 @@ verify_*.py
 detect_*.py
 trigger_*.py
 
-# Ephemeral Data Files
-*.txt
+# Ephemeral Data Files (narrowed)
+# Remove the global *.txt ignore to preserve important docs
 shares.json
 out_*.txt
 brain_test_output.txt
+build_output*.txt
+build_results*.txt
+server_log.txt
+tsc_output*.txt
+*_debug.txt
+*_log.txt
+*_status.txt
+heartbeat_check.txt
+rotation_results.txt
+status.txt
+full_git_status.txt
+git_status_small.txt
 
 # Dependencies
 node_modules/
@@ -69,11 +81,6 @@ kalshi_public.key
 .DS_Store
 Thumbs.db
 
-# Build Output
-build_output*.txt
-build_results*.txt
-server_log.txt
-tsc_output*.txt
-
 # Temp
+tmp/
 tmp/

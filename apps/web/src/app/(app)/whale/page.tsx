@@ -4,7 +4,7 @@ import React, { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
 import { useTierGate } from "@/hooks/useTierGate";
-import { API_BASE } from "@/lib/api";
+import { API, isApiError } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
@@ -25,13 +25,11 @@ function WhaleAlertsContent() {
 
   const { data: alerts, isLoading, error, refetch } = useQuery({
     queryKey: ['whale', sport, minUnits],
-    queryFn: () => fetch(`${API_BASE}/api/whale?sport=${sport}&min_units=${minUnits}`).then(r => {
-      if (!r.ok) {
-        if (r.status === 403) throw new Error("403");
-        throw new Error("Failed to fetch whale alerts");
-      }
-      return r.json().then(json => json.data || []);
-    }),
+    queryFn: async () => {
+      const res = await API.whale(sport, minUnits);
+      if (isApiError(res)) throw res;
+      return res.data || [];
+    },
     refetchInterval: 20_000,
     staleTime: 10_000,
   });

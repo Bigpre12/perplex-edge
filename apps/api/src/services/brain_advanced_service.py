@@ -41,7 +41,7 @@ class BrainAdvancedService:
             # Hard-remove mock fallback
             return []
         except Exception as e:
-            logger.error(f"Error in get_prop_score: {e}")
+            logger.error(f"Brain Score Error for {sport}: {e}")
             return []
         
     async def build_parlay(self, sport: str, legs: int, min_score: int, db: AsyncSession) -> List[dict]:
@@ -340,7 +340,7 @@ class BrainAdvancedService:
                 "elite_signals": elite_count,
                 "steam_moves": steam_count,
                 "injury_impacts": injury_count,
-                "parlay_combos": parlay_count,
+                "parlay_combos": elite_count, # Using elite_signals as proxy for high-end parlay opportunities
                 "clv_enabled": True,
                 "accuracy_7d": accuracy,
                 "active_edges": elite_count, # Alias for dashboard
