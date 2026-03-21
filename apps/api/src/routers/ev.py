@@ -71,4 +71,4 @@ async def get_ev_signals_by_sport(
         return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
 
 # Alias for use by intel.py
-get_top_ev = get_ev_signals
+get_top_ev = get_ev_signals_legacy
