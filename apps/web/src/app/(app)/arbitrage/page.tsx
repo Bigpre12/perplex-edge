@@ -74,6 +74,8 @@ function ArbitrageContent() {
           <span className="text-[10px] font-black text-white uppercase tracking-widest">Total Stake:</span>
           <input 
             type="number" 
+            title="Total Stake Amount"
+            aria-label="Total Stake Amount"
             className="bg-transparent text-white font-mono font-black text-sm w-20 outline-none border-b border-brand-success/20 focus:border-brand-success transition-colors" 
             value={totalStake} 
             onChange={(e) => setTotalStake(parseInt(e.target.value) || 0)}

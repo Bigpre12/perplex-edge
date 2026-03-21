@@ -74,6 +74,8 @@ function WhaleAlertsContent() {
             <span className="text-[10px] font-black text-textMuted uppercase">Min Units:</span>
             <input 
               type="number" 
+              title="Minimum Units Threshold"
+              aria-label="Minimum Units Threshold"
               className="bg-transparent text-white font-mono font-black text-sm w-12 outline-none" 
               value={minUnits} 
               onChange={(e) => setMinUnits(parseInt(e.target.value) || 0)}

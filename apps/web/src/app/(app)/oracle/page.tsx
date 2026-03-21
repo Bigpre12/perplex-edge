@@ -66,7 +66,7 @@ function OracleContent() {
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      let assistantMsg: Message = { role: "assistant", content: "" };
+      const assistantMsg: Message = { role: "assistant", content: "" };
       setMessages(prev => [...prev, assistantMsg]);
 
       while (true) {
@@ -172,6 +172,8 @@ function OracleContent() {
             />
             <button 
               type="submit"
+              title="Send Query to Oracle"
+              aria-label="Send Query to Oracle"
               disabled={isLocked || isStreaming || !input.trim()}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-brand-cyan hover:bg-brand-cyan/90 text-black rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-brand-cyan"
             >
