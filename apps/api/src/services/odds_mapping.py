@@ -19,6 +19,7 @@ class OddsMapper:
         Groups OddsAPI response into consolidated PropRecord rows.
         Groups Over/Under outcomes into a single record per (game, player, market, book).
         """
+        logger.info(f"OddsMapper: Processing {len(odds_raw)} raw event entries for {sport}")
         now = datetime.now(timezone.utc)
         records = []
         
@@ -34,17 +35,20 @@ class OddsMapper:
             
             for bookmaker in event.get('bookmakers', []):
                 book_key = bookmaker.get('key')
+                logger.info(f"  Bookmaker: {book_key}")
                 last_update = bookmaker.get('last_update')
                 source_ts = datetime.fromisoformat(last_update.replace('Z', '+00:00')) if last_update else now
                 
                 for market in bookmaker.get('markets', []):
                     m_key = market.get('key')
+                    logger.info(f"    Market: {m_key}")
                     
                     for outcome in market.get('outcomes', []):
                         name = outcome.get('name')
                         desc = outcome.get('description') # Player name
                         price = outcome.get('price')
                         line = outcome.get('point')
+                        logger.info(f"      Outcome: {name} | {desc} | {price} | {line}")
                         
                         if name is None or price is None: continue
                         
@@ -56,6 +60,7 @@ class OddsMapper:
                         group_key = (eid, m_key, p_name or "team", book_key)
                         
                         if group_key not in grouped_data:
+                            print(f"DEBUG: New group key created: {group_key}")
                             grouped_data[group_key] = {
                                 "sport": sport,
                                 "league": league,
@@ -71,6 +76,7 @@ class OddsMapper:
                             }
                         
                         implied = self.american_to_implied(int(price)) if isinstance(price, (int, float)) else Decimal('0')
+                        print(f"DEBUG: Outcome side={side}, implied={implied}")
                         
                         if 'over' in side or 'home' in side:
                             grouped_data[group_key]["odds_over"] = Decimal(str(price))
@@ -78,7 +84,8 @@ class OddsMapper:
                         elif 'under' in side or 'away' in side:
                             grouped_data[group_key]["odds_under"] = Decimal(str(price))
                             grouped_data[group_key]["implied_under"] = implied
-
+ 
+        print(f"DEBUG: Final grouped_data count: {len(grouped_data)}")
         for data in grouped_data.values():
             try:
                 records.append(PropRecord(**data))

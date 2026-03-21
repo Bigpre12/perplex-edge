@@ -15,13 +15,16 @@ async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
     for r in rows:
         r.setdefault("created_at", now)
 
-    # Note: Ensure the table has a unique constraint on (sport, event_id, market_key, outcome_key, bookmaker)
-    # The current model in brain.py doesn't have it explicitly in __table_args__ anymore because 
-    # I replaced it with the shim, but we should probably add it back or use a primary key if possible.
-    # For now, we'll try to insert and use the ON CONFLICT if the DB supports it.
+    # Detection for SQLite vs Postgres
+    is_sqlite = "sqlite" in str(db.engine.url) if hasattr(db, "engine") else True 
+    # Actually DBWrapper uses engine from db.session
+    from db.session import engine as db_engine
+    is_sqlite = "sqlite" in str(db_engine.url)
+
+    table_name = "unified_odds" # Remove 'public.' for SQLite compatibility
     
-    query = """
-    INSERT INTO public.unified_odds (
+    query = f"""
+    INSERT INTO {table_name} (
       sport, event_id, market_key, outcome_key, bookmaker,
       line, price, implied_prob, player_name,
       league, game_time, home_team, away_team, created_at

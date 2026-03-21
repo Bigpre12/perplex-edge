@@ -110,3 +110,38 @@ export interface ParlayLeg {
     team?: string;
     ev?: number;
 }
+
+/** Universal API Response Wrapper */
+export interface UniversalResponse<T> {
+    status: 'ok' | 'no_data' | 'upstream_error' | 'pipeline_error';
+    message?: string | null;
+    meta?: {
+        source?: string;
+        db_rows?: number;
+        last_sync?: string;
+        request_id?: string;
+    };
+    data: T;
+}
+
+/** Prop Live Schema (Consolidated Over/Under) */
+export interface PropLiveSchema {
+    id: number;
+    sport: string;
+    league?: string | null;
+    game_id: string;
+    game_start_time?: string | null;
+    player_id?: string | null;
+    player_name: string;
+    team?: string | null;
+    market_key: string;
+    market_label?: string | null;
+    line: number;
+    book: string;
+    odds_over?: number | null;
+    odds_under?: number | null;
+    implied_over?: number | null;
+    implied_under?: number | null;
+    source_ts?: string | null;
+    last_updated_at?: string | null;
+}

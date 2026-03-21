@@ -1,4 +1,5 @@
 import { API_BASE } from "./apiConfig";
+import { UniversalResponse, PropLiveSchema } from "../types";
 export { API_BASE };
 
 const API_BASE_URL = API_BASE;
@@ -232,6 +233,38 @@ export const api = {
     edges: (sport = "basketball_nba") => request("/api/ev/ev-top", undefined, { sport }),
     simulate: (legs: any[], stake = 100, simulations = 10000) => 
         request("/api/simulate", { method: "POST", body: JSON.stringify({ legs, stake, simulations }) }),
+
+    // Extended Interface (Requested)
+    fetchPropsLive: (token: string) => 
+        request<UniversalResponse<PropLiveSchema[]>>("/api/props/live", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchPropsList: (token: string) => 
+        request<UniversalResponse<any>>("/api/props", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchPropsScored: (token: string) => 
+        request<UniversalResponse<any>>("/api/props/scored", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchEVSignals: (token: string) => 
+        request<UniversalResponse<any>>("/api/ev/", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchEVTop: (token: string) => 
+        request<UniversalResponse<any>>("/api/intel/ev-top", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchBrainDecisions: (token: string) => 
+        request<UniversalResponse<any>>("/api/brain/decisions", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchParlayBuilder: (token: string) => 
+        request<UniversalResponse<any>>("/api/brain/parlay-builder", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchSteamAlerts: (token: string) => 
+        request<UniversalResponse<any>>("/api/steam", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchSmartMoney: (token: string) => 
+        request<UniversalResponse<any>>("/api/smart-money", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchSteamFeed: (token: string) => 
+        request<UniversalResponse<any>>("/api/steam", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchWhaleFeed: (token: string) => 
+        request<UniversalResponse<any>>("/api/whale/live", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchHitRateSummary: (token: string) => 
+        request<UniversalResponse<any>>("/api/hit-rate/summary", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchHitRatePlayers: (token: string) => 
+        request<UniversalResponse<any>>("/api/hit-rate/by-player", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchHitRateTrends: (token: string) => 
+        request<UniversalResponse<any>>("/api/hit-rate/trends", { headers: { "Authorization": `Bearer ${token}` } }),
+    fetchPerformanceSummary: (token: string) => 
+        request<UniversalResponse<any>>("/api/metrics", { headers: { "Authorization": `Bearer ${token}` } }),
 };
 
 export const API = api;

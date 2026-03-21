@@ -48,3 +48,13 @@ async def websocket_ev_endpoint(
     except Exception as e:
         logger.error(f"[WS] WebSocket error for {user_id}: {str(e)}")
         manager.disconnect(user_id)
+
+async def notify_ev_update(sport: str):
+    """
+    Broadcast to all connected users that new EV signals are available.
+    """
+    await manager.broadcast({
+        "type": "ev_update",
+        "sport": sport,
+        "timestamp": asyncio.get_event_loop().time()
+    })

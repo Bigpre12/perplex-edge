@@ -13,8 +13,11 @@ logger = logging.getLogger(__name__)
 
 async def upsert_props_live(records: List[PropRecord]):
     """Standardized upsert into public.props_live."""
-    if not records: return
+    if not records: 
+        print("DEBUG: upsert_props_live called with NO records")
+        return
     
+    print(f"DEBUG: upsert_props_live called with {len(records)} records")
     async with async_session_maker() as session:
         try:
             is_sqlite = "sqlite" in str(engine.url)
@@ -48,14 +51,19 @@ async def upsert_props_live(records: List[PropRecord]):
             
             await session.execute(stmt)
             await session.commit()
-            logger.info(f"Persistence: Upserted {len(records)} records into props_live.")
+            print(f"DEBUG: Persistence: Upserted {len(records)} records into props_live.")
         except Exception as e:
             await session.rollback()
+            print(f"DEBUG: Persistence: props_live upsert failed: {e}")
             logger.error(f"Persistence: props_live upsert failed: {e}")
 
 async def insert_props_history(records: List[PropRecord], source: str = 'live_ingest', run_id: str = None):
     """Appends records to props_history."""
-    if not records: return
+    if not records: 
+        print("DEBUG: insert_props_history called with NO records")
+        return
+    
+    print(f"DEBUG: insert_props_history called with {len(records)} records")
     
     now = datetime.now(timezone.utc)
     async with async_session_maker() as session:

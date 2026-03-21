@@ -48,10 +48,8 @@ class UnifiedIngestionService:
             events_raw = None
 
         if not events_raw:
-            logger.error(f"UnifiedIngestion: No events found for {sport_key}. Ingestion cycle aborted.")
-            async with async_session_maker() as session:
-                await HeartbeatService.log_heartbeat(session, f"ingest_{sport_key}", status="upstream_error", meta={"error": "No events found"})
-            return
+            logger.warning(f"UnifiedIngestion: No events found from /events for {sport_key}. Proceeding with potential extraction from /odds.")
+            events_raw = []
 
         # Map event_id -> metadata
         metadata_map = {
@@ -81,10 +79,27 @@ class UnifiedIngestionService:
             logger.warning(f"UnifiedIngestion: No bulk odds found for {sport_key}. Initializing empty list.")
             odds_raw = []
 
-        # 2b. Fetch Player Props (Requires per-event calls)
+        if not odds_raw:
+            logger.warning(f"UnifiedIngestion: No odds (bulk or props) found for {sport_key}.")
+            odds_raw = []
+
+        # 2c. Backfill metadata_map if get_events() was empty/stale
+        for game in odds_raw:
+            eid = game.get('id')
+            if eid and eid not in metadata_map:
+                metadata_map[eid] = {
+                    'home_team': game.get('home_team'),
+                    'away_team': game.get('away_team'),
+                    'game_time': datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00')) if game.get('commence_time') else None
+                }
+
+        # 2d. Fetch Player Props (Requires per-event calls)
         prop_markets = ["player_points", "player_rebounds", "player_assists", "player_threes", "player_double_double"]
         if sport_key == "basketball_nba":
-            active_events = [e['id'] for e in events_raw[:15]] # Limit to avoid excessive API usage in one cycle
+            # Use metadata_map keys if events_raw was empty
+            event_ids = [e['id'] for e in events_raw] if events_raw else list(metadata_map.keys())
+            active_events = event_ids[:15] # Limit to avoid excessive API usage
+            
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} events...")
             
             for eid in active_events:
@@ -95,18 +110,9 @@ class UnifiedIngestionService:
                         markets=",".join(prop_markets)
                     )
                     if event_props and "bookmakers" in event_props:
-                        # Normalize into the same structure as bulk odds for the mapper
-                        # Bulk odds: [{"id": eid, "bookmakers": [...]}, ...]
-                        # Single event props: {"id": eid, "bookmakers": [...]}
                         odds_raw.append(event_props)
                 except Exception as e:
                     logger.error(f"UnifiedIngestion: Failed to fetch props for event {eid}: {e}")
-
-        if not odds_raw:
-            logger.warning(f"UnifiedIngestion: No odds (bulk or props) found for {sport_key}. Skipping persistence.")
-            async with async_session_maker() as session:
-                await HeartbeatService.log_heartbeat(session, f"ingest_{sport_key}", status="upstream_error", meta={"error": "No odds found"})
-            return
 
         # 3. Normalize into PropRecords
         records = odds_mapper.map_theodds_props_to_records(odds_raw, metadata_map, sport_key)
