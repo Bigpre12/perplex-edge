@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { Activity, Zap, ArrowDown, ArrowUp, Clock, Info } from "lucide-react";
+import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
 
 export default function KalshiPage() {
@@ -122,9 +123,10 @@ function KalshiContent() {
                     <div>
                       <div className="text-[8px] font-black text-textMuted uppercase mb-1">Implied Probability</div>
                       <div className="h-1.5 w-48 bg-lucrix-dark rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-brand-purple shadow-glow shadow-brand-purple/40 transition-all duration-700" 
-                          style={{ width: `${market.mid_price}%` }} 
+                        <Progress 
+                          value={market.mid_price} 
+                          color="purple" 
+                          className="duration-700"
                         />
                       </div>
                     </div>

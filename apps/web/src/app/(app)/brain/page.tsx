@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { BrainCircuit, Zap, ShieldCheck, Activity, Target, TrendingUp } from "lucide-react";
+import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
 
 export default function BrainPage() {
@@ -101,14 +102,9 @@ function BrainContent() {
                     )}>{prop.score}%</span>
                   </div>
                   <div className="h-1.5 bg-lucrix-dark rounded-full overflow-hidden border border-lucrix-border/50">
-                    <div 
-                      className={clsx(
-                        "h-full transition-all duration-1000",
-                        prop.score >= 75 ? "bg-brand-success shadow-glow shadow-brand-success/40" : 
-                        prop.score >= 50 ? "bg-brand-warning shadow-glow shadow-brand-warning/40" : 
-                        "bg-brand-danger shadow-glow shadow-brand-danger/40"
-                      )}
-                      style={{ width: `${prop.score}%` }}
+                    <Progress 
+                      value={prop.score} 
+                      color={prop.score >= 75 ? "success" : prop.score >= 50 ? "warning" : "danger"} 
                     />
                   </div>
                 </div>

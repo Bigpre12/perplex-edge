@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { Siren, Clock, Activity, Search, TrendingUp, AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
 
 export default function InjuriesPage() {
@@ -105,9 +106,9 @@ function InjuriesContent() {
                 <span className="text-xs font-black text-white italic">{injury.impact_score || '3.5'}/10</span>
               </div>
               <div className="h-1 bg-lucrix-dark rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-brand-danger shadow-glow shadow-brand-danger/40" 
-                  style={{ width: `${(injury.impact_score || 3.5) * 10}%` }} 
+                <Progress 
+                  value={(injury.impact_score || 3.5) * 10} 
+                  color="danger" 
                 />
               </div>
             </div>
