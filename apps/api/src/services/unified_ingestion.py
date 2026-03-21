@@ -236,7 +236,8 @@ class UnifiedIngestionService:
         groups: Dict[tuple, List[PropRecord]] = {}
         for r in records:
             # We use float(line) to group different Representations of the same numeric line
-            key = (r.game_id, r.market_key, r.player_name, float(r.line))
+            safe_line = float(r.line) if r.line is not None else None
+            key = (r.game_id, r.market_key, r.player_name, safe_line)
             if key not in groups: groups[key] = []
             groups[key].append(r)
             

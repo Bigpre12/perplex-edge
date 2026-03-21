@@ -113,7 +113,8 @@ async def startup():
             is_sqlite = "sqlite" in str(engine.url)
             if not is_sqlite:
                 await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR"))
-                logging.info("Startup complete: EV Signal schema verified.")
+                await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT"))
+                logging.info("Startup complete: Schema verified.")
             else:
                 logging.info("Startup complete: Database initialized (SQLite).")
     except Exception as e:
