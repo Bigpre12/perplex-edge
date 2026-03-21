@@ -193,12 +193,16 @@ async def startup():
 
     # Start CLV Tracking Loop
     from services.brain_clv_tracker_loop import start_clv_tracker
-    await start_clv_tracker() 
     logging.info("CLV Tracker started.")
+    
+origins = [
+    "https://perplex-edge.vercel.app",
+    "http://localhost:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
