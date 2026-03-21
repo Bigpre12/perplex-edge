@@ -19,7 +19,8 @@ export default function PricingPage() {
 
     const handleCheckout = async (planKey: PlanKey) => {
         const plan = PLANS[planKey];
-        if (plan.href) { window.location.href = plan.href; return; }
+        const href = billing === "annual" ? (plan as any).annualHref : plan.href;
+        if (href) { window.location.href = href; return; }
 
         const priceId = billing === "annual"
             ? plan.annualPriceId

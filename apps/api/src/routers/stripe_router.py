@@ -38,7 +38,7 @@ async def create_checkout_session(req: CheckoutRequest):
             customer_email=req.user_email,
             client_reference_id=req.user_id, # Link the Stripe session back to the user ID
             line_items=[{
-                'price': price_id,
+                'price': settings.STRIPE_PRO_MONTHLY_PRICE_ID,
                 'quantity': 1,
             }],
             mode='subscription',
@@ -86,9 +86,27 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             user = result.scalar_one_or_none()
 
         if user:
-            user.subscription_tier = "pro"
+            # Resolve tier dynamically from price ID
+            from services.stripe_service import stripe_service
+            
+            line_items = session.get('line_items', {}).get('data', [])
+            if not line_items:
+                # Fallback: try to get from the session's subscription object if available
+                try:
+                    sub_id = session.get('subscription')
+                    if sub_id:
+                        subscription = stripe.Subscription.retrieve(sub_id)
+                        price_id = subscription['items']['data'][0]['price']['id']
+                    else:
+                        price_id = settings.STRIPE_PRO_MONTHLY_PRICE_ID # Default
+                except:
+                    price_id = settings.STRIPE_PRO_MONTHLY_PRICE_ID
+            else:
+                price_id = line_items[0]['price']['id']
+
+            user.subscription_tier = stripe_service.resolve_tier(price_id)
             await db.commit()
-            print(f"✅ Subscription tier updated to pro for user {user.email}")
+            print(f"✅ Subscription tier updated to {user.subscription_tier} for user {user.email}")
         else:
             print(f"⚠️ User not found for Stripe completion: ID={user_id}, Email={customer_email}")
             

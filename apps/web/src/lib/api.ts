@@ -1,4 +1,5 @@
 import { API_BASE } from "./apiConfig";
+export { API_BASE };
 
 const API_BASE_URL = API_BASE;
 

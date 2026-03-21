@@ -26,8 +26,14 @@ class Settings:
             logging.critical("FATAL: SECRET_KEY environment variable is not set. Using insecure default.")
             secret = "CHANGE_ME_IN_PRODUCTION"
         self.SECRET_KEY = secret
-        self.STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "")
-        self.STRIPE_ELITE_PRICE_ID = os.getenv("STRIPE_ELITE_PRICE_ID", "")
+        self.STRIPE_PRO_MONTHLY_PRICE_ID = os.getenv("STRIPE_PRO_MONTHLY_PRICE_ID", os.getenv("STRIPE_PRO_PRICE_ID", ""))
+        self.STRIPE_PRO_ANNUAL_PRICE_ID = os.getenv("STRIPE_PRO_ANNUAL_PRICE_ID", "")
+        self.STRIPE_ELITE_MONTHLY_PRICE_ID = os.getenv("STRIPE_ELITE_MONTHLY_PRICE_ID", os.getenv("STRIPE_ELITE_PRICE_ID", ""))
+        self.STRIPE_ELITE_ANNUAL_PRICE_ID = os.getenv("STRIPE_ELITE_ANNUAL_PRICE_ID", "")
+        
+        # Legacy Aliases
+        self.STRIPE_PRO_PRICE_ID = self.STRIPE_PRO_MONTHLY_PRICE_ID
+        self.STRIPE_ELITE_PRICE_ID = self.STRIPE_ELITE_MONTHLY_PRICE_ID
         self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
         
         self.SUPABASE_URL: str = os.getenv("SUPABASE_URL", os.getenv("NEXT_PUBLIC_SUPABASE_URL", ""))

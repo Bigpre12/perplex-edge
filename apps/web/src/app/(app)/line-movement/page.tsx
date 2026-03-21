@@ -1,157 +1,157 @@
 "use client";
 
-import { Activity, Shield, Zap, Info, TrendingUp, TrendingDown, Clock, Search } from "lucide-react";
-import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
-import LiveStatusBar from "@/components/LiveStatusBar";
-import PageStates from "@/components/PageStates";
-import GateLock from "@/components/GateLock";
-import { useLucrixStore } from "@/store";
-import { useFreshness } from "@/hooks/useFreshness";
-import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
+import React, { useState, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSport } from "@/hooks/useSport";
+import { API_BASE } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
+import { ChevronDown, ChevronUp, LineChart, TrendingUp, Search } from "lucide-react";
+import { Sparklines, SparklinesLine, SparklinesSpots } from "react-sparklines";
 import { clsx } from "clsx";
 
 export default function LineMovementPage() {
-    const activeSport = useLucrixStore((state: any) => state.activeSport);
-    const freshness = useFreshness(activeSport);
-    const { data: moveResponse, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.lineMovement(activeSport),
-        [activeSport],
-        { refreshInterval: 60000 }
-    );
+  return (
+    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING LINE TRACKER...</div>}>
+      <LineMovementContent />
+    </Suspense>
+  );
+}
 
-    const moves = moveResponse?.data || [];
+function LineMovementContent() {
+  const { sport } = useSport();
+  const [searchQuery, setSearchQuery] = useState("");
 
+  const { data: slate, isLoading: slateLoading, error: slateError, refetch: refetchSlate } = useQuery({
+    queryKey: ['slate', sport],
+    queryFn: () => fetch(`${API_BASE}/api/slate?sport=${sport}`).then(r => r.json()),
+    refetchInterval: 300_000,
+  });
+
+  if (slateLoading) {
     return (
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 text-white pb-24">
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-blue-500/20 p-2 rounded-lg border border-blue-500/30 shadow-glow shadow-blue-500/20">
-                            <Activity size={24} className="text-blue-500" />
-                        </div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">Market Velocity</h1>
-                    </div>
-                    <p className="text-[#6B7280] text-[10px] font-black uppercase tracking-[0.2em] mt-1 pl-1">
-                        Institutional Order Flow · Steam & Whale Scanner
-                    </p>
-                </div>
-
-                <div className="flex flex-col space-y-2">
-                    <SportSelector />
-                    <div className="flex justify-end">
-                        <LiveStatusBar
-                            lastUpdated={lastUpdated}
-                            isStale={isStale}
-                            loading={loading}
-                            error={error}
-                            onRefresh={refresh}
-                            refreshInterval={60}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Stats Dashboard */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-lucrix-surface border border-white/5 p-4 rounded-2xl">
-                    <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Active Signals</p>
-                    <div className="text-xl font-black italic">{moves.length}</div>
-                </div>
-                <div className="bg-lucrix-surface border border-white/5 p-4 rounded-2xl">
-                    <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Steam Alerts</p>
-                    <div className="text-xl font-black italic text-emerald-500">
-                        {moves.filter((m:any) => m.type === "STEAM").length}
-                    </div>
-                </div>
-                <div className="bg-lucrix-surface border border-white/5 p-4 rounded-2xl">
-                    <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Whale Activity</p>
-                    <div className="text-xl font-black italic text-blue-400">
-                        {moves.filter((m:any) => m.type === "WHALE").length}
-                    </div>
-                </div>
-                <div className="bg-lucrix-surface border border-blue-500/20 p-4 rounded-2xl bg-blue-500/5">
-                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">Market Sentiment</p>
-                    <div className="text-xl font-black italic">BULLISH</div>
-                </div>
-            </div>
-
-            <GateLock feature="edges" reason="The Market Velocity scanner is reserved for Elite members.">
-                <PageStates
-                    loading={loading && !moveResponse}
-                    error={error}
-                    empty={!loading && moves.length === 0}
-                    emptyMessage="No significant market moves detected. Volatility is low."
-                >
-                    <div className="grid grid-cols-1 gap-3">
-                        {moves.map((move: any) => (
-                            <div key={move.id} className="bg-[#0A0A0F] border border-white/5 rounded-2xl p-5 hover:border-blue-500/40 transition-all group relative overflow-hidden">
-                                {move.type === "STEAM" && (
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50 shadow-glow shadow-emerald-500/40" />
-                                )}
-                                {move.type === "WHALE" && (
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/50 shadow-glow shadow-blue-500/40" />
-                                )}
-
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <div className="flex items-center gap-5">
-                                        <div className={clsx(
-                                            "size-12 rounded-xl flex items-center justify-center border",
-                                            move.direction === "UP" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" : "bg-red-500/10 border-red-500/20 text-red-500"
-                                        )}>
-                                            {move.direction === "UP" ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className={clsx(
-                                                    "text-[8px] font-black uppercase px-1.5 py-0.5 rounded-sm border shadow-sm",
-                                                    move.type === "STEAM" ? "bg-emerald-500/20 text-emerald-500 border-emerald-500/30" : 
-                                                    move.type === "WHALE" ? "bg-blue-500/20 text-blue-500 border-blue-500/30" : 
-                                                    "bg-white/10 text-white border-white/10"
-                                                )}>
-                                                    {move.type}
-                                                </span>
-                                                <span className="text-[8px] font-black text-textMuted uppercase tracking-widest">
-                                                    Intensity {move.intensity}%
-                                                </span>
-                                            </div>
-                                            <h3 className="text-lg font-black italic text-white uppercase tracking-tight group-hover:text-blue-400 transition-colors">
-                                                {move.player || "Team Move"}
-                                            </h3>
-                                            <div className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mt-1">
-                                                {move.market} · {move.outcome} {move.line > 0 ? `@ ${move.line}` : ""}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-8 pr-4">
-                                        <div className="text-right">
-                                            <div className="text-[9px] font-black text-textMuted uppercase mb-1">Velocity</div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                    <div className={clsx("h-full bg-blue-500 shadow-glow shadow-blue-500/50", `w-dp-${Math.round((move.intensity || 0) / 10) * 10}`)} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-[9px] font-black text-textMuted uppercase mb-1">Books Moving</div>
-                                            <div className="text-xl font-mono font-black text-white italic">{move.books_count}</div>
-                                        </div>
-                                        <div className="text-right min-w-[60px]">
-                                            <div className="text-[9px] font-black text-textMuted uppercase mb-1">Age</div>
-                                            <div className="text-[10px] font-mono font-black text-white uppercase">
-                                                {new Date(move.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </PageStates>
-            </GateLock>
+      <div className="space-y-6 pt-6 px-4">
+        <div className="flex justify-between items-center mb-8">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-32" />
         </div>
+        <div className="space-y-4">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+          ))}
+        </div>
+      </div>
     );
+  }
+
+  if (slateError) {
+    return <div className="p-6"><ErrorBanner message="Slate Engine Offline." onRetry={refetchSlate} /></div>;
+  }
+
+  const filteredSlate = (slate?.games || []).filter((g: any) => 
+    g.away_team?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    g.home_team?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="pb-24 space-y-8 pt-6 px-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-brand-cyan/10 p-2 rounded-lg border border-brand-cyan/20">
+              <LineChart size={24} className="text-brand-cyan shadow-glow shadow-brand-cyan/40" />
+            </div>
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">Line Movement</h1>
+          </div>
+          <p className="text-[10px] text-textMuted font-black uppercase tracking-widest mb-4 italic">Sharp vs Public Market Flux</p>
+          <SportSelector />
+        </div>
+        <div className="relative max-w-xs w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-textMuted" size={14} />
+          <input
+            type="text"
+            placeholder="Filter events..."
+            className="w-full bg-lucrix-surface border border-lucrix-border rounded-lg py-2 pl-9 pr-4 text-xs font-bold text-white focus:border-brand-cyan/50 outline-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {filteredSlate.map((game: any) => (
+          <EventRow key={game.id} game={game} sport={sport} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EventRow({ game, sport }: any) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const { data: movement, isLoading } = useQuery({
+    queryKey: ['line-movement', sport, game.id],
+    queryFn: () => fetch(`${API_BASE}/api/line-movement?sport=${sport}&event_id=${game.id}`).then(r => r.json()),
+    enabled: isExpanded,
+    refetchInterval: 30_000,
+  });
+
+  return (
+    <div className="bg-lucrix-surface border border-lucrix-border rounded-xl overflow-hidden transition-all hover:border-brand-cyan/20">
+      <div 
+        className="p-5 flex items-center justify-between cursor-pointer group"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-6">
+          <div className="text-sm font-black text-white font-display uppercase italic tracking-tight">
+            {game.away_team} @ {game.home_team}
+          </div>
+          <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest">
+            {new Date(game.commence_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 text-brand-success">
+            <TrendingUp size={14} />
+            <span className="text-[10px] font-black italic">+0.5 Sharp Move</span>
+          </div>
+          {isExpanded ? <ChevronUp size={18} className="text-textMuted" /> : <ChevronDown size={18} className="text-textMuted group-hover:text-brand-cyan" />}
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="p-6 bg-lucrix-dark/50 border-t border-lucrix-border animate-in slide-in-from-top-2 duration-200">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-brand-cyan border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {movement?.books?.map((book: any, i: number) => (
+                <div key={i} className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="text-[10px] font-black text-white uppercase tracking-widest">{book.name}</div>
+                    <div className="text-[10px] font-mono font-bold text-brand-cyan">{book.current_line}</div>
+                  </div>
+                  <div className="h-12 w-full">
+                    <Sparklines data={book.history} width={100} height={30}>
+                      <SparklinesLine color="#00f2ff" style={{ strokeWidth: 2 }} />
+                      <SparklinesSpots size={2} />
+                    </Sparklines>
+                  </div>
+                </div>
+              ))}
+              {!movement?.books?.length && (
+                <div className="col-span-full text-center text-textMuted text-[10px] font-black uppercase italic py-4">
+                  No movement data for this event yet.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }

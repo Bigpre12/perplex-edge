@@ -1,171 +1,157 @@
 "use client";
 
-import { useState } from "react";
-import { History, TrendingUp, ShieldCheck, Target, Zap, Info } from "lucide-react";
-import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
-import { useLucrixStore } from "@/store";
-import PageStates from "@/components/PageStates";
-import LiveStatusBar from "@/components/LiveStatusBar";
-import GateLock from "@/components/GateLock";
+import React, { useState, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { useSport } from "@/hooks/useSport";
+import { API_BASE } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
-import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggle";
+import { BarChart3, Clock, TrendingUp, Info } from "lucide-react";
 import { clsx } from "clsx";
 
-export default function CLVTrackerPage() {
-    const activeSport = useLucrixStore((state: any) => state.activeSport);
-    const [isHistorical, setIsHistorical] = useState(false);
-    
-    // 1. Summary Stats
-    const { data: summaryData, loading: summaryLoading } = useLiveData<any>(
-        () => api.get(`/api/clv/summary?sport=${activeSport}`),
-        [activeSport]
-    );
-
-    // 2. Track List
-    const { data: trackData, loading: trackLoading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.clv(activeSport.toLowerCase(), isHistorical),
-        [activeSport, isHistorical],
-        { refreshInterval: isHistorical ? 600000 : 300000 }
-    );
-
-    const metrics = summaryData?.metrics || { total_tracked: 0, beat_rate_pct: 0, avg_clv_pct: 0, edge_proven: false };
-    const clvList = trackData?.data || [];
-
-    return (
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 text-white pb-24 font-display">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-amber-500/20 p-2 rounded-lg border border-amber-500/30 shadow-glow shadow-amber-500/20">
-                            <History size={24} className="text-amber-500" />
-                        </div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">Institutional CLV</h1>
-                    </div>
-                    <p className="text-[#6B7280] text-[10px] font-black uppercase tracking-[0.2em] mt-1 pl-1">
-                        Closing Line Value · Proof of Market Mastery
-                    </p>
-                </div>
-
-                <div className="flex flex-col space-y-4 items-end">
-                    <SportSelector />
-                    <div className="flex items-center gap-4">
-                        <LiveHistoricalToggle isHistorical={isHistorical} onChange={setIsHistorical} />
-                        <LiveStatusBar
-                            lastUpdated={lastUpdated}
-                            isStale={isStale}
-                            loading={trackLoading}
-                            error={error}
-                            onRefresh={refresh}
-                            refreshInterval={300}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Performance Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-lucrix-surface border border-white/5 p-5 rounded-3xl relative overflow-hidden group">
-                    <div className="absolute -right-4 -top-4 text-white/5 group-hover:text-amber-500/10 transition-colors">
-                        <Target size={80} />
-                    </div>
-                    <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Beat Rate</p>
-                    <div className="text-3xl font-black italic text-emerald-500">{metrics.beat_rate_pct}%</div>
-                    <p className="text-[10px] font-bold text-textMuted mt-1">Institutional Benchmark: 62%</p>
-                </div>
-
-                <div className="bg-lucrix-surface border border-white/5 p-5 rounded-3xl relative overflow-hidden group">
-                    <div className="absolute -right-4 -top-4 text-white/5 group-hover:text-blue-500/10 transition-colors">
-                        <TrendingUp size={80} />
-                    </div>
-                    <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Avg CLV Edge</p>
-                    <div className="text-3xl font-black italic text-blue-400">+{metrics.avg_clv_pct}%</div>
-                    <p className="text-[10px] font-bold text-textMuted mt-1">Yield Alpha vs Open</p>
-                </div>
-
-                <div className="bg-lucrix-surface border border-white/5 p-5 rounded-3xl relative overflow-hidden group">
-                    <div className="absolute -right-4 -top-4 text-white/5 group-hover:text-purple-500/10 transition-colors">
-                        <ShieldCheck size={80} />
-                    </div>
-                    <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Proven Edge</p>
-                    <div className={clsx("text-2xl font-black italic mt-1", metrics.edge_proven ? "text-emerald-500" : "text-amber-500")}>
-                        {metrics.edge_proven ? "CONFIRMED" : "IDENTIFIED"}
-                    </div>
-                    <p className="text-[10px] font-bold text-textMuted mt-1">Verified Audit Trail</p>
-                </div>
-
-                <div className="bg-lucrix-surface border border-amber-500/20 p-5 rounded-3xl bg-amber-500/5 ring-1 ring-amber-500/10">
-                    <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-1">Sample Set</p>
-                    <div className="text-3xl font-black italic text-white">{metrics.total_tracked}</div>
-                    <p className="text-[10px] font-bold text-amber-500/70 mt-1">Full Cycle Analytics</p>
-                </div>
-            </div>
-
-            <GateLock feature="clv" reason="CLV Analytics and Audit are reserved for Elite members.">
-                <PageStates
-                    loading={trackLoading && clvList.length === 0}
-                    error={error}
-                    empty={!trackLoading && clvList.length === 0}
-                    emptyMessage="Awaiting game completions for CLV settlement."
-                >
-                    <div className="bg-[#0A0A0F] border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-white/5 border-b border-white/5">
-                                    <tr>
-                                        <th className="px-6 py-5 text-[10px] font-black text-textMuted uppercase tracking-widest">Selection</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-textMuted uppercase tracking-widest">Market</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-textMuted uppercase tracking-widest">Open</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-textMuted uppercase tracking-widest">Close</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-textMuted uppercase tracking-widest">Performance</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-textMuted uppercase tracking-widest text-right">Audit</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {clvList.map((item: any) => (
-                                        <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
-                                            <td className="px-6 py-5">
-                                                <div className="font-black italic text-white uppercase tracking-tight text-lg group-hover:text-amber-500 transition-colors">
-                                                    {item.player || "Team Move"}
-                                                </div>
-                                                <div className="text-[9px] font-black text-textMuted uppercase tracking-widest mt-1">
-                                                    {item.sport.toUpperCase()}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="text-xs font-black uppercase text-white/70">{item.market}</div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="text-sm font-mono font-black text-slate-400 bg-white/5 px-2 py-1 rounded-lg inline-block">{item.open_line}</div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="text-sm font-mono font-black text-white bg-white/10 px-2 py-1 rounded-lg inline-block border border-white/10">
-                                                    {item.close_line?.toFixed(1) || "—"}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className={clsx(
-                                                    "flex items-center gap-2 font-black italic text-lg",
-                                                    item.beat ? "text-emerald-500" : "text-red-500"
-                                                )}>
-                                                    {(item.beat || item.clv_value > 0) ? <Zap size={14} className="fill-current" /> : null}
-                                                    {item.clv_value !== undefined ? (item.clv_value > 0 ? `+${item.clv_value.toFixed(2)}%` : `${item.clv_value.toFixed(2)}%`) : "TBD"}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <div className="text-[10px] font-mono font-black text-textMuted uppercase">
-                                                    {new Date(item.timestamp).toLocaleDateString()}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </PageStates>
-            </GateLock>
-        </div>
-    );
+export default function CLVPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING CLV ANALYTICS...</div>}>
+      <CLVPageContent />
+    </Suspense>
+  );
 }
+
+function CLVPageContent() {
+  const { sport } = useSport();
+  const searchParams = useSearchParams();
+  const date = searchParams.get("date") || new Date().toISOString().split('T')[0];
+
+  const { data: clvData, isLoading, error, refetch } = useQuery({
+    queryKey: ['clv', sport, date],
+    queryFn: () => fetch(`${API_BASE}/api/clv?sport=${sport}&date=${date}`).then(r => {
+      if (!r.ok) throw new Error("Failed to fetch CLV data");
+      return r.json();
+    }),
+    refetchInterval: 120_000,
+    staleTime: 60_000
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pt-6 px-4">
+        <div className="flex justify-between items-center mb-8">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-96 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-6"><ErrorBanner message="CLV Analytics Engine is currently offline." onRetry={refetch} /></div>;
+  }
+
+  return (
+    <div className="pb-24 space-y-8 pt-6 px-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-brand-purple/10 p-2 rounded-lg border border-brand-purple/20">
+              <BarChart3 size={24} className="text-brand-purple shadow-glow shadow-brand-purple/40" />
+            </div>
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">Closing Line Value</h1>
+          </div>
+          <p className="text-[10px] text-textMuted font-black uppercase tracking-widest mb-4 italic">Institutional Historical Edge Analysis</p>
+          <SportSelector />
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] font-black text-textMuted uppercase tracking-widest mb-1.5 flex items-center justify-end gap-1.5">
+            <Clock size={12} className="text-brand-purple" />
+            Sync Every 120s
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <AnalyticsCard
+          title="Avg CLV Edge"
+          value={`+${clvData?.meta?.avg_edge?.toFixed(2) || '0.00'}%`}
+          icon={<TrendingUp size={20} className="text-brand-success" />}
+          description="Average edge vs final closing line"
+        />
+        <AnalyticsCard
+          title="Win Rate vs CLV"
+          value={`${clvData?.meta?.win_rate?.toFixed(1) || '00.0'}%`}
+          icon={<Trophy size={20} className="text-brand-cyan" />}
+          description="Percentage of bets that beat the CLV"
+        />
+        <AnalyticsCard
+          title="Total Events"
+          value={clvData?.results?.length || '0'}
+          icon={<Info size={20} className="text-brand-warning" />}
+          description="Events tracked in current window"
+        />
+      </div>
+
+      <div className="bg-lucrix-surface border border-lucrix-border rounded-xl overflow-hidden shadow-card">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-lucrix-dark/80 border-b border-lucrix-border text-[9px] font-black uppercase tracking-widest text-textMuted">
+              <th className="px-6 py-4">Event</th>
+              <th className="px-6 py-4 text-center">Opening Line</th>
+              <th className="px-6 py-4 text-center">Closing Line</th>
+              <th className="px-6 py-4 text-center">CLV Delta</th>
+              <th className="px-6 py-4 text-right">Result</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-lucrix-border/50">
+            {clvData?.results?.map((item: any, i: number) => (
+              <tr key={i} className="group hover:bg-lucrix-dark/50 transition-colors">
+                <td className="px-6 py-5">
+                  <div className="font-black text-white font-display italic uppercase tracking-tight">{item.event}</div>
+                  <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-0.5">{item.market}</div>
+                </td>
+                <td className="px-6 py-5 text-center font-mono font-black text-white">{item.open_line}</td>
+                <td className="px-6 py-5 text-center font-mono font-black text-white">{item.close_line}</td>
+                <td className="px-6 py-5 text-center">
+                  <span className={clsx(
+                    "font-mono font-black px-2 py-1 rounded border",
+                    item.delta > 0 ? "text-brand-success bg-brand-success/10 border-brand-success/20" : "text-brand-danger bg-brand-danger/10 border-brand-danger/20"
+                  )}>
+                    {item.delta > 0 ? `+${item.delta}` : item.delta}
+                  </span>
+                </td>
+                <td className="px-6 py-5 text-right">
+                  <span className={clsx(
+                    "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                    item.status === "WIN" ? "bg-brand-success/20 text-brand-success" : "bg-lucrix-dark text-textMuted"
+                  )}>
+                    {item.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsCard({ title, value, icon, description }: any) {
+  return (
+    <div className="bg-lucrix-surface border border-lucrix-border p-6 rounded-2xl shadow-card">
+      <div className="flex justify-between items-start mb-4">
+        <div className="text-[10px] font-black text-textMuted uppercase tracking-widest">{title}</div>
+        <div className="p-2 bg-lucrix-dark rounded-xl border border-lucrix-border">{icon}</div>
+      </div>
+      <div className="text-3xl font-black text-white font-display italic mb-1 uppercase tracking-tighter">{value}</div>
+      <p className="text-[11px] font-bold text-textSecondary">{description}</p>
+    </div>
+  );
+}
+
+const Trophy = ({ size, className }: any) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 22V18" /><path d="M14 22V18" /><path d="M18 4H6v7a6 6 0 0 0 12 0V4Z" />
+  </svg>
+);

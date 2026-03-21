@@ -22,7 +22,7 @@ export function useAuth() {
 
     // Fetch fresh user profile from backend via React Query
     const {
-        data: user,
+        data: profile,
         isLoading,
         error
     } = useQuery<UserProfile | null>({
@@ -55,10 +55,18 @@ export function useAuth() {
         window.location.href = "/login";
     };
 
+    // Helper to get token from localStorage/Supabase
+    const getToken = () => {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem("accessToken") || localStorage.getItem("perplex_edge_token");
+    };
+
     return {
-        user,
+        user: profile,
+        token: getToken(),
+        tier: profile?.tier || 'free',
         loading: isLoading,
-        isSignedIn: !!user,
+        isSignedIn: !!profile,
         signOut,
         refreshUser,
         error

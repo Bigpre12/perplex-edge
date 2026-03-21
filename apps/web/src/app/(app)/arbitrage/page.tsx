@@ -1,149 +1,200 @@
-// apps/web/src/app/(app)/arbitrage/page.tsx
 "use client";
-import { ArrowRightLeft, Calculator, Info, Zap } from "lucide-react";
-import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
-import LiveStatusBar from "@/components/LiveStatusBar";
-import PageStates from "@/components/PageStates";
-import GateLock from "@/components/GateLock";
-import { useLucrixStore } from "@/store";
-import { useFreshness } from "@/hooks/useFreshness";
-import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
+
+import React, { useState, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSport } from "@/hooks/useSport";
+import { useTierGate } from "@/hooks/useTierGate";
+import { API_BASE } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
+import { ArrowRightLeft, Calculator, Zap, Star, Info, Scaling } from "lucide-react";
+import { clsx } from "clsx";
 
 export default function ArbitragePage() {
-    const activeSport = useLucrixStore((state: any) => state.activeSport);
-    const freshness = useFreshness(activeSport);
-    const { data: opps, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.arbitrage(activeSport),
-        [activeSport],
-        { refreshInterval: 120000 }
-    );
+  return (
+    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING ARB SCANNER...</div>}>
+      <ArbitrageContent />
+    </Suspense>
+  );
+}
 
-    const opportunities = opps?.opportunities || [];
+function ArbitrageContent() {
+  const { sport } = useSport();
+  const [totalStake, setTotalStake] = useState(100);
 
+  const { data: arbData, isLoading, error, refetch } = useQuery({
+    queryKey: ['arbitrage', sport],
+    queryFn: () => fetch(`${API_BASE}/api/arbitrage?sport=${sport}`).then(r => {
+      if (!r.ok) {
+        if (r.status === 403) throw new Error("403");
+        throw new Error("Failed to fetch arbitrage opportunities");
+      }
+      return r.json();
+    }),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
+  const { data: limitedData, isLocked, isLoading: isGateLoading } = useTierGate(
+    { data: arbData, isLoading, error },
+    { requiredTier: "elite" }
+  );
+
+  const opportunities = isLocked ? [] : (limitedData?.opportunities || []);
+
+  if (isLoading || isGateLoading) {
     return (
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6 text-white pb-24">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-emerald-500/20 p-2 rounded-lg border border-emerald-500/30 shadow-glow shadow-emerald-500/20">
-                            <ArrowRightLeft size={24} className="text-emerald-500" />
-                        </div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">Arbitrage Scanner</h1>
-                    </div>
-                    <p className="text-[#6B7280] text-[10px] font-black uppercase tracking-[0.2em] mt-1 pl-1">
-                        Risk-free extraction · {opportunities.length} active
-                    </p>
-                </div>
-
-                <div className="flex flex-col space-y-2">
-                    <SportSelector />
-                    <div className="flex justify-end">
-                        <LiveStatusBar
-                            lastUpdated={lastUpdated}
-                            isStale={isStale}
-                            loading={loading}
-                            error={error}
-                            onRefresh={refresh}
-                            refreshInterval={120}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Arbitrage Hero / Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-lucrix-surface border border-emerald-500/20 p-5 rounded-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <Zap size={40} className="text-emerald-500" />
-                    </div>
-                    <p className="text-[10px] font-black text-textMuted uppercase tracking-widest mb-1">Max Opportunity</p>
-                    <p className="text-2xl font-black text-white italic">
-                        {opportunities.length > 0 ? `+${Math.max(...opportunities.map((o: any) => o.profit_percentage))}%` : "0.0%"}
-                    </p>
-                </div>
-                <div className="bg-lucrix-surface border border-white/5 p-5 rounded-2xl">
-                    <p className="text-[10px] font-black text-textMuted uppercase tracking-widest mb-1">Active Edges</p>
-                    <p className="text-2xl font-black text-white italic">{opportunities.length}</p>
-                </div>
-                <div className="bg-lucrix-surface border border-white/5 p-5 rounded-2xl">
-                    <p className="text-[10px] font-black text-textMuted uppercase tracking-widest mb-1">Scanner Status</p>
-                    <div className="flex items-center gap-2">
-                        <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <p className="text-2xl font-black text-white italic uppercase tracking-tighter">Live</p>
-                    </div>
-                </div>
-            </div>
-
-            <GateLock feature="edges" reason="The Arbitrage Scanner is reserved for Premium athletes.">
-                <PageStates
-                    loading={loading && !opps}
-                    error={error}
-                    empty={!loading && opportunities.length === 0}
-                    emptyMessage="No risk-free arbs found. Markets are currently efficient."
-                >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {opportunities.map((opp: any, i: number) => (
-                            <div key={i} className="bg-lucrix-surface border border-emerald-500/30 rounded-2xl p-6 shadow-2xl transition hover:border-emerald-500/50 group">
-                                <div className="flex justify-between items-start mb-6">
-                                    <div>
-                                        {opp.is_sharp_v_square && (
-                                            <div className="flex items-center gap-1.5 mb-2">
-                                                <span className="text-[8px] bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 px-1.5 py-0.5 rounded-sm font-black uppercase tracking-widest animate-pulse">
-                                                    Sharp vs Square
-                                                </span>
-                                                <Zap size={10} className="text-emerald-500" />
-                                            </div>
-                                        )}
-                                        <div className="text-lg font-black text-white italic uppercase tracking-tight group-hover:text-emerald-400 transition-colors">{opp.player_name}</div>
-                                        <div className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mt-1">
-                                            {opp.sport} · {opp.stat_type} {opp.line}
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-black text-emerald-500 italic">+{opp.profit_percentage}% Profit</div>
-                                        <div className="text-[9px] font-black text-[#6B7280] uppercase tracking-widest">Guaranteed Return</div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white/[0.02] p-4 rounded-xl border border-white/5">
-                                        <div className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-2">OVER @ {opp.over_book}</div>
-                                        <div className="flex justify-between items-end">
-                                            <div className="text-xl font-black text-white font-mono">{opp.over_odds > 0 ? `+${opp.over_odds}` : opp.over_odds}</div>
-                                            <div className="text-xs font-black text-emerald-500 font-mono">${opp.over_stake}</div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white/[0.02] p-4 rounded-xl border border-white/5">
-                                        <div className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-2">UNDER @ {opp.under_book}</div>
-                                        <div className="flex justify-between items-end">
-                                            <div className="text-xl font-black text-white font-mono">{opp.under_odds > 0 ? `+${opp.under_odds}` : opp.under_odds}</div>
-                                            <div className="text-xs font-black text-blue-400 font-mono">${opp.under_stake}</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 text-[9px] text-[#6B7280] italic text-center">
-                                    Example for $100 total stake. Bet on both sides to lock in profit regardless of outcome.
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </PageStates>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                    <div className="bg-[#0F0F1A] border border-white/5 p-6 rounded-2xl flex items-center gap-4">
-                        <div className="bg-emerald-500/20 p-3 rounded-2xl">
-                            <Calculator className="text-emerald-500" size={24} />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-sm text-white">Guaranteed P&L</h4>
-                            <p className="text-xs text-[#6B7280] mt-1">Arbitrage bets leverage house discrepancy. Profit is locked in regardless of game result.</p>
-                        </div>
-                    </div>
-                </div>
-            </GateLock>
+      <div className="space-y-6 pt-6 px-4">
+        <Skeleton className="h-10 w-48 mb-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-64 w-full rounded-2xl" />
+          ))}
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="pb-24 space-y-8 pt-6 px-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="bg-brand-success/10 p-2 rounded-lg border border-brand-success/20">
+              <ArrowRightLeft size={24} className="text-brand-success shadow-glow shadow-brand-success/40" />
+            </div>
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">Arbitrage Scanner</h1>
+          </div>
+          <p className="text-[10px] text-textMuted font-black uppercase tracking-widest mb-4 italic">Risk-Free Market Extraction</p>
+          <SportSelector />
+        </div>
+        <div className="flex items-center gap-4 bg-lucrix-surface border border-lucrix-border rounded-xl px-4 py-2">
+          <Calculator size={16} className="text-brand-success" />
+          <span className="text-[10px] font-black text-white uppercase tracking-widest">Total Stake:</span>
+          <input 
+            type="number" 
+            className="bg-transparent text-white font-mono font-black text-sm w-20 outline-none border-b border-brand-success/20 focus:border-brand-success transition-colors" 
+            value={totalStake} 
+            onChange={(e) => setTotalStake(parseInt(e.target.value) || 0)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+        {isLocked && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center pt-24">
+            <div className="bg-lucrix-surface/80 backdrop-blur-md border border-brand-success/30 p-10 rounded-3xl text-center max-w-lg shadow-2xl">
+              <Star size={40} className="mx-auto text-brand-success mb-6 animate-pulse shadow-glow shadow-brand-success" />
+              <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-4 text-white font-display">Elite Arb Locked</h2>
+              <p className="text-textSecondary text-sm font-bold mb-8 italic">
+                Arbitrage scanning requires Elite computational access. <br/> Reveal guaranteed profit windows across 10+ sportsbooks.
+              </p>
+              <button 
+                onClick={() => window.location.href = "/subscription"}
+                className="bg-brand-success hover:bg-brand-success/90 text-black px-12 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-glow shadow-brand-success/50"
+              >
+                Unlock Arbitrage →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(isLocked ? (arbData?.opportunities?.slice(0, 2) || []) : opportunities).map((opp: any, i: number) => {
+          // Calculation logic
+          const overOdds = opp.over_odds;
+          const underOdds = opp.under_odds;
+          
+          const overMultiplier = overOdds > 0 ? (overOdds/100 + 1) : (100/Math.abs(overOdds) + 1);
+          const underMultiplier = underOdds > 0 ? (underOdds/100 + 1) : (100/Math.abs(underOdds) + 1);
+          
+          const overProb = 1 / overMultiplier;
+          const underProb = 1 / underMultiplier;
+          const totalProb = overProb + underProb;
+          
+          const overStake = (overProb / totalProb) * totalStake;
+          const underStake = (underProb / totalProb) * totalStake;
+          const profit = (totalStake / totalProb) - totalStake;
+          const profitPct = (profit / totalStake) * 100;
+
+          return (
+            <div 
+              key={i} 
+              className={clsx(
+                "bg-lucrix-surface border rounded-2xl p-6 transition-all relative overflow-hidden group",
+                isLocked ? "blur-sm opacity-30 border-lucrix-border" : "border-brand-success/20 hover:border-brand-success/40 shadow-card"
+              )}
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <div className="text-lg font-black text-white font-display italic uppercase tracking-tight group-hover:text-brand-success transition-colors">{opp.player_name}</div>
+                  <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-1">
+                    {opp.market} — {opp.line}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-black text-brand-success font-display italic">+{profitPct.toFixed(2)}%</div>
+                  <div className="text-[9px] font-black text-textMuted uppercase tracking-widest">Guaranteed Return</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <StakeBox 
+                  side="OVER" 
+                  odds={overOdds} 
+                  book={opp.over_book} 
+                  stake={overStake} 
+                  payout={overStake * overMultiplier}
+                />
+                <StakeBox 
+                  side="UNDER" 
+                  odds={underOdds} 
+                  book={opp.under_book} 
+                  stake={underStake} 
+                  payout={underStake * underMultiplier}
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-lucrix-border">
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-textMuted uppercase tracking-widest italic">
+                  <Info size={11} className="text-brand-success" />
+                  Locked Profit: ${profit.toFixed(2)}
+                </div>
+                <div className="text-[9px] font-black text-textMuted uppercase tracking-widest">
+                  Updated: Just Now
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {!isLocked && opportunities.length === 0 && (
+          <div className="col-span-full text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
+            Scanning for risk-free pricing gaps...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StakeBox({ side, odds, book, stake, payout }: any) {
+  return (
+    <div className="bg-lucrix-dark/50 border border-lucrix-border rounded-xl p-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-[9px] font-black text-textMuted uppercase tracking-widest">{side} @ {book}</span>
+        <span className="font-mono font-black text-xs text-white">{odds > 0 ? `+${odds}` : odds}</span>
+      </div>
+      <div className="flex justify-between items-end">
+        <div>
+          <div className="text-[8px] font-black text-textMuted uppercase mb-0.5">Stake</div>
+          <div className="text-lg font-black text-white font-mono">${stake.toFixed(2)}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[8px] font-black text-textMuted uppercase mb-0.5">Payout</div>
+          <div className="text-xs font-black text-brand-success font-mono">${payout.toFixed(2)}</div>
+        </div>
+      </div>
+    </div>
+  );
 }

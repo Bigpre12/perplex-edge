@@ -15,6 +15,7 @@ from core.config import settings
 from services.brains import sharp_money_brain, brain_clv_tracker, injury_impact_brain, brain_advanced_service
 from services.unified_odds_persistence import upsert_unified_odds
 from services.heartbeat_service import HeartbeatService
+from services.odds_api_client import odds_api_client
 
 logger = logging.getLogger(__name__)
 

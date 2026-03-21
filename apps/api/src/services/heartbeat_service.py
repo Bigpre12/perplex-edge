@@ -20,7 +20,7 @@ class HeartbeatService:
         try:
             stmt = select(Heartbeat).where(Heartbeat.feed_name == feed_name)
             res = await db.execute(stmt)
-            record = res.scalar_one_none()
+            record = res.scalar_one_or_none()
             
             now = datetime.now(timezone.utc)
             
@@ -60,4 +60,4 @@ class HeartbeatService:
     async def get_heartbeat(db: AsyncSession, feed_name: str):
         stmt = select(Heartbeat).where(Heartbeat.feed_name == feed_name)
         res = await db.execute(stmt)
-        return res.scalar_one_none()
+        return res.scalar_one_or_none()

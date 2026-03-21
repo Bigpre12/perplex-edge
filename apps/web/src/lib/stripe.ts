@@ -39,7 +39,8 @@ export const PLANS = {
         description: PRICING.PRO.description,
         features: PRICING.PRO.features,
         cta: "Start 7-Day Free Trial",
-        href: null,
+        href: process.env.NEXT_PUBLIC_STRIPE_PRO_MONTHLY_URL || null,
+        annualHref: process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_URL || null,
     },
     elite: {
         name: "Elite",
@@ -52,7 +53,8 @@ export const PLANS = {
         description: PRICING.ELITE.description,
         features: PRICING.ELITE.features,
         cta: "Start 7-Day Free Trial",
-        href: null,
+        href: process.env.NEXT_PUBLIC_STRIPE_ELITE_MONTHLY_URL || null,
+        annualHref: process.env.NEXT_PUBLIC_STRIPE_ELITE_ANNUAL_URL || null,
     },
 } as const;
 

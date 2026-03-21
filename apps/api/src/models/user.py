@@ -9,6 +9,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
+    auth_id = Column(String, unique=True, index=True, nullable=True) # Supabase UUID
     hashed_password = Column(String)
     
     # Tier limits (free, pro, elite)
