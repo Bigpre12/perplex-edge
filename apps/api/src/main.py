@@ -82,6 +82,20 @@ contest_router      = safe_import("contest_router", "contests")
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
+origins = [
+    "https://perplex-edge.vercel.app",
+    "https://perplex-edge-1umcu8vby-bigpre12s-projects.vercel.app",
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.on_event("startup")
 async def startup():
     """Ensure database tables are created on startup."""
@@ -204,19 +218,6 @@ async def startup():
     from services.brain_clv_tracker_loop import start_clv_tracker
     logging.info("CLV Tracker started.")
     
-origins = [
-    "https://perplex-edge.vercel.app",                      # main prod domain
-    "https://perplex-edge-1umcu8vby-bigpre12s-projects.vercel.app",  # preview/alias
-    "http://localhost:3000",                                # local dev (optional)
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 app.add_middleware(RequestIDMiddleware)
 
 @app.get("/api/smart-money")
