@@ -81,6 +81,8 @@ kalshi_public.key
 .DS_Store
 Thumbs.db
 
+# Local analysis artifacts
+*.csv
+
 # Temp
-tmp/
 tmp/
