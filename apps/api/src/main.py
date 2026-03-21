@@ -196,8 +196,9 @@ async def startup():
     logging.info("CLV Tracker started.")
     
 origins = [
-    "https://perplex-edge.vercel.app",
-    "http://localhost:3000",
+    "https://perplex-edge.vercel.app",                      # main prod domain
+    "https://perplex-edge-1umcu8vby-bigpre12s-projects.vercel.app",  # preview/alias
+    "http://localhost:3000",                                # local dev (optional)
 ]
 
 app.add_middleware(
