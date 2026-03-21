@@ -297,11 +297,20 @@ class BrainAdvancedService:
     async def get_dashboard_metrics(self, db: AsyncSession) -> dict:
         """Feature 6: Brain Dashboard Panel (Aggregated Real Data)"""
         try:
-            scored_stmt = select(func.count(ModelPick.id))
-            elite_stmt = select(func.count(ModelPick.id)).where(ModelPick.ev_percentage > 10.0)
+            # PROPS SCORED = count of lines tracked natively
+            from models import UnifiedOdds, UnifiedEVSignal
+            scored_stmt = select(func.count(UnifiedOdds.id))
+            
+            # ACTIVE EDGES = count of EV signals (e.g. edge > 0 or 3)
+            elite_stmt = select(func.count(UnifiedEVSignal.id)).where(UnifiedEVSignal.edge_percent > 3.0)
+            
             steam_stmt = select(func.count(SteamSnapshot.id))
             
-            # Real accuracy calculation (past 7 days)
+            scored_count = (await db.execute(scored_stmt)).scalar() or 0
+            elite_count = (await db.execute(elite_stmt)).scalar() or 0
+            steam_count = (await db.execute(steam_stmt)).scalar() or 0
+            
+            # Real accuracy calculation (past 7 days) if applicable
             from datetime import timedelta
             seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
             accuracy_stmt = select(
@@ -309,13 +318,9 @@ class BrainAdvancedService:
                 func.sum(func.cast(ModelPick.won, Integer))
             ).where(ModelPick.won != None, ModelPick.created_at >= seven_days_ago)
             
-            scored_count = (await db.execute(scored_stmt)).scalar() or 0
-            elite_count = (await db.execute(elite_stmt)).scalar() or 0
-            steam_count = (await db.execute(steam_stmt)).scalar() or 0
-            
             acc_res = (await db.execute(accuracy_stmt)).first()
-            total_resolved = acc_res[0] or 0
-            total_won = acc_res[1] or 0
+            total_resolved = acc_res[0] if acc_res else 0
+            total_won = acc_res[1] if acc_res and acc_res[1] else 0
             accuracy = round((total_won / total_resolved) * 100, 1) if total_resolved > 0 else 0.0
 
             # Dynamic injuries count
@@ -326,8 +331,9 @@ class BrainAdvancedService:
             except:
                 injury_count = 0
             
-            # Simple parlay combo count based on high EV props
-            parlay_count = elite_count // 2 if elite_count > 1 else (1 if elite_count > 0 else 0)
+            # Calculate average EV roughly
+            avg_ev_stmt = select(func.avg(UnifiedEVSignal.edge_percent)).where(UnifiedEVSignal.edge_percent > 0)
+            avg_ev_val = (await db.execute(avg_ev_stmt)).scalar() or 0.0
 
             return {
                 "props_scored_today": scored_count,
@@ -337,11 +343,14 @@ class BrainAdvancedService:
                 "parlay_combos": parlay_count,
                 "clv_enabled": True,
                 "accuracy_7d": accuracy,
-                "active_edges": elite_count # Alias for dashboard
+                "active_edges": elite_count, # Alias for dashboard
+                "hit_rate": accuracy, # Alias for StatsCards
+                "avg_ev": round(float(avg_ev_val), 1) if avg_ev_val else 0.0, # Used by StatsCards
+                "live_volume": scored_count # Alias for StatsCards
             }
         except Exception as e:
             logger.error(f"Error in get_dashboard_metrics: {e}")
-            return {"props_scored_today": 0, "elite_signals": 0}
+            return {"props_scored_today": 0, "elite_signals": 0, "active_edges": 0}
 
 brain_advanced_service = BrainAdvancedService()
 get_prop_score = brain_advanced_service.get_prop_score

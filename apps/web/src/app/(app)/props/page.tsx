@@ -136,6 +136,8 @@ function PropsPageContent() {
           <div className="w-full md:w-48">
             <label className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-2 block">Stat Type</label>
             <select 
+              title="Stat Type"
+              aria-label="Stat Type"
               value={statType}
               onChange={(e) => setStatType(e.target.value)}
               className="w-full bg-lucrix-dark border border-lucrix-border rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-brand-cyan transition-colors appearance-none"
@@ -152,6 +154,8 @@ function PropsPageContent() {
             </div>
             <input 
               type="range" 
+              title="Min EV Threshold"
+              aria-label="Min EV Threshold"
               min="-5" max="20" step="0.5"
               value={minEv}
               onChange={(e) => setMinEv(parseFloat(e.target.value))}

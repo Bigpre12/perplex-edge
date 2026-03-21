@@ -3,7 +3,8 @@
 import React, { useState, Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSport } from "@/hooks/useSport";
-import { useEVBoard, CanonicalProp } from "@/hooks/useEVBoard";
+import { useEVBoard } from "@/hooks/useEVBoard";
+import { CanonicalProp } from "@/hooks/usePropsBoard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
@@ -131,6 +132,8 @@ function EVPageContent() {
             </div>
             <input 
               type="range" 
+              title="Minimum EV"
+              aria-label="Minimum EV"
               min="1" max="20" step="0.5"
               value={minEv}
               onChange={(e) => setMinEv(parseFloat(e.target.value))}
@@ -142,6 +145,8 @@ function EVPageContent() {
           <div className="w-full md:w-48">
             <label className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-2 block">Time Window</label>
             <select 
+              title="Time Window"
+              aria-label="Time Window"
               value={timeWindow}
               onChange={(e) => setTimeWindow(e.target.value)}
               className="w-full bg-lucrix-dark border border-lucrix-border rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-brand-success transition-colors appearance-none"

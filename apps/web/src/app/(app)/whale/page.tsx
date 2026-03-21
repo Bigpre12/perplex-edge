@@ -30,7 +30,7 @@ function WhaleAlertsContent() {
         if (r.status === 403) throw new Error("403");
         throw new Error("Failed to fetch whale alerts");
       }
-      return r.json();
+      return r.json().then(json => json.data || []);
     }),
     refetchInterval: 20_000,
     staleTime: 10_000,

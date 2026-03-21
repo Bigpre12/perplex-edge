@@ -29,7 +29,7 @@ function SteamMovesContent() {
         if (r.status === 403) throw new Error("403");
         throw new Error("Failed to fetch steam moves");
       }
-      return r.json();
+      return r.json().then(json => json.alerts || []);
     }),
     refetchInterval: 15_000,
     staleTime: 5_000,
