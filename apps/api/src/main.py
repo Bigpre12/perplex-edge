@@ -10,9 +10,9 @@ from db.base import Base
 from db.session import engine
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from services.unified_ingestion import unified_ingestion
-
 import logging
 import os
+from core.connection_manager import manager
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +120,13 @@ async def startup():
         # Tables might already exist, or connection failed
         logging.error(f"Startup error during DB initialization: {e}")
 
+    # Start WebSocket Broadcast Listener (Redis-backed)
+    try:
+        await manager.start_redis_listener()
+        logging.info("✅ WebSocket Redis Listener active.")
+    except Exception as e:
+        logging.error(f"Failed to start WebSocket Redis Listener: {e}")
+
     # Initialize Scheduler
     scheduler = AsyncIOScheduler()
     
@@ -190,7 +197,7 @@ async def startup():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -235,7 +242,7 @@ if search_router:        app.include_router(search_router, prefix="/api/search",
 if oracle_router:        app.include_router(oracle_router, prefix="/api/oracle", tags=["oracle"])
 if live_router:          app.include_router(live_router, prefix="/api/live", tags=["live"])
 if slate_router:         app.include_router(slate_router, prefix="/api/slate", tags=["slate"])
-if ws_ev_router:         app.include_router(ws_ev_router, prefix="/api/ws_ev", tags=["ws_ev"])
+if ws_ev_router:         app.mount("/api/ws_ev", ws_ev_router)
 if line_movement_router: app.include_router(line_movement_router, prefix="/api/line-movement", tags=["line_movement"])
 if arbitrage_router:     app.include_router(arbitrage_router, prefix="/api/arbitrage", tags=["arbitrage"])
 if kalshi_router:        app.include_router(kalshi_router, prefix="/api/kalshi", tags=["kalshi"])

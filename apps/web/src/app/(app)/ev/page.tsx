@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { TrendingUp, Zap, Filter, Search, BookOpen, Clock, AlertTriangle } from "lucide-react";
+import { TrendingUp, Zap, Filter, Search, BookOpen, Clock, AlertTriangle, Star } from "lucide-react";
 import { Sparklines, SparklinesLine, SparklinesSpots } from "react-sparklines";
 import { useWSFallback } from "@/hooks/useWSFallback";
 import { useSport } from "@/hooks/useSport";

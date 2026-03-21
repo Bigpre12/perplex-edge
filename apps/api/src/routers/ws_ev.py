@@ -1,89 +1,50 @@
 import asyncio
 import logging
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from typing import List
-from core.config import settings
-import redis.asyncio as redis
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
+from core.connection_manager import manager
+from deps.auth_ws import get_current_user_ws
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/ws", tags=["Institutional WebSockets"])
-redis_client = redis.from_url(settings.REDIS_URL)
+# Note: Prefix is handled in main.py as /api/ws_ev
+router = APIRouter(tags=["Institutional WebSockets"])
 
-class WebSocketConnectionManager:
+@router.websocket("")
+@router.websocket("/")
+async def websocket_ev_endpoint(
+    websocket: WebSocket,
+    current_user = Depends(get_current_user_ws)
+):
     """
-    Sub-second Signal Distribution Manager.
+    Main WebSocket endpoint for EV signals and alerts.
+    Path: /api/ws_ev
     """
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-        self.redis_client = redis_client
+    # Use user_id for connection tracking, fallback to "anonymous" if no user
+    user_id = "anonymous"
+    if current_user:
+        if hasattr(current_user, 'id'):
+            user_id = current_user.id
+        elif isinstance(current_user, dict) and 'id' in current_user:
+            user_id = current_user['id']
+        elif isinstance(current_user, dict) and 'sub' in current_user:
+            user_id = current_user['sub']
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        logger.info(f"[WS] New connection. Active: {len(self.active_connections)}")
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-        logger.info(f"[WS] Connection closed. Active: {len(self.active_connections)}")
-
-    async def broadcast_from_redis(self):
-        """
-        Listen to Redis pub/sub and broadcast to all connected institutional clients.
-        """
-        pubsub = self.redis_client.pubsub()
-        await pubsub.subscribe("updates:global", "updates:ev", "updates:signals")
-        
-        logger.info("[WS] Neural Broadcast Loop Started.")
-        
-        try:
-            async for message in pubsub.listen():
-                if message['type'] == 'message':
-                    data = message['data'].decode('utf-8')
-                    await self._broadcast(data)
-        except Exception as e:
-            logger.error(f"[WS] Broadcast error: {str(e)}")
-        finally:
-            await pubsub.unsubscribe()
-
-    async def _broadcast(self, message: str):
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(message)
-            except Exception:
-                # Connection might be stale
-                pass
-
-manager = WebSocketConnectionManager()
-
-@router.websocket("/ev")
-async def websocket_ev_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    await manager.connect(websocket, user_id)
+    
     try:
         while True:
-            # Keep connection alive
+            # Listen for client messages (heartbeats, subscriptions, etc.)
             data = await websocket.receive_text()
-            # Handle client-side heartbeat or subscriptions if needed
+            try:
+                msg = json.loads(data)
+                if msg.get("type") == "ping":
+                    await manager.send_personal({"type": "pong"}, user_id)
+            except json.JSONDecodeError:
+                pass
+                
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        manager.disconnect(user_id)
     except Exception as e:
-        logger.error(f"[WS] WebSocket error: {str(e)}")
-        manager.disconnect(websocket)
-
-# Background Task Starter (to be called in main.py)
-async def start_websocket_broadcast():
-    asyncio.create_task(manager.broadcast_from_redis())
-
-async def notify_ev_update(sport: str):
-    """Publish a notification to Redis for the WebSocket manager to broadcast."""
-    try:
-        payload = json.dumps({
-            "type": "ev_update",
-            "sport": sport,
-            "timestamp": asyncio.get_running_loop().time()
-        })
-        await redis_client.publish("updates:ev", payload)
-        logger.debug(f"[WS] Published ev_update for {sport}")
-    except Exception as e:
-        logger.error(f"[WS] Failed to publish ev_update: {e}")
+        logger.error(f"[WS] WebSocket error for {user_id}: {str(e)}")
+        manager.disconnect(user_id)

@@ -90,6 +90,7 @@ class Settings:
         vercel_patterns = [
             "https://perplex-edge.vercel.app",
             "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
+            "https://perplex-edge-mu2vm4wb2-bigpre12s-projects.vercel.app",
         ]
         for vp in vercel_patterns:
             if vp not in self.CORS_ORIGINS:
