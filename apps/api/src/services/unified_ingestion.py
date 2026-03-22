@@ -32,13 +32,14 @@ class UnifiedIngestionService:
         start_time = datetime.now(timezone.utc)
         source_name = "primary"
         from workers.ev_engine import ev_engine
-        metrics = {
+        errors: List[str] = []
+        metrics: Dict[str, Any] = {
             "sport": sport_key,
             "status": "started",
             "events_count": 0,
             "odds_count": 0,
             "rows_upserted": 0,
-            "errors": []
+            "errors": errors
         }
         
         # 1. Fetch metadata (Teams and Times) — Attempt key rotation ingest
@@ -74,14 +75,21 @@ class UnifiedIngestionService:
             odds_raw = []
 
         # Map event_id -> metadata
-        metadata_map = {
-            e['id']: {
+        metadata_map = {}
+        for e in odds_raw:
+            eid = e.get('id')
+            if not eid: continue
+            
+            commence_time = e.get('commence_time')
+            game_time = None
+            if isinstance(commence_time, str):
+                game_time = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
+            
+            metadata_map[eid] = {
                 'home_team': e.get('home_team'),
                 'away_team': e.get('away_team'),
-                'game_time': datetime.fromisoformat(e['commence_time'].replace('Z', '+00:00')) if e.get('commence_time') else None
+                'game_time': game_time
             }
-            for e in odds_raw if e.get('id')
-        }
 
         # 2d. Fetch Player Props (Requires per-event calls)
         PROP_MARKETS_BY_SPORT = {
@@ -97,7 +105,7 @@ class UnifiedIngestionService:
             
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
             
-            prop_counts = 0
+            prop_counts: int = 0
             for eid in active_events:
                 try:
                     # Attempt primary prop fetch
@@ -122,7 +130,8 @@ class UnifiedIngestionService:
                                 mkt_key = f"player_{p.get('stat_type')}"
                                 mkt = next((m for m in bm_map[bk]["markets"] if m["key"] == mkt_key), None)
                                 if not mkt:
-                                    mkt = {"key": mkt_key, "outcomes": []}
+                                    outcomes: List[Dict[str, Any]] = []
+                                    mkt = {"key": mkt_key, "outcomes": outcomes}
                                     bm_map[bk]["markets"].append(mkt)
                                 
                                 mkt["outcomes"].append({
