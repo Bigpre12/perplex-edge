@@ -36,9 +36,8 @@ def validate_env():
         logger.error("Please ensure these variables are set in the Railway dashboard.")
         logger.error("**************************************************")
         
-        # We still want to crash in production if essential vars are missing,
-        # but we do it AFTER logging so it's visible in Railway.
         if os.getenv("RAILWAY_ENVIRONMENT_NAME"):
+            # Hard crash in production to avoid mysterious 404s/500s later
             raise RuntimeError(msg)
         else:
             logger.warning("⚠️ Running in LOCAL mode with missing variables. Some features will fail.")
