@@ -64,3 +64,35 @@ async def health_check(
 @router.get("/summary")
 async def meta_summary():
     return {"status": "ok", "app": "LUCRIX"}
+
+@router.get("/diagnostics")
+async def diagnostics(db: AsyncSession = Depends(get_db)):
+    """Fetch backend internal diagnostics (heartbeats and table counts)"""
+    try:
+        from services.heartbeat_service import HeartbeatService
+        heartbeats = await HeartbeatService.get_all_heartbeats(db)
+        
+        # also check table counts
+        res2 = await db.execute(text("SELECT COUNT(*) FROM props_live"))
+        props_count = res2.scalar()
+        
+        res3 = await db.execute(text("SELECT COUNT(*) FROM unified_odds"))
+        odds_count = res3.scalar()
+        
+        return {
+            "props_live_count": props_count,
+            "unified_odds_count": odds_count,
+            "heartbeats": [
+                {
+                    "feed": h.feed_name,
+                    "status": h.status,
+                    "last_run": str(h.last_run_at),
+                    "last_success": str(h.last_success_at),
+                    "rows_written": h.rows_written_today,
+                    "errors": h.error_count_today,
+                    "meta": h.meta
+                } for h in heartbeats
+            ]
+        }
+    except Exception as e:
+        return {"error": str(e)}
