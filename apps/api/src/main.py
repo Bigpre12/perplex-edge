@@ -1,24 +1,27 @@
 import sys
 import os
 import asyncio
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import logging
+import traceback
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from core.config import APP_NAME, settings
 from middleware.request_id import RequestIDMiddleware
 from db.base import Base
 from db.session import engine
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from services.unified_ingestion import unified_ingestion
-import logging
 from core.connection_manager import manager
 
 logger = logging.getLogger(__name__)
 
-
 def validate_env():
-    """Fail fast if critical environment variables are missing."""
+    """Fail fast if critical environment variables are missing, but with descriptive error logs."""
     critical_vars = [
         "DATABASE_URL",
         "THE_ODDS_API_KEY",
@@ -33,15 +36,15 @@ def validate_env():
         logger.error("Please ensure these variables are set in the Railway dashboard.")
         logger.error("**************************************************")
         
+        # We still want to crash in production if essential vars are missing,
+        # but we do it AFTER logging so it's visible in Railway.
         if os.getenv("RAILWAY_ENVIRONMENT_NAME"):
-            # Hard crash in production to avoid mysterious 404s/500s later
             raise RuntimeError(msg)
         else:
             logger.warning("⚠️ Running in LOCAL mode with missing variables. Some features will fail.")
 
-
+# Run validation immediately
 validate_env()
-
 
 def safe_import(module_path, alias):
     try:
@@ -50,10 +53,8 @@ def safe_import(module_path, alias):
             return mod.router
         return getattr(mod, alias)
     except Exception as e:
-        import traceback
         logging.error(f"Error importing router '{module_path}': {e}\n{traceback.format_exc()}")
         return None
-
 
 # --- Router Imports (each guarded by safe_import) ---
 health_router        = safe_import("health", "health")
@@ -84,8 +85,107 @@ kalshi_ws_router     = safe_import("kalshi_ws_proxy", "kalshi_ws")
 intel_router         = safe_import("intel", "router")
 props_history_router = safe_import("props_history", "router")
 
+async def initialize_backend_services():
+    """Background task to initialize heavy services without blocking /health."""
+    logger.info("🚀 [Background Init] Starting service initialization...")
+    
+    try:
+        # 1. Database Setup & Tables
+        logger.info("📡 [Background Init] Ensuring database tables exist...")
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
-app = FastAPI(title=APP_NAME, redirect_slashes=False)
+        # 2. Schema Migrations (safe: IF NOT EXISTS)
+        logger.info("📡 [Background Init] Running schema migrations...")
+        async with engine.begin() as conn:
+            is_sqlite = "sqlite" in str(engine.url)
+            if not is_sqlite:
+                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR"))
+                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS true_prob FLOAT"))
+                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS edge_percent FLOAT"))
+                await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS sport VARCHAR"))
+                await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT"))
+                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sport VARCHAR"))
+                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ"))
+                logger.info("📡 [Background Init] Schema migrations complete.")
+    except Exception as e:
+        logger.error(f"❌ [Background Init] Startup DB error: {e}\n{traceback.format_exc()}")
+
+    # 3. WebSocket Redis Listener
+    try:
+        logger.info("📡 [Background Init] Starting WebSocket Redis Listener...")
+        await manager.start_redis_listener()
+        logger.info("📡 [Background Init] WebSocket Redis Listener active.")
+    except Exception as e:
+        logger.error(f"❌ [Background Init] Failed to start WebSocket Redis Listener: {e}")
+
+    # 4. Scheduler & Jobs
+    try:
+        logger.info("📡 [Background Init] Configuring Scheduler...")
+        scheduler = AsyncIOScheduler()
+        sports_to_ingest = [
+            "americanfootball_nfl", "americanfootball_ncaaf", "basketball_nba",
+            "baseball_mlb", "icehockey_nhl", "soccer_usa_mls",
+            "soccer_uefa_champs_league", "soccer_epl", "mma_mixed_martial_arts",
+            "aussierules_afl", "rugbyleague_nrl",
+        ]
+
+        for sport in sports_to_ingest:
+            scheduler.add_job(
+                unified_ingestion.run_with_retries,
+                'interval',
+                minutes=5,
+                args=[sport],
+                id=f"ingest_{sport}",
+                replace_existing=True
+            )
+
+        from services.grading_service import grading_service
+        scheduler.add_job(
+            grading_service.run_grading_cycle,
+            'interval',
+            minutes=10,
+            id="auto_grading",
+            replace_existing=True
+        )
+        scheduler.start()
+        logger.info("📡 [Background Init] Scheduler started.")
+
+        # 5. Initial Ingest (delayed)
+        async def delayed_initial_ingest():
+            await asyncio.sleep(20) # Give the app plenty of time to be stable
+            logger.info("📡 [Background Init] Starting delayed initial ingestion phase...")
+            for sport in sports_to_ingest:
+                try:
+                    await unified_ingestion.run_with_retries(sport)
+                except Exception as e:
+                    logger.error(f"❌ [Initial Ingest Error] {sport}: {e}")
+
+        asyncio.create_task(delayed_initial_ingest())
+
+    except Exception as e:
+        logger.error(f"❌ [Background Init] Scheduler setup failed: {e}")
+
+    # 6. CLV Tracker
+    try:
+        from services.brain_clv_tracker_loop import start_clv_tracker
+        logger.info("📡 [Background Init] CLV Tracker ready.")
+    except Exception as e:
+        logger.error(f"❌ [Background Init] CLV Tracker failed: {e}")
+
+    logger.info("✅ [Background Init] All background services synchronized.")
+
+@asynccontextmanager
+async def backend_lifespan(app: FastAPI):
+    """Modern FastAPI lifespan handler: non-blocking startup."""
+    # Run heavy tasks in the background so they don't block /health
+    init_task = asyncio.create_task(initialize_backend_services())
+    yield
+    # Clean up tasks if necessary on shutdown
+    init_task.cancel()
+
+app = FastAPI(title=APP_NAME, redirect_slashes=False, lifespan=backend_lifespan)
 
 origins = [
     "https://perplex-edge.vercel.app",
@@ -111,97 +211,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers={"Access-Control-Allow-Origin": "https://perplex-edge.vercel.app"}
     )
 
-@app.on_event("startup")
-async def startup():
-    """Startup: create DB tables, run migrations, start scheduler.
-    Initial ingest runs in background so /health is available immediately."""
-    logging.info("Starting up: Ensuring database tables exist...")
-    try:
-        from sqlalchemy import text
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-        # Schema migrations (safe: IF NOT EXISTS)
-        async with engine.begin() as conn:
-            is_sqlite = "sqlite" in str(engine.url)
-            if not is_sqlite:
-                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR"))
-                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS true_prob FLOAT"))
-                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS edge_percent FLOAT"))
-                await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS sport VARCHAR"))
-                await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT"))
-                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sport VARCHAR"))
-                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ"))
-                logging.info("Startup: Schema migrations complete.")
-    except Exception as e:
-        logging.error(f"Startup DB error: {e}")
-
-    # WebSocket Redis Listener
-    try:
-        await manager.start_redis_listener()
-        logging.info("WebSocket Redis Listener active.")
-    except Exception as e:
-        logging.error(f"Failed to start WebSocket Redis Listener: {e}")
-
-    # Scheduler
-    scheduler = AsyncIOScheduler()
-    sports_to_ingest = [
-        "americanfootball_nfl",
-        "americanfootball_ncaaf",
-        "basketball_nba",
-        "baseball_mlb",
-        "icehockey_nhl",
-        "soccer_usa_mls",
-        "soccer_uefa_champs_league",
-        "soccer_epl",
-        "mma_mixed_martial_arts",
-        "aussierules_afl",
-        "rugbyleague_nrl",
-    ]
-
-    for sport in sports_to_ingest:
-        scheduler.add_job(
-            unified_ingestion.run_with_retries,
-            'interval',
-            minutes=5,
-            args=[sport],
-            id=f"ingest_{sport}",
-            replace_existing=True
-        )
-
-    from services.grading_service import grading_service
-    scheduler.add_job(
-        grading_service.run_grading_cycle,
-        'interval',
-        minutes=10,
-        id="auto_grading",
-        replace_existing=True
-    )
-    scheduler.start()
-    logging.info("Scheduler started.")
-
-    # Initial ingest runs fully in background — does NOT block /health
-    async def initial_ingest():
-        await asyncio.sleep(10)  # Give app time to fully boot first
-        for sport in sports_to_ingest:
-            try:
-                logging.info(f"Initial ingest: {sport}")
-                await unified_ingestion.run_with_retries(sport)
-            except Exception as e:
-                logging.error(f"Initial ingest error for {sport}: {e}")
-
-    asyncio.create_task(initial_ingest())
-
-    # CLV Tracker
-    from services.brain_clv_tracker_loop import start_clv_tracker
-    logging.info("CLV Tracker started.")
-
-
 @app.get("/api/smart-money")
 async def get_sharp_signals():
     """Smart Money endpoint."""
     return {"status": "processing", "signal": "captured"}
-
 
 # --- Router Registration (all guarded) ---
 if health_router:        app.include_router(health_router, prefix="/api/health", tags=["health"])
@@ -232,16 +245,13 @@ if kalshi_router:        app.include_router(kalshi_router, prefix="/api/kalshi",
 if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
 
-
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
-
 @app.get("/")
 async def root():
     return {"name": APP_NAME, "status": "healthy"}
-
 
 if __name__ == "__main__":
     import uvicorn
