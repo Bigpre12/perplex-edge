@@ -470,6 +470,8 @@ class PropLive(Base):
     is_sharp_book = Column(Boolean, default=False)
     confidence = Column(Float, nullable=True) # 0.0 to 1.0
     last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    home_team = Column(String, nullable=True)
+    away_team = Column(String, nullable=True)
     __table_args__ = (UniqueConstraint('sport', 'game_id', 'player_name', 'market_key', 'book', name='uix_props_live_unique'),)
 
 class PropHistory(Base):
@@ -496,6 +498,8 @@ class PropHistory(Base):
     ingested_ts = Column(DateTime(timezone=True), nullable=True)
     source = Column(String, nullable=True)
     run_id = Column(String, nullable=True)
+    home_team = Column(String, nullable=True)
+    away_team = Column(String, nullable=True)
     is_close = Column(Boolean, default=False)
     is_best_over = Column(Boolean, default=False)
     is_best_under = Column(Boolean, default=False)

@@ -10,12 +10,12 @@ from typing import List, Dict, Any, Optional
 from db.session import async_session_maker
 from schemas.props import PropRecord
 from services.odds_mapping import odds_mapper
-from services.persistence_helpers import upsert_props_live, insert_props_history
 from core.config import settings
 from services.brains import sharp_money_brain, brain_clv_tracker, injury_impact_brain, brain_advanced_service
 from services.unified_odds_persistence import upsert_unified_odds
 from services.heartbeat_service import HeartbeatService
 from services.odds_api_client import odds_api_client
+from services.persistence_helpers import upsert_props_live, insert_props_history, delete_props_for_sport
 
 logger = logging.getLogger(__name__)
 
@@ -94,25 +94,47 @@ class UnifiedIngestionService:
                 }
 
         # 2d. Fetch Player Props (Requires per-event calls)
-        prop_markets = ["player_points", "player_rebounds", "player_assists", "player_threes", "player_double_double"]
-        if sport_key == "basketball_nba":
+        PROP_MARKETS_BY_SPORT = {
+            "basketball_nba": "player_points,player_rebounds,player_assists,player_threes,player_blocks,player_steals,player_turnovers,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists",
+            "americanfootball_nfl": "player_pass_tds,player_pass_yds,player_rush_yds,player_rec_yds,player_anytime_td",
+            "icehockey_nhl": "player_points,player_power_play_points,player_shots_on_goal",
+            "baseball_mlb": "player_strikeouts,player_hits,player_home_runs"
+        }
+
+        if sport_key in PROP_MARKETS_BY_SPORT:
             # Use metadata_map keys if events_raw was empty
             event_ids = [e['id'] for e in events_raw] if events_raw else list(metadata_map.keys())
-            active_events = event_ids[:15] # Limit to avoid excessive API usage
             
-            logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} events...")
+            # Filter to events starting in the next 48 hours to save quota
+            now_ts = datetime.now(timezone.utc).timestamp()
+            limit_ts = now_ts + (48 * 3600)
             
+            active_events = []
+            for eid in event_ids:
+                meta = metadata_map.get(eid, {})
+                gt = meta.get('game_time')
+                if gt and gt.timestamp() <= limit_ts:
+                    active_events.append(eid)
+            
+            # Limit to 20 events per run per sport to keep within 100k tier limits
+            active_events = active_events[:20] 
+            
+            logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
+            
+            prop_counts = 0
             for eid in active_events:
                 try:
                     event_props = await odds_api_client.get_player_props(
                         sport=sport_key,
                         event_id=eid,
-                        markets=",".join(prop_markets)
+                        markets=PROP_MARKETS_BY_SPORT[sport_key]
                     )
                     if event_props and "bookmakers" in event_props:
                         odds_raw.append(event_props)
+                        prop_counts += 1
                 except Exception as e:
                     logger.error(f"UnifiedIngestion: Failed to fetch props for event {eid}: {e}")
+            logger.info(f"UnifiedIngestion: Successfully fetched props for {prop_counts} events for {sport_key}")
 
         # 3. Normalize into PropRecords
         records = odds_mapper.map_theodds_props_to_records(odds_raw, metadata_map, sport_key)
@@ -122,9 +144,13 @@ class UnifiedIngestionService:
         metrics["odds_count"] = len(records)
         
         # 4. Standardized Persistence
+        if sport_key in PROP_MARKETS_BY_SPORT:
+            await delete_props_for_sport(sport_key)
+            
         await upsert_props_live(records)
         await insert_props_history(records)
         metrics["rows_upserted"] = len(records)
+        logger.info(f"UnifiedIngestion: Persisted {len(records)} prop records for {sport_key}")
         
         # 4b. Sync with UnifiedOdds for Brains (Split into discrete outcomes)
         unified_rows = []

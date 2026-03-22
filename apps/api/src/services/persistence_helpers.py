@@ -40,7 +40,9 @@ async def upsert_props_live(records: List[PropRecord]):
                 "confidence": ins_obj.excluded.confidence,
                 "source_ts": ins_obj.excluded.source_ts,
                 "ingested_ts": ins_obj.excluded.ingested_ts,
-                "last_updated_at": ins_obj.excluded.last_updated_at
+                "last_updated_at": ins_obj.excluded.last_updated_at,
+                "home_team": ins_obj.excluded.home_team,
+                "away_team": ins_obj.excluded.away_team
             }
             
             if is_sqlite:
@@ -61,6 +63,19 @@ async def upsert_props_live(records: List[PropRecord]):
             await session.rollback()
             print(f"DEBUG: Persistence: props_live upsert failed: {e}")
             logger.error(f"Persistence: props_live upsert failed: {e}")
+
+async def delete_props_for_sport(sport: str):
+    """Clears all live props for a given sport to allow a fresh ingest."""
+    async with async_session_maker() as session:
+        try:
+            from sqlalchemy import delete
+            stmt = delete(PropLive).where(PropLive.sport == sport)
+            await session.execute(stmt)
+            await session.commit()
+            logger.info(f"Persistence: Cleared props_live for sport={sport}")
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Persistence: Failed to clear props for {sport}: {e}")
 
 async def insert_props_history(records: List[PropRecord], source: str = 'live_ingest', run_id: str = None):
     """Appends records to props_history."""

@@ -107,6 +107,10 @@ async def initialize_backend_services():
                 await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT"))
                 await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sport VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ"))
+                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS home_team VARCHAR"))
+                await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
+                await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS home_team VARCHAR"))
+                await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
                 logger.info("📡 [Background Init] Schema migrations complete.")
     except Exception as e:
         logger.error(f"❌ [Background Init] Startup DB error: {e}\n{traceback.format_exc()}")
