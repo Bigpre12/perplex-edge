@@ -19,6 +19,7 @@ from services.unified_ingestion import unified_ingestion
 from core.connection_manager import manager
 
 logger = logging.getLogger(__name__)
+logging.getLogger("apscheduler").setLevel(logging.DEBUG)
 
 def validate_env():
     """Fail fast if critical environment variables are missing, but with descriptive error logs."""
@@ -135,7 +136,7 @@ async def initialize_backend_services():
         ]
 
         for sport in sports_to_ingest:
-            scheduler.add_job(
+            job = scheduler.add_job(
                 unified_ingestion.run_with_retries,
                 'interval',
                 minutes=5,
@@ -143,6 +144,7 @@ async def initialize_backend_services():
                 id=f"ingest_{sport}",
                 replace_existing=True
             )
+            logger.info(f"📡 [Scheduler] Added unified ingestion job {job.id} | next_run_time={job.next_run_time}")
 
         from services.grading_service import grading_service
         scheduler.add_job(
