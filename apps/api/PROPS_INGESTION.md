@@ -8,18 +8,18 @@ The props ingestion layer is integrated into the `UnifiedIngestionService`. It r
 
 ## Ingestion Flow
 
-1.  **Event Discovery**: Fetches upcoming events for the target sport.
-2.  **Pricing Retrieval**: Fetches standard odds (H2H, Spreads, Totals) and iterates through the top 20 upcoming events to fetch deep player prop markets.
-3.  **Normalization**: The `OddsMapper` groups separate Over/Under outcomes from multiple bookmakers into unified `PropRecord` objects.
-4.  **Enrichment**: Records are enriched with:
+1. **Event Discovery**: Fetches upcoming events for the target sport.
+2. **Pricing Retrieval**: Fetches standard odds (H2H, Spreads, Totals) and iterates through the top 20 upcoming events to fetch deep player prop markets.
+3. **Normalization**: The `OddsMapper` groups separate Over/Under outcomes from multiple bookmakers into unified `PropRecord` objects.
+4. **Enrichment**: Records are enriched with:
     - **Market Intelligence**: Identifying "Best Odds" for Over/Under.
     - **Book Categorization**: Flagging "Sharp" (e.g., Pinnacle, Bookmaker.eu) vs "Soft" books.
     - **Confidence**: A heuristic score based on book coverage for a specific line.
-5.  **Persistence Strategy**:
+5. **Persistence Strategy**:
     - **Cleanup**: Existing `props_live` rows for the current sport are cleared before the new batch is inserted.
     - **Upsert**: New records are upserted into `props_live` (Live UI data).
     - **Archive**: Snapshots are appended to `props_history` for later Closing Line Value (CLV) analysis.
-6.  **Brain Integration**: Records are synced to the `unified_odds` table to trigger the EV Engine and other predictive models.
+6. **Brain Integration**: Records are synced to the `unified_odds` table to trigger the EV Engine and other predictive models.
 
 ## Data Model
 
