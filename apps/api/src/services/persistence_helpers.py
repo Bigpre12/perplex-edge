@@ -58,6 +58,7 @@ async def upsert_props_live(records: List[PropRecord]):
         except Exception as e:
             await session.rollback()
             logger.error(f"Persistence: props_live upsert failed: {e}", exc_info=True)
+            raise e
 
 async def delete_props_for_sport(sport: str):
     """Clears all live props for a given sport to allow a fresh ingest."""
