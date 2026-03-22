@@ -32,7 +32,8 @@ export async function apiClient<T>(
   const { params, retries = 3, backoff = 1000, ...fetchOptions } = options;
 
   // 1. Construct URL with query params
-  const url = new URL(endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`);
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+  const url = new URL(endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`, baseUrl);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) url.searchParams.append(key, String(value));

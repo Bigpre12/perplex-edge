@@ -1,45 +1,17 @@
-/**
- * Runtime API Configuration Validation
- * Ensures that the frontend doesn't silently fail due to missing environment variables.
- */
-
-// .trim() to strip trailing newlines that Vercel dashboard can inject
-const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
-if (typeof window !== "undefined") {
-    console.log(`[DEBUG] process.env.NEXT_PUBLIC_API_URL: "${process.env.NEXT_PUBLIC_API_URL}"`);
-}
-
-// Check for missing or placeholder values
-const isPlaceholder = rawApiUrl.includes("<your-cloud-run-domain>") || rawApiUrl === "REPLACE_WITH_ACTUAL_BACKEND_URL";
-const isMissing = !rawApiUrl;
-
-if (typeof window !== "undefined") {
-    if (isMissing) {
-        console.error(
-            "CRITICAL: NEXT_PUBLIC_API_URL is missing! Every API call will fallback to localhost:8000. " +
-            "Please set this in Vercel Dashboard -> Settings -> Environment Variables."
-        );
-    } else if (isPlaceholder) {
-        console.error(
-            "CRITICAL: NEXT_PUBLIC_API_URL still contains a placeholder value! " +
-            "Please update this in Vercel Dashboard with your actual backend URL."
-        );
-    }
-}
+const isDevelopment = process.env.NODE_ENV === "development";
 
 /**
  * The validated API Base URL. 
- * Falls back to localhost:8000 during development if no env var is set.
+ * - In development: uses localhost:8000
+ * - In production: uses relative paths "" (enabling Vercel proxy)
  */
-export const API_BASE = (!isMissing && !isPlaceholder && rawApiUrl.length > 0)
-    ? rawApiUrl.replace(/\/$/, "") 
-    : "http://localhost:8000";
+export const API_BASE = isDevelopment ? "http://localhost:8000" : "";
 
 /**
- * Helper to check if the production API is correctly configured.
+ * Helper to check if the API is correctly configured.
  */
 export function isApiConfigured(): boolean {
-    return !isMissing && !isPlaceholder;
+    return true; // We now default to valid relative paths or localhost
 }
 
-console.log(`[API Config] Base URL: ${API_BASE}`);
+console.log(`[API Config] Mode: ${process.env.NODE_ENV}, Base URL: ${API_BASE || "(relative)"}`);
