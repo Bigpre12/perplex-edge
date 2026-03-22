@@ -22,11 +22,10 @@ async def upsert_props_live(records: List[PropRecord]):
             now = datetime.now(timezone.utc)
             rows = []
             for r in records:
-                row = r.dict(exclude_none=True)
+                # Include all fields, even None, to satisfy SQLAlchemy bound parameters
+                row = r.dict()
                 row.setdefault("ingested_ts", now)
                 row.setdefault("last_updated_at", now)
-                
-                # Ensure Decimal is handled if needed (asyncpg usually handles it)
                 rows.append(row)
 
             query = """
