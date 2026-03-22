@@ -8,53 +8,65 @@ from db.session import async_session_maker, engine
 from models import PropLive, PropHistory, EdgeEVHistory
 from models.brain import WhaleMove, CLVRecord, InjuryImpactEvent
 from schemas.props import PropRecord
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
 async def upsert_props_live(records: List[PropRecord]):
-    """Standardized upsert into public.props_live."""
+    """Standardized upsert into public.props_live using raw SQL for robustness."""
     if not records: 
-        print("DEBUG: upsert_props_live called with NO records")
         return
     
-    print(f"DEBUG: upsert_props_live called with {len(records)} records")
     async with async_session_maker() as session:
         try:
-            is_sqlite = "sqlite" in str(engine.url)
-            ins_obj = sqlite_insert(PropLive) if is_sqlite else pg_insert(PropLive)
-            
-            rows = [r.dict(exclude_none=True) for r in records]
-            stmt = ins_obj.values(rows)
-            
-            update_cols = {
-                "league": ins_obj.excluded.league,
-                "line": ins_obj.excluded.line,
-                "odds_over": ins_obj.excluded.odds_over,
-                "odds_under": ins_obj.excluded.odds_under,
-                "implied_over": ins_obj.excluded.implied_over,
-                "implied_under": ins_obj.excluded.implied_under,
-                "is_best_over": ins_obj.excluded.is_best_over,
-                "is_best_under": ins_obj.excluded.is_best_under,
-                "is_soft_book": ins_obj.excluded.is_soft_book,
-                "is_sharp_book": ins_obj.excluded.is_sharp_book,
-                "confidence": ins_obj.excluded.confidence,
-                "source_ts": ins_obj.excluded.source_ts,
-                "ingested_ts": ins_obj.excluded.ingested_ts,
-                "last_updated_at": ins_obj.excluded.last_updated_at,
-                "home_team": ins_obj.excluded.home_team,
-                "away_team": ins_obj.excluded.away_team
-            }
-            
-            # Use index_elements for both to be robust against missing constraint names
-            stmt = stmt.on_conflict_do_update(
-                index_elements=['sport', 'game_id', 'player_name', 'market_key', 'book'],
-                set_=update_cols
+            now = datetime.now(timezone.utc)
+            rows = []
+            for r in records:
+                row = r.dict(exclude_none=True)
+                row.setdefault("ingested_ts", now)
+                row.setdefault("last_updated_at", now)
+                
+                # Ensure Decimal is handled if needed (asyncpg usually handles it)
+                rows.append(row)
+
+            query = """
+            INSERT INTO props_live (
+                sport, league, game_id, game_start_time, player_id, player_name, 
+                team, market_key, market_label, line, book, odds_over, odds_under,
+                implied_over, implied_under, source_ts, ingested_ts, is_best_over,
+                is_best_under, is_soft_book, is_sharp_book, confidence, last_updated_at,
+                home_team, away_team
             )
+            VALUES (
+                :sport, :league, :game_id, :game_start_time, :player_id, :player_name,
+                :team, :market_key, :market_label, :line, :book, :odds_over, :odds_under,
+                :implied_over, :implied_under, :source_ts, :ingested_ts, :is_best_over,
+                :is_best_under, :is_soft_book, :is_sharp_book, :confidence, :last_updated_at,
+                :home_team, :away_team
+            )
+            ON CONFLICT (sport, game_id, player_name, market_key, book)
+            DO UPDATE SET
+                league = EXCLUDED.league,
+                line = EXCLUDED.line,
+                odds_over = EXCLUDED.odds_over,
+                odds_under = EXCLUDED.odds_under,
+                implied_over = EXCLUDED.implied_over,
+                implied_under = EXCLUDED.implied_under,
+                is_best_over = EXCLUDED.is_best_over,
+                is_best_under = EXCLUDED.is_best_under,
+                is_soft_book = EXCLUDED.is_soft_book,
+                is_sharp_book = EXCLUDED.is_sharp_book,
+                confidence = EXCLUDED.confidence,
+                source_ts = EXCLUDED.source_ts,
+                ingested_ts = EXCLUDED.ingested_ts,
+                last_updated_at = EXCLUDED.last_updated_at,
+                home_team = EXCLUDED.home_team,
+                away_team = EXCLUDED.away_team;
+            """
             
-            await session.execute(stmt)
-            await session.flush()
+            await session.execute(text(query), rows)
             await session.commit()
-            logger.info(f"Persistence: Successfully upserted {len(records)} props to props_live")
+            logger.info(f"Persistence: Successfully upserted {len(records)} props to props_live using raw SQL")
         except Exception as e:
             await session.rollback()
             logger.error(f"Persistence: props_live upsert failed: {e}", exc_info=True)
@@ -76,10 +88,7 @@ async def delete_props_for_sport(sport: str):
 async def insert_props_history(records: List[PropRecord], source: str = 'live_ingest', run_id: Optional[str] = None):
     """Appends records to props_history."""
     if not records: 
-        print("DEBUG: insert_props_history called with NO records")
         return
-    
-    print(f"DEBUG: insert_props_history called with {len(records)} records")
     
     now = datetime.now(timezone.utc)
     async with async_session_maker() as session:
