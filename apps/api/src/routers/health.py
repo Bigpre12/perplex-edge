@@ -105,6 +105,13 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         """))
         columns = [r[0] for r in col_res.fetchall()]
         
+        # file inspection
+        try:
+            with open("src/services/persistence_helpers.py", "r") as f:
+                content_snippet = f.read(500)
+        except Exception:
+            content_snippet = "Could not read file"
+            
         return {
             "props_live_count": props_count,
             "unified_odds_count": odds_count,
@@ -112,6 +119,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             "pg_version": pg_version,
             "sample_odds": sample_odds,
             "duplicates": duplicates,
+            "code_snippet": content_snippet,
             "heartbeats": [
                 {
                     "feed": h.feed_name,
