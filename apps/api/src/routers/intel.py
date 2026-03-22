@@ -93,7 +93,7 @@ async def get_ev_history(
                 last_sync=heartbeat.last_success_at if heartbeat else None,
                 request_id=get_request_id()
             ),
-            data=[h.to_dict() if hasattr(h, "to_dict") else vars(h) for h in history]
+            data=[h.to_dict() if hasattr(h, "to_dict") else {c.name: getattr(h, c.name) for c in h.__table__.columns} for h in history]
         )
     except Exception as e:
         return UniversalResponse(
@@ -124,7 +124,7 @@ async def proxy_injuries(
                 last_sync=heartbeat.last_success_at if heartbeat else None,
                 request_id=get_request_id()
             ),
-            data=[r.to_dict() if hasattr(r, "to_dict") else vars(r) for r in rows]
+            data=[r.to_dict() if hasattr(r, "to_dict") else {c.name: getattr(r, c.name) for c in r.__table__.columns} for r in rows]
         )
     except Exception as e:
         return UniversalResponse(

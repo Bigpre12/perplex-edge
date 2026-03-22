@@ -33,7 +33,7 @@ async def live_games(sport: str = "basketball_nba"):
             from sqlalchemy import select
             from models.prop import GameLine
             
-            async for db in get_db():
+            async with get_db() as db:
                 # Get unique games from seeded data
                 stmt = select(GameLine).where(GameLine.sport_key == sport).limit(10)
                 result = await db.execute(stmt)
