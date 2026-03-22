@@ -17,6 +17,6 @@ from models.injury import Injury
 from models.prop import Prop, PropLine, PropOdds, GameLine, GameLineOdds, LiveGameStat, Market, Sport
 from models.bet import Bet, BetSlip, BetLeg, BetLog, BetResult
 from models.heartbeat import Heartbeat
-from models.contests import Contest, ContestEntry, ContestPick
+from models.contests import Contest, ContestEntry
 from models.snapshots import DatabaseSnapshot
 

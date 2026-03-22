@@ -363,63 +363,6 @@ class BrainService:
                 "is_critical": False
             }
 
-    async def get_metrics(self, sport: str) -> dict:
-        """Pull props and score them for dashboard metrics."""
-        from .prop_service import get_all_props
-        props = await get_all_props(sport)
-        
-        # 2. Score them with real intelligence
-        # Map raw props to a format score_and_recommend expects if necessary
-        # Actually, get_all_props returns dicts with 'best_over', 'best_under', etc.
-        scored = await self.score_and_recommend(props)
-        
-        valid_scores = [p for p in scored if p.get("recommendation")]
-        steam_alerts = await alert_service.get_steam_alerts(sport)
-
-        # Calculate metrics based on real advisor scoring
-        elite_signals = [p for p in valid_scores if p["recommendation"]["tier"] in ["S", "A"]]
-        parlay_signals = [p for p in valid_scores if p["recommendation"]["ev"] >= 5.0]
-
-        return {
-            "eliteSignals": len(elite_signals),
-            "steamAlerts":  len(steam_alerts),
-            "parlayCount":  len(parlay_signals),
-            "propsScored":  len(valid_scores),
-            "modelAccuracy": f"{self._calc_accuracy()}%",
-            "avgEv":        round(sum(p["recommendation"]["ev"] for p in valid_scores) / max(len(valid_scores), 1), 1),
-            "hitRate":      round(sum(55.0 + p["recommendation"]["ev"] for p in valid_scores) / max(len(valid_scores), 1), 1),
-            "liveVolume":   len(props),
-            "volume":       len(props)
-        }
-
-    def _calc_accuracy(self) -> float:
-        """
-        Calculates the overall engine accuracy based on settled bets in the system.
-        Fallbacks to a historical baseline (67.4%) if fewer than 50 bets are settled.
-        """
-        from db.session import SessionLocal
-        from models.bet import BetLog, BetResult
-        from sqlalchemy import select, func
-        
-        db = SessionLocal()
-        try:
-            # Count total settled and wins
-            stmt_total = select(func.count()).select_from(BetLog).where(BetLog.result != BetResult.pending)
-            total_settled = db.execute(stmt_total).scalar() or 0
-            
-            if total_settled < 50:
-                return 67.4 # Historical baseline until enough live data exists
-                
-            stmt_wins = select(func.count()).select_from(BetLog).where(BetLog.result == BetResult.win)
-            wins = db.execute(stmt_wins).scalar() or 0
-            
-            return round((wins / total_settled) * 100, 1)
-        except Exception as e:
-            logger.error(f"Error calculating accuracy: {e}")
-            return 67.4
-        finally:
-            db.close()
-
 brain_service = BrainService()
 get_confidence_tier = brain_service.get_confidence_tier
 score_and_recommend = brain_service.score_and_recommend
@@ -427,4 +370,3 @@ generate_decision = brain_service.generate_decision
 analyze_parlay = brain_service.analyze_parlay
 generate_slate_decisions = brain_service.generate_slate_decisions
 evaluate_system_health = brain_service.evaluate_system_health
-get_metrics = brain_service.get_metrics
