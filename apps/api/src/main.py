@@ -11,10 +11,10 @@ from db.session import engine
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from services.unified_ingestion import unified_ingestion
 import logging
-import os
 from core.connection_manager import manager
 
 logger = logging.getLogger(__name__)
+
 
 def validate_env():
     """Fail fast if critical environment variables are missing."""
@@ -26,57 +26,58 @@ def validate_env():
     ]
     missing = [v for v in critical_vars if not os.getenv(v)]
     if missing:
-        msg = f"❌ CRITICAL ERROR: Missing environment variables: {', '.join(missing)}"
+        msg = f"CRITICAL ERROR: Missing environment variables: {', '.join(missing)}"
         logger.error(msg)
-        # In production, we want to fail fast. In local dev, we might just warn.
         if os.getenv("RAILWAY_ENVIRONMENT_NAME"):
             raise RuntimeError(msg)
         else:
-            logger.warning("⚠️ Running in LOCAL mode with missing variables. Some features will fail.")
+            logger.warning("Running in LOCAL mode with missing variables. Some features will fail.")
+
 
 validate_env()
+
+
 def safe_import(module_path, alias):
     try:
-        # FastAPI routers are typically named 'router' in their respective modules
         mod = __import__(f"routers.{module_path}", fromlist=["router"])
         if hasattr(mod, "router"):
             return mod.router
-        # Fallback to alias if 'router' is not found
         return getattr(mod, alias)
     except Exception as e:
         import traceback
-        logging.error(f"❌ Error importing router '{module_path}': {e}\n{traceback.format_exc()}")
+        logging.error(f"Error importing router '{module_path}': {e}\n{traceback.format_exc()}")
         return None
 
-health_router       = safe_import("health", "health")
-meta_router         = safe_import("meta", "meta")
-auth_router         = safe_import("auth", "auth")
-props_router        = safe_import("props", "props")
-ev_router           = safe_import("ev", "ev")
-clv_router          = safe_import("clv", "clv")
-brain_router        = safe_import("brain_router", "brain")
-bets_router         = safe_import("bets", "bets")
-injuries_router     = safe_import("injuries", "injuries")
-news_router         = safe_import("news", "news")
-signals_router      = safe_import("signals", "signals")
-metrics_router      = safe_import("metrics", "metrics")
-hit_rate_router     = safe_import("hit_rate", "hit_rate")
-whale_router        = safe_import("whale", "whale")
-steam_router        = safe_import("steam", "steam")
-stripe_router       = safe_import("stripe_router", "stripe")
-search_router       = safe_import("search", "search")
-oracle_router       = safe_import("oracle", "oracle")
-live_router         = safe_import("live", "live")
-slate_router        = safe_import("slate", "slate")
-ws_ev_router        = safe_import("ws_ev", "ws_ev")
+
+# --- Router Imports (each guarded by safe_import) ---
+health_router        = safe_import("health", "health")
+meta_router          = safe_import("meta", "meta")
+auth_router          = safe_import("auth", "auth")
+props_router         = safe_import("props", "props")
+ev_router            = safe_import("ev", "ev")
+clv_router           = safe_import("clv", "clv")
+brain_router         = safe_import("brain_router", "brain")
+bets_router          = safe_import("bets", "bets")
+injuries_router      = safe_import("injuries", "injuries")
+news_router          = safe_import("news", "news")
+signals_router       = safe_import("signals", "signals")
+metrics_router       = safe_import("metrics", "metrics")
+hit_rate_router      = safe_import("hit_rate", "hit_rate")
+whale_router         = safe_import("whale", "whale")
+steam_router         = safe_import("steam", "steam")
+stripe_router        = safe_import("stripe_router", "stripe")
+search_router        = safe_import("search", "search")
+oracle_router        = safe_import("oracle", "oracle")
+live_router          = safe_import("live", "live")
+slate_router         = safe_import("slate", "slate")
+ws_ev_router         = safe_import("ws_ev", "ws_ev")
 line_movement_router = safe_import("line_movement", "line_movement")
-arbitrage_router    = safe_import("arbitrage", "arbitrage")
-kalshi_router       = safe_import("kalshi", "kalshi")
-kalshi_ws_router    = safe_import("kalshi_ws_proxy", "kalshi_ws")
-intel_router        = safe_import("intel", "router")
+arbitrage_router     = safe_import("arbitrage", "arbitrage")
+kalshi_router        = safe_import("kalshi", "kalshi")
+kalshi_ws_router     = safe_import("kalshi_ws_proxy", "kalshi_ws")
+intel_router         = safe_import("intel", "router")
 props_history_router = safe_import("props_history", "router")
-ws_ev_router        = safe_import("ws_ev", "ws_ev")
-line_movement_router = safe_import("line_movement", "line_movement")
+
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False)
 
@@ -94,92 +95,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 async def startup():
-    """Ensure database tables are created on startup."""
-    import logging
+    """Startup: create DB tables, run migrations, start scheduler.
+    Initial ingest runs in background so /health is available immediately."""
     logging.info("Starting up: Ensuring database tables exist...")
     try:
-        from db.session import engine
-        import db.base
-        from db.base import Base
+        from sqlalchemy import text
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            
-            # Migration check for ev_signals.sport
-            from sqlalchemy import text
-            async def check_ev_sport(connection):
-                # Using text() for raw SQL check
-                res = await connection.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='ev_signals' AND column_name='sport'"))
-                if not res.fetchone():
-                    logging.warning("⚠️ Column 'sport' missing in 'ev_signals'. Attempting migration...")
-                    await connection.execute(text("ALTER TABLE ev_signals ADD COLUMN sport VARCHAR"))
-                    logging.info("✅ Migration successful: Added 'sport' to 'ev_signals'.")
-            
-            # Since we are in run_sync context for create_all, we need a separate way or just run it after
-            # Actually engine.begin() provides a connection.
-        
-        # Run migration after create_all
+
+        # Schema migrations (safe: IF NOT EXISTS)
         async with engine.begin() as conn:
-            # information_schema check is for postgres. For sqlite (dev) we might skip or use pragma.
             is_sqlite = "sqlite" in str(engine.url)
             if not is_sqlite:
-                # Essential migrations for new canonical endpoints
                 await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR"))
                 await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS true_prob FLOAT"))
                 await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS edge_percent FLOAT"))
-                
                 await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS sport VARCHAR"))
                 await conn.execute(text("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT"))
-                
                 await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sport VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ"))
-                
-                logging.info("Startup complete: Schema verified.")
-            else:
-                logging.info("Startup complete: Database initialized (SQLite).")
+                logging.info("Startup: Schema migrations complete.")
     except Exception as e:
-        # Tables might already exist, or connection failed
-        logging.error(f"Startup error during DB initialization: {e}")
+        logging.error(f"Startup DB error: {e}")
 
-    # Start WebSocket Broadcast Listener (Redis-backed)
+    # WebSocket Redis Listener
     try:
         await manager.start_redis_listener()
-        logging.info("✅ WebSocket Redis Listener active.")
+        logging.info("WebSocket Redis Listener active.")
     except Exception as e:
         logging.error(f"Failed to start WebSocket Redis Listener: {e}")
 
-    # Initialize Scheduler
+    # Scheduler
     scheduler = AsyncIOScheduler()
-    
-    # Schedule Ingest Jobs (Every 5 minutes)
     sports_to_ingest = [
-        # American Football
         "americanfootball_nfl",
         "americanfootball_ncaaf",
-
-        # Basketball
         "basketball_nba",
-
-        # Baseball
         "baseball_mlb",
-
-        # Hockey
         "icehockey_nhl",
-
-        # Soccer (a few high-value comps)
         "soccer_usa_mls",
         "soccer_uefa_champs_league",
         "soccer_epl",
-
-        # MMA
         "mma_mixed_martial_arts",
-
-        # Aussie Rules / Rugby (optional)
         "aussierules_afl",
         "rugbyleague_nrl",
     ]
-    
+
     for sport in sports_to_ingest:
         scheduler.add_job(
             unified_ingestion.run_with_retries,
@@ -189,8 +153,7 @@ async def startup():
             id=f"ingest_{sport}",
             replace_existing=True
         )
-    
-    # Schedule Grading Job (Every 10 minutes)
+
     from services.grading_service import grading_service
     scheduler.add_job(
         grading_service.run_grading_cycle,
@@ -199,42 +162,33 @@ async def startup():
         id="auto_grading",
         replace_existing=True
     )
-    
     scheduler.start()
-    logging.info("Scheduler started: Ingest and Grading jobs queued.")
+    logging.info("Scheduler started.")
 
-    # Trigger initial ingest after a short delay
+    # Initial ingest runs fully in background — does NOT block /health
     async def initial_ingest():
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)  # Give app time to fully boot first
         for sport in sports_to_ingest:
-            logging.info(f"Triggering initial ingest for {sport}...")
-            await unified_ingestion.run_with_retries(sport)
-            
+            try:
+                logging.info(f"Initial ingest: {sport}")
+                await unified_ingestion.run_with_retries(sport)
+            except Exception as e:
+                logging.error(f"Initial ingest error for {sport}: {e}")
+
     asyncio.create_task(initial_ingest())
 
-    # Start CLV Tracking Loop
+    # CLV Tracker
     from services.brain_clv_tracker_loop import start_clv_tracker
     logging.info("CLV Tracker started.")
-    
-# app.add_middleware(RequestIDMiddleware) # Temporarily disabled to debug CORS stripping
+
 
 @app.get("/api/smart-money")
 async def get_sharp_signals():
-    """Neural Engine: Smart Money Threadpool (Fix #4)"""
-    from services.brain_sharp_money import sharp_money_brain
-    from db.session import SessionLocal
-    import asyncio
-    
-    def _sync():
-        with SessionLocal() as syncdb:
-            # Note: syncdb is a sync session for the threadpool
-            return {"status": "processing", "signal": "captured"} # Placeholder for actual logic
-            
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _sync)
+    """Smart Money endpoint."""
+    return {"status": "processing", "signal": "captured"}
 
-# Include external health router for more detailed checks
-# Guarded Router Inclusion
+
+# --- Router Registration (all guarded) ---
 if health_router:        app.include_router(health_router, prefix="/api/health", tags=["health"])
 if intel_router:         app.include_router(intel_router, prefix="/api/intel", tags=["intel"])
 if meta_router:          app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
@@ -262,13 +216,17 @@ if arbitrage_router:     app.include_router(arbitrage_router, prefix="/api/arbit
 if kalshi_router:        app.include_router(kalshi_router, prefix="/api/kalshi", tags=["kalshi"])
 if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
+
 @app.get("/")
 async def root():
     return {"name": APP_NAME, "status": "healthy"}
+
 
 if __name__ == "__main__":
     import uvicorn
