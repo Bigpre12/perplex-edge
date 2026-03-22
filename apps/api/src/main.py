@@ -2,8 +2,9 @@ import sys
 import os
 import asyncio
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from core.config import APP_NAME, settings
 from middleware.request_id import RequestIDMiddleware
 from db.base import Base
@@ -26,12 +27,17 @@ def validate_env():
     ]
     missing = [v for v in critical_vars if not os.getenv(v)]
     if missing:
-        msg = f"CRITICAL ERROR: Missing environment variables: {', '.join(missing)}"
+        msg = f"❌ CRITICAL CONFIGURATION ERROR: Missing environment variables: {', '.join(missing)}"
+        logger.error("**************************************************")
         logger.error(msg)
+        logger.error("Please ensure these variables are set in the Railway dashboard.")
+        logger.error("**************************************************")
+        
         if os.getenv("RAILWAY_ENVIRONMENT_NAME"):
+            # Hard crash in production to avoid mysterious 404s/500s later
             raise RuntimeError(msg)
         else:
-            logger.warning("Running in LOCAL mode with missing variables. Some features will fail.")
+            logger.warning("⚠️ Running in LOCAL mode with missing variables. Some features will fail.")
 
 
 validate_env()
@@ -95,6 +101,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Fail-safe for production: Ensure CORS headers are sent even on 500 errors."""
+    logger.error(f"GLOBAL EXCEPTION CAUGHT: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)},
+        headers={"Access-Control-Allow-Origin": "https://perplex-edge.vercel.app"}
+    )
 
 @app.on_event("startup")
 async def startup():
