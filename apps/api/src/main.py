@@ -116,20 +116,11 @@ async def initialize_backend_services():
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS home_team VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
                 
-                # Add unique constraints if missing (critical for ON CONFLICT upserts)
-                await conn.execute(text("""
-                DO $$ 
-                BEGIN
-                    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uix_props_live_unique') THEN
-                        ALTER TABLE props_live ADD CONSTRAINT uix_props_live_unique UNIQUE (sport, game_id, player_name, market_key, book);
-                    END IF;
-                    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uix_unified_odds_unique') THEN
-                        ALTER TABLE unified_odds ADD CONSTRAINT uix_unified_odds_unique UNIQUE (sport, event_id, market_key, outcome_key, bookmaker);
-                    END IF;
-                END $$;
-                """))
-
-                logger.info("📡 [Background Init] Schema migrations complete.")
+                # Add unique indexes if missing (critical for ON CONFLICT upserts)
+                await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uix_props_live_unique ON props_live (sport, game_id, player_name, market_key, book)"))
+                await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uix_unified_odds_unique ON unified_odds (sport, event_id, market_key, outcome_key, bookmaker)"))
+                
+                logger.info("📡 [Background Init] Schema migrations and indexes complete.")
     except Exception as e:
         logger.error(f"❌ [Background Init] Startup DB error: {e}\n{traceback.format_exc()}")
 

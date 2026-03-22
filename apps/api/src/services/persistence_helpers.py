@@ -45,16 +45,11 @@ async def upsert_props_live(records: List[PropRecord]):
                 "away_team": ins_obj.excluded.away_team
             }
             
-            if is_sqlite:
-                stmt = stmt.on_conflict_do_update(
-                    index_elements=['sport', 'game_id', 'player_name', 'market_key', 'book'],
-                    set_=update_cols
-                )
-            else:
-                stmt = stmt.on_conflict_do_update(
-                    constraint='uix_props_live_unique',
-                    set_=update_cols
-                )
+            # Use index_elements for both to be robust against missing constraint names
+            stmt = stmt.on_conflict_do_update(
+                index_elements=['sport', 'game_id', 'player_name', 'market_key', 'book'],
+                set_=update_cols
+            )
             
             await session.execute(stmt)
             await session.flush()
