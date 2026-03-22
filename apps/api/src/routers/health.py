@@ -80,14 +80,15 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         sample_res = await db.execute(text("SELECT sport, game_id, player_name, book FROM props_live LIMIT 5"))
         sample_rows = [dict(r._mapping) for r in sample_res.fetchall()]
         
-        # constraint check
-        cons_res = await db.execute(text("""
-            SELECT conname, pg_get_constraintdef(c.oid) 
-            FROM pg_constraint c 
-            JOIN pg_namespace n ON n.oid = c.connamespace 
-            WHERE conname LIKE 'uix_props_live%'
+        # duplicates check
+        dup_res = await db.execute(text("""
+            SELECT sport, game_id, player_name, market_key, book, COUNT(*) 
+            FROM props_live 
+            GROUP BY sport, game_id, player_name, market_key, book 
+            HAVING COUNT(*) > 1 
+            LIMIT 5
         """))
-        constraints = [dict(r._mapping) for r in cons_res.fetchall()]
+        duplicates = [dict(r._mapping) for r in dup_res.fetchall()]
         
         res3 = await db.execute(text("SELECT COUNT(*) FROM unified_odds"))
         odds_count = res3.scalar()
@@ -97,6 +98,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             "unified_odds_count": odds_count,
             "sample_props": sample_rows,
             "constraints": constraints,
+            "duplicates": duplicates,
             "heartbeats": [
                 {
                     "feed": h.feed_name,
