@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 from typing import List, Dict, Any
-from db.session import async_session_maker
+from db.session import AsyncSessionLocal
 from services.parlay_service import parlay_service
 from schemas.universal import UniversalResponse, ResponseMeta
 from middleware.request_id import get_request_id
@@ -20,7 +20,7 @@ async def get_parlay_suggestions(
     Returns correlated parlay suggestions generated from high-EV props.
     """
     try:
-        async with async_session_maker() as session:
+        async with AsyncSessionLocal() as session:
             # 1. Fetch high-EV props for the sport
             stmt = select(UnifiedEVSignal).where(
                 UnifiedEVSignal.sport == sport,

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends
 from typing import List, Dict, Any
 from sqlalchemy import select, desc
-from db.session import async_session_maker
+from db.session import AsyncSessionLocal
 from models.brain import SharpSignal, WhaleMove
 from schemas.universal import UniversalResponse, ResponseMeta
 from middleware.request_id import get_request_id
@@ -17,7 +17,7 @@ async def get_sharp_alerts(
     Returns the latest sharp money signals and whale moves.
     """
     try:
-        async with async_session_maker() as session:
+        async with AsyncSessionLocal() as session:
             # Fetch latest Sharp Signals
             sharp_stmt = select(SharpSignal).where(SharpSignal.sport == sport).order_by(desc(SharpSignal.created_at)).limit(limit)
             sharp_res = await session.execute(sharp_stmt)

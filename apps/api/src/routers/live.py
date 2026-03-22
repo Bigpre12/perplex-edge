@@ -29,11 +29,11 @@ async def live_games(sport: str = "basketball_nba"):
     # 2. Database Fallback (if waterfall yields nothing)
     if not all_games:
         try:
-            from db.session import get_db
+            from db.session import AsyncSessionLocal
             from sqlalchemy import select
             from models.prop import GameLine
             
-            async with get_db() as db:
+            async with AsyncSessionLocal() as db:
                 # Get unique games from seeded data
                 stmt = select(GameLine).where(GameLine.sport_key == sport).limit(10)
                 result = await db.execute(stmt)

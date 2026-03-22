@@ -48,22 +48,19 @@ __all__ = ["engine", "AsyncSessionLocal", "get_db", "get_async_db", "Base", "Ses
 from contextlib import asynccontextmanager
 
 # --- DEPENDENCIES ---
-@asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for async database sessions."""
     async with AsyncSessionLocal() as session:
         yield session
 
-@asynccontextmanager
 async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
     """Alias for get_db for backward compatibility."""
     async with AsyncSessionLocal() as session:
         yield session
 
 # Legacy alias: many routers/services still import async_session_maker
-@asynccontextmanager
-async def async_session_maker():
-    """Backward-compatible async context manager for sessions."""
+async def async_session_maker() -> AsyncGenerator[AsyncSession, None]:
+    """Backward-compatible async generator for sessions."""
     async with AsyncSessionLocal() as session:
         yield session
 
