@@ -34,7 +34,7 @@ async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
       :line, :price, :implied_prob, :player_name,
       :league, :game_time, :home_team, :away_team, :created_at
     )
-    ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, player_name)
+    ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker)
     DO UPDATE SET
       line = EXCLUDED.line,
       price = EXCLUDED.price,
