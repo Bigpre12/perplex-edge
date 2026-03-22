@@ -89,6 +89,10 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         res3 = await db.execute(text("SELECT COUNT(*) FROM unified_odds"))
         odds_count = res3.scalar()
         
+        # pg version
+        pg_res = await db.execute(text("SELECT VERSION()"))
+        pg_version = pg_res.scalar()
+        
         # sample odds
         sample_odds_res = await db.execute(text("SELECT sport, market_key, outcome_key, price FROM unified_odds LIMIT 5"))
         sample_odds = [dict(r._mapping) for r in sample_odds_res.fetchall()]
@@ -96,6 +100,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         return {
             "props_live_count": props_count,
             "unified_odds_count": odds_count,
+            "pg_version": pg_version,
             "sample_odds": sample_odds,
             "duplicates": duplicates,
             "heartbeats": [
