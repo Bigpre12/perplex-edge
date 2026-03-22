@@ -59,10 +59,8 @@ async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 # Legacy alias: many routers/services still import async_session_maker
-async def async_session_maker() -> AsyncGenerator[AsyncSession, None]:
-    """Backward-compatible async generator for sessions."""
-    async with AsyncSessionLocal() as session:
-        yield session
+# Note: This is an alias to the factory, allowing 'async with async_session_maker()'
+async_session_maker = AsyncSessionLocal
 
 # Legacy shim for SessionLocal if needed by external scripts (minimizing usage)
 # In a pure async app, this should eventually be removed.
