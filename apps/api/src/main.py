@@ -117,8 +117,12 @@ async def initialize_backend_services():
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
                 
                 # Add unique indexes if missing (critical for ON CONFLICT upserts)
-                await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uix_props_live_unique ON props_live (sport, game_id, player_name, market_key, book)"))
-                await conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uix_unified_odds_unique ON unified_odds (sport, event_id, market_key, outcome_key, bookmaker)"))
+                # Using NULLS NOT DISTINCT (PG 15+) ensures NULL player_name matches for h2h lines
+                await conn.execute(text("DROP INDEX IF EXISTS uix_props_live_unique"))
+                await conn.execute(text("CREATE UNIQUE INDEX uix_props_live_unique ON props_live (sport, game_id, player_name, market_key, book) NULLS NOT DISTINCT"))
+                
+                await conn.execute(text("DROP INDEX IF EXISTS uix_unified_odds_unique"))
+                await conn.execute(text("CREATE UNIQUE INDEX uix_unified_odds_unique ON unified_odds (sport, event_id, market_key, outcome_key, bookmaker) NULLS NOT DISTINCT"))
                 
                 logger.info("📡 [Background Init] Schema migrations and indexes complete.")
     except Exception as e:
