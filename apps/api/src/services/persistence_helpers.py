@@ -1,6 +1,6 @@
 # apps/api/src/services/persistence_helpers.py
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -57,12 +57,12 @@ async def upsert_props_live(records: List[PropRecord]):
                 )
             
             await session.execute(stmt)
+            await session.flush()
             await session.commit()
-            print(f"DEBUG: Persistence: Upserted {len(records)} records into props_live.")
+            logger.info(f"Persistence: Successfully upserted {len(records)} props to props_live")
         except Exception as e:
             await session.rollback()
-            print(f"DEBUG: Persistence: props_live upsert failed: {e}")
-            logger.error(f"Persistence: props_live upsert failed: {e}")
+            logger.error(f"Persistence: props_live upsert failed: {e}", exc_info=True)
 
 async def delete_props_for_sport(sport: str):
     """Clears all live props for a given sport to allow a fresh ingest."""
@@ -77,7 +77,7 @@ async def delete_props_for_sport(sport: str):
             await session.rollback()
             logger.error(f"Persistence: Failed to clear props for {sport}: {e}")
 
-async def insert_props_history(records: List[PropRecord], source: str = 'live_ingest', run_id: str = None):
+async def insert_props_history(records: List[PropRecord], source: str = 'live_ingest', run_id: Optional[str] = None):
     """Appends records to props_history."""
     if not records: 
         print("DEBUG: insert_props_history called with NO records")

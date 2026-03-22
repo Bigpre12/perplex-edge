@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, Depends
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
-from db.session import get_async_db
+from db.session import get_async_db, async_session_maker
 from models import EdgeEVHistory, Injury
 from services.db import db
 from schemas.universal import UniversalResponse, ResponseMeta
@@ -45,7 +45,7 @@ async def get_ev_top(
             {"sport": sport, "min_edge": min_edge, "limit": limit},
         )
 
-        async with get_async_db() as session:
+        async with async_session_maker() as session:
             heartbeat = await HeartbeatService.get_heartbeat(session, f"ingest_{sport}")
 
         return UniversalResponse(

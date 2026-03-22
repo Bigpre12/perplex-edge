@@ -214,6 +214,15 @@ export const api = {
         request<UniversalResponse<any>>("/api/hit-rate/trends", { headers: { "Authorization": `Bearer ${token}` } }),
     fetchPerformanceSummary: (token: string) => 
         request<UniversalResponse<any>>("/api/metrics", { headers: { "Authorization": `Bearer ${token}` } }),
+
+    // Billing
+    billing: {
+        createCheckoutSession: (priceId: string) => 
+            request("/api/billing/create-checkout-session", { method: "POST", body: JSON.stringify({ price_id: priceId }) }),
+        createPortalSession: () => 
+            request("/api/billing/create-portal-session", { method: "POST" }),
+        status: () => request("/api/billing/status"),
+    },
 };
 
 export const API = api;

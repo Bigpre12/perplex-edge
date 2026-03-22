@@ -75,13 +75,13 @@ export async function startCheckout(priceId: string) {
 
 // Portal helper — manage existing subscription
 export async function openBillingPortal() {
-    const data = await api.billingPortal();
+    const data = await api.billing.createPortalSession();
 
     if (isApiError(data)) {
         throw new Error(data.message || "Failed to open billing portal");
     }
 
-    if (data.portal_url) {
-        window.location.href = data.portal_url;
+    if (data.url) {
+        window.location.href = data.url;
     }
 }

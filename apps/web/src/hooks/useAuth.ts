@@ -32,7 +32,7 @@ export function useAuth() {
             if (!session) return null;
 
             try {
-                const data = await api.me() as UserProfile;
+                const data = await api.auth.me() as UserProfile;
                 return data;
             } catch (err: any) {
                 if (err?.message?.startsWith("401")) return null;

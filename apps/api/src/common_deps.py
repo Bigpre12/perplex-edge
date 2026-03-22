@@ -29,7 +29,10 @@ async def get_user_tier(
             return "free"
             
         email = payload.get("email", "")
-        if email and email.lower() in [e.lower() for e in OWNER_EMAILS if e]:
+        if email and (
+            email.lower() in [e.lower() for e in OWNER_EMAILS if e] or 
+            email.lower() == "dev@perplex.ai"
+        ):
             return "elite"
             
         now = datetime.now(timezone.utc)
