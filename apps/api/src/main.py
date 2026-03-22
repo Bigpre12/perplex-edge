@@ -161,7 +161,7 @@ async def initialize_backend_services():
                 id=f"ingest_{sport}",
                 replace_existing=True
             )
-            logger.info(f"📡 [Scheduler] Added unified ingestion job {job.id} | next_run_time={job.next_run_time}")
+            logger.info(f"📡 [Scheduler] Added unified ingestion job {job.id}")
 
         from services.grading_service import grading_service
         scheduler.add_job(
