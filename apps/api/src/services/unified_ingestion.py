@@ -16,6 +16,8 @@ from services.unified_odds_persistence import upsert_unified_odds
 from services.heartbeat_service import HeartbeatService
 from services.odds_api_client import odds_api_client
 from services.persistence_helpers import upsert_props_live, insert_props_history, delete_props_for_sport
+from real_sports_api import _real_sports_api_instance
+from real_data_connector import real_data_connector
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,8 @@ class UnifiedIngestionService:
         return Decimal(abs(american)) / Decimal(abs(american) + 100)
 
     async def run(self, sport_key: str):
+        start_time = datetime.now(timezone.utc)
+        source_name = "primary"
         from workers.ev_engine import ev_engine
         metrics = {
             "sport": sport_key,
@@ -37,19 +41,37 @@ class UnifiedIngestionService:
             "errors": []
         }
         
-        # 1. Fetch metadata (Teams and Times)
+        # 1. Fetch metadata (Teams and Times) — Attempt key rotation ingest
         try:
-            events_raw = await odds_api_client.get_events(sport_key)
-            metrics["events_count"] = len(events_raw) if events_raw else 0
-            logger.info(f"UnifiedIngestion: Fetched {metrics['events_count']} events from OddsAPI for {sport_key}")
+            # Task 1: Use key-rotating instance
+            odds_raw = await _real_sports_api_instance.fetch_odds_from_theodds(sport_key)
+            
+            # Task 2: Waterfall Fallback
+            if not odds_raw or (isinstance(odds_raw, dict) and "error" in odds_raw) or len(odds_raw) < 2:
+                logger.info(f"UnifiedIngestion: Waterfall fallback triggered for {sport_key}")
+                fallback_data = await real_data_connector.fetch_games_by_sport(sport_key)
+                if fallback_data:
+                    source_name = f"waterfall({fallback_data[0].get('source', 'unknown')})"
+                    # Map fallback format to Odds API style for the mapper
+                    odds_raw = []
+                    for g in fallback_data:
+                        odds_raw.append({
+                            "id": g.get("id"),
+                            "sport_key": sport_key,
+                            "home_team": g.get("home_team"),
+                            "away_team": g.get("away_team"),
+                            "commence_time": g.get("start_time").isoformat() if isinstance(g.get("start_time"), datetime) else None,
+                            "bookmakers": g.get("raw_bookmakers_data", [])
+                        })
+                else:
+                    odds_raw = []
+            
+            metrics["events_count"] = len(odds_raw)
+            logger.info(f"UnifiedIngestion: Fetched {metrics['events_count']} events from {source_name} for {sport_key}")
         except Exception as e:
-            metrics["errors"].append(f"Events Fetch: {str(e)}")
-            logger.error(f"UnifiedIngestion: Failed to fetch events from OddsAPI for {sport_key}: {e}")
-            events_raw = None
-
-        if not events_raw:
-            logger.warning(f"UnifiedIngestion: No events found from /events for {sport_key}. Proceeding with potential extraction from /odds.")
-            events_raw = []
+            metrics["errors"].append(f"Ingest Fetch: {str(e)}")
+            logger.error(f"UnifiedIngestion: Failed to fetch data: {e}")
+            odds_raw = []
 
         # Map event_id -> metadata
         metadata_map = {
@@ -58,40 +80,8 @@ class UnifiedIngestionService:
                 'away_team': e.get('away_team'),
                 'game_time': datetime.fromisoformat(e['commence_time'].replace('Z', '+00:00')) if e.get('commence_time') else None
             }
-            for e in events_raw
+            for e in odds_raw if e.get('id')
         }
-
-        # 2. Fetch Pricing
-        try:
-            markets = ["h2h", "spreads", "totals"]
-            markets = list(dict.fromkeys([m.strip().lower() for m in markets if m.strip()]))
-            
-            logger.info(f"UnifiedIngestion: Fetching odds for {sport_key} with markets: {markets}")
-            odds_raw = await odds_api_client.fetch_odds(sport_key, markets=markets)
-            metrics["odds_count"] = len(odds_raw) if odds_raw else 0
-            logger.info(f"UnifiedIngestion: Fetched {metrics['odds_count']} odds entries for {sport_key}")
-        except Exception as e:
-            metrics["errors"].append(f"Odds Fetch: {str(e)}")
-            logger.error(f"UnifiedIngestion: Failed to fetch odds from OddsAPI for {sport_key}: {e}")
-            odds_raw = None
-
-        if not odds_raw:
-            logger.warning(f"UnifiedIngestion: No bulk odds found for {sport_key}. Initializing empty list.")
-            odds_raw = []
-
-        if not odds_raw:
-            logger.warning(f"UnifiedIngestion: No odds (bulk or props) found for {sport_key}.")
-            odds_raw = []
-
-        # 2c. Backfill metadata_map if get_events() was empty/stale
-        for game in odds_raw:
-            eid = game.get('id')
-            if eid and eid not in metadata_map:
-                metadata_map[eid] = {
-                    'home_team': game.get('home_team'),
-                    'away_team': game.get('away_team'),
-                    'game_time': datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00')) if game.get('commence_time') else None
-                }
 
         # 2d. Fetch Player Props (Requires per-event calls)
         PROP_MARKETS_BY_SPORT = {
@@ -102,33 +92,50 @@ class UnifiedIngestionService:
         }
 
         if sport_key in PROP_MARKETS_BY_SPORT:
-            # Use metadata_map keys if events_raw was empty
-            event_ids = [e['id'] for e in events_raw] if events_raw else list(metadata_map.keys())
-            
-            # Filter to events starting in the next 48 hours to save quota
-            now_ts = datetime.now(timezone.utc).timestamp()
-            limit_ts = now_ts + (48 * 3600)
-            
-            active_events = []
-            for eid in event_ids:
-                meta = metadata_map.get(eid, {})
-                gt = meta.get('game_time')
-                if gt and gt.timestamp() <= limit_ts:
-                    active_events.append(eid)
-            
-            # Limit to 20 events per run per sport to keep within 100k tier limits
-            active_events = active_events[:20] 
+            event_ids = list(metadata_map.keys())
+            active_events = event_ids[:20] 
             
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
             
             prop_counts = 0
             for eid in active_events:
                 try:
+                    # Attempt primary prop fetch
                     event_props = await odds_api_client.get_player_props(
                         sport=sport_key,
                         event_id=eid,
                         markets=PROP_MARKETS_BY_SPORT[sport_key]
                     )
+                    
+                    # Task 3: Per-event prop fallback
+                    if not event_props or not event_props.get("bookmakers"):
+                        logger.info(f"UnifiedIngestion: Prop fallback for event {eid}")
+                        fallback_props = await real_data_connector.fetch_player_props(sport_key, eid)
+                        if fallback_props:
+                            # Map fallback to bookmaker format
+                            bm_map = {}
+                            for p in fallback_props:
+                                bk = p.get("sportsbook_key", "unknown")
+                                if bk not in bm_map:
+                                    bm_map[bk] = {"key": bk, "title": p.get("sportsbook"), "markets": []}
+                                
+                                mkt_key = f"player_{p.get('stat_type')}"
+                                mkt = next((m for m in bm_map[bk]["markets"] if m["key"] == mkt_key), None)
+                                if not mkt:
+                                    mkt = {"key": mkt_key, "outcomes": []}
+                                    bm_map[bk]["markets"].append(mkt)
+                                
+                                mkt["outcomes"].append({
+                                    "name": "Over", "description": p.get("player_name"),
+                                    "price": p.get("over_odds"), "point": p.get("line")
+                                })
+                                mkt["outcomes"].append({
+                                    "name": "Under", "description": p.get("player_name"),
+                                    "price": p.get("under_odds"), "point": p.get("line")
+                                })
+                            
+                            event_props = {"id": eid, "sport_key": sport_key, "bookmakers": list(bm_map.values())}
+
                     if event_props and "bookmakers" in event_props:
                         odds_raw.append(event_props)
                         prop_counts += 1
@@ -136,11 +143,37 @@ class UnifiedIngestionService:
                     logger.error(f"UnifiedIngestion: Failed to fetch props for event {eid}: {e}")
             logger.info(f"UnifiedIngestion: Successfully fetched props for {prop_counts} events for {sport_key}")
 
+        # Task 4: Merge Betstack Props
+        betstack_records = []
+        try:
+            logger.info(f"UnifiedIngestion: Fetching Betstack props for {sport_key}")
+            betstack_raw = await _real_sports_api_instance.fetch_props_from_betstack(sport_key)
+            if betstack_raw and isinstance(betstack_raw, list):
+                for p in betstack_raw:
+                    # Normalize Betstack into PropRecord
+                    betstack_records.append(PropRecord(
+                        sport=sport_key,
+                        game_id=p.get("game_id"),
+                        player_name=p.get("player_name"),
+                        market_key=p.get("market_key"),
+                        book="betstack",
+                        line=Decimal(str(p.get("line", 0))),
+                        odds_over=Decimal(str(p.get("odds_over", -110))),
+                        odds_under=Decimal(str(p.get("odds_under", -110))),
+                        source_ts=datetime.now(timezone.utc)
+                    ))
+                logger.info(f"UnifiedIngestion: Merged {len(betstack_records)} Betstack records.")
+        except Exception as e:
+            logger.error(f"UnifiedIngestion: Betstack fetch failed: {e}")
+
         # 3. Normalize into PropRecords
         records = odds_mapper.map_theodds_props_to_records(odds_raw, metadata_map, sport_key)
         
+        # Merge logic (Betstack + Primary)
+        combined_records = records + betstack_records
+        
         # 3b. Market Intelligence: Best Odds, Soft/Sharp flagging
-        records = self.enrich_with_market_intel(records)
+        records = self.enrich_with_market_intel(combined_records)
         metrics["odds_count"] = len(records)
         
         # 4. Standardized Persistence
@@ -150,7 +183,6 @@ class UnifiedIngestionService:
         await upsert_props_live(records)
         await insert_props_history(records)
         metrics["rows_upserted"] = len(records)
-        logger.info(f"UnifiedIngestion: Persisted {len(records)} prop records for {sport_key}")
         
         # 4b. Sync with UnifiedOdds for Brains (Split into discrete outcomes)
         unified_rows = []
@@ -218,7 +250,8 @@ class UnifiedIngestionService:
             logger.error(f"UnifiedIngestion: ModelPick promotion failed: {e}")
 
         metrics["status"] = "completed" if not metrics["errors"] else "partial_success"
-        logger.info(f"🏁 UnifiedIngestion Cycle Complete: {json.dumps(metrics)}")
+        elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
+        logger.info(f"INFO: [{sport_key}] Ingest complete — {metrics['events_count']} odds events, {metrics['rows_upserted']} props upserted, source: {source_name}, elapsed: {elapsed:.1f}s")
         
         async with async_session_maker() as session:
             await HeartbeatService.log_heartbeat(
