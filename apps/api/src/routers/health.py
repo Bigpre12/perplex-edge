@@ -111,10 +111,24 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
                     "last_run": str(h.last_run_at),
                     "last_success": str(h.last_success_at),
                     "rows_written": h.rows_written_today,
-                    "errors": h.error_count_today,
-                    "meta": h.meta
+                    "heartbeat": h.last_run_at.isoformat() if h.last_run_at else None
                 } for h in heartbeats
             ]
         }
     except Exception as e:
         return {"error": str(e)}
+
+@router.get("/trigger-ingest")
+async def trigger_ingest(sport: str = "basketball_nba"):
+    """Manual trigger to run ingestion and see errors immediately."""
+    from services.unified_ingestion import unified_ingestion
+    try:
+        await unified_ingestion.run(sport)
+        return {"status": "success", "sport": sport}
+    except Exception as e:
+        import traceback
+        return {
+            "status": "failed", 
+            "error": str(e), 
+            "traceback": traceback.format_exc()
+        }
