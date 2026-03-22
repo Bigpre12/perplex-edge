@@ -97,9 +97,18 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         sample_odds_res = await db.execute(text("SELECT sport, market_key, outcome_key, price FROM unified_odds LIMIT 5"))
         sample_odds = [dict(r._mapping) for r in sample_odds_res.fetchall()]
         
+        # table columns
+        col_res = await db.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'props_live'
+        """))
+        columns = [r[0] for r in col_res.fetchall()]
+        
         return {
             "props_live_count": props_count,
             "unified_odds_count": odds_count,
+            "columns": columns,
             "pg_version": pg_version,
             "sample_odds": sample_odds,
             "duplicates": duplicates,
