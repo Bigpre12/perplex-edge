@@ -76,10 +76,6 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         res2 = await db.execute(text("SELECT COUNT(*) FROM props_live"))
         props_count = res2.scalar()
         
-        # sample
-        sample_res = await db.execute(text("SELECT sport, game_id, player_name, book FROM props_live LIMIT 5"))
-        sample_rows = [dict(r._mapping) for r in sample_res.fetchall()]
-        
         # duplicates check
         dup_res = await db.execute(text("""
             SELECT sport, game_id, player_name, market_key, book, COUNT(*) 
@@ -100,9 +96,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         return {
             "props_live_count": props_count,
             "unified_odds_count": odds_count,
-            "sample_props": sample_rows,
             "sample_odds": sample_odds,
-            "constraints": constraints,
             "duplicates": duplicates,
             "heartbeats": [
                 {
@@ -111,12 +105,14 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
                     "last_run": str(h.last_run_at),
                     "last_success": str(h.last_success_at),
                     "rows_written": h.rows_written_today,
-                    "heartbeat": h.last_run_at.isoformat() if h.last_run_at else None
+                    "heartbeat": h.last_run_at.isoformat() if h.last_run_at else None,
+                    "meta": h.meta
                 } for h in heartbeats
             ]
         }
     except Exception as e:
-        return {"error": str(e)}
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 @router.get("/trigger-ingest")
 async def trigger_ingest(sport: str = "basketball_nba"):
