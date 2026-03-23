@@ -9,7 +9,6 @@ import { useLucrixStore } from "@/store";
 import GateLock from "@/components/GateLock";
 import PropsEmptyState from "@/components/PropsEmptyState";
 import LiveStatusBar from "@/components/LiveStatusBar";
-import { api, unwrap } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
 import SportSelector from "@/components/shared/SportSelector";
 import { UniversalDataGate, DataStatus } from "@/components/shared/UniversalDataGate";
@@ -20,6 +19,8 @@ import TrendChart from "@/components/TrendChart";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, TrendingUp, Brain } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { usePropsBoard } from "@/hooks/usePropsBoard";
+import { api, unwrap } from "@/lib/api";
 
 export default function PlayerPropsPage() {
     return (
@@ -34,58 +35,32 @@ function PlayerPropsContent() {
     const tier = useLucrixStore((state: any) => state.userTier);
     const freshness = useFreshness(sport);
     const searchParams = useSearchParams();
-    
-    // Filters from URL (controlled by SportFilterBar)
-    const market = searchParams.get("market");
+
     const minEv = parseFloat(searchParams.get("minEdge") || "0");
     const [searchQuery, setSearchQuery] = useState("");
     const [isHistorical, setIsHistorical] = useState(false);
 
-    const { data: propsData, loading, error, refresh, lastUpdated, isStale, status } = useLiveData(
-        () => api.props(sport, market || undefined, minEv, 50, isHistorical),
-        [sport, market, minEv, isHistorical],
-        { refreshInterval: isHistorical ? 300000 : 60000 }
-    );
+    // Use canonical propsBoard endpoint which returns properly formatted data
+    const { data: boardData, isLoading: loading, error, refetch: refresh } = usePropsBoard(sport, minEv > 0 ? minEv : undefined);
+
+    const lastUpdated = boardData?.updated ? new Date(boardData.updated) : null;
+    const isStale = lastUpdated ? (Date.now() - lastUpdated.getTime()) > 180000 : false;
+    const isFallback = boardData?.fallback === "team_markets";
 
     const [selectedHero, setSelectedHero] = useState<string | null>(null);
 
-    const fullData = unwrap(propsData) || [];
+    const fullData = boardData?.props || [];
     const { tier: activeTier, propsLimit } = useGate();
 
-    const currentStatus = (propsData as any)?.status || (loading ? "loading" : "ok");
-    const debugInfo = (propsData as any)?.meta ? {
-        source: (propsData as any).meta.source,
-        rows: (propsData as any).meta.db_rows,
-        last_sync: (propsData as any).meta.last_sync,
-        request_id: (propsData as any).meta.request_id
-    } : undefined;
-    
-    // Grouping for Historical Mode
-    const historicalGroups = isHistorical ? fullData.reduce((acc: any, tick: any) => {
-        const key = `${tick.player_name}_${tick.market_key}`;
-        if (!acc[key]) {
-            acc[key] = {
-                player_name: tick.player_name,
-                market_key: tick.market_key,
-                latest_line: tick.line,
-                ticks: []
-            };
-        }
-        acc[key].ticks.push(tick);
-        return acc;
-    }, {}) : {};
-    
-    const historicalItems = Object.values(historicalGroups);
-
     // In dev, show everything regardless of tier slicing
-    const isDev = typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const isDev = typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-    const limitedData = isDev ? (isHistorical ? historicalItems : fullData) : (isHistorical ? historicalItems.slice(0, propsLimit) : fullData.slice(0, propsLimit));
+    const limitedData = isDev ? fullData : fullData.slice(0, propsLimit);
 
     const filtered = (limitedData as any[]).filter((p: any) =>
         (p.player_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.market_key?.toLowerCase().includes(searchQuery.toLowerCase()))
+        (p.stat_type?.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     return (
@@ -99,19 +74,19 @@ function PlayerPropsContent() {
                         <h1 className="text-3xl font-black italic tracking-tighter uppercase font-display text-white">Pick Intel</h1>
                     </div>
                     <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mb-4">Elite Player Prop Decisioning</p>
-                    
+
                     <div className="mb-6">
                         <SportSelector />
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 mb-6">
-                        <FreshnessBadge 
-                            oddsTs={freshness?.odds_last_updated || null} 
-                            evTs={freshness?.ev_last_updated || null} 
+                        <FreshnessBadge
+                            oddsTs={freshness?.odds_last_updated || null}
+                            evTs={freshness?.ev_last_updated || null}
                         />
-                        <LiveHistoricalToggle 
-                            isHistorical={isHistorical} 
-                            onChange={setIsHistorical} 
+                        <LiveHistoricalToggle
+                            isHistorical={isHistorical}
+                            onChange={setIsHistorical}
                         />
                     </div>
                     <div className="relative max-w-md">
@@ -137,24 +112,23 @@ function PlayerPropsContent() {
             </div>
 
             <UniversalDataGate
-                status={currentStatus as DataStatus}
-                isLoading={loading && !propsData}
+                status={(loading ? "loading" : error ? "error" : "ok") as DataStatus}
+                isLoading={loading && !boardData}
                 data={filtered}
-                debugInfo={debugInfo}
-                onRetry={refresh}
+                onRetry={() => refresh()}
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filtered.map((item: any, i: number) => (
-                        isHistorical 
+                        isHistorical
                             ? <HistoricalPropCard key={i} group={item} />
                             : <PropCard key={i} prop={item} onViewHero={() => setSelectedHero(item.player_name)} />
                     ))}
                 </div>
 
-                <HeroModal 
-                    playerName={selectedHero} 
-                    sport={sport} 
-                    onClose={() => setSelectedHero(null)} 
+                <HeroModal
+                    playerName={selectedHero}
+                    sport={sport}
+                    onClose={() => setSelectedHero(null)}
                 />
 
                 {activeTier === "free" && fullData.length > propsLimit && !isDev && (
@@ -180,9 +154,29 @@ function PlayerPropsContent() {
 }
 
 function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
-    const over = prop.best_over;
-    const under = prop.best_under;
+    // Normalize data from either PropLive or Canonical format
+    const hasOver = prop.best_over || prop.over_odds != null || prop.odds_over != null;
+    const over = prop.best_over || (hasOver ? {
+        line: prop.line,
+        odds: prop.over_odds ?? prop.odds_over ?? -110,
+        book: prop.best_book || prop.book || "—"
+    } : null);
+
+    const hasUnder = prop.best_under || prop.under_odds != null || prop.odds_under != null;
+    const under = prop.best_under || (hasUnder ? {
+        line: prop.line,
+        odds: prop.under_odds ?? prop.odds_under ?? -110,
+        book: prop.best_book || prop.book || "—"
+    } : null);
+
     const rec = prop.recommendation;
+
+    // Normalize field names between PropLive and Canonical formats
+    const playerName = prop.player_name || prop.team || "Matchup";
+    const statType = prop.stat_type || prop.market_key || "—";
+    const homeTeam = prop.home_team || prop.team || "—";
+    const awayTeam = prop.away_team || prop.opponent || "—";
+    const gameTime = prop.commence_time || prop.start_time || prop.game_start_time;
 
     const addToBuilder = () => {
         const saved = localStorage.getItem("parlay_legs");
@@ -192,11 +186,11 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
         } catch (e) { }
 
         const newLeg = {
-            prop_id: prop.id || `${prop.player_name}_${prop.stat_type}`,
-            player_name: prop.player_name,
-            side: rec?.side === "under" ? "Under" : "Over", // Use recommendation as default
+            prop_id: prop.id || `${playerName}_${statType}`,
+            player_name: playerName,
+            side: rec?.side === "under" ? "Under" : "Over",
             line: (rec?.side === "under" ? under?.line : over?.line) || 0,
-            stat_category: prop.stat_type,
+            stat_category: statType,
             odds: (rec?.side === "under" ? under?.odds : over?.odds) || 0,
             over_price: over?.odds || -110,
             under_price: under?.odds || -110,
@@ -228,14 +222,14 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
             <div>
                 <div className="flex justify-between items-start mb-6">
                     <div>
-                        <div className="text-lg font-black tracking-tight text-white font-display italic uppercase">{prop.player_name}</div>
+                        <div className="text-lg font-black tracking-tight text-white font-display italic uppercase">{playerName}</div>
                         <div className="text-[10px] font-black uppercase text-brand-cyan tracking-widest mt-1">
-                            {prop.stat_type?.replace('_', ' ')}
+                            {statType?.replace('_', ' ')}
                         </div>
                     </div>
                     <div className="text-right">
                         <div className="text-[10px] font-black text-textMuted uppercase tracking-widest">Matchup</div>
-                        <div className="text-xs font-bold text-textSecondary">{prop.away_team} @ {prop.home_team}</div>
+                        <div className="text-xs font-bold text-textSecondary">{awayTeam} @ {homeTeam}</div>
                     </div>
                 </div>
 
@@ -310,7 +304,7 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
 
             <div className="mt-6 pt-4 border-t border-lucrix-border flex items-center justify-between">
                 <div className="text-[9px] font-black text-textMuted uppercase tracking-widest">
-                    Tick: {prop.commence_time ? new Date(prop.commence_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    Tick: {gameTime ? new Date(gameTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                 </div>
                 <div className="flex items-center gap-2">
                     <button
@@ -365,8 +359,8 @@ function HeroModal({ playerName, sport, onClose }: { playerName: string | null, 
                                 {playerName} <span className="text-brand-cyan">Hero View</span>
                             </h2>
                         </div>
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#6B7280] hover:text-white"
                             aria-label="Close Hero Stats"
                             title="Close"
@@ -402,12 +396,12 @@ function HeroModal({ playerName, sport, onClose }: { playerName: string | null, 
                                     <TrendingUp size={14} className="text-brand-cyan" />
                                     Performance Analytics vs Market Line
                                 </h3>
-                                <TrendChart 
+                                <TrendChart
                                     data={hero.history?.map((h: any, i: number) => ({
                                         game: `G${i}`,
                                         value: h.line,
-                                        hit: h.line > hero.current_line 
-                                    })).slice(-10)} 
+                                        hit: h.line > hero.current_line
+                                    })).slice(-10)}
                                     line={hero.current_line}
                                     statType="Prop"
                                 />
