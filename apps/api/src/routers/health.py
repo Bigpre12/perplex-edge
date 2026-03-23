@@ -110,15 +110,27 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         # 5. Sample odds (only if unified_odds exists)
         sample_odds = []
         if "unified_odds" in all_tables:
-            sample_odds_res = await db.execute(text("SELECT sport, market_key, outcome_key, price FROM unified_odds LIMIT 5"))
+            sample_odds_res = await db.execute(text("SELECT sport, player_name, market_key, outcome_key, line, price FROM unified_odds WHERE player_name IS NOT NULL LIMIT 10"))
             sample_odds = [dict(r._mapping) for r in sample_odds_res.fetchall()]
         
         # 5b. Sample EV signals
         sample_ev = []
         if "ev_signals" in all_tables:
-            ev_res = await db.execute(text("SELECT sport, market_key, edge_percent, updated_at FROM ev_signals ORDER BY updated_at DESC LIMIT 5"))
+            ev_res = await db.execute(text("SELECT sport, player_name, market_key, edge_percent, updated_at FROM ev_signals ORDER BY updated_at DESC LIMIT 10"))
             sample_ev = [{**dict(r._mapping), "updated_at": str(r.updated_at)} for r in ev_res.fetchall()]
             
+        # 5c. Test Canonical Service
+        test_canonical = {}
+        try:
+            from services.props_service import get_canonical_props
+            test_res = await get_canonical_props("basketball_nba")
+            test_canonical = {
+                "count": test_res.get("count", 0),
+                "first_prop": test_res.get("props", [{}])[0] if test_res.get("props") else None
+            }
+        except Exception as e:
+            test_canonical = {"error": str(e)}
+
         # 6. File inspection
         content_snippet = ""
         try:
@@ -166,6 +178,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             "pg_version": pg_version,
             "sample_odds": sample_odds,
             "sample_ev": sample_ev,
+            "test_canonical": test_canonical,
             "duplicates": duplicates,
             "code_snippet": content_snippet,
             "heartbeats": [
