@@ -154,16 +154,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
 async def trigger_ingest(sport: str = "basketball_nba"):
     """Manual trigger to run ingestion and see errors immediately."""
     from services.unified_ingestion import unified_ingestion
-    from db.session import engine
-    from sqlalchemy import text
     try:
-        # Force index alignment one last time
-        async with engine.begin() as conn:
-            await conn.execute(text("DROP INDEX IF EXISTS uix_props_live_unique"))
-            await conn.execute(text("DROP INDEX IF EXISTS uix_unified_odds_unique"))
-            await conn.execute(text("CREATE UNIQUE INDEX uix_props_live_unique ON props_live (sport, game_id, player_name, market_key, book) NULLS NOT DISTINCT"))
-            await conn.execute(text("CREATE UNIQUE INDEX uix_unified_odds_unique ON unified_odds (sport, event_id, market_key, outcome_key, bookmaker) NULLS NOT DISTINCT"))
-        
         await unified_ingestion.run(sport)
         return {"status": "success", "sport": sport}
     except Exception as e:
