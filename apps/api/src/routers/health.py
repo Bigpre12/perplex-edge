@@ -125,10 +125,19 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             except Exception:
                 content_snippet = "Could not read file"
             
+        # Check column nullability
+        nullability_res = await db.execute(text("""
+            SELECT column_name, is_nullable 
+            FROM information_schema.columns 
+            WHERE table_name = 'props_live'
+        """))
+        nullability = {row[0]: row[1] for row in nullability_res.fetchall()}
+
         return {
             "props_live_count": props_count,
             "unified_odds_count": odds_count,
             "columns": columns,
+            "nullability": nullability,
             "indexes": indexes,
             "pg_version": pg_version,
             "sample_odds": sample_odds,

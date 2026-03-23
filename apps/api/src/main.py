@@ -129,8 +129,8 @@ async def initialize_backend_services():
                 for table, col in cols_to_fix:
                     try:
                         await conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Failed to drop NOT NULL on {table}.{col}: {e}")
                 
                 # Add unique constraints (critical for ON CONFLICT upserts)
                 # Using NULLS NOT DISTINCT (PG 15+) ensures NULL player_name matches for h2h lines
