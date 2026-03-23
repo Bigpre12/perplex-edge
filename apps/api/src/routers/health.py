@@ -133,11 +133,15 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         """))
         nullability = {row[0]: row[1] for row in nullability_res.fetchall()}
 
+        # Check routes
+        available_routes = [route.path for route in router.routes]
+
         return {
             "props_live_count": props_count,
             "unified_odds_count": odds_count,
             "columns": columns,
             "nullability": nullability,
+            "routes": available_routes,
             "indexes": indexes,
             "pg_version": pg_version,
             "sample_odds": sample_odds,
