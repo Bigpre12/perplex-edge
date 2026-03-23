@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSport } from "@/context/SportContext";
 import { useLiveData } from "@/hooks/useLiveData";
 import { SPORTS_CONFIG, SportKey } from "@/lib/sports.config";
@@ -32,6 +32,8 @@ export default function NewsTicker() {
         }
     );
 
+    const tickerRef = useRef<HTMLDivElement>(null);
+
     const displayItems = (items as string[]) || [
         "9 NBA games today — Mavericks @ Magic 7PM ET",
         "Jazz @ Wizards 7PM ET · Nets @ Heat 7:30PM ET",
@@ -40,6 +42,12 @@ export default function NewsTicker() {
         "Market Volatility: Monitor sharp alerts for late-move advantage",
         "Quantum Engine: Ingesting live props for tonight's slate"
     ];
+
+    useEffect(() => {
+        if (tickerRef.current) {
+            tickerRef.current.style.setProperty("--ticker-duration", `${displayItems.length * 8}s`);
+        }
+    }, [displayItems.length]);
 
     if (loading && displayItems.length === 0) return null;
     if (displayItems.length === 0) return null;
@@ -55,8 +63,8 @@ export default function NewsTicker() {
                 {/* Scrolling ticker content */}
                 <div className="overflow-hidden flex-1 relative h-full flex items-center">
                     <div
+                        ref={tickerRef}
                         className="flex whitespace-nowrap animate-ticker will-change-transform"
-                        style={{ "--ticker-duration": `${displayItems.length * 8}s` } as React.CSSProperties}
                     >
                         {/* Duplicate for seamless loop */}
                         {[...displayItems, ...displayItems].map((item, i) => (
