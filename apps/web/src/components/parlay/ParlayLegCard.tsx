@@ -36,18 +36,18 @@ export const ParlayLegCard: React.FC<ParlayLegCardProps> = ({ leg, onRemove, ind
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest">
-                            {leg.stat_category.replace(/_/g, " ")}
+                            {(leg.stat_category || "Prop").replace(/_/g, " ")}
                         </span>
                     </div>
                     <h4 className="text-xs font-black text-white uppercase italic tracking-tight">
-                        {leg.player_name}
+                        {leg.player_name || "Unknown Player"}
                     </h4>
                     <div className="flex items-center gap-2 mt-1">
                         <span className={clsx(
                             "text-[10px] font-bold px-1.5 py-0.5 rounded uppercase",
-                            leg.side.toLowerCase() === "over" ? "bg-brand-success/10 text-brand-success" : "bg-brand-danger/10 text-brand-danger"
+                            (leg.side || "Over").toLowerCase() === "over" ? "bg-brand-success/10 text-brand-success" : "bg-brand-danger/10 text-brand-danger"
                         )}>
-                            {leg.side} {leg.line}
+                            {leg.side || "Over"} {leg.line || 0}
                         </span>
                         <span className="text-[10px] font-mono text-textMuted font-bold">
                             {leg.odds > 0 ? `+${leg.odds}` : leg.odds}
