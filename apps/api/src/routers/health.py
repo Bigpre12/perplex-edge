@@ -154,6 +154,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
 async def trigger_ingest(sport: str = "basketball_nba"):
     """Manual trigger to run ingestion and see errors immediately."""
     from services.unified_ingestion import unified_ingestion
+    from db.session import engine
     try:
         # Force index alignment one last time
         async with engine.begin() as conn:
