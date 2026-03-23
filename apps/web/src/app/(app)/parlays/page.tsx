@@ -53,15 +53,15 @@ export default function ParlayPage() {
         try {
             // Map legs to simulation format
             const simLegs = legs.map(leg => ({
-                player_name: leg.player_name,
-                market: leg.stat_category,
-                line: leg.line,
-                side: leg.side.toLowerCase(),
+                player_name: leg.player_name || "Unknown",
+                market: leg.stat_category || "Prop",
+                line: leg.line || 0,
+                side: (leg.side || "over").toLowerCase(),
                 // If over_price and under_price aren't stored yet, we fallback to the known odds
                 // but for real simulations we should update the storage to include both.
                 // Assuming for now they might be added to the storage in a next step.
-                over_price: (leg as any).over_price || (leg.side.toLowerCase() === 'over' ? leg.odds : -110),
-                under_price: (leg as any).under_price || (leg.side.toLowerCase() === 'under' ? leg.odds : -110),
+                over_price: (leg as any).over_price || ((leg.side || "over").toLowerCase() === 'over' ? leg.odds : -110),
+                under_price: (leg as any).under_price || ((leg.side || "over").toLowerCase() === 'under' ? leg.odds : -110),
                 historical_hit_rate: (leg as any).historical_hit_rate || 0.5
             }));
 
