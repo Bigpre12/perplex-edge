@@ -59,7 +59,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.1.3"
+        "version": "1.1.4"
     }
 
 @router.get("/summary")
@@ -240,3 +240,33 @@ async def trigger_ingest(sport: str = "basketball_nba"):
             "error": str(e), 
             "traceback": traceback.format_exc()
         }
+
+@router.get("/test-db-null")
+async def test_db_null(db: AsyncSession = Depends(get_db)):
+    """Test manual insertion of NULL into props_live to verify schema."""
+    try:
+        from models.brain import PropLive
+        import uuid
+        test_id = str(uuid.uuid4())
+        # Try to insert a record with null odds_over
+        new_row = PropLive(
+            id=test_id,
+            sport="test_sport",
+            league="TEST",
+            game_id="test_game",
+            game_start_time=datetime.now(timezone.utc),
+            market_key="h2h",
+            book="test_book",
+            odds_over=None, # This is the critical test
+            last_updated_at=datetime.now(timezone.utc)
+        )
+        db.add(new_row)
+        await db.commit()
+        
+        # Clean up
+        await db.execute(text(f"DELETE FROM props_live WHERE id = '{test_id}'"))
+        await db.commit()
+        
+        return {"status": "success", "message": "NULL insertion and deletion worked!"}
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
