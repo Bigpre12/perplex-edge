@@ -7,6 +7,7 @@ import { API_BASE } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
+import PropsEmptyState from "@/components/PropsEmptyState";
 import { Target, Clock, TrendingUp, BarChart, Percent } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -68,49 +69,53 @@ function HitRateContent() {
       </div>
 
       <div className="bg-lucrix-surface border border-lucrix-border rounded-2xl overflow-hidden shadow-card">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-lucrix-dark/80 border-b border-lucrix-border text-[9px] font-black uppercase tracking-widest text-textMuted">
-              <th className="px-6 py-4">Player / Team</th>
-              <th className="px-6 py-4 text-center">Market</th>
-              <th className="px-6 py-4 text-center">L5 Hit</th>
-              <th className="px-6 py-4 text-center">L10 Hit</th>
-              <th className="px-6 py-4 text-center">Season Hit</th>
-              <th className="px-6 py-4 text-right">Trend</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-lucrix-border/50">
-            {results.map((row: any, i: number) => (
-              <tr key={i} className="group hover:bg-lucrix-dark/50 transition-colors">
-                <td className="px-6 py-5">
-                  <div className="font-black text-white font-display italic uppercase tracking-tight">{row.player}</div>
-                  <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-0.5">{row.team}</div>
-                </td>
-                <td className="px-6 py-5 text-center font-mono font-black text-white text-xs">
-                  {row.market} {row.line}
-                </td>
-                <td className="px-6 py-5 text-center">
-                  <HitCircle value={row.l5} total={5} />
-                </td>
-                <td className="px-6 py-5 text-center">
-                  <HitBadge value={row.l10_pct} />
-                </td>
-                <td className="px-6 py-5 text-center">
-                  <HitBadge value={row.season_pct} />
-                </td>
-                <td className="px-6 py-5 text-right">
-                  <div className={clsx(
-                    "inline-flex items-center gap-1 text-[10px] font-black italic uppercase tracking-widest",
-                    row.trend === "UP" ? "text-brand-success" : "text-brand-danger"
-                  )}>
-                    {row.trend === "UP" ? <TrendingUp size={12} /> : <BarChart size={12} className="rotate-180" />}
-                    {row.trend}
-                  </div>
-                </td>
+        {results.length === 0 ? (
+          <PropsEmptyState sport={sport} />
+        ) : (
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-lucrix-dark/80 border-b border-lucrix-border text-[9px] font-black uppercase tracking-widest text-textMuted">
+                <th className="px-6 py-4">Player / Team</th>
+                <th className="px-6 py-4 text-center">Market</th>
+                <th className="px-6 py-4 text-center">L5 Hit</th>
+                <th className="px-6 py-4 text-center">L10 Hit</th>
+                <th className="px-6 py-4 text-center">Season Hit</th>
+                <th className="px-6 py-4 text-right">Trend</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-lucrix-border/50">
+              {results.map((row: any, i: number) => (
+                <tr key={i} className="group hover:bg-lucrix-dark/50 transition-colors">
+                  <td className="px-6 py-5">
+                    <div className="font-black text-white font-display italic uppercase tracking-tight">{row.player}</div>
+                    <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-0.5">{row.team}</div>
+                  </td>
+                  <td className="px-6 py-5 text-center font-mono font-black text-white text-xs">
+                    {row.market} {row.line}
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <HitCircle value={row.l5} total={5} />
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <HitBadge value={row.l10_pct} />
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <HitBadge value={row.season_pct} />
+                  </td>
+                  <td className="px-6 py-5 text-right">
+                    <div className={clsx(
+                      "inline-flex items-center gap-1 text-[10px] font-black italic uppercase tracking-widest",
+                      row.trend === "UP" ? "text-brand-success" : "text-brand-danger"
+                    )}>
+                      {row.trend === "UP" ? <TrendingUp size={12} /> : <BarChart size={12} className="rotate-180" />}
+                      {row.trend}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

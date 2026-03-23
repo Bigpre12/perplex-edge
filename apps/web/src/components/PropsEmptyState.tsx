@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Clock, RefreshCw, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
+import { SPORTS_CONFIG, SportKey } from "@/lib/sports.config";
 
 interface Game {
     home: string;
@@ -14,9 +15,17 @@ export default function PropsEmptyState({ sport = "NBA" }) {
     const [nextTipoff, setNextTipoff] = useState("");
 
     useEffect(() => {
+        // Find sport config for ESPN path
+        const sportKey = Object.keys(SPORTS_CONFIG).find(
+            key => SPORTS_CONFIG[key as SportKey].label.toLowerCase() === sport.toLowerCase() || 
+                   key.toLowerCase().includes(sport.toLowerCase())
+        ) as SportKey;
+        
+        const sportCfg = SPORTS_CONFIG[sportKey] || SPORTS_CONFIG.basketball_nba;
+        const espnPath = (sportCfg as any).espn_path || "basketball/nba";
+
         // ESPN scoreboard for context
-        const path = sport.toLowerCase().includes("nba") ? "basketball/nba" : "basketball/nba";
-        fetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`)
+        fetch(`https://site.api.espn.com/apis/site/v2/sports/${espnPath}/scoreboard`)
             .then(r => r.json())
             .then(data => {
                 const events = data.events ?? [];

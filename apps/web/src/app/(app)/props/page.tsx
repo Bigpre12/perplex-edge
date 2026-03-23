@@ -43,6 +43,13 @@ function PropsPageContent() {
   const filteredProps = useMemo(() => {
     let result = [...propsList];
 
+    // Filter out team markets (H2H, Spreads, Totals)
+    result = result.filter(p => {
+      const sType = (p.stat_type || "").toLowerCase();
+      const isTeamMarket = sType === 'h2h' || sType === 'spreads' || sType === 'totals' || !p.player_name;
+      return !isTeamMarket;
+    });
+
     // Source data EV slider filter (handled locally if minEv < 0, else API did it)
     if (minEv > -5) {
       result = result.filter(p => p.ev_percentage >= minEv);

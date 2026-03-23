@@ -36,7 +36,7 @@ const TIERS = [
 
 export default function SubscriptionPage() {
     const { data: user, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.fetch(`/api/user/profile`),
+        () => api.authMe(),
         [],
         { refreshInterval: 600000 } // 10 minutes
     );

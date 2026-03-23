@@ -58,10 +58,16 @@ function PlayerPropsContent() {
 
     const limitedData = isDev ? fullData : fullData.slice(0, propsLimit);
 
-    const filtered = (limitedData as any[]).filter((p: any) =>
-        (p.player_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (p.stat_type?.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filtered = (limitedData as any[]).filter((p: any) => {
+        const sType = (p.stat_type || "").toLowerCase();
+        const isTeamMarket = sType === 'h2h' || sType === 'spreads' || sType === 'totals' || !p.player_name;
+        if (isTeamMarket) return false;
+        
+        return (
+            (p.player_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.stat_type?.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    });
 
     return (
         <div className="pb-24 space-y-8">

@@ -1,0 +1,292 @@
+[
+  {
+    "id": "c61d2594de00eb4d12ba96127dc437e5_MiamiHeat_totals_241.0",
+    "game_id": "c61d2594de00eb4d12ba96127dc437e5",
+    "sport": "NBA",
+    "league": "NBA",
+    "player_name": "Miami Heat",
+    "team": "Miami Heat",
+    "opponent": "San Antonio Spurs",
+    "start_time": "2026-03-23T23:10:00+00:00Z",
+    "stat_type": "Totals",
+    "line": 241.0,
+    "over_odds": -105,
+    "under_odds": -109,
+    "best_book": "betus",
+    "books": [
+      {
+        "book": "betus",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "betus",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "williamhill_us",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "mybookieag",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "williamhill_us",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "betrivers",
+        "side": "over",
+        "odds": -109
+      },
+      {
+        "book": "betrivers",
+        "side": "under",
+        "odds": -113
+      },
+      {
+        "book": "betonlineag",
+        "side": "over",
+        "odds": -108
+      },
+      {
+        "book": "betonlineag",
+        "side": "under",
+        "odds": -112
+      },
+      {
+        "book": "lowvig",
+        "side": "over",
+        "odds": -105
+      },
+      {
+        "book": "mybookieag",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "lowvig",
+        "side": "under",
+        "odds": -109
+      }
+    ],
+    "implied_probability": 0.0,
+    "model_probability": 0.0,
+    "ev_percentage": 0.0,
+    "confidence": 0.0,
+    "steam_signal": false,
+    "whale_signal": false,
+    "sharp_conflict": false,
+    "last_updated": "2026-03-23T16:27:02.160494Z"
+  },
+  {
+    "id": "9d16ebba2fd9d005cddea05f25e60145_LosAngelesClippers_spreads_-13.0",
+    "game_id": "9d16ebba2fd9d005cddea05f25e60145",
+    "sport": "NBA",
+    "league": "NBA",
+    "player_name": "Los Angeles Clippers",
+    "team": "Los Angeles Clippers",
+    "opponent": "Milwaukee Bucks",
+    "start_time": "2026-03-24T02:40:00+00:00Z",
+    "stat_type": "Spreads",
+    "line": -13.0,
+    "over_odds": -106,
+    "under_odds": -106,
+    "best_book": "betus",
+    "books": [
+      {
+        "book": "betus",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "fanatics",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "fanatics",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "williamhill_us",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "williamhill_us",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "betonlineag",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "betonlineag",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "bovada",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "bovada",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "lowvig",
+        "side": "over",
+        "odds": -106
+      },
+      {
+        "book": "lowvig",
+        "side": "under",
+        "odds": -106
+      },
+      {
+        "book": "betrivers",
+        "side": "over",
+        "odds": -114
+      },
+      {
+        "book": "betrivers",
+        "side": "under",
+        "odds": -109
+      },
+      {
+        "book": "mybookieag",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "mybookieag",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "betus",
+        "side": "under",
+        "odds": -110
+      }
+    ],
+    "implied_probability": 0.0,
+    "model_probability": 0.0,
+    "ev_percentage": 0.0,
+    "confidence": 0.0,
+    "steam_signal": false,
+    "whale_signal": false,
+    "sharp_conflict": false,
+    "last_updated": "2026-03-23T16:27:02.160525Z"
+  },
+  {
+    "id": "9d16ebba2fd9d005cddea05f25e60145_LosAngelesClippers_totals_222.0",
+    "game_id": "9d16ebba2fd9d005cddea05f25e60145",
+    "sport": "NBA",
+    "league": "NBA",
+    "player_name": "Los Angeles Clippers",
+    "team": "Los Angeles Clippers",
+    "opponent": "Milwaukee Bucks",
+    "start_time": "2026-03-24T02:40:00+00:00Z",
+    "stat_type": "Totals",
+    "line": 222.0,
+    "over_odds": -110,
+    "under_odds": -110,
+    "best_book": "betus",
+    "books": [
+      {
+        "book": "betus",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "betus",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "fanatics",
+        "side": "under",
+        "odds": -110
+      },
+      {
+        "book": "fanatics",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "mybookieag",
+        "side": "over",
+        "odds": -110
+      },
+      {
+        "book": "mybookieag",
+        "side": "under",
+        "odds": -110
+      }
+    ],
+    "implied_probability": 0.0,
+    "model_probability": 0.0,
+    "ev_percentage": 0.0,
+    "confidence": 0.0,
+    "steam_signal": false,
+    "whale_signal": false,
+    "sharp_conflict": false,
+    "last_updated": "2026-03-23T16:27:02.160541Z"
+  },
+  {
+    "id": "d59068d1012b6bf912e2b6824b39bf51_SacramentoKings_totals_217.5",
+    "game_id": "d59068d1012b6bf912e2b6824b39bf51",
+    "sport": "NBA",
+    "league": "NBA",
+    "player_name": "Sacramento Kings",
+    "team": "Sacramento Kings",
+    "opponent": "Brooklyn Nets",
+    "start_time": "2026-03-22T22:11:00+00:00Z",
+    "stat_type": "Totals",
+    "line": 217.5,
+    "over_odds": -110,
+    "under_odds": -110,
+    "best_book": "bovada",
+    "books": [
+      {
+        "book": "bovada",
+        "side": "over",
+        "odds": -115
+      },
+      {
+        "book": "bovada",
+        "side": "under",
+        "odds": -115
+      },
+      {
+        "book": "betrivers",
+        "side": "over",
+        "odds": -120
+      },
+      {
+        "book": "betrivers",
+        "side": "under",
+        "odds": -115
+      }
+    ],
+    "implied_probability": 0.0,
+    "model_probability": 0.0,
+    "ev_percentage": 0.0,
+    "confidence": 0.0,
+    "steam_signal": false,
+    "whale_signal": false,
+    "sharp_conflict": false,
+    "last_updated": "2026-03-23T16:27:02.160556Z"
+  }
+]

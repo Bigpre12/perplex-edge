@@ -8,6 +8,7 @@ import { CanonicalProp } from "@/hooks/usePropsBoard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
+import PropsEmptyState from "@/components/PropsEmptyState";
 import { Zap, Clock, ShieldAlert, TrendingUp, Info } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -202,9 +203,7 @@ function EVPageContent() {
       {/* Focus View List */}
       <div className="space-y-4">
         {filteredEVs.length === 0 ? (
-          <div className="p-12 text-center text-textMuted font-bold text-sm bg-lucrix-surface border border-lucrix-border rounded-2xl shadow-card">
-            No edges found matching your criteria. Try lowering your EV threshold.
-          </div>
+          <PropsEmptyState sport={sport} />
         ) : (
           filteredEVs.map(prop => (
             <EVCheatRow key={prop.id} prop={prop} />

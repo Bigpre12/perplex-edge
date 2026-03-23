@@ -9,7 +9,7 @@ import PageStates from "@/components/PageStates";
 
 export default function LeaderboardPage() {
     const { data: stats, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.fetch(`/api/picks/stats`),
+        () => api.get(`/api/picks/stats`),
         [],
         { refreshInterval: 600000 } // 10 minutes
     );

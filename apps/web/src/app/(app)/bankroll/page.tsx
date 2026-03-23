@@ -9,7 +9,7 @@ import PageStates from "@/components/PageStates";
 
 export default function BankrollPage() {
     const { data: stats, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.fetch(`/api/ledger/stats`),
+        () => api.get(`/api/ledger/stats`),
         [],
         { refreshInterval: 60000 } // 1 minute
     );
@@ -80,6 +80,8 @@ export default function BankrollPage() {
                                     <label className="text-[10px] font-black uppercase text-[#6B7280] tracking-widest mb-2 block">Total Capital ($)</label>
                                     <input
                                         type="number"
+                                        title="Total Capital"
+                                        aria-label="Total Capital"
                                         className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 font-black text-lg text-white outline-none focus:border-primary/50 transition-all font-mono"
                                         defaultValue={10000}
                                     />
@@ -88,6 +90,8 @@ export default function BankrollPage() {
                                     <label className="text-[10px] font-black uppercase text-[#6B7280] tracking-widest mb-2 block">Target Unit ($)</label>
                                     <input
                                         type="number"
+                                        title="Target Unit"
+                                        aria-label="Target Unit"
                                         className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 font-black text-lg text-white outline-none focus:border-primary/50 transition-all font-mono"
                                         defaultValue={100}
                                     />
