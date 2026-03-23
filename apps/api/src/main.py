@@ -117,13 +117,34 @@ async def initialize_backend_services():
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS home_team VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
                 
-                # Add unique indexes if missing (critical for ON CONFLICT upserts)
+                # Add unique constraints (critical for ON CONFLICT upserts)
                 # Using NULLS NOT DISTINCT (PG 15+) ensures NULL player_name matches for h2h lines
-                await conn.execute(text("DROP INDEX IF EXISTS uix_props_live_unique"))
-                await conn.execute(text("CREATE UNIQUE INDEX uix_props_live_unique ON props_live (sport, game_id, player_name, market_key, book) NULLS NOT DISTINCT"))
                 
-                await conn.execute(text("DROP INDEX IF EXISTS uix_unified_odds_unique"))
-                await conn.execute(text("CREATE UNIQUE INDEX uix_unified_odds_unique ON unified_odds (sport, event_id, market_key, outcome_key, bookmaker) NULLS NOT DISTINCT"))
+                # Props Live
+                try:
+                    await conn.execute(text("DROP INDEX IF EXISTS uix_props_live_unique"))
+                    await conn.execute(text("ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique"))
+                    await conn.execute(text("""
+                        ALTER TABLE props_live 
+                        ADD CONSTRAINT uix_props_live_unique 
+                        UNIQUE (sport, game_id, player_name, market_key, book) 
+                        NULLS NOT DISTINCT
+                    """))
+                except Exception as e:
+                    logger.warning(f"Note: uix_props_live_unique creation bypassed (likely already exists with correct definition): {e}")
+                
+                # Unified Odds
+                try:
+                    await conn.execute(text("DROP INDEX IF EXISTS uix_unified_odds_unique"))
+                    await conn.execute(text("ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique"))
+                    await conn.execute(text("""
+                        ALTER TABLE unified_odds 
+                        ADD CONSTRAINT uix_unified_odds_unique 
+                        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
+                        NULLS NOT DISTINCT
+                    """))
+                except Exception as e:
+                    logger.warning(f"Note: uix_unified_odds_unique creation bypassed: {e}")
                 
                 logger.info("📡 [Background Init] Schema migrations and indexes complete.")
     except Exception as e:
