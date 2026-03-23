@@ -59,7 +59,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.1.2"
+        "version": "1.1.3"
     }
 
 @router.get("/summary")
@@ -123,7 +123,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         test_canonical = {}
         try:
             from services.props_service import get_canonical_props
-            test_res = await get_canonical_props("basketball_nba")
+            test_res = await get_canonical_props("mma_mixed_martial_arts")
             test_canonical = {
                 "count": test_res.get("count", 0),
                 "first_prop": test_res.get("props", [{}])[0] if test_res.get("props") else None
