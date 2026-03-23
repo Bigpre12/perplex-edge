@@ -80,7 +80,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
 
         # 2. Count tables that MIGHT exist
         stats = {}
-        target_tables = ["props_live", "props", "props_v2", "proplines", "unified_odds", "gamelines", "bets", "model_picks"]
+        target_tables = ["props_live", "props", "props_v2", "unified_odds", "ev_signals", "ledger_entries", "bets", "model_picks"]
         for t in target_tables:
             try:
                 if t in all_tables:
