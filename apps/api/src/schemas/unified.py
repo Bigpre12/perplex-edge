@@ -10,7 +10,7 @@ class PropLiveSchema(BaseModel):
     game_start_time: Optional[datetime] = None
     player_name: Optional[str] = None
     market_key: str
-    line: float
+    line: Optional[float] = None
     book: str
     odds_over: Optional[float] = None
     odds_under: Optional[float] = None
@@ -27,7 +27,7 @@ class PropLiveSchema(BaseModel):
 
 class PropHistorySchema(BaseModel):
     snapshot_at: datetime
-    line: float
+    line: Optional[float] = None
     odds_over: Optional[float] = None
     odds_under: Optional[float] = None
     is_best_over: bool = False

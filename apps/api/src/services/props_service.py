@@ -187,7 +187,7 @@ class PropsService:
                     o.price,
                     o.bookmaker,
                     o.implied_prob,
-                    o.updated_at,
+                    o.created_at as updated_at,
                     e.true_prob,
                     e.edge_percent
                 FROM unified_odds o
