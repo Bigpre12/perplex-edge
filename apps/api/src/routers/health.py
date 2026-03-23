@@ -59,7 +59,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.1.0"
+        "version": "1.1.1"
     }
 
 @router.get("/summary")
