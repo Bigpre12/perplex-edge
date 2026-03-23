@@ -230,7 +230,7 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
                     <div>
                         <div className="text-lg font-black tracking-tight text-white font-display italic uppercase">{prop.player_name}</div>
                         <div className="text-[10px] font-black uppercase text-brand-cyan tracking-widest mt-1">
-                            {prop.stat_type.replace('_', ' ')}
+                            {prop.stat_type?.replace('_', ' ')}
                         </div>
                     </div>
                     <div className="text-right">
@@ -447,7 +447,7 @@ function HistoricalPropCard({ group }: { group: any }) {
                     <div className="text-lg font-black tracking-tight text-white font-display italic uppercase leading-none">{group.player_name}</div>
                     <div className="text-[10px] font-black uppercase text-brand-cyan tracking-widest mt-1.5 flex items-center gap-2">
                         <span className="bg-brand-cyan/10 px-1.5 py-0.5 rounded border border-brand-cyan/20">
-                            {group.market_key.replace('_', ' ')}
+                            {group.market_key?.replace('_', ' ')}
                         </span>
                     </div>
                 </div>

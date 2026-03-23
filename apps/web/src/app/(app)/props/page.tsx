@@ -193,7 +193,7 @@ function PropsPageContent() {
           </div>
           <div className="flex items-center gap-1.5">
             <Clock size={10} />
-            Updated {new Date(data.updated).toLocaleTimeString()}
+            Updated {data.updated ? new Date(data.updated).toLocaleTimeString() : 'Just Now'}
           </div>
         </div>
       )}

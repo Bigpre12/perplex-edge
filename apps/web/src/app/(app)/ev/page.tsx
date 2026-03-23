@@ -194,7 +194,7 @@ function EVPageContent() {
           </div>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <Clock size={10} />
-            UPDATED {new Date(data.updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            UPDATED {data.updated ? new Date(data.updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'JUST NOW'}
           </div>
         </div>
       )}
