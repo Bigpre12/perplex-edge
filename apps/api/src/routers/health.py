@@ -112,6 +112,12 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         if "unified_odds" in all_tables:
             sample_odds_res = await db.execute(text("SELECT sport, market_key, outcome_key, price FROM unified_odds LIMIT 5"))
             sample_odds = [dict(r._mapping) for r in sample_odds_res.fetchall()]
+        
+        # 5b. Sample EV signals
+        sample_ev = []
+        if "ev_signals" in all_tables:
+            ev_res = await db.execute(text("SELECT sport, market_key, edge_percent, updated_at FROM ev_signals ORDER BY updated_at DESC LIMIT 5"))
+            sample_ev = [{**dict(r._mapping), "updated_at": str(r.updated_at)} for r in ev_res.fetchall()]
             
         # 6. File inspection
         content_snippet = ""
@@ -159,6 +165,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             "indexes": indexes,
             "pg_version": pg_version,
             "sample_odds": sample_odds,
+            "sample_ev": sample_ev,
             "duplicates": duplicates,
             "code_snippet": content_snippet,
             "heartbeats": [
