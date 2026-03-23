@@ -79,6 +79,15 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         
         res_props = await db.execute(text("SELECT COUNT(*) FROM props"))
         props_total_count = res_props.scalar()
+
+        res_v2 = await db.execute(text("SELECT COUNT(*) FROM props_v2"))
+        props_v2_count = res_v2.scalar()
+
+        res_lines = await db.execute(text("SELECT COUNT(*) FROM proplines"))
+        proplines_count = res_lines.scalar()
+
+        res_games = await db.execute(text("SELECT COUNT(*) FROM gamelines"))
+        gamelines_count = res_games.scalar()
         
         # duplicates check
         dup_res = await db.execute(text("""
@@ -143,6 +152,9 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         return {
             "props_live_count": props_live_count,
             "props_total_count": props_total_count,
+            "props_v2_count": props_v2_count,
+            "proplines_count": proplines_count,
+            "gamelines_count": gamelines_count,
             "unified_odds_count": odds_count,
             "columns": columns,
             "nullability": nullability,
