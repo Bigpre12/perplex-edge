@@ -86,9 +86,10 @@ async def list_props_by_sport(
 
 @router.get("/scored")
 async def scored_props(db: AsyncSession = Depends(get_db)):
-    """Returns recently completed props for the ledger/history (last 72h)."""
+    """Returns recently completed props or falls back to top EV signals for visibility."""
     try:
         now = datetime.utcnow()
+        # 1. Try actual scored props
         stmt = select(Prop).where(
             Prop.is_scored == True,
             Prop.created_at >= now - timedelta(hours=72)
@@ -96,7 +97,17 @@ async def scored_props(db: AsyncSession = Depends(get_db)):
         
         result = await db.execute(stmt)
         items = result.scalars().all()
-        return {"data": items, "results": items}
+        
+        if items:
+            return {"data": items, "results": items}
+            
+        # 2. Fallback to top EV signals (likely what user considers 'scored' by model)
+        from models import UnifiedEVSignal
+        ev_stmt = select(UnifiedEVSignal).order_by(desc(UnifiedEVSignal.edge_percent)).limit(50)
+        ev_res = await db.execute(ev_stmt)
+        ev_items = ev_res.scalars().all()
+        return {"data": ev_items, "results": ev_items}
+        
     except Exception as e:
         logger.error(f"Error listing scored props: {e}")
         return {"data": [], "results": []}

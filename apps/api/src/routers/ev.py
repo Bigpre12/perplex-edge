@@ -41,7 +41,7 @@ def _calculate_kelly(price: int, prob: float) -> float:
 async def get_ev_signals_legacy(
     sport: str = Query("all", description="e.g. basketball_nba or all"),
     min_ev: float = Query(0.0, description="Minimum edge percentage"),
-    limit: int = Query(50, description="Max results")
+    limit: int = Query(500, description="Max results")
 ):
     """Legacy endpoint supporting query params."""
     from services.props_service import get_canonical_props
@@ -58,7 +58,7 @@ async def get_ev_signals_legacy(
 async def get_ev_signals_by_sport(
     sport_path: str,
     min_ev: float = Query(0.0, description="Minimum edge percentage"),
-    limit: int = Query(50, description="Max results")
+    limit: int = Query(500, description="Max results")
 ):
     """Strict Canonical format by sport path var."""
     from services.props_service import get_canonical_props

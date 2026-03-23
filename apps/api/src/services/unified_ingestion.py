@@ -102,7 +102,7 @@ class UnifiedIngestionService:
         if sport_key in PROP_MARKETS_BY_SPORT:
             event_ids = list(metadata_map.keys())
             # type: ignore (Pyre inference fail on list slice)
-            active_events = event_ids[:20] 
+            active_events = event_ids[:100] 
             
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
             

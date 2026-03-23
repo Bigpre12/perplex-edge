@@ -34,7 +34,7 @@ function DashboardContent() {
         queryFn: () => api.props(activeSport),
         refetchInterval: REFRESH_INTERVALS.PROPS,
     });
-    const liveProps = unwrap(propsData).slice(0, 4);
+    const liveProps = unwrap(propsData);
 
     const { data: injuriesData } = useQuery({
         queryKey: ['injuries', activeSport],

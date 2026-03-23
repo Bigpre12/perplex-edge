@@ -24,7 +24,7 @@ function EVPageContent() {
   const searchParams = useSearchParams();
   
   // Custom states for filters
-  const [minEv, setMinEv] = useState<number>(3);
+  const [minEv, setMinEv] = useState<number>(0.5);
   const [timeWindow, setTimeWindow] = useState<string>("All"); // All, Next 2h, Tonight
   const [signalToggle, setSignalToggle] = useState<string>("All"); // All, Steam only, Whale only, Model only
 
