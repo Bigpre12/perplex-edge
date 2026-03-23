@@ -116,6 +116,12 @@ async def initialize_backend_services():
                 await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS home_team VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
+                await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS is_best_over BOOLEAN DEFAULT FALSE"))
+                await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS is_best_under BOOLEAN DEFAULT FALSE"))
+                await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS is_soft_book BOOLEAN DEFAULT FALSE"))
+                await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS is_sharp_book BOOLEAN DEFAULT FALSE"))
+                await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS confidence FLOAT"))
+                await conn.execute(text("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS engine_version VARCHAR DEFAULT 'v1'"))
                 # Ensure columns are nullable in production (physically)
                 # Some early migrations might have created them as NOT NULL
                 cols_to_fix = [
@@ -160,6 +166,17 @@ async def initialize_backend_services():
                     """))
                 except Exception as e:
                     logger.warning(f"Note: uix_unified_odds_unique creation bypassed: {e}")
+                
+                # EV Signals
+                try:
+                    await conn.execute(text("ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_unique"))
+                    await conn.execute(text("""
+                        ALTER TABLE ev_signals 
+                        ADD CONSTRAINT uix_ev_unique 
+                        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+                    """))
+                except Exception as e:
+                    logger.warning(f"Note: uix_ev_unique creation bypassed: {e}")
                 
                 logger.info("📡 [Background Init] Schema migrations and indexes complete.")
     except Exception as e:
