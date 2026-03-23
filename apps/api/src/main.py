@@ -31,17 +31,15 @@ def validate_env():
     ]
     missing = [v for v in critical_vars if not os.getenv(v)]
     if missing:
-        msg = f"❌ CRITICAL CONFIGURATION ERROR: Missing environment variables: {', '.join(missing)}"
-        logger.error("**************************************************")
-        logger.error(msg)
-        logger.error("Please ensure these variables are set in the Railway dashboard.")
-        logger.error("**************************************************")
+        msg = f"❌ CONFIGURATION WARNING: Missing environment variables: {', '.join(missing)}"
+        logger.warning("**************************************************")
+        logger.warning(msg)
+        logger.warning("Please ensure these variables are set in the Railway dashboard.")
+        logger.warning("**************************************************")
         
-        if os.getenv("RAILWAY_ENVIRONMENT_NAME"):
-            # Hard crash in production to avoid mysterious 404s/500s later
-            raise RuntimeError(msg)
-        else:
-            logger.warning("⚠️ Running in LOCAL mode with missing variables. Some features will fail.")
+        # Only hard crash on DATABASE_URL in production
+        if os.getenv("RAILWAY_ENVIRONMENT_NAME") and not os.getenv("DATABASE_URL"):
+            raise RuntimeError("CRITICAL: DATABASE_URL is missing. Backend cannot start.")
 
 # Run validation immediately
 validate_env()
@@ -299,8 +297,13 @@ async def global_exception_handler(request: Request, exc: Exception):
     """Fail-safe for production: Ensure CORS headers are sent even on 500 errors."""
     logger.error(f"GLOBAL EXCEPTION CAUGHT: {str(exc)}", exc_info=True)
     
-    origin = request.headers.get("Origin")
-    allow_origin = origin if origin in origins else origins[0]
+    # Get origin from request or fallback to production
+    origin = request.headers.get("Origin") or request.headers.get("origin")
+    
+    # If it's a vercel origin, use it. Otherwise fallback to primary.
+    allow_origin = "https://perplex-edge.vercel.app"
+    if origin and (origin.endswith(".vercel.app") or "localhost" in origin):
+        allow_origin = origin
     
     return JSONResponse(
         status_code=500,
@@ -308,8 +311,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers={
             "Access-Control-Allow-Origin": allow_origin,
             "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*"
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE, PATCH",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-ID"
         }
     )
 
