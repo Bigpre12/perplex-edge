@@ -116,6 +116,21 @@ async def initialize_backend_services():
                 await conn.execute(text("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS home_team VARCHAR"))
                 await conn.execute(text("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS away_team VARCHAR"))
+                # Ensure columns are nullable in production (physically)
+                # Some early migrations might have created them as NOT NULL
+                cols_to_fix = [
+                    ("props_live", "player_id"),
+                    ("props_live", "player_name"),
+                    ("props_live", "team"),
+                    ("props_live", "market_label"),
+                    ("props_live", "line"),
+                    ("unified_odds", "outcome_name")
+                ]
+                for table, col in cols_to_fix:
+                    try:
+                        await conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"))
+                    except Exception:
+                        pass
                 
                 # Add unique constraints (critical for ON CONFLICT upserts)
                 # Using NULLS NOT DISTINCT (PG 15+) ensures NULL player_name matches for h2h lines
