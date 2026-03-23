@@ -172,32 +172,7 @@ class PropsService:
             async with async_session_maker() as session:
                 # Optimized query: fetch all UnifiedOdds joined with UnifiedEVSignal
                 sql = """
-                SELECT 
-                    o.id as odds_id,
-                    o.event_id, 
-                    o.sport,
-                    o.league,
-                    o.home_team,
-                    o.away_team,
-                    o.game_time,
-                    o.player_name,
-                    o.market_key,
-                    o.outcome_key,
-                    o.line,
-                    o.price,
-                    o.bookmaker,
-                    o.implied_prob,
-                    o.updated_at,
-                    e.true_prob,
-                    e.edge_percent
-                FROM unified_odds o
-                LEFT JOIN ev_signals e ON 
-                    o.event_id = e.event_id AND 
-                    o.sport = e.sport AND 
-                    o.market_key = e.market_key AND 
-                    o.outcome_key = e.outcome_key AND 
-                    o.bookmaker = e.bookmaker
-                WHERE o.sport = :sport AND o.market_key NOT IN ('h2h', 'spreads', 'totals')
+                WHERE o.sport = :sport
                 """
                 
                 # Check DB dialect
@@ -216,10 +191,7 @@ class PropsService:
                                 UnifiedOdds.bookmaker == UnifiedEVSignal.bookmaker
                             )
                         )
-                    ).where(
-                        UnifiedOdds.sport == sport,
-                        UnifiedOdds.market_key.notin_(['h2h', 'spreads', 'totals'])
-                    )
+                        UnifiedOdds.sport == sport
                     result = await session.execute(stmt)
                     raw_rows = []
                     for o, e in result.all():
@@ -253,8 +225,8 @@ class PropsService:
                 
                 for row_dict in raw_rows:
                     if not row_dict['line']: continue # Ignore zero lines
-                    r = row_dict
-                    key = (r['event_id'], r['player_name'], r['market_key'], float(r['line']))
+                    player = r['player_name'] or r['home_team'] or "Matchup"
+                    key = (r['event_id'], player, r['market_key'], float(r['line'] or 0.0))
                     
                     if key not in grouped:
                         grouped[key] = {
@@ -262,7 +234,7 @@ class PropsService:
                             "game_id": r['event_id'],
                             "sport": (r['sport'] or "").upper().replace("BASKETBALL_",""),
                             "league": (r['league'] or "").upper().replace("BASKETBALL_",""),
-                            "player_name": r['player_name'],
+                            "player_name": r['player_name'] or r['home_team'] or "Matchup",
                             "team": r['home_team'], # Approximated, full metadata needed for exact team
                             "opponent": r['away_team'], # Approximated
                             "start_time": r['game_time'].isoformat() + "Z" if r.get('game_time') else None,

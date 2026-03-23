@@ -92,6 +92,15 @@ class OddsMapper:
                         elif is_away:
                             grouped_data[group_key]["odds_under"] = Decimal(str(price))
                             grouped_data[group_key]["implied_under"] = implied
+                        else:
+                            # Robust fallback for H2H if meta name mapping failed
+                            if m_key == 'h2h':
+                                if grouped_data[group_key]["odds_over"] is None:
+                                    grouped_data[group_key]["odds_over"] = Decimal(str(price))
+                                    grouped_data[group_key]["implied_over"] = implied
+                                elif grouped_data[group_key]["odds_under"] is None:
+                                    grouped_data[group_key]["odds_under"] = Decimal(str(price))
+                                    grouped_data[group_key]["implied_under"] = implied
  
         print(f"DEBUG: Final grouped_data count: {len(grouped_data)}")
         for data in grouped_data.values():

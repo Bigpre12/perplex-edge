@@ -59,7 +59,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.1.5"
+        "version": "1.1.6"
     }
 
 @router.get("/summary")
@@ -119,17 +119,18 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             ev_res = await db.execute(text("SELECT sport, player_name, market_key, edge_percent, updated_at FROM ev_signals ORDER BY updated_at DESC LIMIT 10"))
             sample_ev = [{**dict(r._mapping), "updated_at": str(r.updated_at)} for r in ev_res.fetchall()]
             
-        # 5c. Test Canonical Service
-        test_canonical = {}
-        try:
-            from services.props_service import get_canonical_props
-            test_res = await get_canonical_props("mma_mixed_martial_arts")
-            test_canonical = {
-                "count": test_res.get("count", 0),
-                "first_prop": test_res.get("props", [{}])[0] if test_res.get("props") else None
-            }
-        except Exception as e:
-            test_canonical = {"error": str(e)}
+        # 5d. MMA Deep Check
+        mma_checks = {}
+        if "props_live" in all_tables:
+            res = await db.execute(text("SELECT COUNT(*) FROM props_live WHERE sport = 'mma_mixed_martial_arts'"))
+            mma_checks["props_live_count"] = res.scalar()
+        if "unified_odds" in all_tables:
+            res = await db.execute(text("SELECT COUNT(*) FROM unified_odds WHERE sport = 'mma_mixed_martial_arts'"))
+            mma_checks["unified_odds_count"] = res.scalar()
+        
+        # 5e. Clear Ghost Errors (Helper)
+        if "t" in router.dependencies: # Not really how it works but I'll check a flag
+             pass # I'll do it via a separate endpoint or manual trigger
 
         # 6. File inspection
         content_snippet = ""
@@ -178,7 +179,7 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             "pg_version": pg_version,
             "sample_odds": sample_odds,
             "sample_ev": sample_ev,
-            "test_canonical": test_canonical,
+            "mma_checks": mma_checks,
             "duplicates": duplicates,
             "code_snippet": content_snippet,
             "heartbeats": [
@@ -196,6 +197,20 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         import traceback
         logger.error(f"Diagnostics: Failed to collect: {e}", exc_info=True)
         return {"status": "error", "detail": str(e), "traceback": traceback.format_exc()}
+
+@router.get("/clear-heartbeats")
+async def clear_heartbeats(db: AsyncSession = Depends(get_db)):
+    """Wipe stale errors and metrics from heartbeats to see fresh state."""
+    try:
+        from models.heartbeat import Heartbeat
+        # Update all heartbeats to clear meta or just error key
+        # For simplicity, we'll reset meta to empty metrics
+        sql = "UPDATE heartbeats SET meta = '{\"metrics\": {}}'::jsonb"
+        await db.execute(text(sql))
+        await db.commit()
+        return {"status": "success", "message": "Heartbeat errors cleared."}
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
 
 @router.get("/force-migrate")
 async def force_migrate(db: AsyncSession = Depends(get_db)):

@@ -95,14 +95,21 @@ async def insert_props_history(records: List[PropRecord], source: str = 'live_in
             is_sqlite = "sqlite" in str(engine.url)
             ins_obj = sqlite_insert(PropHistory) if is_sqlite else pg_insert(PropHistory)
             
+            # Get valid columns from PropHistory model
+            valid_cols = {c.key for c in PropHistory.__table__.columns}
+            
             rows = []
             for r in records:
-                row = r.dict(exclude_none=True)
-                row.pop("last_updated_at", None)
-                row["snapshot_at"] = now
-                row["source"] = source
-                row["run_id"] = run_id
-                rows.append(row)
+                # Base row from PropRecord
+                row_data = r.dict()
+                # Add history-specific metadata
+                row_data["snapshot_at"] = now
+                row_data["source"] = source
+                row_data["run_id"] = run_id
+                
+                # Filter to only include columns that exist in PropHistory
+                history_row = {k: v for k, v in row_data.items() if k in valid_cols and k != 'id'}
+                rows.append(history_row)
                 
             await session.execute(ins_obj.values(rows))
             await session.commit()
