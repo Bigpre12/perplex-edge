@@ -70,92 +70,89 @@ async def meta_summary():
 async def diagnostics(db: AsyncSession = Depends(get_db)):
     """Fetch backend internal diagnostics (heartbeats and table counts)"""
     try:
+        import traceback
         from services.heartbeat_service import HeartbeatService
         heartbeats = await HeartbeatService.get_all_heartbeats(db)
         
-        # also check table counts
-        res_live = await db.execute(text("SELECT COUNT(*) FROM props_live"))
-        props_live_count = res_live.scalar()
-        
-        res_props = await db.execute(text("SELECT COUNT(*) FROM props"))
-        props_total_count = res_props.scalar()
+        # 1. List all tables to see what physically exists
+        tabs_res = await db.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema='public'"))
+        all_tables = [r[0] for r in tabs_res.fetchall()]
 
-        res_v2 = await db.execute(text("SELECT COUNT(*) FROM props_v2"))
-        props_v2_count = res_v2.scalar()
-
-        res_lines = await db.execute(text("SELECT COUNT(*) FROM proplines"))
-        proplines_count = res_lines.scalar()
-
-        res_games = await db.execute(text("SELECT COUNT(*) FROM gamelines"))
-        gamelines_count = res_games.scalar()
+        # 2. Count tables that MIGHT exist
+        stats = {}
+        target_tables = ["props_live", "props", "props_v2", "proplines", "unified_odds", "gamelines", "bets", "model_picks"]
+        for t in target_tables:
+            try:
+                if t in all_tables:
+                    c_res = await db.execute(text(f"SELECT COUNT(*) FROM {t}"))
+                    stats[t] = c_res.scalar()
+                else:
+                    stats[t] = "MISSING"
+            except Exception as e:
+                stats[t] = f"ERROR: {str(e)}"
         
-        # duplicates check
-        dup_res = await db.execute(text("""
-            SELECT sport, game_id, player_name, market_key, book, COUNT(*) 
-            FROM props_live 
-            GROUP BY sport, game_id, player_name, market_key, book 
-            HAVING COUNT(*) > 1 
-            LIMIT 5
-        """))
-        duplicates = [dict(r._mapping) for r in dup_res.fetchall()]
+        # 3. Duplicate check (only if props_live exists)
+        duplicates = []
+        if "props_live" in all_tables:
+            dup_res = await db.execute(text("""
+                SELECT sport, game_id, player_name, market_key, book, COUNT(*) 
+                FROM props_live 
+                GROUP BY sport, game_id, player_name, market_key, book 
+                HAVING COUNT(*) > 1 
+                LIMIT 5
+            """))
+            duplicates = [dict(r._mapping) for r in dup_res.fetchall()]
         
-        res3 = await db.execute(text("SELECT COUNT(*) FROM unified_odds"))
-        odds_count = res3.scalar()
-        
-        # pg version
+        # 4. PG version
         pg_res = await db.execute(text("SELECT VERSION()"))
         pg_version = pg_res.scalar()
         
-        # sample odds
-        sample_odds_res = await db.execute(text("SELECT sport, market_key, outcome_key, price FROM unified_odds LIMIT 5"))
-        sample_odds = [dict(r._mapping) for r in sample_odds_res.fetchall()]
-        
-        # table columns
-        col_res = await db.execute(text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'props_live'
-        """))
-        columns = [r[0] for r in col_res.fetchall()]
-        
-        # index inspection
-        idx_res = await db.execute(text("""
-            SELECT indexname, indexdef 
-            FROM pg_indexes 
-            WHERE tablename = 'props_live'
-        """))
-        indexes = [dict(r._mapping) for r in idx_res.fetchall()]
-        
-        # file inspection
+        # 5. Sample odds (only if unified_odds exists)
+        sample_odds = []
+        if "unified_odds" in all_tables:
+            sample_odds_res = await db.execute(text("SELECT sport, market_key, outcome_key, price FROM unified_odds LIMIT 5"))
+            sample_odds = [dict(r._mapping) for r in sample_odds_res.fetchall()]
+            
+        # 6. File inspection
+        content_snippet = ""
         try:
-            with open("src/services/persistence_helpers.py", "r") as f:
+            with open("apps/api/src/services/persistence_helpers.py", "r") as f:
                 content_snippet = f.read(500)
         except Exception:
-            # try without src
             try:
                 with open("services/persistence_helpers.py", "r") as f:
                     content_snippet = f.read(500)
             except Exception:
                 content_snippet = "Could not read file"
             
-        # Check column nullability
-        nullability_res = await db.execute(text("""
-            SELECT column_name, is_nullable 
-            FROM information_schema.columns 
-            WHERE table_name = 'props_live'
-        """))
-        nullability = {row[0]: row[1] for row in nullability_res.fetchall()}
+        # 7. Column nullability (props_live)
+        nullability = {}
+        if "props_live" in all_tables:
+            nullability_res = await db.execute(text("""
+                SELECT column_name, is_nullable 
+                FROM information_schema.columns 
+                WHERE table_name = 'props_live'
+            """))
+            nullability = {row[0]: row[1] for row in nullability_res.fetchall()}
 
-        # Check routes
+        # 8. Table Columns
+        columns = []
+        if "props_live" in all_tables:
+            col_res = await db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'props_live'"))
+            columns = [r[0] for r in col_res.fetchall()]
+
+        # 9. Index Inspection
+        indexes = []
+        if "props_live" in all_tables:
+            idx_res = await db.execute(text("SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'props_live'"))
+            indexes = [dict(r._mapping) for r in idx_res.fetchall()]
+
+        # 10. Routes
         available_routes = [route.path for route in router.routes]
 
         return {
-            "props_live_count": props_live_count,
-            "props_total_count": props_total_count,
-            "props_v2_count": props_v2_count,
-            "proplines_count": proplines_count,
-            "gamelines_count": gamelines_count,
-            "unified_odds_count": odds_count,
+            "table_stats": stats,
+            "all_tables": all_tables,
             "columns": columns,
             "nullability": nullability,
             "routes": available_routes,
@@ -170,15 +167,15 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
                     "status": h.status,
                     "last_run": str(h.last_run_at),
                     "last_success": str(h.last_success_at),
-                    "rows_written": h.rows_written_today,
-                    "heartbeat": h.last_run_at.isoformat() if h.last_run_at else None,
+                    "rows_written": getattr(h, "rows_written_today", 0),
                     "meta": h.meta
                 } for h in heartbeats
             ]
         }
     except Exception as e:
         import traceback
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        logger.error(f"Diagnostics: Failed to collect: {e}", exc_info=True)
+        return {"status": "error", "detail": str(e), "traceback": traceback.format_exc()}
 
 @router.get("/force-migrate")
 async def force_migrate(db: AsyncSession = Depends(get_db)):
