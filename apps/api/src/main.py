@@ -266,7 +266,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -276,10 +276,19 @@ app.add_middleware(
 async def global_exception_handler(request: Request, exc: Exception):
     """Fail-safe for production: Ensure CORS headers are sent even on 500 errors."""
     logger.error(f"GLOBAL EXCEPTION CAUGHT: {str(exc)}", exc_info=True)
+    
+    origin = request.headers.get("Origin")
+    allow_origin = origin if origin in origins else origins[0]
+    
     return JSONResponse(
         status_code=500,
         content={"detail": "Internal Server Error", "error": str(exc)},
-        headers={"Access-Control-Allow-Origin": "https://perplex-edge.vercel.app"}
+        headers={
+            "Access-Control-Allow-Origin": allow_origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*"
+        }
     )
 
 @app.get("/api/smart-money")
