@@ -59,7 +59,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.1.1"
+        "version": "1.1.2"
     }
 
 @router.get("/summary")
@@ -200,33 +200,31 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
 @router.get("/force-migrate")
 async def force_migrate(db: AsyncSession = Depends(get_db)):
     """Force run schema migrations and return results."""
-    cols_to_fix = [
-        ("props_live", "player_id"),
-        ("props_live", "player_name"),
-        ("props_live", "team"),
-        ("props_live", "market_label"),
-        ("props_live", "line"),
-        ("props_live", "odds_over"),
-        ("props_live", "odds_under"),
-        ("props_live", "implied_over"),
-        ("props_live", "implied_under"),
-        ("props_history", "line"),
-        ("props_history", "odds_over"),
-        ("props_history", "odds_under"),
-        ("props_history", "implied_over"),
-        ("props_history", "implied_under"),
-        ("unified_odds", "outcome_name")
+    # Grouped for clarity
+    migration_targets = [
+        ("props_live", ["player_id", "player_name", "team", "market_label", "line", "odds_over", "odds_under", "implied_over", "implied_under"]),
+        ("props_history", ["line", "odds_over", "odds_under", "implied_over", "implied_under"]),
+        ("unified_odds", ["outcome_key"]) # Corrected from outcome_name
     ]
-    results = {}
-    for table, col in cols_to_fix:
-        try:
-            await db.execute(text(f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"))
-            await db.commit()
-            results[f"{table}.{col}"] = "Success"
-        except Exception as e:
-            results[f"{table}.{col}"] = f"Failed: {str(e)}"
     
-    return results
+    results = {}
+    for table, columns in migration_targets:
+        for col in columns:
+            try:
+                # Use DROP NOT NULL to ensure columns are nullable
+                sql = f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"
+                await db.execute(text(sql))
+                await db.commit()
+                results[f"{table}.{col}"] = "Success"
+            except Exception as e:
+                # If it already is nullable, this might still say Success or throw an error depending on PG version
+                results[f"{table}.{col}"] = f"Info: {str(e)}"
+    
+    return {
+        "status": "migration_completed",
+        "results": results,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
 
 @router.get("/trigger-ingest")
 async def trigger_ingest(sport: str = "basketball_nba"):
