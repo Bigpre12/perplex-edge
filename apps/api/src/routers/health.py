@@ -159,6 +159,28 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         import traceback
         return {"error": str(e), "traceback": traceback.format_exc()}
 
+@router.get("/force-migrate")
+async def force_migrate(db: AsyncSession = Depends(get_db)):
+    """Force run schema migrations and return results."""
+    cols_to_fix = [
+        ("props_live", "player_id"),
+        ("props_live", "player_name"),
+        ("props_live", "team"),
+        ("props_live", "market_label"),
+        ("props_live", "line"),
+        ("unified_odds", "outcome_name")
+    ]
+    results = {}
+    for table, col in cols_to_fix:
+        try:
+            await db.execute(text(f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"))
+            await db.commit()
+            results[f"{table}.{col}"] = "Success"
+        except Exception as e:
+            results[f"{table}.{col}"] = f"Failed: {str(e)}"
+    
+    return results
+
 @router.get("/trigger-ingest")
 async def trigger_ingest(sport: str = "basketball_nba"):
     """Manual trigger to run ingestion and see errors immediately."""
