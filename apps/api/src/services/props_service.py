@@ -172,6 +172,31 @@ class PropsService:
             async with async_session_maker() as session:
                 # Optimized query: fetch all UnifiedOdds joined with UnifiedEVSignal
                 sql = """
+                SELECT 
+                    o.id as odds_id,
+                    o.event_id, 
+                    o.sport,
+                    o.league,
+                    o.home_team,
+                    o.away_team,
+                    o.game_time,
+                    o.player_name,
+                    o.market_key,
+                    o.outcome_key,
+                    o.line,
+                    o.price,
+                    o.bookmaker,
+                    o.implied_prob,
+                    o.updated_at,
+                    e.true_prob,
+                    e.edge_percent
+                FROM unified_odds o
+                LEFT JOIN ev_signals e ON 
+                    o.event_id = e.event_id AND 
+                    o.sport = e.sport AND 
+                    o.market_key = e.market_key AND 
+                    o.outcome_key = e.outcome_key AND 
+                    o.bookmaker = e.bookmaker
                 WHERE o.sport = :sport
                 """
                 
@@ -191,7 +216,7 @@ class PropsService:
                                 UnifiedOdds.bookmaker == UnifiedEVSignal.bookmaker
                             )
                         )
-                        UnifiedOdds.sport == sport
+                    ).where(UnifiedOdds.sport == sport)
                     result = await session.execute(stmt)
                     raw_rows = []
                     for o, e in result.all():
