@@ -74,8 +74,11 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         heartbeats = await HeartbeatService.get_all_heartbeats(db)
         
         # also check table counts
-        res2 = await db.execute(text("SELECT COUNT(*) FROM props_live"))
-        props_count = res2.scalar()
+        res_live = await db.execute(text("SELECT COUNT(*) FROM props_live"))
+        props_live_count = res_live.scalar()
+        
+        res_props = await db.execute(text("SELECT COUNT(*) FROM props"))
+        props_total_count = res_props.scalar()
         
         # duplicates check
         dup_res = await db.execute(text("""
@@ -138,7 +141,8 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         available_routes = [route.path for route in router.routes]
 
         return {
-            "props_live_count": props_count,
+            "props_live_count": props_live_count,
+            "props_total_count": props_total_count,
             "unified_odds_count": odds_count,
             "columns": columns,
             "nullability": nullability,
