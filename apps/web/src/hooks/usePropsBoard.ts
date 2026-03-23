@@ -30,6 +30,7 @@ export interface CanonicalBoardResponse {
     props: CanonicalProp[];
     count: number;
     updated: string;
+    fallback?: string;  // "team_markets" when no player props exist
 }
 
 export function usePropsBoard(sport = "basketball_nba", minEv?: number) {

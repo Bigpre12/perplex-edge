@@ -198,6 +198,7 @@ class PropsService:
                     o.outcome_key = e.outcome_key AND 
                     o.bookmaker = e.bookmaker
                 WHERE o.sport = :sport
+                  AND o.market_key NOT IN ('h2h', 'spreads', 'totals')
                 """
                 
                 # Check DB dialect
@@ -216,7 +217,9 @@ class PropsService:
                                 UnifiedOdds.bookmaker == UnifiedEVSignal.bookmaker
                             )
                         )
-                    ).where(UnifiedOdds.sport == sport)
+                    ).where(UnifiedOdds.sport == sport).where(
+                        UnifiedOdds.market_key.notin_(['h2h', 'spreads', 'totals'])
+                    )
                     result = await session.execute(stmt)
                     raw_rows = []
                     for o, e in result.all():
@@ -353,6 +356,18 @@ class PropsService:
                     final_props.sort(key=lambda x: x["ev_percentage"], reverse=True)
                 
                 now_str = datetime.utcnow().isoformat() + "Z"
+                
+                # If no player props found, fall back to team markets (spreads/totals)
+                if not final_props:
+                    logger.info(f"No player props found for {sport}, falling back to team markets")
+                    team_data = await self._get_team_canonical(sport, session, min_ev, only_ev)
+                    return {
+                        "props": team_data,
+                        "count": len(team_data),
+                        "updated": now_str,
+                        "fallback": "team_markets"
+                    }
+                
                 return {
                     "props": final_props,
                     "count": len(final_props),
@@ -363,6 +378,63 @@ class PropsService:
             logger.error(f"Error in get_canonical_props: {e}")
             now_str = datetime.utcnow().isoformat() + "Z"
             return {"props": [], "count": 0, "updated": now_str}
+
+    async def _get_team_canonical(self, sport, session, min_ev=None, only_ev=False):
+        """Fallback: return team markets (spreads/totals) in canonical shape when no player props exist."""
+        from models import UnifiedOdds
+        from datetime import datetime
+        
+        stmt = select(UnifiedOdds).where(
+            UnifiedOdds.sport == sport,
+            UnifiedOdds.market_key.in_(['spreads', 'totals'])
+        )
+        result = await session.execute(stmt)
+        rows = result.scalars().all()
+        
+        grouped = {}
+        for o in rows:
+            team = o.home_team or "Matchup"
+            key = (o.event_id, team, o.market_key, float(o.line) if o.line else 0.0)
+            
+            if key not in grouped:
+                grouped[key] = {
+                    "id": f"{o.event_id}_{team.replace(' ','')}_{o.market_key}_{float(o.line or 0.0)}",
+                    "game_id": o.event_id,
+                    "sport": (o.sport or "").upper().replace("BASKETBALL_",""),
+                    "league": (o.league or "").upper().replace("BASKETBALL_",""),
+                    "player_name": team,
+                    "team": o.home_team or "UNK",
+                    "opponent": o.away_team or "UNK",
+                    "start_time": o.game_time.isoformat() + "Z" if o.game_time else None,
+                    "stat_type": o.market_key.replace("_", " ").title(),
+                    "line": float(o.line) if o.line else 0.0,
+                    "over_odds": -110,
+                    "under_odds": -110,
+                    "best_book": o.bookmaker or "Average",
+                    "books": [],
+                    "implied_probability": 0.0,
+                    "model_probability": 0.0,
+                    "ev_percentage": 0.0,
+                    "confidence": 0.0,
+                    "steam_signal": False,
+                    "whale_signal": False,
+                    "sharp_conflict": False,
+                    "last_updated": datetime.utcnow().isoformat() + "Z",
+                }
+            
+            g = grouped[key]
+            g["books"].append({"book": o.bookmaker, "side": o.outcome_key, "odds": int(o.price or 0)})
+            
+            if o.outcome_key == "over" and o.price:
+                price = int(o.price)
+                if price > g.get("over_odds", -10000):
+                    g["over_odds"] = price
+            if o.outcome_key == "under" and o.price:
+                price = int(o.price)
+                if price > g.get("under_odds", -10000):
+                    g["under_odds"] = price
+        
+        return list(grouped.values())
 
 props_service = PropsService()
 get_all_props = props_service.get_all_props

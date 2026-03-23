@@ -117,6 +117,16 @@ function PropsPageContent() {
         </div>
       </div>
 
+      {/* Fallback Notice */}
+      {data?.fallback === "team_markets" && (
+        <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl px-4 py-3 flex items-center gap-3">
+          <Info size={16} className="text-brand-primary flex-shrink-0" />
+          <p className="text-xs font-bold text-brand-primary">
+            Player props data is currently syncing. Showing team spreads &amp; totals in the meantime.
+          </p>
+        </div>
+      )}
+
       {/* Control Panel: Filters, Search, Chips */}
       <div className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-4 md:p-6 space-y-6 shadow-card">
         <div className="flex flex-col md:flex-row gap-6 md:items-end">

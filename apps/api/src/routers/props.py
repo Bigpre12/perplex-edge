@@ -21,11 +21,32 @@ router = APIRouter()
 @router.get("/live", response_model=UniversalResponse[PropLiveSchema])
 async def get_props_live(
     sport: str = Query("basketball_nba"),
+    market: Optional[str] = Query(None, description="Filter by market type: player_props, h2h, spreads, totals"),
     limit: int = Query(25, ge=1, le=200),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Returns market-based live props (Over/Under consolidated)."""
-    stmt = select(PropLive).where(PropLive.sport == sport).order_by(desc(PropLive.last_updated_at)).limit(limit)
+    # Build query - prioritize player props if no market filter specified
+    stmt = select(PropLive).where(PropLive.sport == sport)
+    
+    if market == "player_props":
+        # Exclude team-level markets
+        stmt = stmt.where(PropLive.market_key.notin_(["h2h", "spreads", "totals"]))
+    elif market:
+        stmt = stmt.where(PropLive.market_key == market)
+    else:
+        # Default: try player props first, fall back to all
+        player_stmt = select(PropLive).where(
+            PropLive.sport == sport,
+            PropLive.market_key.notin_(["h2h", "spreads", "totals"])
+        ).order_by(desc(PropLive.last_updated_at)).limit(1)
+        player_check = await db.execute(player_stmt)
+        has_player_props = player_check.scalar_one_or_none()
+        
+        if has_player_props:
+            stmt = stmt.where(PropLive.market_key.notin_(["h2h", "spreads", "totals"]))
+    
+    stmt = stmt.order_by(desc(PropLive.last_updated_at)).limit(limit)
     result = await db.execute(stmt)
     rows = result.scalars().all()
     
