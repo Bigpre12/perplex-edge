@@ -277,7 +277,7 @@ class PropsService:
                             "steam_signal": False,
                             "whale_signal": False,
                             "sharp_conflict": False,
-                            "last_updated": r['updated_at'].isoformat() + "Z" if r.get('updated_at') else dt.utcnow().isoformat() + "Z",
+                            "last_updated": r['updated_at'].isoformat() + "Z" if r.get('updated_at') else datetime.utcnow().isoformat() + "Z",
                             
                             # Helpers for calculating best odds
                             "_max_over": -10000,

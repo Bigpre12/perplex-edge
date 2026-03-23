@@ -253,7 +253,7 @@ function EVCheatRow({ prop }: { prop: CanonicalProp }) {
 
           {/* Mini Tag Row */}
           <div className="flex items-center gap-3 mt-2 text-[10px] font-black uppercase tracking-widest text-textMuted">
-            <span className="text-textSecondary">{prop.sport.replace(/_/g, " ")}</span>
+            <span className="text-textSecondary">{(prop.sport || "").replace(/_/g, " ")}</span>
             <span>·</span>
             <span className="flex items-center gap-1">
               <Clock size={10} /> 

@@ -16,7 +16,10 @@ import {
     Activity, 
     TrendingUp, 
     Diamond, 
-    Settings 
+    Settings,
+    ArrowRightLeft,
+    TrendingDown,
+    History
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -43,6 +46,9 @@ export default function Sidebar() {
         { href: "/parlays", icon: <LinkIcon size={20} />, label: "Parlay" },
         { href: "/live", icon: <Activity size={20} />, label: "Live", showLiveDot: true },
         { href: "/line-movement", icon: <TrendingUp size={20} />, label: "Move" },
+        { href: "/arbitrage", icon: <ArrowRightLeft size={20} />, label: "Arb" },
+        { href: "/whale", icon: <TrendingDown size={20} />, label: "Whale" },
+        { href: "/props-history", icon: <History size={20} />, label: "History" },
         { href: "/kalshi", icon: <Diamond size={20} />, label: "Kalshi", badge: "ELITE" },
         { href: "/settings", icon: <Settings size={20} />, label: "Settings" },
     ];

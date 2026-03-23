@@ -136,7 +136,7 @@ function WhaleAlertsContent() {
               </div>
               <div className="text-right">
                 <div className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1">Detected</div>
-                <div className="text-xs font-bold text-textSecondary">{new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                <div className="text-xs font-bold text-textSecondary">{alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "N/A"}</div>
               </div>
             </div>
           </div>
