@@ -224,13 +224,14 @@ class PropsService:
                 global_updated = None
                 
                 for row_dict in raw_rows:
-                    if not row_dict['line']: continue # Ignore zero lines
-                    player = r['player_name'] or r['home_team'] or "Matchup"
+                    if not row_dict.get('line'): continue # Ignore zero/null lines
+                    r = row_dict
+                    player = r.get('player_name') or r.get('home_team') or "Matchup"
                     key = (r['event_id'], player, r['market_key'], float(r['line'] or 0.0))
                     
                     if key not in grouped:
                         grouped[key] = {
-                            "id": f"{r['event_id']}_{r['player_name'].replace(' ','')}_{r['market_key']}_{float(r['line'])}",
+                            "id": f"{r['event_id']}_{(r.get('player_name') or r.get('home_team') or 'Matchup').replace(' ','')}_{r['market_key']}_{float(r['line'] or 0.0)}",
                             "game_id": r['event_id'],
                             "sport": (r['sport'] or "").upper().replace("BASKETBALL_",""),
                             "league": (r['league'] or "").upper().replace("BASKETBALL_",""),
