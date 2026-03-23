@@ -51,6 +51,7 @@ async def health_check(
 
     return {
         "status": "healthy" if db_status == "connected" else "degraded",
+        "version": "1.0.5",
         "database": db_status,
         "odds_api": odds_status,
         "kalshi": kalshi_status,

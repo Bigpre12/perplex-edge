@@ -1,0 +1,1 @@
+{"status":"failed","error":"name 'engine' is not defined","traceback":"Traceback (most recent call last):\n  File \"/app/src/routers/health.py\", line 159, in trigger_ingest\n    async with engine.begin() as conn:\n               ^^^^^^\nNameError: name 'engine' is not defined\n"}
