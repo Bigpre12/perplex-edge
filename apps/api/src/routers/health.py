@@ -206,6 +206,15 @@ async def force_migrate(db: AsyncSession = Depends(get_db)):
         ("props_live", "team"),
         ("props_live", "market_label"),
         ("props_live", "line"),
+        ("props_live", "odds_over"),
+        ("props_live", "odds_under"),
+        ("props_live", "implied_over"),
+        ("props_live", "implied_under"),
+        ("props_history", "line"),
+        ("props_history", "odds_over"),
+        ("props_history", "odds_under"),
+        ("props_history", "implied_over"),
+        ("props_history", "implied_under"),
         ("unified_odds", "outcome_name")
     ]
     results = {}

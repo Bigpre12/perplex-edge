@@ -72,16 +72,24 @@ class OddsMapper:
                                 "market_key": m_key,
                                 "line": Decimal(str(line)) if line is not None else None,
                                 "book": book_key,
-                                "source_ts": source_ts
+                                "source_ts": source_ts,
+                                "odds_over": None,
+                                "odds_under": None,
+                                "implied_over": None,
+                                "implied_under": None
                             }
                         
                         implied = self.american_to_implied(int(price)) if isinstance(price, (int, float)) else Decimal('0')
                         print(f"DEBUG: Outcome side={side}, implied={implied}")
                         
-                        if 'over' in side or 'home' in side:
+                        # Better H2H/Main mapping: 'Home' -> Over slot, 'Away' -> Under slot
+                        is_home = 'over' in side or 'home' in side or side == (meta.get('home_team') or "").lower()
+                        is_away = 'under' in side or 'away' in side or side == (meta.get('away_team') or "").lower()
+
+                        if is_home:
                             grouped_data[group_key]["odds_over"] = Decimal(str(price))
                             grouped_data[group_key]["implied_over"] = implied
-                        elif 'under' in side or 'away' in side:
+                        elif is_away:
                             grouped_data[group_key]["odds_under"] = Decimal(str(price))
                             grouped_data[group_key]["implied_under"] = implied
  
