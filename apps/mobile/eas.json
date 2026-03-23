@@ -14,13 +14,13 @@
         "preview": {
             "distribution": "internal",
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://lucrix-backend.up.railway.app"
+                "EXPO_PUBLIC_API_URL": "https://perplex-edge-backend-production.up.railway.app"
             }
         },
         "production": {
             "autoIncrement": true,
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://lucrix-backend.up.railway.app"
+                "EXPO_PUBLIC_API_URL": "https://perplex-edge-backend-production.up.railway.app"
             }
         }
     },

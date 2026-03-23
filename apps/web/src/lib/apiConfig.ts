@@ -5,7 +5,9 @@ const isDevelopment = process.env.NODE_ENV === "development";
  * - In development: uses localhost:8000
  * - In production: uses relative paths "" (enabling Vercel proxy)
  */
-export const API_BASE = isDevelopment ? "http://localhost:8000" : "";
+export const API_BASE = isDevelopment 
+    ? "http://localhost:8000" 
+    : (process.env.NEXT_PUBLIC_API_URL || "");
 
 /**
  * Helper to check if the API is correctly configured.
