@@ -105,17 +105,31 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
         """))
         columns = [r[0] for r in col_res.fetchall()]
         
+        # index inspection
+        idx_res = await db.execute(text("""
+            SELECT indexname, indexdef 
+            FROM pg_indexes 
+            WHERE tablename = 'props_live'
+        """))
+        indexes = [dict(r._mapping) for r in idx_res.fetchall()]
+        
         # file inspection
         try:
             with open("src/services/persistence_helpers.py", "r") as f:
                 content_snippet = f.read(500)
         except Exception:
-            content_snippet = "Could not read file"
+            # try without src
+            try:
+                with open("services/persistence_helpers.py", "r") as f:
+                    content_snippet = f.read(500)
+            except Exception:
+                content_snippet = "Could not read file"
             
         return {
             "props_live_count": props_count,
             "unified_odds_count": odds_count,
             "columns": columns,
+            "indexes": indexes,
             "pg_version": pg_version,
             "sample_odds": sample_odds,
             "duplicates": duplicates,
