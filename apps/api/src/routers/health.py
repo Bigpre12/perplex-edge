@@ -59,7 +59,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.1.4"
+        "version": "1.1.5"
     }
 
 @router.get("/summary")
@@ -246,11 +246,8 @@ async def test_db_null(db: AsyncSession = Depends(get_db)):
     """Test manual insertion of NULL into props_live to verify schema."""
     try:
         from models.brain import PropLive
-        import uuid
-        test_id = str(uuid.uuid4())
         # Try to insert a record with null odds_over
         new_row = PropLive(
-            id=test_id,
             sport="test_sport",
             league="TEST",
             game_id="test_game",
@@ -263,10 +260,13 @@ async def test_db_null(db: AsyncSession = Depends(get_db)):
         db.add(new_row)
         await db.commit()
         
+        # The id will be generated automatically
+        test_id = new_row.id
+        
         # Clean up
-        await db.execute(text(f"DELETE FROM props_live WHERE id = '{test_id}'"))
+        await db.execute(text(f"DELETE FROM props_live WHERE id = {test_id}"))
         await db.commit()
         
-        return {"status": "success", "message": "NULL insertion and deletion worked!"}
+        return {"status": "success", "message": f"NULL insertion (id={test_id}) and deletion worked!"}
     except Exception as e:
         return {"status": "failed", "error": str(e)}
