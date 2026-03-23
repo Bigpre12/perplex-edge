@@ -64,7 +64,7 @@ export default function BankrollPage() {
                         <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-2">Market Exposure</p>
                         <p className="text-4xl font-black text-blue-500 italic tracking-tighter">{(stats?.exposure_pct || 6.2).toFixed(1)}%</p>
                         <div className="mt-4 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${stats?.exposure_pct || 6.2}%` }} />
+                            <div className="h-full bg-blue-500 rounded-full transition-all exposure-bar" style={{ ["--exposure-width" as any]: `${stats?.exposure_pct || 6.2}%` }} />
                         </div>
                     </div>
                 </div>

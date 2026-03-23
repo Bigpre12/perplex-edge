@@ -56,7 +56,7 @@ export default function NewsTicker() {
                 <div className="overflow-hidden flex-1 relative h-full flex items-center">
                     <div
                         className="flex whitespace-nowrap animate-ticker will-change-transform"
-                        style={{ animationDuration: `${displayItems.length * 8}s` }} // readable speed: 8s per item
+                        style={{ "--ticker-duration": `${displayItems.length * 8}s` } as React.CSSProperties}
                     >
                         {/* Duplicate for seamless loop */}
                         {[...displayItems, ...displayItems].map((item, i) => (

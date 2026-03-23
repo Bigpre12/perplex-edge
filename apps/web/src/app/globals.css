@@ -162,7 +162,7 @@ body {
 }
 
 .animate-ticker {
-  animation: ticker-scroll linear infinite;
+  animation: ticker-scroll var(--ticker-duration, 30s) linear infinite;
   will-change: transform;
 }
 
@@ -177,6 +177,10 @@ body {
 
 .animate-ticker-scroll {
   animation: ticker-scroll 60s linear infinite;
+}
+
+.exposure-bar {
+  width: var(--exposure-width, 0%);
 }
 
 /* ── Lucrix Rebuild: Consumer-Grade Classes ────────────── */
