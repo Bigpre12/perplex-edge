@@ -136,9 +136,14 @@ async def initialize_backend_services():
                                ("unified_odds", "outcome_name")]:
                 await run_migration_step(f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL")
 
-            # DATA CLEANUP: Delete duplicates to allow unique constraints
-            logger.info("📡 [Background Init] Cleaning up duplicate rows for constraints...")
+            # DATA CLEANUP: Handle NULLs and Duplicates
+            logger.info("📡 [Background Init] Cleaning up NULLs and duplicate rows for constraints...")
             
+            # Step 1: Normalize NULL player_names to empty strings for consistent indexing
+            await run_migration_step("UPDATE props_live SET player_name = '' WHERE player_name IS NULL")
+            await run_migration_step("UPDATE ev_signals SET player_name = '' WHERE player_name IS NULL")
+            await run_migration_step("UPDATE unified_odds SET player_name = '' WHERE player_name IS NULL")
+
             # ev_signals cleanup
             await run_migration_step("""
                 DELETE FROM ev_signals a USING ev_signals b
@@ -153,7 +158,7 @@ async def initialize_backend_services():
                 DELETE FROM props_live a USING props_live b
                 WHERE a.id < b.id 
                 AND a.sport = b.sport AND a.game_id = b.game_id 
-                AND COALESCE(a.player_name, '') = COALESCE(b.player_name, '') 
+                AND a.player_name = b.player_name 
                 AND a.market_key = b.market_key AND a.book = b.book
             """)
 
@@ -166,14 +171,23 @@ async def initialize_backend_services():
                 AND a.bookmaker = b.bookmaker
             """)
 
-            # Add unique constraints
+            # Step 2: Add unique constraints with fallback logic for older PG versions
             # Props Live
             await run_migration_step("ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique")
+            # We wrap individual attempts in temporary functions or just use the run_migration_step which logs warnings
+            # but we want to ensure ONE of them succeeds.
+            # We'll try the PG15+ syntax first.
             await run_migration_step("""
                 ALTER TABLE props_live 
                 ADD CONSTRAINT uix_props_live_unique 
                 UNIQUE (sport, game_id, player_name, market_key, book) 
                 NULLS NOT DISTINCT
+            """)
+            # If the above failed (logged as warning), this one might succeed if not already exists
+            await run_migration_step("""
+                ALTER TABLE props_live 
+                ADD CONSTRAINT uix_props_live_unique 
+                UNIQUE (sport, game_id, player_name, market_key, book)
             """)
 
             # Unified Odds
@@ -183,6 +197,11 @@ async def initialize_backend_services():
                 ADD CONSTRAINT uix_unified_odds_unique 
                 UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
                 NULLS NOT DISTINCT
+            """)
+            await run_migration_step("""
+                ALTER TABLE unified_odds 
+                ADD CONSTRAINT uix_unified_odds_unique 
+                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
             """)
 
             # EV Signals

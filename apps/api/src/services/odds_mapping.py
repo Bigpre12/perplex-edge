@@ -54,7 +54,8 @@ class OddsMapper:
                         
                         # Outcome keys: over, under, home, away, etc.
                         side = name.lower()
-                        p_name = desc if m_key not in ['h2h', 'spreads', 'totals'] else None
+                        p_name = desc if m_key not in ['h2h', 'spreads', 'totals'] else ""
+                        if p_name is None: p_name = ""
                         
                         # Composite key for grouping Over/Under
                         group_key = (eid, m_key, p_name or "team", book_key)

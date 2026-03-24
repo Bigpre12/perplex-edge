@@ -48,11 +48,15 @@ export function PropCard({ prop }: { prop: PropData }) {
             <div className="flex justify-between items-start mb-3">
                 <div className="flex gap-3">
                     <div className="w-10 h-10 rounded-full bg-lucrix-dark flex items-center justify-center font-bold text-white border border-lucrix-border font-display">
-                        {prop.player_name[0]}
+                        {(prop.player_name || prop.team || "?")[0]}
                     </div>
                     <div>
-                        <h3 className="font-black text-white text-sm leading-tight uppercase tracking-tight italic font-display">{prop.player_name}</h3>
-                        <p className="text-textMuted text-[10px] font-bold mt-0.5 uppercase tracking-widest">{prop.team} · {prop.stat_type.replace(/_/g, ' ')}</p>
+                        <h3 className="font-black text-white text-sm leading-tight uppercase tracking-tight italic font-display">
+                            {prop.player_name || prop.team || "Full Match"}
+                        </h3>
+                        <p className="text-textMuted text-[10px] font-bold mt-0.5 uppercase tracking-widest">
+                            {prop.player_name ? `${prop.team} · ` : ""}{prop.stat_type.replace(/_/g, ' ')}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
