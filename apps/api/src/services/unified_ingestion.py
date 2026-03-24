@@ -185,6 +185,11 @@ class UnifiedIngestionService:
         # Merge logic (Betstack + Primary)
         combined_records = records + betstack_records
         
+        # Normalize player_name for all records to avoid NULLs breaking filters/constraints
+        for r in combined_records:
+            if not r.player_name:
+                r.player_name = r.home_team or "Matchup"
+        
         # 3b. Market Intelligence: Best Odds, Soft/Sharp flagging
         records = self.enrich_with_market_intel(combined_records)
         metrics["odds_count"] = len(records)
@@ -209,7 +214,7 @@ class UnifiedIngestionService:
                 "home_team": r.home_team,
                 "away_team": r.away_team,
                 "market_key": r.market_key,
-                "player_name": r.player_name or r.home_team or "Matchup",
+                "player_name": r.player_name, # Already normalized above
                 "bookmaker": r.book,
                 "line": float(r.line) if r.line is not None else None,
             }
