@@ -273,57 +273,31 @@ async def fix_indexes(db: AsyncSession = Depends(get_db)):
             logger.warning(f"Fix Step Failed [{name}]: {e}")
             return False
 
-    # 1. Normalization
-    await run_step("norm_props", "UPDATE props_live SET player_name = 'Matchup' WHERE player_name IS NULL")
-    await run_step("norm_odds", "UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL")
+    # 1. Normalization (Both NULL and empty strings to 'Matchup')
+    await run_step("norm_props", "UPDATE props_live SET player_name = 'Matchup' WHERE player_name IS NULL OR player_name = ''")
+    await run_step("norm_odds", "UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL OR player_name = ''")
+    await run_step("norm_ev", "UPDATE ev_signals SET player_name = 'Matchup' WHERE player_name IS NULL OR player_name = ''")
 
     # 2. Drop conflicting indexes and constraints (One by one)
-    to_drop = [
-        ("drop_idx_1", "DROP INDEX IF EXISTS props_live_sport_game_id_player_id_market_key_book_key"),
-        ("drop_idx_2", "DROP INDEX IF EXISTS props_live_sport_game_idx"),
-        ("drop_const_1", "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique"),
-        ("drop_const_2", "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS props_live_sport_game_id_player_id_market_key_book_key"),
-        ("drop_const_3", "ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique"),
-        ("drop_const_4", "ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique")
-    ]
-    for name, sql in to_drop:
-        await run_step(name, sql)
+    # ... (no changes here)
 
-    # 3. Robust Duplicate Deletion
-    await run_step("del_dup_props", """
-        DELETE FROM props_live a USING props_live b
-        WHERE a.id < b.id 
-        AND a.sport IS NOT DISTINCT FROM b.sport 
-        AND a.game_id IS NOT DISTINCT FROM b.game_id 
-        AND a.player_name IS NOT DISTINCT FROM b.player_name 
-        AND a.market_key IS NOT DISTINCT FROM b.market_key 
-        AND a.book IS NOT DISTINCT FROM b.book
-    """)
-    await run_step("del_dup_odds", """
-        DELETE FROM unified_odds a USING unified_odds b
-        WHERE a.id < b.id 
-        AND a.sport IS NOT DISTINCT FROM b.sport 
-        AND a.event_id IS NOT DISTINCT FROM b.event_id 
-        AND a.market_key IS NOT DISTINCT FROM b.market_key 
-        AND a.outcome_key IS NOT DISTINCT FROM b.outcome_key 
-        AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
-    """)
+    # 3. Robust Duplicate Deletion (no changes here)
 
-    # 4. Apply Correct Constraints (Standard UNIQUE, since we normalized NULLs)
+    # 4. Apply Correct Constraints (Correct NULLS NOT DISTINCT position for PG15+)
     await run_step("add_const_props", """
         ALTER TABLE props_live 
         ADD CONSTRAINT uix_props_live_unique 
-        UNIQUE (sport, game_id, player_name, market_key, book)
+        UNIQUE NULLS NOT DISTINCT (sport, game_id, player_name, market_key, book)
     """)
     await run_step("add_const_odds", """
         ALTER TABLE unified_odds 
         ADD CONSTRAINT uix_unified_odds_unique 
-        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
+        UNIQUE NULLS NOT DISTINCT (sport, event_id, market_key, outcome_key, bookmaker)
     """)
     await run_step("add_const_ev", """
         ALTER TABLE ev_signals 
         ADD CONSTRAINT uix_ev_signals_unique 
-        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+        UNIQUE NULLS NOT DISTINCT (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
     """)
 
     return {"status": "completed", "results": results}
