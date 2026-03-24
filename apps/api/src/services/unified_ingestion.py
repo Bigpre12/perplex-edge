@@ -209,9 +209,9 @@ class UnifiedIngestionService:
                 "home_team": r.home_team,
                 "away_team": r.away_team,
                 "market_key": r.market_key,
-                "player_name": r.player_name,
+                "player_name": r.player_name or r.home_team or "Matchup",
                 "bookmaker": r.book,
-                "line": float(r.line) if r.line else None,
+                "line": float(r.line) if r.line is not None else None,
             }
 
             # Over Outcome

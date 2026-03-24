@@ -252,7 +252,7 @@ class PropsService:
                 global_updated = None
                 
                 for row_dict in raw_rows:
-                    if not row_dict.get('line'): continue # Ignore zero/null lines
+                    if row_dict.get('line') is None: continue # Ignore NULL lines only
                     r = row_dict
                     player = r.get('player_name') or r.get('home_team') or "Matchup"
                     key = (r['event_id'], player, r['market_key'], float(r['line'] or 0.0))
