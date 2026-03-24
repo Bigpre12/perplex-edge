@@ -7,7 +7,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
  */
 export const API_BASE = isDevelopment 
     ? "http://localhost:8000" 
-    : (process.env.NEXT_PUBLIC_API_URL || "");
+    : (process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app");
 
 /**
  * Helper to check if the API is correctly configured.

@@ -267,6 +267,7 @@ app = FastAPI(title=APP_NAME, redirect_slashes=False, lifespan=backend_lifespan)
 origins = [
     "https://perplex-edge.vercel.app",
     "https://perplex-edge-1umcu8vby-bigpre12s-projects.vercel.app",
+    "https://web-production-514e7.up.railway.app",
     "http://localhost:3000",
 ]
 
@@ -281,7 +282,8 @@ async def dynamic_cors_middleware(request: Request, call_next):
         is_allowed = (
             origin == "http://localhost:3000" or 
             origin == "http://127.0.0.1:3000" or
-            origin.endswith(".vercel.app")
+            origin.endswith(".vercel.app") or
+            origin.endswith(".up.railway.app")
         )
         if is_allowed:
             response.headers["Access-Control-Allow-Origin"] = origin
