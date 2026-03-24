@@ -159,6 +159,7 @@ async def initialize_backend_services():
             
             # Step 1: Normalize NULL player_names to empty strings for consistent indexing
             await run_migration_step("UPDATE props_live SET player_name = '' WHERE player_name IS NULL")
+            await run_migration_step("UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL")
             await run_migration_step("UPDATE ev_signals SET player_name = '' WHERE player_name IS NULL")
             await run_migration_step("UPDATE unified_odds SET player_name = '' WHERE player_name IS NULL")
 

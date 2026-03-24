@@ -235,13 +235,17 @@ class UnifiedIngestionService:
                 unified_rows.append(under_row)
 
         # Task 6: Diagnostic Logging for Unified Odds (instrumented per user request)
-        try:
-            logger.info(f"UnifiedIngestion: preparing to write {len(unified_rows)} unified odds rows for {sport_key}")
-            await upsert_unified_odds(unified_rows)
-            logger.info(f"UnifiedIngestion: successfully wrote unified odds rows for {sport_key}")
-        except Exception as e:
-            logger.error(f"UnifiedIngestion: upsert_unified_odds failed for {sport_key}: {e}", exc_info=True)
-            metrics["errors"].append(f"Unified Odds Persistence: {str(e)}")
+        if unified_rows:
+            try:
+                logger.info(f"UnifiedIngestion: preparing to write {len(unified_rows)} unified odds rows for {sport_key}")
+                await upsert_unified_odds(unified_rows)
+                logger.info(f"UnifiedIngestion: successfully wrote unified odds rows for {sport_key}")
+                metrics["rows_upserted"] = len(unified_rows)
+            except Exception as e:
+                logger.error(f"UnifiedIngestion: upsert_unified_odds failed for {sport_key}: {e}", exc_info=True)
+                metrics["errors"].append(f"Unified Odds Persistence: {str(e)}")
+        else:
+            logger.warning(f"UnifiedIngestion: No unified rows generated for {sport_key}")
 
         # 5. Trigger Brain & EV
         secondary_tasks = [
