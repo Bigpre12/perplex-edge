@@ -57,9 +57,21 @@ async def metrics(db: AsyncSession = Depends(get_async_db)):
 
 @router.get("/picks-stats")
 async def picks_stats():
-    """Returns pick statistics for the leaderboard page."""
+    """Returns pick statistics (model performance) for the leaderboard page."""
+    from services.hit_rate_service import hit_rate_service
+    
+    summary = await hit_rate_service.get_summary("all")
+    
     return {
+        "models": [
+            {
+                "name": "Lucrix Alpha Engine", 
+                "sport": "ALL MARKET", 
+                "hit_rate": summary.get("overall_hit_rate", 0.0), 
+                "profit": summary.get("roi", 0.0)
+            }
+        ],
         "top_pickers": [],
         "consensus_picks": [],
-        "total_active_picks": 0
+        "total_active_picks": summary.get("graded_picks", 0)
     }

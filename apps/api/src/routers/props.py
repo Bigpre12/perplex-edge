@@ -86,6 +86,41 @@ async def list_props_legacy(
         logger.error(f"Error listing props logic for {sport}: {e}")
         return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
 
+@router.get("/scored")
+async def scored_props(sport: Optional[str] = None, db: AsyncSession = Depends(get_async_db)):
+    """Returns recently completed/graded props or falls back to top EV signals for visibility."""
+    try:
+        from models.brain import ModelPick
+        from sqlalchemy import text
+        now = datetime.utcnow()
+        # 1. Try actual scored model picks
+        filters = [ModelPick.won != None]
+        if sport and sport != "all":
+            filters.append(ModelPick.sport_key == sport)
+            
+        stmt = select(ModelPick).where(
+            *filters
+        ).where(
+            ModelPick.updated_at >= now - timedelta(hours=72)
+        ).order_by(desc(ModelPick.updated_at)).limit(50)
+        
+        result = await db.execute(stmt)
+        items = result.scalars().all()
+        
+        if items:
+            return {"data": items, "results": items}
+            
+        # 2. Fallback to top EV signals
+        from models import UnifiedEVSignal
+        ev_stmt = select(UnifiedEVSignal).order_by(desc(UnifiedEVSignal.edge_percent)).limit(50)
+        ev_res = await db.execute(ev_stmt)
+        ev_items = ev_res.scalars().all()
+        return {"data": ev_items, "results": ev_items}
+        
+    except Exception as e:
+        logger.error(f"Error listing scored props: {e}")
+        return {"data": [], "results": []}
+
 # Phase 6 Canonical Board Endpoint
 @router.get("/{sport_path}")
 async def list_props_by_sport(
@@ -104,34 +139,6 @@ async def list_props_by_sport(
     except Exception as e:
         logger.error(f"Error listing props for {sport_path}: {e}")
         return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
-
-@router.get("/scored")
-async def scored_props(db: AsyncSession = Depends(get_db)):
-    """Returns recently completed props or falls back to top EV signals for visibility."""
-    try:
-        now = datetime.utcnow()
-        # 1. Try actual scored props
-        stmt = select(Prop).where(
-            Prop.is_scored == True,
-            Prop.created_at >= now - timedelta(hours=72)
-        ).order_by(desc(Prop.created_at)).limit(50)
-        
-        result = await db.execute(stmt)
-        items = result.scalars().all()
-        
-        if items:
-            return {"data": items, "results": items}
-            
-        # 2. Fallback to top EV signals (likely what user considers 'scored' by model)
-        from models import UnifiedEVSignal
-        ev_stmt = select(UnifiedEVSignal).order_by(desc(UnifiedEVSignal.edge_percent)).limit(50)
-        ev_res = await db.execute(ev_stmt)
-        ev_items = ev_res.scalars().all()
-        return {"data": ev_items, "results": ev_items}
-        
-    except Exception as e:
-        logger.error(f"Error listing scored props: {e}")
-        return {"data": [], "results": []}
 
 
 @router.get("/hero/{player_name}")
