@@ -40,6 +40,7 @@ export const api = {
     
     // Core
     health: () => request("/api/health"),
+    metaHealth: () => request("/api/meta/health"), // Alias for backward compatibility
     meta: {
         health: () => request("/api/meta/health"),
         summary: () => request("/api/meta/summary"),
@@ -178,7 +179,9 @@ export const api = {
     alerts: (sport = "basketball_nba") => request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
     wsBaseUrl: API_BASE.replace(/^http/, 'ws'),
     wsOdds: `${API_BASE.replace(/^http/, 'ws')}/api/ws/ev`,
+    wsEv: `${API_BASE.replace(/^http/, 'ws')}/api/ws/ev`, // Alias for wsOdds
     wsKalshi: `${API_BASE.replace(/^http/, 'ws')}/api/ws/kalshi`,
+    pollMs: 30000,
     edges: (sport = "basketball_nba") => request("/api/ev/ev-top", undefined, { sport }),
     simulate: (legs: any[], stake = 100, simulations = 10000) => 
         request("/api/simulate", { method: "POST", body: JSON.stringify({ legs, stake, simulations }) }),

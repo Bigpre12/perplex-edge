@@ -5,9 +5,9 @@
   "venv": ".venv",
   "executionEnvironments": [
     {
-      "root": "src"
+      "root": "src",
+      "extraPaths": ["src", "../../.venv/Lib/site-packages"]
     }
   ],
-  "pythonVersion": "3.10",
   "typeCheckingMode": "basic"
 }

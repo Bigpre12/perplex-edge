@@ -55,6 +55,9 @@ export async function apiClient<T>(
   let lastError: any;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      if (typeof fetch !== "function") {
+        throw new Error("Global 'fetch' is not a function. This may be due to a misconfigured environment or shadowing.");
+      }
       const response = await fetch(url.toString(), {
         ...fetchOptions,
         headers,

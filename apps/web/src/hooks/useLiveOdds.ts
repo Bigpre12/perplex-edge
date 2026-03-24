@@ -34,7 +34,7 @@ export function useLiveOdds(sportId: SportKey) {
         fetchHTTP();
         pollRef.current = setInterval(() => {
             if (!isDown) fetchHTTP();
-        }, API.pollMs);
+        }, API.pollMs || 30000);
 
         let reconnectTimeout: NodeJS.Timeout;
         const tryWS = () => {
