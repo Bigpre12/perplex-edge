@@ -260,85 +260,73 @@ async def trigger_ingest(sport: str = "basketball_nba"):
 async def fix_indexes(db: AsyncSession = Depends(get_db)):
     """Force cleanup of conflicting indexes and apply correct unique constraints."""
     results = {}
-    try:
-        # 1. Normalization
-        await db.execute(text("UPDATE props_live SET player_name = 'Matchup' WHERE player_name IS NULL"))
-        await db.execute(text("UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL"))
-        await db.commit()
-        results["normalization"] = "Success"
-
-        # 2. Drop conflicting indexes and constraints
-        to_drop = [
-            "DROP INDEX IF EXISTS props_live_sport_game_id_player_id_market_key_book_key",
-            "DROP INDEX IF EXISTS props_live_sport_game_idx",
-            "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique",
-            "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS props_live_sport_game_id_player_id_market_key_book_key",
-            "ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique",
-            "ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique"
-        ]
-        for sql in to_drop:
-            try:
-                await db.execute(text(sql))
-                await db.commit()
-            except Exception as e:
-                logger.warning(f"Drop failed: {sql} - {e}")
-        results["cleanup"] = "Success"
-
-        # 3. Robust Duplicate Deletion
-        cleanup_sql = [
-            """
-            DELETE FROM props_live a USING props_live b
-            WHERE a.id < b.id 
-            AND a.sport IS NOT DISTINCT FROM b.sport 
-            AND a.game_id IS NOT DISTINCT FROM b.game_id 
-            AND a.player_name IS NOT DISTINCT FROM b.player_name 
-            AND a.market_key IS NOT DISTINCT FROM b.market_key 
-            AND a.book IS NOT DISTINCT FROM b.book
-            """,
-            """
-            DELETE FROM unified_odds a USING unified_odds b
-            WHERE a.id < b.id 
-            AND a.sport IS NOT DISTINCT FROM b.sport 
-            AND a.event_id IS NOT DISTINCT FROM b.event_id 
-            AND a.market_key IS NOT DISTINCT FROM b.market_key 
-            AND a.outcome_key IS NOT DISTINCT FROM b.outcome_key 
-            AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
-            """
-        ]
-        for sql in cleanup_sql:
+    
+    async def run_step(name, sql):
+        try:
             await db.execute(text(sql))
             await db.commit()
-        results["duplicates"] = "Success"
+            results[name] = "Success"
+            return True
+        except Exception as e:
+            await db.rollback()
+            results[name] = f"Failed: {str(e)}"
+            logger.warning(f"Fix Step Failed [{name}]: {e}")
+            return False
 
-        # 4. Apply Correct Constraints
-        to_add = [
-            """
-            ALTER TABLE props_live 
-            ADD CONSTRAINT uix_props_live_unique 
-            UNIQUE (sport, game_id, player_name, market_key, book) 
-            NULLS NOT DISTINCT
-            """,
-            """
-            ALTER TABLE unified_odds 
-            ADD CONSTRAINT uix_unified_odds_unique 
-            UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
-            NULLS NOT DISTINCT
-            """,
-            """
-            ALTER TABLE ev_signals 
-            ADD CONSTRAINT uix_ev_signals_unique 
-            UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
-            NULLS NOT DISTINCT
-            """
-        ]
-        for sql in to_add:
-            try:
-                await db.execute(text(sql))
-                await db.commit()
-                results[sql.split()[2]] = "Success"
-            except Exception as e:
-                results[sql.split()[2]] = f"Failed: {str(e)}"
+    # 1. Normalization
+    await run_step("norm_props", "UPDATE props_live SET player_name = 'Matchup' WHERE player_name IS NULL")
+    await run_step("norm_odds", "UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL")
 
-        return {"status": "completed", "results": results}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    # 2. Drop conflicting indexes and constraints (One by one)
+    to_drop = [
+        ("drop_idx_1", "DROP INDEX IF EXISTS props_live_sport_game_id_player_id_market_key_book_key"),
+        ("drop_idx_2", "DROP INDEX IF EXISTS props_live_sport_game_idx"),
+        ("drop_const_1", "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique"),
+        ("drop_const_2", "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS props_live_sport_game_id_player_id_market_key_book_key"),
+        ("drop_const_3", "ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique"),
+        ("drop_const_4", "ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique")
+    ]
+    for name, sql in to_drop:
+        await run_step(name, sql)
+
+    # 3. Robust Duplicate Deletion
+    await run_step("del_dup_props", """
+        DELETE FROM props_live a USING props_live b
+        WHERE a.id < b.id 
+        AND a.sport IS NOT DISTINCT FROM b.sport 
+        AND a.game_id IS NOT DISTINCT FROM b.game_id 
+        AND a.player_name IS NOT DISTINCT FROM b.player_name 
+        AND a.market_key IS NOT DISTINCT FROM b.market_key 
+        AND a.book IS NOT DISTINCT FROM b.book
+    """)
+    await run_step("del_dup_odds", """
+        DELETE FROM unified_odds a USING unified_odds b
+        WHERE a.id < b.id 
+        AND a.sport IS NOT DISTINCT FROM b.sport 
+        AND a.event_id IS NOT DISTINCT FROM b.event_id 
+        AND a.market_key IS NOT DISTINCT FROM b.market_key 
+        AND a.outcome_key IS NOT DISTINCT FROM b.outcome_key 
+        AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
+    """)
+
+    # 4. Apply Correct Constraints
+    await run_step("add_const_props", """
+        ALTER TABLE props_live 
+        ADD CONSTRAINT uix_props_live_unique 
+        UNIQUE (sport, game_id, player_name, market_key, book) 
+        NULLS NOT DISTINCT
+    """)
+    await run_step("add_const_odds", """
+        ALTER TABLE unified_odds 
+        ADD CONSTRAINT uix_unified_odds_unique 
+        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
+        NULLS NOT DISTINCT
+    """)
+    await run_step("add_const_ev", """
+        ALTER TABLE ev_signals 
+        ADD CONSTRAINT uix_ev_signals_unique 
+        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+        NULLS NOT DISTINCT
+    """)
+
+    return {"status": "completed", "results": results}
