@@ -197,8 +197,12 @@ async def initialize_backend_services():
             """)
 
             # Step 2: Add unique constraints with NULLS NOT DISTINCT (PG 15+)
-            # Props Live
+            
+            # Props Live: Drop old player_id based indexes that conflict with our new player_name logic
+            await run_migration_step("DROP INDEX IF EXISTS props_live_sport_game_id_player_id_market_key_book_key")
+            await run_migration_step("DROP INDEX IF EXISTS props_live_sport_game_idx")
             await run_migration_step("ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique")
+            
             await run_migration_step("""
                 ALTER TABLE props_live 
                 ADD CONSTRAINT uix_props_live_unique 
