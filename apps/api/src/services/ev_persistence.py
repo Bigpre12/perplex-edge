@@ -17,7 +17,14 @@ async def insert_edges_ev_history(edges: list[dict]) -> None:
         async with AsyncSessionLocal() as session:
             async with session.begin():
                 for edge in edges:
-                    # Map incoming scout/engine keys to UnifiedEVSignal column names
+                    # Helper to safely convert to float with default
+                    def safe_float(val, default=0.0):
+                        try:
+                            if val is None or val == "": return default
+                            return float(val)
+                        except (ValueError, TypeError):
+                            return default
+
                     row = {
                         "sport": edge.get("sport"),
                         "event_id": edge.get("game_id") or edge.get("event_id"),
@@ -25,11 +32,11 @@ async def insert_edges_ev_history(edges: list[dict]) -> None:
                         "outcome_key": edge.get("side") or edge.get("outcome_key"),
                         "player_name": edge.get("player_name"),
                         "bookmaker": edge.get("book") or edge.get("bookmaker"),
-                        "price": float(edge.get("odds", 0)) if edge.get("odds") is not None else float(edge.get("price", 0)),
-                        "line": float(edge.get("line")) if edge.get("line") is not None else None,
-                        "true_prob": float(edge.get("model_prob", 0)) if edge.get("model_prob") is not None else float(edge.get("true_prob", 0)),
-                        "edge_percent": float(edge.get("edge_pct", 0)) if edge.get("edge_pct") is not None else float(edge.get("edge_percent", 0)),
-                        "implied_prob": float(edge.get("implied_prob", 0)),
+                        "price": safe_float(edge.get("odds") or edge.get("price")),
+                        "line": safe_float(edge.get("line"), None) if edge.get("line") is not None else None,
+                        "true_prob": safe_float(edge.get("model_prob") or edge.get("true_prob")),
+                        "edge_percent": safe_float(edge.get("edge_pct") or edge.get("edge_percent")),
+                        "implied_prob": safe_float(edge.get("implied_prob")),
                         "engine_version": edge.get("engine_version", "v1-scout")
                     }
                     

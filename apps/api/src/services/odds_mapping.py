@@ -54,8 +54,24 @@ class OddsMapper:
                         
                         # Outcome keys: over, under, home, away, etc.
                         side = name.lower()
-                        p_name = desc if m_key not in ['h2h', 'spreads', 'totals'] else ""
-                        if p_name is None: p_name = ""
+                        
+                        # Robust player name extraction: 
+                        # In Player Props, name is often 'Over'/'Under' and description is the player name.
+                        # However, some books reverse this or put the name in the 'name' field for H2H.
+                        is_main_market = m_key in ['h2h', 'spreads', 'totals']
+                        p_name = ""
+                        if not is_main_market:
+                            # Prefer description, then name if description is 'Over'/'Under'
+                            p_name = desc if desc else ""
+                            if p_name.lower() in ['over', 'under'] and name:
+                                p_name = name
+                        
+                        if not p_name and not is_main_market:
+                             p_name = desc or name or ""
+
+                        # Clean up p_name from common noise
+                        if p_name.lower() in ['over', 'under', 'yes', 'no']:
+                            p_name = ""
                         
                         # Composite key for grouping Over/Under
                         group_key = (eid, m_key, p_name or "team", book_key)

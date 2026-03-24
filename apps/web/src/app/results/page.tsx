@@ -1,3 +1,4 @@
+"use client";
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -85,7 +86,7 @@ export default function ResultsPage() {
                         Transparent Track Record
                     </h1>
                     <p className="text-xl text-[#94a3b8] max-w-2xl mx-auto">
-                        Real-time performance metrics and every pick we've ever made. No hidden losses, no deleted posts—just math.
+                        Real-time performance metrics and every pick we've ever made. No hidden losses, no deleted postsâ€”just math.
                     </p>
                     <div className="mt-8 flex items-center justify-center gap-4">
                         <span className="flex items-center gap-2 px-4 py-2 bg-[#F5C518]/10 border border-[#F5C518]/20 rounded-full text-[#F5C518] text-sm font-medium">

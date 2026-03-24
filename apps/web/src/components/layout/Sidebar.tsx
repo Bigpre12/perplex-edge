@@ -7,6 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useFreshness } from '@/hooks/useFreshness';
 import { useSport } from '@/context/SportContext';
 import { formatDistanceToNow } from 'date-fns';
+import { safeDate } from '@/lib/dateUtils';
 import { 
     Home, 
     Target, 
@@ -104,7 +105,7 @@ export default function Sidebar() {
                     <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">Data Freshness</span>
                 </div>
                 <div className="text-brand-success font-mono text-xs font-medium">
-                    ODDS · {freshness?.odds_last_updated ? formatDistanceToNow(new Date(freshness.odds_last_updated), { addSuffix: true }).replace('about ', '') : 'Scanning...'}
+                    ODDS · {safeDate(freshness?.odds_last_updated) ? formatDistanceToNow(safeDate(freshness.odds_last_updated)!, { addSuffix: true }).replace('about ', '') : 'Scanning...'}
                 </div>
                 <div className="text-textMuted font-mono text-[10px] mt-2">
                     v2.1.0

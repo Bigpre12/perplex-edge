@@ -1,3 +1,4 @@
+"use client";
 // apps/web/src/hooks/useFreshness.ts
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";

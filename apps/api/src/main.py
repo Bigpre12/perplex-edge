@@ -106,7 +106,8 @@ async def initialize_backend_services():
                 async with engine.begin() as conn:
                     await conn.execute(text(query))
             except Exception as e:
-                logger.warning(f"Migration step failed (continuing): {query[:100]}... Error: {e}")
+                q_snippet = str(query)[:100] if query else "NULL"
+                logger.warning(f"Migration step failed (continuing): {q_snippet}... Error: {e}")
 
         if not is_sqlite:
             # Add columns
@@ -247,6 +248,9 @@ async def initialize_backend_services():
             logger.info(f"📡 [Scheduler] Added unified ingestion job {job.id}")
 
         from services.grading_service import grading_service
+        from services.kalshi_ingestion import kalshi_ingestion
+        from services.whale_service import whale_service
+
         scheduler.add_job(
             grading_service.run_grading_cycle,
             'interval',
@@ -254,20 +258,46 @@ async def initialize_backend_services():
             id="auto_grading",
             replace_existing=True
         )
+
+        # Kalshi Sync (NBA, MLB)
+        for k_sport in ["NBA", "MLB"]:
+            scheduler.add_job(
+                kalshi_ingestion.run,
+                'interval',
+                minutes=8,
+                args=[k_sport],
+                id=f"kalshi_sync_{k_sport.lower()}",
+                replace_existing=True
+            )
+
+        # Periodic Global Whale Check
+        scheduler.add_job(
+            whale_service.detect_whale_signals,
+            'interval',
+            minutes=12,
+            id="whale_global_check",
+            replace_existing=True
+        )
+
         scheduler.start()
         logger.info("📡 [Background Init] Scheduler started.")
 
-        # 5. Initial Ingest (delayed)
-        async def delayed_initial_ingest():
-            await asyncio.sleep(20) # Give the app plenty of time to be stable
-            logger.info("📡 [Background Init] Starting delayed initial ingestion phase...")
-            for sport in sports_to_ingest:
-                try:
-                    await unified_ingestion.run_with_retries(sport)
-                except Exception as e:
-                    logger.error(f"❌ [Initial Ingest Error] {sport}: {e}")
+        # 5. Initial Ingest (Parallel)
+        async def run_parallel_ingest():
+            logger.info("📡 [Background Init] Starting parallel initial ingestion phase...")
+            # Sports + Kalshi
+            ingest_tasks = [unified_ingestion.run_with_retries(sport) for sport in sports_to_ingest]
+            ingest_tasks.append(kalshi_ingestion.run("NBA"))
+            ingest_tasks.append(kalshi_ingestion.run("MLB"))
+            
+            results = await asyncio.gather(*ingest_tasks, return_exceptions=True)
+            for sport, res in zip(sports_to_ingest + ["Kalshi_NBA", "Kalshi_MLB"], results):
+                if isinstance(res, Exception):
+                    logger.error(f"❌ [Initial Ingest Failed] {sport}: {res}")
+                else:
+                    logger.info(f"✅ [Initial Ingest Complete] {sport}")
 
-        asyncio.create_task(delayed_initial_ingest())
+        asyncio.create_task(run_parallel_ingest())
 
     except Exception as e:
         logger.error(f"❌ [Background Init] Scheduler setup failed: {e}")
@@ -275,7 +305,8 @@ async def initialize_backend_services():
     # 6. CLV Tracker
     try:
         from services.brain_clv_tracker_loop import start_clv_tracker
-        logger.info("📡 [Background Init] CLV Tracker ready.")
+        asyncio.create_task(start_clv_tracker())
+        logger.info("📡 [Background Init] CLV Tracker started.")
     except Exception as e:
         logger.error(f"❌ [Background Init] CLV Tracker failed: {e}")
 
@@ -294,37 +325,13 @@ app = FastAPI(title=APP_NAME, redirect_slashes=False, lifespan=backend_lifespan)
 
 origins = [
     "https://perplex-edge.vercel.app",
-    "https://perplex-edge-1umcu8vby-bigpre12s-projects.vercel.app",
-    "https://web-production-514e7.up.railway.app",
     "http://localhost:3000",
 ]
 
-# Dynamic CORS middleware to handle Vercel preview URLs
-@app.middleware("http")
-async def dynamic_cors_middleware(request: Request, call_next):
-    origin = request.headers.get("origin")
-    response = await call_next(request)
-    
-    if origin:
-        # Allow localhost and any vercel.app subdomain
-        is_allowed = (
-            origin == "http://localhost:3000" or 
-            origin == "http://127.0.0.1:3000" or
-            origin.endswith(".vercel.app") or
-            origin.endswith(".up.railway.app")
-        )
-        if is_allowed:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Request-ID"
-    
-    return response
-
-# Also keep the standard middleware as a fallback/primary
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"] if settings.DEVELOPMENT_MODE else origins,
+    allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.up\.railway\.app|http://localhost:3000" if not settings.DEVELOPMENT_MODE else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

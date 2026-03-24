@@ -43,7 +43,7 @@ async def upsert_props_live(records: List[PropRecord]):
                 :is_best_under, :is_soft_book, :is_sharp_book, :confidence, :last_updated_at,
                 :home_team, :away_team
             )
-            ON CONFLICT ON CONSTRAINT uix_props_live_unique
+            ON CONFLICT (sport, game_id, player_name, market_key, book)
             DO UPDATE SET
                 league = EXCLUDED.league,
                 line = EXCLUDED.line,

@@ -21,6 +21,7 @@ import { X, TrendingUp, Brain } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { usePropsBoard } from "@/hooks/usePropsBoard";
 import { api, unwrap } from "@/lib/api";
+import { safeDate, formatTime } from "@/lib/dateUtils";
 
 export default function PlayerPropsPage() {
     return (
@@ -43,7 +44,7 @@ function PlayerPropsContent() {
     // Use canonical propsBoard endpoint which returns properly formatted data
     const { data: boardData, isLoading: loading, error, refetch: refresh } = usePropsBoard(sport, minEv > 0 ? minEv : undefined);
 
-    const lastUpdated = boardData?.updated ? new Date(boardData.updated) : null;
+    const lastUpdated = safeDate(boardData?.updated);
     const isStale = lastUpdated ? (Date.now() - lastUpdated.getTime()) > 180000 : false;
     const isFallback = boardData?.fallback === "team_markets";
 
@@ -310,7 +311,7 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
 
             <div className="mt-6 pt-4 border-t border-lucrix-border flex items-center justify-between">
                 <div className="text-[9px] font-black text-textMuted uppercase tracking-widest">
-                    Tick: {gameTime ? new Date(gameTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    Tick: {formatTime(gameTime)}
                 </div>
                 <div className="flex items-center gap-2">
                     <button

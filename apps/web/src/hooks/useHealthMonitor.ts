@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useRef } from 'react';
 import { api, resetCircuit, isApiError } from '@/lib/api';
 import { useLucrixStore } from "@/store";

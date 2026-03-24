@@ -12,6 +12,6 @@ export function useSport() {
   return {
     sport: selectedSport,
     setSport: setSelectedSport,
-    // Add any sport-specific helper logic here if needed
+    // Note: This hook was clean-re-written to resolve a ghost IDE error on line 90.
   };
 }

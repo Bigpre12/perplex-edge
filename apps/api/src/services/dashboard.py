@@ -1,16 +1,17 @@
 import logging
+from typing import Dict, Any
 from sqlalchemy import select, func
 from db.session import AsyncSessionLocal
 from models.brain import UnifiedEVSignal
 
 logger = logging.getLogger(__name__)
 
-async def get_dashboard_metrics(db=None) -> dict:
+async def get_dashboard_metrics(db=None) -> Dict[str, Any]:
     """
     Returns core system metrics. Accepts optional db session from routers.
     """
     try:
-        async def _fetch(session):
+        async def _fetch(session) -> Dict[str, Any]:
             ev_count = await session.scalar(
                 select(func.count()).select_from(UnifiedEVSignal)
             )
@@ -18,8 +19,8 @@ async def get_dashboard_metrics(db=None) -> dict:
                 select(func.avg(UnifiedEVSignal.edge_percent))
             )
             return {
-                "total_ev_signals": ev_count or 0,
-                "average_ev": round(float(avg_ev), 4) if avg_ev else 0.0,
+                "total_ev_signals": int(ev_count) if ev_count is not None else 0,
+                "average_ev": round(float(avg_ev), 4) if avg_ev is not None else 0.0,
             }
 
         if db:

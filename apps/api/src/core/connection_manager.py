@@ -47,7 +47,8 @@ class ConnectionManager:
 
     async def start_redis_listener(self):
         """Listen to Redis pub/sub and broadcast to local connections."""
-        if self._broadcast_task and not self._broadcast_task.done():
+        task = self._broadcast_task
+        if task and not task.done():
             return
 
         pubsub = self.redis_client.pubsub()

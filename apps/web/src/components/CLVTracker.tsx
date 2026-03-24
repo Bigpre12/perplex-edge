@@ -1,3 +1,4 @@
+"use client";
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -32,7 +33,7 @@ export function CLVTracker({ sport }: { sport: SportKey }) {
         <div className="bg-[#12121e] border border-[#2a2a3a] rounded-xl overflow-hidden shadow-xl">
             <div className="bg-[#1a1c2e] p-4 border-b border-[#2a2a3a] flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <span className="text-xl">📊</span>
+                    <span className="text-xl">ðŸ“Š</span>
                     <h3 className="font-bold text-[#f0f0ff] uppercase tracking-tighter text-sm">Closing Line Value (CLV)</h3>
                 </div>
                 <div className="flex flex-col items-end">

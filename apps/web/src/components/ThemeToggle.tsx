@@ -1,3 +1,4 @@
+"use client";
 'use client';
 import { useEffect, useState } from 'react';
 
@@ -22,7 +23,7 @@ export default function ThemeToggle() {
     <button onClick={toggle} title='Toggle theme'
       style={{ background: 'transparent', border: '1px solid #333', borderRadius: 8,
                padding: '6px 12px', cursor: 'pointer', fontSize: 18 }}>
-      {dark ? '☀️' : '🌙'}
+      {dark ? 'â˜€ï¸' : 'ðŸŒ™'}
     </button>
   );
 }

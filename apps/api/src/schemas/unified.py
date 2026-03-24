@@ -59,15 +59,16 @@ class WhaleEventSchema(BaseModel):
     id: int
     sport: str
     event_id: str
-    market_key: str
     player_name: Optional[str] = None
-    bookmaker: str
-    price: float
+    market: str = Field(alias="market_key")
+    book: str = Field(alias="bookmaker")
+    odds: float = Field(alias="price")
     line: Optional[float] = None
-    move_type: str
-    created_at: datetime
+    units: float = Field(default=10.0, alias="whale_rating") 
+    move_type: Optional[str] = "WHALE"
+    timestamp: datetime = Field(alias="created_at")
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
 
 class ClvTradeSchema(BaseModel):
     id: int
