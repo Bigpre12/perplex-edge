@@ -256,32 +256,89 @@ async def trigger_ingest(sport: str = "basketball_nba"):
             "traceback": traceback.format_exc()
         }
 
-@router.get("/test-db-null")
-async def test_db_null(db: AsyncSession = Depends(get_db)):
-    """Test manual insertion of NULL into props_live to verify schema."""
+@router.get("/fix-indexes")
+async def fix_indexes(db: AsyncSession = Depends(get_db)):
+    """Force cleanup of conflicting indexes and apply correct unique constraints."""
+    results = {}
     try:
-        from models.brain import PropLive
-        # Try to insert a record with null odds_over
-        new_row = PropLive(
-            sport="test_sport",
-            league="TEST",
-            game_id="test_game",
-            game_start_time=datetime.now(timezone.utc),
-            market_key="h2h",
-            book="test_book",
-            odds_over=None, # This is the critical test
-            last_updated_at=datetime.now(timezone.utc)
-        )
-        db.add(new_row)
+        # 1. Normalization
+        await db.execute(text("UPDATE props_live SET player_name = 'Matchup' WHERE player_name IS NULL"))
+        await db.execute(text("UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL"))
         await db.commit()
-        
-        # The id will be generated automatically
-        test_id = new_row.id
-        
-        # Clean up
-        await db.execute(text(f"DELETE FROM props_live WHERE id = {test_id}"))
-        await db.commit()
-        
-        return {"status": "success", "message": f"NULL insertion (id={test_id}) and deletion worked!"}
+        results["normalization"] = "Success"
+
+        # 2. Drop conflicting indexes and constraints
+        to_drop = [
+            "DROP INDEX IF EXISTS props_live_sport_game_id_player_id_market_key_book_key",
+            "DROP INDEX IF EXISTS props_live_sport_game_idx",
+            "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique",
+            "ALTER TABLE props_live DROP CONSTRAINT IF EXISTS props_live_sport_game_id_player_id_market_key_book_key",
+            "ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique",
+            "ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique"
+        ]
+        for sql in to_drop:
+            try:
+                await db.execute(text(sql))
+                await db.commit()
+            except Exception as e:
+                logger.warning(f"Drop failed: {sql} - {e}")
+        results["cleanup"] = "Success"
+
+        # 3. Robust Duplicate Deletion
+        cleanup_sql = [
+            """
+            DELETE FROM props_live a USING props_live b
+            WHERE a.id < b.id 
+            AND a.sport IS NOT DISTINCT FROM b.sport 
+            AND a.game_id IS NOT DISTINCT FROM b.game_id 
+            AND a.player_name IS NOT DISTINCT FROM b.player_name 
+            AND a.market_key IS NOT DISTINCT FROM b.market_key 
+            AND a.book IS NOT DISTINCT FROM b.book
+            """,
+            """
+            DELETE FROM unified_odds a USING unified_odds b
+            WHERE a.id < b.id 
+            AND a.sport IS NOT DISTINCT FROM b.sport 
+            AND a.event_id IS NOT DISTINCT FROM b.event_id 
+            AND a.market_key IS NOT DISTINCT FROM b.market_key 
+            AND a.outcome_key IS NOT DISTINCT FROM b.outcome_key 
+            AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
+            """
+        ]
+        for sql in cleanup_sql:
+            await db.execute(text(sql))
+            await db.commit()
+        results["duplicates"] = "Success"
+
+        # 4. Apply Correct Constraints
+        to_add = [
+            """
+            ALTER TABLE props_live 
+            ADD CONSTRAINT uix_props_live_unique 
+            UNIQUE (sport, game_id, player_name, market_key, book) 
+            NULLS NOT DISTINCT
+            """,
+            """
+            ALTER TABLE unified_odds 
+            ADD CONSTRAINT uix_unified_odds_unique 
+            UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
+            NULLS NOT DISTINCT
+            """,
+            """
+            ALTER TABLE ev_signals 
+            ADD CONSTRAINT uix_ev_signals_unique 
+            UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+            NULLS NOT DISTINCT
+            """
+        ]
+        for sql in to_add:
+            try:
+                await db.execute(text(sql))
+                await db.commit()
+                results[sql.split()[2]] = "Success"
+            except Exception as e:
+                results[sql.split()[2]] = f"Failed: {str(e)}"
+
+        return {"status": "completed", "results": results}
     except Exception as e:
-        return {"status": "failed", "error": str(e)}
+        return {"status": "error", "message": str(e)}
