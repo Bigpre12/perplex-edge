@@ -55,7 +55,7 @@ export function PropCard({ prop }: { prop: PropData }) {
                             {prop.player_name || prop.team || "Full Match"}
                         </h3>
                         <p className="text-textMuted text-[10px] font-bold mt-0.5 uppercase tracking-widest">
-                            {prop.player_name ? `${prop.team} · ` : ""}{prop.stat_type.replace(/_/g, ' ')}
+                            {prop.player_name ? `${prop.team} · ` : ""}{(prop.stat_type || "prop").replace(/_/g, ' ')}
                         </p>
                     </div>
                 </div>

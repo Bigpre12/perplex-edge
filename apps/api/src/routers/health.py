@@ -281,10 +281,53 @@ async def fix_indexes(db: AsyncSession = Depends(get_db)):
     await run_step("norm_odds", "UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL OR player_name = ''")
     await run_step("norm_ev", "UPDATE ev_signals SET player_name = 'Matchup' WHERE player_name IS NULL OR player_name = ''")
 
-    # 2. Drop conflicting indexes and constraints (One by one)
-    # ... (no changes here)
+    # 2. Drop competing indexes and constraints (The Nuke Option)
+    await run_step("nuke_conflicts", """
+        DO $$ 
+        DECLARE 
+            r RECORD;
+            tables TEXT[] := ARRAY['props_live', 'unified_odds', 'ev_signals'];
+            t TEXT;
+        BEGIN
+            FOREACH t IN ARRAY tables LOOP
+                -- Drop all indexes except PKEY
+                FOR r IN (
+                    SELECT indexname FROM pg_indexes 
+                    WHERE tablename = t AND indexname NOT LIKE '%_pkey' AND indexname NOT LIKE 'uix_%'
+                ) LOOP
+                    EXECUTE 'DROP INDEX IF EXISTS ' || r.indexname || ' CASCADE';
+                END LOOP;
+                
+                -- Drop all unique constraints
+                FOR r IN (
+                    SELECT conname FROM pg_constraint 
+                    WHERE conrelid = t::regclass AND contype = 'u' AND conname NOT LIKE 'uix_%'
+                ) LOOP
+                    EXECUTE 'ALTER TABLE ' || t || ' DROP CONSTRAINT IF EXISTS ' || r.conname || ' CASCADE';
+                END LOOP;
+            END LOOP;
+        END $$;
+    """)
 
-    # 3. Robust Duplicate Deletion (no changes here)
+    # 3. Robust Duplicate Deletion
+    await run_step("del_dup_props", """
+        DELETE FROM props_live a USING props_live b
+        WHERE a.id < b.id 
+        AND a.sport IS NOT DISTINCT FROM b.sport 
+        AND a.game_id IS NOT DISTINCT FROM b.game_id 
+        AND a.player_name IS NOT DISTINCT FROM b.player_name 
+        AND a.market_key IS NOT DISTINCT FROM b.market_key 
+        AND a.book IS NOT DISTINCT FROM b.book
+    """)
+    await run_step("del_dup_odds", """
+        DELETE FROM unified_odds a USING unified_odds b
+        WHERE a.id < b.id 
+        AND a.sport IS NOT DISTINCT FROM b.sport 
+        AND a.event_id IS NOT DISTINCT FROM b.event_id 
+        AND a.market_key IS NOT DISTINCT FROM b.market_key 
+        AND a.outcome_key IS NOT DISTINCT FROM b.outcome_key 
+        AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
+    """)
 
     # 4. Apply Correct Constraints (Correct NULLS NOT DISTINCT position for PG15+)
     await run_step("add_const_props", """
