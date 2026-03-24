@@ -329,21 +329,24 @@ async def fix_indexes(db: AsyncSession = Depends(get_db)):
         AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
     """)
 
-    # 4. Apply Correct Constraints (Correct NULLS NOT DISTINCT position for PG15+)
+    # 4. Apply Correct Constraints (Standard UNIQUE for PG14 compatibility)
     await run_step("add_const_props", """
         ALTER TABLE props_live 
         ADD CONSTRAINT uix_props_live_unique 
-        UNIQUE NULLS NOT DISTINCT (sport, game_id, player_name, market_key, book)
+        UNIQUE (sport, game_id, player_name, market_key, book)
     """)
     await run_step("add_const_odds", """
         ALTER TABLE unified_odds 
         ADD CONSTRAINT uix_unified_odds_unique 
-        UNIQUE NULLS NOT DISTINCT (sport, event_id, market_key, outcome_key, bookmaker)
+        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
     """)
     await run_step("add_const_ev", """
         ALTER TABLE ev_signals 
         ADD CONSTRAINT uix_ev_signals_unique 
-        UNIQUE NULLS NOT DISTINCT (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+        UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
     """)
+    
+    # 5. Drop the trigger that might be causing conflicts
+    await run_step("drop_trigger", "DROP TRIGGER IF EXISTS ensure_matchup_stats_trigger ON props_live")
 
     return {"status": "completed", "results": results}

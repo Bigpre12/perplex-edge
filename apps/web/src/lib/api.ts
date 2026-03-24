@@ -177,10 +177,10 @@ export const api = {
     activeMoves: (sport = "basketball_nba", min_units = 0) => request("/api/whale", undefined, { sport, min_units }),
     steamAlerts: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
     alerts: (sport = "basketball_nba") => request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
-    wsBaseUrl: API_BASE.replace(/^http/, 'ws'),
-    wsOdds: `${API_BASE.replace(/^http/, 'ws')}/api/ws/ev`,
-    wsEv: `${API_BASE.replace(/^http/, 'ws')}/api/ws/ev`, // Alias for wsOdds
-    wsKalshi: `${API_BASE.replace(/^http/, 'ws')}/api/ws/kalshi`,
+    wsBaseUrl: (API_BASE || "").replace(/^http/, 'ws'),
+    wsOdds: `${(API_BASE || "").replace(/^http/, 'ws')}/api/ws/ev`,
+    wsEv: `${(API_BASE || "").replace(/^http/, 'ws')}/api/ws/ev`, // Alias for wsOdds
+    wsKalshi: `${(API_BASE || "").replace(/^http/, 'ws')}/api/ws/kalshi`,
     pollMs: 30000,
     edges: (sport = "basketball_nba") => request("/api/ev/ev-top", undefined, { sport }),
     simulate: (legs: any[], stake = 100, simulations = 10000) => 
