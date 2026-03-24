@@ -119,14 +119,16 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             ev_res = await db.execute(text("SELECT sport, player_name, market_key, edge_percent, updated_at FROM ev_signals ORDER BY updated_at DESC LIMIT 10"))
             sample_ev = [{**dict(r._mapping), "updated_at": str(r.updated_at)} for r in ev_res.fetchall()]
             
-        # 5d. MMA Deep Check
-        mma_checks = {}
+        # 5d. Sport Specific Checks
+        sport_counts = {}
         if "props_live" in all_tables:
-            res = await db.execute(text("SELECT COUNT(*) FROM props_live WHERE sport = 'mma_mixed_martial_arts'"))
-            mma_checks["props_live_count"] = res.scalar()
-        if "unified_odds" in all_tables:
-            res = await db.execute(text("SELECT COUNT(*) FROM unified_odds WHERE sport = 'mma_mixed_martial_arts'"))
-            mma_checks["unified_odds_count"] = res.scalar()
+            res = await db.execute(text("SELECT sport, COUNT(*) FROM props_live GROUP BY sport"))
+            sport_counts = {r[0]: r[1] for r in res.fetchall()}
+            
+        ev_by_sport = {}
+        if "ev_signals" in all_tables:
+            res = await db.execute(text("SELECT sport, COUNT(*) FROM ev_signals GROUP BY sport"))
+            ev_by_sport = {r[0]: r[1] for r in res.fetchall()}
         
         # 5e. Clear Ghost Errors (Helper)
         if "t" in router.dependencies: # Not really how it works but I'll check a flag
@@ -179,7 +181,8 @@ async def diagnostics(db: AsyncSession = Depends(get_db)):
             "pg_version": pg_version,
             "sample_odds": sample_odds,
             "sample_ev": sample_ev,
-            "mma_checks": mma_checks,
+            "sport_counts": sport_counts,
+            "ev_by_sport": ev_by_sport,
             "duplicates": duplicates,
             "code_snippet": content_snippet,
             "heartbeats": [
