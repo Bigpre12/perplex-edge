@@ -157,56 +157,71 @@ async def initialize_backend_services():
             # DATA CLEANUP: Handle NULLs and Duplicates
             logger.info("📡 [Background Init] Cleaning up NULLs and duplicate rows for constraints...")
             
-            # Step 1: Normalize NULL player_names to empty strings for consistent indexing
-            await run_migration_step("UPDATE props_live SET player_name = '' WHERE player_name IS NULL")
+            # Step 1: Normalize NULL player_names to 'Matchup' for consistent indexing
+            await run_migration_step("UPDATE props_live SET player_name = 'Matchup' WHERE player_name IS NULL")
             await run_migration_step("UPDATE unified_odds SET player_name = 'Matchup' WHERE player_name IS NULL")
-            await run_migration_step("UPDATE ev_signals SET player_name = '' WHERE player_name IS NULL")
-            await run_migration_step("UPDATE unified_odds SET player_name = '' WHERE player_name IS NULL")
+            await run_migration_step("UPDATE ev_signals SET player_name = 'Matchup' WHERE player_name IS NULL")
 
-            # ev_signals cleanup
-            await run_migration_step("""
-                DELETE FROM ev_signals a USING ev_signals b
-                WHERE a.id < b.id 
-                AND a.sport = b.sport AND a.event_id = b.event_id 
-                AND a.market_key = b.market_key AND a.outcome_key = b.outcome_key 
-                AND a.bookmaker = b.bookmaker AND a.engine_version = b.engine_version
-            """)
-
-            # props_live cleanup
+            # props_live cleanup: USE IS NOT DISTINCT FROM to catch NULL duplicates
             await run_migration_step("""
                 DELETE FROM props_live a USING props_live b
                 WHERE a.id < b.id 
-                AND a.sport = b.sport AND a.game_id = b.game_id 
-                AND a.player_name = b.player_name 
-                AND a.market_key = b.market_key AND a.book = b.book
+                AND a.sport IS NOT DISTINCT FROM b.sport 
+                AND a.game_id IS NOT DISTINCT FROM b.game_id 
+                AND a.player_name IS NOT DISTINCT FROM b.player_name 
+                AND a.market_key IS NOT DISTINCT FROM b.market_key 
+                AND a.book IS NOT DISTINCT FROM b.book
             """)
 
             # unified_odds cleanup
             await run_migration_step("""
                 DELETE FROM unified_odds a USING unified_odds b
                 WHERE a.id < b.id 
-                AND a.sport = b.sport AND a.event_id = b.event_id 
-                AND a.market_key = b.market_key AND a.outcome_key = b.outcome_key 
-                AND a.bookmaker = b.bookmaker
+                AND a.sport IS NOT DISTINCT FROM b.sport 
+                AND a.event_id IS NOT DISTINCT FROM b.event_id 
+                AND a.market_key IS NOT DISTINCT FROM b.market_key 
+                AND a.outcome_key IS NOT DISTINCT FROM b.outcome_key 
+                AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
             """)
 
-            # Step 2: Add unique constraints with fallback logic for older PG versions
+            # ev_signals cleanup
+            await run_migration_step("""
+                DELETE FROM ev_signals a USING ev_signals b
+                WHERE a.id < b.id 
+                AND a.sport IS NOT DISTINCT FROM b.sport 
+                AND a.event_id IS NOT DISTINCT FROM b.event_id 
+                AND a.market_key IS NOT DISTINCT FROM b.market_key 
+                AND a.outcome_key IS NOT DISTINCT FROM b.outcome_key 
+                AND a.bookmaker IS NOT DISTINCT FROM b.bookmaker
+                AND a.engine_version IS NOT DISTINCT FROM b.engine_version
+            """)
+
+            # Step 2: Add unique constraints with NULLS NOT DISTINCT (PG 15+)
             # Props Live
             await run_migration_step("ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique")
-            # We wrap individual attempts in temporary functions or just use the run_migration_step which logs warnings
-            # but we want to ensure ONE of them succeeds.
-            # We'll try the PG15+ syntax first.
             await run_migration_step("""
                 ALTER TABLE props_live 
                 ADD CONSTRAINT uix_props_live_unique 
                 UNIQUE (sport, game_id, player_name, market_key, book) 
                 NULLS NOT DISTINCT
             """)
-            # If the above failed (logged as warning), this one might succeed if not already exists
+            
+            # Unified Odds
+            await run_migration_step("ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique")
             await run_migration_step("""
-                ALTER TABLE props_live 
-                ADD CONSTRAINT uix_props_live_unique 
-                UNIQUE (sport, game_id, player_name, market_key, book)
+                ALTER TABLE unified_odds 
+                ADD CONSTRAINT uix_unified_odds_unique 
+                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
+                NULLS NOT DISTINCT
+            """)
+
+            # EV Signals
+            await run_migration_step("ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique")
+            await run_migration_step("""
+                ALTER TABLE ev_signals 
+                ADD CONSTRAINT uix_ev_signals_unique 
+                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+                NULLS NOT DISTINCT
             """)
 
             # Unified Odds
