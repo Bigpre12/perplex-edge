@@ -131,10 +131,17 @@ async def initialize_backend_services():
             await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS engine_version VARCHAR DEFAULT 'v1'")
 
             # DROP NOT NULL cleanup
-            for table, col in [("props_live", "player_id"), ("props_live", "player_name"), ("props_live", "team"), 
-                               ("props_live", "market_label"), ("props_live", "line"), ("props_live", "odds_over"), 
-                               ("props_live", "odds_under"), ("props_live", "implied_over"), ("props_live", "implied_under"),
-                               ("unified_odds", "outcome_name")]:
+            not_null_cleanup = [
+                ("props_live", "player_id"), ("props_live", "player_name"), ("props_live", "team"), 
+                ("props_live", "market_label"), ("props_live", "line"), ("props_live", "odds_over"), 
+                ("props_live", "odds_under"), ("props_live", "implied_over"), ("props_live", "implied_under"),
+                ("props_history", "player_id"), ("props_history", "player_name"), ("props_history", "team"),
+                ("props_history", "market_label"), ("props_history", "line"), ("props_history", "odds_over"), 
+                ("props_history", "odds_under"), ("props_history", "implied_over"), ("props_history", "implied_under"),
+                ("unified_odds", "outcome_name")
+            ]
+            
+            for table, col in not_null_cleanup:
                 await run_migration_step(f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL")
 
             # DATA CLEANUP: Handle NULLs and Duplicates
