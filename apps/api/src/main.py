@@ -130,15 +130,25 @@ async def initialize_backend_services():
             await run_migration_step("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS confidence FLOAT")
             await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS engine_version VARCHAR DEFAULT 'v1'")
 
-            # DROP NOT NULL cleanup
+            # DROP NOT NULL cleanup - Vital for handling missing data gracefully during ingestion
             not_null_cleanup = [
+                # props_live
                 ("props_live", "player_id"), ("props_live", "player_name"), ("props_live", "team"), 
                 ("props_live", "market_label"), ("props_live", "line"), ("props_live", "odds_over"), 
                 ("props_live", "odds_under"), ("props_live", "implied_over"), ("props_live", "implied_under"),
+                # props_history 
                 ("props_history", "player_id"), ("props_history", "player_name"), ("props_history", "team"),
                 ("props_history", "market_label"), ("props_history", "line"), ("props_history", "odds_over"), 
                 ("props_history", "odds_under"), ("props_history", "implied_over"), ("props_history", "implied_under"),
-                ("unified_odds", "outcome_name")
+                # unified_odds
+                ("unified_odds", "outcome_key"), ("unified_odds", "player_name"), ("unified_odds", "home_team"), 
+                ("unified_odds", "away_team"), ("unified_odds", "league"), ("unified_odds", "game_time"),
+                # ev_signals
+                ("ev_signals", "player_name"), ("ev_signals", "line"), ("ev_signals", "price"), 
+                ("ev_signals", "outcome_key"),
+                # analytics/logging
+                ("line_ticks", "player_name"), ("line_ticks", "line"),
+                ("ev_signals_history", "player_name"), ("ev_signals_history", "line")
             ]
             
             for table, col in not_null_cleanup:

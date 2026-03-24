@@ -50,4 +50,8 @@ async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
     except Exception as e:
         # If the unique constraint is missing, we might need to handle it differently or just log.
         import logging
-        logging.getLogger(__name__).error(f"UnifiedOdds: Upsert failed: {e}")
+        error_msg = f"UnifiedOdds: Upsert failed for {len(rows)} rows: {e}"
+        logging.getLogger(__name__).error(error_msg)
+        # Log sample row for debugging if possible
+        if rows:
+            logging.getLogger(__name__).debug(f"Sample row causing failure: {rows[0]}")
