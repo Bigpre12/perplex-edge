@@ -293,7 +293,7 @@ async def fix_indexes(db: AsyncSession = Depends(get_db)):
                 -- Drop all indexes except PKEY
                 FOR r IN (
                     SELECT indexname FROM pg_indexes 
-                    WHERE tablename = t AND indexname NOT LIKE '%_pkey' AND indexname NOT LIKE 'uix_%'
+                    WHERE tablename = t AND indexname NOT LIKE '%_pkey'
                 ) LOOP
                     EXECUTE 'DROP INDEX IF EXISTS ' || r.indexname || ' CASCADE';
                 END LOOP;
@@ -301,7 +301,7 @@ async def fix_indexes(db: AsyncSession = Depends(get_db)):
                 -- Drop all unique constraints
                 FOR r IN (
                     SELECT conname FROM pg_constraint 
-                    WHERE conrelid = t::regclass AND contype = 'u' AND conname NOT LIKE 'uix_%'
+                    WHERE conrelid = t::regclass AND contype = 'u'
                 ) LOOP
                     EXECUTE 'ALTER TABLE ' || t || ' DROP CONSTRAINT IF EXISTS ' || r.conname || ' CASCADE';
                 END LOOP;

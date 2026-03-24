@@ -93,7 +93,7 @@ export function GlobalSearch() {
                                     )}
                                     <div className="font-mono text-sm leading-tight text-right">
                                         <div className="text-white font-bold">O {prop.line}</div>
-                                        <div className="text-textMuted text-[10px] uppercase">{prop.prop_type.replace("player_", "")}</div>
+                                        <div className="text-textMuted text-[10px] uppercase">{(prop.prop_type || "").replace("player_", "")}</div>
                                     </div>
                                 </div>
                             </div>
