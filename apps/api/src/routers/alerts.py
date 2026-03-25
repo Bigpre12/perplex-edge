@@ -1,28 +1,44 @@
-from fastapi import APIRouter, Depends, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from typing import Optional
 from db.session import get_db
 from services.alert_writer import run_alert_detection
+from services.ev_writer import run_ev_grader
 
 router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 
+@router.post("/trigger")
 @router.get("/trigger")
 async def trigger_alerts(
-    background_tasks: BackgroundTasks,
-    sport: str = Query(default="basketball_nba")
+    sport: str = Query(default="basketball_nba"),
+    db: AsyncSession = Depends(get_db)
 ):
     """Manually invoke the sharp/steam detection pipeline."""
-    background_tasks.add_task(run_alert_detection, sport)
-    return {"status": "ok", "message": f"Alert detection triggered for {sport}"}
+    alert_count = await run_alert_detection(sport, db)
+    ev_count = await run_ev_grader(sport, db)
+    return {
+        "status": "ok", 
+        "alerts_written": alert_count,
+        "ev_signals_written": ev_count,
+        "sport": sport
+    }
 
 @router.get("")
 async def get_alerts(
     sport: str = Query(default="basketball_nba"),
+    alert_type: Optional[str] = Query(default=None),
     limit: int = Query(default=20),
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        result = await db.execute(text("""
+        where_sql = "sport = :sport"
+        params = {"sport": sport, "limit": limit}
+        if alert_type:
+            where_sql += " AND alert_type = :alert_type"
+            params["alert_type"] = alert_type
+            
+        result = await db.execute(text(f"""
             SELECT 
                 id,
                 player_name,
@@ -35,10 +51,10 @@ async def get_alerts(
                 confidence,
                 created_at
             FROM sharp_alerts
-            WHERE sport = :sport
+            WHERE {where_sql}
             ORDER BY created_at DESC
             LIMIT :limit
-        """), {"sport": sport, "limit": limit})
+        """), params)
         
         rows = result.mappings().all()
         return {

@@ -9,15 +9,15 @@ logger = logging.getLogger(__name__)
 
 SHARP_BOOK_LIST = ['draftkings', 'fanduel', 'betmgm', 'williamhill_us', 'betrivers', 'pointsbetus']
 
-async def run_alert_detection(sport: str, db: Optional[AsyncSession] = None):
+async def run_alert_detection(sport: str, db: Optional[AsyncSession] = None) -> int:
     if not db:
         from db.session import async_session_maker # type: ignore
         async with async_session_maker() as session:
-            await _run_detection(sport, session)
+            return await _run_detection(sport, session)
     else:
-        await _run_detection(sport, db)
+        return await _run_detection(sport, db)
 
-async def _run_detection(sport: str, db: AsyncSession):
+async def _run_detection(sport: str, db: AsyncSession) -> int:
     try:
         logger.info(f"🔍 [ALERT WRITER] Running sharp/steam detection for {sport}")
         
@@ -142,9 +142,11 @@ async def _run_detection(sport: str, db: AsyncSession):
             logger.info(f"✅ [ALERT WRITER] Inserted {inserted} new shape/steam alerts for {sport}!")
 
         await db.commit()
+        return inserted
     except Exception as e:
         logger.error(f"❌ [ALERT WRITER] Failure running detection for {sport}: {str(e)}", exc_info=True)
         await db.rollback()
+        return 0
 
 async def _insert_alert_if_fresh(
     db: AsyncSession, sport: str, player_name: str, market_key: str, 

@@ -19,6 +19,7 @@ from services.persistence_helpers import upsert_props_live, insert_props_history
 from real_sports_api import _real_sports_api_instance # type: ignore
 from real_data_connector import real_data_connector # type: ignore
 from services.alert_writer import run_alert_detection # type: ignore
+from services.ev_writer import run_ev_grader # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -260,6 +261,7 @@ class UnifiedIngestionService:
             ("Injury Impact", lambda: injury_impact_brain.analyze_impacts(sport_key)),
             ("EV Engine", lambda: ev_engine.run_ev_cycle(sport_key)),
             ("Alert Writer", lambda: run_alert_detection(sport_key)),
+            ("EV Writer", lambda: run_ev_grader(sport_key)),
         ]
 
         for name, task_fn in secondary_tasks:

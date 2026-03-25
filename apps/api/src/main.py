@@ -86,6 +86,7 @@ sharp_router         = safe_import("sharp", "router")
 parlays_router       = safe_import("parlays", "router")
 props_history_router = safe_import("props_history", "router")
 alerts_router        = safe_import("alerts", "router")
+audit_router         = safe_import("audit", "router")
 
 async def initialize_backend_services():
     """Background task to initialize heavy services without blocking /health."""
@@ -463,6 +464,7 @@ if sharp_router:         app.include_router(sharp_router, prefix="/api/sharp", t
 if parlays_router:       app.include_router(parlays_router, prefix="/api/parlays", tags=["parlays"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
 if alerts_router:        app.include_router(alerts_router)
+if audit_router:         app.include_router(audit_router)
 
 @app.get("/health")
 async def health():
