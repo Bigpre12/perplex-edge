@@ -64,6 +64,7 @@ async def get_ev_signals(
             AND implied_under IS NOT NULL
             AND implied_under > 0
             AND implied_under < 1
+            AND (implied_over + implied_under) <= 1.08
         """
         params: dict = {"limit": limit}
         if sport:
@@ -75,20 +76,22 @@ async def get_ev_signals(
         result = await db.execute(text(query), params)
         rows = result.mappings().all()
 
-        # Compute EV in Python, not SQL
+        # Compute EV in Python — normalize to no-vig fair probs first
         edges = []
         for r in rows:
             row = dict(r)
             try:
-                fair_over = row['implied_over'] / (row['implied_over'] + row['implied_under'])
-                fair_under = 1 - fair_over
+                total_implied = row['implied_over'] + row['implied_under']
+                fair_over = row['implied_over'] / total_implied
+                fair_under = row['implied_under'] / total_implied
                 dec_over = 1 / row['implied_over'] if row['implied_over'] > 0 else 0
                 dec_under = 1 / row['implied_under'] if row['implied_under'] > 0 else 0
                 ev_over = round((fair_over * dec_over - 1) * 100, 2)
                 ev_under = round((fair_under * dec_under - 1) * 100, 2)
                 best_ev = max(ev_over, ev_under)
                 recommendation = 'OVER' if ev_over >= ev_under else 'UNDER'
-                if best_ev > 0:
+                # Only keep edges in the 2–20% range (noise filter)
+                if 2.0 <= best_ev <= 20.0:
                     row['ev_pct'] = best_ev
                     row['recommendation'] = recommendation
                     edges.append(row)

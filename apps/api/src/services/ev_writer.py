@@ -36,6 +36,9 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
                    AND implied_under IS NOT NULL
                    AND odds_over IS NOT NULL
                    AND odds_under IS NOT NULL
+                   AND implied_over > 0
+                   AND implied_under > 0
+                   AND (implied_over + implied_under) <= 1.08
             ),
             fair_probs AS (
                  SELECT 
@@ -62,7 +65,8 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
                  FROM fair_probs
             )
             SELECT * FROM calculated_ev 
-            WHERE ev_over > 0.02 OR ev_under > 0.02
+            WHERE (ev_over > 0.02 OR ev_under > 0.02)
+              AND ev_over < 0.20 AND ev_under < 0.20
         """)
         
         result = await db.execute(sql, {"sport": sport})
