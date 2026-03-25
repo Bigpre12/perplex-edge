@@ -152,7 +152,7 @@ export const API = {
             const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
             return data;
         } catch (err) {
-            return handleApiError(err);
+            return { alerts: [], total: 0, status: 'unavailable', sport: sport || 'all' };
         }
     },
     authMe: async () => {

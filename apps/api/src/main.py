@@ -85,6 +85,7 @@ intel_router         = safe_import("intel", "router")
 sharp_router         = safe_import("sharp", "router")
 parlays_router       = safe_import("parlays", "router")
 props_history_router = safe_import("props_history", "router")
+alerts_router        = safe_import("alerts", "router")
 
 async def initialize_backend_services():
     """Background task to initialize heavy services without blocking /health."""
@@ -461,6 +462,7 @@ if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalsh
 if sharp_router:         app.include_router(sharp_router, prefix="/api/sharp", tags=["sharp"])
 if parlays_router:       app.include_router(parlays_router, prefix="/api/parlays", tags=["parlays"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
+if alerts_router:        app.include_router(alerts_router)
 
 @app.get("/health")
 async def health():
