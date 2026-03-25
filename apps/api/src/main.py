@@ -366,6 +366,19 @@ async def initialize_backend_services():
 @asynccontextmanager
 async def backend_lifespan(app: FastAPI):
     """Modern FastAPI lifespan handler: non-blocking startup."""
+    
+    commit_sha = os.getenv("RAILWAY_GIT_COMMIT_SHA", "unknown")
+    env_name = os.getenv("RAILWAY_ENVIRONMENT_NAME", "local")
+    db_host = os.getenv("DATABASE_URL", "").split("@")[-1].split("/")[0] if "@" in os.getenv("DATABASE_URL", "") else "unknown"
+    
+    logger.info("=" * 60)
+    logger.info("🚀 [SYSTEM BOOT] Perplex Edge API Process Init")
+    logger.info(f"   ► Commit SHA   : {commit_sha}")
+    logger.info(f"   ► Environment  : {env_name}")
+    logger.info(f"   ► DB Host      : {db_host}")
+    logger.info(f"   ► Service Role : API + Ingest Worker + Heartbeat")
+    logger.info("=" * 60)
+
     # Run heavy tasks in the background so they don't block /health
     init_task = asyncio.create_task(initialize_backend_services())
     yield

@@ -53,10 +53,14 @@ async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
 
     try:
         if player_rows:
+            import logging
+            logging.getLogger(__name__).warning(f"⚠️ [TEMP DIAGNOSTIC] upsert_unified_odds -> {len(player_rows)} PLAYER rows. Using ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker) WHERE player_name IS NOT NULL.")
             q_player = base_insert + " ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker) WHERE player_name IS NOT NULL " + update_clause
             await db.executemany(q_player, player_rows)
             
         if team_rows:
+            import logging
+            logging.getLogger(__name__).warning(f"⚠️ [TEMP DIAGNOSTIC] upsert_unified_odds -> {len(team_rows)} TEAM rows. Using ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker) WHERE player_name IS NULL.")
             q_team = base_insert + " ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker) WHERE player_name IS NULL " + update_clause
             await db.executemany(q_team, team_rows)
     except Exception as e:
