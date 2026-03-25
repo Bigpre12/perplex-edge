@@ -10,7 +10,6 @@ router = APIRouter(prefix="/api/audit", tags=["audit"])
 async def get_audit(
     sport: Optional[str] = Query(default=None),
     book: Optional[str] = Query(default=None),
-    grade: Optional[str] = Query(default=None),
     date_from: Optional[str] = Query(default=None),
     date_to: Optional[str] = Query(default=None),
     page: int = Query(default=1),
@@ -29,9 +28,6 @@ async def get_audit(
         if book:
             conditions.append("book = :book")
             params["book"] = book
-        if grade:
-            conditions.append("grade = :grade")
-            params["grade"] = grade
         if date_from:
             conditions.append("last_updated_at >= :date_from")
             params["date_from"] = date_from
@@ -51,8 +47,8 @@ async def get_audit(
             SELECT 
                 player_name, market_key, sport, book,
                 line, odds_over, odds_under,
-                confidence, grade,
-                commence_time, last_updated_at,
+                confidence,
+                last_updated_at,
                 home_team, away_team
             FROM props_live
             WHERE {where_clause}
@@ -71,6 +67,10 @@ async def get_audit(
             "status": "ok" if rows else "no_data"
         }
     except Exception as e:
+        try:
+            await db.rollback()
+        except Exception:
+            pass
         return {
             "rows": [],
             "total": 0,
@@ -79,3 +79,4 @@ async def get_audit(
             "status": "error",
             "detail": str(e)
         }
+
