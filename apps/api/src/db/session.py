@@ -16,6 +16,11 @@ elif DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://") and "asyncpg" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+# Fix for asyncpg: strip 'sslmode' from URL as it's not supported as a query param by asyncpg
+if "sslmode=" in DATABASE_URL:
+    import re
+    DATABASE_URL = re.sub(r"[?&]sslmode=[^&]*", "", DATABASE_URL)
+
 # Redacted logging for debugging
 db_url = os.environ.get("DATABASE_URL", "NOT SET")
 if db_url != "NOT SET":

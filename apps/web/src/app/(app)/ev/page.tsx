@@ -1,285 +1,134 @@
-"use client";
+'use client';
 
-import React, { useState, Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import { useSport } from "@/hooks/useSport";
-import { useEVBoard } from "@/hooks/useEVBoard";
-import { CanonicalProp } from "@/hooks/usePropsBoard";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import SportSelector from "@/components/shared/SportSelector";
-import PropsEmptyState from "@/components/PropsEmptyState";
-import { Zap, Clock, ShieldAlert, TrendingUp, Info } from "lucide-react";
-import { clsx } from "clsx";
+import React, { useState } from 'react';
+import { useEV, EVRecord } from '@/hooks/useEV';
+import { DataTable } from '@/components/shared/DataTable';
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorRetry } from '@/components/shared/ErrorRetry';
+import { SportFilter } from '@/components/shared/SportFilter';
+import { TrendingUp, Percent, Info } from 'lucide-react';
 
 export default function EVPage() {
-  return (
-    <Suspense fallback={<div className="p-6 text-white text-center py-24 animate-pulse uppercase tracking-widest font-black italic">BOOTING EV ENGINE...</div>}>
-      <EVPageContent />
-    </Suspense>
-  );
-}
+  const [sport, setSport] = useState('all');
+  const { data: evSignals, isLoading, isError, refetch } = useEV(sport);
 
-function EVPageContent() {
-  const { sport } = useSport();
-  const searchParams = useSearchParams();
-  
-  // Custom states for filters
-  const [minEv, setMinEv] = useState<number>(0.5);
-  const [timeWindow, setTimeWindow] = useState<string>("All"); // All, Next 2h, Tonight
-  const [signalToggle, setSignalToggle] = useState<string>("All"); // All, Steam only, Whale only, Model only
+  const getEVColor = (val: number) => {
+    if (val >= 5) return 'text-green-400';
+    if (val >= 2) return 'text-yellow-400';
+    return 'text-red-400';
+  };
 
-  const { data, isLoading, error, refetch } = useEVBoard(sport, minEv);
-
-  const evList = data?.props || [];
-
-  // Filter and Sort logic
-  const filteredEVs = useMemo(() => {
-    let result = [...evList];
-
-    // Source data EV slider filter
-    if (minEv > 0) {
-      result = result.filter(p => p.ev_percentage >= minEv);
-    }
-
-    // Time window filter
-    if (timeWindow === "Next 2h") {
-      const now = new Date();
-      const limit = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-      result = result.filter(p => p.start_time && new Date(p.start_time) <= limit && new Date(p.start_time) >= now);
-    } else if (timeWindow === "Tonight") {
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      result = result.filter(p => p.start_time && new Date(p.start_time) <= today);
-    }
-
-    // Signal toggles
-    if (signalToggle === "Steam only") {
-      result = result.filter(p => p.steam_signal);
-    } else if (signalToggle === "Whale only") {
-      result = result.filter(p => p.whale_signal);
-    } else if (signalToggle === "Model only") {
-      result = result.filter(p => !p.steam_signal && !p.whale_signal && p.ev_percentage > 0);
-    }
-
-    // Default sort: EV% desc, then Start Time asc
-    result.sort((a, b) => {
-      const evDiff = b.ev_percentage - a.ev_percentage;
-      if (Math.abs(evDiff) > 0.1) return evDiff;
-      if (a.start_time && b.start_time) {
-        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-      }
-      return 0;
-    });
-
-    return result;
-  }, [evList, minEv, timeWindow, signalToggle]);
-
-  const maxEV = filteredEVs.length > 0 ? Math.max(...filteredEVs.map(p => p.ev_percentage)) : 0;
-  
-  // Calculate median
-  const medianEV = useMemo(() => {
-    if (filteredEVs.length === 0) return 0;
-    const sorted = [...filteredEVs].sort((a, b) => a.ev_percentage - b.ev_percentage);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0 ? sorted[mid].ev_percentage : (sorted[mid - 1].ev_percentage + sorted[mid].ev_percentage) / 2;
-  }, [filteredEVs]);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6 pt-6 px-4">
-        <div className="flex justify-between items-center mb-8">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-32" />
+  const columns = [
+    { 
+      header: 'Player / Market', 
+      accessor: (p: EVRecord) => (
+        <div className="flex flex-col">
+          <span className="font-bold text-white">{p.player_name || 'Matchup'}</span>
+          <span className="text-xs text-white/40 uppercase font-mono">{p.market_key}</span>
         </div>
-        <div className="space-y-4">
-          {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="p-6"><ErrorBanner message={error.message} onRetry={refetch} /></div>;
-  }
+      ) 
+    },
+    { header: 'Line', accessor: (p: EVRecord) => <span className="font-mono">{p.line}</span> },
+    { 
+      header: 'EV Score', 
+      accessor: (p: EVRecord) => (
+        <span className={`font-black ${getEVColor(p.ev_percentage)}`}>
+          {p.ev_percentage.toFixed(2)}%
+        </span>
+      )
+    },
+    { 
+      header: 'Edge', 
+      accessor: (p: EVRecord) => (
+        <span className="text-white/60 font-mono">
+          {(p.edge_percent * 100).toFixed(1)}%
+        </span>
+      )
+    },
+    { header: 'Bookmaker', accessor: 'bookmaker', className: 'uppercase text-xs font-medium' },
+    { 
+      header: 'Recommendation', 
+      accessor: (p: EVRecord) => (
+        <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md text-xs font-bold uppercase tracking-widest">
+          {p.recommendation || 'Watch'}
+        </span>
+      )
+    },
+  ];
 
   return (
-    <div className="pb-24 pt-6 px-4 max-w-5xl mx-auto space-y-8">
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-brand-success/10 p-2 rounded-lg border border-brand-success/20">
-              <Zap size={24} className="text-brand-success shadow-glow shadow-brand-success" />
+    <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-900/20 via-black to-black border border-white/10 p-8 md:p-12">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="max-w-2xl space-y-4">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest leading-none">
+                <TrendingUp className="w-3 h-3" />
+                <span>Positive Expectation Engine</span>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">
+                EV+ <span className="text-blue-500">SIGNALS</span>
+              </h1>
+              <p className="text-white/50 text-lg leading-relaxed">
+                Our quant engine identifies mathematical edges where sportsbook odds misprice real-world probabilities.
+              </p>
             </div>
-            <h1 className="text-3xl font-black italic tracking-tighter uppercase font-display text-white">EV Cheat Sheet</h1>
+            
+            <div className="flex gap-4">
+               <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                 <div className="text-white/30 text-xs font-bold uppercase mb-1">Total Edges</div>
+                 <div className="text-3xl font-black">{evSignals?.length || 0}</div>
+               </div>
+               <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                 <div className="text-white/30 text-xs font-bold uppercase mb-1">Max Edge</div>
+                 <div className="text-3xl font-black text-green-400">
+                    {Math.max(...(evSignals?.map(s => s.ev_percentage) || [0])).toFixed(1)}%
+                 </div>
+               </div>
+            </div>
           </div>
-          <p className="text-[10px] text-textMuted font-black uppercase tracking-widest mb-4 italic">The Best Edges Right Now</p>
-          <SportSelector />
-        </div>
-      </div>
-
-      {/* Control Panel: Filters, Search, Chips */}
-      <div className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-4 md:p-6 space-y-6 shadow-card">
-        <div className="flex flex-col md:flex-row gap-6 md:items-end">
           
-          {/* Slider */}
-          <div className="w-full md:w-64">
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-textMuted">Minimum EV</label>
-              <span className="text-xs font-mono font-black text-brand-success">{minEv}%</span>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 blur-[100px] -mr-48 -mt-48 rounded-full" />
+        </div>
+
+        <SportFilter activeSport={sport} onSportChange={setSport} />
+
+        {/* Content */}
+        {isLoading ? (
+          <LoadingSkeleton rows={10} />
+        ) : isError ? (
+          <ErrorRetry onRetry={() => refetch()} />
+        ) : (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between text-xs text-white/30 px-2">
+              <div className="flex items-center space-x-4">
+                 <span className="flex items-center space-x-1">
+                   <div className="w-2 h-2 rounded-full bg-green-400" />
+                   <span>High ({'>'}5%)</span>
+                 </span>
+                 <span className="flex items-center space-x-1">
+                   <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                   <span>Mid (2-5%)</span>
+                 </span>
+                 <span className="flex items-center space-x-1">
+                   <div className="w-2 h-2 rounded-full bg-red-400" />
+                   <span>Low ({'<'}2%)</span>
+                 </span>
+              </div>
+              <span className="flex items-center space-x-1">
+                <Info className="w-3 h-3" />
+                <span>Computed against Sharp Consensus</span>
+              </span>
             </div>
-            <input 
-              type="range" 
-              title="Minimum EV"
-              aria-label="Minimum EV"
-              min="1" max="20" step="0.5"
-              value={minEv}
-              onChange={(e) => setMinEv(parseFloat(e.target.value))}
-              className="w-full accent-brand-success"
+            
+            <DataTable 
+              columns={columns} 
+              data={evSignals as any} 
+              onRowClick={(p) => console.log('Clicked signal:', p)}
             />
           </div>
-
-          {/* Time Window */}
-          <div className="w-full md:w-48">
-            <label className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-2 block">Time Window</label>
-            <select 
-              title="Time Window"
-              aria-label="Time Window"
-              value={timeWindow}
-              onChange={(e) => setTimeWindow(e.target.value)}
-              className="w-full bg-lucrix-dark border border-lucrix-border rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-brand-success transition-colors appearance-none"
-            >
-              <option value="All">All Games</option>
-              <option value="Next 2h">Next 2 Hours</option>
-              <option value="Tonight">Tonight</option>
-            </select>
-          </div>
-
-        </div>
-
-        {/* Signal Toggles */}
-        <div className="flex flex-wrap gap-2">
-          {["All", "Steam only", "Whale only", "Model only"].map(chip => (
-            <button 
-              key={chip}
-              onClick={() => setSignalToggle(chip)}
-              className={clsx(
-                "px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all",
-                signalToggle === chip 
-                  ? "bg-brand-success text-black shadow-glow shadow-brand-success/30" 
-                  : "bg-lucrix-dark text-textMuted border border-lucrix-border hover:border-textMuted"
-              )}
-            >
-              {chip}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Top Summary Strip */}
-      {data && (
-        <div className="flex items-center justify-between bg-lucrix-dark border border-lucrix-border/50 rounded-xl p-3 px-5 text-[10px] font-black uppercase tracking-widest text-textMuted">
-          <div className="flex items-center gap-3 md:gap-6 flex-wrap">
-            <span><span className="text-white text-sm">{filteredEVs.length}</span> +EV PROPS FOUND</span>
-            {filteredEVs.length > 0 && (
-              <>
-                <span className="hidden md:inline">·</span>
-                <span>MEDIAN EV <span className="text-brand-success text-sm">{medianEV.toFixed(1)}%</span></span>
-                <span className="hidden md:inline">·</span>
-                <span>MAX EV <span className="text-brand-success text-sm">{maxEV.toFixed(1)}%</span></span>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 whitespace-nowrap">
-            <Clock size={10} />
-            UPDATED {data.updated ? new Date(data.updated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'JUST NOW'}
-          </div>
-        </div>
-      )}
-
-      {/* Focus View List */}
-      <div className="space-y-4">
-        {filteredEVs.length === 0 ? (
-          <PropsEmptyState sport={sport} />
-        ) : (
-          filteredEVs.map(prop => (
-            <EVCheatRow key={prop.id} prop={prop} />
-          ))
         )}
-      </div>
-
-      {/* Disclaimer */}
-      <div className="text-center text-[10px] font-bold text-textMuted/50 max-w-2xl mx-auto flex items-center justify-center gap-2">
-        <Info size={12} />
-        EV% and Confidence are model-based estimations and not guaranteed outcomes. <a href="#" className="underline">View Track Record</a>
-      </div>
-    </div>
-  );
-}
-
-function EVCheatRow({ prop }: { prop: CanonicalProp }) {
-  // Use best bet side based on best odds
-  const betSide = prop.implied_probability > 0 || prop.ev_percentage > 0 ? (prop.best_book ? (prop.over_odds && prop.over_odds > 0 && String(prop.over_odds).includes(String(prop.best_book)) ? "OVER" : "UNDER") : "OVER") : "OVER";
-  const displayOdds = prop.best_book && prop.over_odds ? prop.over_odds : prop.under_odds || -110;
-  
-  return (
-    <div className="group relative bg-lucrix-surface border border-lucrix-border hover:border-brand-success/50 transition-colors rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-card hover:shadow-glow hover:shadow-brand-success/10 cursor-pointer overflow-hidden">
-      {/* Background Pulse for very high EV */}
-      {prop.ev_percentage > 10 && (
-        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-success/5 blur-3xl rounded-full" />
-      )}
-      
-      {/* Left side: Big EV + Details */}
-      <div className="flex items-center gap-5 md:gap-8 w-full md:w-auto relative z-10">
-        
-        {/* BIG EV% */}
-        <div className="flex flex-col items-center justify-center bg-brand-success/10 border border-brand-success/20 p-3 px-4 rounded-xl min-w-[90px]">
-          <span className="text-[10px] font-black uppercase tracking-widest text-brand-success mb-1">EDGE</span>
-          <span className="text-2xl font-black font-display text-brand-success leading-none">+{prop.ev_percentage.toFixed(1)}%</span>
-        </div>
-
-        {/* Player Details */}
-        <div className="flex flex-col">
-          <h3 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-white font-display leading-tight">{prop.player_name}</h3>
-          
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className="text-sm font-black text-brand-cyan uppercase tracking-widest">{prop.stat_type}</span>
-            <span className="text-lg font-black font-display text-white">{prop.line}</span>
-          </div>
-
-          {/* Mini Tag Row */}
-          <div className="flex items-center gap-3 mt-2 text-[10px] font-black uppercase tracking-widest text-textMuted">
-            <span className="text-textSecondary">{(prop.sport || "").replace(/_/g, " ")}</span>
-            <span>·</span>
-            <span className="flex items-center gap-1">
-              <Clock size={10} /> 
-              {prop.start_time ? new Date(prop.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'LIVE'}
-            </span>
-            {(prop.steam_signal || prop.whale_signal) && <span>·</span>}
-            {prop.steam_signal && <span className="text-brand-primary">STEAM</span>}
-            {prop.whale_signal && <span className="text-purple-400">WHALE</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* Right side: Book & Odds */}
-      <div className="flex items-stretch md:items-end flex-row md:flex-col gap-3 md:gap-2 w-full md:w-auto relative z-10 border-t md:border-t-0 border-lucrix-border/50 pt-4 md:pt-0">
-        <div className="flex-1 md:flex-none flex flex-col items-center md:items-end justify-center bg-lucrix-dark md:bg-transparent rounded-xl border md:border-transparent border-lucrix-border p-3 md:p-0">
-          <span className="text-[10px] font-black uppercase tracking-widest text-textMuted mb-1">Top Book</span>
-          <span className="font-bold text-sm text-white">{prop.best_book}</span>
-        </div>
-        
-        <div className="flex-1 md:flex-none flex items-center justify-center md:justify-end gap-2 bg-lucrix-dark md:bg-brand-success/10 border border-lucrix-border md:border-brand-success/20 p-3 md:py-2 md:px-4 rounded-xl">
-          <span className="text-[10px] font-black uppercase tracking-widest text-textMuted md:text-brand-success/80">
-            {betSide}
-          </span>
-          <span className="text-lg font-mono font-black text-brand-success">
-            {displayOdds > 0 ? `+${displayOdds}` : displayOdds}
-          </span>
-        </div>
       </div>
     </div>
   );

@@ -56,7 +56,7 @@ class RealSportsAPI:
                 params = {
                     "apiKey": current_key,
                     "regions": "us",
-                    "markets": "h2h,spreads,totals,player_props",
+                    "markets": "h2h,spreads,totals,player_points,player_rebounds,player_assists,player_threes,player_blocks,player_steals,player_turnovers,player_pass_tds,player_pass_yds,player_rush_yds,player_rec_yds,player_anytime_td,pitcher_strikeouts,batter_hits,batter_home_runs",
                     "oddsFormat": "american"
                 }
                 try:

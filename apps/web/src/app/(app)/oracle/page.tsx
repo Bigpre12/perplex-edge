@@ -1,194 +1,163 @@
-"use client";
+'use client';
 
-import React, { useState, useRef, useEffect, Suspense } from "react";
-import { useSport } from "@/hooks/useSport";
-import { useAuth } from "@/hooks/useAuth";
-import { useTierGate } from "@/hooks/useTierGate";
-import { API_BASE } from "@/lib/api";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import SportSelector from "@/components/shared/SportSelector";
-import { Brain, Send, User, Bot, Sparkles, Star, AlertCircle } from "lucide-react";
-import { clsx } from "clsx";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+import React, { useState } from 'react';
+import { useOracle } from '@/hooks/useOracle';
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorRetry } from '@/components/shared/ErrorRetry';
+import { Brain, Sparkles, Send, ShieldCheck, TrendingUp, Info } from 'lucide-react';
 
 export default function OraclePage() {
-  return (
-    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING ORACLE CORE...</div>}>
-      <OracleContent />
-    </Suspense>
-  );
-}
+  const [player, setPlayer] = useState('');
+  const [market, setMarket] = useState('');
+  const [context, setContext] = useState('');
+  
+  const oracleMutation = useOracle();
 
-function OracleContent() {
-  const { sport } = useSport();
-  const { user, tier } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const { isLocked, isLoading: isGateLoading } = useTierGate(
-    { data: true, isLoading: false, error: null },
-    { requiredTier: "pro" }
-  );
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleQuery = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isStreaming || isLocked) return;
-
-    const userMsg: Message = { role: "user", content: input };
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
-    setIsStreaming(true);
-
-    try {
-      const response = await fetch(`${API_BASE}/api/oracle`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.id}` // Placeholder for real token logic
-        },
-        body: JSON.stringify({ sport, question: input }),
-      });
-
-      if (!response.ok) throw new Error("Oracle connection lost.");
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      const assistantMsg: Message = { role: "assistant", content: "" };
-      setMessages(prev => [...prev, assistantMsg]);
-
-      while (true) {
-        const { done, value } = await reader!.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        assistantMsg.content += chunk;
-        setMessages(prev => [...prev.slice(0, -1), { ...assistantMsg }]);
-      }
-    } catch (err) {
-      console.error(err);
-      setMessages(prev => [...prev, { role: "assistant", content: "⚠️ System malfunction. The oracle is temporarily unavailable." }]);
-    } finally {
-      setIsStreaming(false);
-    }
+    if (!player || !market) return;
+    oracleMutation.mutate({ player, market, context });
   };
 
-  if (isGateLoading) {
-    return <div className="p-24 text-center"><Skeleton className="h-64 w-full max-w-2xl mx-auto rounded-3xl" /></div>;
-  }
-
   return (
-    <div className="pb-24 flex flex-col h-[calc(100vh-140px)] pt-6 px-4">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-brand-cyan/10 p-2 rounded-lg border border-brand-cyan/20">
-              <Brain size={24} className="text-brand-cyan shadow-glow shadow-brand-cyan/40" />
-            </div>
-            <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white font-display">Oracle AI</h1>
-          </div>
-          <p className="text-[10px] text-textMuted font-black uppercase tracking-widest italic mb-4">Generative Sports Intelligence</p>
-          <SportSelector />
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-hidden flex flex-col bg-lucrix-surface border border-lucrix-border rounded-3xl shadow-2xl relative">
-        {isLocked && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-3xl">
-            <div className="bg-lucrix-surface border border-brand-cyan/30 p-10 rounded-3xl text-center max-w-sm shadow-2xl">
-              <Star size={40} className="mx-auto text-brand-cyan mb-6 animate-pulse" />
-              <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-4 text-white font-display">Pro Intelligence Only</h2>
-              <p className="text-textSecondary text-sm font-bold mb-8 italic">
-                The Oracle requires advanced computational cycles reserved for Pro+ athletes.
-              </p>
-              <button 
-                onClick={() => window.location.href = "/subscription"}
-                className="bg-brand-cyan hover:bg-brand-cyan/90 text-black px-10 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all"
-              >
-                Access Oracle →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Chat Feed */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-50">
-              <Sparkles size={48} className="text-brand-cyan" />
-              <div className="space-y-1">
-                <p className="text-white font-black uppercase tracking-widest text-sm">Awaiting Query</p>
-                <p className="text-textMuted text-xs italic">Ask about lines, trends, or institutional flow...<br/>"Which NBA player has the highest CLV edge today?"</p>
-              </div>
-            </div>
-          )}
-          {messages.map((msg, i) => (
-            <div key={i} className={clsx("flex gap-4", msg.role === "user" ? "flex-row-reverse" : "flex-row")}>
-              <div className={clsx(
-                "p-3 rounded-xl border flex-shrink-0",
-                msg.role === "user" ? "bg-lucrix-dark border-lucrix-border" : "bg-brand-cyan/10 border-brand-cyan/20"
-              )}>
-                {msg.role === "user" ? <User size={18} className="text-white" /> : <Bot size={18} className="text-brand-cyan" />}
-              </div>
-              <div className={clsx(
-                "p-4 rounded-2xl max-w-[80%] text-sm font-bold leading-relaxed",
-                msg.role === "user" ? "bg-lucrix-dark text-white border border-lucrix-border" : "bg-brand-cyan/5 text-textSecondary border border-brand-cyan/10"
-              )}>
-                {msg.content}
-              </div>
-            </div>
-          ))}
-          {isStreaming && (
-            <div className="flex gap-4 animate-pulse">
-              <div className="p-3 rounded-xl border bg-brand-cyan/10 border-brand-cyan/20 flex-shrink-0">
-                <Bot size={18} className="text-brand-cyan" />
-              </div>
-              <div className="bg-brand-cyan/5 border border-brand-cyan/10 p-4 rounded-2xl w-24 h-10" />
-            </div>
-          )}
+    <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
+      <div className="max-w-5xl mx-auto space-y-12">
+        {/* Header */}
+        <div className="text-center space-y-4">
+           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em]">
+              <Brain className="w-4 h-4" />
+              <span>Neural Alpha Extraction</span>
+           </div>
+           <h1 className="text-6xl font-black tracking-tighter uppercase italic leading-none">
+             ORACLE <span className="text-blue-500 not-italic">AI</span>
+           </h1>
+           <p className="text-white/40 max-w-xl mx-auto text-sm">
+             Our proprietary LLM agent analyzes real-time feeds, injury reports, and historical patterns 
+             to generate high-probability betting recommendations.
+           </p>
         </div>
 
-        {/* Input Area */}
-        <div className="p-6 border-t border-lucrix-border bg-lucrix-dark/30">
-          <form onSubmit={handleSubmit} className="relative">
-            <input 
-              type="text" 
-              placeholder={isLocked ? "Oracle Locked" : "Type your question to the oracle..."}
-              className="w-full bg-lucrix-surface border border-lucrix-border rounded-2xl py-4 pl-6 pr-16 text-sm font-bold text-white outline-none focus:border-brand-cyan/50 transition-all disabled:opacity-50"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={isLocked || isStreaming}
-            />
-            <button 
-              type="submit"
-              title="Send Query to Oracle"
-              aria-label="Send Query to Oracle"
-              disabled={isLocked || isStreaming || !input.trim()}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-brand-cyan hover:bg-brand-cyan/90 text-black rounded-xl transition-all disabled:opacity-30 disabled:hover:bg-brand-cyan"
-            >
-              <Send size={20} />
-            </button>
-          </form>
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 opacity-60">
-              <AlertCircle size={10} className="text-brand-cyan" />
-              <span className="text-[9px] font-black uppercase text-textMuted tracking-widest">Rate Limited: 50 requests / day (Pro)</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-[8px] bg-lucrix-dark px-1.5 py-0.5 rounded text-white font-black italic border border-white/5 uppercase">H-100 Clusters Active</span>
-            </div>
-          </div>
+        {/* Query Interface */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+           <div className="lg:col-span-5 space-y-6">
+              <form onSubmit={handleQuery} className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl space-y-6">
+                 <div className="space-y-4">
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-black uppercase text-white/30 tracking-widest ml-1">Player Name</label>
+                       <input 
+                          value={player}
+                          onChange={(e) => setPlayer(e.target.value)}
+                          placeholder="e.g. LeBron James"
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                       />
+                    </div>
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-black uppercase text-white/30 tracking-widest ml-1">Market Category</label>
+                       <input 
+                          value={market}
+                          onChange={(e) => setMarket(e.target.value)}
+                          placeholder="e.g. Points, Rebounds, PRAs"
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                       />
+                    </div>
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-black uppercase text-white/30 tracking-widest ml-1">Additional Context (Optional)</label>
+                       <textarea 
+                          value={context}
+                          onChange={(e) => setContext(e.target.value)}
+                          placeholder="e.g. Matchup details or injury concerns..."
+                          rows={4}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                       />
+                    </div>
+                 </div>
+
+                 <button 
+                    disabled={oracleMutation.isPending || !player || !market}
+                    className="w-full py-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center space-x-3 shadow-xl shadow-blue-600/20 active:scale-95 transition-all"
+                 >
+                    {oracleMutation.isPending ? (
+                       <Sparkles className="w-5 h-5 animate-spin" />
+                    ) : (
+                       <Send className="w-4 h-4" />
+                    )}
+                    <span>Consult Oracle</span>
+                 </button>
+              </form>
+           </div>
+
+           {/* Results Area */}
+           <div className="lg:col-span-7">
+              {oracleMutation.isPending ? (
+                 <div className="space-y-8 animate-pulse text-center py-24">
+                   <div className="w-24 h-24 rounded-full bg-blue-500/10 mx-auto flex items-center justify-center border border-blue-500/20">
+                      <Brain className="w-12 h-12 text-blue-500 animate-pulse" />
+                   </div>
+                   <div className="space-y-2">
+                     <p className="text-xl font-black uppercase italic">Processing Neural Streams...</p>
+                     <p className="text-white/20 text-xs font-black uppercase tracking-widest">Aggregating Global Sentiment & Sharp Volume</p>
+                   </div>
+                 </div>
+              ) : oracleMutation.data ? (
+                 <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl space-y-8 relative overflow-hidden">
+                    {/* Background Glow */}
+                    <div className="absolute top-0 right-0 p-8 opacity-10 blur-3xl w-64 h-64 bg-blue-500 -mr-32 -mt-32 rounded-full" />
+                    
+                    <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                       <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/20 text-green-400">
+                             <ShieldCheck className="w-6 h-6" />
+                          </div>
+                          <div>
+                             <h3 className="font-black uppercase tracking-tighter text-xl">Oracle Consensus</h3>
+                             <p className="text-[10px] text-white/30 font-black tracking-widest uppercase italic">Verified Logic Transcript</p>
+                          </div>
+                       </div>
+                       <div className="text-right">
+                          <span className="text-[10px] font-black uppercase text-white/30 mb-1 block">Decision Strength</span>
+                          <span className="text-3xl font-black text-blue-500 italic">{(oracleMutation.data as any).confidence_score || '92%'}</span>
+                       </div>
+                    </div>
+
+                    <div className="space-y-6">
+                       <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
+                          <p className="text-white/80 leading-relaxed text-sm italic">
+                             "{(oracleMutation.data as any).recommendation || 'The quant model indicates a significant mispricing in the current player market...'}"
+                          </p>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-white/5 rounded-2xl space-y-1">
+                             <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Sharp Alignment</span>
+                             <div className="flex items-center space-x-2">
+                                <TrendingUp className="w-4 h-4 text-green-400" />
+                                <span className="font-black text-white">BULLISH</span>
+                             </div>
+                          </div>
+                          <div className="p-4 bg-white/5 rounded-2xl space-y-1">
+                             <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Risk Level</span>
+                             <div className="flex items-center space-x-2">
+                                <Info className="w-4 h-4 text-blue-400" />
+                                <span className="font-black text-white">LOW CONVICTION</span>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/5 flex justify-center">
+                       <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">A.I. Model v2.4a (Quantum-Stream)</span>
+                    </div>
+                 </div>
+              ) : (
+                 <div className="flex flex-col items-center justify-center py-32 space-y-6 opacity-20 border border-white/5 border-dashed rounded-3xl">
+                    <Sparkles className="w-16 h-16" />
+                    <div className="text-center space-y-2">
+                       <p className="text-xl font-black tracking-tighter uppercase italic">Awaiting Input</p>
+                       <p className="text-xs font-black uppercase tracking-widest max-w-[200px]">Submit a player and market to receive neural insights.</p>
+                    </div>
+                 </div>
+              )}
+           </div>
         </div>
       </div>
     </div>

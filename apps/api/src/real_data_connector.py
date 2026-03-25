@@ -121,7 +121,9 @@ class RealDataConnector:
         """Fetch live games via full waterfall: Odds API → ESPN → TheSportsDB → TheRundown → BallDontLie → MySportsFeeds → SportsGameOdds"""
         # === Provider 1: The Odds API (burns credits, has full odds) ===
         try:
-            raw_games = await odds_api.get_live_odds(sport_key, markets="h2h,spreads,totals")
+            # Requesting common player props along with team markets for better discovery
+            player_markets = "player_points,player_rebounds,player_assists,player_threes,player_pass_tds,player_pass_yds,player_rush_yds,player_rec_yds,player_anytime_td,pitcher_strikeouts,batter_hits"
+            raw_games = await odds_api.get_live_odds(sport_key, markets=f"h2h,spreads,totals,{player_markets}")
             if raw_games:
                 formatted = []
                 for game in raw_games:

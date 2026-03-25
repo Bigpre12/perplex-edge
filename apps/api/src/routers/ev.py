@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, Query
 from typing import Optional
 from datetime import datetime
+from sqlalchemy import text
 from db.session import get_db
 
 router = APIRouter(tags=["ev"])
@@ -16,13 +17,14 @@ async def get_ev_signals(
 ):
     # 1. Try ev_signals table first
     try:
-        rows = await db.fetch_all(
-            """SELECT * FROM ev_signals 
+        result = await db.execute(
+            text("""SELECT * FROM ev_signals 
                WHERE created_at > NOW() - INTERVAL '24 hours'
                ORDER BY ev_percentage DESC NULLS LAST
-               LIMIT :limit""",
+               LIMIT :limit"""),
             {"limit": limit}
         )
+        rows = result.mappings().all()
         if rows:
             return {
                 "props": [dict(r) for r in rows],
@@ -53,7 +55,8 @@ async def get_ev_signals(
             params["sport"] = sport
         query += " ORDER BY implied_over ASC LIMIT :limit"
 
-        rows = await db.fetch_all(query, params)
+        result = await db.execute(text(query), params)
+        rows = result.mappings().all()
         return {
             "props": [dict(r) for r in rows],
             "count": len(rows),

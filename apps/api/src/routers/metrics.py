@@ -19,7 +19,7 @@ async def metrics(db: AsyncSession = Depends(get_async_db)):
         db_connected = health_check.scalar() == 1
         
         # 2. Last Ingest Time
-        last_ingest_stmt = select(func.max(UnifiedOdds.ingested_ts))
+        last_ingest_stmt = select(func.max(UnifiedOdds.created_at))
         last_ingest = (await db.execute(last_ingest_stmt)).scalar()
         
         # 3. Row Counts

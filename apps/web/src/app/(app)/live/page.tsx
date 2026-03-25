@@ -1,135 +1,93 @@
-"use client";
+'use client';
 
-import { useCallback } from "react";
-import { Radio, Activity, Trophy, Clock, BrainCircuit } from "lucide-react";
-import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
-import LiveStatusBar from "@/components/LiveStatusBar";
-import PageStates from "@/components/PageStates";
-
-import { useSport } from "@/context/SportContext";
-import { isApiError } from "@/lib/api";
+import React from 'react';
+import { useLiveGames, LiveGame } from '@/hooks/useLiveGames';
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ErrorRetry } from '@/components/shared/ErrorRetry';
+import { Radio, Clock, Trophy } from 'lucide-react';
 
 export default function LivePage() {
-    const { selectedSport: sport } = useSport();
+  const { data: games, isLoading, isError, refetch } = useLiveGames();
 
-    const { data: liveData, loading, error, lastUpdated, isStale, refresh, status } = useLiveData<any>(
-        () => api.liveGames(sport),
-        [sport],
-        { refreshInterval: 30000 } // 30 seconds
-    );
+  const ScoreBoard = ({ game }: { game: LiveGame }) => (
+    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 transition-all hover:bg-white/10 group">
+       <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+             <Radio className="w-3 h-3 animate-pulse" />
+             <span>Live {game.sport.replace('_', ' ').toUpperCase()}</span>
+          </div>
+          <div className="flex items-center space-x-1 text-white/30 text-xs font-mono">
+             <Clock className="w-3 h-3" />
+             <span>{game.period} {game.clock}</span>
+          </div>
+       </div>
 
-    const games = isApiError(liveData) ? [] : liveData?.games || [];
-    const filtered = games; // Assuming 'filtered' is meant to be 'games' or a derived value from 'games'
+       <div className="grid grid-cols-2 gap-4 items-center mb-6">
+          <div className="flex flex-col items-center">
+             <div className="w-16 h-16 rounded-2xl bg-white/5 mb-3 flex items-center justify-center text-xl font-bold border border-white/5 group-hover:scale-105 transition-transform">
+                {game.home_team.substring(0, 1)}
+             </div>
+             <span className="text-sm font-bold text-center h-10 overflow-hidden line-clamp-2">{game.home_team}</span>
+             <span className="text-4xl font-black mt-2 text-white">{game.score_home || 0}</span>
+          </div>
+          <div className="flex flex-col items-center">
+             <div className="w-16 h-16 rounded-2xl bg-white/5 mb-3 flex items-center justify-center text-xl font-bold border border-white/5 group-hover:scale-105 transition-transform">
+                {game.away_team.substring(0, 1)}
+             </div>
+             <span className="text-sm font-bold text-center h-10 overflow-hidden line-clamp-2">{game.away_team}</span>
+             <span className="text-4xl font-black mt-2 text-white">{game.score_away || 0}</span>
+          </div>
+       </div>
 
-    return (
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 pb-24 text-white">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="bg-red-500/20 p-2 rounded-lg border border-red-500/30 animate-pulse">
-                            <Radio size={24} className="text-red-500" />
-                        </div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">Live Odds Console</h1>
-                    </div>
-                    <p className="text-[#6B7280] text-sm font-medium">Real-time market pressure and live game state</p>
-                </div>
+       <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 w-1/3 animate-progress" />
+       </div>
+    </div>
+  );
 
-                <LiveStatusBar
-                    lastUpdated={lastUpdated}
-                    isStale={isStale}
-                    loading={loading}
-                    error={error}
-                    onRefresh={refresh}
-                    refreshInterval={30}
-                />
-            </div>
-
-            {/* Brain Alerts Panel */}
-            <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-2xl p-4 md:p-6 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <BrainCircuit className="w-8 h-8 text-emerald-500 relative z-10" />
-                        <div className="absolute inset-x-0 bottom-0 h-4 bg-emerald-500/30 blur z-0" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-black uppercase tracking-widest text-emerald-500">Brain Alerts Active</h2>
-                        <p className="text-sm font-mono text-emerald-600/70">Scanning live game flows for neural edges.</p>
-                    </div>
-                </div>
-                <div className="text-xs font-mono text-emerald-500/50 bg-emerald-950 px-3 py-1.5 rounded-full border border-emerald-900">
-                    Live Analysis Subsystem: ONLINE
-                </div>
-            </div>
-
-            <PageStates
-                loading={loading && !liveData}
-                error={error}
-                empty={!loading && filtered.length === 0}
-                emptyMessage="No games are currently in-play."
-                status={status}
-            >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {games.map((game: any) => (
-                        <div key={game.id} className="bg-[#0D0D14] border border-white/5 rounded-2xl overflow-hidden shadow-2xl">
-                            {/* Scoreboard Header */}
-                            <div className="p-6 bg-gradient-to-r from-red-500/10 to-transparent border-b border-white/5">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">
-                                        <Activity size={14} /> {game.status} · {game.clock}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-[#6B7280] uppercase tracking-widest">
-                                        <Clock size={14} /> {game.time_remaining}
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-between items-center px-4">
-                                    <div className="text-center flex-1">
-                                        <div className="text-sm font-black text-white italic truncate max-w-[120px] mx-auto">{game.away_team}</div>
-                                        <div className="text-4xl font-black text-white mt-1 font-mono tracking-tighter">{game.away_score}</div>
-                                    </div>
-                                    <div className="text-xs font-black text-white/20 italic px-4 uppercase">VS</div>
-                                    <div className="text-center flex-1">
-                                        <div className="text-sm font-black text-white italic truncate max-w-[120px] mx-auto">{game.home_team}</div>
-                                        <div className="text-4xl font-black text-white mt-1 font-mono tracking-tighter">{game.home_score}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Live Props Feed */}
-                            <div className="p-6 space-y-4 bg-white/[0.01]">
-                                <h4 className="text-[10px] font-black text-[#6B7280] uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <Trophy size={14} /> Market Pressure Edges
-                                </h4>
-                                <div className="space-y-3">
-                                    {game.props?.map((prop: any, i: number) => (
-                                        <div key={i} className="bg-white/[0.02] border border-white/5 rounded-xl p-4 flex justify-between items-center transition hover:bg-white/[0.04]">
-                                            <div>
-                                                <div className="text-sm font-black text-white italic uppercase tracking-tight">{prop.player_name}</div>
-                                                <div className="text-[10px] font-bold text-[#6B7280] uppercase mt-0.5">{prop.stat_type} · Line: {prop.line}</div>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className="text-xs font-black text-emerald-500 font-mono italic">{prop.current_value} ACTUAL</div>
-                                                <div className="text-[9px] font-black text-[#6B7280] uppercase tracking-widest mt-0.5">PACE: {prop.pace}</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-xs font-black text-primary font-mono">{prop.over_odds > 0 ? `+${prop.over_odds}` : prop.over_odds}</div>
-                                                <div className="text-[9px] font-black text-[#6B7280] uppercase tracking-widest mt-0.5">{prop.book}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {(!game.props || game.props.length === 0) && (
-                                        <p className="text-xs text-[#6B7280] italic text-center py-4">No live market discrepancies detected yet.</p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </PageStates>
+  return (
+    <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex justify-between items-end">
+          <div className="space-y-2">
+            <h1 className="text-6xl font-black tracking-tighter uppercase leading-[0.8] mb-4">
+              <span className="text-blue-500">LIVE</span> ACTION
+            </h1>
+            <p className="text-white/40 max-w-md">
+              Real-time scoring and state updates across all tracked leagues.
+              Polling every <span className="text-blue-400 font-mono">15s</span>.
+            </p>
+          </div>
+          
+          <div className="hidden md:flex space-x-2">
+             <div className="px-4 py-2 rounded-full border border-white/10 bg-white/5 flex items-center space-x-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Systems Active</span>
+             </div>
+          </div>
         </div>
-    );
+
+        {/* Dynamic Content */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <LoadingSkeleton rows={3} />
+          </div>
+        ) : isError ? (
+          <ErrorRetry onRetry={() => refetch()} />
+        ) : games?.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 space-y-4 opacity-30">
+             <Trophy className="w-16 h-16" />
+             <p className="text-xl font-bold uppercase tracking-widest">No Active Games</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+             {games.map((game) => (
+                <ScoreBoard key={game.id} game={game} />
+             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
