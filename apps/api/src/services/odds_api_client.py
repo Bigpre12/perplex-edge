@@ -30,6 +30,29 @@ logger = logging.getLogger(__name__)
 class OddsApiClient:
     BASE_URL = "https://api.the-odds-api.com/v4"
     
+    TEAM_MARKETS = ["h2h", "spreads", "totals"]
+
+    PLAYER_PROP_MARKETS = [
+        "player_points", "player_rebounds", "player_assists",
+        "player_threes", "player_blocks", "player_steals",
+        "player_points_rebounds_assists", "player_points_rebounds",
+        "player_points_assists", "player_first_touchdown_scorer",
+        "player_anytime_touchdown_scorer", "player_pass_yds",
+        "player_pass_tds", "player_rush_yds", "player_reception_yds",
+        "player_receptions", "batter_hits", "batter_home_runs",
+        "batter_rbis", "pitcher_strikeouts"
+    ]
+
+    @classmethod
+    def get_markets_for_sport(cls, sport: str) -> str:
+        player_sports = [
+            "basketball_nba", "americanfootball_nfl", "baseball_mlb", 
+            "icehockey_nhl", "americanfootball_ncaaf"
+        ]
+        if sport in player_sports:
+            return ",".join(cls.TEAM_MARKETS + cls.PLAYER_PROP_MARKETS)
+        return ",".join(cls.TEAM_MARKETS)
+    
     def __init__(self):
         # Load keys from centralized settings
         self.api_keys = settings.ODDS_API_KEYS
@@ -140,11 +163,11 @@ class OddsApiClient:
         """Fetch game schedules (cheap, no odds results)."""
         return await self._request(f"/sports/{sport}/events", use_cache=True) or []
 
-    async def get_live_odds(self, sport: str, regions: str = "us", markets: str = "h2h,spreads") -> List[Dict]:
+    async def get_live_odds(self, sport: str, regions: str = "us", markets: str = None) -> List[Dict]:
         """Fetch real-time odds for games."""
         params = {
             "regions": regions,
-            "markets": markets,
+            "markets": markets or self.get_markets_for_sport(sport),
             "oddsFormat": "american",
             "dateFormat": "iso"
         }
@@ -162,10 +185,10 @@ class OddsApiClient:
         return await self._request(f"/sports/{sport}/events/{event_id}/odds", params=params) or {}
 
     # --- Compatibility Aliases ---
-    async def get_odds(self, sport: str, regions: str = "us", markets: str = "h2h,spreads") -> List[Dict]:
+    async def get_odds(self, sport: str, regions: str = "us", markets: str = None) -> List[Dict]:
         return await self.get_live_odds(sport, regions, markets)
 
-    async def fetch_odds(self, sport: str, regions: str = "us", markets: str = "h2h,spreads") -> List[Dict]:
+    async def fetch_odds(self, sport: str, regions: str = "us", markets: str = None) -> List[Dict]:
         return await self.get_live_odds(sport, regions, markets)
 
     async def fetch_events(self, sport: str) -> List[Dict]:

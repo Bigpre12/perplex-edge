@@ -196,37 +196,55 @@ async def initialize_backend_services():
                 AND a.engine_version IS NOT DISTINCT FROM b.engine_version
             """)
 
-            # Step 2: Add unique constraints with NULLS NOT DISTINCT (PG 15+)
+            # Step 2: Add unique constraints with partial indexes for Supabase Postgres 14 compatibility
             
-            # Props Live: Drop old player_id based indexes that conflict with our new player_name logic
-            await run_migration_step("DROP INDEX IF EXISTS props_live_sport_game_id_player_id_market_key_book_key")
-            await run_migration_step("DROP INDEX IF EXISTS props_live_sport_game_idx")
+            # Props Live
             await run_migration_step("ALTER TABLE props_live DROP CONSTRAINT IF EXISTS uix_props_live_unique")
+            await run_migration_step("DROP INDEX IF EXISTS uix_props_live_unique")
+            await run_migration_step("DROP INDEX IF EXISTS uix_props_live_team_unique")
             
             await run_migration_step("""
-                ALTER TABLE props_live 
-                ADD CONSTRAINT uix_props_live_unique 
-                UNIQUE (sport, game_id, player_name, market_key, book) 
-                NULLS NOT DISTINCT
+                CREATE UNIQUE INDEX IF NOT EXISTS uix_props_live_unique 
+                ON props_live (sport, game_id, player_name, market_key, book) 
+                WHERE player_name IS NOT NULL
+            """)
+            await run_migration_step("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uix_props_live_team_unique 
+                ON props_live (sport, game_id, market_key, book) 
+                WHERE player_name IS NULL
             """)
             
             # Unified Odds
             await run_migration_step("ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique")
+            await run_migration_step("DROP INDEX IF EXISTS uix_unified_odds_unique")
+            await run_migration_step("DROP INDEX IF EXISTS uix_unified_odds_team_unique")
+            
             await run_migration_step("""
-                ALTER TABLE unified_odds 
-                ADD CONSTRAINT uix_unified_odds_unique 
-                UNIQUE (sport, event_id, player_name, market_key, outcome_key, bookmaker)
-                NULLS NOT DISTINCT
+                CREATE UNIQUE INDEX IF NOT EXISTS uix_unified_odds_unique 
+                ON unified_odds (sport, event_id, player_name, market_key, outcome_key, bookmaker)
+                WHERE player_name IS NOT NULL
+            """)
+            await run_migration_step("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uix_unified_odds_team_unique 
+                ON unified_odds (sport, event_id, market_key, outcome_key, bookmaker)
+                WHERE player_name IS NULL
             """)
 
             # EV Signals
-            await run_migration_step("ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique")
             await run_migration_step("ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_unique")
+            await run_migration_step("ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique")
+            await run_migration_step("DROP INDEX IF EXISTS uix_ev_unique")
+            await run_migration_step("DROP INDEX IF EXISTS uix_ev_team_unique")
+            
             await run_migration_step("""
-                ALTER TABLE ev_signals 
-                ADD CONSTRAINT uix_ev_unique 
-                UNIQUE (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version)
-                NULLS NOT DISTINCT
+                CREATE UNIQUE INDEX IF NOT EXISTS uix_ev_unique 
+                ON ev_signals (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version)
+                WHERE player_name IS NOT NULL
+            """)
+            await run_migration_step("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uix_ev_team_unique 
+                ON ev_signals (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+                WHERE player_name IS NULL
             """)
             
             logger.info("📡 [Background Init] Schema migrations and indexes complete.")
@@ -266,12 +284,21 @@ async def initialize_backend_services():
         from services.grading_service import grading_service
         from services.kalshi_ingestion import kalshi_ingestion
         from services.whale_service import whale_service
+        from services.grader import run_full_grading_pipeline
 
         scheduler.add_job(
             grading_service.run_grading_cycle,
             'interval',
             minutes=10,
             id="auto_grading",
+            replace_existing=True
+        )
+        
+        scheduler.add_job(
+            run_full_grading_pipeline,
+            'interval',
+            minutes=5,
+            id="sql_grading",
             replace_existing=True
         )
 
@@ -312,6 +339,14 @@ async def initialize_backend_services():
                     logger.error(f"❌ [Initial Ingest Failed] {sport}: {res}")
                 else:
                     logger.info(f"✅ [Initial Ingest Complete] {sport}")
+            
+            # Post-ingest graders hook
+            logger.info("📡 [Background Init] Running post-ingest SQL grading pipeline...")
+            try:
+                from services.grader import run_full_grading_pipeline
+                await run_full_grading_pipeline()
+            except Exception as e:
+                logger.error(f"❌ [Background Init] Post-ingest grader failed: {e}")
 
         asyncio.create_task(run_parallel_ingest())
 

@@ -87,39 +87,60 @@ async def list_props_legacy(
         return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
 
 @router.get("/scored")
-async def scored_props(sport: Optional[str] = None, db: AsyncSession = Depends(get_async_db)):
-    """Returns recently completed/graded props or falls back to top EV signals for visibility."""
+async def scored_props(sport: Optional[str] = None, limit: int = 50, db: AsyncSession = Depends(get_async_db)):
+    """Returns top graded props. Falls back to team markets if no player props exist."""
     try:
-        from models.brain import ModelPick
         from sqlalchemy import text
         now = datetime.utcnow()
-        # 1. Try actual scored model picks
-        filters = [ModelPick.won != None]
+        
+        # Try player props first
+        query = """
+            SELECT * FROM props_live 
+            WHERE last_updated_at > NOW() - INTERVAL '24 hours'
+              AND player_name IS NOT NULL
+              AND player_name != home_team 
+              AND player_name != away_team
+        """
         if sport and sport != "all":
-            filters.append(ModelPick.sport_key == sport)
+            query += f" AND sport = '{sport}'"
+        query += f" ORDER BY confidence DESC NULLS LAST, ev_percentage DESC NULLS LAST LIMIT {limit}"
+        
+        result_player = await db.execute(text(query))
+        rows = result_player.mappings().all()
+        
+        # Fallback: if no player props, return team markets with confidence scores
+        if not rows:
+            fallback_query = """
+                SELECT * FROM props_live
+                WHERE last_updated_at > NOW() - INTERVAL '24 hours'
+            """
+            if sport and sport != "all":
+                fallback_query += f" AND sport = '{sport}'"
+            fallback_query += f" ORDER BY confidence DESC NULLS LAST LIMIT {limit}"
             
-        stmt = select(ModelPick).where(
-            *filters
-        ).where(
-            ModelPick.updated_at >= now - timedelta(hours=72)
-        ).order_by(desc(ModelPick.updated_at)).limit(50)
-        
-        result = await db.execute(stmt)
-        items = result.scalars().all()
-        
-        if items:
-            return {"data": items, "results": items}
+            result_team = await db.execute(text(fallback_query))
+            rows = result_team.mappings().all()
             
-        # 2. Fallback to top EV signals
-        from models import UnifiedEVSignal
-        ev_stmt = select(UnifiedEVSignal).order_by(desc(UnifiedEVSignal.edge_percent)).limit(50)
-        ev_res = await db.execute(ev_stmt)
-        ev_items = ev_res.scalars().all()
-        return {"data": ev_items, "results": ev_items}
+            return {
+                "props": [dict(r) for r in rows],
+                "data": [dict(r) for r in rows], # For backwards compat with frontend expectations
+                "count": len(rows),
+                "updated": datetime.utcnow().isoformat() + "Z",
+                "fallback": "team_markets",
+                "note": "Player props markets not yet ingested for current cycle"
+            }
         
+        return {
+            "props": [dict(r) for r in rows],
+            "data": [dict(r) for r in rows],
+            "count": len(rows),
+            "updated": datetime.utcnow().isoformat() + "Z",
+            "fallback": None
+        }
+
     except Exception as e:
-        logger.error(f"Error listing scored props: {e}")
-        return {"data": [], "results": []}
+        logger.error(f"Error listing scored props: {e}", exc_info=True)
+        return {"data": [], "props": [], "count": 0}
 
 # Phase 6 Canonical Board Endpoint
 @router.get("/{sport_path}")

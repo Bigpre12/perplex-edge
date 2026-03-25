@@ -28,7 +28,10 @@ async def upsert_props_live(records: List[PropRecord]):
                 row.setdefault("last_updated_at", now)
                 rows.append(row)
 
-            query = """
+            player_rows = [r for r in rows if r.get("player_name")]
+            team_rows = [r for r in rows if not r.get("player_name")]
+
+            base_insert = """
             INSERT INTO props_live (
                 sport, league, game_id, game_start_time, player_id, player_name, 
                 team, market_key, market_label, line, book, odds_over, odds_under,
@@ -43,7 +46,9 @@ async def upsert_props_live(records: List[PropRecord]):
                 :is_best_under, :is_soft_book, :is_sharp_book, :confidence, :last_updated_at,
                 :home_team, :away_team
             )
-            ON CONFLICT ON CONSTRAINT uix_props_live_unique
+            """
+
+            update_clause = """
             DO UPDATE SET
                 league = EXCLUDED.league,
                 line = EXCLUDED.line,
@@ -63,7 +68,14 @@ async def upsert_props_live(records: List[PropRecord]):
                 away_team = EXCLUDED.away_team;
             """
             
-            await session.execute(text(query), rows)
+            if player_rows:
+                q_player = base_insert + " ON CONFLICT (sport, game_id, player_name, market_key, book) WHERE player_name IS NOT NULL " + update_clause
+                await session.execute(text(q_player), player_rows)
+            
+            if team_rows:
+                q_team = base_insert + " ON CONFLICT (sport, game_id, market_key, book) WHERE player_name IS NULL " + update_clause
+                await session.execute(text(q_team), team_rows)
+                
             await session.commit()
             logger.info(f"Persistence: Successfully upserted {len(records)} props to props_live using raw SQL")
         except Exception as e:
