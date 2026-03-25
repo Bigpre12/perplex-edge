@@ -20,7 +20,7 @@ async def get_ev_signals(
         result = await db.execute(
             text("""SELECT * FROM ev_signals 
                WHERE created_at > NOW() - INTERVAL '24 hours'
-               ORDER BY ev_percentage DESC NULLS LAST
+               ORDER BY ev_score DESC NULLS LAST
                LIMIT :limit"""),
             {"limit": limit}
         )
@@ -32,40 +32,82 @@ async def get_ev_signals(
                 "updated": datetime.utcnow().isoformat() + "Z",
                 "source": "ev_signals"
             }
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Error reading ev_signals (fallback next): {e}")
+        try:
+            await db.rollback()
+        except Exception:
+            pass
 
     # 2. Fallback: pull from props_live with on-the-fly EV calc
     try:
         query = """
-            SELECT *,
-              ROUND(
-                (CAST(1.0 AS NUMERIC) / NULLIF(implied_over, 0) - implied_over) * 100,
-                2
-              ) AS ev_pct
+            SELECT
+                player_name,
+                market_key,
+                sport,
+                book,
+                line,
+                odds_over,
+                odds_under,
+                implied_over,
+                implied_under,
+                confidence,
+                home_team,
+                away_team,
+                last_updated_at
             FROM props_live
             WHERE last_updated_at > NOW() - INTERVAL '24 hours'
-              AND implied_over IS NOT NULL
-              AND implied_over > 0
-              AND implied_over < 1
+            AND implied_over IS NOT NULL
+            AND implied_over > 0
+            AND implied_over < 1
+            AND implied_under IS NOT NULL
+            AND implied_under > 0
+            AND implied_under < 1
         """
         params: dict = {"limit": limit}
         if sport:
             query += " AND sport = :sport"
             params["sport"] = sport
-        query += " ORDER BY implied_over ASC LIMIT :limit"
+            
+        query += " ORDER BY confidence DESC LIMIT :limit"
 
         result = await db.execute(text(query), params)
         rows = result.mappings().all()
+
+        # Compute EV in Python, not SQL
+        edges = []
+        for r in rows:
+            row = dict(r)
+            try:
+                fair_over = row['implied_over'] / (row['implied_over'] + row['implied_under'])
+                fair_under = 1 - fair_over
+                dec_over = 1 / row['implied_over'] if row['implied_over'] > 0 else 0
+                dec_under = 1 / row['implied_under'] if row['implied_under'] > 0 else 0
+                ev_over = round((fair_over * dec_over - 1) * 100, 2)
+                ev_under = round((fair_under * dec_under - 1) * 100, 2)
+                best_ev = max(ev_over, ev_under)
+                recommendation = 'OVER' if ev_over >= ev_under else 'UNDER'
+                if best_ev > 0:
+                    row['ev_pct'] = best_ev
+                    row['recommendation'] = recommendation
+                    edges.append(row)
+            except Exception:
+                continue
+
         return {
-            "props": [dict(r) for r in rows],
-            "count": len(rows),
-            "updated": datetime.utcnow().isoformat() + "Z",
-            "source": "props_live_fallback",
-            "fallback": "computed_live"
+            "props": edges,
+            "count": len(edges),
+            "status": "ok" if edges else "no_data",
+            "updated": datetime.utcnow().isoformat() + "Z"
         }
     except Exception as e:
+        try:
+            await db.rollback()
+        except Exception:
+            pass
         return {"props": [], "count": 0, "error": str(e), 
+                "status": "error",
                 "updated": datetime.utcnow().isoformat() + "Z"}
 
 @router.get("/ev-top")
