@@ -15,6 +15,7 @@ class DBWrapper:
                 await conn.execute(text(query), rows)
             except Exception as e:
                 logger.error(f"DBWrapper executemany failed: {e}")
+                raise e
     async def fetch_all(self, query: str, params: dict = None):
         async with engine.connect() as conn:
             try:
