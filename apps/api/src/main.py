@@ -215,39 +215,18 @@ async def initialize_backend_services():
             await run_migration_step("""
                 ALTER TABLE unified_odds 
                 ADD CONSTRAINT uix_unified_odds_unique 
-                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
+                UNIQUE (sport, event_id, player_name, market_key, outcome_key, bookmaker)
                 NULLS NOT DISTINCT
             """)
 
             # EV Signals
             await run_migration_step("ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_signals_unique")
-            await run_migration_step("""
-                ALTER TABLE ev_signals 
-                ADD CONSTRAINT uix_ev_signals_unique 
-                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
-                NULLS NOT DISTINCT
-            """)
-
-            # Unified Odds
-            await run_migration_step("ALTER TABLE unified_odds DROP CONSTRAINT IF EXISTS uix_unified_odds_unique")
-            await run_migration_step("""
-                ALTER TABLE unified_odds 
-                ADD CONSTRAINT uix_unified_odds_unique 
-                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
-                NULLS NOT DISTINCT
-            """)
-            await run_migration_step("""
-                ALTER TABLE unified_odds 
-                ADD CONSTRAINT uix_unified_odds_unique 
-                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker)
-            """)
-
-            # EV Signals
             await run_migration_step("ALTER TABLE ev_signals DROP CONSTRAINT IF EXISTS uix_ev_unique")
             await run_migration_step("""
                 ALTER TABLE ev_signals 
                 ADD CONSTRAINT uix_ev_unique 
-                UNIQUE (sport, event_id, market_key, outcome_key, bookmaker, engine_version)
+                UNIQUE (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version)
+                NULLS NOT DISTINCT
             """)
             
             logger.info("📡 [Background Init] Schema migrations and indexes complete.")

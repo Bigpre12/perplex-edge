@@ -392,7 +392,7 @@ class UnifiedOdds(Base):
     away_team = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', name='uix_unified_odds_unique'),)
+    __table_args__ = (UniqueConstraint('sport', 'event_id', 'player_name', 'market_key', 'outcome_key', 'bookmaker', name='uix_unified_odds_unique'),)
 
 class UnifiedEVSignal(Base):
     """Unified EV Signals: Computed betting edges from the EV engine."""
@@ -412,7 +412,7 @@ class UnifiedEVSignal(Base):
     engine_version = Column(String, nullable=False, server_default='v1')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
-    __table_args__ = (UniqueConstraint('sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', name='uix_ev_unique'),)
+    __table_args__ = (UniqueConstraint('sport', 'event_id', 'player_name', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', name='uix_ev_unique'),)
 
 class LineTick(Base):
     """Line Ticks: Historical record of price/line changes for movement analysis."""
