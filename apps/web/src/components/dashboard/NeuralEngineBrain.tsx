@@ -40,14 +40,14 @@ export default function NeuralEngineBrain() {
       try {
         const brainStatus = await API.brain.status();
         if (!isApiError(brainStatus)) {
-          const stats = (brainStatus as any).metrics || {};
+          const stats = (brainStatus as any)?.metrics || (brainStatus as any)?.brain?.metrics || (brainStatus as any) || {};
           setData({
-            props_scored: stats.props_scored_today ?? 0,
-            injury_impacts: stats.injury_impacts ?? 0,
-            decisions: stats.decisions ?? [],
-            active_edges: stats.active_edges ?? stats.elite_signals ?? 0,
-            clv_enabled: stats.clv_enabled ?? true,
-            brain_health: (brainStatus as any).inference_engine ?? 'IDLE'
+            props_scored: stats?.props_scored_today ?? stats?.props_scored ?? 0,
+            injury_impacts: stats?.injury_impacts ?? 0,
+            decisions: stats?.decisions ?? [],
+            active_edges: stats?.active_edges ?? stats?.elite_signals ?? stats?.edges ?? 0,
+            clv_enabled: stats?.clv_enabled ?? true,
+            brain_health: (brainStatus as any)?.inference_engine ?? (brainStatus as any)?.brain?.status ?? 'IDLE'
           });
         }
       } catch (err) {

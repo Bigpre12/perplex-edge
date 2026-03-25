@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react'
-import api, { isApiError, unwrap } from '@/lib/api'
+import API, { isApiError, unwrap } from '@/lib/api'
 import { useBackendStatus } from './useBackendStatus'
 import { useLiveData } from './useLiveData'
 import { SportKey } from '@/lib/sports.config'
@@ -53,21 +53,21 @@ export const useBrainData = (requestedSportKey?: SportKey) => {
 
     // 1. Fetch Decisions
     const { data: decData, loading: decLoading, refresh: decRefetch } = useLiveData(
-        () => api.brain.decisions(sportKey),
+        () => API.brain.decisions(sportKey),
         ['brain-decisions', sportKey],
         { enabled: !isDown, refreshInterval: 30000 }
     )
 
     // 2. Fetch Health/Metrics
     const { data: healthData, loading: healthLoading, refresh: healthRefetch } = useLiveData(
-        () => api.brain.metrics(),
+        () => API.brain.metrics(),
         ['brain-metrics', sportKey],
         { enabled: !isDown, refreshInterval: 30000 }
     )
 
     // 3. Fetch Intel
     const { data: intelData, loading: intelLoading, refresh: intelRefetch } = useLiveData(
-        () => api.recentIntel(sportKey),
+        () => API.recentIntel(sportKey),
         ['recent-intel', sportKey],
         { enabled: !isDown, refreshInterval: 60000 }
     )

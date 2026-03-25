@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 // Removed Clerk useAuth, using Supabase auth instead since we migrated
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import { PLANS, startCheckout, PlanKey } from "@/lib/stripe";
 import { useSubscription } from "@/hooks/useSubscription";
 

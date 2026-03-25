@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { ChevronRight, Check } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 
 const SPORTS = [
     { key: "basketball_nba", label: "🏀 NBA" },

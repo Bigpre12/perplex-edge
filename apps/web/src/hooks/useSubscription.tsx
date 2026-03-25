@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, createContext, useContext, useCallback, ReactNode } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import { canAccess, FeatureKey, Tier } from "@/lib/permissions";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 import { useLucrixStore } from "@/store";
 
 const BYPASS = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NEXT_PUBLIC_DEV_MODE === "true";
@@ -50,14 +50,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
         }
 
         try {
-            const data = await api.authMe();
-            if (isApiError(data)) {
+            const res = await API.authMe();
+            if (isApiError(res)) {
                 setStoreTier("free");
                 return;
             }
-            const normalizedTier = ((data as any).tier || "free").toLowerCase() as Tier;
+            const normalizedTier = ((res as any).tier || "free").toLowerCase() as Tier;
             setStoreTier(normalizedTier);
-            setStatus((data as any).status || "active");
+            setStatus((res as any).status || "active");
         } catch (err) {
             console.error("Fetch tier error:", err);
             setStoreTier("free");

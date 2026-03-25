@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Lock, Zap, ArrowRight, Check } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 
 interface Props {
     children: React.ReactNode;

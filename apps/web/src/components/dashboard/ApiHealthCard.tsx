@@ -9,7 +9,7 @@ interface HealthData {
   timestamp?: string;
 }
 
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export default function ApiHealthCard() {
   const [health, setHealth]   = useState<HealthStatus>("Checking");
@@ -18,7 +18,7 @@ export default function ApiHealthCard() {
   useEffect(() => {
     const check = async () => {
       try {
-        const data = await api.health();
+        const data = await API.health();
         if (!isApiError(data)) {
           setDetail(data);
           const s = data.status?.toLowerCase();
