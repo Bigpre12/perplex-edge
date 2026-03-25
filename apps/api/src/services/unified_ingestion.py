@@ -18,6 +18,7 @@ from services.odds_api_client import odds_api_client # type: ignore
 from services.persistence_helpers import upsert_props_live, insert_props_history, delete_props_for_sport # type: ignore
 from real_sports_api import _real_sports_api_instance # type: ignore
 from real_data_connector import real_data_connector # type: ignore
+from services.alert_writer import run_alert_detection # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -258,6 +259,7 @@ class UnifiedIngestionService:
             ("CLV Tracker", lambda: brain_clv_tracker.record_opening_line(records)),
             ("Injury Impact", lambda: injury_impact_brain.analyze_impacts(sport_key)),
             ("EV Engine", lambda: ev_engine.run_ev_cycle(sport_key)),
+            ("Alert Writer", lambda: run_alert_detection(sport_key)),
         ]
 
         for name, task_fn in secondary_tasks:
