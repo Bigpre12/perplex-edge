@@ -152,10 +152,11 @@ class EVService:
                         await session.execute(stmt)
                     else:
                         # Raw SQL fallback for Postgres as pg_insert is acting up with true_prob
-                        sql = """
+                        base_sql = """
                         INSERT INTO ev_signals (sport, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, implied_prob, engine_version, created_at, updated_at)
                         VALUES (:sport, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :implied_prob, :engine_version, now(), now())
-                        ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) 
+                        """
+                        update_clause = """
                         DO UPDATE SET 
                             price = EXCLUDED.price, 
                             line = EXCLUDED.line, 
@@ -164,6 +165,11 @@ class EVService:
                             implied_prob = EXCLUDED.implied_prob, 
                             updated_at = now()
                         """
+                        if row.get("player_name"):
+                            sql = base_sql + " ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL " + update_clause
+                        else:
+                            sql = base_sql + " ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NULL " + update_clause
+                            
                         await session.execute(text(sql), row)
                 
                 # 2. Add Historical Records
