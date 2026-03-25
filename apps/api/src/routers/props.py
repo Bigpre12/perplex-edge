@@ -86,61 +86,100 @@ async def list_props_legacy(
         logger.error(f"Error listing props logic for {sport}: {e}")
         return {"props": [], "count": 0, "updated": datetime.utcnow().isoformat() + "Z"}
 
-@router.get("/scored")
-async def scored_props(sport: Optional[str] = None, limit: int = 50, db: AsyncSession = Depends(get_async_db)):
-    """Returns top graded props. Falls back to team markets if no player props exist."""
+@router.get("/graded")
+async def get_graded_props(
+    sport: Optional[str] = Query(None),
+    limit: int = Query(50),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Returns graded/scored props. Falls back to all props_live if no player props."""
     try:
         from sqlalchemy import text
-        now = datetime.utcnow()
+        params = {"limit": limit}
         
-        # Try player props first
-        query = """
-            SELECT * FROM props_live 
+        # Try player props first (where player_name != team names)
+        player_query = """
+            SELECT * FROM props_live
             WHERE last_updated_at > NOW() - INTERVAL '24 hours'
               AND player_name IS NOT NULL
-              AND player_name != home_team 
+              AND player_name != home_team
               AND player_name != away_team
+              AND market_key NOT IN ('h2h', 'spreads', 'totals')
+            ORDER BY confidence DESC NULLS LAST
+            LIMIT :limit
         """
         if sport and sport != "all":
-            query += f" AND sport = '{sport}'"
-        query += f" ORDER BY confidence DESC NULLS LAST, ev_percentage DESC NULLS LAST LIMIT {limit}"
-        
-        result_player = await db.execute(text(query))
-        rows = result_player.mappings().all()
-        
-        # Fallback: if no player props, return team markets with confidence scores
-        if not rows:
-            fallback_query = """
-                SELECT * FROM props_live
-                WHERE last_updated_at > NOW() - INTERVAL '24 hours'
-            """
-            if sport and sport != "all":
-                fallback_query += f" AND sport = '{sport}'"
-            fallback_query += f" ORDER BY confidence DESC NULLS LAST LIMIT {limit}"
-            
-            result_team = await db.execute(text(fallback_query))
-            rows = result_team.mappings().all()
-            
-            return {
-                "props": [dict(r) for r in rows],
-                "data": [dict(r) for r in rows], # For backwards compat with frontend expectations
-                "count": len(rows),
-                "updated": datetime.utcnow().isoformat() + "Z",
-                "fallback": "team_markets",
-                "note": "Player props markets not yet ingested for current cycle"
-            }
-        
+            player_query = player_query.replace(
+                "ORDER BY", "AND sport = :sport ORDER BY"
+            )
+            params["sport"] = sport
+
+        rows = (await db.execute(text(player_query), params)).mappings().all()
+    except Exception:
+        rows = []
+
+    if rows:
         return {
             "props": [dict(r) for r in rows],
-            "data": [dict(r) for r in rows],
             "count": len(rows),
             "updated": datetime.utcnow().isoformat() + "Z",
             "fallback": None
         }
 
+    # Fallback: return ALL props_live (team markets included)
+    fallback_query = """
+        SELECT * FROM props_live
+        WHERE last_updated_at > NOW() - INTERVAL '24 hours'
+        ORDER BY confidence DESC NULLS LAST, is_best_over DESC NULLS LAST
+        LIMIT :limit
+    """
+    if sport and sport != "all":
+        fallback_query = fallback_query.replace(
+            "ORDER BY", "AND sport = :sport ORDER BY"
+        )
+        params["sport"] = sport
+
+    try:
+        rows = (await db.execute(text(fallback_query), params)).mappings().all()
     except Exception as e:
-        logger.error(f"Error listing scored props: {e}", exc_info=True)
-        return {"data": [], "props": [], "count": 0}
+        return {"props": [], "count": 0, "error": str(e),
+                "updated": datetime.utcnow().isoformat() + "Z",
+                "fallback": "error"}
+
+    return {
+        "props": [dict(r) for r in rows],
+        "count": len(rows),
+        "updated": datetime.utcnow().isoformat() + "Z",
+        "fallback": "team_markets",
+        "note": "No player props ingested yet for current cycle. Showing team markets."
+    }
+
+@router.get("/scored")
+async def scored_props(
+    sport: Optional[str] = Query(None),
+    limit: int = Query(50),
+    db: AsyncSession = Depends(get_async_db)
+):
+    try:
+        from sqlalchemy import text
+        query = """
+            SELECT * FROM props_live
+            WHERE last_updated_at > NOW() - INTERVAL '24 hours'
+              AND confidence IS NOT NULL
+            ORDER BY confidence DESC NULLS LAST
+            LIMIT :limit
+        """
+        params = {"limit": limit}
+        if sport and sport != "all":
+            query = query.replace("ORDER BY", "AND sport = :sport ORDER BY")
+            params["sport"] = sport
+
+        rows = (await db.execute(text(query), params)).mappings().all()
+        data = [dict(r) for r in rows]
+        return {"data": data, "results": data, "count": len(data),
+                "updated": datetime.utcnow().isoformat() + "Z"}
+    except Exception as e:
+        return {"data": [], "results": [], "count": 0, "error": str(e)}
 
 # Phase 6 Canonical Board Endpoint
 @router.get("/{sport_path}")

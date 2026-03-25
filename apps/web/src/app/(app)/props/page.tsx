@@ -43,11 +43,10 @@ function PropsPageContent() {
   const filteredProps = useMemo(() => {
     let result = [...propsList];
 
-    // Filter out team markets (H2H, Spreads, Totals)
+    // Allow team markets to show when player props are missing
     result = result.filter(p => {
-      const sType = (p.stat_type || "").toLowerCase();
-      const isTeamMarket = sType === 'h2h' || sType === 'spreads' || sType === 'totals' || !p.player_name;
-      return !isTeamMarket;
+      if (!p.player_name && !p.team && !p.opponent) return false;
+      return true;
     });
 
     // Source data EV slider filter (handled locally if minEv < 0, else API did it)

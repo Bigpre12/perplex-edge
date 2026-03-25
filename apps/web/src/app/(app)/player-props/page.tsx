@@ -61,12 +61,13 @@ function PlayerPropsContent() {
 
     const filtered = (limitedData as any[]).filter((p: any) => {
         const sType = (p.stat_type || "").toLowerCase();
-        const isTeamMarket = sType === 'h2h' || sType === 'spreads' || sType === 'totals' || !p.player_name;
-        if (isTeamMarket) return false;
+        // Allow team markets to show when player props are missing
+        if (!p.player_name && !p.home_team && !p.team) return false;
         
         return (
             (p.player_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            (p.stat_type?.toLowerCase().includes(searchQuery.toLowerCase()))
+            (p.stat_type?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (p.team?.toLowerCase().includes(searchQuery.toLowerCase()))
         );
     });
 
