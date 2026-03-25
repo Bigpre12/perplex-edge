@@ -47,7 +47,7 @@ export default function HitRatePage() {
         </span>
       )
     },
-    { header: 'Total Picks', accessor: 'picks', className: 'text-white/40' },
+    { header: 'Total Picks', accessor: (p: any) => p.picks, className: 'text-white/40' },
     { 
       header: 'Streak', 
       accessor: (p: PlayerPerformance) => (

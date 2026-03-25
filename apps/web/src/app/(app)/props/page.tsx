@@ -29,7 +29,7 @@ export default function PropsPage() {
         </div>
       ) 
     },
-    { header: 'Market', accessor: 'market_key', className: 'capitalize' },
+    { header: 'Market', accessor: (p: any) => p.market_key, className: 'capitalize' },
     { header: 'Line', accessor: (p: PropRecord) => <span className="font-mono">{p.line}</span> },
     { 
       header: 'Odds', 
@@ -42,20 +42,20 @@ export default function PropsPage() {
     },
     { 
       header: 'Confidence', 
-      accessor: (p: PropRecord) => (
-        <div className="w-24 bg-white/5 h-1.5 rounded-full overflow-hidden">
-          <div 
-            className="bg-blue-500 h-full" 
-            style={{ width: `${(p.confidence || 0) * 100}%` }} 
-          />
-        </div>
-      )
+      accessor: (p: PropRecord) => {
+        const barStyle = { width: `${(p.confidence || 0) * 100}%` } as React.CSSProperties;
+        return (
+          <div className="w-24 bg-white/5 h-1.5 rounded-full overflow-hidden">
+            {React.createElement('div', { className: 'bg-blue-500 h-full', style: barStyle })}
+          </div>
+        );
+      }
     },
     { 
       header: 'Grade', 
       accessor: (p: PropRecord) => <GradeBadge grade={p.grade} /> 
     },
-    { header: 'Bookmaker', accessor: 'book', className: 'text-xs text-white/50 uppercase' },
+    { header: 'Bookmaker', accessor: (p: any) => p.book, className: 'text-xs text-white/50 uppercase' },
   ];
 
   return (
@@ -74,6 +74,8 @@ export default function PropsPage() {
              <select 
                value={gradeFilter} 
                onChange={(e) => setGradeFilter(e.target.value)}
+               title="Grade Filter"
+               aria-label="Grade Filter"
                className="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
              >
                <option value="all">All Grades</option>

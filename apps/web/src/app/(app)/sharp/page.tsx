@@ -5,7 +5,7 @@ import { useSharpMoney, SharpAlert } from '@/hooks/useSharpMoney';
 import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
-import { Flame, Whale, TrendingUp, Clock } from 'lucide-react';
+import { Flame, Anchor, TrendingUp, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function SharpPage() {
@@ -33,7 +33,7 @@ export default function SharpPage() {
           )}
           {a.is_whale && (
             <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase">
-              <Whale className="w-3 h-3" />
+              <Anchor className="w-3 h-3" />
               <span>Whale</span>
             </div>
           )}
@@ -94,7 +94,7 @@ export default function SharpPage() {
                 <div key={whale.id} className="relative group overflow-hidden rounded-3xl bg-blue-600/5 border border-blue-500/20 p-6 transition-all hover:bg-blue-600/10">
                    <div className="flex items-center justify-between mb-4">
                       <div className="p-3 rounded-2xl bg-blue-500/20 text-blue-400">
-                        <Whale className="w-6 h-6" />
+                        <Anchor className="w-6 h-6" />
                       </div>
                       <span className="text-[10px] font-black uppercase text-blue-400/50 tracking-widest">Premium Signal</span>
                    </div>
@@ -105,7 +105,7 @@ export default function SharpPage() {
                       <span className="text-xs font-black text-green-400 uppercase">{whale.sharp_side}</span>
                    </div>
                    <div className="absolute bottom-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                      <Whale className="w-24 h-24" />
+                      <Anchor className="w-24 h-24" />
                    </div>
                 </div>
              ))}

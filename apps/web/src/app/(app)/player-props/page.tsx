@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, TrendingUp, Brain } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { usePropsBoard } from "@/hooks/usePropsBoard";
-import { api, unwrap } from "@/lib/api";
+import API, { api, unwrap } from "@/lib/api";
 import { safeDate, formatTime } from "@/lib/dateUtils";
 
 export default function PlayerPropsPage() {
@@ -336,11 +336,11 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
 function HeroModal({ playerName, sport, onClose }: { playerName: string | null, sport: string, onClose: () => void }) {
     const { data: heroRes, isLoading } = useQuery({
         queryKey: ["hero", playerName, sport],
-        queryFn: () => api.hero(playerName || "", sport),
+        queryFn: () => API.hero(playerName || "", sport),
         enabled: !!playerName
     });
 
-    const hero = unwrap(heroRes);
+    const hero = heroRes?.data || heroRes;
 
     if (!playerName) return null;
 

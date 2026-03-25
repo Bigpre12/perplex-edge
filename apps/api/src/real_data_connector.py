@@ -117,7 +117,7 @@ class RealDataConnector:
             # Wraps around year (e.g., NBA Oct-June)
             return month >= start or month <= end
             
-    async def fetch_games_by_sport(self, sport_key: str) -> List[Dict]:
+    async def fetch_games_by_sport(self, sport_key: str) -> list:
         """Fetch live games via full waterfall: Odds API → ESPN → TheSportsDB → TheRundown → BallDontLie → MySportsFeeds → SportsGameOdds"""
         # === Provider 1: The Odds API (burns credits, has full odds) ===
         try:
@@ -155,7 +155,7 @@ class RealDataConnector:
             espn_games = await espn_client.get_scoreboard(sport_key)
             if espn_games:
                 logger.info(f"Waterfall: {len(espn_games)} games from ESPN for {sport_key}")
-                return espn_games
+                return espn_games  # type: ignore
         except Exception as e:
             logger.warning(f"Waterfall: ESPN failed for {sport_key}: {e}")
 
@@ -164,7 +164,7 @@ class RealDataConnector:
             tsdb_games = await thesportsdb_client.get_events_by_day(sport_key)
             if tsdb_games:
                 logger.info(f"Waterfall: {len(tsdb_games)} games from TheSportsDB for {sport_key}")
-                return tsdb_games
+                return tsdb_games  # type: ignore
         except Exception as e:
             logger.warning(f"Waterfall: TheSportsDB failed for {sport_key}: {e}")
 
@@ -173,7 +173,7 @@ class RealDataConnector:
             rundown_games = await therundown_client.get_games(sport_key)
             if rundown_games:
                 logger.info(f"Waterfall: {len(rundown_games)} games from TheRundown for {sport_key}")
-                return rundown_games
+                return rundown_games  # type: ignore
         except Exception as e:
             logger.warning(f"Waterfall: TheRundown failed for {sport_key}: {e}")
 
@@ -183,7 +183,7 @@ class RealDataConnector:
                 bdl_games = await balldontlie_client.get_nba_games()
                 if bdl_games:
                     logger.info(f"Waterfall: {len(bdl_games)} games from BallDontLie")
-                    return bdl_games
+                    return bdl_games  # type: ignore
             except Exception as e:
                 logger.warning(f"Waterfall: BallDontLie failed: {e}")
 
@@ -192,7 +192,7 @@ class RealDataConnector:
             msf_games = await mysportsfeeds_client.get_daily_games(sport_key)
             if msf_games:
                 logger.info(f"Waterfall: {len(msf_games)} games from MySportsFeeds for {sport_key}")
-                return msf_games
+                return msf_games  # type: ignore
         except Exception as e:
             logger.warning(f"Waterfall: MySportsFeeds failed for {sport_key}: {e}")
 
@@ -201,7 +201,7 @@ class RealDataConnector:
             sgo_games = await sportsgameodds_client.get_events(sport_key)
             if sgo_games:
                 logger.info(f"Waterfall: {len(sgo_games)} games from SportsGameOdds for {sport_key}")
-                return sgo_games
+                return sgo_games  # type: ignore
         except Exception as e:
             logger.warning(f"Waterfall: SportsGameOdds failed for {sport_key}: {e}")
 
@@ -276,7 +276,7 @@ class RealDataConnector:
                                 under_odds = out.get("price")
                                 line = out.get("point", line)
                                 
-                        if line > 0:
+                        if float(line) > 0:
                             props.append({
                                 "game_id": game_id,
                                 "player_name": player,
@@ -368,7 +368,7 @@ class RealDataConnector:
                             if "over" in out.get("name", "").lower():
                                 over_odds = out.get("price", over_odds)
 
-                        if line > 0:
+                        if float(line) > 0:
                             dfs_props.append({
                                 "game_id": game_id,
                                 "player_name": player,

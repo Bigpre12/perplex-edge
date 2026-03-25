@@ -106,7 +106,7 @@ async def initialize_backend_services():
                 async with engine.begin() as conn:
                     await conn.execute(text(query))
             except Exception as e:
-                q_snippet = str(query)[:100] if query else "NULL"
+                q_snippet = str(query)[0:100] if query else "NULL"
                 logger.warning(f"Migration step failed (continuing): {q_snippet}... Error: {e}")
 
         if not is_sqlite:

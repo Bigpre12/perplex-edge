@@ -75,7 +75,7 @@ export default function LivePage() {
           </div>
         ) : isError ? (
           <ErrorRetry onRetry={() => refetch()} />
-        ) : games?.length === 0 ? (
+        ) : !games || games.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 space-y-4 opacity-30">
              <Trophy className="w-16 h-16" />
              <p className="text-xl font-bold uppercase tracking-widest">No Active Games</p>

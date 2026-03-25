@@ -170,6 +170,14 @@ export const API = {
         } catch (err) {
             return handleApiError(err);
         }
+    },
+    hero: async (playerName: string, sport: string) => {
+        try {
+            const { data } = await api.get('/api/hero', { params: { name: playerName, sport } });
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
     }
 };
 

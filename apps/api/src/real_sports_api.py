@@ -39,7 +39,7 @@ class RealSportsAPI:
         if self.odds_api_keys:
             self.odds_api_key_index += 1
             new_key = self._get_current_odds_api_key()
-            logger.info(f"🔄 Rotating Odds API Key. New Slot: {self.odds_api_key_index % len(self.odds_api_keys)}. Key: {new_key[:6]}...")
+            logger.info(f"🔄 Rotating Odds API Key. New Slot: {self.odds_api_key_index % len(self.odds_api_keys)}.")
 
     async def fetch_odds_from_theodds(self, sport: str = "basketball_nba"):
         """Fetch real-time odds from The Odds API with automated key rotation"""
@@ -63,7 +63,7 @@ class RealSportsAPI:
                     response = await client.get(url, params=params, timeout=10.0)
                     
                     if response.status_code in [401, 403, 429]:
-                        logger.warning(f"⚠️ Odds API Key {current_key[:6]}... failed (Status: {response.status_code}). Rotating...")
+                        logger.warning(f"⚠️ Odds API Key {current_key[0:6]}... failed (Status: {response.status_code}). Rotating...")
                         self._rotate_odds_api_key()
                         continue
                         
@@ -71,7 +71,7 @@ class RealSportsAPI:
                     return response.json()
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code in [401, 403, 429]:
-                        logger.warning(f"⚠️ Odds API Key {current_key[:6]}... failed with {e.response.status_code}. Rotating...")
+                        logger.warning(f"⚠️ Odds API Key {current_key[0:6]}... failed with {e.response.status_code}. Rotating...")
                         self._rotate_odds_api_key()
                         continue
                     logger.error(f"Error fetching odds: {e}")
@@ -117,7 +117,7 @@ class RealSportsAPI:
 
     # _get_mock_roster removed for production.
 
-    async def fetch_league_rosters(self, sport: str = "nba") -> Dict[str, List[Dict]]:
+    async def fetch_league_rosters(self, sport: str = "nba") -> dict:
         """Fetch rosters for all major teams in a league for seeding pipeline"""
         common_teams = {
             "nba": ["Lakers", "Celtics", "Warriors", "Knicks", "Nuggets", "Suns", "Bucks", "76ers"],
@@ -256,21 +256,23 @@ class TrackRecordBuilder:
                     
                     # Only include positive EV picks
                     if ev > 0:
+                        st = game.get("start_time")
+                        game_date_str = st.isoformat() if isinstance(st, datetime) else datetime.now(timezone.utc).isoformat()
                         pick = {
                             "id": len(picks) + 1,
                             "game_id": game["id"],
-                            "game_date": game.get("start_time").isoformat() if isinstance(game.get("start_time"), datetime) else datetime.now(timezone.utc).isoformat(),
+                            "game_date": game_date_str,
                             "teams": f"{game.get('away_team_name', 'Away')} @ {game.get('home_team_name', 'Home')}",
                             "player_name": prop["player_name"],
                             "stat_type": prop["stat_type"],
                             "line": float(point),
                             "over_odds": int(price),
                             "bookmaker": prop.get("sportsbook", "Unknown"),
-                            "model_probability": round(float(model_prob), 3),
-                            "implied_probability": round(float(implied_prob), 3),
-                            "ev_percentage": round(float(ev), 2),
-                            "confidence": round(50 + (float(ev or 0) * 10), 1),
-                            "predicted_hit_rate": round(float(model_prob or 0) * 100, 1),
+                            "model_probability": float(f"{model_prob:.3f}"),
+                            "implied_probability": float(f"{implied_prob:.3f}"),
+                            "ev_percentage": float(f"{ev:.2f}"),
+                            "confidence": float(f"{(50 + (float(ev or 0) * 10)):.1f}"),
+                            "predicted_hit_rate": float(f"{(float(model_prob or 0) * 100):.1f}"),
                             "created_at": datetime.now(timezone.utc).isoformat(),
                             "status": "pending"
                         }
@@ -287,7 +289,9 @@ class TrackRecordBuilder:
         try:
             graded_picks = []
             
-            for pick in picks:
+            for p in picks:
+                if not isinstance(p, dict): continue
+                pick: dict = p
                 # Get game results
                 results = await self.api.get_game_results(pick.get("game_id", ""))
                 
@@ -300,6 +304,7 @@ class TrackRecordBuilder:
                             break
                     
                     if player_stats:
+                        # type: ignore
                         actual_value = float(player_stats.get(pick.get("stat_type", ""), 0))
                         line = float(pick.get("line", 0))
                         
@@ -307,14 +312,14 @@ class TrackRecordBuilder:
                         won = actual_value > line
                         
                         # Calculate profit/loss
-                        odds = int(pick.get("over_odds", -110))
-                        stake = 110  # Standard stake
+                        odds = float(pick.get("over_odds", -110))
+                        stake = 110.0  # Standard stake
                         
                         if won:
                             if odds > 0:
-                                profit = (float(odds) / 100) * stake
+                                profit = float((odds / 100) * stake)
                             else:
-                                profit = (100 / abs(float(odds))) * stake
+                                profit = float((100 / abs(odds)) * stake)
                         else:
                             profit = -stake
                         
@@ -328,10 +333,10 @@ class TrackRecordBuilder:
                             "actual_value": actual_value,
                             "line_result": f"{actual_value} vs {line}",
                             "won": won,
-                            "profit_loss": round(float(profit), 2),
-                            "roi": round(float(profit / stake) * 100, 2),
-                            "closing_odds": closing_odds,
-                            "clv_cents": round(float(clv_cents), 2),
+                            "profit_loss": float(f"{profit:.2f}"),
+                            "roi": float(f"{(profit / stake) * 100:.2f}"),
+                            "closing_odds": float(f"{closing_odds:.2f}"),
+                            "clv_cents": float(f"{clv_cents:.2f}"),
                             "graded_at": datetime.now(timezone.utc).isoformat(),
                             "status": "graded"
                         }
@@ -364,8 +369,8 @@ class TrackRecordBuilder:
         clv_win_rate = (positive_clv_picks / total_picks) * 100 if total_picks > 0 else 0
         
         # EV validation
-        avg_ev = sum(p.get("ev_percentage", 0) for p in graded_picks) / total_picks if total_picks > 0 else 0
-        realized_ev = roi  # ROI approximates realized EV
+        avg_ev = float(sum(p.get("ev_percentage", 0.0) for p in graded_picks) / total_picks) if total_picks > 0 else 0.0
+        realized_ev = float(roi)  # ROI approximates realized EV
         
         # Performance by bookmaker
         bookmaker_performance = {}
@@ -375,14 +380,14 @@ class TrackRecordBuilder:
                 bookmaker_performance[bookmaker] = {
                     "picks": 0,
                     "wins": 0,
-                    "profit": 0,
-                    "roi": 0
+                    "profit": 0.0,
+                    "roi": 0.0
                 }
             
-            bookmaker_performance[bookmaker]["picks"] += 1
+            bookmaker_performance[bookmaker]["picks"] += int(1)
             if pick.get("won", False):
-                bookmaker_performance[bookmaker]["wins"] += 1
-            bookmaker_performance[bookmaker]["profit"] += pick.get("profit_loss", 0)
+                bookmaker_performance[bookmaker]["wins"] += int(1)
+            bookmaker_performance[bookmaker]["profit"] += float(pick.get("profit_loss", 0.0))
         
         # Calculate ROI for each bookmaker
         for bookmaker in bookmaker_performance:
@@ -395,15 +400,15 @@ class TrackRecordBuilder:
             "total_picks": total_picks,
             "won_picks": won_picks,
             "lost_picks": lost_picks,
-            "hit_rate": round(float(hit_rate), 2),
-            "total_profit": round(float(total_profit), 2),
+            "hit_rate": float(f"{hit_rate:.2f}"),
+            "total_profit": float(f"{total_profit:.2f}"),
             "total_stake": total_stake,
-            "roi": round(float(roi), 2),
-            "avg_clv": round(float(avg_clv), 2),
-            "clv_win_rate": round(float(clv_win_rate), 2),
-            "avg_ev": round(float(avg_ev), 2),
-            "realized_ev": round(float(realized_ev), 2),
-            "ev_accuracy": round(float(realized_ev / avg_ev) * 100, 2) if avg_ev > 0 else 0,
+            "roi": float(f"{roi:.2f}"),
+            "avg_clv": float(f"{avg_clv:.2f}"),
+            "clv_win_rate": float(f"{clv_win_rate:.2f}"),
+            "avg_ev": float(f"{avg_ev:.2f}"),
+            "realized_ev": float(f"{realized_ev:.2f}"),
+            "ev_accuracy": float(f"{(realized_ev / avg_ev) * 100:.2f}") if avg_ev > 0 else 0.0,
             "bookmaker_performance": bookmaker_performance,
             "track_record_built": datetime.now(timezone.utc).isoformat(),
             "validation_status": "complete"

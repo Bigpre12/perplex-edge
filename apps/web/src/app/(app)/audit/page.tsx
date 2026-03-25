@@ -69,11 +69,14 @@ export default function AuditPage() {
     },
     { 
       header: 'Edge', 
-      accessor: (r: any) => (
-        <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
-          <div className="bg-blue-500 h-full" style={{ width: `${(r.confidence || 0) * 100}%` }} />
-        </div>
-      )
+      accessor: (r: any) => {
+        const barStyle = { width: `${(r.confidence || 0) * 100}%` } as React.CSSProperties;
+        return (
+          <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
+            {React.createElement('div', { className: 'bg-blue-500 h-full', style: barStyle })}
+          </div>
+        );
+      }
     },
     { header: 'Book', accessor: 'book', className: 'text-[10px] uppercase text-white/40' },
     { 
@@ -133,6 +136,8 @@ export default function AuditPage() {
                     disabled={page === 0}
                     onClick={() => setPage(page - 1)}
                     className="p-1 hover:bg-white/5 rounded disabled:opacity-20"
+                    title="Previous Page"
+                    aria-label="Previous Page"
                  >
                     <ChevronLeft className="w-5 h-5" />
                  </button>
@@ -141,6 +146,8 @@ export default function AuditPage() {
                     disabled={(page + 1) * limit >= (auditData?.total || 0)}
                     onClick={() => setPage(page + 1)}
                     className="p-1 hover:bg-white/5 rounded disabled:opacity-20"
+                    title="Next Page"
+                    aria-label="Next Page"
                  >
                     <ChevronRight className="w-5 h-5" />
                  </button>

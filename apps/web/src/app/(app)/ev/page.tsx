@@ -45,7 +45,7 @@ export default function EVPage() {
         </span>
       )
     },
-    { header: 'Bookmaker', accessor: 'bookmaker', className: 'uppercase text-xs font-medium' },
+    { header: 'Bookmaker', accessor: (p: any) => p.bookmaker, className: 'uppercase text-xs font-medium' },
     { 
       header: 'Recommendation', 
       accessor: (p: EVRecord) => (

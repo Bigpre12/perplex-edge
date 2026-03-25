@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 
-export const useAudit = (page: number = 0, limit: int = 50) => {
+export const useAudit = (page: number = 0, limit: number = 50) => {
   return useQuery({
     queryKey: ['audit', page, limit],
     queryFn: async () => {

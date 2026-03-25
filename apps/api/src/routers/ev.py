@@ -49,7 +49,7 @@ async def get_ev_signals(
               AND implied_over > 0
               AND implied_over < 1
         """
-        params = {"limit": limit}
+        params: dict = {"limit": limit}
         if sport:
             query += " AND sport = :sport"
             params["sport"] = sport

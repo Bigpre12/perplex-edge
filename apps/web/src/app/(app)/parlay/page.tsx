@@ -123,7 +123,7 @@ export default function ParlayPage() {
                           </div>
                           <div className="flex items-center space-x-4">
                              <span className="font-mono text-green-400 text-sm">{leg.odds > 0 ? `+${leg.odds}` : leg.odds}</span>
-                             <button onClick={() => toggleLeg(leg)} className="text-white/20 hover:text-red-500 transition-colors">
+                             <button onClick={() => toggleLeg(leg)} className="text-white/20 hover:text-red-500 transition-colors" title="Remove Leg" aria-label="Remove Leg">
                                 <Trash2 className="w-4 h-4" />
                              </button>
                           </div>
