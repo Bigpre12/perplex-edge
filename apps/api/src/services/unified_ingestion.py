@@ -95,7 +95,7 @@ class UnifiedIngestionService:
 
         # 2d. Fetch Player Props (Requires per-event calls)
         PROP_MARKETS_BY_SPORT = {
-            "basketball_nba": "player_points,player_rebounds,player_assists,player_threes,player_blocks,player_steals,player_turnovers,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_rebounds_assists",
+            "basketball_nba": "player_points,player_rebounds,player_assists,player_threes",
             "americanfootball_nfl": "player_pass_tds,player_pass_yds,player_rush_yds,player_rec_yds,player_anytime_td",
             "icehockey_nhl": "player_points,player_power_play_points,player_shots_on_goal",
             "baseball_mlb": "pitcher_strikeouts,batter_hits,batter_home_runs"
@@ -104,7 +104,8 @@ class UnifiedIngestionService:
         if sport_key in PROP_MARKETS_BY_SPORT:
             event_ids = list(metadata_map.keys())
             # type: ignore (Pyre inference fail on list slice)
-            active_events = event_ids[:100] 
+            # Quota Protection: Cap at 25 events per cycle to prevent credit drain
+            active_events = event_ids[:25] 
             
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
             

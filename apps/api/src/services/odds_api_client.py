@@ -143,6 +143,7 @@ class OddsApiClient:
                         if self._rotate_key():
                             continue # Try next key
                         else:
+                            logger.critical("🚨 ALL Odds API keys exhausted or rate-limited. Ingestion will stall.")
                             break # No more keys
                     else:
                         logger.error(f"❌ Odds API error {resp.status_code}: {resp.text[:200]}")
