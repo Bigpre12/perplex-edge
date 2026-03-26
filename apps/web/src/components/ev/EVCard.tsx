@@ -77,7 +77,7 @@ export const EVCard: React.FC<EVCardProps> = ({ signal, index }) => {
             <CircularProgressbar
               value={signal.edge_percent}
               maxValue={15}
-              text={`${signal.edge_percent.toFixed(1)}%`}
+              text={signal.edge_percent != null ? `${signal.edge_percent.toFixed(1)}%` : "—"}
               styles={buildStyles({
                 textSize: "24px",
                 pathColor: edgeColor,

@@ -17,8 +17,8 @@ export function useFreshness(sport: string) {
     async function load() {
       try {
         const result = await api.get(`/api/signals/freshness?sport=${sport || ''}`);
-        if (!cancelled) {
-          setData(result?.data ?? null);
+        if (!cancelled && result?.data) {
+          setData(result.data);
         }
       } catch (err) {
         // silently ignore freshness poll errors

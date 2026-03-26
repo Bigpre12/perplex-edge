@@ -107,7 +107,7 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
                                         </div>
                                         {move.confidence !== undefined && (
                                             <div className="px-2 py-0.5 rounded-md text-[8px] font-black tracking-widest uppercase border border-white/10 bg-white/5 text-textMuted">
-                                                {(Number(move.confidence ?? 0) * 100).toFixed(1)}% TRUST LEVEL
+                                                {move.confidence != null ? `${(Number(move.confidence) * 100).toFixed(1)}%` : "0.0%"} TRUST LEVEL
                                             </div>
                                         )}
                                     </div>

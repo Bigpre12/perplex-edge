@@ -68,7 +68,7 @@ export function PlayerProfileCard({ playerId, propType, line }: Props) {
                         <span className={`text-lg font-bold ${Number(val) >= 0.7 ? "text-green-400" :
                                 Number(val) >= 0.5 ? "text-yellow-400" : "text-red-400"
                             }`}>
-                            {val != null ? `${(Number(val) * 100).toFixed(0)}%` : "—"}
+                            {val != null && !isNaN(Number(val)) ? `${(Number(val) * 100).toFixed(0)}%` : "—"}
                         </span>
                     </div>
                 ))}

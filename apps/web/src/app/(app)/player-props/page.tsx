@@ -387,11 +387,15 @@ function HeroModal({ playerName, sport, onClose }: { playerName: string | null, 
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
                                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">L5 Hit Rate</div>
-                                    <div className="text-2xl font-black text-green-500">{(hero.stats?.l5_hit * 100).toFixed(0)}%</div>
+                                    <div className="text-2xl font-black text-green-500">
+                                        {hero.stats?.l5_hit != null ? `${(hero.stats.l5_hit * 100).toFixed(0)}%` : "—"}
+                                    </div>
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
                                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">L10 Hit Rate</div>
-                                    <div className="text-2xl font-black text-green-500">{(hero.stats?.l10_hit * 100).toFixed(0)}%</div>
+                                    <div className="text-2xl font-black text-green-500">
+                                        {hero.stats?.l10_hit != null ? `${(hero.stats.l10_hit * 100).toFixed(0)}%` : "—"}
+                                    </div>
                                 </div>
                                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
                                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Current Line</div>
