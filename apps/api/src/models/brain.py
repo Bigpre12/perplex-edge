@@ -400,6 +400,7 @@ class UnifiedEVSignal(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     sport = Column(String, nullable=False, index=True)
     sport_key = Column(String, nullable=True) # Compatibility
+    prop_type = Column(String, nullable=True, index=True) # e.g. 'Player Points'
     event_id = Column(String, nullable=False, index=True)
     market_key = Column(String, nullable=False, index=True)
     outcome_key = Column(String, nullable=True) # can be 'over'/'under' or side name
