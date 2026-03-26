@@ -1,6 +1,7 @@
 {
-  "buildCommand": "cd apps/web && next build",
-  "outputDirectory": "apps/web/.next",
+  "rootDirectory": "apps/web",
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
   "framework": "nextjs",
   "rewrites": [
     {
