@@ -354,8 +354,9 @@ class UnifiedIngestionService:
                 r.is_sharp_book = any(s in book_lower for s in settings.SHARP_BOOKMAKERS)
                 r.is_soft_book = any(s in book_lower for s in settings.SOFT_BOOKMAKERS)
                 
-                # Simple confidence metric based on book counts for this line
-                r.confidence = float(min(len(prop_group) / 10.0, 1.0))
+                # Standardized confidence metric: capped at 0.95, 4 decimal precision
+                raw_conf = float(len(prop_group) / 10.0)
+                r.confidence = round(min(raw_conf, 0.95), 4)
                 
         return records
 

@@ -51,6 +51,11 @@ class OddsMapper:
                         logger.info(f"      Outcome: {name} | {desc} | {price} | {line}")
                         
                         if name is None or price is None: continue
+
+                        # NBA Spread Protection: skip anomalous lines
+                        if m_key == "spreads" and line is not None and abs(float(line)) > 20.0:
+                            logger.warning(f"OddsMapper: Rejected bad spread line {line} from {book_key}")
+                            continue
                         
                         # Outcome keys: over, under, home, away, etc.
                         side = name.lower()
