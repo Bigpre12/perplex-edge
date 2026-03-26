@@ -7,7 +7,7 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     async rewrites() {
-        const raw = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").trim();
+        const raw = "https://perplex-edge-backend-production.up.railway.app";
         const apiUrl = raw.startsWith("http") ? raw : `https://${raw}`;
         return [
             {
