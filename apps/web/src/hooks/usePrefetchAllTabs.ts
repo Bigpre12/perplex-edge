@@ -2,7 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { api } from '@/lib/api';
+import { API } from '@/lib/api';
 import { useSport } from '@/context/SportContext';
 
 /**
@@ -16,13 +16,13 @@ export function usePrefetchAllTabs() {
     useEffect(() => {
         const prefetch = async () => {
             const endpoints = [
-                { key: ['props', activeSport], fn: () => api.props(activeSport) },
-                { key: ['brain-metrics', activeSport], fn: () => api.brain.metrics() },
-                { key: ['injuries', activeSport], fn: () => api.injuries(activeSport) },
-                { key: ['ev-top', activeSport], fn: () => api.evTop(activeSport, 2) },
-                { key: ['sharp-moves', activeSport], fn: () => api.sharpMoves(activeSport) },
-                { key: ['line-movement', activeSport], fn: () => api.lineMovement(activeSport) },
-                { key: ['hit-rate-summary', activeSport], fn: () => api.hitRateSummary(activeSport) },
+                { key: ['props', activeSport], fn: () => API.props(activeSport) },
+                { key: ['brain-metrics', activeSport], fn: () => API.brainMetrics() },
+                { key: ['injuries', activeSport], fn: () => API.injuries(activeSport) },
+                { key: ['ev-top', activeSport], fn: () => API.evTop(activeSport, 2) },
+                { key: ['sharp-moves', activeSport], fn: () => API.sharpMoves(activeSport) },
+                { key: ['line-movement', activeSport], fn: () => API.lineMovement(activeSport) },
+                { key: ['hit-rate-summary', activeSport], fn: () => API.hitRateSummary(activeSport) },
             ];
 
             // Prefetch each query with a 1-minute stale time to ensure immediate tab availability

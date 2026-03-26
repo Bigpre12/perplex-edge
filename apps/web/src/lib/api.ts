@@ -178,6 +178,38 @@ export const API = {
         } catch (err) {
             return handleApiError(err);
         }
+    },
+    activeMoves: async (sport?: string) => {
+        try {
+            const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
+            return data?.alerts || data || [];
+        } catch (err) {
+            return [];
+        }
+    },
+    evTop: async (sport?: string, limit = 10) => {
+        try {
+            const { data } = await api.get(`/api/ev?sport=${sport || ''}&limit=${limit}`);
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
+    },
+    sharpMoves: async (sport?: string) => {
+        try {
+            const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
+            return data;
+        } catch (err) {
+            return { alerts: [], total: 0, status: 'unavailable' };
+        }
+    },
+    hitRateSummary: async (sport?: string) => {
+        try {
+            const { data } = await api.get(sport ? `/api/hit-rate?sport=${sport}` : '/api/hit-rate');
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
     }
 };
 

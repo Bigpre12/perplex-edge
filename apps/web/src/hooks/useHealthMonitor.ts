@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from 'react';
-import { api, resetCircuit, isApiError } from '@/lib/api';
+import API, { isApiError } from '@/lib/api';
 import { useLucrixStore } from "@/store";
 
 export function useHealthMonitor(intervalMs = 15_000) {
@@ -10,13 +10,12 @@ export function useHealthMonitor(intervalMs = 15_000) {
 
     const check = async () => {
         try {
-            const result = await api.health();
+            const result = await API.health();
             if (!isApiError(result)) {
                 failRef.current = 0;
-                resetCircuit();           // reset breaker when back online
                 setBackendOnline(true);
             } else {
-                throw new Error(result.error);
+                throw new Error("API reported error status");
             }
         } catch {
             failRef.current++;

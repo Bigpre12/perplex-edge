@@ -1,5 +1,4 @@
 "use client";
-// apps/web/src/hooks/useFreshness.ts
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
@@ -17,9 +16,9 @@ export function useFreshness(sport: string) {
 
     async function load() {
       try {
-        const result = await api.freshness(sport);
+        const result = await api.get(`/api/signals/freshness?sport=${sport || ''}`);
         if (!cancelled) {
-          setData(result?.data ?? result);
+          setData(result?.data ?? null);
         }
       } catch (err) {
         // silently ignore freshness poll errors

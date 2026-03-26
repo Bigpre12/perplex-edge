@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useUpgradeSuccess } from '@/hooks/useUpgradeSuccess';
 import { useSubscription } from '@/hooks/useSubscription';
 import { Activity, Loader2 } from "lucide-react";
+import { ErrorBoundary } from 'react-error-boundary';
 
 import SystemStatusBanner from "@/components/SystemStatusBanner";
 import StatsCards from "@/components/dashboard/StatsCards";
@@ -12,40 +13,62 @@ import { WhaleTracker } from '@/components/dashboard/WhaleTracker';
 import LiveTrackCard from '@/components/dashboard/LiveTrackCard';
 import RecentIntel from '@/components/RecentIntel';
 
-
 import { useSport } from '@/context/SportContext';
 import { api, isApiError } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { REFRESH_INTERVALS } from '@/hooks/useLiveData';
-import UpgradeCTA from '@/components/UpgradeCTA'; // Need to define or import
+import UpgradeCTA from '@/components/UpgradeCTA';
 
-const unwrap = (d: any): any[] => Array.isArray(d) ? d : (d?.data || d?.results || d?.items || d?.props || d?.games || []);
+const unwrap = (d: any): any[] => {
+    if (!d) return [];
+    if (Array.isArray(d)) return d;
+    return (d?.data || d?.results || d?.items || d?.props || d?.games || []);
+};
+
+function FallbackUI({ error }: { error: any }) {
+    return (
+        <div className="flex flex-col items-center justify-center h-64 gap-4 bg-lucrix-surface border border-white/10 rounded-xl p-8 shadow-xl">
+            <p className="text-red-400 font-black uppercase tracking-widest italic">Dashboard failed to load</p>
+            <p className="text-textMuted text-[10px] font-medium max-w-md text-center">{error?.message || "Quantum synchronization failure"}</p>
+            <button 
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 bg-brand-primary/20 hover:bg-brand-primary/30 border border-brand-primary/40 text-brand-primary rounded-lg text-xs font-black uppercase tracking-widest transition-all"
+            >
+                Reload Matrix
+            </button>
+        </div>
+    );
+}
 
 function DashboardContent() {
     useUpgradeSuccess("", () => { });
     const { tier, loading: subLoading, isPro } = useSubscription();
-    const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const isDev = typeof window !== 'undefined' && 
+                 (window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' ||
+                  process.env.NEXT_PUBLIC_DEV_MODE === 'true');
+    
     const { selectedSport: activeSport } = useSport();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
 
     const { data: propsData, isLoading: propsLoading } = useQuery({
         queryKey: ['props', activeSport],
-        queryFn: () => api.props(activeSport),
+        queryFn: () => api.get(`/api/props/graded?sport=${activeSport || ''}`).then(r => r.data),
         refetchInterval: REFRESH_INTERVALS.PROPS,
     });
     const liveProps = unwrap(propsData);
 
     const { data: injuriesData } = useQuery({
         queryKey: ['injuries', activeSport],
-        queryFn: () => api.injuries(activeSport),
+        queryFn: () => api.get(`/api/injuries?sport=${activeSport || ''}`).then(r => r.data),
         refetchInterval: REFRESH_INTERVALS.INJURIES,
     });
     const injuries = unwrap(injuriesData);
 
     const { data: healthData } = useQuery({
         queryKey: ['health'],
-        queryFn: () => api.health(),
+        queryFn: () => api.get('/api/health').then(r => r.data),
         refetchInterval: REFRESH_INTERVALS.HEALTH,
     });
 
@@ -72,7 +95,7 @@ function DashboardContent() {
 
                     {/* WhaleTracker only shown to pro+ */}
                     {mounted ? (
-                        (isPro || isDev || process.env.NEXT_PUBLIC_DEV_MODE === 'true') ? (
+                        (isPro || isDev) ? (
                             <WhaleTracker />
                         ) : (
                             <UpgradeCTA feature="Whale Intel" description="Tracks high-stakes positions in real-time." />
@@ -81,13 +104,13 @@ function DashboardContent() {
                         <div className="h-40 bg-lucrix-surface border border-lucrix-border rounded-xl animate-pulse" />
                     )}
 
-                    {/* Live Performance — real data from working-player-props */}
+                    {/* Live Performance */}
                     <div className="bg-lucrix-surface border border-lucrix-border p-6 rounded-xl shadow-card">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-white font-bold flex items-center gap-2 uppercase tracking-tight font-display">
                                 <Activity className="text-brand-purple animate-pulse" size={18} /> Live Performance
                             </h3>
-                            {liveProps.length > 0 && (
+                            {liveProps?.length > 0 && (
                                 <span className="text-[9px] bg-brand-purple/20 text-brand-purple px-2 py-0.5 rounded-sm font-black animate-pulse border border-brand-purple/30">
                                     {liveProps.length} ACTIVE
                                 </span>
@@ -100,25 +123,24 @@ function DashboardContent() {
                                     <div key={i} className="h-40 bg-lucrix-dark rounded-xl animate-pulse border border-lucrix-border" />
                                 ))}
                             </div>
-                        ) : liveProps.length > 0 ? (
+                        ) : liveProps?.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {liveProps.map((prop: any, idx: number) => {
-                                    const playerName = prop.player_name || prop.player?.name || 'Unknown';
-                                    const statType = prop.stat_type || prop.market?.stat_type || 'Stat';
-                                    const line: number = prop.line || prop.line_value || 0;
-                                    const side: 'over' | 'under' = prop.side === 'under' ? 'under' : 'over';
-                                    const conf: number = prop.confidence_score || prop.model_probability || 0;
-                                    // Estimate "current value" from model confidence vs line
+                                    const playerName = prop?.player_name || prop?.player?.name || 'Unknown';
+                                    const statType = prop?.stat_type || prop?.market?.stat_type || 'Stat';
+                                    const line: number = prop?.line || prop?.line_value || 0;
+                                    const side: 'over' | 'under' = prop?.side === 'under' ? 'under' : 'over';
+                                    const conf: number = prop?.confidence_score || prop?.model_probability || 0;
                                     const currentValue = parseFloat((line * conf * (side === 'over' ? 0.95 : 1.05)).toFixed(1));
                                     return (
                                         <LiveTrackCard
-                                            key={prop.id || idx}
+                                            key={prop?.id || idx}
                                             player={playerName}
                                             statType={statType}
                                             currentValue={currentValue}
                                             line={line}
                                             side={side}
-                                            gameStatus={prop.sportsbook || 'Model'}
+                                            gameStatus={prop?.sportsbook || 'Model'}
                                         />
                                     );
                                 })}
@@ -148,7 +170,7 @@ function DashboardContent() {
                         </div>
                     </div>
 
-                    {/* Recent Intel — live from ESPN and Backend */}
+                    {/* Recent Intel */}
                     <div className="bg-lucrix-surface border border-lucrix-border rounded-xl flex flex-col overflow-hidden shadow-card">
                         <div className="p-4 border-b border-lucrix-border bg-lucrix-dark/50">
                             <h4 className="text-[10px] font-black text-textSecondary uppercase tracking-widest flex items-center justify-between">
@@ -177,16 +199,16 @@ function DashboardContent() {
                         <div className="p-4 space-y-3">
                             {!mounted ? (
                                 <div className="h-20 bg-brand-danger/10 rounded-lg animate-pulse" />
-                            ) : injuries.length > 0 ? (
-                                injuries.filter((i: any) => ['Out', 'Questionable', 'Day-to-Day'].includes(i.status)).slice(0, 3).map((inj: any, idx: number) => (
-                                    <div key={(inj.player_name || inj.player) + idx} className="bg-brand-danger/5 border border-brand-danger/10 rounded-lg p-3 flex justify-between items-center text-xs transition-colors hover:bg-brand-danger/10">
+                            ) : injuries?.length > 0 ? (
+                                injuries.filter((i: any) => ['Out', 'Questionable', 'Day-to-Day'].includes(i?.status)).slice(0, 3).map((inj: any, idx: number) => (
+                                    <div key={(inj?.player_name || inj?.player || 'Unknown') + idx} className="bg-brand-danger/5 border border-brand-danger/10 rounded-lg p-3 flex justify-between items-center text-xs transition-colors hover:bg-brand-danger/10">
                                         <div>
-                                            <div className="font-bold text-white uppercase">{inj.player_name || inj.player || 'Unknown'}</div>
-                                            <div className="text-[9px] text-brand-danger/80 font-black uppercase">{inj.status} <span className="text-textMuted font-mono">({inj.body_part || 'General'})</span></div>
+                                            <div className="font-bold text-white uppercase">{inj?.player_name || inj?.player || 'Unknown'}</div>
+                                            <div className="text-[9px] text-brand-danger/80 font-black uppercase">{inj?.status} <span className="text-textMuted font-mono">({inj?.body_part || 'General'})</span></div>
                                         </div>
                                         <div className="text-right">
-                                            <div className={`font-mono text-[10px] ${inj.direction === 'positive' ? 'text-brand-success' : 'text-textSecondary'} font-bold`}>{inj.stat_impact || 'Impact Payout'}</div>
-                                            <div className="text-[9px] text-textMuted font-black uppercase tracking-widest">{inj.teammate_boost}</div>
+                                            <div className={`font-mono text-[10px] ${inj?.direction === 'positive' ? 'text-brand-success' : 'text-textSecondary'} font-bold`}>{inj?.stat_impact || 'Impact Payout'}</div>
+                                            <div className="text-[9px] text-textMuted font-black uppercase tracking-widest">{inj?.teammate_boost}</div>
                                         </div>
                                     </div>
                                 ))
@@ -202,7 +224,7 @@ function DashboardContent() {
 }
 
 function InternalHealthItem({ label, status }: any) {
-    const isGood = ['STABLE', 'SYNCED', 'ACTIVE', 'HEALTHY', 'CONNECTED'].includes(status);
+    const isGood = ['STABLE', 'SYNCED', 'ACTIVE', 'HEALTHY', 'CONNECTED'].includes(String(status).toUpperCase());
     return (
         <div className="flex items-center justify-between border-b border-lucrix-border pb-2 last:border-0 last:pb-0">
             <span className="text-xs text-textSecondary font-semibold">{label}</span>
@@ -215,13 +237,15 @@ function InternalHealthItem({ label, status }: any) {
 
 export default function Dashboard() {
     return (
-        <Suspense fallback={
-            <div className="flex flex-col items-center justify-center py-24">
-                <Loader2 className="animate-spin text-brand-cyan mb-4" size={32} />
-                <p className="text-textMuted text-[10px] font-black uppercase tracking-widest">Booting Neural Dashboard...</p>
-            </div>
-        }>
-            <DashboardContent />
-        </Suspense>
+        <ErrorBoundary FallbackComponent={FallbackUI}>
+            <Suspense fallback={
+                <div className="flex flex-col items-center justify-center py-24">
+                    <Loader2 className="animate-spin text-brand-cyan mb-4" size={32} />
+                    <p className="text-textMuted text-[10px] font-black uppercase tracking-widest">Booting Neural Dashboard...</p>
+                </div>
+            }>
+                <DashboardContent />
+            </Suspense>
+        </ErrorBoundary>
     );
 }

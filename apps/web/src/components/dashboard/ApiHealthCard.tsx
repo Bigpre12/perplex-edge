@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import API, { isApiError } from "@/lib/api";
 
 type HealthStatus = "Healthy" | "Degraded" | "Offline" | "Checking";
 
@@ -7,9 +8,8 @@ interface HealthData {
   status: string;
   version?: string;
   timestamp?: string;
+  database?: string;
 }
-
-import API, { isApiError } from "@/lib/api";
 
 export default function ApiHealthCard() {
   const [health, setHealth]   = useState<HealthStatus>("Checking");
@@ -19,14 +19,18 @@ export default function ApiHealthCard() {
     const check = async () => {
       try {
         const data = await API.health();
-        if (!isApiError(data)) {
+        const isHealthy = data?.status === "healthy" || data?.database === "connected";
+        
+        if (isHealthy) {
           setDetail(data);
-          const s = data.status?.toLowerCase();
-          if (s === "healthy") setHealth("Healthy");
-          else if (s === "degraded") setHealth("Degraded");
-          else setHealth("Healthy");
-        } else {
+          setHealth("Healthy");
+        } else if (data?.status === "degraded") {
+          setDetail(data);
+          setHealth("Degraded");
+        } else if (isApiError(data)) {
           setHealth(data.status && data.status >= 500 ? "Offline" : "Degraded");
+        } else {
+          setHealth("Healthy");
         }
       } catch {
         setHealth("Offline");
