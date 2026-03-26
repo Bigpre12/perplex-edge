@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+export const API_BASE = 'https://perplex-edge-backend-production.up.railway.app';
 const API_URL = 'https://perplex-edge-backend-production.up.railway.app';
 
 export const api = axios.create({
