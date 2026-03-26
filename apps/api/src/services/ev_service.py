@@ -143,11 +143,11 @@ class EVService:
 
                 # 1. UPSERT Live Signals
                 for s in signals:
-                    valid_cols = ["sport", "sportkey", "event_id", "market_key", "outcome_key", "player_name", 
+                    valid_cols = ["sport", "sport_key", "event_id", "market_key", "outcome_key", "player_name", 
                                   "bookmaker", "price", "line", "true_prob", "edge_percent", 
                                   "implied_prob", "confidence", "engine_version"]
                     row = {k: v for k, v in s.items() if k in valid_cols}
-                    row.setdefault("sportkey", s["sport"])
+                    row.setdefault("sport_key", s["sport"])
                     # Ensure numeric fields are floats
                     for col in ["price", "line", "true_prob", "edge_percent", "implied_prob", "confidence"]:
                         if col in row and row[col] is not None:
@@ -163,8 +163,8 @@ class EVService:
                     else:
                         # Raw SQL fallback for Postgres as pg_insert is acting up with true_prob
                         base_sql = """
-                        INSERT INTO ev_signals (sport, sportkey, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, implied_prob, confidence, engine_version, created_at, updated_at)
-                        VALUES (:sport, :sportkey, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :implied_prob, :confidence, :engine_version, now(), now())
+                        INSERT INTO ev_signals (sport, sport_key, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, implied_prob, confidence, engine_version, created_at, updated_at)
+                        VALUES (:sport, :sport_key, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :implied_prob, :confidence, :engine_version, now(), now())
                         """
                         update_clause = """
                         DO UPDATE SET 

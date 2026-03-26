@@ -399,7 +399,7 @@ class UnifiedEVSignal(Base):
     __tablename__ = "ev_signals"
     id = Column(Integer, primary_key=True, autoincrement=True)
     sport = Column(String, nullable=False, index=True)
-    sportkey = Column(String, nullable=True) # Compatibility
+    sport_key = Column(String, nullable=True) # Compatibility
     event_id = Column(String, nullable=False, index=True)
     market_key = Column(String, nullable=False, index=True)
     outcome_key = Column(String, nullable=True) # can be 'over'/'under' or side name

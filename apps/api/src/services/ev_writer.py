@@ -96,7 +96,7 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
 async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, ev_score: float, fair_prob: float) -> int:
     insert_sql = text("""
         INSERT INTO ev_signals 
-            (player_name, market_key, sport, sportkey, event_id, outcome_key, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, confidence, engine_version, created_at, updated_at)
+            (player_name, market_key, sport, sport_key, event_id, outcome_key, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, confidence, engine_version, created_at, updated_at)
         VALUES 
             (:player_name, :market_key, :sport, :sport, :event_id, :outcome_key, :bookmaker, :line, :ev_score, :edge_percent, :edge_percent, :recommendation, :fair_prob, :fair_prob, 0, 0, :confidence, 'v1-grader', NOW(), NOW())
         ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL
