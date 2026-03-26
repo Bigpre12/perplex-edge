@@ -6,8 +6,8 @@ const isDevelopment = process.env.NODE_ENV === "development";
  * - In production: uses relative paths "" (enabling Vercel proxy)
  */
 export const API_BASE = isDevelopment 
-    ? (process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app") 
-    : (process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app");
+    ? "https://perplex-edge-backend-production.up.railway.app" 
+    : "https://perplex-edge-backend-production.up.railway.app";
 
 /**
  * Helper to check if the API is correctly configured.
