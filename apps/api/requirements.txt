@@ -29,7 +29,9 @@ email-validator>=2.1.0
 
 # Scheduling & Async
 apscheduler>=3.10.4
+celery>=5.3.6
 redis>=5.0.0
+celery[redis]>=5.3.6
 
 # Payments
 stripe>=7.0.0
