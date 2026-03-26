@@ -105,7 +105,7 @@ class UnifiedIngestionService:
             event_ids = list(metadata_map.keys())
             # type: ignore (Pyre inference fail on list slice)
             # Quota Protection: Cap at 25 events per cycle to prevent credit drain
-            active_events = event_ids[:25] 
+            active_events = event_ids[:20] 
             
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
             
@@ -151,6 +151,7 @@ class UnifiedIngestionService:
                             
                             event_props = {"id": eid, "sport_key": sport_key, "bookmakers": list(bm_map.values())}
 
+                    if event_props:
                         # type: ignore (Inference fail on odds_raw)
                         odds_raw.append(event_props)
                         # type: ignore (Inference fail on int increment)
