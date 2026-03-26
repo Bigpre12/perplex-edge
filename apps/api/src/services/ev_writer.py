@@ -38,7 +38,7 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
                    AND odds_under IS NOT NULL
                    AND implied_over > 0
                    AND implied_under > 0
-                   AND (implied_over + implied_under) <= 1.08
+                   AND (implied_over + implied_under) BETWEEN 0.85 AND 1.15
             ),
             fair_probs AS (
                  SELECT 

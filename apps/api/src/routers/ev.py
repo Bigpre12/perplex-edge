@@ -64,7 +64,7 @@ async def get_ev_signals(
             AND implied_under IS NOT NULL
             AND implied_under > 0
             AND implied_under < 1
-            AND (implied_over + implied_under) <= 1.08
+            AND (implied_over + implied_under) BETWEEN 0.85 AND 1.15
         """
         params: dict = {"limit": limit}
         if sport:
