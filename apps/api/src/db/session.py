@@ -42,7 +42,11 @@ engine = create_async_engine(
     DATABASE_URL, 
     echo=False,
     connect_args=connect_args,
-    pool_pre_ping=True if "sqlite" not in DATABASE_URL else False
+    pool_pre_ping=True if "sqlite" not in DATABASE_URL else False,
+    # Supabase/Postgres Connection Pool Optimization
+    pool_size=3,              # Keep it small to avoid MaxClientsInSessionMode
+    max_overflow=2,           # Allow brief spikes
+    pool_recycle=1800,        # Recycle connections every 30 mins
 )
 
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -73,5 +77,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker as sync_sessionmaker
 
 sync_url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://").replace("sqlite+aiosqlite://", "sqlite://")
-sync_engine = create_engine(sync_url, connect_args=connect_args if "sqlite" in sync_url else {})
+sync_engine = create_engine(
+    sync_url, 
+    connect_args=connect_args if "sqlite" in sync_url else {},
+    pool_size=2,
+    max_overflow=1
+)
 SessionLocal = sync_sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)
