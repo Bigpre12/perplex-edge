@@ -104,9 +104,15 @@ export default function Sidebar() {
                 <div className="flex items-center gap-2">
                     <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">Data Freshness</span>
                 </div>
-                <div className="text-brand-success font-mono text-xs font-medium">
-                    ODDS · {safeDate(freshness?.last_odds_update) ? formatDistanceToNow(safeDate(freshness?.last_odds_update)!, { addSuffix: true }).replace('about ', '') : 'Scanning...'}
-                </div>
+                {isLoading ? (
+                    <div className="text-brand-cyan font-mono text-xs font-medium animate-pulse uppercase italic tracking-widest">
+                        Connecting...
+                    </div>
+                ) : (
+                    <div className="text-brand-success font-mono text-xs font-medium">
+                        ODDS · {safeDate(freshness?.last_odds_update) ? formatDistanceToNow(safeDate(freshness?.last_odds_update)!, { addSuffix: true }).replace('about ', '') : 'Scanning...'}
+                    </div>
+                )}
                 <div className="text-textMuted font-mono text-[10px] mt-2">
                     v2.1.0
                 </div>

@@ -12,7 +12,7 @@ import { useSport } from "@/context/SportContext";
 export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
     const { selectedSport } = useSport();
     const sport = requestedSport || selectedSport;
-    const freshness = useFreshness(sport);
+    const { data: freshness, isLoading: freshnessLoading } = useFreshness(sport);
     const [moves, setMoves] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { isDown } = useBackendStatus();
@@ -73,9 +73,11 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
                         <span className="flex h-1.5 w-1.5 rounded-full bg-brand-orange animate-pulse" />
                         <span className="text-[9px] font-black text-brand-orange uppercase tracking-widest">Live Monitor</span>
                     </div>
+                    <div className="flex items-center gap-4">
                     <FreshnessBadge 
                         oddsTs={freshness?.last_odds_update || null} 
-                        evTs={freshness?.last_ev_update || null} 
+                        evTs={freshness?.last_ev_update || null}
+                        isLoading={freshnessLoading}
                     />
                 </div>
             </div>

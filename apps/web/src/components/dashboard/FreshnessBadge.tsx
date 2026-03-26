@@ -13,8 +13,28 @@ function timeAgo(ts: string | null): string {
   return `${min}m ago`;
 }
 
-export function FreshnessBadge({ oddsTs, evTs }: { oddsTs: string | null; evTs: string | null }) {
-  console.log('freshness data:', { oddsTs, evTs });
+export function FreshnessBadge({ 
+  oddsTs, 
+  evTs, 
+  isLoading 
+}: { 
+  oddsTs: string | null; 
+  evTs: string | null;
+  isLoading?: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex gap-4 text-[10px] items-center font-medium opacity-80 mt-1 animate-pulse">
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+          <span className="text-brand-cyan uppercase tracking-widest font-black italic">
+            Connecting to Intel Stream...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   const isStale = (ts: string | null, thresholdSec: number) => {
     if (!ts) return true;
     const diffSec = (Date.now() - new Date(ts).getTime()) / 1000;

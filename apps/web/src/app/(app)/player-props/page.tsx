@@ -34,7 +34,7 @@ export default function PlayerPropsPage() {
 function PlayerPropsContent() {
     const sport = useLucrixStore((state: any) => state.activeSport);
     const tier = useLucrixStore((state: any) => state.userTier);
-    const freshness = useFreshness(sport);
+    const { data: freshness, isLoading: freshnessLoading } = useFreshness(sport);
     const searchParams = useSearchParams();
 
     const minEv = parseFloat(searchParams.get("minEdge") || "0");
@@ -91,6 +91,7 @@ function PlayerPropsContent() {
                         <FreshnessBadge
                             oddsTs={freshness?.last_odds_update || null}
                             evTs={freshness?.last_ev_update || null}
+                            isLoading={freshnessLoading}
                         />
                         <LiveHistoricalToggle
                             isHistorical={isHistorical}

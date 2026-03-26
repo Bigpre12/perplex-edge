@@ -10,6 +10,7 @@ type Freshness = {
 
 export function useFreshness(sport: string) {
   const [data, setData] = useState<Freshness | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,9 +20,11 @@ export function useFreshness(sport: string) {
         const result = await api.get(`/api/signals/freshness?sport=${sport || ''}`);
         if (!cancelled && result?.data) {
           setData(result.data);
+          setIsLoading(false);
         }
       } catch (err) {
         // silently ignore freshness poll errors
+        if (!cancelled) setIsLoading(false);
       }
     }
 
@@ -33,5 +36,5 @@ export function useFreshness(sport: string) {
     };
   }, [sport]);
 
-  return data;
+  return { data, isLoading };
 }
