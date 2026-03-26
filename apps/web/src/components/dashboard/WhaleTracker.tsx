@@ -74,11 +74,12 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
                         <span className="text-[9px] font-black text-brand-orange uppercase tracking-widest">Live Monitor</span>
                     </div>
                     <div className="flex items-center gap-4">
-                    <FreshnessBadge 
-                        oddsTs={freshness?.last_odds_update || null} 
-                        evTs={freshness?.last_ev_update || null}
-                        isLoading={freshnessLoading}
-                    />
+                        <FreshnessBadge 
+                            oddsTs={freshness?.last_odds_update || null} 
+                            evTs={freshness?.last_ev_update || null}
+                            isLoading={freshnessLoading}
+                        />
+                    </div>
                 </div>
             </div>
 

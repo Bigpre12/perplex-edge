@@ -35,7 +35,7 @@ export default function Sidebar() {
     }, [pathname]);
 
     const { selectedSport } = useSport();
-    const freshness = useFreshness(selectedSport);
+    const { data: freshness, isLoading } = useFreshness(selectedSport);
 
     // Navigation items based on spec
     const navItems = [
