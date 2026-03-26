@@ -15,7 +15,7 @@ from core.config import settings
 class BetstackClient:
     def __init__(self):
         self.api_key = settings.BETSTACK_API_KEY
-        self.base_url = "https://api.betstack.com/v1"  # Base URL from legacy references
+        self.base_url = settings.BETSTACK_BASE_URL
         self.timeout = 15.0
 
     @property

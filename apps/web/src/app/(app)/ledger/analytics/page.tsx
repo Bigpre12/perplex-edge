@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import Link from "next/link";
-import { api, isApiError } from "@/lib/api";
+import API, { api, isApiError } from "@/lib/api";
 import {
     ScatterChart,
     Scatter,
@@ -63,7 +63,7 @@ export default function PortfolioAnalytics() {
         const fetchStats = async () => {
             setLoading(true);
             try {
-                const data = await api.ledgerStats();
+                const data = await API.ledgerStats();
                 if (!isApiError(data)) {
                     setStats(data);
                 }
@@ -254,7 +254,7 @@ export default function PortfolioAnalytics() {
                     </div>
                 </div>
 
-                <div className="h-[400px] w-full mt-4" style={{ minWidth: 0 }}>
+                <div className="h-[400px] w-full mt-4 min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                         <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                             <XAxis

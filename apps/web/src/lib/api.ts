@@ -210,6 +210,51 @@ export const API = {
         } catch (err) {
             return handleApiError(err);
         }
+    },
+    playerTrends: async (playerName: string, statType: string) => {
+        try {
+            const { data } = await api.get(`/api/props/history`, {
+                params: { player_name: playerName, market_key: statType, sport: 'basketball_nba', book: 'draftkings' }
+            });
+            return { history: data };
+        } catch (err) {
+            return { history: [] };
+        }
+    },
+    mlPredict: async (payload: any) => {
+        try {
+            const { data } = await api.post(`/api/oracle/analyze-prop`, payload);
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
+    },
+    ledgerStats: async () => {
+        try {
+            const { data } = await api.get('/api/bets/stats');
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
+    },
+    backtestRun: async (payload: any) => {
+        try {
+            const { data } = await api.post('/api/backtest', payload);
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
+    },
+    reportingExport: (format: string) => {
+        return `${API_BASE}/api/reporting/export?format=${format}`;
+    },
+    playerProfile: async (playerName: string) => {
+        try {
+            const { data } = await api.get('/api/hero', { params: { name: playerName, sport: 'basketball_nba' } });
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
     }
 };
 

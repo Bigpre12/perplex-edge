@@ -27,7 +27,12 @@ async def kalshi_ws_proxy(
 
     await websocket.accept()
     
-    redis_url = os.getenv("REDIS_URL")
+    redis_url = settings.REDIS_URL
+    if not redis_url:
+        logger.error("KalshiWSProxy: REDIS_URL not configured")
+        await websocket.close(code=4000)
+        return
+        
     redis_conn = redis.from_url(redis_url, decode_responses=True)
     pubsub = redis_conn.pubsub()
     await pubsub.subscribe("kalshi:prices")
@@ -49,4 +54,4 @@ async def kalshi_ws_proxy(
         logger.error(f"KalshiWSProxy: Error: {e}")
     finally:
         await pubsub.unsubscribe("kalshi:prices")
-        await redis.close()
+        await redis_conn.close()

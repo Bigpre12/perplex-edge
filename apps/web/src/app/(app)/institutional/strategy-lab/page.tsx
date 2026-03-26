@@ -14,7 +14,7 @@ import {
     Line,
     LineChart as RechartLine
 } from "recharts";
-import { api, isApiError } from "@/lib/api";
+import API, { api, isApiError } from "@/lib/api";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 
@@ -34,7 +34,7 @@ function StrategyContent() {
         setLoading(true);
         setError(null);
         try {
-            const data = await api.backtestRun({
+            const data = await API.backtestRun({
                 ...params,
                 start_date: new Date(Date.now() - params.days * 24 * 60 * 60 * 1000).toISOString()
             });
@@ -152,7 +152,7 @@ function StrategyContent() {
                             </div>
 
                             {/* Equity Curve Chart */}
-                                <div className="h-[450px] w-full" style={{ minWidth: 0 }}>
+                            <div className="h-[450px] w-full min-w-0">
                                     <ResponsiveContainer width="100%" height="85%">
                                     <AreaChart data={backtestResult.equity_curve}>
                                         <defs>

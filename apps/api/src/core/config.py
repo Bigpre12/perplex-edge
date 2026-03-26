@@ -18,7 +18,16 @@ class Settings:
         self.DATABASE_URL = DATABASE_URL
         self.PORT = PORT
         self.REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+        self.BETSTACK_BASE_URL = os.getenv("BETSTACK_BASE_URL", "https://api.betstack.io/v1")
         self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        
+        # Diagnostic logging for Redis (redacted host)
+        try:
+            from urllib.parse import urlparse
+            parsed_redis = urlparse(self.REDIS_URL)
+            logging.info(f"Infrastructure: Redis configured at host={parsed_redis.hostname} port={parsed_redis.port}")
+        except Exception:
+            pass
         
         # FIX 4: Secure defaults for production
         secret = os.environ.get("SECRET_KEY", "")

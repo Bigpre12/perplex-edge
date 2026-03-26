@@ -26,7 +26,7 @@ class RealSportsAPI:
         self.ai_api_key = settings.GROQ_API_KEY
         
         # API Base URLs
-        self.betstack_base_url = "https://api.betstack.com/v1"
+        self.betstack_base_url = settings.BETSTACK_BASE_URL
         self.odds_api_base_url = "https://api.the-odds-api.com/v4"
         self.groq_api_base_url = "https://api.groq.com/openai/v1"
         

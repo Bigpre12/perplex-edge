@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, isApiError } from "@/lib/api";
+import API, { api, isApiError } from "@/lib/api";
 
 interface PlayerProfile {
     player_name: string;
@@ -52,7 +52,7 @@ export default function PlayerProfilePage() {
         if (!playerName) return;
         const fetchProfile = async () => {
             try {
-                const data = await api.playerProfile(playerName);
+                const data = await API.playerProfile(playerName);
                 if (!isApiError(data)) {
                     setProfile(data);
                 } else {
@@ -67,83 +67,98 @@ export default function PlayerProfilePage() {
         fetchProfile();
     }, [playerName]);
 
-    if (loading) return <div style={{ background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>Loading player...</div>;
-    if (!profile) return <div style={{ background: "#0f1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}>Player not found.</div>;
+    if (loading) return (
+        <div className="min-h-screen bg-[#0f1117] flex items-center justify-center text-slate-500 font-bold uppercase tracking-widest animate-pulse">
+            Loading player...
+        </div>
+    );
+    
+    if (!profile) return (
+        <div className="min-h-screen bg-[#0f1117] flex items-center justify-center text-slate-500 font-bold uppercase tracking-widest">
+            Player not found.
+        </div>
+    );
 
-    const tabStyle = (active: boolean) => ({
-        padding: "8px 20px", borderRadius: "8px", border: "none",
-        background: active ? "#6366f1" : "transparent",
-        color: active ? "#fff" : "#6b7280",
-        fontSize: "13px", fontWeight: 700, cursor: "pointer"
-    });
+    const tabClass = (active: boolean) => `
+        px-5 py-2 rounded-lg transition-all duration-200
+        ${active ? "bg-[#6366f1] text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]" : "bg-transparent text-slate-500 hover:text-slate-300"}
+        text-[13px] font-bold cursor-pointer
+    `;
 
     return (
-        <div style={{ background: "#0f1117", minHeight: "100vh", padding: "24px", color: "#fff" }}>
-            <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+        <div className="min-h-screen bg-[#0f1117] p-6 text-white pb-24">
+            <div className="max-w-[900px] mx-auto">
 
                 {/* Header */}
-                <div style={{ background: "#1a1d2e", borderRadius: "12px", padding: "24px", border: "1px solid #2d3748", marginBottom: "20px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div className="bg-[#1a1d2e] rounded-xl p-6 border border-[#2d3748] mb-5 group hover:border-[#6366f1]/30 transition-colors">
+                    <div className="flex justify-between items-start">
                         <div>
-                            <h1 style={{ fontSize: "28px", fontWeight: 900, margin: 0 }}>{profile.player_name}</h1>
-                            <div style={{ fontSize: "14px", color: "#9ca3af", marginTop: "4px" }}>
-                                {profile.team} · {profile.sport} · {profile.position}
+                            <h1 className="text-3xl font-black m-0 tracking-tight italic uppercase">{profile.player_name}</h1>
+                            <div className="text-sm text-slate-400 mt-1 font-bold uppercase tracking-widest flex items-center gap-2">
+                                <span className="text-[#6366f1]">{profile.team}</span>
+                                <span className="opacity-30">/</span>
+                                <span>{profile.sport}</span>
+                                <span className="opacity-30">/</span>
+                                <span>{profile.position}</span>
                             </div>
                         </div>
                         {profile.injury_status && (
-                            <span style={{
-                                padding: "6px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 700,
-                                background: "#7f1d1d", color: "#f87171"
-                            }}>
+                            <span className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#7f1d1d] text-[#f87171] border border-[#f87171]/20">
                                 🚑 {profile.injury_status}
                             </span>
                         )}
                     </div>
 
                     {/* Hit rate summary */}
-                    <div style={{ display: "flex", gap: "16px", marginTop: "20px", flexWrap: "wrap" }}>
+                    <div className="flex gap-4 mt-6 flex-wrap">
                         {profile.hit_rates.slice(0, 4).map((hr, i) => (
-                            <div key={i} style={{ background: "#0f1117", borderRadius: "8px", padding: "12px 16px", minWidth: "120px" }}>
-                                <div style={{ fontSize: "10px", color: "#6b7280", fontWeight: 700, letterSpacing: "0.05em" }}>
-                                    {hr.stat_type.toUpperCase()}
+                            <div key={i} className="bg-[#0f1117] rounded-lg p-4 min-w-[130px] border border-white/5 hover:border-white/10 transition-all">
+                                <div className="text-[10px] text-slate-500 font-black tracking-widest uppercase mb-1">
+                                    {hr.stat_type}
                                 </div>
-                                <div style={{ fontSize: "22px", fontWeight: 900, color: hr.hit_rate >= 65 ? "#10b981" : hr.hit_rate >= 55 ? "#60a5fa" : "#9ca3af" }}>
+                                <div className={`text-2xl font-black ${hr.hit_rate >= 65 ? "text-[#10b981]" : hr.hit_rate >= 55 ? "text-[#60a5fa]" : "text-white"}`}>
                                     {hr.hit_rate}%
                                 </div>
-                                <div style={{ fontSize: "10px", color: "#4b5563" }}>{hr.hits}/{hr.total_picks} picks</div>
+                                <div className="text-[10px] text-slate-600 font-bold mt-1 uppercase tracking-tighter">{hr.hits}/{hr.total_picks} PICKS</div>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div style={{ display: "flex", gap: "4px", marginBottom: "16px", background: "#1a1d2e", borderRadius: "10px", padding: "4px", border: "1px solid #2d3748" }}>
-                    <button style={tabStyle(activeTab === "props")} onClick={() => setActiveTab("props")}>Today's Props</button>
-                    <button style={tabStyle(activeTab === "stats")} onClick={() => setActiveTab("stats")}>Recent Stats</button>
-                    <button style={tabStyle(activeTab === "hitrate")} onClick={() => setActiveTab("hitrate")}>Hit Rates</button>
+                <div className="flex gap-1 mb-6 bg-[#1a1d2e] rounded-xl p-1 border border-[#2d3748]">
+                    <button className={tabClass(activeTab === "props")} onClick={() => setActiveTab("props")}>Today's Props</button>
+                    <button className={tabClass(activeTab === "stats")} onClick={() => setActiveTab("stats")}>Recent Stats</button>
+                    <button className={tabClass(activeTab === "hitrate")} onClick={() => setActiveTab("hitrate")}>Hit Rates</button>
                 </div>
 
                 {/* Props tab */}
                 {activeTab === "props" && (
-                    <div style={{ display: "grid", gap: "10px" }}>
-                        {profile.props.length === 0 && <div style={{ color: "#6b7280", textAlign: "center", padding: "40px" }}>No props available today.</div>}
+                    <div className="grid gap-3">
+                        {profile.props.length === 0 && (
+                            <div className="text-slate-500 text-center py-16 bg-[#1a1d2e] rounded-xl border border-dashed border-[#2d3748] font-bold italic">
+                                No props available for today's slate.
+                            </div>
+                        )}
                         {profile.props.map((prop, i) => (
-                            <div key={i} style={{ background: "#1a1d2e", borderRadius: "10px", padding: "16px 20px", border: "1px solid #2d3748", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div key={i} className="bg-[#1a1d2e] rounded-xl p-5 border border-[#2d3748] flex justify-between items-center group hover:border-[#10b981]/30 transition-all">
                                 <div>
-                                    <div style={{ fontSize: "14px", fontWeight: 700 }}>{prop.stat_type} {prop.pick.toUpperCase()} {prop.line}</div>
-                                    <div style={{ fontSize: "12px", color: "#6b7280" }}>{prop.book}</div>
+                                    <div className="text-[15px] font-black italic uppercase tracking-tight">
+                                        {prop.stat_type} <span className="text-[#6366f1]">{prop.pick}</span> {prop.line}
+                                    </div>
+                                    <div className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1 opacity-60">{prop.book}</div>
                                 </div>
-                                <div style={{ fontSize: "22px", fontWeight: 900, color: "#10b981" }}>
-                                    {prop.ev_percentage > 0 ? "+" : ""}{prop.ev_percentage}% EV
+                                <div className="text-2xl font-black text-[#10b981] drop-shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                    {prop.ev_percentage > 0 ? "+" : ""}{prop.ev_percentage}% <span className="text-[10px] opacity-60">EV</span>
                                 </div>
-                                <div style={{ textAlign: "right" }}>
-                                    <div style={{ fontSize: "15px", fontWeight: 700 }}>{prop.odds > 0 ? `+${prop.odds}` : prop.odds}</div>
-                                    <div style={{
-                                        padding: "2px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: 700, marginTop: "4px",
-                                        background: prop.confidence === "HIGH" ? "#064e3b" : "#1f2937",
-                                        color: prop.confidence === "HIGH" ? "#10b981" : "#9ca3af",
-                                        display: "inline-block"
-                                    }}>{prop.confidence}</div>
+                                <div className="text-right">
+                                    <div className="text-lg font-black">{prop.odds > 0 ? `+${prop.odds}` : prop.odds}</div>
+                                    <div className={`
+                                        mt-1 px-2.5 py-0.5 rounded text-[10px] font-black tracking-widest
+                                        ${prop.confidence === "HIGH" ? "bg-[#10b981]/10 text-[#10b981]" : "bg-slate-800 text-slate-400"}
+                                    `}>
+                                        {prop.confidence}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -152,22 +167,22 @@ export default function PlayerProfilePage() {
 
                 {/* Stats tab */}
                 {activeTab === "stats" && (
-                    <div style={{ background: "#1a1d2e", borderRadius: "12px", border: "1px solid #2d3748", overflow: "hidden" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <div className="bg-[#1a1d2e] rounded-xl border border-[#2d3748] overflow-hidden shadow-xl">
+                        <table className="w-full border-collapse">
                             <thead>
-                                <tr style={{ background: "#111827" }}>
+                                <tr className="bg-[#111827]">
                                     {["Date", "Opponent", "Stat", "Value"].map(h => (
-                                        <th key={h} style={{ padding: "12px 16px", fontSize: "11px", color: "#6b7280", fontWeight: 700, textAlign: "left" }}>{h}</th>
+                                        <th key={h} className="p-4 px-6 text-[10px] text-slate-500 font-black uppercase tracking-widest text-left">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {profile.stats.map((s, i) => (
-                                    <tr key={i} style={{ borderTop: "1px solid #1f2937" }}>
-                                        <td style={{ padding: "12px 16px", fontSize: "12px", color: "#9ca3af" }}>{new Date(s.game_date).toLocaleDateString()}</td>
-                                        <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600 }}>{s.opponent}</td>
-                                        <td style={{ padding: "12px 16px", fontSize: "12px", color: "#9ca3af" }}>{s.stat_type}</td>
-                                        <td style={{ padding: "12px 16px", fontSize: "15px", fontWeight: 800, color: "#fff" }}>{s.value}</td>
+                                    <tr key={i} className="border-t border-[#1f2937] hover:bg-white/[0.02] transition-colors">
+                                        <td className="p-4 px-6 text-xs text-slate-400 font-medium">{new Date(s.game_date).toLocaleDateString()}</td>
+                                        <td className="p-4 px-6 text-sm font-black italic uppercase tracking-tight text-white">{s.opponent}</td>
+                                        <td className="p-4 px-6 text-xs text-slate-400 font-bold uppercase tracking-tighter">{s.stat_type}</td>
+                                        <td className="p-4 px-6 text-lg font-black text-white">{s.value}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -177,16 +192,16 @@ export default function PlayerProfilePage() {
 
                 {/* Hit rate tab */}
                 {activeTab === "hitrate" && (
-                    <div style={{ display: "grid", gap: "10px" }}>
+                    <div className="grid gap-3">
                         {profile.hit_rates.map((hr, i) => (
-                            <div key={i} style={{ background: "#1a1d2e", borderRadius: "10px", padding: "16px 20px", border: "1px solid #2d3748", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ fontSize: "14px", fontWeight: 700 }}>{hr.stat_type}</div>
-                                <div style={{ fontSize: "24px", fontWeight: 900, color: hr.hit_rate >= 65 ? "#10b981" : hr.hit_rate >= 55 ? "#60a5fa" : "#9ca3af" }}>
+                            <div key={i} className="bg-[#1a1d2e] rounded-xl p-5 border border-[#2d3748] flex justify-between items-center group hover:border-[#6366f1]/30 transition-all">
+                                <div className="text-[15px] font-black uppercase italic tracking-tight">{hr.stat_type}</div>
+                                <div className={`text-3xl font-black ${hr.hit_rate >= 65 ? "text-[#10b981]" : hr.hit_rate >= 55 ? "text-[#60a5fa]" : "text-white"}`}>
                                     {hr.hit_rate}%
                                 </div>
-                                <div style={{ textAlign: "center" }}>
-                                    <div style={{ fontSize: "13px", color: "#9ca3af" }}>{hr.hits}/{hr.total_picks} hits</div>
-                                    <div style={{ fontSize: "11px", color: "#6b7280" }}>Avg EV: +{hr.avg_ev}%</div>
+                                <div className="text-right">
+                                    <div className="text-xs font-black italic text-slate-400 uppercase">{hr.hits}/{hr.total_picks} hits</div>
+                                    <div className="text-[10px] text-slate-600 font-bold uppercase mt-0.5 tracking-tighter">Avg EV: +{hr.avg_ev}%</div>
                                 </div>
                             </div>
                         ))}

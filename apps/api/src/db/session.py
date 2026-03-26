@@ -16,6 +16,11 @@ elif DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://") and "asyncpg" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+# Fix for Supabase Transaction Pooler (Port 6543)
+if ":6543" in DATABASE_URL and "prepared_statement_cache_size" not in DATABASE_URL:
+    separator = "&" if "?" in DATABASE_URL else "?"
+    DATABASE_URL += f"{separator}prepared_statement_cache_size=0"
+
 # Fix for asyncpg: strip 'sslmode' from URL as it's not supported as a query param by asyncpg
 if "sslmode=" in DATABASE_URL:
     import re
@@ -45,7 +50,7 @@ engine = create_async_engine(
     pool_pre_ping=True if "sqlite" not in DATABASE_URL else False,
     # Supabase/Postgres Connection Pool Optimization
     pool_size=3,              # Keep it small to avoid MaxClientsInSessionMode
-    max_overflow=2,           # Allow brief spikes
+    max_overflow=0,           # Strictly limit to pool_size
     pool_recycle=1800,        # Recycle connections every 30 mins
 )
 

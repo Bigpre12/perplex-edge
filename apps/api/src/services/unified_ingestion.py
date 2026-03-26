@@ -96,7 +96,7 @@ class UnifiedIngestionService:
         # 2d. Fetch Player Props (Requires per-event calls)
         PROP_MARKETS_BY_SPORT = {
             "basketball_nba": "player_points,player_rebounds,player_assists,player_threes",
-            "americanfootball_nfl": "player_pass_tds,player_pass_yds,player_rush_yds,player_rec_yds,player_anytime_td",
+            "americanfootball_nfl": "player_pass_tds,player_pass_yds,player_rush_yds,player_anytime_td",
             "icehockey_nhl": "player_points,player_power_play_points,player_shots_on_goal",
             "baseball_mlb": "pitcher_strikeouts,batter_hits,batter_home_runs"
         }

@@ -149,6 +149,9 @@ class EVService:
                     row = {k: v for k, v in s.items() if k in valid_cols}
                     row.setdefault("sport_key", s["sport"])
                     row.setdefault("ev_percentage", row.get("edge_percent", 0))
+                    row.setdefault("prop_type", "unknown")
+                    if row.get("prop_type") is None:
+                        row["prop_type"] = "unknown"
                     # Ensure numeric fields are floats
                     for col in ["price", "line", "true_prob", "edge_percent", "implied_prob", "confidence"]:
                         if col in row and row[col] is not None:
