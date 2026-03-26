@@ -24,7 +24,7 @@ async def freshness(
     try:
         result = await db.execute(text("""
             SELECT MAX(last_updated_at) as last_odds,
-                   MAX(created_at) as last_ev
+                   MAX(ingested_ts)     as last_ev
             FROM props_live
             WHERE sport = :sport
         """), {"sport": sport})
