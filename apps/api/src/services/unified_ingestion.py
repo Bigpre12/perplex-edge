@@ -162,7 +162,9 @@ class UnifiedIngestionService:
         betstack_records = []
         try:
             logger.info(f"UnifiedIngestion: Fetching Betstack props for {sport_key}")
-            betstack_raw = await _real_sports_api_instance.fetch_props_from_betstack(sport_key)
+            # Normalize sport key for Betstack (e.g., basketball_nba -> nba)
+            betstack_sport = "nba" if "nba" in sport_key else sport_key
+            betstack_raw = await _real_sports_api_instance.fetch_props_from_betstack(betstack_sport)
             if betstack_raw and isinstance(betstack_raw, list):
                 for p in betstack_raw:
                     # Normalize Betstack into PropRecord

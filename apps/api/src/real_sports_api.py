@@ -52,11 +52,19 @@ class RealSportsAPI:
                 return {"error": "Missing API Key"}
 
             async with httpx.AsyncClient() as client:
+                # Task: Support sport-specific markets for discovery
+                # For discovery, we only need team-level markets to get events
+                # Deep props are fetched in the secondary enrichment loop
+                if "nba" in sport or "nfl" in sport or "mlb" in sport or "nhl" in sport:
+                    discovery_markets = "h2h,spreads,totals"
+                else:
+                    discovery_markets = "h2h"
+
                 url = f"{self.odds_api_base_url}/sports/{sport}/odds"
                 params = {
                     "apiKey": current_key,
                     "regions": "us",
-                    "markets": "h2h,spreads,totals,player_points,player_rebounds,player_assists,player_threes,player_blocks,player_steals,player_turnovers,player_pass_tds,player_pass_yds,player_rush_yds,player_rec_yds,player_anytime_td,pitcher_strikeouts,batter_hits,batter_home_runs",
+                    "markets": discovery_markets,
                     "oddsFormat": "american"
                 }
                 try:
@@ -98,7 +106,7 @@ class RealSportsAPI:
     
     async def fetch_roster_data(self, team: str, sport: str = "nba"):
         """Fetch roster data using BallDontLie API with fallback logic"""
-        if sport.lower() != "nba":
+        if "nba" not in sport.lower():
             logger.warning(f"RealSportsAPI: Roster fetching only supported for NBA. Requested: {sport}")
             return []
 
