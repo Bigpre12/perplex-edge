@@ -27,15 +27,15 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
             
             const mappedMoves = data.map((m: any) => ({
                 id: m.id || m.event_id || Math.random().toString(),
-                player: m.player_name || m.player || "Unknown",
-                stat: m.stat_type || "Market",
-                line: m.line || 0,
-                move_type: m.side || m.move_type || "WHALE",
-                delta: m.delta || m.ev_percentage || 0,
-                severity: m.severity || (m.confidence_score > 80 ? 'High' : 'Medium'),
-                books_involved: m.books_involved || [m.book || "Institutional"],
-                whale_label: m.whale_label || (m.expected_value > 5 ? "MAX VALUE" : "SHARP MONEY"),
-                confidence: m.confidence_score || m.confidence || 0
+                player: m.player_name || m.home_team || 'N/A',
+                stat: m.market_key || 'N/A',
+                line: m.line,
+                move_type: m.alert_type || "WHALE",
+                delta: m.confidence || 0,
+                severity: (m.confidence > 0.8) ? 'High' : 'Medium',
+                books_involved: m.book ? [m.book] : ["Institutional"],
+                whale_label: (m.confidence > 0.05) ? "MAX VALUE" : "SHARP MONEY",
+                confidence: m.confidence || 0
             }));
             
             setMoves(mappedMoves);
@@ -74,8 +74,8 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
                         <span className="text-[9px] font-black text-brand-orange uppercase tracking-widest">Live Monitor</span>
                     </div>
                     <FreshnessBadge 
-                        oddsTs={freshness?.odds_last_updated || null} 
-                        evTs={freshness?.ev_last_updated || null} 
+                        oddsTs={freshness?.last_odds_update || null} 
+                        evTs={freshness?.last_ev_update || null} 
                     />
                 </div>
             </div>
@@ -105,9 +105,9 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
                                         <div className={`px-2 py-0.5 rounded-md text-[8px] font-black tracking-widest uppercase border ${move.severity === 'High' ? 'bg-brand-danger/20 border-brand-danger/30 text-brand-danger' : 'bg-brand-orange/20 border-brand-orange/30 text-brand-orange'}`}>
                                             {move.move_type}
                                         </div>
-                                        {move.confidence && (
+                                        {move.confidence !== undefined && (
                                             <div className="px-2 py-0.5 rounded-md text-[8px] font-black tracking-widest uppercase border border-white/10 bg-white/5 text-textMuted">
-                                                {move.confidence}% Trust Level
+                                                {(Number(move.confidence ?? 0) * 100).toFixed(1)}% TRUST LEVEL
                                             </div>
                                         )}
                                     </div>
@@ -120,9 +120,18 @@ export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
                                     <div className="space-y-1">
                                         <h4 className="text-base font-black text-white tracking-widest uppercase italic group-hover/item:text-brand-orange transition-colors">{move.player}</h4>
                                         <div className="flex items-center gap-2 text-[10px] text-textMuted font-black uppercase tracking-widest italic font-display">
-                                            <span>{move.stat.replace('player_', '').replace('_', ' ')}</span>
-                                            <ArrowRight size={10} className="text-white/20" />
-                                            <span className="text-white">Lines @ {move.line}</span>
+                                            <span>{(move.stat || "N/A").replace('player_', '').replace('_', ' ')}</span>
+                                            {move.line ? (
+                                                <>
+                                                    <ArrowRight size={10} className="text-white/20" />
+                                                    <span className="text-white">@ {move.line}</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ArrowRight size={10} className="text-white/20" />
+                                                    <span className="text-white">N/A</span>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex -space-x-2">

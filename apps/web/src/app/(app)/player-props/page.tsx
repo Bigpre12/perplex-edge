@@ -89,8 +89,8 @@ function PlayerPropsContent() {
 
                     <div className="flex flex-wrap items-center gap-4 mb-6">
                         <FreshnessBadge
-                            oddsTs={freshness?.odds_last_updated || null}
-                            evTs={freshness?.ev_last_updated || null}
+                            oddsTs={freshness?.last_odds_update || null}
+                            evTs={freshness?.last_ev_update || null}
                         />
                         <LiveHistoricalToggle
                             isHistorical={isHistorical}

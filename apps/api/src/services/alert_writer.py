@@ -37,7 +37,8 @@ async def _run_detection(sport: str, db: AsyncSession) -> int:
             )
             SELECT 
                 u.event_id, u.player_name, u.market_key, u.outcome_key as direction,
-                u.line, u.bookmaker as book, u.price, c.avg_price
+                u.line, u.bookmaker as book, u.price, c.avg_price,
+                u.home_team, u.away_team
             FROM unified_odds u
             JOIN consensus c 
                 ON u.event_id = c.event_id 
@@ -63,7 +64,9 @@ async def _run_detection(sport: str, db: AsyncSession) -> int:
                 direction=w["direction"],
                 line=w["line"],
                 book=w["book"],
-                confidence=float(min(abs(w["price"] - w["avg_price"]) / 100.0, 1.0))
+                confidence=float(min(abs(w["price"] - w["avg_price"]) / 100.0, 1.0)),
+                home_team=w.get("home_team"),
+                away_team=w.get("away_team")
             )
 
         # 2. STEAM MOVE
@@ -150,9 +153,19 @@ async def _run_detection(sport: str, db: AsyncSession) -> int:
 
 async def _insert_alert_if_fresh(
     db: AsyncSession, sport: str, player_name: str, market_key: str, 
-    alert_type: str, direction: str, line: Optional[float], book: str, confidence: float
+    alert_type: str, direction: str, line: Optional[float], book: str, confidence: float,
+    home_team: Optional[str] = None, away_team: Optional[str] = None
 ) -> int:
     """Insert only if an alert for this player/market hasn't fired in the last 10 mins."""
+    
+    # Ensure columns exist (DB robust check)
+    try:
+        await db.execute(text("ALTER TABLE sharp_alerts ADD COLUMN IF NOT EXISTS home_team TEXT"))
+        await db.execute(text("ALTER TABLE sharp_alerts ADD COLUMN IF NOT EXISTS away_team TEXT"))
+        await db.commit()
+    except Exception:
+        await db.rollback()
+
     check_sql = text("""
         SELECT 1 FROM sharp_alerts 
         WHERE sport = :sport 
@@ -170,12 +183,12 @@ async def _insert_alert_if_fresh(
         return 0 # Skip duplicate
 
     insert_sql = text("""
-        INSERT INTO sharp_alerts (sport, player_name, market_key, alert_type, direction, line, book, confidence, created_at)
-        VALUES (:sport, :player_name, :market_key, :alert_type, :direction, :line, :book, :confidence, NOW())
+        INSERT INTO sharp_alerts (sport, player_name, market_key, alert_type, direction, line, book, confidence, home_team, away_team, created_at)
+        VALUES (:sport, :player_name, :market_key, :alert_type, :direction, :line, :book, :confidence, :home_team, :away_team, NOW())
     """)
     await db.execute(insert_sql, {
         "sport": sport, "player_name": player_name, "market_key": market_key,
         "alert_type": alert_type, "direction": direction, "line": line,
-        "book": book, "confidence": confidence
+        "book": book, "confidence": confidence, "home_team": home_team, "away_team": away_team
     })
     return 1

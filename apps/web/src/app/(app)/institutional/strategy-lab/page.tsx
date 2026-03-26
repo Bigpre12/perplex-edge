@@ -152,16 +152,8 @@ function StrategyContent() {
                             </div>
 
                             {/* Equity Curve Chart */}
-                            <div className="glass-panel p-8 rounded-3xl border-white/[0.05] h-[450px]">
-                                <div className="flex items-center justify-between mb-8">
-                                    <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase italic tracking-widest">
-                                        <TrendingUp size={18} className="text-primary" /> Equity Curve Simulation
-                                    </h3>
-                                    <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
-                                        <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-primary/30"></span> Bankroll Path</span>
-                                    </div>
-                                </div>
-                                <ResponsiveContainer width="100%" height="85%">
+                                <div className="h-[450px] w-full" style={{ minWidth: 0 }}>
+                                    <ResponsiveContainer width="100%" height="85%">
                                     <AreaChart data={backtestResult.equity_curve}>
                                         <defs>
                                             <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">

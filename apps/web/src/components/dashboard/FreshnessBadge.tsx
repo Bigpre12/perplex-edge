@@ -14,6 +14,7 @@ function timeAgo(ts: string | null): string {
 }
 
 export function FreshnessBadge({ oddsTs, evTs }: { oddsTs: string | null; evTs: string | null }) {
+  console.log('freshness data:', { oddsTs, evTs });
   const isStale = (ts: string | null, thresholdSec: number) => {
     if (!ts) return true;
     const diffSec = (Date.now() - new Date(ts).getTime()) / 1000;

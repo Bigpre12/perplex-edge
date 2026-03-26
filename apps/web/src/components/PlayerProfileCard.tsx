@@ -83,7 +83,7 @@ export function PlayerProfileCard({ playerId, propType, line }: Props) {
 
             {/* Trend Chart */}
             {chartData.length > 0 && (
-                <div className="h-40 w-full bg-gray-950/50 rounded-xl p-2 border border-gray-800/50">
+                <div className="h-40 w-full bg-gray-950/50 rounded-xl p-2 border border-gray-800/50" style={{ minWidth: 0 }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData}>
                             <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />

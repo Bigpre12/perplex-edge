@@ -49,6 +49,8 @@ async def get_alerts(
                 line,
                 book,
                 confidence,
+                home_team,
+                away_team,
                 created_at
             FROM sharp_alerts
             WHERE {where_sql}

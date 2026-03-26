@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
 type Freshness = {
-  odds_last_updated: string | null;
-  ev_last_updated: string | null;
+  last_odds_update: string | null;
+  last_ev_update: string | null;
   server_time: string;
 };
 

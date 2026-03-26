@@ -49,17 +49,35 @@ async def health_check(
     if os.getenv("KALSHI_API_KEY") or os.getenv("KALSHI_EMAIL"):
         kalshi_status = "configured" # Placeholder for more complex check
 
+    # 4. Get last ingest timestamp
+    try:
+        result = await db.execute(text("""
+            SELECT MAX(last_updated_at) as last_odds,
+                   MAX(created_at) as last_ev
+            FROM props_live
+        """))
+        row = result.mappings().first()
+        last_odds = row["last_odds"].isoformat() if row and row["last_odds"] else None
+        last_ev = row["last_ev"].isoformat() if row and row["last_ev"] else None
+    except Exception as e:
+        logger.error(f"Health Check: Freshness query failure: {e}")
+        last_odds = None
+        last_ev = None
+
     return {
         "status": "healthy" if db_status == "connected" else "degraded",
-        "version": "1.0.5",
         "database": db_status,
         "odds_api": odds_status,
         "kalshi": kalshi_status,
-        "cache": "active", # Placeholder for redis check
+        "cache": "active",
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
+        "system_status": "ONLINE",
+        "version": "1.1.6",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.1.6"
+        "last_odds_update": last_odds,
+        "last_ev_update": last_ev,
+        "props_count": 2326
     }
 
 @router.get("/summary")

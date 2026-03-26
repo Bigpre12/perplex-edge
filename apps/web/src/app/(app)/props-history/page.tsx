@@ -96,7 +96,7 @@ function PropsHistoryContent() {
               </div>
             </div>
 
-            <div className="h-80 w-full mt-8">
+            <div className="h-80 w-full mt-8" style={{ minWidth: 0 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={history?.games || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} opacity={0.3} />
