@@ -96,16 +96,18 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
 async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, ev_score: float, fair_prob: float) -> int:
     insert_sql = text("""
         INSERT INTO ev_signals 
-            (player_name, market_key, sport, book, line, ev_score, edge_percent, recommendation, fair_prob, market_prob, created_at)
+            (player_name, market_key, sport, book, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, created_at, updated_at)
         VALUES 
-            (:player_name, :market_key, :sport, :book, :line, :ev_score, :edge_percent, :recommendation, :fair_prob, 0, NOW())
-        ON CONFLICT (sport, market_key, player_name, book) WHERE player_name IS NOT NULL
+            (:player_name, :market_key, :sport, :book, :book, :line, :ev_score, :edge_percent, :edge_percent, :recommendation, :fair_prob, :fair_prob, 0, 0, NOW(), NOW())
+        ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL
         DO UPDATE SET 
             ev_score = EXCLUDED.ev_score,
             edge_percent = EXCLUDED.edge_percent,
+            ev_percentage = EXCLUDED.ev_percentage,
             recommendation = EXCLUDED.recommendation,
             fair_prob = EXCLUDED.fair_prob,
-            created_at = EXCLUDED.created_at
+            true_prob = EXCLUDED.true_prob,
+            updated_at = NOW()
     """)
     try:
         await db.execute(insert_sql, {

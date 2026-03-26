@@ -34,14 +34,14 @@ export function useEvSignals(sport: string, minEv = 2.0) {
                 event_id: s.id || s.event_id,
                 sport_key: s.sport,
                 player_name: s.player_name,
-                market_key: s.stat_type,
+                market_key: s.stat_type || s.market_key,
                 line: s.line,
-                bookmaker: s.book,
-                current_price: s.odds,
-                true_prob: s.true_prob,
-                implied_prob: 1 / s.odds,
-                edge_percent: s.ev_percentage,
-                confidence_score: s.ev_percentage,
+                bookmaker: s.book || s.bookmaker,
+                current_price: s.odds || s.price,
+                true_prob: s.true_prob || s.fair_prob,
+                implied_prob: s.implied_prob || (s.odds ? 1 / s.odds : 0),
+                edge_percent: s.edge_percent || s.ev_percentage || 0,
+                confidence_score: s.edge_percent || s.ev_percentage || 0,
                 updated_at: s.updated_at
             }));
             const filtered = mapped.filter((s: any) => s.edge_percent >= minEv);
@@ -62,14 +62,14 @@ export function useEvSignals(sport: string, minEv = 2.0) {
                 event_id: s.id || s.event_id,
                 sport_key: s.sport,
                 player_name: s.player_name,
-                market_key: s.stat_type,
+                market_key: s.stat_type || s.market_key,
                 line: s.line,
-                bookmaker: s.book,
-                current_price: s.odds,
-                true_prob: s.true_prob,
-                implied_prob: 1 / s.odds,
-                edge_percent: s.ev_percentage,
-                confidence_score: s.ev_percentage,
+                bookmaker: s.book || s.bookmaker,
+                current_price: s.odds || s.price,
+                true_prob: s.true_prob || s.fair_prob,
+                implied_prob: s.implied_prob || (s.odds ? 1 / s.odds : 0),
+                edge_percent: s.edge_percent || s.ev_percentage || 0,
+                confidence_score: s.edge_percent || s.ev_percentage || 0,
                 updated_at: s.updated_at
             };
             

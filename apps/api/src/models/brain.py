@@ -401,18 +401,35 @@ class UnifiedEVSignal(Base):
     sport = Column(String, nullable=False, index=True)
     event_id = Column(String, nullable=False, index=True)
     market_key = Column(String, nullable=False, index=True)
-    outcome_key = Column(String, nullable=False)
-    player_name = Column(String, nullable=True)
+    outcome_key = Column(String, nullable=True) # can be 'over'/'under' or side name
+    player_name = Column(String, nullable=True, index=True)
     bookmaker = Column(String, nullable=False, index=True)
+    book = Column(String, nullable=True) # Alias for bookmaker
     price = Column(Float, nullable=False)
+    odds = Column(Float, nullable=True) # Alias for price
     line = Column(Float, nullable=True)
-    true_prob = Column(Float, nullable=False)
-    edge_percent = Column(Float, nullable=False)
-    implied_prob = Column(Float, nullable=False)
+    
+    # Extended Schema (New)
+    true_prob = Column(Float, nullable=True)
+    edge_percent = Column(Float, nullable=True)
+    implied_prob = Column(Float, nullable=True)
+    
+    # Legacy/Rich Schema Compatibility
+    ev_score = Column(Float, nullable=True)     # Often same as edge_percent/100
+    ev_percent = Column(Float, nullable=True)   # Often same as edge_percent
+    ev_percentage = Column(Float, nullable=True) # Frontend expected name
+    fair_prob = Column(Float, nullable=True)    # Alias for true_prob
+    market_prob = Column(Float, nullable=True)  # Alias for implied_prob
+    recommendation = Column(String, nullable=True) # 'OVER'/'UNDER'
+    
     engine_version = Column(String, nullable=False, server_default='v1')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), index=True)
-    __table_args__ = (UniqueConstraint('sport', 'event_id', 'player_name', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', name='uix_ev_unique'),)
+    
+    __table_args__ = (
+        UniqueConstraint('sport', 'event_id', 'player_name', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', name='uix_ev_unique'),
+        Index('idx_ev_signals_player_market', 'player_name', 'market_key'),
+    )
 
 class LineTick(Base):
     """Line Ticks: Historical record of price/line changes for movement analysis."""

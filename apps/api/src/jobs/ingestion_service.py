@@ -152,20 +152,45 @@ def transform_odds_api_props(odds_events, game_info, home_team='TBD', away_team=
 
 async def run_steam_scout():
     """Rapid scan for line movements (Steam) for imminent games."""
+    from services.alert_writer import run_alert_detection
     logger.info("Starting Steam Scout scan for NBA/NFL imminent games...")
-    # Implementation targeted for games starting within 4h
+    # Trigger the optimized database-backed detection
     for sport_key in ["basketball_nba", "americanfootball_nfl"]:
         try:
-            # We fetch fresh lines and compare to cache/db
-            await fetch_lines_for_sport(sport_key)
-            # Steam analysis logic would go here, comparing current to prev in Redis
+            await run_alert_detection(sport_key)
             logger.debug(f"Steam scan complete for {sport_key}")
         except Exception as e:
             logger.error(f"Steam scout failed for {sport_key}: {e}")
 
 async def run_clv_snapshot():
     """Snapshot closing lines for games starting within 2 hours."""
+    from db.session import async_session_maker
+    from sqlalchemy import text
+    from services.persistence_helpers import insert_clv_trades
+    
     logger.info("Starting CLV snapshot for games starting within 2h...")
-    # Logic: query UnifiedOdds for games starting within 2h and log lines
-    # This acts as a 'closing line' record for later hit-rate analysis
-    pass
+    
+    async with async_session_maker() as session:
+        try:
+            # Query UnifiedOdds for games starting within 2h
+            query = text("""
+                SELECT sport, league, event_id as game_id, game_time, player_name, market_key, 
+                       line, bookmaker as book, price as odds, outcome_key as side
+                FROM unified_odds
+                WHERE game_time BETWEEN NOW() AND NOW() + INTERVAL '2 hours'
+            """)
+            result = await session.execute(query)
+            rows = result.mappings().all()
+            
+            if rows:
+                clv_records = []
+                for r in rows:
+                    clv_records.append({
+                        **dict(r),
+                        "snapshot_type": "closing",
+                        "recorded_at": datetime.now(timezone.utc)
+                    })
+                await insert_clv_trades(clv_records)
+                logger.info(f"CLV: Snapshotted {len(clv_records)} lines.")
+        except Exception as e:
+            logger.error(f"CLV snapshot failed: {e}")

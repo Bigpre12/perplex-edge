@@ -258,24 +258,10 @@ class UnifiedIngestionService:
         else:
             logger.warning(f"UnifiedIngestion: No unified rows generated for {sport_key}")
 
-        # 5. Trigger Brain & EV
-        secondary_tasks = [
-            ("Sharp Money", lambda: sharp_money_brain.detect_signals(sport_key)),
-            ("CLV Tracker", lambda: brain_clv_tracker.record_opening_line(records)),
-            ("Injury Impact", lambda: injury_impact_brain.analyze_impacts(sport_key)),
-            ("EV Engine", lambda: ev_engine.run_ev_cycle(sport_key)),
-            ("Alert Writer", lambda: run_alert_detection(sport_key)),
-            ("EV Writer", lambda: run_ev_grader(sport_key)),
-        ]
+        # 5. Trigger Unified Intelligence Pipeline
+        await self.run_intelligence_pipeline(sport_key, records)
 
-        for name, task_fn in secondary_tasks:
-            try:
-                res = task_fn()
-                if asyncio.iscoroutine(res):
-                    await res
-                logger.info(f"UnifiedIngestion: Successfully completed {name}")
-            except Exception as e:
-                logger.error(f"UnifiedIngestion: Secondary processing failed for {name}: {e}")
+        # Promote EV signals to ModelPicks for the dashboard
 
         # Promote EV signals to ModelPicks for the dashboard
         try:
@@ -321,6 +307,38 @@ class UnifiedIngestionService:
                             status="pipeline_error",
                             meta={"error": str(e), "attempts": retries}
                         )
+
+    async def run_intelligence_pipeline(self, sport: str, records: List[PropRecord]):
+        """
+        Single orchestrator for all post-ingestion scoring.
+        Ensures data dependencies and standardized output.
+        """
+        logger.info(f"🚀 [INTELLIGENCE PIPELINE] Starting for {sport}...")
+        
+        try:
+            # Step 1: EV Calculations (The Core)
+            from services.ev_service import ev_service
+            await ev_service.run_ev_cycle(sport)
+            
+            # Notify WebSocket clients
+            from routers.ws_ev import notify_ev_update
+            await notify_ev_update(sport)
+            
+            # Step 2: Signal Detection (Whales, Steam, Sharps)
+            from services.alert_writer import run_alert_detection
+            await run_alert_detection(sport)
+            
+            # Step 3: Analytical Extras
+            tasks = [
+                sharp_money_brain.detect_signals(sport),
+                brain_clv_tracker.record_opening_line(records),
+                injury_impact_brain.analyze_impacts(sport)
+            ]
+            await asyncio.gather(*[t for t in tasks if asyncio.iscoroutine(t)], return_exceptions=True)
+            
+            logger.info(f"✅ [INTELLIGENCE PIPELINE] Completed for {sport}")
+        except Exception as e:
+            logger.error(f"❌ [INTELLIGENCE PIPELINE] Failed for {sport}: {e}")
 
     def enrich_with_market_intel(self, records: List[PropRecord]) -> List[PropRecord]:
         """

@@ -17,13 +17,19 @@ async def get_ev_signals(
 ):
     # 1. Try ev_signals table first
     try:
-        result = await db.execute(
-            text("""SELECT * FROM ev_signals 
-               WHERE created_at > NOW() - INTERVAL '24 hours'
-               ORDER BY ev_score DESC NULLS LAST
-               LIMIT :limit"""),
-            {"limit": limit}
-        )
+        sql = """
+            SELECT *, edge_percent as ev_percentage, true_prob as fair_prob 
+            FROM ev_signals 
+            WHERE created_at > NOW() - INTERVAL '24 hours'
+        """
+        params = {"limit": limit}
+        if sport:
+            sql += " AND sport = :sport"
+            params["sport"] = sport
+            
+        sql += " ORDER BY edge_percent DESC NULLS LAST LIMIT :limit"
+        
+        result = await db.execute(text(sql), params)
         rows = result.mappings().all()
         if rows:
             return {

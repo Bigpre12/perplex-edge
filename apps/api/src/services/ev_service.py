@@ -79,11 +79,19 @@ class EVService:
                                 'outcome_key': outcome,
                                 'player_name': p_name,
                                 'bookmaker': book,
+                                'book': book, # Alias
                                 'price': price,
+                                'odds': price, # Alias
                                 'line': line,
                                 'true_prob': true_p,
+                                'fair_prob': true_p, # Legacy alias
                                 'edge_percent': edge,
+                                'ev_percent': edge, # Legacy alias
+                                'ev_percentage': edge, # Frontend expected
+                                'ev_score': edge / 100.0, # Decimal score
                                 'implied_prob': implied,
+                                'market_prob': implied, # Legacy alias
+                                'recommendation': outcome.upper(),
                                 'engine_version': self.version
                             })
 

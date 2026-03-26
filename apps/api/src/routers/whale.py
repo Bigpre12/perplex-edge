@@ -6,7 +6,6 @@ from sqlalchemy import select, desc
 from db.session import get_async_db
 from models.brain import WhaleMove
 from schemas.unified import WhaleEventSchema
-from services.whale_service import detect_whale_signals
 from datetime import datetime, timezone, timedelta
 
 router = APIRouter(tags=["whale"])

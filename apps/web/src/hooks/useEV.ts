@@ -8,6 +8,7 @@ export interface EVRecord {
   market_key: string;
   ev_percentage: number;
   edge_percent: number;
+  ev_score: number;
   bookmaker: string;
   line: number;
   recommendation: string;
@@ -27,7 +28,7 @@ export const useEV = (sport: string = 'all') => {
         throw new Error('No EV signals returned from API');
       } catch (err) {
         console.warn('Backend EV fetch failed, falling back to Supabase', err);
-        let query = supabase.from('ev_signals').select('*').order('ev_percentage', { ascending: false }).limit(50);
+        let query = supabase.from('ev_signals').select('*').order('edge_percent', { ascending: false }).limit(50);
         if (sport !== 'all') {
             query = query.eq('sport', sport);
         }
