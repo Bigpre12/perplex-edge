@@ -112,22 +112,24 @@ async def insert_props_history(records: List[PropRecord], source: str = 'live_in
             # Get valid columns from PropHistory model
             valid_cols = {c.key for c in PropHistory.__table__.columns}
             
-            rows = []
+            # Filter to only include columns that exist in PropHistory
+            history_rows = []
             for r in records:
-                # Base row from PropRecord
                 row_data = r.dict()
-                # Add history-specific metadata
                 row_data["snapshot_at"] = now
                 row_data["source"] = source
                 row_data["run_id"] = run_id
-                
-                # Filter to only include columns that exist in PropHistory
                 history_row = {k: v for k, v in row_data.items() if k in valid_cols and k != 'id'}
-                rows.append(history_row)
+                history_rows.append(history_row)
+            
+            # Chunk inserts to avoid asyncpg parameter limit (32767)
+            batch_size = 500
+            for i in range(0, len(history_rows), batch_size):
+                batch = history_rows[i:i + batch_size]
+                await session.execute(ins_obj.values(batch))
                 
-            await session.execute(ins_obj.values(rows))
             await session.commit()
-            logger.info(f"Persistence: Appended {len(records)} records to props_history.")
+            logger.info(f"Persistence: Appended {len(records)} records to props_history in batches.")
         except Exception as e:
             await session.rollback()
             logger.error(f"Persistence: props_history append failed: {e}")
@@ -140,7 +142,13 @@ async def insert_edges_ev_history(ev_rows: List[Dict]):
         try:
             is_sqlite = "sqlite" in str(engine.url)
             ins_obj = sqlite_insert(EdgeEVHistory) if is_sqlite else pg_insert(EdgeEVHistory)
-            await session.execute(ins_obj.values(ev_rows))
+            
+            # Chunk inserts
+            batch_size = 500
+            for i in range(0, len(ev_rows), batch_size):
+                batch = ev_rows[i:i + batch_size]
+                await session.execute(ins_obj.values(batch))
+                
             await session.commit()
             logger.info(f"Persistence: Inserted {len(ev_rows)} edges into edges_ev_history.")
         except Exception as e:

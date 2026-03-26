@@ -26,8 +26,8 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
         sql = text("""
             WITH valid_props AS (
                  SELECT 
-                     player_name, market_key, sport, book, line,
-                     odds_over, odds_under, implied_over, implied_under
+                     player_name, market_key, sport, book, line, game_id,
+                     odds_over, odds_under, implied_over, implied_under, confidence
                  FROM props_live 
                  WHERE sport = :sport
                    AND confidence > 0 
@@ -58,7 +58,7 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
             ),
             calculated_ev AS (
                  SELECT 
-                     player_name, market_key, sport, book, line,
+                     player_name, market_key, sport, book, line, game_id, confidence,
                      (fair_over_prob * dec_over) - 1 as ev_over,
                      (fair_under_prob * dec_under) - 1 as ev_under,
                      fair_over_prob, fair_under_prob
@@ -96,9 +96,9 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
 async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, ev_score: float, fair_prob: float) -> int:
     insert_sql = text("""
         INSERT INTO ev_signals 
-            (player_name, market_key, sport, book, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, created_at, updated_at)
+            (player_name, market_key, sport, sportkey, event_id, outcome_key, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, confidence, engine_version, created_at, updated_at)
         VALUES 
-            (:player_name, :market_key, :sport, :book, :book, :line, :ev_score, :edge_percent, :edge_percent, :recommendation, :fair_prob, :fair_prob, 0, 0, NOW(), NOW())
+            (:player_name, :market_key, :sport, :sport, :event_id, :outcome_key, :bookmaker, :line, :ev_score, :edge_percent, :edge_percent, :recommendation, :fair_prob, :fair_prob, 0, 0, :confidence, 'v1-grader', NOW(), NOW())
         ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL
         DO UPDATE SET 
             ev_score = EXCLUDED.ev_score,
@@ -107,6 +107,7 @@ async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, e
             recommendation = EXCLUDED.recommendation,
             fair_prob = EXCLUDED.fair_prob,
             true_prob = EXCLUDED.true_prob,
+            confidence = EXCLUDED.confidence,
             updated_at = NOW()
     """)
     try:
@@ -114,10 +115,13 @@ async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, e
             "player_name": row["player_name"],
             "market_key": row["market_key"],
             "sport": sport,
-            "book": row["book"],
+            "event_id": row["game_id"],
+            "outcome_key": rec.lower(),
+            "bookmaker": row["book"],
             "line": row["line"],
             "ev_score": round(float(ev_score), 4),
             "edge_percent": round(float(ev_score * 100), 2),
+            "confidence": float(row.get("confidence") or 0.7),
             "recommendation": rec,
             "fair_prob": round(float(fair_prob), 4)
         })

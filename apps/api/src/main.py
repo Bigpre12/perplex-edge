@@ -114,11 +114,15 @@ async def initialize_backend_services():
         if not is_sqlite:
             # Add columns
             await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR")
+            await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sportkey VARCHAR")
+            await run_migration_step("ALTER TABLE ev_signals ALTER COLUMN sportkey DROP NOT NULL")
             await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS true_prob FLOAT")
             await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS edge_percent FLOAT")
+            await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS confidence FLOAT")
             await run_migration_step("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS sport VARCHAR")
             await run_migration_step("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sport VARCHAR")
+            await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS evpercentage FLOAT DEFAULT 0")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS game_start_time TIMESTAMPTZ")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS home_team VARCHAR")

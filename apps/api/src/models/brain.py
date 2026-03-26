@@ -399,15 +399,15 @@ class UnifiedEVSignal(Base):
     __tablename__ = "ev_signals"
     id = Column(Integer, primary_key=True, autoincrement=True)
     sport = Column(String, nullable=False, index=True)
+    sportkey = Column(String, nullable=True) # Compatibility
     event_id = Column(String, nullable=False, index=True)
     market_key = Column(String, nullable=False, index=True)
     outcome_key = Column(String, nullable=True) # can be 'over'/'under' or side name
     player_name = Column(String, nullable=True, index=True)
     bookmaker = Column(String, nullable=False, index=True)
-    book = Column(String, nullable=True) # Alias for bookmaker
     price = Column(Float, nullable=False)
-    odds = Column(Float, nullable=True) # Alias for price
     line = Column(Float, nullable=True)
+    confidence = Column(Float, nullable=True)
     
     # Extended Schema (New)
     true_prob = Column(Float, nullable=True)
@@ -486,6 +486,7 @@ class PropLive(Base):
     is_soft_book = Column(Boolean, default=False)
     is_sharp_book = Column(Boolean, default=False)
     confidence = Column(Float, nullable=True) # 0.0 to 1.0
+    evpercentage = Column(Float, default=0.0) # For grading
     last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     home_team = Column(String, nullable=True)
     away_team = Column(String, nullable=True)

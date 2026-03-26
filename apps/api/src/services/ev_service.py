@@ -91,6 +91,7 @@ class EVService:
                                 'ev_score': edge / 100.0, # Decimal score
                                 'implied_prob': implied,
                                 'market_prob': implied, # Legacy alias
+                                'confidence': 0.7, # Default confidence for EV signals
                                 'recommendation': outcome.upper(),
                                 'engine_version': self.version
                             })
@@ -142,12 +143,13 @@ class EVService:
 
                 # 1. UPSERT Live Signals
                 for s in signals:
-                    valid_cols = ["sport", "event_id", "market_key", "outcome_key", "player_name", 
+                    valid_cols = ["sport", "sportkey", "event_id", "market_key", "outcome_key", "player_name", 
                                   "bookmaker", "price", "line", "true_prob", "edge_percent", 
-                                  "implied_prob", "engine_version"]
+                                  "implied_prob", "confidence", "engine_version"]
                     row = {k: v for k, v in s.items() if k in valid_cols}
+                    row.setdefault("sportkey", s["sport"])
                     # Ensure numeric fields are floats
-                    for col in ["price", "line", "true_prob", "edge_percent", "implied_prob"]:
+                    for col in ["price", "line", "true_prob", "edge_percent", "implied_prob", "confidence"]:
                         if col in row and row[col] is not None:
                             row[col] = float(row[col])
 
@@ -161,8 +163,8 @@ class EVService:
                     else:
                         # Raw SQL fallback for Postgres as pg_insert is acting up with true_prob
                         base_sql = """
-                        INSERT INTO ev_signals (sport, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, implied_prob, engine_version, created_at, updated_at)
-                        VALUES (:sport, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :implied_prob, :engine_version, now(), now())
+                        INSERT INTO ev_signals (sport, sportkey, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, implied_prob, confidence, engine_version, created_at, updated_at)
+                        VALUES (:sport, :sportkey, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :implied_prob, :confidence, :engine_version, now(), now())
                         """
                         update_clause = """
                         DO UPDATE SET 
@@ -171,6 +173,7 @@ class EVService:
                             true_prob = EXCLUDED.true_prob, 
                             edge_percent = EXCLUDED.edge_percent, 
                             implied_prob = EXCLUDED.implied_prob, 
+                            confidence = EXCLUDED.confidence,
                             updated_at = now()
                         """
                         if row.get("player_name"):
