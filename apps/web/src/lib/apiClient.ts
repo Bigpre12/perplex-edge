@@ -34,7 +34,7 @@ export async function apiClient<T>(
   // 1. Construct URL with query params
   const baseUrl = typeof window !== "undefined" 
     ? window.location.origin 
-    : (process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app");
+    : (process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app");
   
   const url = new URL(endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`, baseUrl);
   if (params) {

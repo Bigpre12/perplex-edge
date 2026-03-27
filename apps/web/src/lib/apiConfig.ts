@@ -1,6 +1,6 @@
 const isServer = typeof window === 'undefined';
 const isDevelopment = process.env.NODE_ENV === "development";
-const PROD_URL = "https://perplex-edge-backend-production.up.railway.app";
+const PROD_URL = "https://perplex-edge-backend-copy-production.up.railway.app";
 const DEV_URL = "http://localhost:8000";
 
 /**
