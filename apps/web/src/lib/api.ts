@@ -1,6 +1,11 @@
-import axios from 'axios';
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-production.up.railway.app';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-production.up.railway.app';
+const isServer = typeof window === 'undefined';
+export const API_BASE = isServer 
+  ? (process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-production.up.railway.app')
+  : '';
+
+const API_URL = isServer 
+  ? (process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-production.up.railway.app')
+  : '';
 
 export const api = axios.create({
   baseURL: API_URL,

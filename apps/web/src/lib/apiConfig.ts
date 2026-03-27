@@ -1,11 +1,13 @@
-const isDevelopment = process.env.NODE_ENV === "development";
+const isServer = typeof window === 'undefined';
 const PROD_URL = "https://perplex-edge-backend-production.up.railway.app";
 const DEV_URL = "http://localhost:8000";
 
 /**
  * The validated API Base URL. 
  */
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || (isDevelopment ? DEV_URL : PROD_URL);
+export const API_BASE = isServer 
+    ? (process.env.NEXT_PUBLIC_API_URL || (isDevelopment ? DEV_URL : PROD_URL))
+    : ""; // Use relative paths in the browser to avoid CORS (proxying through Next.js)
 
 /**
  * Helper to check if the API is correctly configured.
