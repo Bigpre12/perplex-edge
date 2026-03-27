@@ -9,10 +9,11 @@ const nextConfig = {
     async rewrites() {
         const raw = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app";
         const apiUrl = raw.startsWith("http") ? raw : `https://${raw}`;
+        const cleanApiUrl = apiUrl.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
         return [
             {
                 source: "/api/:path*",
-                destination: `${apiUrl}/api/:path*`,
+                destination: `${cleanApiUrl}/api/:path*`,
             },
         ];
     },
