@@ -398,15 +398,10 @@ async def backend_lifespan(app: FastAPI):
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False, lifespan=backend_lifespan)
 
-origins = [
-    "https://perplex-edge.vercel.app",
-    "http://localhost:3000",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
