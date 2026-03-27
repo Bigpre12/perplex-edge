@@ -1,3 +1,4 @@
+import axios from 'axios';
 const isServer = typeof window === 'undefined';
 export const API_BASE = isServer 
   ? (process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-production.up.railway.app')
