@@ -6,11 +6,11 @@ export interface EVRecord {
   id: string;
   player_name: string;
   market_key: string;
-  ev_percentage: number;
-  edge_percent: number;
-  ev_score: number;
+  ev_pct: number;
+  edge_percent?: number;
+  ev_score?: number;
   bookmaker: string;
-  line: number;
+  line?: number;
   recommendation: string;
   sport: string;
 }
@@ -22,7 +22,7 @@ export const useEV = (sport: string = 'all') => {
       try {
         const url = sport === 'all' ? '/api/ev' : `/api/ev?sport=${sport}`;
         const { data } = await api.get(url);
-        if (data && data.props && data.props.length > 0) {
+        if (data && data.props) {
           return data.props as EVRecord[];
         }
         throw new Error('No EV signals returned from API');

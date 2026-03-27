@@ -12,9 +12,10 @@ export default function EVPage() {
   const [sport, setSport] = useState('all');
   const { data: evSignals, isLoading, isError, refetch } = useEV(sport);
 
-  const getEVColor = (val: number) => {
-    if (val >= 5) return 'text-green-400';
-    if (val >= 2) return 'text-yellow-400';
+  const getEVColor = (val: number | undefined | null) => {
+    const n = Number(val) || 0;
+    if (n >= 5) return 'text-green-400';
+    if (n >= 2) return 'text-yellow-400';
     return 'text-red-400';
   };
 
@@ -32,16 +33,17 @@ export default function EVPage() {
     { 
       header: 'EV Score', 
       accessor: (p: EVRecord) => (
-        <span className={`font-black ${getEVColor(p.ev_percentage)}`}>
-          {p.ev_percentage.toFixed(2)}%
+        <span className={`font-black ${getEVColor(p.ev_pct)}`}>
+          {(p.ev_pct || 0).toFixed(2)}%
         </span>
-      )
+      ),
+      sortValue: (p: EVRecord) => p.ev_pct || 0,
     },
     { 
       header: 'Edge', 
       accessor: (p: EVRecord) => (
         <span className="text-white/60 font-mono">
-          {(p.edge_percent * 100).toFixed(1)}%
+          {((p.edge_percent || 0) * 100).toFixed(1)}%
         </span>
       )
     },
@@ -74,21 +76,23 @@ export default function EVPage() {
                 Our quant engine identifies mathematical edges where sportsbook odds misprice real-world probabilities.
               </p>
             </div>
-            
+
             <div className="flex gap-4">
                <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
                  <div className="text-white/30 text-xs font-bold uppercase mb-1">Total Edges</div>
                  <div className="text-3xl font-black">{evSignals?.length || 0}</div>
                </div>
-               <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                 <div className="text-white/30 text-xs font-bold uppercase mb-1">Max Edge</div>
-                 <div className="text-3xl font-black text-green-400">
-                    {Math.max(...(evSignals?.map(s => s.ev_percentage) || [0])).toFixed(1)}%
-                 </div>
-               </div>
+                <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                  <div className="text-white/30 text-xs font-bold uppercase mb-1">Max Edge</div>
+                  <div className="text-3xl font-black text-green-400">
+                     {(evSignals && evSignals.length > 0
+                        ? Math.max(...evSignals.map(s => s.ev_pct || 0))
+                        : 0).toFixed(1)}%
+                  </div>
+                </div>
             </div>
           </div>
-          
+
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 blur-[100px] -mr-48 -mt-48 rounded-full" />
         </div>
 
@@ -124,7 +128,7 @@ export default function EVPage() {
             
             <DataTable 
               columns={columns} 
-              data={evSignals as any} 
+              data={evSignals ?? []} 
               onRowClick={(p) => console.log('Clicked signal:', p)}
             />
           </div>

@@ -17,10 +17,11 @@ export type EVSignal = {
   line: number;
   bookmaker: string;
   current_price: number;
-  true_prob: number;
-  implied_prob: number;
-  edge_percent: number;
-  confidence_score: number;
+  ev_pct: number;
+  edge_percent?: number;
+  true_prob?: number;
+  implied_prob?: number;
+  confidence_score?: number;
   updated_at: string;
   outcome_key?: string;
 };
@@ -31,7 +32,8 @@ interface EVCardProps {
 }
 
 export const EVCard: React.FC<EVCardProps> = ({ signal, index }) => {
-  const isHighEdge = signal.edge_percent >= 5;
+  const edgeVal = signal.ev_pct || signal.edge_percent || 0;
+  const isHighEdge = edgeVal >= 5;
   const edgeColor = isHighEdge ? "#10b981" : "#3b82f6"; // Green-500 or Blue-500
   
   return (
@@ -75,9 +77,9 @@ export const EVCard: React.FC<EVCardProps> = ({ signal, index }) => {
           
           <div className="w-14 h-14 shrink-0">
             <CircularProgressbar
-              value={signal.edge_percent}
+              value={edgeVal}
               maxValue={15}
-              text={signal.edge_percent != null ? `${signal.edge_percent.toFixed(1)}%` : "—"}
+              text={`${edgeVal.toFixed(1)}%`}
               styles={buildStyles({
                 textSize: "24px",
                 pathColor: edgeColor,
@@ -105,7 +107,7 @@ export const EVCard: React.FC<EVCardProps> = ({ signal, index }) => {
             <div className="flex items-center gap-2">
               <ShieldCheck size={12} className="text-brand-primary" />
               <span className="text-sm font-black text-white/50 italic">
-                {signal.true_prob > 0 ? `+${Math.round((1/signal.true_prob - 1) * 100)}` : "---"}
+                {signal.true_prob && signal.true_prob > 0 ? `+${Math.round((1/signal.true_prob - 1) * 100)}` : "---"}
               </span>
             </div>
           </div>

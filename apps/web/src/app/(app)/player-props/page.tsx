@@ -441,9 +441,9 @@ function HeroModal({ playerName, sport, onClose }: { playerName: string | null, 
 
 function HistoricalPropCard({ group }: { group: any }) {
     // Transform ticks for TrendChart
-    const trendData = group.ticks.map((t: any, idx: number) => ({
+    const trendData = (group.ticks || []).map((t: any, idx: number) => ({
         game: `G${idx}`,
-        value: t.line,
+        value: Number(t.line) || 0,
         hit: false // Placeholder
     })).slice(-10);
 

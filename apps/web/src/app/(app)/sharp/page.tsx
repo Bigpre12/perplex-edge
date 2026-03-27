@@ -16,60 +16,82 @@ export default function SharpPage() {
       header: 'Event', 
       accessor: (a: SharpAlert) => (
         <div className="flex flex-col">
-          <span className="font-bold text-white">{a.player_name || 'Matchup'}</span>
-          <span className="text-xs text-white/40 uppercase">{a.market_key}</span>
+          <span className="font-bold text-white">{a.selection || a.player_name || 'Matchup'}</span>
+          <span className="text-xs text-white/40 uppercase">{a.market || a.market_key || 'Market'}</span>
         </div>
       ) 
     },
     { 
       header: 'Signal', 
-      accessor: (a: SharpAlert) => (
-        <div className="flex items-center space-x-2">
-          {a.is_steam && (
-            <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-black uppercase">
-              <Flame className="w-3 h-3" />
-              <span>Steam</span>
-            </div>
-          )}
-          {a.is_whale && (
-            <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase">
-              <Anchor className="w-3 h-3" />
-              <span>Whale</span>
-            </div>
-          )}
-          {!a.is_steam && !a.is_whale && (
-            <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase">
-              <TrendingUp className="w-3 h-3" />
-              <span>Sharp Move</span>
-            </div>
-          )}
-        </div>
-      )
+      accessor: (a: SharpAlert) => {
+        const isSteam = a.type === 'sharp' && a.signal_type === 'steam';
+        const isWhale = a.type === 'whale';
+        return (
+          <div className="flex items-center space-x-2">
+            {isSteam && (
+              <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-black uppercase">
+                <Flame className="w-3 h-3" />
+                <span>Steam</span>
+              </div>
+            )}
+            {isWhale && (
+              <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase">
+                <Anchor className="w-3 h-3" />
+                <span>Whale</span>
+              </div>
+            )}
+            {!isSteam && !isWhale && (
+              <div className="flex items-center space-x-1 px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-black uppercase">
+                <TrendingUp className="w-3 h-3" />
+                <span>{a.signal_type || 'Sharp Move'}</span>
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     { 
       header: 'Side', 
-      accessor: (a: SharpAlert) => (
-        <span className={`font-black uppercase tracking-widest ${a.sharp_side.toLowerCase().includes('over') || a.sharp_side.toLowerCase().includes('home') ? 'text-green-400' : 'text-red-400'}`}>
-          {a.sharp_side}
-        </span>
-      )
+      accessor: (a: SharpAlert) => {
+        const sideText = a.side || a.sharp_side || 'N/A';
+        const sideLower = sideText.toLowerCase();
+        const color = sideLower.includes('over') || sideLower.includes('home') || sideLower.includes('yes') ? 'text-green-400' : sideLower.includes('under') || sideLower.includes('away') || sideLower.includes('no') ? 'text-red-400' : 'text-white/60';
+        return (
+          <span className={`font-black uppercase tracking-widest ${color}`}>
+            {sideText}
+          </span>
+        );
+      }
     },
     { 
       header: 'Movement', 
-      accessor: (a: SharpAlert) => (
-        <span className="font-mono text-white/80">
-          {a.line_movement > 0 ? `+${a.line_movement}` : a.line_movement} ticks
-        </span>
-      )
+      accessor: (a: SharpAlert) => {
+        const move = Number(a.line_movement || a.severity || a.rating) || 0;
+        return (
+          <span className="font-mono text-white/80">
+            {move > 0 ? `+${move.toFixed(1)}` : move.toFixed(1)} ticks
+          </span>
+        );
+      }
     },
     { 
       header: 'Time', 
-      accessor: (a: SharpAlert) => (
-        <div className="flex items-center space-x-1 text-white/40 text-xs">
-          <Clock className="w-3 h-3" />
-          <span>{formatDistanceToNow(new Date(a.created_at))} ago</span>
-        </div>
-      )
+      accessor: (a: SharpAlert) => {
+        let displayTime = 'recently';
+        try {
+          if (a.created_at) {
+            displayTime = formatDistanceToNow(new Date(a.created_at)) + ' ago';
+          }
+        } catch (e) {
+          console.error("Date formatting error:", e);
+        }
+        return (
+          <div className="flex items-center space-x-1 text-white/40 text-xs">
+            <Clock className="w-3 h-3" />
+            <span>{displayTime}</span>
+          </div>
+        );
+      }
     },
   ];
 
@@ -90,7 +112,7 @@ export default function SharpPage() {
         {/* Featured Whale Move */}
         {alerts && alerts.filter(a => a.is_whale).length > 0 && (
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {alerts.filter(a => a.is_whale).slice(0, 3).map((whale) => (
+             {alerts.filter(a => a && a.is_whale).slice(0, 3).map((whale) => (
                 <div key={whale.id} className="relative group overflow-hidden rounded-3xl bg-blue-600/5 border border-blue-500/20 p-6 transition-all hover:bg-blue-600/10">
                    <div className="flex items-center justify-between mb-4">
                       <div className="p-3 rounded-2xl bg-blue-500/20 text-blue-400">
@@ -102,7 +124,9 @@ export default function SharpPage() {
                    <div className="flex items-center space-x-2 mb-4">
                       <span className="text-xs text-white/40 uppercase">{whale.market_key}</span>
                       <span className="w-1 h-1 rounded-full bg-white/20" />
-                      <span className="text-xs font-black text-green-400 uppercase">{whale.sharp_side}</span>
+                      <span className={`text-xs font-black uppercase ${(whale.sharp_side || '').toLowerCase().includes('over') ? 'text-green-400' : 'text-blue-400'}`}>
+                        {whale.sharp_side || 'MATCH'}
+                      </span>
                    </div>
                    <div className="absolute bottom-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                       <Anchor className="w-24 h-24" />

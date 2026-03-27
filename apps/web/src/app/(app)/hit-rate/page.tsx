@@ -89,8 +89,8 @@ export default function HitRatePage() {
 
         {/* Global Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           <StatCard label="Platform Accuracy" value={`${(stats as any)?.overall_hit_rate || 62}%`} icon={Activity} color="blue" />
-           <StatCard label="Average ROI" value={`${(stats as any)?.roi || 8.4}%`} icon={TrendingUp} color="green" />
+           <StatCard label="Platform Accuracy" value={`${Math.round(((stats as any)?.overall_hit_rate || 0.62) * 100)}%`} icon={Activity} color="blue" />
+           <StatCard label="Average ROI" value={`${((stats as any)?.roi || 0.084) * 100 > 1 ? Math.round(((stats as any)?.roi || 0.084) * 100) : ((stats as any)?.roi || 0.084).toFixed(2)}%`} icon={TrendingUp} color="green" />
            <StatCard label="Graded Picks" value={(stats as any)?.graded_picks || '12,450'} icon={BarChart3} color="purple" />
            <StatCard label="Current Streak" value="W6" icon={Trophy} color="yellow" />
         </div>

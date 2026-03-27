@@ -68,7 +68,7 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
                         results.push({
                             id: a.id || Math.random().toString(),
                             type: "SHARP",
-                            message: a.message || `${a.player} ${a.stat} move detected`,
+                            message: a.message || `${a.player || 'Sharp'} ${a.stat || 'market'} move detected`,
                             timestamp: a.timestamp || a.alert_time || new Date().toISOString(),
                         });
                     });

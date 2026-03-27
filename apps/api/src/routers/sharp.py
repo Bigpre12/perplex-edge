@@ -49,6 +49,7 @@ async def get_sharp_alerts(
                     "event_id": w.event_id,
                     "market": w.market_key,
                     "selection": w.selection,
+                    "side": w.side,
                     "bookmaker": w.bookmaker,
                     "created_at": w.created_at.isoformat() if w.created_at else None
                 })

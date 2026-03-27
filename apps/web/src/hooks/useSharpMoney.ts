@@ -4,12 +4,20 @@ import { supabase } from '@/lib/supabase';
 
 export interface SharpAlert {
   id: string;
-  player_name: string;
-  market_key: string;
-  sharp_side: string;
-  line_movement: number;
-  is_steam: boolean;
-  is_whale: boolean;
+  type: 'sharp' | 'whale';
+  selection: string;
+  player_name?: string; // For legacy compatibility
+  market_key?: string;
+  market?: string;
+  sharp_side?: string;
+  side?: string;
+  line_movement?: number;
+  severity?: number;
+  rating?: number;
+  move_size?: string;
+  signal_type?: string;
+  is_steam?: boolean;
+  is_whale?: boolean;
   created_at: string;
 }
 
@@ -18,9 +26,9 @@ export const useSharpMoney = () => {
     queryKey: ['sharp-money'],
     queryFn: async () => {
       try {
-        const { data } = await api.get('/api/smart-money');
-        if (data && data.alerts) {
-          return data.alerts as SharpAlert[];
+        const { data } = await api.get('/api/sharp/alerts');
+        if (data && data.data) {
+          return data.data as SharpAlert[];
         }
         throw new Error('No sharp alerts returned from API');
       } catch (err) {

@@ -42,7 +42,7 @@ export function DataTable<T extends { id: string | number }>({
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
-          {data.length === 0 ? (
+          {(!data || data.length === 0) ? (
             <tr>
               <td colSpan={columns.length} className="px-6 py-12 text-center text-white/30">
                 No data available

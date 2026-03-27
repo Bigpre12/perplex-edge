@@ -38,12 +38,13 @@ export function usePropsBoard(sport = "basketball_nba", minEv?: number) {
     return useQuery<CanonicalBoardResponse, Error>({
         queryKey: ['propsBoard', sport, minEv],
         queryFn: async () => {
-            const res = await api.propsBoard(sport, minEv);
-            if (res instanceof Error) throw res;
-            if (res?.status === "pipeline_error" || res?.error) {
-                throw new Error(res.message || res.error || "Failed to fetch props board");
+            const { data } = await api.get(`/api/props/${sport}`, {
+                params: { min_ev: minEv }
+            });
+            if (data?.status === "pipeline_error" || data?.error) {
+                throw new Error(data.message || data.error || "Failed to fetch props board");
             }
-            return res as CanonicalBoardResponse;
+            return data as CanonicalBoardResponse;
         },
         refetchInterval: 30000, // 30s auto-refresh
         staleTime: 15000,
