@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, insert
 from models.brain import WhaleMove, SteamEvent, SharpSignal
+from services.heartbeat_service import HeartbeatService
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -165,9 +166,52 @@ async def _run_detection(sport: str, db: AsyncSession) -> int:
                 total_inserted += 1
 
         # 3. LEGACY COMPATIBILITY: Also write to sharp_alerts for the live feed
-        # (This avoids breaking any frontend components still listening to this table)
+        if whales or steams:
+            from datetime import timedelta
+            # Ensure the table exists or handle mapping. 
+            # Given the SQL in regions/alerts.py, we just use a raw INSERT.
+            for w in whales:
+                await db.execute(text("""
+                    INSERT INTO sharp_alerts (player_name, market_key, sport, alert_type, direction, line, book, confidence, home_team, away_team, created_at)
+                    VALUES (:player_name, :market_key, :sport, :alert_type, :direction, :line, :book, :confidence, :home_team, :away_team, :created_at)
+                """), {
+                    "player_name": w["player_name"],
+                    "market_key": w["market_key"],
+                    "sport": sport,
+                    "alert_type": "WHALE",
+                    "direction": "OVER" if w["price"] > w["avg_price"] else "UNDER", # Heuristic
+                    "line": w["line"],
+                    "book": w["bookmaker"],
+                    "confidence": 1.0 if abs(w["price"] - w["avg_price"]) >= 40 else 0.7,
+                    "home_team": w["home_team"],
+                    "away_team": w["away_team"],
+                    "created_at": datetime.now(timezone.utc)
+                })
+            
+            # (Steam events follow same logic)
+            for s in steams:
+                # Pivot to alert format
+                await db.execute(text("""
+                    INSERT INTO sharp_alerts (player_name, market_key, sport, alert_type, direction, line, book, confidence, created_at)
+                    VALUES (:player_name, :market_key, :sport, :alert_type, :direction, :line, :book, :confidence, :created_at)
+                """), {
+                    "player_name": s["player_name"],
+                    "market_key": s["market_key"],
+                    "sport": sport,
+                    "alert_type": "STEAM",
+                    "direction": "OVER" if s["cur_over"] < s["hist_over"] else "UNDER",
+                    "line": s["cur_line"],
+                    "book": s["book"],
+                    "confidence": 0.8,
+                    "created_at": datetime.now(timezone.utc)
+                })
+
+        # 4. Heartbeat Integration
         if total_inserted > 0:
             logger.info(f"✅ [INTELLIGENCE ENGINE] Generated {total_inserted} signals for {sport} across Whales and Steam.")
+            await HeartbeatService.log_heartbeat(db, f"intelligence_{sport}", status="ok", rows_written=total_inserted)
+        else:
+            await HeartbeatService.log_heartbeat(db, f"intelligence_{sport}", status="idle", rows_written=0)
             
         await db.commit()
         return total_inserted

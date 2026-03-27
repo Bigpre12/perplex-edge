@@ -2,6 +2,7 @@ import logging
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
+from services.heartbeat_service import HeartbeatService
 
 logger = logging.getLogger(__name__)
 
@@ -18,55 +19,55 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
     try:
         logger.info(f"📊 [EV WRITER] Running EV calculations for {sport}")
         
-        # We find rows in props_live with positive confidence
-        # Compute no-vig fair odds from over/under implied probs
-        # EV% = (fair_prob x decimal_odds) - 1
-        # If EV > 0.02 (2%), write to ev_signals
-        
+        # We pivot unified_odds (one row per outcome) to get over/under side-by-side
+        # This is more robust as it uses the newly populated table.
         sql = text("""
-            WITH valid_props AS (
-                 SELECT 
-                     player_name, market_key, sport, book, line, game_id,
-                     odds_over, odds_under, implied_over, implied_under, confidence
-                 FROM props_live 
-                 WHERE sport = :sport
-                   AND confidence > 0 
-                   AND player_name IS NOT NULL
-                   AND implied_over IS NOT NULL 
-                   AND implied_under IS NOT NULL
-                   AND odds_over IS NOT NULL
-                   AND odds_under IS NOT NULL
-                   AND implied_over > 0
-                   AND implied_under > 0
-                   AND (implied_over + implied_under) BETWEEN 0.85 AND 1.15
+            WITH pivoted AS (
+                SELECT 
+                    player_name, market_key, sport, bookmaker as book, line, event_id as game_id,
+                    MAX(CASE WHEN outcome_key ILIKE 'over%' OR outcome_key = 'over' THEN price END) as odds_over,
+                    MAX(CASE WHEN outcome_key ILIKE 'under%' OR outcome_key = 'under' THEN price END) as odds_under,
+                    MAX(CASE WHEN outcome_key ILIKE 'over%' OR outcome_key = 'over' THEN implied_prob END) as implied_over,
+                    MAX(CASE WHEN outcome_key ILIKE 'under%' OR outcome_key = 'under' THEN implied_prob END) as implied_under
+                FROM unified_odds 
+                WHERE sport = :sport
+                  AND player_name IS NOT NULL
+                  AND line IS NOT NULL
+                GROUP BY player_name, market_key, sport, bookmaker, line, event_id
             ),
             fair_probs AS (
-                 SELECT 
-                     *,
-                     implied_over / (implied_over + implied_under) as fair_over_prob,
-                     implied_under / (implied_over + implied_under) as fair_under_prob,
-                     -- Convert American odds to Decimal
-                     CASE 
-                         WHEN odds_over > 0 THEN (odds_over / 100.0) + 1
-                         ELSE (100.0 / ABS(odds_over)) + 1 
-                     END as dec_over,
-                     CASE 
-                         WHEN odds_under > 0 THEN (odds_under / 100.0) + 1
-                         ELSE (100.0 / ABS(odds_under)) + 1 
-                     END as dec_under
-                 FROM valid_props
+                SELECT 
+                    *,
+                    -- Normalizing no-vig prob
+                    CASE 
+                        WHEN (implied_over + implied_under) > 0 
+                        THEN implied_over / (implied_over + implied_under) 
+                        ELSE 0 
+                    END as fair_over_prob,
+                    -- American to Decimal conversion
+                    CASE 
+                        WHEN odds_over > 0 THEN (odds_over / 100.0) + 1
+                        WHEN odds_over < 0 THEN (100.0 / ABS(odds_over)) + 1
+                        ELSE 0
+                    END as dec_over,
+                    CASE 
+                        WHEN odds_under > 0 THEN (odds_under / 100.0) + 1
+                        WHEN odds_under < 0 THEN (100.0 / ABS(odds_under)) + 1
+                        ELSE 0
+                    END as dec_under
+                FROM pivoted
+                WHERE implied_over > 0 AND implied_under > 0
             ),
             calculated_ev AS (
-                 SELECT 
-                     player_name, market_key, sport, book, line, game_id, confidence,
-                     (fair_over_prob * dec_over) - 1 as ev_over,
-                     (fair_under_prob * dec_under) - 1 as ev_under,
-                     fair_over_prob, fair_under_prob
-                 FROM fair_probs
+                SELECT 
+                    *,
+                    (fair_over_prob * dec_over) - 1 as ev_over,
+                    ((1 - fair_over_prob) * dec_under) - 1 as ev_under
+                FROM fair_probs
             )
             SELECT * FROM calculated_ev 
             WHERE (ev_over > 0.02 OR ev_under > 0.02)
-              AND ev_over < 0.20 AND ev_under < 0.20
+              AND (ev_over < 0.25 AND ev_under < 0.25)
         """)
         
         result = await db.execute(sql, {"sport": sport})
@@ -74,18 +75,25 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
         
         inserted_count = 0
         for edge in edges:
+            # We use a default confidence since it's hard to derive from just odds
+            confidence = 0.75
             if edge["ev_over"] > 0.02:
                 inserted_count += await _upsert_ev_signal(
-                    db, sport, edge, "OVER", edge["ev_over"], edge["fair_over_prob"]
+                    db, sport, edge, "OVER", edge["ev_over"], edge["fair_over_prob"], confidence
                 )
             if edge["ev_under"] > 0.02:
                 inserted_count += await _upsert_ev_signal(
-                    db, sport, edge, "UNDER", edge["ev_under"], edge["fair_under_prob"]
+                    db, sport, edge, "UNDER", edge["ev_under"], 1.0 - edge["fair_over_prob"], confidence
                 )
         
-        await db.commit()
+        # Log Heartbeat before commit
         if inserted_count > 0:
             logger.info(f"✅ [EV WRITER] Generated {inserted_count} +EV signals for {sport}")
+            await HeartbeatService.log_heartbeat(db, f"ev_grader_{sport}", status="ok", rows_written=inserted_count)
+        else:
+            await HeartbeatService.log_heartbeat(db, f"ev_grader_{sport}", status="idle", rows_written=0)
+
+        await db.commit()
         return inserted_count
         
     except Exception as e:
@@ -93,7 +101,7 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
         await db.rollback()
         return 0
 
-async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, ev_score: float, fair_prob: float) -> int:
+async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, ev_score: float, fair_prob: float, confidence: float = 0.7) -> int:
     insert_sql = text("""
         INSERT INTO ev_signals 
             (player_name, market_key, sport, sport_key, prop_type, event_id, outcome_key, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, confidence, engine_version, created_at, updated_at)

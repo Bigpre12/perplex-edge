@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker, engine
 from models import UnifiedOdds, UnifiedEVSignal, EdgeEVHistory
+from services.heartbeat_service import HeartbeatService
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -96,12 +97,13 @@ class EVService:
                                 'engine_version': self.version
                             })
 
-            # 4. Persistence
             if signals:
                 logger.info(f"EVService: Generated {len(signals)} edges for sport={sport}")
                 await self.upsert_ev_signals(signals)
+                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="ok", rows_written=len(signals))
             else:
                 logger.info(f"EVService: No edges exceeding {settings.EV_MIN_THRESHOLD}% found for sport={sport}")
+                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle", rows_written=0)
 
     def _calculate_sharp_weighted_fair_probs(self, outcomes: Dict[str, Dict[str, Tuple[float, float]]]) -> Dict[str, float]:
         """
