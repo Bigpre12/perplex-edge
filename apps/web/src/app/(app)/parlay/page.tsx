@@ -37,8 +37,12 @@ export default function ParlayPage() {
         return acc * mult;
     }, 1);
     
-    if (multiplier >= 2) return Math.round((multiplier - 1) * 100);
-    return Math.round(-100 / (multiplier - 1));
+    // Safety guard to avoid division by zero or negative results
+    const diff = multiplier - 1;
+    if (diff <= 1e-4) return 0;
+
+    if (multiplier >= 2) return Math.round(diff * 100);
+    return Math.round(-100 / diff);
   };
 
   const totalOdds = calculateTotalOdds();

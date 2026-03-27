@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { Check, ShieldCheck, Zap, Star, ShieldAlert, CreditCard, Sparkles } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
+import { API } from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
 
@@ -36,7 +36,7 @@ const TIERS = [
 
 export default function SubscriptionPage() {
     const { data: user, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.authMe(),
+        () => API.authMe(),
         [],
         { refreshInterval: 600000 } // 10 minutes
     );

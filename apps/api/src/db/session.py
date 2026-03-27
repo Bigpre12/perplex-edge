@@ -49,8 +49,8 @@ engine = create_async_engine(
     connect_args=connect_args,
     pool_pre_ping=True if "sqlite" not in DATABASE_URL else False,
     # Supabase/Postgres Connection Pool Optimization
-    pool_size=3,              # Keep it small to avoid MaxClientsInSessionMode
-    max_overflow=0,           # Strictly limit to pool_size
+    pool_size=20,             # Increased for higher concurrency
+    max_overflow=10,          # Allow temporary surge
     pool_recycle=1800,        # Recycle connections every 30 mins
 )
 

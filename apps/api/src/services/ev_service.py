@@ -166,9 +166,10 @@ class EVService:
                         await session.execute(stmt)
                     else:
                         # Raw SQL fallback for Postgres as pg_insert is acting up with true_prob
+                        row["recommendation"] = s.get("recommendation")
                         base_sql = """
-                        INSERT INTO ev_signals (sport, sport_key, prop_type, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, ev_percentage, implied_prob, confidence, engine_version, created_at, updated_at)
-                        VALUES (:sport, :sport_key, :prop_type, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :ev_percentage, :implied_prob, :confidence, :engine_version, now(), now())
+                        INSERT INTO ev_signals (sport, sport_key, prop_type, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, ev_percentage, implied_prob, confidence, engine_version, recommendation, created_at, updated_at)
+                        VALUES (:sport, :sport_key, :prop_type, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :ev_percentage, :implied_prob, :confidence, :engine_version, :recommendation, now(), now())
                         """
                         update_clause = """
                         DO UPDATE SET 
@@ -178,6 +179,7 @@ class EVService:
                             edge_percent = EXCLUDED.edge_percent, 
                             implied_prob = EXCLUDED.implied_prob, 
                             confidence = EXCLUDED.confidence,
+                            recommendation = EXCLUDED.recommendation,
                             updated_at = now()
                         """
                         if row.get("player_name"):
@@ -195,6 +197,7 @@ class EVService:
                         'league': s.get('league'),
                         'game_id': s['event_id'],
                         'game_start_time': s.get('game_start_time'),
+                        'player_id': s.get('player_name') or 'unknown',
                         'player_name': s['player_name'],
                         'market_key': s['market_key'],
                         'line': float(s['line']) if s.get('line') is not None else None,
