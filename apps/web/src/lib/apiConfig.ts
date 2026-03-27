@@ -1,13 +1,11 @@
 const isDevelopment = process.env.NODE_ENV === "development";
+const PROD_URL = "https://perplex-edge-backend-production.up.railway.app";
+const DEV_URL = "http://localhost:8000";
 
 /**
  * The validated API Base URL. 
- * - In development: uses localhost:8000
- * - In production: uses relative paths "" (enabling Vercel proxy)
  */
-export const API_BASE = isDevelopment 
-    ? "https://perplex-edge-backend-production.up.railway.app" 
-    : "https://perplex-edge-backend-production.up.railway.app";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || (isDevelopment ? DEV_URL : PROD_URL);
 
 /**
  * Helper to check if the API is correctly configured.

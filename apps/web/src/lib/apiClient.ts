@@ -32,7 +32,10 @@ export async function apiClient<T>(
   const { params, retries = 3, backoff = 1000, ...fetchOptions } = options;
 
   // 1. Construct URL with query params
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+  const baseUrl = typeof window !== "undefined" 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app");
+  
   const url = new URL(endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`, baseUrl);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
