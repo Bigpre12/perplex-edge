@@ -264,7 +264,7 @@ async def force_migrate(db: AsyncSession = Depends(get_db)):
 
 @router.get("/trigger-ingest")
 async def trigger_ingest(sport: str = "basketball_nba"):
-    """Manual trigger to run ingestion and see errors immediately."""
+    """GET version of manual trigger (legacy)"""
     from services.unified_ingestion import unified_ingestion
     try:
         await unified_ingestion.run(sport)
@@ -276,6 +276,22 @@ async def trigger_ingest(sport: str = "basketball_nba"):
             "error": str(e), 
             "traceback": traceback.format_exc()
         }
+
+@router.post("/ingest/{sport}")
+async def manual_ingest_sport(sport: str):
+    """
+    POST manual trigger as per stabilization plan.
+    Logs headers and quota results to the console.
+    """
+    from services.unified_ingestion import unified_ingestion
+    logger.info(f"🚦 [Manual Trigger] Starting ingestion for: {sport}")
+    try:
+        # We use run() directly to bypass some retries for faster feedback in manual mode
+        await unified_ingestion.run(sport)
+        return {"status": "success", "sport": sport, "message": "Check server logs for quota headers"}
+    except Exception as e:
+        logger.error(f"❌ [Manual Trigger] Failed for {sport}: {e}")
+        return {"status": "error", "detail": str(e)}
 
 @router.get("/fix-indexes")
 async def fix_indexes(db: AsyncSession = Depends(get_db)):

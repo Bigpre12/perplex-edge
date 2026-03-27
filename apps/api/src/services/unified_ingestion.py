@@ -44,10 +44,10 @@ class UnifiedIngestionService:
             "errors": errors
         }
         
-        # 1. Fetch metadata (Teams and Times) — Attempt key rotation ingest
+        # 1. Fetch metadata (Teams and Times) — Attempt key rotating ingest
         try:
             # Task 1: Use key-rotating instance
-            odds_raw = await _real_sports_api_instance.fetch_odds_from_theodds(sport_key)
+            odds_raw = await odds_api_client.get_live_odds(sport_key)
             
             # Task 2: Waterfall Fallback
             if not odds_raw or (isinstance(odds_raw, dict) and "error" in odds_raw) or len(odds_raw) < 2:

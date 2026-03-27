@@ -120,6 +120,7 @@ class OddsApiClient:
             p = params.copy()
             p["apiKey"] = key
             url = f"{self.BASE_URL}{endpoint}"
+            logger.info(f"🌐 Calling TheOddsAPI: {url} (params keys: {list(p.keys())})")
             
             try:
                 async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -128,8 +129,11 @@ class OddsApiClient:
                     # Log quota headers
                     used = resp.headers.get("x-requests-used")
                     rem = resp.headers.get("x-requests-remaining")
+                    
+                    log_msg = f"📡 TheOddsAPI Response [{resp.status_code}] | Path: {endpoint}"
                     if rem:
-                        logger.info(f"✅ OddsAPI Quota: {rem} left (Used: {used}) | Path: {endpoint}")
+                        log_msg += f" | Quota: {rem} left (Used: {used})"
+                    logger.info(log_msg)
                     
                     if resp.status_code == 200:
                         data = resp.json()
@@ -139,7 +143,8 @@ class OddsApiClient:
                         return data
                     
                     elif resp.status_code in (401, 403, 429):
-                        logger.error(f"❌ Key index {self.current_key_idx} failure ({resp.status_code}). Rotating...")
+                        error_body = resp.text[:200]
+                        logger.error(f"❌ Key index {self.current_key_idx} failure ({resp.status_code}): {error_body}. Rotating...")
                         if self._rotate_key():
                             continue # Try next key
                         else:
