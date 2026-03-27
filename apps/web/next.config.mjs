@@ -7,12 +7,13 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     async rewrites() {
-        const raw = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app";
-        const apiUrl = (raw.startsWith("http") ? raw : `https://${raw}`).replace(/\/$/, "");
+        const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+        const apiUrl = (raw && raw !== "" ? raw : "https://perplex-edge-backend-production.up.railway.app")
+            .replace(/\/$/, "");
         return [
             {
                 source: "/backend/:path*",
-                destination: `${apiUrl}/:path*`, // Keeps /api from the frontend request
+                destination: `${apiUrl}/api/:path*`,
             },
         ];
     },
