@@ -12,8 +12,8 @@ const nextConfig = {
         const cleanApiUrl = apiUrl.endsWith("/") ? apiUrl.slice(0, -1) : apiUrl;
         return [
             {
-                source: "/api/:path*",
-                destination: `${cleanApiUrl}/api/:path*`,
+                source: "/backend/:path*",
+                destination: `${cleanApiUrl}/:path*`,
             },
         ];
     },
