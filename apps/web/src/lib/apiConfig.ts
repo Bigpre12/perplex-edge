@@ -8,7 +8,7 @@ const DEV_URL = "http://localhost:8000";
  */
 export const API_BASE = isServer 
     ? (process.env.NEXT_PUBLIC_API_URL || (isDevelopment ? DEV_URL : PROD_URL))
-    : ""; // Use relative paths in the browser to avoid CORS (proxying through Next.js)
+    : "/backend"; // Use non-conflicting proxy path in browser
 
 /**
  * Helper to check if the API is correctly configured.
