@@ -1,12 +1,12 @@
 {
   "include": ["src"],
   "exclude": ["**/__pycache__"],
-  "venvPath": "../../",
+  "venvPath": "C:\\Users\\preio\\OneDrive\\Documents\\Untitled\\perplex_engine\\perplex-edge\\",
   "venv": ".venv",
   "executionEnvironments": [
     {
       "root": "src",
-      "extraPaths": ["src", "../../.venv/Lib/site-packages"]
+      "extraPaths": ["C:\\Users\\preio\\OneDrive\\Documents\\Untitled\\perplex_engine\\perplex-edge\\apps\\api\\src"]
     }
   ],
   "typeCheckingMode": "basic"

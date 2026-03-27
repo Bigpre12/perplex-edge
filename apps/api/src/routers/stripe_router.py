@@ -5,6 +5,7 @@ from db.session import get_db
 from sqlalchemy.orm import Session
 from core.config import settings
 from common_deps import get_db, require_elite
+from api_utils.supabase_proxy import supabase
 
 router = APIRouter(tags=["Stripe Monetization"])
 
@@ -106,6 +107,17 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 
             user.subscription_tier = stripe_service.resolve_tier(price_id)
             await db.commit()
+            
+            # Sync with Supabase profiles
+            try:
+                if user.clerk_id:
+                    print(f"[Supabase] Syncing {user.subscription_tier} for clerk_id {user.clerk_id}")
+                    await supabase.table("profiles").update({
+                        "tier": user.subscription_tier
+                    }).eq("clerk_id", user.clerk_id).execute()
+            except Exception as e:
+                print(f"[Supabase] Sync failed: {e}")
+
             print(f"✅ Subscription tier updated to {user.subscription_tier} for user {user.email}")
         else:
             print(f"⚠️ User not found for Stripe completion: ID={user_id}, Email={customer_email}")

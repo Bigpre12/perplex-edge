@@ -15,6 +15,7 @@ class User(Base):
     # Tier limits (free, pro, elite)
     subscription_tier = Column(String, default="free")
     stripe_customer_id = Column(String, nullable=True, index=True)
+    clerk_id = Column(String, unique=True, index=True, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)

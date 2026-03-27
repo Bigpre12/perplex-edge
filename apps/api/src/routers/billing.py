@@ -7,6 +7,7 @@ from sqlalchemy import select, update
 
 from db.session import get_db
 from models.user import User
+from api_utils.supabase_proxy import supabase  # Use the proxy singleton
 from services.stripe_service import stripe_service
 from routers.auth import get_current_user
 from core.config import settings
@@ -30,6 +31,21 @@ async def upgrade_user(db: AsyncSession, user_id: int, price_id: str, customer_i
     )
     await db.execute(stmt)
     await db.commit()
+    
+    # Sync with Supabase profiles
+    try:
+        user_stmt = select(User).where(User.id == user_id)
+        user_result = await db.execute(user_stmt)
+        user = user_result.scalar_one_or_none()
+        
+        if user and user.clerk_id:
+            logger.info(f"[Supabase] Syncing tier {tier} for clerk_id {user.clerk_id}")
+            await supabase.table("profiles").update({
+                "tier": tier
+            }).eq("clerk_id", user.clerk_id).execute()
+    except Exception as e:
+        logger.error(f"[Supabase] Sync failed for user {user_id}: {e}")
+        
     return tier
 
 async def downgrade_user(db: AsyncSession, customer_id: str):
@@ -41,6 +57,20 @@ async def downgrade_user(db: AsyncSession, customer_id: str):
     )
     await db.execute(stmt)
     await db.commit()
+
+    # Sync with Supabase profiles
+    try:
+        user_stmt = select(User).where(User.stripe_customer_id == customer_id)
+        user_result = await db.execute(user_stmt)
+        user = user_result.scalar_one_or_none()
+        
+        if user and user.clerk_id:
+            logger.info(f"[Supabase] Syncing downgrade for clerk_id {user.clerk_id}")
+            await supabase.table("profiles").update({
+                "tier": "free"
+            }).eq("clerk_id", user.clerk_id).execute()
+    except Exception as e:
+        logger.error(f"[Supabase] Sync failed for customer {customer_id}: {e}")
 
 @router.post("/create-checkout-session")
 async def create_checkout_session(
