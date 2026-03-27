@@ -7,7 +7,7 @@ const DEV_URL = "http://localhost:8000";
  * The validated API Base URL. 
  */
 export const API_BASE = isServer 
-    ? (process.env.NEXT_PUBLIC_API_URL || (isDevelopment ? DEV_URL : PROD_URL))
+    ? (process.env.NEXT_PUBLIC_API_URL || PROD_URL)
     : "/backend"; // Use non-conflicting proxy path in browser
 
 /**
