@@ -12,7 +12,7 @@ const nextConfig = {
             .replace(/\/$/, "");
         return [
             {
-                source: "/backend/:path*",
+                source: "/backend/api/:path*",
                 destination: `${apiUrl}/api/:path*`,
             },
         ];

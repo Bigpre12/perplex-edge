@@ -38,7 +38,7 @@ export const API = {
     brain: {
         status: async () => {
             try {
-                const { data } = await api.get('/brain');
+                const { data } = await api.get('/api/brain');
                 return data;
             } catch (err) {
                 return handleApiError(err);
@@ -46,7 +46,7 @@ export const API = {
         },
         decisions: async (sport?: string) => {
             try {
-                const { data } = await api.get(sport ? `/brain/decisions?sport=${sport}` : '/brain/decisions');
+                const { data } = await api.get(sport ? `/api/brain/decisions?sport=${sport}` : '/api/brain/decisions');
                 return data;
             } catch (err) {
                 return handleApiError(err);
@@ -54,7 +54,7 @@ export const API = {
         },
         metrics: async () => {
             try {
-                const { data } = await api.get('/brain/metrics');
+                const { data } = await api.get('/api/brain/metrics');
                 return data;
             } catch (err) {
                 return handleApiError(err);
@@ -64,7 +64,7 @@ export const API = {
     ev: {
         top: async (sport?: string, limit = 10) => {
             try {
-                const { data } = await api.get(`/ev/top?sport=${sport || ''}&limit=${limit}`);
+                const { data } = await api.get(`/api/ev/top?sport=${sport || ''}&limit=${limit}`);
                 return data;
             } catch (err) {
                 return handleApiError(err);
@@ -74,7 +74,7 @@ export const API = {
     signals: {
         freshness: async (sport?: string) => {
             try {
-                const { data } = await api.get(`/signals/freshness?sport=${sport || ''}`);
+                const { data } = await api.get(`/api/signals/freshness?sport=${sport || ''}`);
                 return data;
             } catch (err) {
                 return handleApiError(err);
@@ -83,7 +83,7 @@ export const API = {
     },
     props: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/props/graded?sport=${sport}` : '/props/graded');
+            const { data } = await api.get(sport ? `/api/props/graded?sport=${sport}` : '/api/props/graded');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -91,7 +91,7 @@ export const API = {
     },
     propsScored: async (sport?: string, limit = 50) => {
         try {
-            const { data } = await api.get(`/props/scored?sport=${sport || ''}&limit=${limit}`);
+            const { data } = await api.get(`/api/props/scored?sport=${sport || ''}&limit=${limit}`);
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -99,7 +99,7 @@ export const API = {
     },
     injuries: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/injuries?sport=${sport}` : '/injuries');
+            const { data } = await api.get(sport ? `/api/injuries?sport=${sport}` : '/api/injuries');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -107,7 +107,7 @@ export const API = {
     },
     news: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/news?sport=${sport}` : '/news');
+            const { data } = await api.get(sport ? `/api/news?sport=${sport}` : '/api/news');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -115,7 +115,7 @@ export const API = {
     },
     lineMovement: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/line-movement?sport=${sport}` : '/line-movement');
+            const { data } = await api.get(sport ? `/api/line-movement?sport=${sport}` : '/api/line-movement');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -123,7 +123,7 @@ export const API = {
     },
     health: async () => {
         try {
-            const { data } = await api.get('/health');
+            const { data } = await api.get('/api/health');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -131,7 +131,7 @@ export const API = {
     },
     metrics: async () => {
         try {
-            const { data } = await api.get('/brain/metrics');
+            const { data } = await api.get('/api/brain/metrics');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -139,7 +139,7 @@ export const API = {
     },
     brainMetrics: async () => {
         try {
-            const { data } = await api.get('/brain/metrics');
+            const { data } = await api.get('/api/brain/metrics');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -147,7 +147,7 @@ export const API = {
     },
     recentIntel: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/intel?sport=${sport}` : '/intel');
+            const { data } = await api.get(sport ? `/api/intel?sport=${sport}` : '/api/intel');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -155,7 +155,7 @@ export const API = {
     },
     alerts: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/alerts?sport=${sport}` : '/alerts');
+            const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
             return data;
         } catch (err) {
             return { alerts: [], total: 0, status: 'unavailable', sport: sport || 'all' };
@@ -163,7 +163,7 @@ export const API = {
     },
     authMe: async () => {
         try {
-            const { data } = await api.get('/auth/me');
+            const { data } = await api.get('/api/auth/me');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -171,7 +171,7 @@ export const API = {
     },
     referrals: async () => {
         try {
-            const { data } = await api.get('/referrals');
+            const { data } = await api.get('/api/referrals');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -179,7 +179,7 @@ export const API = {
     },
     hero: async (playerName: string, sport: string) => {
         try {
-            const { data } = await api.get('/hero', { params: { name: playerName, sport } });
+            const { data } = await api.get('/api/hero', { params: { name: playerName, sport } });
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -187,7 +187,7 @@ export const API = {
     },
     activeMoves: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/alerts?sport=${sport}` : '/alerts');
+            const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
             return data?.alerts || data || [];
         } catch (err) {
             return [];
@@ -195,7 +195,7 @@ export const API = {
     },
     evTop: async (sport?: string, limit = 10) => {
         try {
-            const { data } = await api.get(`/ev?sport=${sport || ''}&limit=${limit}`);
+            const { data } = await api.get(`/api/ev?sport=${sport || ''}&limit=${limit}`);
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -203,7 +203,7 @@ export const API = {
     },
     sharpMoves: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/alerts?sport=${sport}` : '/alerts');
+            const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
             return data;
         } catch (err) {
             return { alerts: [], total: 0, status: 'unavailable' };
@@ -211,7 +211,7 @@ export const API = {
     },
     hitRateSummary: async (sport?: string) => {
         try {
-            const { data } = await api.get(sport ? `/hit-rate?sport=${sport}` : '/hit-rate');
+            const { data } = await api.get(sport ? `/api/hit-rate?sport=${sport}` : '/api/hit-rate');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -219,7 +219,7 @@ export const API = {
     },
     playerTrends: async (playerName: string, statType: string) => {
         try {
-            const { data } = await api.get(`/props/history`, {
+            const { data } = await api.get(`/api/props/history`, {
                 params: { player_name: playerName, market_key: statType, sport: 'basketball_nba', book: 'draftkings' }
             });
             return { history: data };
@@ -229,7 +229,7 @@ export const API = {
     },
     mlPredict: async (payload: any) => {
         try {
-            const { data } = await api.post(`/oracle/analyze-prop`, payload);
+            const { data } = await api.post(`/api/oracle/analyze-prop`, payload);
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -237,7 +237,7 @@ export const API = {
     },
     ledgerStats: async () => {
         try {
-            const { data } = await api.get('/bets/stats');
+            const { data } = await api.get('/api/bets/stats');
             return data;
         } catch (err) {
             return handleApiError(err);
@@ -245,18 +245,18 @@ export const API = {
     },
     backtestRun: async (payload: any) => {
         try {
-            const { data } = await api.post('/backtest', payload);
+            const { data } = await api.post('/api/backtest', payload);
             return data;
         } catch (err) {
             return handleApiError(err);
         }
     },
     reportingExport: (format: string) => {
-        return `${API_BASE}/reporting/export?format=${format}`;
+        return `${API_BASE}/api/reporting/export?format=${format}`;
     },
     playerProfile: async (playerName: string) => {
         try {
-            const { data } = await api.get('/hero', { params: { name: playerName, sport: 'basketball_nba' } });
+            const { data } = await api.get('/api/hero', { params: { name: playerName, sport: 'basketball_nba' } });
             return data;
         } catch (err) {
             return handleApiError(err);
