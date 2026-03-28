@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import logging
 
 from db.session import get_db
+from models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "system_status": "ONLINE",
-        "version": "1.2.1",
+        "version": "1.2.2",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
@@ -231,6 +232,29 @@ async def clear_heartbeats(db: AsyncSession = Depends(get_db)):
         await db.execute(text(sql))
         await db.commit()
         return {"status": "success", "message": "Heartbeat errors cleared."}
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
+
+@router.get("/db-test-write")
+async def db_test_write(db: AsyncSession = Depends(get_db)):
+    """Test if we can actually write to the users table."""
+    try:
+        import secrets
+        test_email = f"test_{secrets.token_hex(4)}@example.com"
+        new_user = User(
+            username=f"test_{secrets.token_hex(4)}",
+            email=test_email,
+            hashed_password="TEST_ONLY"
+        )
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        
+        return {
+            "status": "success",
+            "message": f"Successfully wrote user {test_email}",
+            "user_id": new_user.id
+        }
     except Exception as e:
         return {"status": "failed", "error": str(e)}
 
