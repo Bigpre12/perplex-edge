@@ -230,7 +230,10 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db))
                         auth_success = True
                         # JIT Provision or Update local user
                         if not user:
-                            # Provision new user from Supabase
+                            logger.info(f"Auth: User {email} not found in local DB. Provisioning now via raw SQL...")
+                            from sqlalchemy import text
+                            
+                            # 1. Generate unique username
                             base_username = email.split("@")[0]
                             username = base_username
                             count = 0
@@ -241,21 +244,41 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db))
                                     break
                                 count += 1
                                 username = f"{base_username}{count}"
+
+                            # 2. Use raw SQL to ensure it works even if model sessions are finicky in production
+                            sql = text("""
+                                INSERT INTO users (username, email, hashed_password, created_at, updated_at, is_active, subscription_tier, clerk_id)
+                                VALUES (:u, :e, :p, NOW(), NOW(), true, :t, :c)
+                                RETURNING id
+                            """)
                             
-                            user = User(
-                                username=username,
-                                email=email,
-                                hashed_password="SUPABASE_AUTH_EXTERNAL",
-                                clerk_id=sb_user.get("id") # Store Supabase ID in clerk_id as a common external ref
-                            )
-                            db.add(user)
-                            # Sync tier from metadata if available
-                            meta = sb_user.get("user_metadata", {})
-                            user.subscription_tier = meta.get("tier", "free")
-                            
-                            await db.commit()
-                            await db.refresh(user)
-                            logger.info(f"Auth: JIT provisioned Supabase user {email}")
+                            try:
+                                # Sync tier from metadata if available
+                                meta = sb_user.get("user_metadata", {})
+                                tier = meta.get("tier", "free")
+                                sb_id = sb_user.get("id")
+                                
+                                res = await db.execute(sql, {
+                                    "u": username,
+                                    "e": email,
+                                    "p": "SUPABASE_AUTH_EXTERNAL",
+                                    "t": tier,
+                                    "c": sb_id
+                                })
+                                row = res.fetchone()
+                                await db.commit()
+                                
+                                if row:
+                                    logger.info(f"Auth: JIT Provisioning success for {email}, new_id={row[0]}")
+                                    # Get the user back via ORM to continue the flow
+                                    user_res = await db.execute(select(User).where(User.id == row[0]))
+                                    user = user_res.scalar_one()
+                                else:
+                                    logger.error(f"Auth: JIT Provisioning failed - no ID returned for {email}")
+                            except Exception as e:
+                                logger.error(f"Auth: JIT Provisioning crash for {email}: {e}")
+                                await db.rollback()
+                                raise HTTPException(status_code=500, detail=f"Database provisioning failure: {str(e)}")
                         else:
                             # User exists but authenticated via Supabase
                             user.hashed_password = "SUPABASE_AUTH_EXTERNAL"
