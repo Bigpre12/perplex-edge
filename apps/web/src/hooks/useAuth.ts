@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { clearUser } from "@/lib/auth";
+import { TOKEN_STORAGE_KEY } from "@/lib/authStorage";
 import API from "@/lib/api";
 import { Tier } from "@/lib/tier";
 
@@ -50,7 +51,7 @@ export function useAuth() {
     const signOut = async () => {
         await supabase.auth.signOut();
         clearUser();
-        localStorage.removeItem("perplex_edge_token");
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
         queryClient.setQueryData(["auth", "me"], null);
         window.location.href = "/login";
     };
@@ -58,7 +59,7 @@ export function useAuth() {
     // Helper to get token from localStorage/Supabase
     const getToken = () => {
         if (typeof window === 'undefined') return null;
-        return localStorage.getItem("accessToken") || localStorage.getItem("perplex_edge_token");
+        return localStorage.getItem("accessToken") || localStorage.getItem(TOKEN_STORAGE_KEY);
     };
 
     return {

@@ -45,6 +45,10 @@ class UnifiedIngestionService:
         }
         
         # 1. Fetch metadata (Teams and Times) — Attempt key rotating ingest
+        if not odds_api_client.is_configured:
+            logger.warning(f"UnifiedIngestion: Skipping {sport_key} - Odds API not configured")
+            return
+            
         try:
             # Task 1: Use key-rotating instance
             odds_raw = await odds_api_client.get_live_odds(sport_key)
@@ -102,10 +106,11 @@ class UnifiedIngestionService:
         }
 
         if sport_key in PROP_MARKETS_BY_SPORT:
-            event_ids = list(metadata_map.keys())
-            # type: ignore (Pyre inference fail on list slice)
-            # Quota Protection: Cap at 25 events per cycle to prevent credit drain
-            active_events = event_ids[:20] 
+            # Quota Protection: Cap at 20 events per cycle to prevent credit drain
+            active_events: List[str] = []
+            for i, k in enumerate(metadata_map.keys()):
+                if i >= 20: break
+                active_events.append(k)
             
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
             
@@ -317,15 +322,15 @@ class UnifiedIngestionService:
         
         try:
             # Step 1: EV Calculations (The Core)
-            from services.ev_service import ev_service
+            from services.ev_service import ev_service # type: ignore
             await ev_service.run_ev_cycle(sport)
             
             # Notify WebSocket clients
-            from routers.ws_ev import notify_ev_update
+            from routers.ws_ev import notify_ev_update # type: ignore
             await notify_ev_update(sport)
             
             # Step 2: Signal Detection (Whales, Steam, Sharps)
-            from services.alert_writer import run_alert_detection
+            from services.alert_writer import run_alert_detection # type: ignore
             await run_alert_detection(sport)
             
             # Step 3: Analytical Extras
@@ -334,7 +339,7 @@ class UnifiedIngestionService:
                 brain_clv_tracker.record_opening_line(records),
                 injury_impact_brain.analyze_impacts(sport)
             ]
-            await asyncio.gather(*[t for t in tasks if asyncio.iscoroutine(t)], return_exceptions=True)
+            await asyncio.gather(*[t for t in tasks if asyncio.iscoroutine(t)], return_exceptions=True) # type: ignore
             
             logger.info(f"✅ [INTELLIGENCE PIPELINE] Completed for {sport}")
         except Exception as e:
@@ -373,8 +378,8 @@ class UnifiedIngestionService:
                 r.is_soft_book = any(s in book_lower for s in settings.SOFT_BOOKMAKERS)
                 
                 # Standardized confidence metric: capped at 0.95, 4 decimal precision
-                raw_conf = float(len(prop_group) / 10.0)
-                r.confidence = round(min(raw_conf, 0.95), 4)
+                raw_conf = len(prop_group) / 10.0
+                r.confidence = round(float(min(raw_conf, 0.95)), 4)  # type: ignore (Stale/Inaccurate check)
                 
         return records
 

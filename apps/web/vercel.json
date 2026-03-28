@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/backend/:path*",
+      "destination": "https://perplex-edge-backend-copy-production.up.railway.app/:path*"
+    }
+  ]
+}

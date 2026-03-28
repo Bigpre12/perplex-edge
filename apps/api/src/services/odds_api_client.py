@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 
 from core.config import settings
 from services.cache import cache
+from api_utils.http import build_headers
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +70,13 @@ class OddsApiClient:
         # Limit per day (approx 100k/mo tier)
         self.max_daily_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
 
+    @property
+    def is_configured(self) -> bool:
+        """Returns True if at least one API key is available."""
+        return bool(self.api_keys and any(self.api_keys))
+
     def _get_api_key(self) -> str:
-        if not self.api_keys:
+        if not self.is_configured:
             return ""
         return self.api_keys[self.current_key_idx % len(self.api_keys)]
 
@@ -93,8 +99,13 @@ class OddsApiClient:
         count = await self._get_today_count()
         await cache.set(key, str(count + 1), ttl=86400)
 
-    async def _request(self, endpoint: str, params: Dict = None, use_cache: bool = True, ttl: int = None) -> Any:
-        # 1. Check Daily Limit
+    async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None, use_cache: bool = True, ttl: Optional[int] = None) -> Any:
+        # 1. Check Configuration
+        if not self.is_configured:
+            logger.warning("Odds API missing credentials: ODDS_API_KEYS not set or empty")
+            return None
+
+        # 2. Check Daily Limit
         count = await self._get_today_count()
         if count >= self.max_daily_calls and not settings.DEVELOPMENT_MODE:
             logger.warning(f"🚨 Odds API daily limit ({self.max_daily_calls}) reached. Aborting.")
@@ -124,7 +135,13 @@ class OddsApiClient:
             
             try:
                 async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    resp = await client.get(url, params=p)
+                    if method.upper() == "GET":
+                        resp = await client.get(url, params=p)
+                    elif method.upper() == "POST":
+                        resp = await client.post(url, params=p, json=json_data)
+                    else:
+                        logger.error(f"Unsupported HTTP method: {method}")
+                        return None
                     
                     # Log quota headers
                     used = resp.headers.get("x-requests-used")
@@ -163,13 +180,13 @@ class OddsApiClient:
 
     async def get_active_sports(self) -> List[Dict]:
         """Fetch all currently active sports."""
-        return await self._request("/sports", use_cache=True, ttl=self.long_ttl) or []
+        return await self._make_request("/sports", use_cache=True, ttl=self.long_ttl) or []
 
     async def get_events(self, sport: str) -> List[Dict]:
         """Fetch game schedules (cheap, no odds results)."""
-        return await self._request(f"/sports/{sport}/events", use_cache=True) or []
+        return await self._make_request(f"/sports/{sport}/events", use_cache=True) or []
 
-    async def get_live_odds(self, sport: str, regions: str = "us", markets: str = None) -> List[Dict]:
+    async def get_live_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None) -> List[Dict]:
         """Fetch real-time odds for games."""
         params = {
             "regions": regions,
@@ -177,7 +194,7 @@ class OddsApiClient:
             "oddsFormat": "american",
             "dateFormat": "iso"
         }
-        return await self._request(f"/sports/{sport}/odds", params=params) or []
+        return await self._make_request(f"/sports/{sport}/odds", params=params) or []
 
     async def get_player_props(self, sport: str, event_id: str, markets: str, regions: str = "us") -> Dict:
         """Fetch specific player props for an event."""
@@ -188,13 +205,23 @@ class OddsApiClient:
             "dateFormat": "iso"
         }
         # Note: endpoint returns a dict for single event ID if passed as path param
-        return await self._request(f"/sports/{sport}/events/{event_id}/odds", params=params) or {}
+        return await self._make_request(f"/sports/{sport}/events/{event_id}/odds", params=params) or {}
 
     # --- Compatibility Aliases ---
-    async def get_odds(self, sport: str, regions: str = "us", markets: str = None) -> List[Dict]:
+    async def get_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None) -> List[Dict]:
         return await self.get_live_odds(sport, regions, markets)
 
-    async def fetch_odds(self, sport: str, regions: str = "us", markets: str = None) -> List[Dict]:
+    async def get_event_odds(self, sport: str, event_id: str, regions: str = "us", markets: Optional[str] = None) -> Dict:
+        """Fetch odds for a specific event ID."""
+        params = {
+            "regions": regions,
+            "markets": markets or self.get_markets_for_sport(sport),
+            "oddsFormat": "american",
+            "dateFormat": "iso"
+        }
+        return await self._make_request(f"/sports/{sport}/events/{event_id}/odds", params=params) or {}
+
+    async def fetch_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None) -> List[Dict]:
         return await self.get_live_odds(sport, regions, markets)
 
     async def fetch_events(self, sport: str) -> List[Dict]:

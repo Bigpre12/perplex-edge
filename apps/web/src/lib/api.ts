@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
 const isServer = typeof window === 'undefined';
 export const API_BASE = isServer 
   ? (process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app')
@@ -13,6 +14,30 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Automatically inject JWT token from localStorage into every request
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// Automatically handle 401 Unauthorized by clearing session and redirecting
+api.interceptors.response.use((response) => {
+  return response;
+}, (error) => {
+  if (error.response && error.response.status === 401) {
+    console.warn('Authentication expired (401). Clearing session and redirecting...');
+    handleUnauthorized();
+  }
+  return Promise.reject(error);
 });
 
 // Helper for error handling

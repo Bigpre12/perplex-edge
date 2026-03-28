@@ -1,4 +1,5 @@
 import { API_BASE } from "./apiConfig";
+import { TOKEN_STORAGE_KEY, handleUnauthorized } from "./authStorage";
 
 /**
  * Standardized API Client for LUCRIX.
@@ -49,7 +50,7 @@ export async function apiClient<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("lucrix_token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -73,6 +74,9 @@ export async function apiClient<T>(
 
       // Handle non-retryable errors (4xx)
       if (response.status >= 400 && response.status < 500) {
+        if (response.status === 401) {
+          handleUnauthorized();
+        }
         const errorData = await response.json().catch(() => ({}));
         throw new APIError(response.status, errorData.message || response.statusText, errorData);
       }
