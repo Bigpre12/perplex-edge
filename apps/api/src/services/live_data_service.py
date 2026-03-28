@@ -80,7 +80,7 @@ class LiveDataService:
                 await self.poll_props()
                 
                 elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
-                wait_time = max(0, self.polling_interval - elapsed)
+                wait_time = max(0.0, float(self.polling_interval) - elapsed)
                 
                 if wait_time > 0:
                     await asyncio.sleep(wait_time)
