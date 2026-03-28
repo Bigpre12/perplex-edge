@@ -88,7 +88,7 @@ async def get_current_user(
                 if user:
                     return user
 
-        # Attempt B: Supabase (Modern Frontend)
+        # JWT is valid but user not in local DB — create synthetic user from claims                 email_fallback = payload.get("email")                 if email_fallback:                     synthetic = User(                         username=username,                         email=email_fallback,                         hashed_password="JWT_AUTH",                         subscription_tier=payload.get("tier", "free")                     )                     logger.info(f"Auth: returning synthetic user for {email_fallback} (JWT valid, not in local DB)")                     return synthetic          # Attempt B: Supabase (Modern Frontend)
         from core.config import settings
         from api_utils.supabase_proxy import create_client
         
