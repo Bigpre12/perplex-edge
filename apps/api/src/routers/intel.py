@@ -4,10 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from db.session import AsyncSessionLocal, get_async_db
 from models import EdgeEVHistory, Injury
+from models.user import User
 from services.db import db
 from schemas.universal import UniversalResponse, ResponseMeta
 from services.heartbeat_service import HeartbeatService
 from middleware.request_id import get_request_id
+from api_utils.tier_guards import require_tier
 
 router = APIRouter(tags=["Intel Intelligence"])
 
@@ -16,6 +18,7 @@ async def get_ev_top(
     sport: str = Query("basketball_nba", description="sport key, e.g. 'basketball_nba'"),
     limit: int = Query(10, ge=1, le=100),
     min_edge: float = Query(0.0, description="minimum edge pct"),
+    current_user: User = Depends(require_tier("pro"))
 ):
     """
     Return latest EV edges for each unique prop (game+player+market+book+side),
@@ -71,7 +74,8 @@ async def get_ev_history(
     sport: str = Query("basketball_nba"),
     event_id: Optional[str] = None,
     limit: int = Query(100),
-    db_session: AsyncSession = Depends(get_async_db)
+    db_session: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(require_tier("pro"))
 ):
     """Returns historical EV signals for trend analysis using EdgeEVHistory."""
     try:

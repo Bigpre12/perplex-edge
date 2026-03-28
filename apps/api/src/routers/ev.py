@@ -4,6 +4,8 @@ from typing import Optional
 from datetime import datetime
 from sqlalchemy import text
 from db.session import get_db
+from api_utils.tier_guards import require_tier
+from models.user import User
 
 router = APIRouter(tags=["ev"])
 logger = logging.getLogger(__name__)
@@ -13,7 +15,8 @@ logger = logging.getLogger(__name__)
 async def get_ev_signals(
     sport: Optional[str] = Query(None),
     limit: int = Query(50),
-    db=Depends(get_db)
+    db=Depends(get_db),
+    current_user: User = Depends(require_tier("pro"))
 ):
     # 1. Try ev_signals table first
     try:
@@ -120,10 +123,19 @@ async def get_ev_signals(
                 "updated": datetime.utcnow().isoformat() + "Z"}
 
 @router.get("/ev-top")
-async def get_ev_top(limit: int = Query(20), db=Depends(get_db)):
+async def get_ev_top(
+    limit: int = Query(20), 
+    db=Depends(get_db),
+    current_user: User = Depends(require_tier("pro"))
+):
     # Reuse the same logic, higher threshold
-    return await get_ev_signals(sport=None, limit=limit, db=db)
+    return await get_ev_signals(sport=None, limit=limit, db=db, current_user=current_user)
 
 @router.get("/{sport_path}")
-async def get_ev_by_sport(sport_path: str, limit: int = Query(50), db=Depends(get_db)):
-    return await get_ev_signals(sport=sport_path, limit=limit, db=db)
+async def get_ev_by_sport(
+    sport_path: str, 
+    limit: int = Query(50), 
+    db=Depends(get_db),
+    current_user: User = Depends(require_tier("pro"))
+):
+    return await get_ev_signals(sport=sport_path, limit=limit, db=db, current_user=current_user)

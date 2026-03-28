@@ -1,12 +1,7 @@
-"use client";
+import { checkTierAccess } from "@/lib/tier";
+import { FeatureKey, getRequiredTier } from "@/lib/featureAccess";
 
-import { useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import { clearUser } from "@/lib/auth";
-import { TOKEN_STORAGE_KEY } from "@/lib/authStorage";
-import API from "@/lib/api";
-import { Tier } from "@/lib/tier";
+// ... existing imports ...
 
 interface UserProfile {
     id: string;
@@ -62,10 +57,34 @@ export function useAuth() {
         return localStorage.getItem("accessToken") || localStorage.getItem(TOKEN_STORAGE_KEY);
     };
 
+import { checkTierAccess } from "@/lib/tier";
+import { FeatureKey, getRequiredTier } from "@/lib/featureAccess";
+
+// ... existing code ...
+
+    const tier: Tier = profile?.tier || 'free';
+    const isFree = tier === 'free';
+    const isPro = tier === 'pro';
+    const isElite = tier === 'elite';
+    const isAtLeastPro = tier === 'pro' || tier === 'elite';
+
+    /**
+     * checkAccess - Checks if the current user has access to a specific feature.
+     */
+    const checkAccess = (feature: FeatureKey): boolean => {
+        const required = getRequiredTier(feature);
+        return checkTierAccess(tier, required);
+    };
+
     return {
         user: profile,
         token: getToken(),
-        tier: profile?.tier || 'free',
+        tier,
+        isFree,
+        isPro,
+        isElite,
+        isAtLeastPro,
+        checkAccess,
         loading: isLoading,
         isSignedIn: !!profile,
         signOut,
