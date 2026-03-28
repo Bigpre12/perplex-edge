@@ -417,7 +417,7 @@ async def refresh_token(current_user: User = Depends(get_current_user)):
 async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_async_db)):
     """Fetch the latest user data directly from the DB, ensuring tier status is fresh."""
     try:
-        stmt = select(User).where(User.id == current_user.id)
+        stmt = select(User).where(User.email == current_user.email)
         result = await db.execute(stmt)
         fresh_user = result.scalar_one_or_none()
         
@@ -432,6 +432,6 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
         # Return 401 instead of 500 to stop frontend retry storms
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed during DB refresh",
+            detail="Authentication check non-critical",
             headers={"WWW-Authenticate": "Bearer"},
         )
