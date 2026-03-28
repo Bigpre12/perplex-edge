@@ -236,26 +236,74 @@ async def clear_heartbeats(db: AsyncSession = Depends(get_db)):
 
 @router.get("/force-migrate")
 async def force_migrate(db: AsyncSession = Depends(get_db)):
-    """Force run schema migrations and return results."""
-    # Grouped for clarity
+    """
+    Force run schema migrations to add missing columns and ensure nullability.
+    Uses 'ADD COLUMN IF NOT EXISTS' for maximum safety.
+    """
+    # Table -> [(ColumnName, Type)]
     migration_targets = [
-        ("props_live", ["player_id", "player_name", "team", "market_label", "line", "odds_over", "odds_under", "implied_over", "implied_under"]),
-        ("props_history", ["line", "odds_over", "odds_under", "implied_over", "implied_under"]),
-        ("unified_odds", ["outcome_key"]) # Corrected from outcome_name
+        ("users", [
+            ("password_reset_token", "VARCHAR"),
+            ("password_reset_expires", "TIMESTAMP WITH TIME ZONE"),
+            ("stripe_customer_id", "VARCHAR"),
+            ("clerk_id", "VARCHAR"),
+            ("subscription_tier", "VARCHAR DEFAULT 'free'")
+        ]),
+        ("props_live", [
+            ("player_id", "VARCHAR"),
+            ("player_name", "VARCHAR"),
+            ("team", "VARCHAR"),
+            ("market_label", "VARCHAR"),
+            ("line", "NUMERIC"),
+            ("odds_over", "NUMERIC"),
+            ("odds_under", "NUMERIC"),
+            ("implied_over", "NUMERIC"),
+            ("implied_under", "NUMERIC"),
+            ("home_team", "VARCHAR"),
+            ("away_team", "VARCHAR")
+        ]),
+        ("props_history", [
+            ("line", "NUMERIC"),
+            ("odds_over", "NUMERIC"),
+            ("odds_under", "NUMERIC"),
+            ("implied_over", "NUMERIC"),
+            ("implied_under", "NUMERIC"),
+            ("home_team", "VARCHAR"),
+            ("away_team", "VARCHAR")
+        ]),
+        ("ev_signals", [
+            ("edge_percent", "DOUBLE PRECISION"),
+            ("true_prob", "DOUBLE PRECISION"),
+            ("implied_prob", "DOUBLE PRECISION"),
+            ("engine_version", "VARCHAR DEFAULT 'v1'")
+        ]),
+        ("unified_odds", [
+            ("outcome_key", "VARCHAR"),
+            ("player_name", "VARCHAR"),
+            ("league", "VARCHAR"),
+            ("game_time", "TIMESTAMP WITH TIME ZONE"),
+            ("home_team", "VARCHAR"),
+            ("away_team", "VARCHAR")
+        ])
     ]
     
     results = {}
     for table, columns in migration_targets:
-        for col in columns:
+        for col, col_type in columns:
             try:
-                # Use DROP NOT NULL to ensure columns are nullable
-                sql = f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"
-                await db.execute(text(sql))
+                # 1. Ensure column exists
+                add_sql = f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {col_type}"
+                await db.execute(text(add_sql))
+                
+                # 2. Ensure column is nullable (except where specific defaults might imply NOT NULL which we'll lift)
+                drop_sql = f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"
+                await db.execute(text(drop_sql))
+                
                 await db.commit()
                 results[f"{table}.{col}"] = "Success"
             except Exception as e:
-                # If it already is nullable, this might still say Success or throw an error depending on PG version
-                results[f"{table}.{col}"] = f"Info: {str(e)}"
+                await db.rollback()
+                results[f"{table}.{col}"] = f"Error: {str(e)}"
     
     return {
         "status": "migration_completed",
