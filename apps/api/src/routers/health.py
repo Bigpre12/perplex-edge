@@ -74,7 +74,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "system_status": "ONLINE",
-        "version": "1.1.7",
+        "version": "1.1.9",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
@@ -233,6 +233,41 @@ async def clear_heartbeats(db: AsyncSession = Depends(get_db)):
         return {"status": "success", "message": "Heartbeat errors cleared."}
     except Exception as e:
         return {"status": "failed", "error": str(e)}
+
+@router.get("/db-inspect")
+async def db_inspect(table: str = "users", db: AsyncSession = Depends(get_db)):
+    """Inspect a table schema and sample data for debugging."""
+    try:
+        # Get column names
+        col_sql = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'"
+        col_res = await db.execute(text(col_sql))
+        columns = [{"name": r[0], "type": r[1]} for r in col_res.fetchall()]
+        
+        # Get sample data (redacted for safety)
+        data_sql = f"SELECT * FROM {table} LIMIT 5"
+        data_res = await db.execute(text(data_sql))
+        data_keys = [c["name"] for c in columns]
+        
+        raw_data = data_res.fetchall()
+        sample = []
+        for row in raw_data:
+            row_dict = {}
+            for i, key in enumerate(data_keys):
+                val = row[i]
+                if key in ["email", "username", "hashed_password", "password_reset_token", "clerk_id", "auth_id"]:
+                    row_dict[key] = "[REDACTED]"
+                else:
+                    row_dict[key] = val
+            sample.append(row_dict)
+            
+        return {
+            "table": table,
+            "columns": columns,
+            "sample_count": len(sample),
+            "sample": sample
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @router.get("/force-migrate")
 async def force_migrate(db: AsyncSession = Depends(get_db)):

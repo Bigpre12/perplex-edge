@@ -276,6 +276,7 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db))
     access_token = auth_service.create_access_token(
         data={"sub": user.username, "email": user.email, "tier": (user.subscription_tier or "free").lower()}
     )
+    logger.info(f"Auth: Login success for {user.email}, user.id={user.id} (type={type(user.id)})")
     return {
         "access_token": access_token,
         "token_type": "bearer",
