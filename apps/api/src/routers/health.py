@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 import logging
 
 from db.session import get_db
-from models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "system_status": "ONLINE",
-        "version": "1.2.2",
+        "version": "1.2.3",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
@@ -237,23 +236,27 @@ async def clear_heartbeats(db: AsyncSession = Depends(get_db)):
 
 @router.get("/db-test-write")
 async def db_test_write(db: AsyncSession = Depends(get_db)):
-    """Test if we can actually write to the users table."""
+    """Test if we can actually write to the users table via raw SQL."""
     try:
         import secrets
         test_email = f"test_{secrets.token_hex(4)}@example.com"
-        new_user = User(
-            username=f"test_{secrets.token_hex(4)}",
-            email=test_email,
-            hashed_password="TEST_ONLY"
-        )
-        db.add(new_user)
+        test_user = f"test_{secrets.token_hex(4)}"
+        
+        # Raw SQL insert to be ultra-safe and avoid model dependency issues during boot
+        sql = text("""
+            INSERT INTO users (username, email, hashed_password, created_at, updated_at, is_active)
+            VALUES (:u, :e, :p, NOW(), NOW(), true)
+            RETURNING id
+        """)
+        
+        res = await db.execute(sql, {"u": test_user, "e": test_email, "p": "TEST_ONLY"})
+        row = res.fetchone()
         await db.commit()
-        await db.refresh(new_user)
         
         return {
             "status": "success",
-            "message": f"Successfully wrote user {test_email}",
-            "user_id": new_user.id
+            "message": f"Successfully wrote user {test_email} via raw SQL",
+            "user_id": row[0] if row else "unknown"
         }
     except Exception as e:
         return {"status": "failed", "error": str(e)}
