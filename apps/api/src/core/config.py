@@ -94,6 +94,7 @@ class Settings:
         self.SOFT_BOOKMAKERS = ["draftkings", "fanduel", "betmgm", "caesars", "pointsbet", "williamhill_us", "betrivers", "unibet_us"]
         self.EV_MIN_THRESHOLD = float(os.getenv("EV_MIN_THRESHOLD", "1.0"))
         self.MAJOR_LINE_MOVE_THRESHOLD = float(os.getenv("MAJOR_LINE_MOVE_THRESHOLD", "5.0")) # cents/ticks
+        self.LIVE_DATA_POLLING_INTERVAL = int(os.getenv("LIVE_DATA_POLLING_INTERVAL", "30"))
         
         # CORS Setup — allow Vercel preview/production domains automatically
         raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:5173")

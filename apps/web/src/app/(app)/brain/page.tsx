@@ -10,6 +10,7 @@ import SportSelector from "@/components/shared/SportSelector";
 import { BrainCircuit, Zap, ShieldCheck, Activity, Target, TrendingUp } from "lucide-react";
 import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
+import type { LucideIcon } from "lucide-react";
 
 import { UpgradeGate } from "@/components/UpgradeGate";
 
@@ -95,8 +96,8 @@ function BrainContent() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {props.map((prop: any, i: number) => {
-          const isSmartAligned = smartMoney?.aligned_props?.includes(prop.id);
+        {props.map((prop: { id: string; player: string; market: string; line: string; score: number; reasoning: string; projection: string; recommendation: string }, i: number) => {
+          const isSmartAligned = (smartMoney as any)?.aligned_props?.includes(prop.id);
           
           return (
             <div key={i} className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-6 hover:border-brand-purple/30 transition-all group relative overflow-hidden shadow-card">
@@ -166,7 +167,7 @@ function BrainContent() {
   );
 }
 
-function StatBadge({ label, value, icon, color = "text-brand-purple" }: any) {
+function StatBadge({ label, value, icon, color = "text-brand-purple" }: { label: string; value: string; icon: React.ReactNode; color?: string }) {
   return (
     <div className="bg-lucrix-surface border border-lucrix-border rounded-xl px-4 py-2 flex items-center gap-3">
       <div className={clsx("p-1.5 bg-lucrix-dark rounded border border-lucrix-border", color)}>

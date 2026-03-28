@@ -20,7 +20,7 @@ export default function EVPage() {
   );
 }
 
-function EVPageContent({ sport, setSport }: { sport: string, setSport: (s: string) => void }) {
+function EVPageContent({ sport, setSport }: { sport: string; setSport: (s: string) => void }) {
   const { data: evSignals, isLoading, isError, refetch } = useEV(sport);
 
   const getEVColor = (val: number | undefined | null) => {
@@ -97,7 +97,7 @@ function EVPageContent({ sport, setSport }: { sport: string, setSport: (s: strin
                   <div className="text-white/30 text-xs font-bold uppercase mb-1">Max Edge</div>
                   <div className="text-3xl font-black text-green-400">
                      {(evSignals && evSignals.length > 0
-                        ? Math.max(...evSignals.map(s => s.ev_pct || 0))
+                        ? Math.max(...evSignals.map((s: EVRecord) => s.ev_pct || 0))
                         : 0).toFixed(1)}%
                   </div>
                 </div>
@@ -140,7 +140,7 @@ function EVPageContent({ sport, setSport }: { sport: string, setSport: (s: strin
             <DataTable 
               columns={columns} 
               data={evSignals ?? []} 
-              onRowClick={(p) => console.log('Clicked signal:', p)}
+              onRowClick={(p: EVRecord) => console.log('Clicked signal:', p)}
             />
           </div>
         )}

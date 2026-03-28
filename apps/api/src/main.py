@@ -17,6 +17,8 @@ from db.base import Base
 from db.session import engine
 from services.unified_ingestion import unified_ingestion
 from core.connection_manager import manager
+from services.live_data_service import live_data_service
+from services.kalshi_ws import kalshi_ws_manager
 
 logger = logging.getLogger(__name__)
 logging.getLogger("apscheduler").setLevel(logging.DEBUG)
@@ -371,6 +373,21 @@ async def initialize_backend_services():
         logger.info("📡 [Background Init] CLV Tracker started.")
     except Exception as e:
         logger.error(f"❌ [Background Init] CLV Tracker failed: {e}")
+
+    # 7. High-Frequency Live Data Polling
+    try:
+        logger.info("📡 [Background Init] Starting Live Data Polling Service...")
+        asyncio.create_task(live_data_service.run_loop())
+    except Exception as e:
+        logger.error(f"❌ [Background Init] Live Data Polling failed: {e}")
+
+    # 8. Kalshi WebSocket Bridge
+    try:
+        logger.info("📡 [Background Init] Starting Kalshi WebSocket Bridge...")
+        # Start with a few major indices/markets
+        asyncio.create_task(kalshi_ws_manager.run(["INX", "BTC", "ETH"]))
+    except Exception as e:
+        logger.error(f"❌ [Background Init] Kalshi WS Bridge failed: {e}")
 
     logger.info("✅ [Background Init] All background services synchronized.")
 

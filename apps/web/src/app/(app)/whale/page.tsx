@@ -76,7 +76,7 @@ function WhaleAlertsContent() {
               aria-label="Minimum Units Threshold"
               className="bg-transparent text-white font-mono font-black text-sm w-12 outline-none" 
               value={minUnits} 
-              onChange={(e) => setMinUnits(parseInt(e.target.value) || 0)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMinUnits(parseInt(e.target.value) || 0)}
             />
           </div>
           <div className="text-[9px] font-black text-textMuted uppercase tracking-widest flex items-center gap-1.5">
@@ -105,7 +105,7 @@ function WhaleAlertsContent() {
           </div>
         )}
 
-        {(isLocked ? (alerts?.slice(0, 3) || []) : alerts || []).map((alert: any, i: number) => (
+        {(isLocked ? (alerts?.slice(0, 3) || []) : alerts || []).map((alert: { player_name?: string; team?: string; market: string; line: string; odds: string; book?: string; units: number; timestamp?: string }, i: number) => (
           <div 
             key={i} 
             className={clsx(
