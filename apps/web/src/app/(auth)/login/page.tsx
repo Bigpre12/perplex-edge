@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { User, Lock, ArrowRight, ShieldCheck, Cpu } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authStorage } from "@/lib/auth";
-import { api } from "@/lib/api";
+import API from "@/lib/api";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -23,7 +23,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const data: any = await api.auth.login({
+            const data: any = await API.auth.login({
                 email: formData.email,
                 password: formData.password
             });

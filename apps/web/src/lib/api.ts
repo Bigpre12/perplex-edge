@@ -1,12 +1,14 @@
 import axios from 'axios';
 import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
 const isServer = typeof window === 'undefined';
+const env = isServer ? (globalThis as any).process?.env : {};
+
 export const API_BASE = isServer 
-  ? (process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app')
+  ? (env?.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app')
   : '/backend';
 
 const API_URL = isServer 
-  ? (process.env.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app')
+  ? (env?.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app')
   : '/backend';
 
 export const api = axios.create({
@@ -17,7 +19,7 @@ export const api = axios.create({
 });
 
 // Automatically inject JWT token from localStorage into every request
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: any) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (token) {
@@ -25,20 +27,37 @@ api.interceptors.request.use((config) => {
     }
   }
   return config;
-}, (error) => {
+}, (error: any) => {
   return Promise.reject(error);
 });
 
 // Automatically handle 401 Unauthorized by clearing session and redirecting
-api.interceptors.response.use((response) => {
+api.interceptors.response.use((response: any) => {
   return response;
-}, (error) => {
+}, (error: any) => {
   if (error.response && error.response.status === 401) {
     console.warn('Authentication expired (401). Clearing session and redirecting...');
     handleUnauthorized();
   }
   return Promise.reject(error);
 });
+
+// Augment the axios instance with methods expected by various components
+(api as any).auth = {
+    login: async (credentials: any) => {
+        const { data } = await api.post('/api/auth/login', credentials);
+        return data;
+    },
+    signup: async (userData: any) => {
+        const { data } = await api.post('/api/auth/signup', userData);
+        return data;
+    }
+};
+
+(api as any).adminStats = async (email: string) => {
+    const { data } = await api.get(`/api/admin/stats?email=${email}`);
+    return data;
+};
 
 // Helper for error handling
 export const handleApiError = (error: any) => {
