@@ -167,8 +167,8 @@ class OddsApiClient(ResilientBaseClient):
                     if resp.status_code == 200:
                         data = resp.json()
                         await self._increment_count()
-                        if use_cache:
-                            await cache.set_json(cache_key, data, ttl=ttl)
+                        # Always populate the cache on a successful fetch to keep data fresh for other consumers
+                        await cache.set_json(cache_key, data, ttl=ttl)
                         return data
                     
                     elif resp.status_code in (401, 403, 429):

@@ -29,11 +29,12 @@ class LiveDataService:
         """Polls live odds for all hot sports to warm the cache."""
         for sport in self.hot_sports:
             try:
-                logger.info(f"🔥 [Live Polling] Warming cache for {sport} odds...")
-                # Calling this updates the Redis cache inside OddsApiClient._make_request
-                await odds_api_client.get_live_odds(sport, use_cache=True, ttl=self.polling_interval + 10)
+                logger.info(f"🔥 [Live Polling] Refreshing cache for {sport} odds...")
+                # Use use_cache=False to force a fetch from the provider; 
+                # OddsApiClient._make_request will handle populating the cache.
+                await odds_api_client.get_live_odds(sport, use_cache=False, ttl=self.polling_interval + 10)
             except Exception as e:
-                logger.error(f"❌ [Live Polling] Failed to warm odds for {sport}: {e}")
+                logger.error(f"❌ [Live Polling] Failed to refresh odds for {sport}: {e}")
 
     async def poll_props(self):
         """Polls player props for active games in hot sports."""
@@ -46,7 +47,7 @@ class LiveDataService:
                 # 2. Limit to first 5 active events to protect quota while warming hot games
                 active_eids = [e['id'] for e in events[:5] if 'id' in e]
                 
-                logger.info(f"🔥 [Live Polling] Warming cache for {len(active_eids)} {sport} event props...")
+                logger.info(f"🔥 [Live Polling] Refreshing cache for {len(active_eids)} {sport} event props...")
                 
                 # Fetch props for these events
                 markets = odds_api_client.get_markets_for_sport(sport)
@@ -55,14 +56,14 @@ class LiveDataService:
                         sport=sport, 
                         event_id=eid, 
                         markets=markets,
-                        use_cache=True,
-                        ttl=60 # Props can be slightly slower
+                        use_cache=False, # Force refresh
+                        ttl=60 
                     )
                     # Small sleep to avoid hitting provider rate limits too hard in one burst
                     await asyncio.sleep(0.5)
                     
             except Exception as e:
-                logger.error(f"❌ [Live Polling] Failed to warm props for {sport}: {e}")
+                logger.error(f"❌ [Live Polling] Failed to refresh props for {sport}: {e}")
 
     async def run_loop(self):
         """Main orchestrator loop."""
