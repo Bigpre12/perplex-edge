@@ -26,7 +26,7 @@ class UserSignup(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
-        id: Optional[int] = None
+    id: Optional[int] = None
     username: str
     email: str
     tier: str
