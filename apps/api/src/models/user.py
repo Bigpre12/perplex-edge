@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.sql import func
 from db.base import Base
 
@@ -9,7 +10,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
-    auth_id = Column(String, unique=True, index=True, nullable=True) # Supabase UUID
+        auth_id = Column(PGUUID(as_uuid=False), unique=True, index=True, nullable=True)  # Supabase UUID
     hashed_password = Column(String)
     
     password_reset_token = Column(String, nullable=True, index=True)
