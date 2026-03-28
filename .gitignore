@@ -1,70 +1,34 @@
-# Environment Variables
+# Environment & Secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+*.key
+kalshi.key
+kalshi_public.key
 
-# Logs
+# Node / Next.js
+node_modules/
+.next/
+.vercel/
+dist/
+out/
+build/
+coverage/
 *.log
-logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Python Debug & Test Artifacts
-*_output.txt
-*_utf8.txt
-*_crash.log
-*_error.log
-*_debug.log
-startup_*.log
-uvicorn_*.txt
-diag_output*.txt
-crash_verbose.txt
-whale_err.txt
-
-# Python Test Scripts (standalone, not pytest)
-test_*.py
-debug_*.py
-check_*.py
-diagnose_*.py
-trace_*.py
-verify_*.py
-detect_*.py
-trigger_*.py
-
-# Ephemeral Data Files (narrowed)
-# Remove the global *.txt ignore to preserve important docs
-shares.json
-out_*.txt
-brain_test_output.txt
-build_output*.txt
-build_results*.txt
-server_log.txt
-tsc_output*.txt
-*_debug.txt
-*_log.txt
-*_status.txt
-heartbeat_check.txt
-rotation_results.txt
-status.txt
-full_git_status.txt
-git_status_small.txt
-
-# Dependencies
-node_modules/
-.venv/
-venv/
-env/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Next.js
-.next/
-out/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.pyre/
 
 # Database
 *.db
@@ -72,17 +36,39 @@ out/
 *.db-wal
 *.db-shm
 
-# Secrets / Keys
-kalshi.key
-kalshi_public.key
-*.key
-
-# OS Files
+# OS / Editor
 .DS_Store
 Thumbs.db
+*.swp
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
 
-# Local analysis artifacts
+# Project Specific
+tmp/
+debug_archive/
+diag_output*.txt
+crash_verbose.txt
+whale_err.txt
+shares.json
 *.csv
 
-# Temp
-tmp/
+# Web App build artifacts
+apps/web/.next
+apps/web/.vercel
+apps/web/dist
+apps/web/out
+apps/web/coverage
+apps/web/node_modules
+
+# Mobile App build artifacts
+apps/mobile/.next
+apps/mobile/.vercel
+apps/mobile/dist
+apps/mobile/out
+apps/mobile/build
+apps/mobile/.expo
+apps/mobile/.gradle
+apps/mobile/.idea
+apps/mobile/node_modules
