@@ -74,7 +74,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "system_status": "ONLINE",
-        "version": "1.1.6",
+        "version": "1.1.7",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
