@@ -74,7 +74,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "system_status": "ONLINE",
-        "version": "1.1.9",
+        "version": "1.2.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
@@ -238,9 +238,15 @@ async def clear_heartbeats(db: AsyncSession = Depends(get_db)):
 async def db_inspect(table: str = "users", db: AsyncSession = Depends(get_db)):
     """Inspect a table schema and sample data for debugging."""
     try:
+        # Check if it's a table or a view
+        type_sql = "SELECT table_type FROM information_schema.tables WHERE table_name = :table AND table_schema = 'public'"
+        type_res = await db.execute(text(type_sql), {"table": table})
+        table_type_row = type_res.fetchone()
+        table_type = table_type_row[0] if table_type_row else "unknown"
+
         # Get column names
-        col_sql = f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table}'"
-        col_res = await db.execute(text(col_sql))
+        col_sql = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = :table AND table_schema = 'public' ORDER BY ordinal_position"
+        col_res = await db.execute(text(col_sql), {"table": table})
         columns = [{"name": r[0], "type": r[1]} for r in col_res.fetchall()]
         
         # Get sample data (redacted for safety)
@@ -262,6 +268,7 @@ async def db_inspect(table: str = "users", db: AsyncSession = Depends(get_db)):
             
         return {
             "table": table,
+            "type": table_type,
             "columns": columns,
             "sample_count": len(sample),
             "sample": sample
