@@ -12,6 +12,9 @@ class User(Base):
     auth_id = Column(String, unique=True, index=True, nullable=True) # Supabase UUID
     hashed_password = Column(String)
     
+    password_reset_token = Column(String, nullable=True, index=True)
+    password_reset_expires = Column(DateTime(timezone=True), nullable=True)
+    
     # Tier limits (free, pro, elite)
     subscription_tier = Column(String, default="free")
     stripe_customer_id = Column(String, nullable=True, index=True)

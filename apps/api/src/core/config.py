@@ -86,6 +86,7 @@ class Settings:
         self.ODDSPAPI_API_KEY = os.getenv("ODDSPAPI_API_KEY", "")
         self.ROSTER_API_KEY = os.getenv("ROSTER_API_KEY", "")
         self.DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+        self.RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
         
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
         

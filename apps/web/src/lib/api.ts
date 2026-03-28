@@ -51,6 +51,14 @@ api.interceptors.response.use((response: any) => {
     signup: async (userData: any) => {
         const { data } = await api.post('/api/auth/signup', userData);
         return data;
+    },
+    forgotPassword: async (payload: any) => {
+        const { data } = await api.post('/api/auth/forgot-password', payload);
+        return data;
+    },
+    resetPassword: async (payload: any) => {
+        const { data } = await api.post('/api/auth/reset-password', payload);
+        return data;
     }
 };
 
@@ -92,6 +100,22 @@ export const API = {
         signup: async (userData: any) => {
             try {
                 const { data } = await api.post('/api/auth/signup', userData);
+                return data;
+            } catch (err) {
+                return handleApiError(err);
+            }
+        },
+        forgotPassword: async (payload: any) => {
+            try {
+                const { data } = await api.post('/api/auth/forgot-password', payload);
+                return data;
+            } catch (err) {
+                return handleApiError(err);
+            }
+        },
+        resetPassword: async (payload: any) => {
+            try {
+                const { data } = await api.post('/api/auth/reset-password', payload);
                 return data;
             } catch (err) {
                 return handleApiError(err);

@@ -5,10 +5,11 @@ from sqlalchemy import select, update
 from db.session import get_db, get_async_db
 from models.user import User, APIKey
 from services.auth_service import auth_service
+from services.email_service import email_service
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
 import secrets
 import logging
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +181,13 @@ async def signup(user_data: UserSignup, db: AsyncSession = Depends(get_async_db)
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    
+    # Trigger Welcome Email (Fire and forget or async)
+    try:
+        email_service.send_welcome_email(new_user.email, new_user.username)
+    except Exception as e:
+        logger.error(f"Signup: Failed to trigger welcome email: {e}")
+        
     return new_user
 
 class UserLogin(BaseModel):
@@ -277,6 +285,60 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db))
             "tier": (user.subscription_tier or "free").lower()
         }
     }
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_async_db)):
+    """Generate a reset token and email it to the user."""
+    stmt = select(User).where(User.email == data.email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    # Security: Always return 200 even if user doesn't exist to avoid enumeration
+    if user:
+        # Generate secure random token
+        token = secrets.token_urlsafe(32)
+        user.password_reset_token = token
+        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        await db.commit()
+        
+        # Send Email
+        try:
+            email_service.send_password_reset_email(user.email, token)
+        except Exception as e:
+            logger.error(f"Forgot Password: Failed to send email to {user.email}: {e}")
+            
+    return {"message": "If that email exists, a reset link has been sent."}
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(get_async_db)):
+    """Verify reset token and update password."""
+    stmt = select(User).where(
+        (User.password_reset_token == data.token) & 
+        (User.password_reset_expires > datetime.now(timezone.utc))
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Update password and clear token
+    user.hashed_password = auth_service.get_password_hash(data.new_password)
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    await db.commit()
+    
+    return {"message": "Password updated successfully"}
 
 
 @router.post("/keys/generate")
