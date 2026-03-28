@@ -60,6 +60,25 @@ export const unwrap = (d: any): any[] => {
 
 // Legacy API methods needed by dashboard and hooks
 export const API = {
+    auth: {
+        login: async (credentials: any) => {
+            try {
+                // Ensure we use the 'api' Axios instance for consistency with interceptors
+                const { data } = await api.post('/api/auth/login', credentials);
+                return data;
+            } catch (err) {
+                return handleApiError(err);
+            }
+        },
+        signup: async (userData: any) => {
+            try {
+                const { data } = await api.post('/api/auth/signup', userData);
+                return data;
+            } catch (err) {
+                return handleApiError(err);
+            }
+        }
+    },
     brain: {
         status: async () => {
             try {
@@ -294,7 +313,16 @@ export const API = {
         } catch (err) {
             return handleApiError(err);
         }
+    },
+    adminStats: async (email: string) => {
+        try {
+            const { data } = await api.get(`/api/admin/stats?email=${email}`);
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
     }
 };
+
 
 export default API;
