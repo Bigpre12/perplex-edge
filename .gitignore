@@ -61,6 +61,7 @@ apps/web/dist
 apps/web/out
 apps/web/coverage
 apps/web/node_modules
+apps/web/*.txt
 
 # Mobile App build artifacts
 apps/mobile/.next
