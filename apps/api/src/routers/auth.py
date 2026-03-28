@@ -188,11 +188,76 @@ class UserLogin(BaseModel):
 
 @router.post("/login", response_model=Token)
 async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db)):
+    # 1. Try local DB authentication first
     stmt = select(User).where(User.email == login_data.email)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     
-    if not user or not auth_service.verify_password(login_data.password, user.hashed_password):
+    auth_success = False
+    if user and user.hashed_password != "SUPABASE_AUTH_EXTERNAL":
+        if auth_service.verify_password(login_data.password, user.hashed_password):
+            auth_success = True
+            
+    # 2. Fallback to Supabase authentication if local fails
+    if not auth_success:
+        from core.config import settings
+        if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+            try:
+                import httpx
+                # Supabase Auth API: sign in with password to get a token
+                sb_auth_url = f"{settings.SUPABASE_URL}/auth/v1/token?grant_type=password"
+                headers = {"apikey": settings.SUPABASE_KEY, "Content-Type": "application/json"}
+                payload = {"email": login_data.email, "password": login_data.password}
+                
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(sb_auth_url, json=payload, headers=headers)
+                    
+                if resp.status_code == 200:
+                    sb_data = resp.json()
+                    sb_user = sb_data.get("user", {})
+                    email = sb_user.get("email")
+                    
+                    if email:
+                        auth_success = True
+                        # JIT Provision or Update local user
+                        if not user:
+                            # Provision new user from Supabase
+                            base_username = email.split("@")[0]
+                            username = base_username
+                            count = 0
+                            while True:
+                                check_stmt = select(User).where(User.username == username)
+                                check_res = await db.execute(check_stmt)
+                                if not check_res.scalar_one_or_none():
+                                    break
+                                count += 1
+                                username = f"{base_username}{count}"
+                            
+                            user = User(
+                                username=username,
+                                email=email,
+                                hashed_password="SUPABASE_AUTH_EXTERNAL",
+                                clerk_id=sb_user.get("id") # Store Supabase ID in clerk_id as a common external ref
+                            )
+                            db.add(user)
+                            # Sync tier from metadata if available
+                            meta = sb_user.get("user_metadata", {})
+                            user.subscription_tier = meta.get("tier", "free")
+                            
+                            await db.commit()
+                            await db.refresh(user)
+                            logger.info(f"Auth: JIT provisioned Supabase user {email}")
+                        else:
+                            # User exists but authenticated via Supabase
+                            user.hashed_password = "SUPABASE_AUTH_EXTERNAL"
+                            if not user.clerk_id:
+                                user.clerk_id = sb_user.get("id")
+                            await db.commit()
+                            logger.info(f"Auth: Synchronized existing user {email} with Supabase credentials")
+            except Exception as e:
+                logger.error(f"Auth: Supabase fallback login failed for {login_data.email}: {e}")
+
+    if not auth_success or not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
