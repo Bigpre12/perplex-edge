@@ -142,7 +142,7 @@ function WhaleAlertsContent() {
           </div>
         ))}
 
-        {!isLocked && (!limitedAlerts || limitedAlerts.length === 0) && (
+        {!isLocked && (!alerts || alerts.length === 0) && (
           <div className="text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
             Scanning for high-stakes positions...
           </div>

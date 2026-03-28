@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense } from "react";
+import React, { Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
 import { API, isApiError } from "@/lib/api";
