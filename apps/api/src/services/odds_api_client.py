@@ -16,19 +16,31 @@ Methods:
 """
 import os
 import time
-import httpx
+import httpx # type: ignore
 import logging
 import asyncio
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
 
-from core.config import settings
-from services.cache import cache
-from api_utils.http import build_headers
+from core.config import settings # type: ignore
+from clients.base_client import ResilientBaseClient # type: ignore
+from services.cache import cache # type: ignore
+from api_utils.http import build_headers # type: ignore
 
 logger = logging.getLogger(__name__)
 
-class OddsApiClient:
+class OddsApiClient(ResilientBaseClient):
+    """
+    Client for TheOddsAPI (Live Odds, Historical, Scores).
+    
+    [ARCHITECTURAL RULE]
+    This client is the SOLE authorized path for TheOddsAPI data.
+    The frontend MUST NOT call TheOddsAPI directly. All requests must
+    be routed through this backend service to ensure:
+    1. API Key Security (Never exposed to browser)
+    2. Response Caching (Lower latency & cost)
+    3. Tier-Based Gating (Elite/Pro restrictions)
+    """
     BASE_URL = "https://api.the-odds-api.com/v4"
     
     TEAM_MARKETS = ["h2h", "spreads", "totals"]

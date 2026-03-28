@@ -7,11 +7,20 @@ import { API, isApiError } from "@/lib/api";
 import { useBackendStatus } from "@/hooks/useBackendStatus";
 import { useFreshness } from '@/hooks/useFreshness';
 import { FreshnessBadge } from './FreshnessBadge';
-import { useSport } from "@/context/SportContext";
+import { UpgradeGate } from "../UpgradeGate";
 
 export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
     const { selectedSport } = useSport();
     const sport = requestedSport || selectedSport;
+
+    return (
+        <UpgradeGate feature="whaleIntel">
+            <WhaleTrackerContent sport={sport} />
+        </UpgradeGate>
+    );
+}
+
+function WhaleTrackerContent({ sport }: { sport: string }) {
     const { data: freshness, isLoading: freshnessLoading } = useFreshness(sport);
     const [moves, setMoves] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);

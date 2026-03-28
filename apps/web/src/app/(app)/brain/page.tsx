@@ -11,10 +11,14 @@ import { BrainCircuit, Zap, ShieldCheck, Activity, Target, TrendingUp } from "lu
 import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
 
+import { UpgradeGate } from "@/components/UpgradeGate";
+
 export default function BrainPage() {
   return (
     <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING NEURAL ENGINE...</div>}>
-      <BrainContent />
+      <UpgradeGate feature="neuralBrain">
+        <BrainContent />
+      </UpgradeGate>
     </Suspense>
   );
 }
@@ -25,7 +29,8 @@ function BrainContent() {
   const { data: brainData, isLoading: brainLoading, error: brainError, refetch: refetchBrain } = useQuery({
     queryKey: ['brain', sport],
     queryFn: async () => {
-      const res = await API.get(`/api/brain`, { sport });
+      // res = { props: [...], status: {...} }
+      const res = await API.brain.status();
       if (isApiError(res)) throw res;
       return res;
     },
@@ -35,7 +40,7 @@ function BrainContent() {
   const { data: smartMoney, isLoading: smartLoading } = useQuery({
     queryKey: ['smart-money', sport],
     queryFn: async () => {
-      const res = await API.get('/api/smart-money', { sport });
+      const res = await API.recentIntel(sport);
       if (isApiError(res)) return { aligned_props: [] };
       return res.data || res;
     },

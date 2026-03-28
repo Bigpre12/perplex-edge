@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import time
-import httpx
+import httpx # type: ignore
 from typing import Optional, Dict, Any, Callable
-from core.config import settings
+from core.config import settings # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,12 @@ class ResilientBaseClient:
     - Circuit Breaker logic
     - Connection Pooling (via httpx.AsyncClient)
     - Quota/Usage Logging
+
+    [ARCHITECTURAL RULE]
+    All external data provider calls (TheOddsAPI, SportsDataIO, etc.) MUST be 
+    centralized in these backend client modules. The frontend should NEVER 
+    call external providers directly; it must always go through a /backend 
+    router for security, caching, and tier-based gating.
     """
     
     def __init__(
@@ -115,7 +121,7 @@ class ResilientBaseClient:
 
     def _on_failure(self):
         self.fail_count += 1
-        self.last_fail_time = time.time()
+        self.last_fail_time = int(time.time())
         if self.fail_count >= self.fail_threshold:
             logger.error(f"[{self.name}] Failure threshold reached. TRIPPING CIRCUIT BREAKER.")
             self.is_open = True

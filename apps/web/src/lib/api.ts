@@ -210,6 +210,14 @@ export const API = {
             return handleApiError(err);
         }
     },
+    whale: async (sport?: string, minUnits = 0) => {
+        try {
+            const { data } = await api.get(`/api/whale`, { params: { sport, min_units: minUnits } });
+            return data;
+        } catch (err) {
+            return handleApiError(err);
+        }
+    },
     activeMoves: async (sport?: string) => {
         try {
             const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');

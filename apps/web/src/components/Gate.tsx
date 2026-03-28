@@ -1,6 +1,6 @@
 "use client";
-import { useSubscription } from "@/hooks/useSubscription";
-import { FeatureKey, getRequiredTier } from "@/lib/permissions";
+import { useAuth } from "@/hooks/useAuth";
+import { FeatureKey, getRequiredTier } from "@/lib/featureAccess";
 import Link from "next/link";
 import { clsx } from "clsx";
 
@@ -10,16 +10,22 @@ interface GateProps {
     quiet?: boolean;   // just hide — no upgrade prompt
 }
 
+/**
+ * Gate - Conditionally renders children if the user has access to the specified feature.
+ * Otherwise, shows an upgrade prompt or nothing (if quiet).
+ */
 export default function Gate({ feature, children, quiet = false }: GateProps) {
-    const { can, loading } = useSubscription();
+    const { checkAccess, tier, loading } = useAuth();
     const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === "true";
 
     if (loading) return null;
-    const hasAccess = can(feature); // Define hasAccess here
+    
+    const hasAccess = isDevMode || checkAccess(feature);
 
-    if (isDevMode || hasAccess) {
+    if (hasAccess) {
         return <>{children}</>;
     }
+    
     if (quiet) return null;
 
     const required = getRequiredTier(feature);

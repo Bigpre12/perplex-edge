@@ -1,7 +1,7 @@
-'use client';
-
 import React, { useState } from 'react';
+
 import { useEV, EVRecord } from '@/hooks/useEV';
+import { UpgradeGate } from '@/components/UpgradeGate';
 import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
@@ -10,6 +10,15 @@ import { TrendingUp, Percent, Info } from 'lucide-react';
 
 export default function EVPage() {
   const [sport, setSport] = useState('all');
+
+  return (
+    <UpgradeGate feature="evSignals">
+      <EVPageContent sport={sport} setSport={setSport} />
+    </UpgradeGate>
+  );
+}
+
+function EVPageContent({ sport, setSport }: { sport: string, setSport: (s: string) => void }) {
   const { data: evSignals, isLoading, isError, refetch } = useEV(sport);
 
   const getEVColor = (val: number | undefined | null) => {

@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
-import { useTierGate } from "@/hooks/useTierGate";
+import { useAuth } from "@/hooks/useAuth";
 import { API, isApiError } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -34,14 +34,13 @@ function WhaleAlertsContent() {
     staleTime: 10_000,
   });
 
-  const { data: limitedAlerts, isLocked, isLoading: isGateLoading } = useTierGate(
-    { data: alerts, isLoading, error },
-    { requiredTier: "elite" }
-  );
+  const { checkAccess, loading: isAuthLoading } = useAuth();
+  const isLocked = !isAuthLoading && !checkAccess("whaleIntel");
 
-  if (isLoading || isGateLoading) {
+  if (isLoading || isAuthLoading) {
     return (
       <div className="space-y-6 pt-6 px-4">
+        {/* ... existing skeleton ... */}
         <Skeleton className="h-10 w-48 mb-6" />
         <Skeleton className="h-20 w-full mb-4" />
         <div className="space-y-4">
@@ -55,6 +54,7 @@ function WhaleAlertsContent() {
 
   return (
     <div className="pb-24 space-y-8 pt-6 px-4">
+      {/* ... header code ... */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -88,16 +88,16 @@ function WhaleAlertsContent() {
 
       <div className="space-y-4 relative">
         {isLocked && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center pt-24">
-            <div className="bg-lucrix-surface/80 backdrop-blur-md border border-brand-warning/30 p-10 rounded-3xl text-center max-w-lg shadow-2xl">
-              <Star size={40} className="mx-auto text-brand-warning mb-6 animate-pulse" />
-              <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-4 text-white font-display">Elite Access Only</h2>
-              <p className="text-textSecondary text-sm font-bold mb-8 italic">
-                Whale movements represent institutional-grade order flow. <br/> Upgrade to Elite to reveal the top 1% of market signals.
+          <div className="absolute inset-x-0 top-0 z-20 flex flex-col items-center justify-center pt-24 pb-12 bg-gradient-to-t from-lucrix-bg via-lucrix-bg/95 to-transparent min-h-[500px]">
+             <div className="bg-lucrix-surface/90 backdrop-blur-xl border border-brand-warning/20 p-10 rounded-3xl text-center max-w-lg shadow-[0_0_50px_rgba(234,179,8,0.15)] scale-105">
+              <Star size={48} className="mx-auto text-brand-warning mb-6 shadow-glow shadow-brand-warning/40" />
+              <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4 text-white font-display">Elite Access Required</h2>
+              <p className="text-textSecondary text-base font-bold mb-8 italic leading-relaxed">
+                Whale movements represent institutional-grade order flow. <br/> Reveal the high-stakes positions moving the markets today.
               </p>
               <button 
-                onClick={() => window.location.href = "/subscription"}
-                className="bg-brand-warning hover:bg-brand-warning/90 text-black px-12 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-glow shadow-brand-warning/50"
+                onClick={() => window.location.href = "/pricing"}
+                className="w-full bg-brand-warning hover:bg-white text-black px-12 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:scale-[1.02] active:scale-[0.98]"
               >
                 Unlock Whale Flow →
               </button>
@@ -105,7 +105,7 @@ function WhaleAlertsContent() {
           </div>
         )}
 
-        {(isLocked ? (alerts?.slice(0, 3) || []) : limitedAlerts || []).map((alert: any, i: number) => (
+        {(isLocked ? (alerts?.slice(0, 3) || []) : alerts || []).map((alert: any, i: number) => (
           <div 
             key={i} 
             className={clsx(
