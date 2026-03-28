@@ -32,7 +32,7 @@ class LiveDataService:
                 logger.info(f"🔥 [Live Polling] Refreshing cache for {sport} odds...")
                 # Use use_cache=False to force a fetch from the provider; 
                 # OddsApiClient._make_request will handle populating the cache.
-                await odds_api_client.get_live_odds(sport, use_cache=False, ttl=self.polling_interval + 10)
+                await odds_api_client.get_live_odds(sport)
             except Exception as e:
                 logger.error(f"❌ [Live Polling] Failed to refresh odds for {sport}: {e}")
 
