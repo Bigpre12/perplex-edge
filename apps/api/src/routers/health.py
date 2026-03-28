@@ -74,7 +74,7 @@ async def health_check(
         "inference_status": "ACTIVE",
         "pipeline_status": "ACTIVE",
         "system_status": "ONLINE",
-        "version": "1.2.0",
+        "version": "1.2.1",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
@@ -245,9 +245,9 @@ async def db_inspect(table: str = "users", db: AsyncSession = Depends(get_db)):
         table_type = table_type_row[0] if table_type_row else "unknown"
 
         # Get column names
-        col_sql = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = :table AND table_schema = 'public' ORDER BY ordinal_position"
+        col_sql = "SELECT column_name, data_type, column_default FROM information_schema.columns WHERE table_name = :table AND table_schema = 'public' ORDER BY ordinal_position"
         col_res = await db.execute(text(col_sql), {"table": table})
-        columns = [{"name": r[0], "type": r[1]} for r in col_res.fetchall()]
+        columns = [{"name": r[0], "type": r[1], "default": r[2]} for r in col_res.fetchall()]
         
         # Get sample data (redacted for safety)
         data_sql = f"SELECT * FROM {table} LIMIT 5"
