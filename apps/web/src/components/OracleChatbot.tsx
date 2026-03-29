@@ -61,10 +61,10 @@ export default function OracleChatbot() {
             } else {
                 throw new Error(data.message || data.error);
             }
-        } catch {
+        } catch (e: any) {
             setMessages((prev) => [
                 ...prev,
-                { role: "assistant", content: "Connection lost. Try again." },
+                { role: "assistant", content: e.message || "Connection lost. Try again." },
             ]);
         } finally {
             setLoading(false);
