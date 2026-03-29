@@ -67,3 +67,30 @@ async def meta_summary():
 @router.get("/username")
 async def meta_username():
     return {"username": "demo-user"}
+
+@router.get("/force-ev")
+async def force_ev_nba(db: AsyncSession = Depends(get_async_db)):
+    """Diagnostic endpoint to force EV cycle and show results."""
+    from services.ev_service import ev_service
+    from sqlalchemy import select
+    from models.brain import UnifiedEVSignal
+
+    await ev_service.run_ev_cycle("basketball_nba")
+    
+    # Check results
+    stmt = select(UnifiedEVSignal).where(UnifiedEVSignal.sport == "basketball_nba")
+    res = await db.execute(stmt)
+    signals = res.scalars().all()
+    
+    return {
+        "status": "triggered",
+        "count": len(signals),
+        "samples": [
+            {
+                "player": s.player_name,
+                "market": s.market_key,
+                "edge": s.edge_percent,
+                "book": s.bookmaker
+            } for s in signals[:5]
+        ]
+    }
