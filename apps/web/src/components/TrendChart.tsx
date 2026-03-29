@@ -17,7 +17,7 @@ interface TrendChartProps {
 
 export default function TrendChart({ data, line, statType }: TrendChartProps) {
     return (
-        <div className="w-full h-32 mt-2 min-w-0">
+        <div className="w-full h-32 mt-2 min-w-0" style={{ minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                     <XAxis

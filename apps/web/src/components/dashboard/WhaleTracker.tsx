@@ -8,9 +8,10 @@ import { useBackendStatus } from "@/hooks/useBackendStatus";
 import { useFreshness } from '@/hooks/useFreshness';
 import { FreshnessBadge } from './FreshnessBadge';
 import { UpgradeGate } from "../UpgradeGate";
+import { useSport } from "@/hooks/useSport";
 
 export function WhaleTracker({ sport: requestedSport }: { sport?: string }) {
-    const { selectedSport } = useSport();
+    const { sport: selectedSport } = useSport();
     const sport = requestedSport || selectedSport;
 
     return (
@@ -37,14 +38,14 @@ function WhaleTrackerContent({ sport }: { sport: string }) {
             const mappedMoves = data.map((m: any) => ({
                 id: m.id || m.event_id || Math.random().toString(),
                 player: m.player_name || m.home_team || 'N/A',
-                stat: m.market_key || 'N/A',
+                stat: m.market || m.market_key || 'N/A',
                 line: m.line,
-                move_type: m.alert_type || "WHALE",
-                delta: m.confidence || 0,
-                severity: (m.confidence > 0.8) ? 'High' : 'Medium',
+                move_type: "WHALE",
+                delta: m.whale_rating || 0,
+                severity: (m.whale_rating > 0.7) ? 'High' : 'Medium',
                 books_involved: m.book ? [m.book] : ["Institutional"],
-                whale_label: (m.confidence > 0.05) ? "MAX VALUE" : "SHARP MONEY",
-                confidence: m.confidence || 0
+                whale_label: (m.units > 50) ? "MAX VALUE" : "SHARP MONEY",
+                confidence: m.whale_rating || 0
             }));
             
             setMoves(mappedMoves);
