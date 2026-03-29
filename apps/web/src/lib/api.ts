@@ -180,7 +180,7 @@ export const API = {
   },
   health: async () => {
     try {
-      const { data } = await api.get('/api/health');
+      const { data } = await api.get('/api/health', { params: { t: Date.now() } });
       return data;
     } catch (err) { return handleApiError(err); }
   },
