@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "dev": "concurrently \"npm run api\" \"npm run web\"",
-    "api": "py run_api.py",
+    "api": "cd apps/api && py run_api.py",
     "web": "cd apps/web && npm run dev",
     "lint": "npm run lint:web",
     "lint:web": "cd apps/web && npm run lint",
