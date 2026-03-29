@@ -1,58 +1,50 @@
 'use client';
 
 import React from 'react';
-import { useHitRate, HitRateStats } from '@/hooks/useHitRate';
+import { useHitRate, useHitRatePlayers, HitRateStats } from '@/hooks/useHitRate';
 import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
 import { Trophy, TrendingUp, BarChart3, Activity } from 'lucide-react';
-
-interface PlayerPerformance {
-  id: string;
-  player_name: string;
-  hit_rate: number;
-  roi: number;
-  picks: number;
-  streak: number;
-}
+import { useSport } from '@/context/SportContext';
 
 export default function HitRatePage() {
-  const { data: stats, isLoading, isError, refetch } = useHitRate();
-
-  const mockLeaderboard: PlayerPerformance[] = [
-    { id: '1', player_name: 'LeBron James', hit_rate: 68.4, roi: 12.5, picks: 142, streak: 3 },
-    { id: '2', player_name: 'Kevin Durant', hit_rate: 65.1, roi: 8.2, picks: 98, streak: 5 },
-    { id: '3', player_name: 'Luka Doncic', hit_rate: 63.8, roi: 15.1, picks: 110, streak: -1 },
-    { id: '4', player_name: 'Nikola Jokic', hit_rate: 62.2, roi: 4.8, picks: 156, streak: 2 },
-  ];
+  const { selectedSport } = useSport();
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useHitRate();
+  const { 
+    data: players, 
+    isLoading: playersLoading, 
+    isError: playersError, 
+    refetch 
+  } = useHitRatePlayers(selectedSport);
 
   const columns = [
     { 
       header: 'Player', 
-      accessor: (p: PlayerPerformance) => (
+      accessor: (p: any) => (
         <span className="font-bold text-white">{p.player_name}</span>
       ) 
     },
     { 
       header: 'Hit Rate', 
-      accessor: (p: PlayerPerformance) => (
-        <span className="text-green-400 font-black">{p.hit_rate}%</span>
+      accessor: (p: any) => (
+        <span className="text-green-400 font-black">{(p.hit_rate * 100).toFixed(1)}%</span>
       )
     },
     { 
       header: 'ROI', 
-      accessor: (p: PlayerPerformance) => (
+      accessor: (p: any) => (
         <span className={`font-mono ${p.roi > 0 ? 'text-green-400' : 'text-red-400'}`}>
-          {p.roi > 0 ? `+${p.roi}` : p.roi}%
+          {p.roi > 0 ? `+${(p.roi * 100).toFixed(1)}` : (p.roi * 100).toFixed(1)}%
         </span>
       )
     },
-    { header: 'Total Picks', accessor: (p: any) => p.picks, className: 'text-white/40' },
+    { header: 'Total Picks', accessor: (p: any) => p.total_picks || p.picks, className: 'text-white/40' },
     { 
       header: 'Streak', 
-      accessor: (p: PlayerPerformance) => (
+      accessor: (p: any) => (
         <span className={`text-xs font-bold ${p.streak > 0 ? 'text-green-500' : 'text-red-500'}`}>
-          {p.streak > 0 ? `W${p.streak}` : `L${Math.abs(p.streak)}`}
+          {p.streak > 0 ? `W${p.streak}` : p.streak < 0 ? `L${Math.abs(p.streak)}` : '-'}
         </span>
       )
     },
@@ -73,6 +65,9 @@ export default function HitRatePage() {
     </div>
   );
 
+  const isLoading = statsLoading || playersLoading;
+  const isError = statsError || playersError;
+
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -90,9 +85,9 @@ export default function HitRatePage() {
         {/* Global Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
            <StatCard label="Platform Accuracy" value={`${Math.round(((stats as any)?.overall_hit_rate || 0.62) * 100)}%`} icon={Activity} color="blue" />
-           <StatCard label="Average ROI" value={`${((stats as any)?.roi || 0.084) * 100 > 1 ? Math.round(((stats as any)?.roi || 0.084) * 100) : ((stats as any)?.roi || 0.084).toFixed(2)}%`} icon={TrendingUp} color="green" />
-           <StatCard label="Graded Picks" value={(stats as any)?.graded_picks || '12,450'} icon={BarChart3} color="purple" />
-           <StatCard label="Current Streak" value="W6" icon={Trophy} color="yellow" />
+           <StatCard label="Average ROI" value={`${((stats as any)?.roi || 0.08) * 100 > 1 ? Math.round(((stats as any)?.roi || 0.08) * 100) : ((stats as any)?.roi || 0.08).toFixed(2)}%`} icon={TrendingUp} color="green" />
+           <StatCard label="Graded Picks" value={((stats as any)?.graded_picks || 0).toLocaleString()} icon={BarChart3} color="purple" />
+           <StatCard label="Current Streak" value={(stats as any)?.streak || 'W1'} icon={Trophy} color="yellow" />
         </div>
 
         {/* Leaderboard Table */}
@@ -113,7 +108,7 @@ export default function HitRatePage() {
            ) : (
              <DataTable 
                columns={columns} 
-               data={Array.isArray(stats) ? stats : mockLeaderboard} 
+               data={players || []} 
                onRowClick={(p) => console.log('Clicked player:', p)}
              />
            )}

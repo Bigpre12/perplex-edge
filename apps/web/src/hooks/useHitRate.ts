@@ -31,3 +31,19 @@ export const useHitRate = () => {
     refetchInterval: 120000, // 2min
   });
 };
+
+export const useHitRatePlayers = (sport = 'all') => {
+  return useQuery({
+    queryKey: ['hit-rate-players', sport],
+    queryFn: async () => {
+      try {
+        const { data } = await api.get(`/api/hit-rate/players?sport=${sport}`);
+        return (data || []) as any[];
+      } catch (err) {
+        console.warn('Backend hit-rate players fetch failed', err);
+        return [];
+      }
+    },
+    refetchInterval: 120000,
+  });
+};

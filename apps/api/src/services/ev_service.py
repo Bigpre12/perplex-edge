@@ -32,6 +32,7 @@ class EVService:
             
             if not all_odds:
                 logger.info(f"EVService: No odds found in unified_odds for sport={sport}")
+                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle_no_data", rows_written=0)
                 return
 
             logger.info(f"EVService: Processing {len(all_odds)} rows for sport={sport}")
@@ -102,8 +103,10 @@ class EVService:
                 await self.upsert_ev_signals(signals)
                 await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="ok", rows_written=len(signals))
             else:
-                logger.info(f"EVService: No edges exceeding {settings.EV_MIN_THRESHOLD}% found for sport={sport}")
-                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle", rows_written=0)
+                # Lower threshold check
+                threshold = getattr(settings, "EV_MIN_THRESHOLD", 0.5)
+                logger.info(f"EVService: No edges exceeding {threshold}% found for sport={sport} (Found {len(grouped)} market groups)")
+                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle_no_edges", rows_written=0)
 
     def _calculate_sharp_weighted_fair_probs(self, outcomes: Dict[str, Dict[str, Tuple[float, float]]]) -> Dict[str, float]:
         """

@@ -17,7 +17,14 @@ export function useFreshness(sport: string) {
 
     async function load() {
       try {
-        const result = await api.get(`/api/signals/freshness?sport=${sport || ''}`);
+        // Normalize sport key for backend consistency
+        let normalizedSport = (sport || '').toLowerCase();
+        if (normalizedSport === 'nba') normalizedSport = 'basketball_nba';
+        if (normalizedSport === 'nfl') normalizedSport = 'americanfootball_nfl';
+        if (normalizedSport === 'mlb') normalizedSport = 'baseball_mlb';
+        if (normalizedSport === 'nhl') normalizedSport = 'icehockey_nhl';
+
+        const result = await api.get(`/api/signals/freshness?sport=${normalizedSport}`);
         if (!cancelled && result?.data) {
           setData(result.data);
           setIsLoading(false);
