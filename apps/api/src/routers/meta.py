@@ -78,6 +78,10 @@ async def force_ev_nba(db: AsyncSession = Depends(get_async_db)):
 
     await ev_service.run_ev_cycle("basketball_nba")
     
+    # Also generate picks from these signals
+    from services.brain_advanced_service import brain_advanced_service
+    await brain_advanced_service.generate_model_picks("basketball_nba", db)
+
     # Check results
     stmt = select(UnifiedEVSignal).where(UnifiedEVSignal.sport == "basketball_nba")
     res = await db.execute(stmt)
