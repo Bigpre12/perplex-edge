@@ -14,6 +14,23 @@ class OddsMapper:
             return Decimal(100) / Decimal(american + 100)
         return Decimal(abs(american)) / Decimal(abs(american) + 100)
 
+    def _normalize_player_name(self, name: str) -> str:
+        if not name: return ""
+        # 1. Clean whitespace and basic noise
+        name = name.strip()
+        # 2. Handle "Last, First" -> "First Last"
+        if "," in name:
+            parts = [p.strip() for p in name.split(",")]
+            if len(parts) == 2:
+                name = f"{parts[1]} {parts[0]}"
+        # 3. Strip Jr/III/etc
+        suffixes = [" jr.", " jr", " iii", " ii", " iv"]
+        for s in suffixes:
+            if name.lower().endswith(s):
+                name = name[:-(len(s))].strip()
+        
+        return name.title()
+
     def map_theodds_props_to_records(self, odds_raw: List[Dict], metadata_map: Dict, sport: str) -> List[PropRecord]:
         """
         Groups OddsAPI response into consolidated PropRecord rows.
@@ -75,6 +92,7 @@ class OddsMapper:
                              p_name = desc or name or ""
 
                         # Clean up p_name from common noise
+                        p_name = self._normalize_player_name(p_name)
                         if p_name.lower() in ['over', 'under', 'yes', 'no']:
                             p_name = ""
                         
