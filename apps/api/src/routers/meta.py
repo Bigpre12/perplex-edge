@@ -28,13 +28,13 @@ async def data_inspector(db: AsyncSession = Depends(get_async_db)):
         except Exception:
             counts[t] = -1 # Table might not exist yet
             
-    # Add unique bookmakers for verification
+    # Add unique outcomes for verification
     try:
-        res = await db.execute(text("SELECT DISTINCT bookmaker FROM unified_odds WHERE sport = 'basketball_nba'"))
-        books = [r[0] for r in res.all()]
-        counts["nba_books"] = books
+        res = await db.execute(text("SELECT DISTINCT outcome_key FROM unified_odds WHERE sport = 'basketball_nba'"))
+        outcomes = [r[0] for r in res.all()]
+        counts["nba_outcomes"] = outcomes
     except Exception:
-        counts["nba_books"] = []
+        counts["nba_outcomes"] = []
 
     return UniversalResponse(
         status="ok",
@@ -98,6 +98,7 @@ async def force_ev_nba(db: AsyncSession = Depends(get_async_db)):
     return {
         "status": "triggered",
         "count": len(signals),
+        "debug": "Check /api/meta/inspect for bookmaker names",
         "samples": [
             {
                 "player": s.player_name,
