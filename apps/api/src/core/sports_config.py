@@ -20,9 +20,9 @@ VALID_SPORTS = ALL_SPORTS
 SPORT_KEYS = ALL_SPORTS
 
 # Frequency Constants (in seconds)
-HIGH_FREQUENCY = 60
-MEDIUM_FREQUENCY = 300
-LOW_FREQUENCY = 3600
+HIGH_FREQUENCY = 120    # 2 minutes (Relaxed from 60s for quota safety)
+MEDIUM_FREQUENCY = 600 # 10 minutes (Relaxed from 300s)
+LOW_FREQUENCY = 3600   # 1 hour
 
 # Sport Lists for Scheduling
 HIGH_FREQUENCY_SPORTS = ["basketball_nba", "americanfootball_nfl"]

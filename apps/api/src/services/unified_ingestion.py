@@ -104,8 +104,12 @@ class UnifiedIngestionService:
             "icehockey_nhl": "player_points,player_power_play_points,player_shots_on_goal",
             "baseball_mlb": "pitcher_strikeouts,batter_hits,batter_home_runs"
         }
+        
+        # Quota Safety: Only fetch props for sports currently in-season (March 2026)
+        # NFL is in off-season, NHL/NBA/MLB are active.
+        IN_SEASON_PROP_SPORTS = ["basketball_nba", "baseball_mlb", "icehockey_nhl"]
 
-        if sport_key in PROP_MARKETS_BY_SPORT:
+        if sport_key in PROP_MARKETS_BY_SPORT and sport_key in IN_SEASON_PROP_SPORTS:
             # Quota Protection: Cap at 20 events per cycle to prevent credit drain
             active_events: List[str] = []
             for i, k in enumerate(metadata_map.keys()):
