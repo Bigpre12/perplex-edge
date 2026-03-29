@@ -23,7 +23,7 @@ class LiveDataService:
             "icehockey_nhl"
         ]
         self._stop_event = asyncio.Event()
-        self.polling_interval = int(settings.LIVE_DATA_POLLING_INTERVAL) if hasattr(settings, "LIVE_DATA_POLLING_INTERVAL") else 30
+        self.polling_interval = int(settings.LIVE_DATA_POLLING_INTERVAL) if hasattr(settings, "LIVE_DATA_POLLING_INTERVAL") else 120
         
     async def poll_odds(self):
         """Polls live odds for all hot sports to warm the cache."""

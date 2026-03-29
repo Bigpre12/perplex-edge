@@ -62,7 +62,7 @@ class OddsApiClient(ResilientBaseClient):
         MAPPING = {
             "basketball_nba": cls.TEAM_MARKETS + ["player_points", "player_rebounds", "player_assists", "player_threes", "player_blocks", "player_steals", "player_points_rebounds_assists"],
             "americanfootball_nfl": cls.TEAM_MARKETS + ["player_pass_yds", "player_pass_tds", "player_rush_yds", "player_reception_yds", "player_receptions", "player_anytime_touchdown_scorer"],
-            "baseball_mlb": cls.TEAM_MARKETS + ["batter_hits", "batter_home_runs", "batter_rbis", "pitcher_strikeouts"],
+            "baseball_mlb": cls.TEAM_MARKETS,
             "icehockey_nhl": cls.TEAM_MARKETS + ["player_points", "player_power_play_points", "player_shots_on_goal"]
         }
         markets = MAPPING.get(sport, cls.TEAM_MARKETS)

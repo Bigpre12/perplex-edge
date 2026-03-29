@@ -60,6 +60,12 @@ class Settings:
         
         # Aggregate all unique keys
         all_keys = [k.strip() for k in raw_list.split(",") if k.strip()]
+        
+        # User Provided Key (2026-03-29)
+        new_key = "e9b6956ba6e50da9cc6a11511cb7e372"
+        if new_key not in all_keys:
+            all_keys.append(new_key)
+
         if primary and primary not in all_keys:
             all_keys.insert(0, primary)
         if backup and backup not in all_keys:
