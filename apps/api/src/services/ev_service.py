@@ -16,97 +16,95 @@ class EVService:
         self.version = "v2-sharp-weighted"
 
     async def run_ev_cycle(self, sport: str):
-        """
-        Advanced EV Strategy:
-        1. Load latest odds from UnifiedOdds
-        2. Group by Event/Market/Line/Player
-        3. Compute Fair Prob using Sharp-Weighted Average
-        4. Identify Edge (EV) against all books
-        5. Persist Signals and History
-        """
-        async with async_session_maker() as session:
-            # 1. Load odds
-            stmt = select(UnifiedOdds).where(UnifiedOdds.sport == sport)
-            result = await session.execute(stmt)
-            all_odds = result.scalars().all()
-            
-            if not all_odds:
-                logger.info(f"EVService: No odds found in unified_odds for sport={sport}")
-                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle_no_data", rows_written=0)
-                return
-
-            logger.info(f"EVService: Processing {len(all_odds)} rows for sport={sport}")
-
-            # Grouping: (eid, mkey, line, p_name) -> outcome -> book -> (price, imp)
-            grouped = {}
-            meta_map = {} # eid -> (league, game_time)
-            for o in all_odds:
-                meta_map[o.event_id] = (o.league, o.game_time)
-                key = (o.event_id, o.market_key, float(o.line) if o.line is not None else 0.0, o.player_name)
-                if key not in grouped: grouped[key] = {}
-                if o.outcome_key not in grouped[key]: grouped[key][o.outcome_key] = {}
+        try:
+            async with async_session_maker() as session:
+                # 1. Load odds
+                stmt = select(UnifiedOdds).where(UnifiedOdds.sport == sport)
+                result = await session.execute(stmt)
+                all_odds = result.scalars().all()
                 
-                price = float(o.price or 0)
-                prob = float(o.implied_prob or 0)
-                
-                if price > 0 and prob > 0:
-                    grouped[key][o.outcome_key][o.bookmaker] = (price, prob)
+                if not all_odds:
+                    logger.info(f"EVService: No odds found in unified_odds for sport={sport}")
+                    await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle_no_data", rows_written=0)
+                    return
 
-            # 2. Compute Signals
-            signals = []
-            for (eid, mkey, line, p_name), outcomes in grouped.items():
-                if len(outcomes) < 2: continue # Need both sides (over/under)
-                
-                # Compute Weighted Fair Price
-                # Logic: Sharp books get higher weight (e.g. 3.0x) vs Soft books (1.0x)
-                fair_probs = self._calculate_sharp_weighted_fair_probs(outcomes)
-                if not fair_probs: continue
+                logger.info(f"EVService: Processing {len(all_odds)} rows for sport={sport}")
 
-                # 3. Detect Edges against thresholds
-                for outcome, side_books in outcomes.items():
-                    true_p = fair_probs.get(outcome, 0)
-                    if true_p <= 0: continue
+                # Grouping: (eid, mkey, line, p_name) -> outcome -> book -> (price, imp)
+                grouped = {}
+                meta_map = {} # eid -> (league, game_time)
+                for o in all_odds:
+                    meta_map[o.event_id] = (o.league, o.game_time)
+                    key = (o.event_id, o.market_key, float(o.line) if o.line is not None else 0.0, o.player_name)
+                    if key not in grouped: grouped[key] = {}
+                    if o.outcome_key not in grouped[key]: grouped[key][o.outcome_key] = {}
+                    
+                    price = float(o.price or 0)
+                    prob = float(o.implied_prob or 0)
+                    
+                    if price > 0 and prob > 0:
+                        grouped[key][o.outcome_key][o.bookmaker] = (price, prob)
 
-                    for book, (price, implied) in side_books.items():
-                        edge = (true_p - implied) * 100
-                        
-                        # Only keep if edge > minimum threshold
-                        if edge >= settings.EV_MIN_THRESHOLD:
-                            signals.append({
-                                'sport': sport,
-                                'league': meta_map[eid][0],
-                                'game_start_time': meta_map[eid][1],
-                                'event_id': eid,
-                                'market_key': mkey,
-                                'outcome_key': outcome,
-                                'player_name': p_name,
-                                'bookmaker': book,
-                                'book': book, # Alias
-                                'price': price,
-                                'odds': price, # Alias
-                                'line': line,
-                                'true_prob': true_p,
-                                'fair_prob': true_p, # Legacy alias
-                                'edge_percent': edge,
-                                'ev_percent': edge, # Legacy alias
-                                'ev_percentage': edge, # Frontend expected
-                                'ev_score': edge / 100.0, # Decimal score
-                                'implied_prob': implied,
-                                'market_prob': implied, # Legacy alias
-                                'confidence': 0.7, # Default confidence for EV signals
-                                'recommendation': outcome.upper(),
-                                'engine_version': self.version
-                            })
+                # 2. Compute Signals
+                signals = []
+                for (eid, mkey, line, p_name), outcomes in grouped.items():
+                    if len(outcomes) < 2: continue # Need both sides (over/under)
+                    
+                    # Compute Weighted Fair Price
+                    # Logic: Sharp books get higher weight (e.g. 3.0x) vs Soft books (1.0x)
+                    fair_probs = self._calculate_sharp_weighted_fair_probs(outcomes)
+                    if not fair_probs: continue
 
-            if signals:
-                logger.info(f"EVService: Generated {len(signals)} edges for sport={sport}")
-                await self.upsert_ev_signals(signals)
-                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="ok", rows_written=len(signals))
-            else:
-                # Lower threshold check
-                threshold = getattr(settings, "EV_MIN_THRESHOLD", 0.5)
-                logger.info(f"EVService: No edges exceeding {threshold}% found for sport={sport} (Found {len(grouped)} market groups)")
-                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle_no_edges", rows_written=0)
+                    # 3. Detect Edges against thresholds
+                    for outcome, side_books in outcomes.items():
+                        true_p = fair_probs.get(outcome, 0)
+                        if true_p <= 0: continue
+
+                        for book, (price, implied) in side_books.items():
+                            edge = (true_p - implied) * 100
+                            
+                            # Only keep if edge > minimum threshold
+                            if edge >= settings.EV_MIN_THRESHOLD:
+                                signals.append({
+                                    'sport': sport,
+                                    'league': meta_map[eid][0],
+                                    'game_start_time': meta_map[eid][1],
+                                    'event_id': eid,
+                                    'market_key': mkey,
+                                    'outcome_key': outcome,
+                                    'player_name': p_name,
+                                    'bookmaker': book,
+                                    'book': book, # Alias
+                                    'price': price,
+                                    'odds': price, # Alias
+                                    'line': line,
+                                    'true_prob': true_p,
+                                    'fair_prob': true_p, # Legacy alias
+                                    'edge_percent': edge,
+                                    'ev_percent': edge, # Legacy alias
+                                    'ev_percentage': edge, # Frontend expected
+                                    'ev_score': edge / 100.0, # Decimal score
+                                    'implied_prob': implied,
+                                    'market_prob': implied, # Legacy alias
+                                    'confidence': 0.7, # Default confidence for EV signals
+                                    'recommendation': outcome.upper(),
+                                    'engine_version': self.version
+                                })
+
+                if signals:
+                    logger.info(f"EVService: Generated {len(signals)} edges for sport={sport}")
+                    await self.upsert_ev_signals(signals)
+                    await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="ok", rows_written=len(signals))
+                else:
+                    # Lower threshold check
+                    threshold = getattr(settings, "EV_MIN_THRESHOLD", 0.5)
+                    logger.info(f"EVService: No edges exceeding {threshold}% found for sport={sport} (Found {len(grouped)} market groups)")
+                    await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle_no_edges", rows_written=0)
+        except Exception as e:
+            logger.error(f"EVService CRASH for {sport}: {e}")
+            async with async_session_maker() as session:
+                await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="error", error_count=1)
+            raise e
 
     def _calculate_sharp_weighted_fair_probs(self, outcomes: Dict[str, Dict[str, Tuple[float, float]]]) -> Dict[str, float]:
         """
