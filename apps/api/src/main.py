@@ -283,62 +283,61 @@ async def initialize_backend_services():
             "aussierules_afl", "rugbyleague_nrl",
         ]
 
-        # NOTE: Internal scheduler is disabled to prevent double-polling with the dedicated celery-beat service.
-        # This saves ~66k API calls per day on the 100k tier.
-        # for sport in sports_to_ingest:
-        #     job = scheduler.add_job(
-        #         unified_ingestion.run_with_retries,
-        #         'interval',
-        #         minutes=5,
-        #         args=[sport],
-        #         id=f"ingest_{sport}",
-        #         replace_existing=True
-        #     )
-        #     logger.info(f"📡 [Scheduler] Added unified ingestion job {job.id}")
+        # NOTE: Internal scheduler is re-enabled to ensure data freshness.
+        for sport in sports_to_ingest:
+            job = scheduler.add_job(
+                unified_ingestion.run_with_retries,
+                'interval',
+                minutes=5,
+                args=[sport],
+                id=f"ingest_{sport}",
+                replace_existing=True
+            )
+            logger.info(f"📡 [Scheduler] Added unified ingestion job {job.id}")
 
-        # from services.grading_service import grading_service
-        # from services.kalshi_ingestion import kalshi_ingestion
-        # from services.whale_service import whale_service
-        # from services.grader import run_full_grading_pipeline
-        # 
-        # scheduler.add_job(
-        #     grading_service.run_grading_cycle,
-        #     'interval',
-        #     minutes=10,
-        #     id="auto_grading",
-        #     replace_existing=True
-        # )
-        # 
-        # scheduler.add_job(
-        #     run_full_grading_pipeline,
-        #     'interval',
-        #     minutes=5,
-        #     id="sql_grading",
-        #     replace_existing=True
-        # )
-        # 
-        # # Kalshi Sync (NBA, MLB)
-        # for k_sport in ["NBA", "MLB"]:
-        #     scheduler.add_job(
-        #         kalshi_ingestion.run,
-        #         'interval',
-        #         minutes=8,
-        #         args=[k_sport],
-        #         id=f"kalshi_sync_{k_sport.lower()}",
-        #         replace_existing=True
-        #     )
-        # 
-        # # Periodic Global Whale Check
-        # scheduler.add_job(
-        #     whale_service.detect_whale_signals,
-        #     'interval',
-        #     minutes=12,
-        #     id="whale_global_check",
-        #     replace_existing=True
-        # )
-        # 
-        # scheduler.start()
-        logger.info("📡 [Background Init] Internal scheduler bypassed (using celery-beat).")
+        from services.grading_service import grading_service
+        from services.kalshi_ingestion import kalshi_ingestion
+        from services.whale_service import whale_service
+        from services.grader import run_full_grading_pipeline
+        
+        scheduler.add_job(
+            grading_service.run_grading_cycle,
+            'interval',
+            minutes=10,
+            id="auto_grading",
+            replace_existing=True
+        )
+        
+        scheduler.add_job(
+            run_full_grading_pipeline,
+            'interval',
+            minutes=5,
+            id="sql_grading",
+            replace_existing=True
+        )
+        
+        # Kalshi Sync (NBA, MLB)
+        for k_sport in ["NBA", "MLB"]:
+            scheduler.add_job(
+                kalshi_ingestion.run,
+                'interval',
+                minutes=8,
+                args=[k_sport],
+                id=f"kalshi_sync_{k_sport.lower()}",
+                replace_existing=True
+            )
+        
+        # Periodic Global Whale Check
+        scheduler.add_job(
+            whale_service.detect_whale_signals,
+            'interval',
+            minutes=12,
+            id="whale_global_check",
+            replace_existing=True
+        )
+        
+        scheduler.start()
+        logger.info("📡 [Background Init] Internal scheduler active.")
         logger.info("📡 [Background Init] Scheduler started.")
 
         # 5. Initial Ingest (Parallel)
