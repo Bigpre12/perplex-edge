@@ -7,10 +7,18 @@ function timeAgo(ts: string | null): string {
   if (!ts) return "Never";
   const then = new Date(ts).getTime();
   const diffSec = Math.floor((Date.now() - then) / 1000);
+  
   if (diffSec < 30) return "just now";
   if (diffSec < 60) return `${diffSec}s ago`;
+  
   const min = Math.floor(diffSec / 60);
-  return `${min}m ago`;
+  if (min < 60) return `${min}m ago`;
+  
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return `${hours}h ago`;
+  
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 export function FreshnessBadge({ 
