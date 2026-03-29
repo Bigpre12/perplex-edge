@@ -58,13 +58,15 @@ class OddsApiClient(ResilientBaseClient):
 
     @classmethod
     def get_markets_for_sport(cls, sport: str) -> str:
-        player_sports = [
-            "basketball_nba", "americanfootball_nfl", "baseball_mlb", 
-            "icehockey_nhl", "americanfootball_ncaaf"
-        ]
-        if sport in player_sports:
-            return ",".join(cls.TEAM_MARKETS + cls.PLAYER_PROP_MARKETS)
-        return ",".join(cls.TEAM_MARKETS)
+        """Returns only the valid markets for the specified sport to avoid 422 errors."""
+        MAPPING = {
+            "basketball_nba": cls.TEAM_MARKETS + ["player_points", "player_rebounds", "player_assists", "player_threes", "player_blocks", "player_steals", "player_points_rebounds_assists"],
+            "americanfootball_nfl": cls.TEAM_MARKETS + ["player_pass_yds", "player_pass_tds", "player_rush_yds", "player_reception_yds", "player_receptions", "player_anytime_touchdown_scorer"],
+            "baseball_mlb": cls.TEAM_MARKETS + ["batter_hits", "batter_home_runs", "batter_rbis", "pitcher_strikeouts"],
+            "icehockey_nhl": cls.TEAM_MARKETS + ["player_points", "player_power_play_points", "player_shots_on_goal"]
+        }
+        markets = MAPPING.get(sport, cls.TEAM_MARKETS)
+        return ",".join(markets)
     
     def __init__(self):
         # Load keys from centralized settings
@@ -190,15 +192,15 @@ class OddsApiClient(ResilientBaseClient):
 
     # --- Core API Methods ---
 
-    async def get_active_sports(self) -> List[Dict]:
+    async def get_active_sports(self, use_cache: bool = True, ttl: Optional[int] = None) -> List[Dict]:
         """Fetch all currently active sports."""
-        return await self._make_request("/sports", use_cache=True, ttl=self.long_ttl) or []
+        return await self._make_request("/sports", use_cache=use_cache, ttl=ttl or self.long_ttl) or []
 
-    async def get_events(self, sport: str) -> List[Dict]:
+    async def get_events(self, sport: str, use_cache: bool = True, ttl: Optional[int] = None) -> List[Dict]:
         """Fetch game schedules (cheap, no odds results)."""
-        return await self._make_request(f"/sports/{sport}/events", use_cache=True) or []
+        return await self._make_request(f"/sports/{sport}/events", use_cache=use_cache, ttl=ttl) or []
 
-    async def get_live_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None) -> List[Dict]:
+    async def get_live_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None, use_cache: bool = True, ttl: Optional[int] = None) -> List[Dict]:
         """Fetch real-time odds for games."""
         params = {
             "regions": regions,
@@ -206,9 +208,9 @@ class OddsApiClient(ResilientBaseClient):
             "oddsFormat": "american",
             "dateFormat": "iso"
         }
-        return await self._make_request(f"/sports/{sport}/odds", params=params) or []
+        return await self._make_request(f"/sports/{sport}/odds", params=params, use_cache=use_cache, ttl=ttl) or []
 
-    async def get_player_props(self, sport: str, event_id: str, markets: str, regions: str = "us") -> Dict:
+    async def get_player_props(self, sport: str, event_id: str, markets: str, regions: str = "us", use_cache: bool = True, ttl: Optional[int] = None) -> Dict:
         """Fetch specific player props for an event."""
         params = {
             "regions": regions,
@@ -217,7 +219,7 @@ class OddsApiClient(ResilientBaseClient):
             "dateFormat": "iso"
         }
         # Note: endpoint returns a dict for single event ID if passed as path param
-        return await self._make_request(f"/sports/{sport}/events/{event_id}/odds", params=params) or {}
+        return await self._make_request(f"/sports/{sport}/events/{event_id}/odds", params=params, use_cache=use_cache, ttl=ttl) or {}
 
     # --- Compatibility Aliases ---
     async def get_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None) -> List[Dict]:
