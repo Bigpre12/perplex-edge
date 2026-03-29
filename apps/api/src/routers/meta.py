@@ -129,3 +129,37 @@ async def ingest_nba_full(db: AsyncSession = Depends(get_async_db)):
     await brain_advanced_service.generate_model_picks("basketball_nba", db)
     
     return {"status": "ok", "message": "NBA Full Cycle Completed"}
+
+@router.get("/seed-dummy-data")
+async def seed_dummy_data(db: AsyncSession = Depends(get_async_db)):
+    """Seed a dummy EV signal to verify UI pipeline."""
+    from models.brain import UnifiedEVSignal
+    from datetime import datetime, timezone
+    
+    dummy = UnifiedEVSignal(
+        sport="basketball_nba",
+        event_id="dummy_event_123",
+        market_key="player_points",
+        outcome_key="over",
+        player_name="Antigravity Test",
+        bookmaker="pinnacle",
+        price=1.91,
+        line=25.5,
+        true_prob=0.55,
+        edge_percent=5.5,
+        ev_percentage=5.5,
+        implied_prob=0.523,
+        confidence=0.9,
+        engine_version="test-v1",
+        recommendation="OVER",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    db.add(dummy)
+    await db.commit()
+    
+    # Also promote it to picks
+    from services.brain_advanced_service import brain_advanced_service
+    await brain_advanced_service.generate_model_picks("basketball_nba", db)
+    
+    return {"status": "ok", "message": "Dummy signal seeded and promoted"}
