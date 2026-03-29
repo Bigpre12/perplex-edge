@@ -204,6 +204,11 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db))
     
     auth_success = False
     
+    # Check local password first IF not an external integration
+    if user and user.hashed_password and user.hashed_password != "SUPABASE_AUTH_EXTERNAL":
+        if auth_service.verify_password(login_data.password, user.hashed_password):
+            auth_success = True
+            
     if not auth_success and user and user.hashed_password != "SUPABASE_AUTH_EXTERNAL":
         from core.config import settings
         if settings.SUPABASE_URL and settings.SUPABASE_KEY:
