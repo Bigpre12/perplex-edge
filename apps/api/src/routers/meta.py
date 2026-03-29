@@ -17,7 +17,8 @@ async def data_inspector(db: AsyncSession = Depends(get_async_db)):
     tables = [
         "odds", "line_ticks", "ev_signals", "ev_signals_history", 
         "props_live", "props_history", "edges_ev_history", 
-        "unified_odds", "whale_moves", "injury_impact_events"
+        "unified_odds", "whale_moves", "injury_impact_events",
+        "model_picks"
     ]
     counts = {}
     for t in tables:
