@@ -36,9 +36,13 @@ export async function apiClient<T>(
 ): Promise<T> {
   const { params, retries = 3, backoff = 1000, ...fetchOptions } = options;
   // 1. Construct URL with query params
+  let configuredUrl = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
+  if (process.env.NODE_ENV === "production" && configuredUrl.includes("localhost")) {
+      configuredUrl = "https://perplex-edge-backend-copy-production.up.railway.app";
+  }
   const baseUrl = typeof window !== "undefined"
     ? window.location.origin
-    : (process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app");
+    : configuredUrl;
 
   const url = new URL(endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`, baseUrl);
   if (params) {

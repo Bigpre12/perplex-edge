@@ -2,12 +2,14 @@ import axios from 'axios';
 import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
 const isServer = typeof window === 'undefined';
 const env = isServer ? (globalThis as any).process?.env : {};
-export const API_BASE = isServer 
-  ? (env?.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app')
-  : '/backend';
-const API_URL = isServer 
-  ? (env?.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app')
-  : '/backend';
+
+let configuredUrl = env?.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app';
+if (env?.NODE_ENV === "production" && configuredUrl.includes("localhost")) {
+    configuredUrl = 'https://perplex-edge-backend-copy-production.up.railway.app';
+}
+
+export const API_BASE = isServer ? configuredUrl : '/backend';
+const API_URL = isServer ? configuredUrl : '/backend';
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
