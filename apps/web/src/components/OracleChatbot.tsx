@@ -50,15 +50,16 @@ export default function OracleChatbot() {
         setLoading(true);
 
         try {
-            const res = await api.oracle({ messages: updated });
+            const response = await api.post('/api/oracle', { messages: updated });
+            const data = response.data;
 
-            if (!isApiError(res)) {
+            if (!isApiError(data)) {
                 setMessages((prev) => [
                     ...prev,
-                    { role: "assistant", content: res.message ?? "No response from Oracle." },
+                    { role: "assistant", content: data.message ?? "No response from Oracle." },
                 ]);
             } else {
-                throw new Error(res.message);
+                throw new Error(data.message || data.error);
             }
         } catch {
             setMessages((prev) => [
