@@ -16,10 +16,11 @@ const nextConfig = {
         ];
     },
     async rewrites() {
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
         return [
             {
                 source: "/backend/:path*",
-                destination: "http://localhost:8000/:path*",
+                destination: `${backendUrl}/:path*`,
             },
         ];
     },

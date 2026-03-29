@@ -22,6 +22,7 @@ const SUGGESTIONS = [
 
 import { useGate } from "@/hooks/useGate";
 import { api, isApiError } from "@/lib/api";
+import axios from "axios";
 
 export default function OracleChatbot() {
     const { tier, oracleLimit } = useGate();
@@ -50,7 +51,7 @@ export default function OracleChatbot() {
         setLoading(true);
 
         try {
-            const response = await api.post('/api/oracle', { messages: updated });
+            const response = await axios.post('/api/oracle', { messages: updated });
             const data = response.data;
 
             if (!isApiError(data)) {
