@@ -292,6 +292,12 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_async_db))
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Master Override for Developer/Owner Account
+    if user.email == "owner@lucrix.io":
+        user.subscription_tier = "elite"
+        user.is_admin = True
+        await db.commit()
+
     access_token = auth_service.create_access_token(
         data={"sub": user.username, "email": user.email, "tier": (user.subscription_tier or "free").lower()}
     )
