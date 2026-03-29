@@ -99,3 +99,33 @@ async def force_ev_nba(db: AsyncSession = Depends(get_async_db)):
             } for s in signals[:5]
         ]
     }
+
+@router.get("/ingest-nba")
+async def ingest_nba_full(db: AsyncSession = Depends(get_async_db)):
+    """
+    One-click fix for NBA data:
+    1. Wipe NBA odds (only basketball_nba)
+    2. Run Injest (Normalized)
+    3. Run EV Cycle
+    4. Run ModelPick promotion
+    """
+    from services.unified_ingestion import unified_ingestion
+    from services.ev_service import ev_service
+    from services.brain_advanced_service import brain_advanced_service
+    from models import UnifiedOdds
+    from sqlalchemy import delete
+
+    # 1. Wipe
+    await db.execute(delete(UnifiedOdds).where(UnifiedOdds.sport == "basketball_nba"))
+    await db.commit()
+    
+    # 2. Ingest
+    await unified_ingestion.run("basketball_nba")
+    
+    # 3. EV cycle
+    await ev_service.run_ev_cycle("basketball_nba")
+    
+    # 4. Picks Promotion
+    await brain_advanced_service.generate_model_picks("basketball_nba", db)
+    
+    return {"status": "ok", "message": "NBA Full Cycle Completed"}
