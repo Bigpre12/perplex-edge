@@ -28,6 +28,14 @@ async def data_inspector(db: AsyncSession = Depends(get_async_db)):
         except Exception:
             counts[t] = -1 # Table might not exist yet
             
+    # Add unique bookmakers for verification
+    try:
+        res = await db.execute(text("SELECT DISTINCT bookmaker FROM unified_odds WHERE sport = 'basketball_nba'"))
+        books = [r[0] for r in res.all()]
+        counts["nba_books"] = books
+    except Exception:
+        counts["nba_books"] = []
+
     return UniversalResponse(
         status="ok",
         meta=ResponseMeta(
