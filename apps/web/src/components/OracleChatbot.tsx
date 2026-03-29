@@ -51,10 +51,10 @@ export default function OracleChatbot() {
         setLoading(true);
 
         try {
-            const response = await axios.post('/api/oracle', { messages: updated });
+            const response = await api.post('/api/oracle/chat', { messages: updated });
             const data = response.data;
 
-            if (!isApiError(data)) {
+            if (data && !isApiError(data)) {
                 setMessages((prev) => [
                     ...prev,
                     { role: "assistant", content: data.message ?? "No response from Oracle." },
