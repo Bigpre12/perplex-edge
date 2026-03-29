@@ -286,6 +286,7 @@ class PropsService:
                             "_max_over": -10000,
                             "_max_under": -10000,
                             "_max_ev": -999.0,
+                            "_max_ev_side": "over",
                         }
                     
                     group = grouped[key]
@@ -327,14 +328,21 @@ class PropsService:
                         group["best_book"] = r["bookmaker"]
                         # Set confidence based loosely on Ev or hardcoded for now
                         group["confidence"] = min(100.0, max(50.0, 50.0 + (float(r["edge_percent"]) * 3)))
+                        # Ensure we capture what side the primary edge exists on for advisory logic
+                        group["_max_ev_side"] = r.get("outcome_key", "over")
                 
                 # Final filtering and cleanup
                 final_props = []
                 for g in grouped.values():
+                    # Extract side before deleting helpers
+                    best_ev_side = g.get("_max_ev_side", "over")
+                    
                     # Cleanup internal Helpers
                     del g["_max_over"]
                     del g["_max_under"]
                     del g["_max_ev"]
+                    if "_max_ev_side" in g:
+                        del g["_max_ev_side"]
                     
                     # Apply Filters
                     if only_ev and g["ev_percentage"] <= 0:
@@ -348,6 +356,23 @@ class PropsService:
                     g["over_odds"] = g["over_odds"] or -110
                     g["under_odds"] = g["under_odds"] or -110
                     g["best_book"] = g["best_book"] or "Average"
+                    
+                    # Restore Recommendation Advisory Payload
+                    ev_val = g.get("ev_percentage", 0.0)
+                    tier = "S" if ev_val >= 5 else "A" if ev_val >= 3 else "B" if ev_val >= 1 else "C"
+                    
+                    if ev_val > 0.5:
+                        reason = f"{g['player_name']} {best_ev_side} {g['line']} shows a {ev_val}% edge vs market average."
+                    else:
+                        reason = "No significant market edge detected. Watch for late sharp movement."
+                        tier = "C"
+
+                    g["recommendation"] = {
+                        "side": best_ev_side,
+                        "tier": tier,
+                        "ev": ev_val,
+                        "reason": reason
+                    }
                     
                     final_props.append(g)
                 
@@ -420,6 +445,12 @@ class PropsService:
                     "whale_signal": False,
                     "sharp_conflict": False,
                     "last_updated": datetime.utcnow().isoformat() + "Z",
+                    "recommendation": {
+                        "side": "over",
+                        "tier": "C",
+                        "ev": 0.0,
+                        "reason": "Team market data. No specific player edge."
+                    }
                 }
             
             g = grouped[key]

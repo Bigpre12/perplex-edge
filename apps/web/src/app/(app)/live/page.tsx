@@ -9,12 +9,18 @@ import { Radio, Clock, Trophy } from 'lucide-react';
 export default function LivePage() {
   const { data: games, isLoading, isError, refetch } = useLiveGames();
 
-  const ScoreBoard = ({ game }: { game: LiveGame }) => (
+  const ScoreBoard = ({ game }: { game: LiveGame }) => {
+    // Safely extract names/sports to prevent UI crash from broken live data points
+    const sportName = (game.sport || 'UNKNOWN').replace('_', ' ').toUpperCase();
+    const homeTeamInitial = (game.home_team || 'H').substring(0, 1);
+    const awayTeamInitial = (game.away_team || 'A').substring(0, 1);
+
+    return (
     <div className="bg-white/5 border border-white/10 rounded-3xl p-6 transition-all hover:bg-white/10 group">
        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
              <Radio className="w-3 h-3 animate-pulse" />
-             <span>Live {game.sport.replace('_', ' ').toUpperCase()}</span>
+             <span>Live {sportName}</span>
           </div>
           <div className="flex items-center space-x-1 text-white/30 text-xs font-mono">
              <Clock className="w-3 h-3" />
@@ -25,16 +31,16 @@ export default function LivePage() {
        <div className="grid grid-cols-2 gap-4 items-center mb-6">
           <div className="flex flex-col items-center">
              <div className="w-16 h-16 rounded-2xl bg-white/5 mb-3 flex items-center justify-center text-xl font-bold border border-white/5 group-hover:scale-105 transition-transform">
-                {game.home_team.substring(0, 1)}
+                {homeTeamInitial}
              </div>
-             <span className="text-sm font-bold text-center h-10 overflow-hidden line-clamp-2">{game.home_team}</span>
+             <span className="text-sm font-bold text-center h-10 overflow-hidden line-clamp-2">{game.home_team || 'Unknown'}</span>
              <span className="text-4xl font-black mt-2 text-white">{game.score_home || 0}</span>
           </div>
           <div className="flex flex-col items-center">
              <div className="w-16 h-16 rounded-2xl bg-white/5 mb-3 flex items-center justify-center text-xl font-bold border border-white/5 group-hover:scale-105 transition-transform">
-                {game.away_team.substring(0, 1)}
+                {awayTeamInitial}
              </div>
-             <span className="text-sm font-bold text-center h-10 overflow-hidden line-clamp-2">{game.away_team}</span>
+             <span className="text-sm font-bold text-center h-10 overflow-hidden line-clamp-2">{game.away_team || 'Unknown'}</span>
              <span className="text-4xl font-black mt-2 text-white">{game.score_away || 0}</span>
           </div>
        </div>
@@ -43,7 +49,8 @@ export default function LivePage() {
           <div className="h-full bg-blue-500 w-1/3 animate-progress" />
        </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">

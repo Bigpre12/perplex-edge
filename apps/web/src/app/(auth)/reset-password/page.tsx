@@ -49,6 +49,27 @@ function ResetPasswordContent() {
     };
 
     return (
+        <React.Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center p-4">Loading neural engine...</div>}>
+            <ResetPasswordContent 
+                token={token}
+                password={password}
+                setPassword={setPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                loading={loading}
+                success={success}
+                error={error}
+                handleSubmit={handleSubmit}
+            />
+        </React.Suspense>
+    );
+}
+
+function ResetPasswordContent({ 
+    token, password, setPassword, confirmPassword, setConfirmPassword, 
+    loading, success, error, handleSubmit 
+}: any) {
+    return (
         <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 relative overflow-hidden">
             {/* Dynamic Background */}
             <div className="absolute top-0 left-0 w-full h-full">
