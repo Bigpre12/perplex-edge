@@ -64,6 +64,10 @@ api.interceptors.response.use((response: any) => {
   const { data } = await api.get(`/api/admin/stats?email=${email}`);
   return data;
 };
+(api as any).simulate = async (legs: any[], sims = 100, trials = 10000) => {
+  const { data } = await api.post('/api/parlays/simulate', { legs, n_sims: trials });
+  return data;
+};
 // Helper for error handling
 export const handleApiError = (error: any) => {
   console.error('API Error:', error.response?.data || error.message);
