@@ -19,7 +19,8 @@ class EVService:
         try:
             async with async_session_maker() as session:
                 # 1. Load odds
-                stmt = select(UnifiedOdds).where(UnifiedOdds.sport == sport)
+                # Case-insensitive sport matching for robustness
+                stmt = select(UnifiedOdds).where(UnifiedOdds.sport.ilike(f"%{sport}%"))
                 result = await session.execute(stmt)
                 all_odds = result.scalars().all()
                 
@@ -36,8 +37,9 @@ class EVService:
                 for o in all_odds:
                     meta_map[o.event_id] = (o.league, o.game_time)
                     key = (o.event_id, o.market_key, float(o.line) if o.line is not None else 0.0, o.player_name)
+                    outcome_lower = o.outcome_key.lower()
                     if key not in grouped: grouped[key] = {}
-                    if o.outcome_key not in grouped[key]: grouped[key][o.outcome_key] = {}
+                    if outcome_lower not in grouped[key]: grouped[key][outcome_lower] = {}
                     
                     price = float(o.price or 0)
                     prob = float(o.implied_prob or 0)
