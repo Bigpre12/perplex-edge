@@ -28,7 +28,7 @@ async def data_inspector(db: AsyncSession = Depends(get_async_db)):
         except Exception:
             counts[t] = -1 # Table might not exist yet
             
-    # Diagnostics removed for stability
+    # Stable inspector
     return UniversalResponse(
         status="ok",
         meta=ResponseMeta(
