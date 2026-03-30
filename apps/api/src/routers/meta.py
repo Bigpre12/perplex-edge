@@ -28,7 +28,22 @@ async def data_inspector(db: AsyncSession = Depends(get_async_db)):
         except Exception:
             counts[t] = -1 # Table might not exist yet
             
-    # Stable inspector
+    # Diagnostics
+    try:
+        # 1. Sport Sample
+        res = await db.execute(text("SELECT sport, count(*) as c FROM unified_odds GROUP BY sport LIMIT 20"))
+        counts["db_sports"] = [dict(r._mapping) for r in res.all()]
+        
+        # 2. NBA Sample
+        res = await db.execute(text("SELECT sport, player_name, market_key, outcome_key, bookmaker FROM unified_odds WHERE sport ILIKE '%nba%' LIMIT 5"))
+        counts["nba_sample"] = [dict(r._mapping) for r in res.all()]
+        
+        # 3. Model Picks Sample
+        res = await db.execute(text("SELECT sport_key, player_name, ev_percentage FROM model_picks LIMIT 5"))
+        counts["picks_sample"] = [dict(r._mapping) for r in res.all()]
+    except Exception as e:
+        counts["diag_error"] = str(e)
+
     return UniversalResponse(
         status="ok",
         meta=ResponseMeta(
