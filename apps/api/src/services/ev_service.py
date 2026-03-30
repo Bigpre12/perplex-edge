@@ -18,9 +18,13 @@ class EVService:
     async def run_ev_cycle(self, sport: str):
         try:
             async with async_session_maker() as session:
-                # 1. Load odds
-                # Case-insensitive sport matching for robustness
-                stmt = select(UnifiedOdds).where(UnifiedOdds.sport.ilike(f"%{sport}%"))
+                # 1. Diagnostic: Check visibility
+                total_q = await session.execute(select(func.count(UnifiedOdds.id)))
+                total_cnt = total_q.scalar()
+                logger.info(f"EVService: DB visibility check - total_unified_odds={total_cnt}, target_sport='{sport}'")
+
+                # 2. Load odds (Case-insensitive catch-all)
+                stmt = select(UnifiedOdds).where(UnifiedOdds.sport.ilike(f"%{sport.split('_')[-1]}%"))
                 result = await session.execute(stmt)
                 all_odds = result.scalars().all()
                 
