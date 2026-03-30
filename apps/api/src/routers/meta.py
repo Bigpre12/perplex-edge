@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import os
 from fastapi import APIRouter
 
 from sqlalchemy import text
@@ -53,6 +54,19 @@ async def data_inspector(db: AsyncSession = Depends(get_async_db)):
         ),
         data=[counts]
     )
+
+@router.get("/logs")
+async def get_logs(lines: int = 100):
+    """Diagnostic: read last N lines of app log."""
+    log_file = "app.log"
+    if not os.path.exists(log_file):
+        return {"status": "error", "message": f"Log file {log_file} not found"}
+    try:
+        with open(log_file, "r") as f:
+            all_lines = f.readlines()
+            return {"status": "ok", "count": len(all_lines), "data": all_lines[-lines:]}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @router.get("/health", response_model=UniversalResponse[dict])
 async def meta_health(db: AsyncSession = Depends(get_async_db)):
