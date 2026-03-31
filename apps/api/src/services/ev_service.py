@@ -18,15 +18,18 @@ class EVService:
     async def run_ev_cycle(self, sport: str):
         try:
             async with async_session_maker() as session:
-                # 1. Diagnostic: Check visibility
-                total_q = await session.execute(select(func.count(UnifiedOdds.id)))
-                total_cnt = total_q.scalar()
-                logger.info(f"EVService: DB visibility check - total_unified_odds={total_cnt}, target_sport='{sport}'")
-
-                # 2. Load odds (Case-insensitive catch-all)
-                stmt = select(UnifiedOdds).where(UnifiedOdds.sport.ilike(f"%{sport.split('_')[-1]}%"))
+                # 1. Load odds (Force query-all to avoid sport mapping issues)
+                stmt = select(UnifiedOdds)
                 result = await session.execute(stmt)
-                all_odds = result.scalars().all()
+                all_records = result.scalars().all()
+                
+                # Filter for sport keywords in Python
+                keywords = [sport.lower()]
+                if "_" in sport: keywords.append(sport.split('_')[-1].lower())
+                
+                all_odds = [o for o in all_records if any(k in (o.sport or "").lower() for k in keywords)]
+                
+                logger.info(f"EVService: Visibility Check — Total DB Rows={len(all_records)}, Matches for {sport}={len(all_odds)}")
                 
                 if not all_odds:
                     logger.info(f"EVService: No odds found in unified_odds for sport={sport}")
