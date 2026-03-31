@@ -15,44 +15,19 @@ router = APIRouter()
 @router.get("/inspect", response_model=UniversalResponse[dict])
 async def data_inspector(db: AsyncSession = Depends(get_async_db)):
     """Source verification: inspect row counts in core tables."""
-    tables = [
-        "odds", "line_ticks", "ev_signals", "ev_signals_history", 
-        "props_live", "props_history", "edges_ev_history", 
-        "unified_odds", "whale_moves", "injury_impact_events",
-        "model_picks"
-    ]
-    counts = {}
-    for t in tables:
-        try:
-            res = await db.execute(text(f"SELECT count(*) FROM {t}"))
-            counts[t] = res.scalar()
-        except Exception:
-            counts[t] = -1 # Table might not exist yet
-            
-    # Diagnostics
-    try:
-        # 1. Sport Sample
-        res = await db.execute(text("SELECT sport, count(*) as c FROM unified_odds GROUP BY sport LIMIT 20"))
-        counts["db_sports"] = [dict(r._mapping) for r in res.all()]
-        
-        # 2. NBA Sample
-        res = await db.execute(text("SELECT sport, player_name, market_key, outcome_key, bookmaker FROM unified_odds WHERE sport ILIKE '%nba%' LIMIT 5"))
-        counts["nba_sample"] = [dict(r._mapping) for r in res.all()]
-        
-        # 3. Model Picks Sample
-        res = await db.execute(text("SELECT sport_key, player_name, ev_percentage FROM model_picks LIMIT 5"))
-        counts["picks_sample"] = [dict(r._mapping) for r in res.all()]
-    except Exception as e:
-        counts["diag_error"] = str(e)
-
+    # Optimized inspector
+    ev_count = (await db.execute(text("SELECT count(*) FROM ev_signals"))).scalar() or 0
+    pick_count = (await db.execute(text("SELECT count(*) FROM model_picks"))).scalar() or 0
+    odds_count = (await db.execute(text("SELECT count(*) FROM unified_odds"))).scalar() or 0
+    
     return UniversalResponse(
         status="ok",
         meta=ResponseMeta(
             request_id=get_request_id(),
-            db_rows=sum(c for c in counts.values() if c > 0),
+            db_rows=ev_count + pick_count + odds_count,
             last_sync=datetime.now(timezone.utc)
         ),
-        data=[counts]
+        data=[{"ev_signals": ev_count, "model_picks": pick_count, "unified_odds": odds_count}]
     )
 
 @router.get("/logs")
