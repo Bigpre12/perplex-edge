@@ -1,7 +1,7 @@
 # apps/api/src/services/ev_service.py
 import logging
 from typing import List, Dict, Any, Tuple
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker, engine
@@ -18,16 +18,15 @@ class EVService:
     async def run_ev_cycle(self, sport: str):
         try:
             async with async_session_maker() as session:
-                # 1. Load odds (Force query-all to avoid sport mapping issues)
-                stmt = select(UnifiedOdds)
-                result = await session.execute(stmt)
-                all_records = result.scalars().all()
+                # 1. Load odds via Raw SQL for total visibility (bypassing model mapping issues)
+                res = await session.execute(text("SELECT * FROM unified_odds"))
+                all_records = res.mappings().all()
                 
                 # Filter for sport keywords in Python
                 keywords = [sport.lower()]
                 if "_" in sport: keywords.append(sport.split('_')[-1].lower())
                 
-                all_odds = [o for o in all_records if any(k in (o.sport or "").lower() for k in keywords)]
+                all_odds = [o for o in all_records if any(k in (o.get("sport") or "").lower() for k in keywords)]
                 
                 logger.info(f"EVService: Visibility Check — Total DB Rows={len(all_records)}, Matches for {sport}={len(all_odds)}")
                 
