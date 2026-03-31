@@ -45,6 +45,25 @@ class InjuryService:
                         team_group["injuries"] = filtered_injs
                         corrected_injuries.append(team_group)
                 
+            # PERSIST to DB for historical tracking and analytical access
+            from services.persistence_helpers import upsert_injuries
+            db_rows = []
+            if isinstance(corrected_injuries, list):
+                for team_group in corrected_injuries:
+                    team_display_name = team_group.get("displayName", "Unknown Team")
+                    for inj in team_group.get("injuries", []):
+                        athlete = inj.get("athlete", {})
+                        db_rows.append({
+                            "sport": sport,
+                            "player": athlete.get("displayName", "Unknown"),
+                            "team": team_display_name,
+                            "status": inj.get("status", "Unknown"),
+                            "note": inj.get("shortComment", "")
+                        })
+            
+            if db_rows:
+                await upsert_injuries(sport, db_rows)
+                
             return corrected_injuries
         except Exception as e:
             logger.error(f"InjuryService: Fetch failed for {sport}: {e}")

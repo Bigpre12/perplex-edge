@@ -191,3 +191,21 @@ async def insert_injury_events(events: List[Dict]):
         except Exception as e:
             await session.rollback()
             logger.error(f"Persistence: injury_impact_events insert failed: {e}")
+
+async def upsert_injuries(sport: str, rows: List[Dict]):
+    if not rows: return
+    async with async_session_maker() as session:
+        try:
+            from models.injury import Injury
+            from sqlalchemy import delete
+            # Full refresh for the sport to ensure we don't have stale injury records
+            await session.execute(delete(Injury).where(Injury.sport == sport))
+            
+            is_sqlite = "sqlite" in str(engine.url)
+            ins_obj = sqlite_insert(Injury) if is_sqlite else pg_insert(Injury)
+            await session.execute(ins_obj.values(rows))
+            await session.commit()
+            logger.info(f"Persistence: Refreshed {len(rows)} injuries for {sport}")
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Persistence: Injury upsert failed: {e}")

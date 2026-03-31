@@ -224,27 +224,40 @@ async def get_prop_hero(
     if not current:
         return {"status": "not_found", "message": "No live line found for player"}
         
-    # 2. Get history to compute hit rate
-    hist_stmt = select(PropHistory).where(
-        PropHistory.player_name == player_name,
-        PropHistory.sport == sport
-    ).order_by(desc(PropHistory.snapshot_at)).limit(50)
+    # 2. Get history and calculate real stats from settled PropLine results
+    from models.prop import PropLine
     
-    hist_res = await db.execute(hist_stmt)
-    history = hist_res.scalars().all()
+    stat_display = current.market_key.replace("player_", "").replace("_", " ").title() if current.market_key else "Points"
     
-    # Simple hit-rate logic (L10/L20)
-    # This assumes PropHistory rows represent game results or final closing lines
-    # For now, we'll just return the raw history for the frontend to chart
+    # Query settled results for this player and stat type
+    settled_stmt = select(PropLine).where(
+        PropLine.player_name == player_name,
+        PropLine.sport_key == sport,
+        PropLine.stat_type == stat_display,
+        PropLine.is_settled == True
+    ).order_by(desc(PropLine.start_time)).limit(20)
     
+    settled_res = await db.execute(settled_stmt)
+    settled_list = settled_res.scalars().all()
+    
+    l5_hits = [s.hit for s in settled_list[:5] if s.hit is not None]
+    l10_hits = [s.hit for s in settled_list[:10] if s.hit is not None]
+    
+    l5_rate = sum(l5_hits) / len(l5_hits) if l5_hits else 0.0
+    l10_rate = sum(l10_hits) / len(l10_hits) if l10_hits else 0.0
+    
+    # Season Avg based on actual recorded values
+    actuals = [s.actual_value for s in settled_list if s.actual_value is not None]
+    avg_val = sum(actuals) / len(actuals) if actuals else (current.line or 0.0)
+
     return {
         "status": "success",
         "player": player_name,
         "current_line": current.line,
         "history": [PropHistorySchema.model_validate(h) for h in history],
         "stats": {
-            "l5_hit": 0.6, # Placeholder for actual historical scoring logic
-            "l10_hit": 0.55,
-            "season_avg": current.line * 1.1 
+            "l5_hit": round(l5_rate, 2),
+            "l10_hit": round(l10_rate, 2),
+            "season_avg": round(avg_val, 2)
         }
     }

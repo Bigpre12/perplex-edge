@@ -164,9 +164,9 @@ function DashboardContent() {
                             <Activity size={14} className="text-brand-success" /> Neural Status
                         </h4>
                         <div className="space-y-4">
-                            <InternalHealthItem label="Inference Engine" status={(healthData as any)?.inference_status || (healthData as any)?.status?.toUpperCase() || "IDLE"} />
-                            <InternalHealthItem label="Data Pipeline" status={(healthData as any)?.pipeline_status || "ACTIVE"} />
-                            <InternalHealthItem label="Odds Stream" status={(healthData as any)?.stream_status || "SYNCED"} />
+                            <InternalHealthItem label="Inference Engine" status={(healthData as any)?.inference_status || "IDLE"} />
+                            <InternalHealthItem label="Data Pipeline" status={(healthData as any)?.pipeline_status || "IDLE"} />
+                            <InternalHealthItem label="Odds Stream" status={(healthData as any)?.odds_stream || "SYNCED"} />
                         </div>
                     </div>
 

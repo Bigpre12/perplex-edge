@@ -23,16 +23,17 @@ class EmailService:
 
         try:
             params = {
-                "from": "Lucrix <onboarding@resend.dev>", # Update with verified domain in production
+                "from": f"Perplex Edge <{os.getenv('RESEND_FROM_EMAIL', 'onboarding@resend.dev')}>",
                 "to": [user_email],
                 "subject": "Welcome to Perplex Edge Neural Engine!",
                 "html": f"""
-                    <div style="font-family: sans-serif; background: #050505; color: #fff; padding: 40px; border-radius: 20px;">
-                        <h1 style="color: #3b82f6;">Welcome, {username}!</h1>
-                        <p style="font-size: 16px; color: #aaa;">Your edge starts now. You've successfully integrated with the Perplex Edge neural engine.</p>
+                    <div style="font-family: sans-serif; background: #050505; color: #fff; padding: 40px; border-radius: 20px; border: 1px solid #1e293b;">
+                        <h1 style="color: #3b82f6; margin-bottom: 20px;">Welcome to the Edge, {username}!</h1>
+                        <p style="font-size: 16px; color: #94a3b8; line-height: 1.6;">The neural engine is active. You have successfully integrated with the Perplex Edge data stream.</p>
                         <div style="margin-top: 30px;">
-                            <a href="{settings.FRONTEND_URL}" style="background: #2563eb; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold;">Launch Dashboard</a>
+                            <a href="{settings.FRONTEND_URL}" style="background: #2563eb; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">Launch Neural Dashboard</a>
                         </div>
+                        <p style="margin-top: 30px; font-size: 12px; color: #475569;">© 2026 Perplex Edge. Analytical intelligence for the institutional bettor.</p>
                     </div>
                 """
             }
@@ -46,22 +47,22 @@ class EmailService:
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
         
         if resend.api_key == "mock_key":
-            logger.info(f"MOCK EMAIL: Password reset link for {user_email}: {reset_link}")
+            logger.info(f"SIMULATION MODE: Password reset link for {user_email}: {reset_link}")
             return
 
         try:
             params = {
-                "from": "Lucrix Auth <auth@resend.dev>",
+                "from": f"Perplex Edge Auth <{os.getenv('RESEND_FROM_EMAIL', 'onboarding@resend.dev')}>",
                 "to": [user_email],
-                "subject": "Reset Your Perplex Edge Password",
+                "subject": "Neural Access: Reset Your Password",
                 "html": f"""
-                    <div style="font-family: sans-serif; background: #050505; color: #fff; padding: 40px; border-radius: 20px;">
-                        <h2 style="color: #3b82f6;">Password Reset Request</h2>
-                        <p style="font-size: 16px; color: #aaa;">We received a request to reset your password. Click the button below to proceed. This link expires in 1 hour.</p>
+                    <div style="font-family: sans-serif; background: #050505; color: #fff; padding: 40px; border-radius: 20px; border: 1px solid #1e293b;">
+                        <h2 style="color: #3b82f6; margin-bottom: 20px;">Neural Access Reset</h2>
+                        <p style="font-size: 16px; color: #94a3b8; line-height: 1.6;">We received a request to recalibrate your neural access credentials. Click below to continue.</p>
                         <div style="margin-top: 30px;">
-                            <a href="{reset_link}" style="background: #2563eb; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 12px; font-weight: bold;">Reset Password</a>
+                            <a href="{reset_link}" style="background: #2563eb; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">Recalibrate Password</a>
                         </div>
-                        <p style="margin-top: 20px; font-size: 12px; color: #555;">If you didn't request this, you can safely ignore this email.</p>
+                        <p style="margin-top: 20px; font-size: 12px; color: #475569;">This link will expire in 60 minutes for security protocols.</p>
                     </div>
                 """
             }

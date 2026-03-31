@@ -278,6 +278,19 @@ class BrainAdvancedService:
             
             await db.commit()
             logger.info(f"Brain: Generated {len(picks_to_insert)} ModelPicks and logs for {sport}.")
+            
+            # Log heartbeat for Model Inference
+            try:
+                from services.heartbeat_service import HeartbeatService
+                await HeartbeatService.log_heartbeat(
+                    db, 
+                    "model_inference", 
+                    status="ok" if len(picks_to_insert) > 0 else "idle",
+                    rows_written=len(picks_to_insert)
+                )
+            except Exception as e:
+                logger.error(f"Brain: Failed to log heartbeat: {e}")
+                
             return len(picks_to_insert)
             
         except Exception as e:
@@ -352,9 +365,52 @@ class BrainAdvancedService:
             logger.error(f"Error in get_dashboard_metrics: {e}")
             return {"props_scored_today": 0, "elite_signals": 0, "active_edges": 0}
 
+    async def get_heatmap(self, sport: str, db: AsyncSession) -> List[dict]:
+        """Feature 8: Neural Market Heatmap (Real Data Aggregation)"""
+        try:
+            # Query UnifiedEVSignal to bucketize the current market state
+            stmt = select(UnifiedEVSignal).where(UnifiedEVSignal.sport == sport)
+            res = await db.execute(stmt)
+            signals = res.scalars().all()
+            
+            heatmap = []
+            if not signals:
+                return []
+                
+            # Define buckets matching frontend expectations
+            ev_tiers = ["0-1%", "1-3%", "3-5%", "5%+"]
+            conf_tiers = ["LOW", "MED", "HIGH"]
+            
+            # Bucketization logic
+            buckets = {}
+            for s in signals:
+                edge = float(s.edge_percent or 0)
+                ev_idx = 0 if edge < 1 else 1 if edge < 3 else 2 if edge < 5 else 3
+                
+                # Heuristic confidence based on true probability
+                prob = float(s.true_prob or 0.5)
+                conf_idx = 0 if prob < 0.52 else 1 if prob < 0.6 else 2
+                
+                key = (ev_idx, conf_idx)
+                buckets[key] = buckets.get(key, 0) + 1
+                
+            for ev_idx, ev_label in enumerate(ev_tiers):
+                for conf_idx, conf_label in enumerate(conf_tiers):
+                    heatmap.append({
+                        "ev_tier": ev_label,
+                        "confidence": conf_label,
+                        "intensity": buckets.get((ev_idx, conf_idx), 0)
+                    })
+                    
+            return heatmap
+        except Exception as e:
+            logger.error(f"Error in get_heatmap: {e}")
+            return []
+
 brain_advanced_service = BrainAdvancedService()
 get_prop_score = brain_advanced_service.get_prop_score
 build_parlay = brain_advanced_service.build_parlay
 check_steam_moves = brain_advanced_service.check_steam_moves
 get_reasoning_feed = brain_advanced_service.get_reasoning_feed
 get_dashboard_metrics = brain_advanced_service.get_dashboard_metrics
+get_heatmap = brain_advanced_service.get_heatmap

@@ -3,13 +3,16 @@ import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
 const isServer = typeof window === 'undefined';
 const env = isServer ? (globalThis as any).process?.env : {};
 
-let configuredUrl = env?.NEXT_PUBLIC_API_URL || 'https://perplex-edge-backend-copy-production.up.railway.app';
-if (env?.NODE_ENV === "production" && configuredUrl.includes("localhost")) {
-    configuredUrl = 'https://perplex-edge-backend-copy-production.up.railway.app';
+const configuredUrl = env?.NEXT_PUBLIC_API_URL || '';
+
+// If we're on the server and no URL is provided, we must fail or log.
+// On the client, we use the '/backend' proxy prefix defined in next.config.mjs.
+if (!configuredUrl && isServer) {
+    console.warn("⚠️ NEXT_PUBLIC_API_URL is not set. API calls may fail on server-side rendering.");
 }
 
-export const API_BASE = isServer ? configuredUrl : '/backend';
-const API_URL = isServer ? configuredUrl : '/backend';
+export const API_BASE = isServer ? (configuredUrl || 'http://localhost:8000') : '/backend';
+const API_URL = isServer ? (configuredUrl || 'http://localhost:8000') : '/backend';
 export const api = axios.create({
   baseURL: API_URL,
   headers: {

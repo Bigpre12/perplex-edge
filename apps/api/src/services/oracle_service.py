@@ -160,14 +160,44 @@ RULES:
 
     async def get_suggestions(self, sport: str) -> List[str]:
         """Generate smart suggestions based on live data"""
-        # Static defaults for now, can be LLM-generated in Phase 13
-        return [
-            f"What are the best {sport.replace('_', ' ')} props tonight?",
-            "Is there any elite steam detected?",
-            "Are there any high-impact injuries I should know about?",
-            "Build me a 3-leg parlay with high brain scores",
-            "Show me props with positive EV"
-        ]
+        try:
+            context = await self.build_context(sport)
+            suggestions = []
+            
+            # 1. EV Suggestion
+            if context.get("ev_signals"):
+                best = context["ev_signals"][0]
+                p_name = best.get('player_name') or "this player"
+                edge = best.get('edge_percent') or "high"
+                suggestions.append(f"Is {p_name}'s {edge}% EV edge a sharp play?")
+            
+            # 2. Injury Suggestion
+            if context.get("injuries"):
+                inj = context["injuries"][0]
+                suggestions.append(f"How does the {inj.get('player')} ({inj.get('status')}) impact today's {sport.split('_')[-1].upper()} slate?")
+                
+            # 3. Steam/Whale Suggestion
+            if context.get("whale_signals") or context.get("steam_events"):
+                signals = context.get("whale_signals", []) + context.get("steam_events", [])
+                if signals:
+                    s = signals[0]
+                    p_name = s.get('player') or s.get('player_name')
+                    suggestions.append(f"Analyze the sharp movement on {p_name}.")
+
+            # 4. Defaults
+            suggestions.append(f"Build me a high-confidence {sport.split('_')[-1].upper()} parlay.")
+            suggestions.append(f"What are the top arbitrage spots in {sport.split('_')[-1].upper()}?")
+            
+            return list(islice(suggestions, 5))
+        except Exception as e:
+            logger.error(f"Error generating suggestions: {e}")
+            return [
+                f"What are the best {sport.replace('_', ' ')} props tonight?",
+                "Show me props with high positive EV",
+                "Are there any whale signals detected?",
+                "Analyze recent injury impact",
+                "Show me institutional arbitrage"
+            ]
 
 oracle_service = OracleService()
 chat = oracle_service.chat

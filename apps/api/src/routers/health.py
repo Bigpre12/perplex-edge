@@ -50,35 +50,92 @@ async def health_check(
     if os.getenv("KALSHI_API_KEY") or os.getenv("KALSHI_EMAIL"):
         kalshi_status = "configured" # Placeholder for more complex check
 
-    # 4. Get last ingest timestamp
+    # 4. Ingestion & Heartbeat Status from HeartbeatService
+    from services.heartbeat_service import HeartbeatService
+    from datetime import timedelta
+    
+    heartbeats = await HeartbeatService.get_all_heartbeats(db)
+    hb_map = {hb.feed_name: hb for hb in heartbeats}
+    
+    # Check main sports for pipeline status (Basketball/NBA is our primary focus)
+    pipeline_hb = hb_map.get("ingest_basketball_nba")
+    inference_hb = hb_map.get("model_inference") 
+    
+    now = datetime.now(timezone.utc)
+    
+    def get_status_label(hb, threshold_min=60):
+        if not hb or not hb.last_success_at:
+            return "IDLE"
+        
+        last_success = hb.last_success_at
+        if last_success.tzinfo is None:
+            last_success = last_success.replace(tzinfo=timezone.utc)
+            
+        if now - last_success > timedelta(minutes=threshold_min):
+            return "STALE"
+        return "ACTIVE"
+
+    pipeline_status = get_status_label(pipeline_hb)
+    inference_status = get_status_label(inference_hb)
+    
+    # 5. Get metrics and freshness
     try:
-        result = await db.execute(text("""
-            SELECT MAX(last_updated_at) as last_odds,
-                   MAX(created_at) as last_ev
+        # Get count and freshness in one go - optimized for Postgres
+        query = text("""
+            SELECT 
+                (SELECT COUNT(*) FROM props_live) as props_count,
+                MAX(last_updated_at) as last_odds,
+                MAX(created_at) as last_ev
             FROM props_live
-        """))
+        """)
+        result = await db.execute(query)
         row = result.mappings().first()
+        
+        props_count = row["props_count"] if row else 0
         last_odds = row["last_odds"].isoformat() if row and row["last_odds"] else None
         last_ev = row["last_ev"].isoformat() if row and row["last_ev"] else None
+        
+        # If last_odds is older than 3 hours, force status to DEGRADED
+        is_stale = False
+        odds_stream_status = "SYNCED"
+        if row and row["last_odds"]:
+            lo = row["last_odds"]
+            if lo.tzinfo is None: lo = lo.replace(tzinfo=timezone.utc)
+            if now - lo > timedelta(hours=1):
+                odds_stream_status = "DELAYED"
+            if now - lo > timedelta(hours=3):
+                odds_stream_status = "STALE"
+                is_stale = True
+        elif props_count == 0:
+            odds_stream_status = "EMPTY"
+            is_stale = True
+            
     except Exception as e:
-        logger.error(f"Health Check: Freshness query failure: {e}")
+        logger.error(f"Health Check: Metrics failure: {e}")
+        props_count = 0
         last_odds = None
         last_ev = None
+        is_stale = True
+        odds_stream_status = "ERROR"
+
+    overall_status = "healthy" if db_status == "connected" and not is_stale else "degraded"
+    system_status = "ONLINE" if db_status == "connected" else "OFFLINE"
 
     return {
-        "status": "healthy" if db_status == "connected" else "degraded",
+        "status": overall_status,
         "database": db_status,
         "odds_api": odds_status,
         "kalshi": kalshi_status,
         "cache": "active",
-        "inference_status": "ACTIVE",
-        "pipeline_status": "ACTIVE",
-        "system_status": "ONLINE",
-        "version": "1.2.7",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "inference_status": inference_status,
+        "pipeline_status": pipeline_status,
+        "odds_stream": odds_stream_status,
+        "system_status": system_status,
+        "version": "1.2.8",
+        "timestamp": now.isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
-        "props_count": 2326
+        "props_count": props_count
     }
 
 @router.get("/summary")

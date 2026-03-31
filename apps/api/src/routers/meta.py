@@ -19,15 +19,32 @@ async def data_inspector(db: AsyncSession = Depends(get_async_db)):
     ev_count = (await db.execute(text("SELECT count(*) FROM ev_signals"))).scalar() or 0
     pick_count = (await db.execute(text("SELECT count(*) FROM model_picks"))).scalar() or 0
     odds_count = (await db.execute(text("SELECT count(*) FROM unified_odds"))).scalar() or 0
+    injury_count = (await db.execute(text("SELECT count(id) FROM injuries"))).scalar() or 0
     
+    # Staleness check (flag if no new signals for 24h)
+    stale_signals = False
+    last_signal_stmt = text("SELECT MAX(created_at) FROM ev_signals")
+    last_signal_time = (await db.execute(last_signal_stmt)).scalar()
+    if last_signal_time:
+        if last_signal_time.tzinfo is None: 
+            last_signal_time = last_signal_time.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - last_signal_time).total_seconds() > 86400:
+            stale_signals = True
+
     return UniversalResponse(
-        status="ok",
+        status="ok" if not stale_signals else "warning",
         meta=ResponseMeta(
             request_id=get_request_id(),
-            db_rows=ev_count + pick_count + odds_count,
+            db_rows=ev_count + pick_count + odds_count + injury_count,
             last_sync=datetime.now(timezone.utc)
         ),
-        data=[{"ev_signals": ev_count, "model_picks": pick_count, "unified_odds": odds_count}]
+        data=[{
+            "ev_signals": ev_count, 
+            "model_picks": pick_count, 
+            "unified_odds": odds_count,
+            "injuries": injury_count,
+            "is_stale": stale_signals
+        }]
     )
 
 @router.get("/logs")
@@ -72,7 +89,7 @@ async def meta_summary():
 
 @router.get("/username")
 async def meta_username():
-    return {"username": "demo-user"}
+    return {"username": "Edge Master", "role": "System Intelligence"}
 
 @router.get("/force-ev")
 async def force_ev_nba(db: AsyncSession = Depends(get_async_db)):
@@ -136,36 +153,3 @@ async def ingest_nba_full(db: AsyncSession = Depends(get_async_db)):
     
     return {"status": "ok", "message": "NBA Full Cycle Completed"}
 
-@router.get("/seed-dummy-data")
-async def seed_dummy_data(db: AsyncSession = Depends(get_async_db)):
-    """Seed a dummy EV signal to verify UI pipeline."""
-    from models.brain import UnifiedEVSignal
-    from datetime import datetime, timezone
-    
-    dummy = UnifiedEVSignal(
-        sport="basketball_nba",
-        event_id="dummy_event_123",
-        market_key="player_points",
-        outcome_key="over",
-        player_name="Antigravity Test",
-        bookmaker="pinnacle",
-        price=1.91,
-        line=25.5,
-        true_prob=0.55,
-        edge_percent=5.5,
-        ev_percentage=5.5,
-        implied_prob=0.523,
-        confidence=0.9,
-        engine_version="test-v1",
-        recommendation="OVER",
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
-    )
-    db.add(dummy)
-    await db.commit()
-    
-    # Also promote it to picks
-    from services.brain_advanced_service import brain_advanced_service
-    await brain_advanced_service.generate_model_picks("basketball_nba", db)
-    
-    return {"status": "ok", "message": "Dummy signal seeded and promoted"}

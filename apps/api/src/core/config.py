@@ -99,7 +99,7 @@ class Settings:
         # Betting Engine Configuration
         self.SHARP_BOOKMAKERS = ["pinnacle", "betonline", "betonlineag", "bookmaker", "circa", "circasports", "lowvig", "cris"]
         self.SOFT_BOOKMAKERS = ["draftkings", "fanduel", "betmgm", "caesars", "pointsbet", "williamhill", "betrivers", "unibet", "bovada", "betway"]
-        self.EV_MIN_THRESHOLD = float(os.getenv("EV_MIN_THRESHOLD", "0.5")) # Lower default
+        self.EV_MIN_THRESHOLD = float(os.getenv("EV_MIN_THRESHOLD", "-100.0")) # FORCE ALL SIGNALS
         self.MAJOR_LINE_MOVE_THRESHOLD = float(os.getenv("MAJOR_LINE_MOVE_THRESHOLD", "5.0")) # cents/ticks
         self.LIVE_DATA_POLLING_INTERVAL = int(os.getenv("LIVE_DATA_POLLING_INTERVAL", "30"))
         

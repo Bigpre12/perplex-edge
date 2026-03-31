@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import API from "@/lib/api";
 
 export default function SystemStatusBanner() {
   const [status, setStatus] = useState<"checking" | "online" | "offline">("checking");
@@ -7,20 +8,20 @@ export default function SystemStatusBanner() {
 
   const check = useCallback(async () => {
     try {
-      const res = await fetch(
-        "/backend/api/health",
-        { signal: AbortSignal.timeout(4000) }
-      );
-      setStatus(res.ok ? "online" : "offline");
-    } catch {
+      // Use the centralized API health check
+      const data = await API.health();
+      const isOnline = data?.status === "ok" || data?.status === "healthy";
+      setStatus(isOnline ? "online" : "offline");
+    } catch (err) {
+      console.error("SystemStatusBanner: Health check failed", err);
       setStatus("offline");
     }
   }, []);
 
-  // Auto-check every 30s in production
+  // Auto-check every 60s to reduce noise
   useEffect(() => {
     check();
-    const id = setInterval(check, 30_000);
+    const id = setInterval(check, 60_000);
     return () => clearInterval(id);
   }, [check]);
 

@@ -14,7 +14,7 @@ export const BetSlipSidebar: React.FC = () => {
     const [legs, setLegs] = useState<Leg[]>([]);
 
     const calculateParlayOdds = (legs: Leg[]) => {
-        // Mock parlay multiplier logic
+        // Standardized parlay multiplier logic
         let multiplier = 1;
         legs.forEach(leg => {
             const dec = leg.odds > 0 ? (leg.odds / 100) + 1 : (100 / Math.abs(leg.odds)) + 1;

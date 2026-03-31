@@ -28,8 +28,8 @@ export function UpgradeWall({ onDismiss }: { onDismiss?: () => void }) {
                 <div className="space-y-2.5 mb-8">
                     {[
                         { name: 'Free', price: '$0', perks: ['Full props feed', 'Basic slates'] },
-                        { name: 'Pro', price: '$19.99', perks: ['Kelly units', '🔥 Steam score', 'Combos + Parlays'], highlight: true },
-                        { name: 'Elite', price: '$39.99', perks: ['Everything', 'Oracle AI', 'Whale/Sharp alerts'] },
+                        { name: 'Pro', price: '$19.99', perks: ['Kelly units', '🔥 Steam score', 'Real-time Intel'], highlight: true },
+                        { name: 'Elite', price: '$39.99', perks: ['Everything', 'Oracle AI+', 'Whale Tracker'] },
                     ].map(tier => (
                         <div key={tier.name}
                             className={`p-4 rounded-2xl border transition-all cursor-pointer

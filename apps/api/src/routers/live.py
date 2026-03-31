@@ -31,24 +31,24 @@ async def live_games(sport: str = "basketball_nba"):
         try:
             from db.session import AsyncSessionLocal
             from sqlalchemy import select
-            from models.prop import GameLine
+            from models.prop import GameV2
             
             async with AsyncSessionLocal() as db:
-                # Get unique games from seeded data
-                stmt = select(GameLine).where(GameLine.sport_key == sport).limit(10)
+                # Get unique games from latest recorded data
+                stmt = select(GameV2).where(GameV2.sport == sport).order_by(GameV2.commence_time.desc()).limit(10)
                 result = await db.execute(stmt)
-                seeded_games = result.scalars().all()
+                db_games = result.scalars().all()
                 
-                for g in seeded_games:
+                for g in db_games:
                     all_games.append({
-                        "id": g.game_id,
+                        "id": str(g.id),
                         "home_team": g.home_team,
                         "away_team": g.away_team,
-                        "home_score": random.randint(80, 110),
-                        "away_score": random.randint(80, 110),
-                        "status": "live",
-                        "period": random.randint(1, 4),
-                        "clock": f"{random.randint(1, 12)}:{random.randint(0, 5)}{random.randint(0, 9)}",
+                        "home_score": g.home_score or 0,
+                        "away_score": g.away_score or 0,
+                        "status": g.status or "scheduled",
+                        "period": "",
+                        "clock": "",
                         "commence_time": g.commence_time.isoformat() if g.commence_time else None,
                         "source": "db_fallback"
                     })

@@ -343,6 +343,11 @@ class UnifiedIngestionService:
                 brain_clv_tracker.record_opening_line(records),
                 injury_impact_brain.analyze_impacts(sport)
             ]
+            
+            # Step 4: Real-time News Ingestion
+            from services.news_service import news_service
+            tasks.append(news_service.get_news(sport))
+            
             await asyncio.gather(*[t for t in tasks if asyncio.iscoroutine(t)], return_exceptions=True) # type: ignore
             
             logger.info(f"✅ [INTELLIGENCE PIPELINE] Completed for {sport}")
