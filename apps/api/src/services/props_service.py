@@ -194,6 +194,7 @@ class PropsService:
                 LEFT JOIN ev_signals e ON 
                     o.event_id = e.event_id AND 
                     o.sport = e.sport AND 
+                    o.player_name = e.player_name AND
                     o.market_key = e.market_key AND 
                     o.outcome_key = e.outcome_key AND 
                     o.bookmaker = e.bookmaker
