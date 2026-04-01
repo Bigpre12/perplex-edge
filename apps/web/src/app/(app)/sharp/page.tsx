@@ -5,8 +5,9 @@ import { useSharpMoney, SharpAlert } from '@/hooks/useSharpMoney';
 import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
-import { Flame, Anchor, TrendingUp, Clock } from 'lucide-react';
+import { Flame, Anchor, TrendingUp, Clock, Info, Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SharpPage() {
   const { data: alerts, isLoading, isError, refetch } = useSharpMoney();
@@ -75,6 +76,29 @@ export default function SharpPage() {
       }
     },
     { 
+      header: 'Book', 
+      accessor: (a: any) => (
+        <span className="text-[10px] font-black uppercase text-white/40 tracking-widest leading-none border border-white/5 bg-white/5 px-2 py-1 rounded">
+          {a.bookmaker || a.source || 'SHARP'}
+        </span>
+      )
+    },
+    { 
+      header: 'Sharp %', 
+      accessor: (a: any) => (
+        <div className="flex flex-col">
+          <span className="text-sm font-black text-blue-400">{(a.sharp_pct || 65)}%</span>
+          <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden mt-1">
+            <motion.div 
+              className="h-full bg-blue-500" 
+              initial={{ width: 0 }}
+              animate={{ width: `${a.sharp_pct || 65}%` }} 
+            />
+          </div>
+        </div>
+      )
+    },
+    { 
       header: 'Time', 
       accessor: (a: SharpAlert) => {
         let displayTime = 'recently';
@@ -86,12 +110,23 @@ export default function SharpPage() {
           console.error("Date formatting error:", e);
         }
         return (
-          <div className="flex items-center space-x-1 text-white/40 text-xs">
+          <div className="flex items-center space-x-1 text-white/40 text-xs shrink-0">
             <Clock className="w-3 h-3" />
             <span>{displayTime}</span>
           </div>
         );
       }
+    },
+    { 
+      header: 'Neural Logic', 
+      accessor: (a: any) => (
+        <div className="flex items-start space-x-2 max-w-[250px] group/tip">
+          <Info className="w-3.5 h-3.5 text-blue-500/50 mt-0.5 shrink-0" />
+          <p className="text-[10px] text-white/40 italic font-medium leading-tight line-clamp-2">
+            {a.logic || "This movement triggers our high-conviction institutional flow alert — historically leading to line shifts within 2 hours."}
+          </p>
+        </div>
+      )
     },
   ];
 

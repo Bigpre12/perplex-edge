@@ -20,12 +20,14 @@ export const useEV = (sport: string = 'all') => {
     queryKey: ['ev', sport],
     queryFn: async () => {
       try {
-        const url = sport === 'all' ? '/api/ev' : `/api/ev?sport=${sport}`;
+        const url = sport === 'all' 
+          ? '/api/ev/top?limit=25' 
+          : `/api/ev/top?sport=${sport}&limit=25`;
         const { data } = await api.get(url);
-        if (data && data.props) {
-          return data.props as EVRecord[];
-        }
-        throw new Error('No EV signals returned from API');
+        
+        // Handle unwrapped data or .props
+        const signals = Array.isArray(data) ? data : (data.props || data.data || []);
+        return signals as EVRecord[];
       } catch (err) {
         console.warn('Backend EV fetch failed, falling back to Supabase', err);
         let query = supabase.from('ev_signals').select('*').order('edge_percent', { ascending: false }).limit(50);

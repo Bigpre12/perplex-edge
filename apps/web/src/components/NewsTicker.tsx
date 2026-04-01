@@ -33,15 +33,18 @@ export default function NewsTicker() {
     );
 
     const tickerRef = useRef<HTMLDivElement>(null);
+    const sportCfg = SPORTS_CONFIG[selectedSport as SportKey] || SPORTS_CONFIG.basketball_nba;
+    const sportLabel = sportCfg.label?.toUpperCase() || "NBA";
 
-    const displayItems = (items as string[]) || [
-        "9 NBA games today — Mavericks @ Magic 7PM ET",
-        "Jazz @ Wizards 7PM ET · Nets @ Heat 7:30PM ET",
-        "Warriors @ Rockets 7:30PM ET · Raptors @ Wolves 8PM ET",
-        "Lakers @ Nuggets 10PM ET · Pelicans @ Suns 10PM ET",
-        "Market Volatility: Monitor sharp alerts for late-move advantage",
-        "Quantum Engine: Ingesting live props for tonight's slate"
+    const defaultHeadlines = [
+        `${sportLabel} Market Live — Ingesting internal prop data`,
+        `Real-time liquidity scan across ${sportLabel} markets`,
+        "Quantum Engine: Detecting mathematical mispricings",
+        "Monitor sharp movement for late-market edges",
+        `Dynamic ${sportLabel} analysis active`
     ];
+
+    const displayItems = (items as string[]) || defaultHeadlines;
 
     useEffect(() => {
         if (tickerRef.current) {
@@ -49,15 +52,14 @@ export default function NewsTicker() {
         }
     }, [displayItems.length]);
 
-    if (loading && displayItems.length === 0) return null;
-    if (displayItems.length === 0) return null;
+    // Removed visibility guards to ensure ticker always renders with fallbacks
 
     return (
         <div className="w-full bg-[#080810] border-b border-[#1E1E35] overflow-hidden h-8 flex items-center relative z-40">
             <div className="flex items-center w-full">
                 {/* Static label - High Visibility */}
                 <div className="flex-shrink-0 px-4 py-1.5 bg-[#22C55E] text-black text-[10px] font-black tracking-widest uppercase italic z-50 shadow-[4px_0_10px_rgba(0,0,0,0.5)]">
-                    MARKET LIVE
+                    {sportLabel} LIVE
                 </div>
 
                 {/* Scrolling ticker content */}

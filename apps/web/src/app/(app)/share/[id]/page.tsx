@@ -8,7 +8,7 @@ import { SportsbookDeeplinks } from '@/components/SportsbookDeeplinks';
 import MatchupIntelligence from '@/components/MatchupIntelligence';
 import { SocialShareCard } from '@/components/SocialShareCard';
 import { exportComponentAsImage } from '@/utils/shareExporter';
-import { API_BASE_URL } from "@/lib/apiConfig";
+import { API_BASE as API_BASE_URL } from "@/lib/api";
 
 export default function TailLink() {
     const { id } = useParams();

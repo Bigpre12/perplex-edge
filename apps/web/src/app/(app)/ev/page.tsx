@@ -9,18 +9,19 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
 import { SportFilter } from '@/components/shared/SportFilter';
 import { TrendingUp, Percent, Info } from 'lucide-react';
+import { useSport } from '@/hooks/useSport';
+import SportSelector from '@/components/shared/SportSelector';
 
 export default function EVPage() {
-  const [sport, setSport] = useState('all');
-
   return (
     <UpgradeGate feature="evSignals">
-      <EVPageContent sport={sport} setSport={setSport} />
+      <EVPageContent />
     </UpgradeGate>
   );
 }
 
-function EVPageContent({ sport, setSport }: { sport: string; setSport: (s: string) => void }) {
+function EVPageContent() {
+  const { sport } = useSport();
   const { data: evSignals, isLoading, isError, refetch } = useEV(sport);
 
   const getEVColor = (val: number | undefined | null) => {
@@ -67,6 +68,14 @@ function EVPageContent({ sport, setSport }: { sport: string; setSport: (s: strin
         </span>
       )
     },
+    { 
+      header: 'AI Reasoning', 
+      accessor: (p: any) => (
+        <span className="text-[10px] text-white/40 italic font-medium leading-tight line-clamp-2 max-w-[200px]">
+          {p.reasoning || p.insight || 'Neural model identifies significant line divergence vs sharp consensus.'}
+        </span>
+      ) 
+    },
   ];
 
   return (
@@ -107,7 +116,9 @@ function EVPageContent({ sport, setSport }: { sport: string; setSport: (s: strin
           <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 blur-[100px] -mr-48 -mt-48 rounded-full" />
         </div>
 
-        <SportFilter activeSport={sport} onSportChange={setSport} />
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <SportSelector />
+        </div>
 
         {/* Content */}
         {isLoading ? (

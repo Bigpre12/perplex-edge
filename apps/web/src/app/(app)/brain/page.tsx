@@ -27,26 +27,27 @@ export default function BrainPage() {
 function BrainContent() {
   const { sport } = useSport();
 
-  const { data: brainData, isLoading: brainLoading, error: brainError, refetch: refetchBrain } = useQuery({
+  const { data: brainData, isLoading: brainLoading, error: brainError, refetch: refetchBrain, dataUpdatedAt: brainUpdatedAt } = useQuery({
     queryKey: ['brain', sport],
     queryFn: async () => {
-      // res = { props: [...], status: {...} }
       const res = await API.brain.status();
       if (isApiError(res)) throw res;
       return res;
     },
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
 
-  const { data: smartMoney, isLoading: smartLoading } = useQuery({
+  const { data: smartMoney, isLoading: smartLoading, dataUpdatedAt: smartUpdatedAt } = useQuery({
     queryKey: ['smart-money', sport],
     queryFn: async () => {
       const res = await API.recentIntel(sport);
       if (isApiError(res)) return { aligned_props: [] };
       return res.data || res;
     },
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
+
+  const lastSync = brainUpdatedAt ? new Date(brainUpdatedAt).toLocaleTimeString() : 'N/A';
 
   if (brainLoading || smartLoading) {
     return (
@@ -82,9 +83,10 @@ function BrainContent() {
         </div>
         <div className="flex gap-4">
           <StatBadge 
-            label="Active Models" 
-            value={brainData?.status?.overall_status === "ACTIVE" ? "12" : "DOWN"} 
-            icon={<Activity size={12} />} 
+            label={"Neural Sync: " + lastSync}
+            value={brainData?.status?.overall_status === "ACTIVE" ? "ACTIVE" : "OFFLINE"} 
+            icon={<BrainCircuit size={12} />} 
+            color={brainData?.status?.overall_status === "ACTIVE" ? "text-brand-success" : "text-brand-danger"}
           />
           <StatBadge 
             label="Live Data Volume" 

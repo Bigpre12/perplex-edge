@@ -26,11 +26,11 @@ export const useSharpMoney = () => {
     queryKey: ['sharp-money'],
     queryFn: async () => {
       try {
-        const { data } = await api.get('/api/sharp/alerts');
-        if (data && data.data) {
-          return data.data as SharpAlert[];
-        }
-        throw new Error('No sharp alerts returned from API');
+        const { data } = await api.get('/api/sharp-moves');
+        const signals = Array.isArray(data) ? data : (data.data || data.alerts || []);
+        
+        // Ensure we only show 'sharp' types as requested
+        return signals.filter((s: any) => s.type === 'sharp') as SharpAlert[];
       } catch (err) {
         console.warn('Backend sharp-money fetch failed, falling back to Supabase', err);
         const { data: supabaseData, error: supabaseError } = await supabase

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { API_BASE } from "@/lib/apiConfig";
+import { API_BASE } from "@/lib/api";
 interface Props {
     loading: boolean;
     error: string | null;
@@ -15,7 +15,7 @@ export default function PageStates({ loading, error, empty, emptyMessage, childr
     if (loading) return (
         <div className="flex items-center justify-center py-24">
             <div className="text-center space-y-3">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="w-8 h-8 border-2 border-brand-purple border-t-transparent rounded-full animate-spin mx-auto" />
                 <p className="text-gray-400 text-sm font-bold uppercase tracking-widest">Loading live data...</p>
             </div>
         </div>
@@ -28,7 +28,7 @@ export default function PageStates({ loading, error, empty, emptyMessage, childr
                 <p className="text-white font-black uppercase">{error?.includes("Failed to fetch") ? "Backend Offline" : "Data Error"}</p>
                 <p className="text-slate-500 text-xs max-w-xs mx-auto">{error || "Ensure the backend API is online"}</p>
             </div>
-            <button onClick={() => window.location.reload()} className="text-primary text-xs font-black uppercase underline">Retry Connection</button>
+            <button onClick={() => window.location.reload()} className="text-brand-purple text-xs font-black uppercase underline">Retry Connection</button>
         </div>
     );
 
@@ -49,7 +49,7 @@ export default function PageStates({ loading, error, empty, emptyMessage, childr
                 <button onClick={() => window.location.reload()} className="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-widest transition-all">
                     Sync Engine Now
                 </button>
-                <a href={`${API_BASE}/api/health`} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary text-[9px] font-black uppercase tracking-widest underline transition-colors">
+                <a href={`${API_BASE}/api/health`} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-brand-purple text-[9px] font-black uppercase tracking-widest underline transition-colors">
                     System Health Check →
                 </a>
             </div>

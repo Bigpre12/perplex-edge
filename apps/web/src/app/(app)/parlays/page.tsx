@@ -1,50 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Link2, Trash2, Zap, Target, BarChart3, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { Zap, Target, BarChart3, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { clsx } from "clsx";
 import GateLock from "@/components/GateLock";
-import { useGate } from "@/hooks/useGate";
 import { api, isApiError } from "@/lib/api";
-
-interface Leg {
-    prop_id: string; // Changed to match backend SGPLeg model
-    player_name: string;
-    side: string;
-    line: number;
-    stat_category: string;
-    odds: number;
-    game_id?: string;
-}
-
-import { useSport } from "@/context/SportContext";
-
+import { useSport } from "@/hooks/useSport";
+import { useLucrixStore } from "@/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { ParlayLegCard } from "@/components/parlay/ParlayLegCard";
 
 export default function ParlayPage() {
-    const { selectedSport: sport } = useSport();
-    const [legs, setLegs] = useState<Leg[]>([]);
+    const { sport } = useSport();
+    const { parlayLegs: legs, addLeg, removeLeg, clearParlay } = useLucrixStore();
     const [analysis, setAnalysis] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [aiBuilding, setAiBuilding] = useState(false);
 
-    // Initialize from localStorage if available
-    useEffect(() => {
-        const saved = localStorage.getItem("parlay_legs");
-        if (saved) {
-            try {
-                setLegs(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to parse saved legs");
-            }
+    const handleAiBuild = async () => {
+        setAiBuilding(true);
+        try {
+            const data = await (api as any).buildParlay(sport);
+            const newLegs = Array.isArray(data) ? data : (data.legs || []);
+            clearParlay();
+            newLegs.forEach((leg: any) => addLeg(leg));
+            setAnalysis(null);
+        } catch (e) {
+            console.error("AI Build failed", e);
+        } finally {
+            setAiBuilding(false);
         }
-    }, []);
-
-    const removeLeg = (id: string) => {
-        const next = legs.filter(l => l.prop_id !== id);
-        setLegs(next);
-        localStorage.setItem("parlay_legs", JSON.stringify(next));
-        setAnalysis(null);
     };
 
     const runAnalysis = async () => {
@@ -53,31 +38,28 @@ export default function ParlayPage() {
         try {
             // Map legs to simulation format
             const simLegs = legs.map(leg => ({
-                player_name: leg.player_name || "Unknown",
-                market: leg.stat_category || "Prop",
-                line: leg.line || 0,
+                player_name: leg.player_name || leg.selection || "Unknown",
+                market: leg.stat_category || leg.market_key || "Prop",
+                line: Number(leg.line) || 0,
                 side: (leg.side || "over").toLowerCase(),
-                // If over_price and under_price aren't stored yet, we fallback to the known odds
-                // but for real simulations we should update the storage to include both.
-                // Assuming for now they might be added to the storage in a next step.
-                over_price: (leg as any).over_price || ((leg.side || "over").toLowerCase() === 'over' ? leg.odds : -110),
-                under_price: (leg as any).under_price || ((leg.side || "over").toLowerCase() === 'under' ? leg.odds : -110),
-                historical_hit_rate: (leg as any).historical_hit_rate || 0.5
+                over_price: Number(leg.odds_over || leg.odds || -110),
+                under_price: Number(leg.odds_under || -110),
+                historical_hit_rate: Number(leg.confidence || 0.5)
             }));
 
-            const result = await api.simulate(simLegs, 100, 10000);
+            const result = await (api as any).simulate(simLegs, 100, 10000);
             
             if (result && !isApiError(result)) {
                 setAnalysis({
                     sgp_grade: result.roi > 5 ? "S" : result.roi > 2 ? "A" : result.roi > 0 ? "B" : "C",
-                    total_correlation_score: result.edge.toFixed(2),
-                    edge: (result.edge * 100).toFixed(1),
-                    win_rate: (result.win_rate * 100).toFixed(1),
-                    ev: result.expected_value,
-                    roi: result.roi,
-                    max_drawdown: result.max_drawdown,
+                    total_correlation_score: result.edge?.toFixed(2) || "0.00",
+                    edge: ((result.edge || 0) * 100).toFixed(1),
+                    win_rate: ((result.win_rate || 0) * 100).toFixed(1),
+                    ev: result.expected_value || 0,
+                    roi: result.roi || 0,
+                    max_drawdown: result.max_drawdown || 0,
                     confidence: result.confidence?.toUpperCase() || "MEDIUM",
-                    true_prob: (result.true_probability * 100).toFixed(1),
+                    true_prob: ((result.true_probability || 0) * 100).toFixed(1),
                 });
             }
         } catch (e) {
@@ -88,7 +70,8 @@ export default function ParlayPage() {
     };
 
     const totalOddsMultiplier = legs.reduce((acc, leg) => {
-        const multiplier = leg.odds > 0 ? (leg.odds / 100) + 1 : (100 / Math.abs(leg.odds)) + 1;
+        const odds = Number(leg.odds || leg.odds_over || -110);
+        const multiplier = odds > 0 ? (odds / 100) + 1 : (100 / Math.abs(odds)) + 1;
         return acc * multiplier;
     }, 1);
 
@@ -98,6 +81,14 @@ export default function ParlayPage() {
 
     const displayAmericanOdds = americanOddsRaw > 0 ? `+${americanOddsRaw}` : americanOddsRaw;
 
+    // Grade Color Mappings
+    const gradeStyles: Record<string, string> = {
+        'S': 'text-yellow-400 border-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.5)]',
+        'A': 'text-emerald-400 border-emerald-400 shadow-[0_0_25px_rgba(52,211,153,0.5)]',
+        'B': 'text-blue-400 border-blue-400 shadow-[0_0_25px_rgba(96,165,250,0.5)]',
+        'C': 'text-slate-400 border-slate-400 shadow-[0_0_25px_rgba(148,163,184,0.5)]',
+    };
+
     return (
         <div className="pb-32 space-y-10 pt-10 px-6 max-w-[1400px] mx-auto text-white">
             {/* Premium Header */}
@@ -106,10 +97,20 @@ export default function ParlayPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                 >
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase font-display leading-none mb-2">
-                        Parlay <span className="text-brand-primary">Matrix</span>
-                    </h1>
-                    <p className="text-textMuted text-xs font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-4 mb-2">
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase font-display leading-none">
+                            Parlay <span className="text-brand-primary">Matrix</span>
+                        </h1>
+                        <button
+                            onClick={handleAiBuild}
+                            disabled={aiBuilding}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-brand-primary/10 border border-brand-primary/20 rounded-full text-[10px] font-black uppercase tracking-widest text-brand-primary hover:bg-brand-primary hover:text-white transition-all disabled:opacity-50"
+                        >
+                            <Zap size={14} className={aiBuilding ? "animate-spin" : "fill-current"} />
+                            {aiBuilding ? "Neural Building..." : "Build Me a Parlay"}
+                        </button>
+                    </div>
+                    <p className="text-textMuted text-xs font-bold uppercase tracking-widest leading-none">
                         Cross-Market Simulation & Correlation Engine
                     </p>
                 </motion.div>
@@ -121,14 +122,13 @@ export default function ParlayPage() {
                     </div>
                     <div className="flex flex-col items-center px-4">
                         <span className="text-[9px] font-black uppercase tracking-widest text-textMuted mb-1">Total Odds</span>
-                        <span className="text-xl font-black italic text-brand-primary">{displayAmericanOdds}</span>
+                        <span className="text-xl font-black italic text-brand-primary">{legs.length > 0 ? displayAmericanOdds : "---"}</span>
                     </div>
                 </div>
             </div>
 
             <GateLock feature="parlay">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    {/* Left: Simulation & Analysis Dashboard */}
                     <div className="lg:col-span-8 space-y-6">
                         <AnimatePresence mode="wait">
                             {loading ? (
@@ -157,13 +157,15 @@ export default function ParlayPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     className="bg-lucrix-surface/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden"
                                 >
-                                    {/* Score Header */}
                                     <div className="bg-gradient-to-br from-brand-primary/20 via-transparent to-transparent p-10 flex flex-col md:flex-row items-center justify-between gap-8 border-b border-white/5">
                                         <div className="flex items-center gap-6">
                                             <div className="relative group">
                                                 <div className="absolute -inset-4 bg-brand-primary/20 rounded-full blur-2xl group-hover:bg-brand-primary/40 transition duration-500" />
-                                                <div className="relative w-24 h-24 rounded-full border-4 border-brand-primary flex items-center justify-center bg-lucrix-dark/80">
-                                                    <span className="text-5xl font-black italic text-brand-primary">{analysis.sgp_grade}</span>
+                                                <div className={clsx(
+                                                    "relative w-24 h-24 rounded-full border-4 flex items-center justify-center bg-lucrix-dark/80 transition-all duration-700",
+                                                    gradeStyles[analysis.sgp_grade] || gradeStyles['C']
+                                                )}>
+                                                    <span className="text-5xl font-black italic">{analysis.sgp_grade}</span>
                                                 </div>
                                             </div>
                                             <div>
@@ -183,10 +185,9 @@ export default function ParlayPage() {
                                         </div>
                                     </div>
 
-                                    {/* Stats Grid */}
                                     <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-white/5">
                                         <div className="p-8 group hover:bg-white/5 transition-colors">
-                                            <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-2 italic">Probability</p>
+                                            <p className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-2 italic">Win Probability</p>
                                             <div className="text-2xl font-black text-white">{analysis.win_rate}%</div>
                                         </div>
                                         <div className="p-8 group hover:bg-white/5 transition-colors">
@@ -203,7 +204,6 @@ export default function ParlayPage() {
                                         </div>
                                     </div>
 
-                                    {/* Confidence Banner */}
                                     <div className="p-6 bg-white/5 border-t border-white/5">
                                         <div className="flex items-center gap-3 text-textMuted">
                                             <ShieldCheck size={18} className="text-brand-primary" />
@@ -225,8 +225,8 @@ export default function ParlayPage() {
                                         <Target className="text-textMuted/40" size={48} />
                                     </div>
                                     <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Build Your Slip</h3>
-                                    <p className="text-textMuted text-sm font-bold max-w-sm mx-auto italic">
-                                        Add legs from the Alpha Scanner or Player Props to begin your Monte Carlo simulation.
+                                    <p className="text-textMuted text-sm font-bold max-w-sm mx-auto italic leading-relaxed">
+                                        Add legs from the Props Board or Alpha Scanner.<br/>Begin your cross-market correlation analysis.
                                     </p>
                                 </motion.div>
                             ) : (
@@ -240,31 +240,29 @@ export default function ParlayPage() {
                                         <BarChart3 size={48} className="text-brand-primary" />
                                     </div>
                                     <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2">Analysis Required</h3>
-                                    <p className="text-textMuted text-sm font-bold max-w-sm mx-auto italic mb-8">
-                                        You have successfully added {legs.length} legs. Run the simulator to calculate true edge and correlation.
+                                    <p className="text-textMuted text-sm font-bold max-w-sm mx-auto italic mb-8 leading-relaxed">
+                                        You have successfully added {legs.length} legs. Run the simulator to calculate true edge and correlation matrix.
                                     </p>
                                     <button 
                                         onClick={runAnalysis}
                                         className="bg-brand-primary hover:bg-brand-primary-hover text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-brand-primary/20 hover:scale-105 active:scale-95"
                                     >
-                                        Run Simulation Matrix
+                                        Execute Simulation Matrix
                                     </button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
 
-                    {/* Right: Premium Slip */}
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-lucrix-surface/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl sticky top-24 overflow-hidden">
-                            {/* Decorative Accent */}
-                            <div className="absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 bg-brand-primary/10 rounded-full blur-3xl" />
+                            <div className="absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 bg-brand-primary/10 rounded-full blur-3xl opacity-50" />
                             
                             <div className="relative flex items-center justify-between mb-8 pb-4 border-b border-white/5">
                                 <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-primary inline-flex items-center gap-2">
-                                    <Zap size={12} className="fill-brand-primary" /> Parlay Slip
+                                    <CheckCircle2 size={12} className="text-brand-primary" /> Parlay Slip
                                 </h2>
-                                <span className="text-[9px] font-black uppercase text-textMuted italic">Beta 1.0</span>
+                                <span className="text-[9px] font-black uppercase text-textMuted italic">NEURAL v2.4</span>
                             </div>
 
                             <div className="space-y-4 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -280,8 +278,8 @@ export default function ParlayPage() {
                                             </p>
                                         </motion.div>
                                     ) : (
-                                        legs.map((leg, i) => (
-                                            <ParlayLegCard key={leg.prop_id} leg={leg} index={i} onRemove={removeLeg} />
+                                        legs.map((leg: any, i: number) => (
+                                            <ParlayLegCard key={leg.id || leg.prop_id} leg={leg} index={i} onRemove={removeLeg} />
                                         ))
                                     )}
                                 </AnimatePresence>
@@ -297,7 +295,12 @@ export default function ParlayPage() {
                                     </div>
                                     <div className="text-right">
                                         <span className="text-[9px] font-black uppercase tracking-widest text-textMuted mb-2 block italic">Confidence</span>
-                                        <span className="text-xs font-black text-white italic">{loading ? "CALC..." : (analysis?.confidence || "NONE")}</span>
+                                        <span className={clsx(
+                                            "text-xs font-black italic",
+                                            analysis ? "text-brand-primary" : "text-white/20"
+                                        )}>
+                                            {loading ? "CALC..." : (analysis?.confidence || "PENDING")}
+                                        </span>
                                     </div>
                                 </div>
 

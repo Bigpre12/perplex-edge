@@ -7,6 +7,8 @@ import { GradeBadge } from '@/components/shared/GradeBadge';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
 import { SportFilter } from '@/components/shared/SportFilter';
+import { Check, Plus } from 'lucide-react';
+import { useLucrixStore } from '@/store';
 
 export default function PropsPage() {
   const [sport, setSport] = useState('basketball_nba');
@@ -56,6 +58,31 @@ export default function PropsPage() {
       accessor: (p: PropRecord) => <GradeBadge grade={p.grade} /> 
     },
     { header: 'Bookmaker', accessor: (p: any) => p.book, className: 'text-xs text-white/50 uppercase' },
+    {
+      header: 'Action',
+      accessor: (p: PropRecord) => {
+        const { addLeg, parlayLegs } = useLucrixStore();
+        const isInParlay = parlayLegs.some((l: any) => l.id === p.id);
+        
+        return (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addLeg(p);
+            }}
+            disabled={isInParlay}
+            className={`flex items-center space-x-1 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
+              isInParlay 
+                ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500 hover:text-white'
+            }`}
+          >
+            {isInParlay ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+            <span>{isInParlay ? 'Added' : 'Parlay'}</span>
+          </button>
+        );
+      }
+    }
   ];
 
   return (

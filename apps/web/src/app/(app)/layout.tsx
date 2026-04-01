@@ -16,8 +16,7 @@ import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { SportProvider } from "@/context/SportContext";
 import StatusBar from "@/components/shared/StatusBar";
 import PrefetchWrapper from "@/components/shared/PrefetchWrapper";
-
-
+import GlobalHelp from "@/components/shared/GlobalHelp";
 
 export default function AppLayout({
     children,
@@ -61,6 +60,7 @@ export default function AppLayout({
                 {/* Global Modals & Listeners */}
                 <CommandCenter />
                 <OracleChatbot />
+                <GlobalHelp />
                 <ArbNotificationBanner />
                 <MobileNav />
             </div>

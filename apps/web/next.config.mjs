@@ -17,11 +17,11 @@ const nextConfig = {
     },
     async rewrites() {
         const isProd = process.env.NODE_ENV === "production";
-        let backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
+        let backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app";
         
         // Prevent accidental localhost copy-paste to Vercel
         if (isProd && backendUrl.includes("localhost")) {
-            backendUrl = "https://perplex-edge-backend-copy-production.up.railway.app";
+            backendUrl = "https://perplex-edge-backend-production.up.railway.app";
         }
 
         return [

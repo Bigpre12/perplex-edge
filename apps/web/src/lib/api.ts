@@ -3,7 +3,7 @@ import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
 const isServer = typeof window === 'undefined';
 
 // --- CONFIGURATION ---
-const PROD_URL = "https://perplex-edge-backend-copy-production.up.railway.app";
+const PROD_URL = "https://perplex-edge-backend-production.up.railway.app";
 const LOCAL_URL = "http://localhost:8000";
 
 // On server, we need the full URL. On client, we use the /backend proxy for better CORS/SSL support.
@@ -27,6 +27,36 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Implementation of exponential backoff retry logic (Phase 1)
+api.interceptors.response.use(
+  (response) => response,
+  async (error: any) => {
+    const config = error.config;
+    if (!config) return Promise.reject(error);
+
+    // Initialize retry count
+    config._retryCount = config._retryCount || 0;
+
+    // Only retry on network errors or 5xx server errors
+    const isNetworkError = !error.response;
+    const isServerError = error.response && error.response.status >= 500 && error.response.status <= 599;
+    
+    if ((isNetworkError || isServerError) && config._retryCount < 3) {
+      config._retryCount += 1;
+      
+      // Exponential backoff: 1s, 2s, 4s
+      const backoffDelay = Math.pow(2, config._retryCount - 1) * 1000;
+      console.warn(`[API Retry] ${config.url} failed. Attempt ${config._retryCount}/3 in ${backoffDelay}ms...`);
+      
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      return api(config);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 // Automatically inject JWT token from localStorage into every request
 api.interceptors.request.use((config: any) => {
   if (typeof window !== 'undefined') {
@@ -77,6 +107,26 @@ api.interceptors.response.use((response: any) => {
 };
 (api as any).simulate = async (legs: any[], sims = 100, trials = 10000) => {
   const { data } = await api.post('/api/parlays/simulate', { legs, n_sims: trials });
+  return data;
+};
+(api as any).buildParlay = async (sport: string) => {
+  const { data } = await api.get(`/api/oracle/build-parlay`, { params: { sport } });
+  return data;
+};
+(api as any).ledgerMyBets = async () => {
+  const { data } = await api.get('/api/bets/my');
+  return data;
+};
+(api as any).ledgerStats = async () => {
+  const { data } = await api.get('/api/bets/stats');
+  return data;
+};
+(api as any).ledgerCreateBet = async (betData: any) => {
+  const { data } = await api.post('/api/bets', betData);
+  return data;
+};
+(api as any).socialShare = async (shareData: any) => {
+  const { data } = await api.post('/api/social/share', shareData);
   return data;
 };
 // Helper for error handling
@@ -288,6 +338,12 @@ export const API = {
   mlPredict: async (payload: any) => {
     try {
       const { data } = await api.post(`/api/oracle/analyze-prop`, payload);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  buildParlay: async (sport: string) => {
+    try {
+      const { data } = await api.get(`/api/oracle/build-parlay`, { params: { sport } });
       return data;
     } catch (err) { return handleApiError(err); }
   },

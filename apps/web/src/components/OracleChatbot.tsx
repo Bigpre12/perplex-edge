@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useGate } from "@/hooks/useGate";
+import { useSport } from "@/hooks/useSport";
+import { clsx } from "clsx";
+import { motion } from "framer-motion";
 
 interface Message {
     role: "user" | "assistant";
@@ -20,12 +24,9 @@ const SUGGESTIONS = [
     "Sharp money report",
 ];
 
-import { useGate } from "@/hooks/useGate";
-import { api, isApiError } from "@/lib/api";
-import axios from "axios";
-
 export default function OracleChatbot() {
     const { tier, oracleLimit } = useGate();
+    const { sport } = useSport();
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
     const [input, setInput] = useState("");
@@ -45,22 +46,54 @@ export default function OracleChatbot() {
         if (!text.trim() || loading) return;
 
         const userMsg: Message = { role: "user", content: text };
-        const updated = [...messages, userMsg];
-        setMessages(updated);
+        // Store current messages for the API call
+        const currentMessages = [...messages, userMsg];
+        
+        setMessages(currentMessages);
         setInput("");
         setLoading(true);
 
         try {
-            const response = await api.post('/api/oracle/chat', { messages: updated });
-            const data = response.data;
+            const response = await fetch('/api/oracle/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    messages: currentMessages, 
+                    sport: sport 
+                }),
+            });
 
-            if (data && !isApiError(data)) {
-                setMessages((prev) => [
-                    ...prev,
-                    { role: "assistant", content: data.message ?? "No response from Oracle." },
-                ]);
-            } else {
-                throw new Error(data.message || data.error);
+            if (!response.ok) throw new Error("Oracle connection failed");
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            
+            // Start with empty assistant message
+            setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+            
+            let fullContent = "";
+
+            if (reader) {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                // We're expecting raw text or data: chunks. 
+                // For a simple proxy, it might just be the raw tokens.
+                fullContent += chunk;
+                
+                setMessages((prev) => {
+                  const items = [...prev];
+                  if (items.length > 0) {
+                    items[items.length - 1] = { 
+                      role: "assistant", 
+                      content: fullContent 
+                    };
+                  }
+                  return items;
+                });
+              }
             }
         } catch (e: any) {
             setMessages((prev) => [
@@ -70,72 +103,62 @@ export default function OracleChatbot() {
         } finally {
             setLoading(false);
         }
-    }, [messages, loading]);
+    }, [messages, loading, sport]);
 
     const reset = () => setMessages([INITIAL_MESSAGE]);
 
     return (
         <>
-            {/* Floating Button — right side, above Command Center */}
+            {/* Floating Button */}
             <button
                 onClick={() => setOpen(!open)}
-                aria-label="Toggle Oracle"
-                className="fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full bg-purple-600 hover:bg-purple-500 active:scale-95 text-white shadow-xl flex items-center justify-center text-2xl transition-all duration-200"
+                className="fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full bg-brand-primary hover:bg-brand-primary/80 active:scale-95 text-white shadow-glow shadow-brand-primary/20 flex items-center justify-center text-2xl transition-all duration-200"
             >
                 {open ? "✕" : "🔮"}
             </button>
 
             {/* Chat Window */}
             {open && (
-                <div className="fixed bottom-40 right-6 z-50 w-80 sm:w-96 h-[520px] bg-gray-950 border border-purple-800/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-
+                <div className="fixed bottom-40 right-6 z-50 w-80 sm:w-96 h-[520px] bg-gray-950 border border-brand-primary/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-purple-900/30 border-b border-purple-800/50">
+                    <div className="flex items-center justify-between px-4 py-3 bg-brand-primary/10 border-b border-brand-primary/20">
                         <div className="flex items-center gap-2">
                             <span className="text-lg">🔮</span>
-                            <span className="font-bold text-white text-sm tracking-wide">Oracle</span>
-                            <span className="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">
-                                LIVE
+                            <span className="font-bold text-white text-sm tracking-wide uppercase">Oracle Neural Sync</span>
+                            <span className="text-[9px] text-brand-success bg-brand-success/10 px-2 py-0.5 rounded-full border border-brand-success/20 font-black animate-pulse">
+                                STREAMING
                             </span>
                         </div>
-                        <button
-                            onClick={reset}
-                            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                        >
-                            Clear
+                        <button onClick={reset} className="text-[10px] text-textMuted hover:text-white transition-colors font-black uppercase tracking-widest">
+                            Reset
                         </button>
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-700">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-none">
                         {messages.map((msg, i) => (
-                            <div
-                                key={i}
-                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                            >
+                            <div key={i} className={clsx("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
                                 {msg.role === "assistant" && (
                                     <span className="text-base mr-2 mt-1 flex-shrink-0">🔮</span>
                                 )}
-                                <div
-                                    className={`max-w-[82%] px-3 py-2 rounded-xl text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "user"
-                                        ? "bg-purple-600 text-white rounded-br-none"
-                                        : "bg-gray-800/80 text-gray-100 rounded-bl-none border border-gray-700/50"
-                                        }`}
-                                >
+                                <div className={clsx(
+                                    "max-w-[85%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap font-sans",
+                                    msg.role === "user"
+                                        ? "bg-brand-primary text-white rounded-br-none shadow-glow shadow-brand-primary/10"
+                                        : "bg-white/5 text-slate-100 rounded-bl-none border border-white/5"
+                                )}>
                                     {msg.content}
                                 </div>
                             </div>
                         ))}
-
-                        {/* Typing indicator */}
-                        {loading && (
+                        {loading && messages[messages.length-1]?.role !== 'assistant' && (
                             <div className="flex justify-start items-center gap-2">
                                 <span className="text-base">🔮</span>
-                                <div className="bg-gray-800 px-4 py-3 rounded-xl rounded-bl-none border border-gray-700/50">
+                                <div className="bg-white/5 px-4 py-3 rounded-2xl rounded-bl-none border border-white/5">
                                     <div className="flex gap-1">
-                                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-0" />
-                                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-150" />
-                                        <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-300" />
+                                        <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-bounce" />
+                                        <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                                        <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-bounce [animation-delay:0.4s]" />
                                     </div>
                                 </div>
                             </div>
@@ -143,14 +166,14 @@ export default function OracleChatbot() {
                         <div ref={bottomRef} />
                     </div>
 
-                    {/* Suggestions — only on first message */}
+                    {/* Suggestions */}
                     {messages.length <= 1 && (
-                        <div className="px-3 pb-2 flex flex-wrap gap-1.5">
+                        <div className="px-4 pb-4 flex flex-wrap gap-2">
                             {SUGGESTIONS.map((s) => (
                                 <button
                                     key={s}
                                     onClick={() => ask(s)}
-                                    className="text-xs bg-purple-900/40 hover:bg-purple-700/60 text-purple-300 px-2.5 py-1 rounded-full border border-purple-700/50 transition-all duration-150"
+                                    className="text-[10px] font-black uppercase tracking-widest bg-white/5 hover:bg-brand-primary/20 text-textMuted hover:text-white px-3 py-1.5 rounded-lg border border-white/5 transition-all duration-150"
                                 >
                                     {s}
                                 </button>
@@ -159,31 +182,31 @@ export default function OracleChatbot() {
                     )}
 
                     {/* Input */}
-                    <div className="flex flex-col border-t border-purple-800/50">
+                    <div className="p-4 border-t border-white/10 bg-white/5">
                         {messages.length > oracleLimit * 2 && tier === "free" ? (
-                            <div className="p-4 text-center bg-purple-900/20">
-                                <p className="text-xs text-gray-400">Daily Oracle limit reached</p>
-                                <a href="/pricing" className="text-purple-400 font-bold text-xs hover:underline mt-1 inline-block">
-                                    Upgrade to Pro for Unlimited Oracle →
+                            <div className="text-center p-2">
+                                <p className="text-[10px] text-textMuted uppercase font-black mb-2">Daily Signal Limit Exceeded</p>
+                                <a href="/billing" className="text-brand-primary font-black uppercase tracking-widest text-[9px] hover:underline">
+                                    Upgrade Terminal Access →
                                 </a>
                             </div>
                         ) : (
-                            <div className="p-3 flex gap-2">
+                            <div className="flex gap-2">
                                 <input
                                     ref={inputRef}
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && ask(input)}
-                                    placeholder="Ask Oracle..."
+                                    placeholder="Execute query..."
                                     disabled={loading}
-                                    className="flex-1 bg-gray-800/80 text-white text-sm rounded-xl px-3 py-2 outline-none border border-gray-700/50 focus:border-purple-500 placeholder-gray-500 disabled:opacity-50 transition-colors"
+                                    className="flex-1 bg-white/5 text-white text-xs rounded-xl px-4 py-2.5 outline-none border border-white/10 focus:border-brand-primary/50 placeholder-gray-600 disabled:opacity-50 transition-all"
                                 />
                                 <button
                                     onClick={() => ask(input)}
                                     disabled={loading || !input.trim()}
-                                    className="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-150 active:scale-95"
+                                    className="bg-brand-primary hover:bg-brand-primary/80 disabled:opacity-30 disabled:cursor-not-allowed text-white px-5 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
                                 >
-                                    {loading ? "..." : "→"}
+                                    {loading ? "..." : "Sync"}
                                 </button>
                             </div>
                         )}

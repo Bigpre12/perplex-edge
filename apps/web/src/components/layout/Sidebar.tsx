@@ -114,7 +114,7 @@ export default function Sidebar() {
                     </div>
                 )}
                 <div className="text-textMuted font-mono text-[10px] mt-2">
-                    v1.2.7
+                    v2.1.0
                 </div>
             </div>
         </aside>

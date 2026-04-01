@@ -9,8 +9,11 @@ export const SPORTS_CONFIG = {
     soccer_epl: { label: "EPL", icon: "⚽", season: true, espn: "eng.1", espn_path: "soccer/eng.1" },
     soccer_uefa_champs_league: { label: "UCL", icon: "⚽", season: true, espn: "uefa.champions", espn_path: "soccer/uefa.champions" },
     mma_mixed_martial_arts: { label: "UFC", icon: "🥊", season: true, espn: "ufc", espn_path: "mma/ufc" },
+    soccer_usa_mls: { label: "MLS", icon: "⚽", season: true, espn: "usa.1", espn_path: "soccer/usa.1" },
     tennis_atp: { label: "Tennis", icon: "🎾", season: true, espn: "atp", espn_path: "tennis/atp" },
-    golf_pga_tour: { label: "PGA", icon: "⛳", season: true, espn: "pga", espn_path: "golf/pga" },
+    tennis_wta: { label: "Tennis (W)", icon: "🎾", season: true, espn: "wta", espn_path: "tennis/wta" },
+    golf_pga: { label: "PGA", icon: "⛳", season: true, espn: "pga", espn_path: "golf/pga" },
+    boxing_boxing: { label: "Boxing", icon: "🥊", season: true, espn: "boxing", espn_path: "boxing" },
     all: { label: "All Sports", icon: "🌍", season: true, espn: null, espn_path: "basketball/nba" },
 } as const;
 

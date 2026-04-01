@@ -6,17 +6,19 @@ import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
 import { Trophy, TrendingUp, BarChart3, Activity } from 'lucide-react';
-import { useSport } from '@/context/SportContext';
+import { useSport } from '@/hooks/useSport';
+import SportSelector from '@/components/shared/SportSelector';
+import { clsx } from "clsx";
 
 export default function HitRatePage() {
-  const { selectedSport } = useSport();
+  const { sport } = useSport();
   const { data: stats, isLoading: statsLoading, isError: statsError } = useHitRate();
   const { 
     data: players, 
     isLoading: playersLoading, 
     isError: playersError, 
     refetch 
-  } = useHitRatePlayers(selectedSport);
+  } = useHitRatePlayers(sport);
 
   const columns = [
     { 
@@ -50,20 +52,31 @@ export default function HitRatePage() {
     },
   ];
 
-  const StatCard = ({ label, value, icon: Icon, color }: any) => (
-    <div className="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden">
-       <div className="flex justify-between items-start relative z-10">
+  const StatCard = ({ label, value, icon: Icon, color }: { label: string, value: string, icon: any, color: 'blue' | 'green' | 'purple' | 'yellow' }) => {
+    const colorMap = {
+      blue: { bg: 'bg-blue-500/20', text: 'text-blue-400', blur: 'bg-blue-500/10' },
+      green: { bg: 'bg-green-500/20', text: 'text-green-400', blur: 'bg-green-500/10' },
+      purple: { bg: 'bg-purple-500/20', text: 'text-purple-400', blur: 'bg-purple-500/10' },
+      yellow: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', blur: 'bg-yellow-500/10' }
+    };
+
+    const style = colorMap[color];
+
+    return (
+      <div className="bg-white/5 border border-white/10 p-6 rounded-3xl relative overflow-hidden">
+        <div className="flex justify-between items-start relative z-10">
           <div>
             <p className="text-white/40 text-xs font-black uppercase tracking-widest mb-1">{label}</p>
             <h3 className="text-3xl font-black">{value}</h3>
           </div>
-          <div className={`p-2 rounded-xl bg-${color}-500/20 text-${color}-400`}>
-             <Icon className="w-5 h-5" />
+          <div className={clsx("p-2 rounded-xl", style.bg, style.text)}>
+            <Icon className="w-5 h-5" />
           </div>
-       </div>
-       <div className={`absolute bottom-0 right-0 p-4 bg-${color}-500/10 blur-2xl w-24 h-24 rounded-full -mr-12 -mb-12`} />
-    </div>
-  );
+        </div>
+        <div className={clsx("absolute bottom-0 right-0 p-4 blur-2xl w-24 h-24 rounded-full -mr-12 -mb-12", style.blur)} />
+      </div>
+    );
+  };
 
   const isLoading = statsLoading || playersLoading;
   const isError = statsError || playersError;
@@ -80,6 +93,7 @@ export default function HitRatePage() {
            <h1 className="text-5xl font-black tracking-tighter uppercase italic">
              HIT RATE <span className="text-blue-500 not-italic">TRACKER</span>
            </h1>
+           <SportSelector />
         </div>
 
         {/* Global Stats Grid */}

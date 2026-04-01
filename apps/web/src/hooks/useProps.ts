@@ -21,11 +21,9 @@ export const useProps = (sport: string = 'basketball_nba') => {
     queryKey: ['props', sport],
     queryFn: async () => {
       try {
-        const { data } = await api.get(`/api/props/graded?sport=${sport}`);
-        if (data && data.props && data.props.length > 0) {
-          return data.props as PropRecord[];
-        }
-        throw new Error('No props returned from API');
+        const { data } = await api.get(`/api/props/scored?sport=${sport}`);
+        const props = Array.isArray(data) ? data : (data.props || data.data || []);
+        return props as PropRecord[];
       } catch (err) {
         console.warn('Backend props fetch failed, falling back to Supabase', err);
         const { data: supabaseData, error: supabaseError } = await supabase
