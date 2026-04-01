@@ -421,6 +421,7 @@ app = FastAPI(title=APP_NAME, redirect_slashes=False, lifespan=backend_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://perplex-edge.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -487,6 +488,11 @@ if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalsh
 if sharp_router:         app.include_router(sharp_router, prefix="/api/sharp", tags=["sharp"])
 if parlays_router:       app.include_router(parlays_router, prefix="/api/parlays", tags=["parlays"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
+
+# Hero Stats (Analytics Modal)
+from routers.hero import router as hero_router
+app.include_router(hero_router, prefix="/api/hero", tags=["hero"])
+
 if alerts_router:        app.include_router(alerts_router)
 if audit_router:         app.include_router(audit_router)
 

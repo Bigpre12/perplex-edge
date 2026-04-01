@@ -1,4 +1,4 @@
-import { API_BASE } from "./apiConfig";
+import { API_BASE } from "./api";
 import { TOKEN_STORAGE_KEY, handleUnauthorized } from "./authStorage";
 
 /**
@@ -35,16 +35,11 @@ export async function apiClient<T>(
   options: RequestOptions = {}
 ): Promise<T> {
   const { params, retries = 3, backoff = 1000, ...fetchOptions } = options;
-  // 1. Construct URL with query params
-  let configuredUrl = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
-  if (process.env.NODE_ENV === "production" && configuredUrl.includes("localhost")) {
-      configuredUrl = "https://perplex-edge-backend-copy-production.up.railway.app";
-  }
-  const baseUrl = typeof window !== "undefined"
-    ? window.location.origin
-    : configuredUrl;
-
-  const url = new URL(endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`, baseUrl);
+  
+  // Use the centralized API_BASE. 
+  // In production (Vercel), this is "/backend" (proxy).
+  // In server-side rendering, this is the full Railway URL.
+  const url = new URL(endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : undefined);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined) url.searchParams.append(key, String(value));

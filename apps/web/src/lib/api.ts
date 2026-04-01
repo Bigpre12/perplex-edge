@@ -1,18 +1,26 @@
 import axios from 'axios';
 import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
 const isServer = typeof window === 'undefined';
-const env = isServer ? (globalThis as any).process?.env : {};
 
-const configuredUrl = env?.NEXT_PUBLIC_API_URL || '';
+// --- CONFIGURATION ---
+const PROD_URL = "https://perplex-edge-backend-copy-production.up.railway.app";
+const LOCAL_URL = "http://localhost:8000";
 
-// If we're on the server and no URL is provided, we must fail or log.
-// On the client, we use the '/backend' proxy prefix defined in next.config.mjs.
-if (!configuredUrl && isServer) {
-    console.warn("⚠️ NEXT_PUBLIC_API_URL is not set. API calls may fail on server-side rendering.");
+// On server, we need the full URL. On client, we use the /backend proxy for better CORS/SSL support.
+const rawUrl = (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL : null) || PROD_URL;
+let configuredUrl = rawUrl;
+
+// Sanity check: Ensure we don't use localhost in production mode on the server
+if (isServer && process.env.NODE_ENV === "production" && configuredUrl.includes("localhost")) {
+    configuredUrl = PROD_URL;
 }
 
-export const API_BASE = isServer ? (configuredUrl || 'http://localhost:8000') : '/backend';
-const API_URL = isServer ? (configuredUrl || 'http://localhost:8000') : '/backend';
+export const API_BASE = isServer ? configuredUrl : "/backend";
+const API_URL = isServer ? configuredUrl : "/backend";
+
+// WebSocket Base URL: swapping http -> ws, https -> wss
+const wsBase = isServer ? configuredUrl : window.location.origin;
+export const WS_BASE = wsBase.replace('https://', 'wss://').replace('http://', 'ws://');
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -304,6 +312,7 @@ export const API = {
       return data;
     } catch (err) { return handleApiError(err); }
   },
+  wsBaseUrl: isServer ? WS_BASE : (window.location.origin.replace('http', 'ws') + '/backend'),
   adminStats: async (email: string) => {
     try {
       const { data } = await api.get(`/api/admin/stats?email=${email}`);
