@@ -67,7 +67,7 @@ class UnifiedIngestionService:
                             "sport_key": sport_key,
                             "home_team": g.get("home_team"),
                             "away_team": g.get("away_team"),
-                            "commence_time": g.get("start_time").isoformat() if isinstance(g.get("start_time"), datetime) else None,
+                            "commence_time": g.get("start_time").isoformat() if isinstance(g.get("start_time"), datetime) else str(g.get("start_time") or g.get("date") or ""),
                             "bookmakers": g.get("raw_bookmakers_data", [])
                         })
                 else:
