@@ -1,36 +1,64 @@
 "use client";
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import API, { isApiError } from '@/lib/api';
 import { useLucrixStore } from "@/store";
 
-export function useHealthMonitor(intervalMs = 15_000) {
-    const { setBackendOnline } = useLucrixStore();
-    const failRef = useRef(0);
-    const timerRef = useRef<NodeJS.Timeout>();
+export function useHealthMonitor() {
+    const { setBackendOnline, setIsConnecting } = useLucrixStore();
+    const [failCount, setFailCount] = useState(0);
 
     const check = async () => {
         try {
             const result = await API.health();
             if (!isApiError(result)) {
-                failRef.current = 0;
                 setBackendOnline(true);
+                setIsConnecting(false);
+                setFailCount(0);
+                return true;
             } else {
-                throw new Error("API reported error status");
+                return false;
             }
-        } catch {
-            failRef.current++;
-            if (failRef.current >= 2) { // More aggressive offline detection
-                setBackendOnline(false);
-            }
+        } catch (err) {
+            return false;
         }
     };
 
-    useEffect(() => {
-        check();
-        const interval = setInterval(check, intervalMs);
-        timerRef.current = interval;
-        return () => clearInterval(interval);
-    }, [intervalMs]);
+    const handleFailure = () => {
+        setFailCount(prev => {
+            const newCount = prev + 1;
+            if (newCount < 4) {
+                setIsConnecting(true);
+            } else {
+                setBackendOnline(false);
+                setIsConnecting(false);
+            }
+            return newCount;
+        });
+    };
 
-    return { check };
+    useEffect(() => {
+        let timerId: NodeJS.Timeout;
+
+        const runCheck = async () => {
+            const success = await check();
+            if (success) {
+                timerId = setTimeout(runCheck, 30000);
+            } else {
+                handleFailure();
+                const delays = [0, 3000, 8000, 15000];
+                const nextDelay = delays[failCount + 1] || 15000;
+                timerId = setTimeout(runCheck, nextDelay);
+            }
+        };
+
+        runCheck();
+
+        return () => {
+            if (timerId) clearTimeout(timerId);
+        };
+    }, [setBackendOnline, setIsConnecting]); 
+
+    return { 
+        checkNow: check 
+    };
 }

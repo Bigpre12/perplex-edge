@@ -1,14 +1,10 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { Zap, Search, RefreshCw, Filter, Trophy, Star, Clock } from "lucide-react";
+import { useState, Suspense, useEffect } from "react";
+import { Zap, Search, Trophy, Star, Clock, X, TrendingUp, Brain } from "lucide-react";
 import { clsx } from "clsx";
-import { useLiveData } from "@/hooks/useLiveData";
-import { useGate } from "@/hooks/useGate";
 import { useLucrixStore } from "@/store";
-import GateLock from "@/components/GateLock";
-import PropsEmptyState from "@/components/PropsEmptyState";
-import LiveStatusBar from "@/components/LiveStatusBar";
+import { useGate } from "@/hooks/useGate";
 import { useSearchParams } from "next/navigation";
 import SportSelector from "@/components/shared/SportSelector";
 import { UniversalDataGate, DataStatus } from "@/components/shared/UniversalDataGate";
@@ -16,16 +12,17 @@ import { useFreshness } from "@/hooks/useFreshness";
 import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
 import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggle";
 import TrendChart from "@/components/TrendChart";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, Brain } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { AnimatePresence } from "framer-motion";
 import { usePropsBoard } from "@/hooks/usePropsBoard";
-import API, { api, unwrap } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { safeDate, formatTime } from "@/lib/dateUtils";
+import PlayerTrendsModal from "@/components/PlayerTrendsModal";
+import { isAfter } from "date-fns";
+import LiveStatusBar from "@/components/LiveStatusBar";
 
 export default function PlayerPropsPage() {
     return (
-        <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display">BOOTING INTEL...</div>}>
+        <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING INTEL...</div>}>
             <PlayerPropsContent />
         </Suspense>
     );
@@ -33,35 +30,28 @@ export default function PlayerPropsPage() {
 
 function PlayerPropsContent() {
     const sport = useLucrixStore((state: any) => state.activeSport);
-    const tier = useLucrixStore((state: any) => state.userTier);
     const { data: freshness, isLoading: freshnessLoading } = useFreshness(sport);
     const searchParams = useSearchParams();
 
     const minEv = parseFloat(searchParams.get("minEdge") || "0");
     const [searchQuery, setSearchQuery] = useState("");
     const [isHistorical, setIsHistorical] = useState(false);
+    const [selectedProp, setSelectedProp] = useState<any>(null);
 
-    // Use canonical propsBoard endpoint which returns properly formatted data
     const { data: boardData, isLoading: loading, error, refetch: refresh } = usePropsBoard(sport, minEv > 0 ? minEv : undefined);
 
     const lastUpdated = safeDate(boardData?.updated);
     const isStale = lastUpdated ? (Date.now() - lastUpdated.getTime()) > 180000 : false;
-    const isFallback = boardData?.fallback === "team_markets";
-
-    const [selectedHero, setSelectedHero] = useState<string | null>(null);
 
     const fullData = boardData?.props || [];
-    const { tier: activeTier, propsLimit } = useGate();
+    const { propsLimit, tier: activeTier } = useGate();
 
-    // In dev, show everything regardless of tier slicing
     const isDev = typeof window !== 'undefined' &&
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
     const limitedData = isDev ? fullData : fullData.slice(0, propsLimit);
 
     const filtered = (limitedData as any[]).filter((p: any) => {
-        const sType = (p.stat_type || "").toLowerCase();
-        // Allow team markets to show when player props are missing
         if (!p.player_name && !p.home_team && !p.team) return false;
         
         return (
@@ -130,14 +120,14 @@ function PlayerPropsContent() {
                     {filtered.map((item: any, i: number) => (
                         isHistorical
                             ? <HistoricalPropCard key={i} group={item} />
-                            : <PropCard key={i} prop={item} onViewHero={() => setSelectedHero(item.player_name)} />
+                            : <PropCard key={i} prop={item} onViewHero={() => setSelectedProp(item)} />
                     ))}
                 </div>
 
-                <HeroModal
-                    playerName={selectedHero}
-                    sport={sport}
-                    onClose={() => setSelectedHero(null)}
+                <PlayerTrendsModal
+                    isOpen={!!selectedProp}
+                    propData={selectedProp}
+                    onClose={() => setSelectedProp(null)}
                 />
 
                 {activeTier === "free" && fullData.length > propsLimit && !isDev && (
@@ -163,7 +153,6 @@ function PlayerPropsContent() {
 }
 
 function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
-    // Normalize data from either PropLive or Canonical format
     const hasOver = prop.best_over || prop.over_odds != null || prop.odds_over != null;
     const over = prop.best_over || (hasOver ? {
         line: prop.line,
@@ -179,8 +168,6 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
     } : null);
 
     const rec = prop.recommendation;
-
-    // Normalize field names between PropLive and Canonical formats
     const playerName = prop.player_name || prop.team || "Matchup";
     const statType = prop.stat_type || prop.market_key || "—";
     const homeTeam = prop.home_team || prop.team || "—";
@@ -219,7 +206,6 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
             "bg-lucrix-surface border rounded-2xl p-6 transition-all group shadow-card relative overflow-hidden flex flex-col justify-between",
             rec?.tier === "S" ? "border-brand-cyan/50 shadow-glow shadow-brand-cyan/10" : "border-lucrix-border hover:border-brand-cyan/30"
         )}>
-            {/* Recommendation Ribbon for S/A Tier */}
             {(rec?.tier === "S" || rec?.tier === "A") && (
                 <div className="absolute top-0 right-0">
                     <div className="bg-brand-cyan text-black text-[8px] font-black uppercase tracking-widest py-1 px-4 rounded-bl-xl rotate-0 origin-top-right">
@@ -294,8 +280,7 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
                     </div>
                 </div>
 
-                {/* Advisor Insights */}
-                {rec && (
+                {rec && rec.reason !== "No significant market edge detected. Watch for late sharp movement." && (
                     <div className="mt-4 p-3 bg-lucrix-dark/50 rounded-xl border border-lucrix-border">
                         <div className="flex items-center gap-2 mb-1.5">
                             <div className={clsx(
@@ -313,7 +298,7 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
 
             <div className="mt-6 pt-4 border-t border-lucrix-border flex items-center justify-between">
                 <div className="text-[9px] font-black text-textMuted uppercase tracking-widest">
-                    Tick: {formatTime(gameTime)}
+                    Tick: <TickCountdown startTime={gameTime} />
                 </div>
                 <div className="flex items-center gap-2">
                     <button
@@ -334,117 +319,40 @@ function PropCard({ prop, onViewHero }: { prop: any, onViewHero: () => void }) {
     );
 }
 
-function HeroModal({ playerName, sport, onClose }: { playerName: string | null, sport: string, onClose: () => void }) {
-    const { data: heroRes, isLoading } = useQuery({
-        queryKey: ["hero", playerName, sport],
-        queryFn: () => API.hero(playerName || "", sport),
-        enabled: !!playerName
-    });
+function TickCountdown({ startTime }: { startTime: string }) {
+    const [now, setNow] = useState(new Date());
 
-    const hero = heroRes?.data || heroRes;
+    useEffect(() => {
+        const id = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(id);
+    }, []);
 
-    if (!playerName) return null;
+    const start = safeDate(startTime);
+    if (!start) return "—";
 
+    if (isAfter(now, start)) {
+        return <span className="text-brand-danger animate-pulse">LIVE</span>;
+    }
+
+    const diff = start.getTime() - now.getTime();
+    if (diff > 3600000) {
+        return formatTime(startTime);
+    }
+
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
     return (
-        <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
-                onClick={onClose}
-            >
-                <motion.div
-                    initial={{ scale: 0.95, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.95, y: 20 }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full max-w-2xl bg-[#0D0D14] border border-white/5 rounded-3xl shadow-2xl overflow-hidden"
-                >
-                    {/* Header */}
-                    <div className="p-6 border-b border-white/[0.05] flex justify-between items-start">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase font-display">
-                                {playerName} <span className="text-brand-cyan">Hero View</span>
-                            </h2>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#6B7280] hover:text-white"
-                            aria-label="Close Hero Stats"
-                            title="Close"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    {/* Content */}
-                    {isLoading ? (
-                        <div className="py-24 text-center text-brand-cyan animate-pulse font-black uppercase italic tracking-widest">
-                            Crunching Models...
-                        </div>
-                    ) : hero ? (
-                        <div className="p-6 space-y-8">
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">L5 Hit Rate</div>
-                                    <div className="text-2xl font-black text-green-500">
-                                        {hero.stats?.l5_hit != null ? `${(hero.stats.l5_hit * 100).toFixed(0)}%` : "—"}
-                                    </div>
-                                </div>
-                                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">L10 Hit Rate</div>
-                                    <div className="text-2xl font-black text-green-500">
-                                        {hero.stats?.l10_hit != null ? `${(hero.stats.l10_hit * 100).toFixed(0)}%` : "—"}
-                                    </div>
-                                </div>
-                                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-center">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Current Line</div>
-                                    <div className="text-2xl font-black text-white">{hero.current_line}</div>
-                                </div>
-                            </div>
-
-                            <div className="bg-black/40 p-6 rounded-2xl border border-white/5">
-                                <h3 className="text-[10px] font-black uppercase text-brand-cyan tracking-[0.2em] mb-6 flex items-center gap-2 italic">
-                                    <TrendingUp size={14} className="text-brand-cyan" />
-                                    Performance Analytics vs Market Line
-                                </h3>
-                                <TrendChart
-                                    data={hero.history?.map((h: any, i: number) => ({
-                                        game: `G${i}`,
-                                        value: h.line,
-                                        hit: h.line > hero.current_line
-                                    })).slice(-10)}
-                                    line={hero.current_line}
-                                    statType="Prop"
-                                />
-                            </div>
-
-                            <div className="p-4 bg-brand-cyan/5 border border-brand-cyan/20 rounded-xl">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Brain size={14} className="text-brand-cyan" />
-                                    <span className="text-[10px] font-black uppercase text-white tracking-widest">Model Consensus</span>
-                                </div>
-                                <p className="text-[11px] font-bold text-slate-400 leading-relaxed italic">
-                                    Our multi-brain ensemble suggests {playerName} is currently trending in the top 5% of efficiency for the {sport} slate. High correlation noted between market steam and projected volume.
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="py-12 text-center text-slate-500 font-bold uppercase tracking-widest italic">No hero data found for this player.</div>
-                    )}
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+        <span className="text-brand-cyan">
+             {mins.toString().padStart(2, '0')}:{secs.toString().padStart(2, '0')}
+        </span>
     );
 }
 
 function HistoricalPropCard({ group }: { group: any }) {
-    // Transform ticks for TrendChart
     const trendData = (group.ticks || []).map((t: any, idx: number) => ({
         game: `G${idx}`,
         value: Number(t.line) || 0,
-        hit: false // Placeholder
+        hit: false
     })).slice(-10);
 
     return (
@@ -470,7 +378,6 @@ function HistoricalPropCard({ group }: { group: any }) {
                         <Clock size={11} className="text-blue-400" />
                         Price History (Last 10)
                     </div>
-                    <div className="text-[8px] bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">VOLATILE</div>
                 </div>
                 <TrendChart data={trendData} line={group.latest_line} statType={group.market_key} />
             </div>

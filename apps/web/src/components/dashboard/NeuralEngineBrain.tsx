@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useSubscription } from "@/hooks/useSubscription";
 import { API, isApiError } from "@/lib/api";
 import { useSport } from "@/context/SportContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cpu, Zap, Shield, Activity, BarChart, Lock } from "lucide-react";
+import { useLucrixStore } from "@/store";
 
 interface BrainData {
   props_scored:    number;
@@ -17,7 +17,8 @@ interface BrainData {
 }
 
 export default function NeuralEngineBrain() {
-  const { isPro } = useSubscription();
+  const { userTier, backendOnline } = useLucrixStore();
+  const isPro = userTier === 'pro' || userTier === 'elite';
   const isDev = typeof window !== 'undefined' && 
                (window.location.hostname === 'localhost' || 
                 window.location.hostname === '127.0.0.1' ||
@@ -96,13 +97,13 @@ export default function NeuralEngineBrain() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
         <BrainCard 
             label="BRAIN DECISIONS" 
-            value={showAll ? String(data.decisions.length) : null} 
+            value={showAll ? (backendOnline ? String(data.decisions.length) : "--") : null} 
             icon={<Zap size={14} className="text-brand-primary" />}
             isLocked={!showAll}
         />
         <BrainCard 
             label="ACTIVE EDGES" 
-            value={showAll ? (data.active_edges > 0 ? String(data.active_edges) : "0") : null} 
+            value={showAll ? (backendOnline ? (data.active_edges > 0 ? String(data.active_edges) : "0") : "--") : null} 
             icon={<BarChart size={14} className="text-brand-cyan" />}
             isLocked={!showAll}
         />
@@ -114,13 +115,13 @@ export default function NeuralEngineBrain() {
         />
         <BrainCard 
             label="INJURY IMPACT" 
-            value={data.injury_impacts > 0 ? `${data.injury_impacts} ACT` : "NOMINAL"} 
+            value={backendOnline ? (data.injury_impacts > 0 ? `${data.injury_impacts} ACT` : "NOMINAL") : "--"} 
             icon={<Activity size={14} className="text-brand-danger" />}
             color="text-brand-danger"
         />
         <BrainCard 
             label="PROPS SCORED"   
-            value={data.props_scored > 0 ? String(data.props_scored) : "0"} 
+            value={backendOnline ? (data.props_scored > 0 ? String(data.props_scored) : "0") : "--"} 
             icon={<Activity size={14} className="text-brand-purple" />}
             color="text-brand-purple"
         />

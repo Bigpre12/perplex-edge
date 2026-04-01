@@ -20,8 +20,11 @@ import {
     Settings,
     ArrowRightLeft,
     TrendingDown,
-    History
+    History,
+    CloudOff,
+    Loader2
 } from 'lucide-react';
+import { useLucrixStore } from '@/store';
 
 export default function Sidebar() {
     const { tier } = useSubscription();
@@ -36,6 +39,20 @@ export default function Sidebar() {
 
     const { selectedSport } = useSport();
     const { data: freshness, isLoading } = useFreshness(selectedSport);
+    const { backendOnline, isConnecting } = useLucrixStore();
+    const [scanningTimedOut, setScanningTimedOut] = useState(false);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (isLoading || !freshness?.last_odds_update) {
+            timer = setTimeout(() => {
+                setScanningTimedOut(true);
+            }, 10000);
+        } else {
+            setScanningTimedOut(false);
+        }
+        return () => clearTimeout(timer);
+    }, [isLoading, freshness]);
 
     // Navigation items based on spec
     const navItems = [
@@ -102,17 +119,27 @@ export default function Sidebar() {
             {/* Bottom Footer Info */}
             <div className="p-4 border-t border-lucrix-border flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">Data Freshness</span>
+                    {isConnecting ? (
+                        <div className="text-amber-500 font-mono text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-1.5">
+                            <Loader2 size={10} className="animate-spin" /> Connecting...
+                        </div>
+                    ) : !backendOnline ? (
+                        <div className="text-brand-danger font-mono text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                            <CloudOff size={10} /> Backend Offline
+                        </div>
+                    ) : isLoading || (!freshness?.last_odds_update && !scanningTimedOut) ? (
+                        <div className="text-brand-cyan font-mono text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-1.5">
+                            <Loader2 size={10} className="animate-spin" /> Scanning...
+                        </div>
+                    ) : (
+                        <div className="text-brand-success font-mono text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-success animate-pulse" />
+                            ODDS · {safeDate(freshness?.last_odds_update) 
+                                ? formatDistanceToNow(safeDate(freshness?.last_odds_update)!, { addSuffix: true }).replace('about ', '') 
+                                : (scanningTimedOut ? 'LATENCY DETECTED' : 'SCANNING...')}
+                        </div>
+                    )}
                 </div>
-                {isLoading ? (
-                    <div className="text-brand-cyan font-mono text-xs font-medium animate-pulse uppercase italic tracking-widest">
-                        Connecting...
-                    </div>
-                ) : (
-                    <div className="text-brand-success font-mono text-xs font-medium">
-                        ODDS · {safeDate(freshness?.last_odds_update) ? formatDistanceToNow(safeDate(freshness?.last_odds_update)!, { addSuffix: true }).replace('about ', '') : 'Scanning...'}
-                    </div>
-                )}
                 <div className="text-textMuted font-mono text-[10px] mt-2">
                     v2.1.0
                 </div>

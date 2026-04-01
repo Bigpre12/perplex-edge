@@ -7,6 +7,7 @@ import { api, isApiError } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { SPORTS_CONFIG, SportKey } from "@/lib/sports.config";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { 
   Settings, 
   Bell, 
@@ -29,9 +30,11 @@ import { motion } from "framer-motion";
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="p-10 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">SYNCING COMMAND CENTER...</div>}>
-      <SettingsContent />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={<div className="p-10 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">SYNCING COMMAND CENTER...</div>}>
+        <SettingsContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -39,6 +42,7 @@ function SettingsContent() {
   const { token, user, signOut } = useAuth();
   const queryClient = useQueryClient();
   const [isSaved, setIsSaved] = useState(false);
+  const [lastSavedField, setLastSavedField] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const { data: settings, isLoading, error } = useQuery({
@@ -51,19 +55,23 @@ function SettingsContent() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (partialSettings: any) => {
-      const { data } = await api.patch('/api/user/settings', partialSettings);
-      return data;
+    mutationFn: async ({ field, value }: { field: string, value: any }) => {
+      const { data } = await api.patch('/api/user/settings', { [field]: value });
+      return { data, field };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-settings'] });
       setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
+      setLastSavedField(data.field);
+      setTimeout(() => {
+        setIsSaved(false);
+        setLastSavedField(null);
+      }, 3000);
     }
   });
 
-  const handleUpdate = (update: any) => {
-    mutation.mutate(update);
+  const handleUpdate = (field: string, value: any) => {
+    mutation.mutate({ field, value });
   };
 
   const copyToClipboard = (text: string) => {
@@ -136,7 +144,7 @@ function SettingsContent() {
            >
               <div className="bg-white/5 border border-white/5 rounded-[2rem] p-6 flex flex-col sm:flex-row items-center gap-6">
                 <div className="w-20 h-20 bg-brand-primary/10 rounded-2xl border border-brand-primary/20 flex items-center justify-center text-3xl font-black text-brand-primary italic">
-                  {user?.email?.[0].toUpperCase()}
+                  {user?.email?.[0]?.toUpperCase() || "?"}
                 </div>
                 <div className="flex-1 space-y-1 text-center sm:text-left">
                   <div className="text-[9px] font-black text-textMuted uppercase tracking-[0.2em] leading-none mb-1">Authenticated Terminal</div>
@@ -170,7 +178,9 @@ function SettingsContent() {
                     description="Standard sizing for parlay math"
                     value={settings?.unit_size || 100}
                     type="number"
-                    onChange={(val) => handleUpdate({ unit_size: parseFloat(val) })}
+                    onChange={(val) => handleUpdate("unit_size", parseFloat(val))}
+                    isSaving={mutation.isPending && lastSavedField === "unit_size"}
+                    isSaved={isSaved && lastSavedField === "unit_size"}
                   />
 
                   {/* Field 2: Default Sport */}
@@ -183,7 +193,9 @@ function SettingsContent() {
                       value: k,
                       label: (SPORTS_CONFIG[k as SportKey] as any).label
                     }))}
-                    onChange={(val) => handleUpdate({ default_sport: val })}
+                    onChange={(val: any) => handleUpdate("default_sport", val)}
+                    isSaving={mutation.isPending && lastSavedField === "default_sport"}
+                    isSaved={isSaved && lastSavedField === "default_sport"}
                   />
 
                   {/* Field 3: Default Sportsbook */}
@@ -201,7 +213,9 @@ function SettingsContent() {
                       { value: "bet365", label: "Bet365" },
                       { value: "bovada", label: "Bovada" },
                     ]}
-                    onChange={(val) => handleUpdate({ default_sportsbook: val })}
+                    onChange={(val: any) => handleUpdate("default_sportsbook", val)}
+                    isSaving={mutation.isPending && lastSavedField === "default_sportsbook"}
+                    isSaved={isSaved && lastSavedField === "default_sportsbook"}
                   />
 
                   {/* Field 4: Theme Mode */}
@@ -214,7 +228,9 @@ function SettingsContent() {
                       { value: "dark", label: "Neural Dark" },
                       { value: "light", label: "High Contrast Light" },
                     ]}
-                    onChange={(val) => handleUpdate({ theme: val })}
+                    onChange={(val: any) => handleUpdate("theme", val)}
+                    isSaving={mutation.isPending && lastSavedField === "theme"}
+                    isSaved={isSaved && lastSavedField === "theme"}
                   />
 
                   {/* Field 5: Notifications */}
@@ -223,7 +239,9 @@ function SettingsContent() {
                     icon={<Bell size={14} />}
                     description="Mobile signal push protocol" 
                     active={settings?.notifications_enabled} 
-                    onToggle={() => handleUpdate({ notifications_enabled: !settings?.notifications_enabled })}
+                    onToggle={() => handleUpdate("notifications_enabled", !settings?.notifications_enabled)}
+                    isSaving={mutation.isPending && lastSavedField === "notifications_enabled"}
+                    isSaved={isSaved && lastSavedField === "notifications_enabled"}
                   />
 
                   {/* Field 6: Data Grid (Extra) */}
@@ -232,7 +250,9 @@ function SettingsContent() {
                     icon={<Key size={14} />}
                     description="Enable raw intelligence keys" 
                     active={settings?.api_enabled} 
-                    onToggle={() => handleUpdate({ api_enabled: !settings?.api_enabled })}
+                    onToggle={() => handleUpdate("api_enabled", !settings?.api_enabled)}
+                    isSaving={mutation.isPending && lastSavedField === "api_enabled"}
+                    isSaved={isSaved && lastSavedField === "api_enabled"}
                   />
               </div>
            </SectionContainer>
@@ -316,7 +336,7 @@ function SectionContainer({ title, icon, description, children }: any) {
   );
 }
 
-function InputRow({ label, description, icon, value, onChange, type = "text" }: any) {
+function InputRow({ label, description, icon, value, onChange, type = "text", isSaved, isSaving }: any) {
   return (
     <div className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-3 group hover:border-brand-primary/30 transition-all">
       <div className="flex items-center justify-between">
@@ -324,6 +344,7 @@ function InputRow({ label, description, icon, value, onChange, type = "text" }: 
           <div className="text-brand-primary">{icon}</div>
           <div className="text-[10px] font-black text-white uppercase tracking-widest italic">{label}</div>
         </div>
+        {isSaved && <span className="text-[9px] font-black text-brand-success uppercase italic">Saved ✓</span>}
       </div>
       <input 
         type={type}
@@ -336,7 +357,7 @@ function InputRow({ label, description, icon, value, onChange, type = "text" }: 
   );
 }
 
-function SelectRow({ label, description, icon, value, options, onChange }: any) {
+function SelectRow({ label, description, icon, value, options, onChange, isSaved, isSaving }: any) {
   return (
     <div className="bg-white/5 border border-white/5 rounded-2xl p-5 flex flex-col gap-3 group hover:border-brand-primary/30 transition-all">
       <div className="flex items-center justify-between">
@@ -344,6 +365,7 @@ function SelectRow({ label, description, icon, value, options, onChange }: any) 
           <div className="text-brand-cyan">{icon}</div>
           <div className="text-[10px] font-black text-white uppercase tracking-widest italic">{label}</div>
         </div>
+        {isSaved && <span className="text-[9px] font-black text-brand-success uppercase italic">Saved ✓</span>}
       </div>
       <div className="relative">
         <select 
@@ -362,7 +384,7 @@ function SelectRow({ label, description, icon, value, options, onChange }: any) 
   );
 }
 
-function ToggleRow({ label, description, icon, active, onToggle, disabled }: any) {
+function ToggleRow({ label, description, icon, active, onToggle, disabled, isSaved, isSaving }: any) {
   return (
     <div className={clsx(
       "bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-brand-primary/20 transition-all relative overflow-hidden",
@@ -371,7 +393,10 @@ function ToggleRow({ label, description, icon, active, onToggle, disabled }: any
       <div className="flex items-center gap-4">
         <div className={clsx(active ? "text-brand-primary" : "text-textMuted")}>{icon}</div>
         <div>
-          <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1 italic">{label}</div>
+          <div className="text-[10px] font-black text-white uppercase tracking-widest mb-1 italic flex items-center gap-2">
+            {label}
+            {isSaved && <span className="text-[9px] font-black text-brand-success uppercase italic">Saved ✓</span>}
+          </div>
           <div className="text-[8px] font-bold text-textMuted uppercase leading-none">{description}</div>
         </div>
       </div>

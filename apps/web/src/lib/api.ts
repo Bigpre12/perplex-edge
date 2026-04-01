@@ -3,7 +3,7 @@ import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
 const isServer = typeof window === 'undefined';
 
 // --- CONFIGURATION ---
-const PROD_URL = "https://perplex-edge-backend-production.up.railway.app";
+const PROD_URL = "https://perplex-edge-backend-copy-production.up.railway.app";
 const LOCAL_URL = "http://localhost:8000";
 
 // On server, we need the full URL. On client, we use the /backend proxy for better CORS/SSL support.

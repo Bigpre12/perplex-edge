@@ -30,7 +30,20 @@ function KalshiContent() {
     refetchInterval: 10_000,
   });
 
-  if (isLoading) {
+  const [timedOut, setTimedOut] = React.useState(false);
+
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoading) {
+      setTimedOut(false);
+      timer = setTimeout(() => {
+        setTimedOut(true);
+      }, 8000);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  if (isLoading && !timedOut) {
     return (
       <div className="space-y-6 pt-10 px-6 max-w-[1400px] mx-auto">
         <Skeleton className="h-12 w-64 mb-10" />
@@ -201,9 +214,15 @@ function KalshiContent() {
             <div className="p-8 bg-white/5 rounded-full">
               <Zap size={48} className="text-textMuted opacity-20" />
             </div>
-            <div className="text-center">
-              <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2 leading-none">Scanning Prediction Grids</h3>
-              <p className="text-[10px] text-textMuted font-black uppercase tracking-widest italic">Indexing Kalshi exchange liquidity...</p>
+            <div className="text-center px-6">
+              <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2 leading-none">
+                {timedOut ? "Indexing Delay Detected" : "Scanning Prediction Grids"}
+              </h3>
+              <p className="text-[10px] text-textMuted font-black uppercase tracking-widest italic max-w-xs mx-auto">
+                {timedOut 
+                  ? "The exchange is responding slowly. We are maintaining the connection to sync active contracts." 
+                  : "Indexing Kalshi exchange liquidity..."}
+              </p>
             </div>
           </div>
         )}

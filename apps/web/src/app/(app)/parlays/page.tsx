@@ -17,13 +17,19 @@ export default function ParlayPage() {
     const [loading, setLoading] = useState(false);
     const [aiBuilding, setAiBuilding] = useState(false);
 
-    const handleAiBuild = async () => {
+    const handleAiBuild = async (override?: boolean) => {
         setAiBuilding(true);
         try {
             const data = await (api as any).buildParlay(sport);
             const newLegs = Array.isArray(data) ? data : (data.legs || []);
-            clearParlay();
-            newLegs.forEach((leg: any) => addLeg(leg));
+            if (override === true) {
+                clearParlay();
+                newLegs.forEach((leg: any) => addLeg(leg));
+            } else {
+                // Add first missing leg
+                const missing = newLegs.find((nl: any) => !legs.find((l: any) => l.prop_id === nl.prop_id));
+                if (missing) addLeg(missing);
+            }
             setAnalysis(null);
         } catch (e) {
             console.error("AI Build failed", e);
@@ -102,7 +108,7 @@ export default function ParlayPage() {
                             Parlay <span className="text-brand-primary">Matrix</span>
                         </h1>
                         <button
-                            onClick={handleAiBuild}
+                            onClick={() => handleAiBuild(true)}
                             disabled={aiBuilding}
                             className="flex items-center gap-2 px-4 py-1.5 bg-brand-primary/10 border border-brand-primary/20 rounded-full text-[10px] font-black uppercase tracking-widest text-brand-primary hover:bg-brand-primary hover:text-white transition-all disabled:opacity-50"
                         >
@@ -225,9 +231,17 @@ export default function ParlayPage() {
                                         <Target className="text-textMuted/40" size={48} />
                                     </div>
                                     <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Build Your Slip</h3>
-                                    <p className="text-textMuted text-sm font-bold max-w-sm mx-auto italic leading-relaxed">
+                                    <p className="text-textMuted text-sm font-bold max-w-sm mx-auto italic leading-relaxed mb-8">
                                         Add legs from the Props Board or Alpha Scanner.<br/>Begin your cross-market correlation analysis.
                                     </p>
+                                    <button 
+                                        onClick={() => handleAiBuild(true)}
+                                        disabled={aiBuilding}
+                                        className="bg-brand-primary hover:bg-brand-primary-hover text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-brand-primary/20 hover:scale-105 active:scale-95 flex items-center gap-2"
+                                    >
+                                        <Zap size={18} className={aiBuilding ? "animate-spin" : "fill-current"} />
+                                        {aiBuilding ? "Generating Matrix..." : "AI BUILD PARLAY"}
+                                    </button>
                                 </motion.div>
                             ) : (
                                 <motion.div 
@@ -279,7 +293,14 @@ export default function ParlayPage() {
                                         </motion.div>
                                     ) : (
                                         legs.map((leg: any, i: number) => (
-                                            <ParlayLegCard key={leg.id || leg.prop_id} leg={leg} index={i} onRemove={removeLeg} />
+                                            <ParlayLegCard 
+                                                key={leg.id || leg.prop_id} 
+                                                leg={leg} 
+                                                index={i} 
+                                                onRemove={removeLeg} 
+                                                onAiAdd={() => handleAiBuild(false)}
+                                                aiLoading={aiBuilding}
+                                            />
                                         ))
                                     )}
                                 </AnimatePresence>

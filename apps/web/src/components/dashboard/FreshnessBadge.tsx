@@ -4,7 +4,7 @@
 import React from "react";
 
 function timeAgo(ts: string | null): string {
-  if (!ts) return "Never";
+  if (!ts) return "Not yet synced";
   const then = new Date(ts).getTime();
   const diffSec = Math.floor((Date.now() - then) / 1000);
   

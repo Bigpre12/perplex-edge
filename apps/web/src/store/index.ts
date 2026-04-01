@@ -10,6 +10,7 @@ interface LucrixState {
 
     // UI & Status
     backendOnline: boolean;
+    isConnecting: boolean;
     unreadAlerts: number;
 
     // Tools State (Parlay)
@@ -20,6 +21,7 @@ interface LucrixState {
     setActiveSport: (sport: SportKey) => void;
     setUserTier: (tier: UserTier) => void;
     setBackendOnline: (status: boolean) => void;
+    setIsConnecting: (status: boolean) => void;
     setUnreadAlerts: (count: number) => void;
 
     // Parlay Actions
@@ -38,6 +40,7 @@ export const useLucrixStore = create<LucrixState>()(
             activeSport: 'basketball_nba',
             userTier: 'free',
             backendOnline: false,
+            isConnecting: false,
             unreadAlerts: 0,
             parlayLegs: [],
             favoriteProps: [],
@@ -46,6 +49,7 @@ export const useLucrixStore = create<LucrixState>()(
             setActiveSport: (activeSport) => set({ activeSport }),
             setUserTier: (userTier) => set({ userTier }),
             setBackendOnline: (backendOnline) => set({ backendOnline }),
+            setIsConnecting: (isConnecting) => set({ isConnecting }),
             setUnreadAlerts: (unreadAlerts) => set({ unreadAlerts }),
 
             // Parlay Actions

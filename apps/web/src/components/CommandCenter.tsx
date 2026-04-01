@@ -35,18 +35,6 @@ export default function CommandCenter() {
     const [selected, setSelected] = useState(0);
     const [hasOpened, setHasOpened] = useState(false);
 
-    // Open on first load
-    useEffect(() => {
-        const alreadyShown = sessionStorage.getItem("cmd-shown");
-        if (!alreadyShown) {
-            setTimeout(() => {
-                setOpen(true);
-                setHasOpened(true);
-                sessionStorage.setItem("cmd-shown", "1");
-            }, 600); // slight delay so page renders first
-        }
-    }, []);
-
     // Keyboard shortcut — Cmd/Ctrl+K
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if ((e.metaKey || e.ctrlKey) && e.key === "k") {
