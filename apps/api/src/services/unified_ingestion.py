@@ -210,11 +210,13 @@ class UnifiedIngestionService:
         metrics["odds_count"] = len(records)
         
         # 4. Standardized Persistence
-        if sport_key in PROP_MARKETS_BY_SPORT:
+        # CRITICAL FIX: Prevent wiping out historical live data if quota exhaustion caused 0 records
+        if sport_key in PROP_MARKETS_BY_SPORT and len(records) > 0:
             await delete_props_for_sport(sport_key)
             
-        await upsert_props_live(records)
-        await insert_props_history(records)
+        if records:
+            await upsert_props_live(records)
+            await insert_props_history(records)
         metrics["rows_upserted"] = len(records)
         
         # 4b. Sync with UnifiedOdds for Brains (Split into discrete outcomes)
