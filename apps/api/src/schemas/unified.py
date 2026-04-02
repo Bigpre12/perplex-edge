@@ -16,6 +16,9 @@ class PropLiveSchema(BaseModel):
     odds_under: Optional[float] = None
     implied_over: Optional[float] = None
     implied_under: Optional[float] = None
+    team: Optional[str] = None
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
     last_updated_at: Optional[datetime] = None
     is_best_over: bool = False
     is_best_under: bool = False

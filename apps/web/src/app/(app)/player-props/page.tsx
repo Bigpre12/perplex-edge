@@ -14,6 +14,7 @@ import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggl
 import TrendChart from "@/components/TrendChart";
 import { AnimatePresence } from "framer-motion";
 import { usePropsBoard } from "@/hooks/usePropsBoard";
+import { useScoredProps } from "@/hooks/useScoredProps";
 import { api, unwrap } from "@/lib/api";
 import { safeDate, formatTime } from "@/lib/dateUtils";
 import PlayerTrendsModal from "@/components/PlayerTrendsModal";
@@ -52,11 +53,43 @@ function PlayerPropsContent() {
     const [selectedProp, setSelectedProp] = useState<any>(null);
 
     const { data: boardData, isLoading: loading, error, refetch: refresh } = usePropsBoard(sport, minEv > 0 ? minEv : undefined);
+    const { data: scoredData, isLoading: scoredLoading } = useScoredProps(sport);
+
+    // Automatic retry for raw odds if empty
+    useEffect(() => {
+        if (boardData && boardData.props.length === 0 && !loading) {
+            const timer = setTimeout(() => {
+                refresh();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [boardData, loading, refresh]);
 
     const lastUpdated = safeDate(boardData?.updated);
     const isStale = lastUpdated ? (Date.now() - lastUpdated.getTime()) > 180000 : false;
+    
+    // Scored Data Mapping for Inline Merge
+    const scoredMap: Record<string, any> = {};
+    if (scoredData && Array.isArray(scoredData)) {
+        scoredData.forEach((s: any) => {
+            const key = `${s.player_name}__${s.market_key}`;
+            scoredMap[key] = s;
+        });
+    }
 
-    const fullData = boardData?.props || [];
+    const fullDataRaw = boardData?.props || [];
+    
+    // SAFE INLINE MERGE (Never blocks odds display)
+    const fullData = fullDataRaw.map(p => {
+        const key = `${p.player_name}__${p.market_key}`;
+        const scoredEnrichment = scoredMap[key] || {};
+        return {
+            ...p,
+            ...scoredEnrichment,
+            // Prioritize scored recommendation if available
+            recommendation: scoredEnrichment.recommendation || p.recommendation
+        };
+    });
     const { propsLimit, tier: activeTier } = useGate();
 
     const isDev = typeof window !== 'undefined' &&
@@ -67,6 +100,9 @@ function PlayerPropsContent() {
     const filtered = (limitedData as any[]).filter((p: any) => {
         if (!p.player_name && !p.home_team && !p.team) return false;
         
+        // Edge Threshold Filter
+        if (minEv > 0 && (p.ev_percentage || 0) < minEv) return false;
+
         return (
             (p.player_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (p.stat_type?.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -92,9 +128,9 @@ function PlayerPropsContent() {
 
                     <div className="flex flex-wrap items-center gap-4 mb-6">
                         <FreshnessBadge
-                            oddsTs={freshness?.last_odds_update || null}
-                            evTs={freshness?.last_ev_update || null}
-                            isLoading={freshnessLoading}
+                            oddsTs={fullDataRaw.length > 0 ? (lastUpdated?.toISOString() || new Date().toISOString()) : null}
+                            evTs={Object.keys(scoredMap).length > 0 ? new Date().toISOString() : null}
+                            isLoading={loading || scoredLoading}
                         />
                         <LiveHistoricalToggle
                             isHistorical={isHistorical}
