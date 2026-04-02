@@ -125,6 +125,7 @@ function SettingsContent() {
            )}
            <button 
              onClick={() => signOut()}
+             aria-label="Terminate Session"
              className="px-6 py-3 bg-white/5 hover:bg-red-500/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-textMuted hover:text-red-400 transition-all font-sans flex items-center gap-2"
            >
              <LogOut size={14} /> Terminate
@@ -178,7 +179,7 @@ function SettingsContent() {
                     description="Standard sizing for parlay math"
                     value={settings?.unit_size || 100}
                     type="number"
-                    onChange={(val) => handleUpdate("unit_size", parseFloat(val))}
+                    onChange={(val: string) => handleUpdate("unit_size", parseFloat(val))}
                     isSaving={mutation.isPending && lastSavedField === "unit_size"}
                     isSaved={isSaved && lastSavedField === "unit_size"}
                   />
@@ -276,15 +277,24 @@ function SettingsContent() {
                        <input 
                          type="password" 
                          readOnly 
+                         id="rsa-key-input"
+                         aria-label="Production RSA Key"
                          value={settings?.api_key || "px_edge_*******************"}
                          className="bg-transparent border-none text-[10px] text-white outline-none w-full font-mono"
                        />
-                       <button onClick={() => copyToClipboard(settings?.api_key || "")} className="p-2 text-textMuted hover:text-brand-primary transition-colors">
+                       <button 
+                         onClick={() => copyToClipboard(settings?.api_key || "")} 
+                         aria-label="Copy API Key"
+                         className="p-2 text-textMuted hover:text-brand-primary transition-colors"
+                       >
                           {copied ? <CheckCircle size={16} className="text-brand-success" /> : <Copy size={16} />}
                        </button>
                     </div>
                  </div>
-                 <button className="w-full py-4 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary font-black uppercase tracking-widest text-[9px] rounded-xl hover:bg-brand-primary hover:text-white transition-all">
+                 <button 
+                   aria-label="Re-Generate RSA Key"
+                   className="w-full py-4 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary font-black uppercase tracking-widest text-[9px] rounded-xl hover:bg-brand-primary hover:text-white transition-all"
+                 >
                    <RefreshCw size={14} className="inline mr-2 mb-0.5" /> Re-Generate RSA
                  </button>
               </div>
@@ -299,14 +309,20 @@ function SettingsContent() {
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500">Clearance Level 5</h3>
                </div>
                <div className="space-y-3">
-                  <button className="w-full py-4 px-5 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group hover:bg-red-500/10 transition-all">
+                  <button 
+                    aria-label="Flush History"
+                    className="w-full py-4 px-5 bg-white/5 border border-white/5 rounded-xl flex items-center justify-between group hover:bg-red-500/10 transition-all"
+                  >
                      <div className="text-left">
                         <div className="text-[10px] font-black text-white uppercase mb-0.5">Flush History</div>
                         <div className="text-[8px] font-bold text-textMuted uppercase italic">Clear Intelligence Buffer</div>
                      </div>
                      <RefreshCw size={14} className="text-textMuted group-hover:rotate-180 transition-all duration-700" />
                   </button>
-                  <button className="w-full py-4 px-5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between group hover:bg-red-500 hover:text-white transition-all">
+                  <button 
+                    aria-label="Deactivate Matrix"
+                    className="w-full py-4 px-5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between group hover:bg-red-500 hover:text-white transition-all"
+                  >
                      <div className="text-left">
                         <div className="text-[10px] font-black uppercase mb-0.5">Deactivate Matrix</div>
                         <div className="text-[8px] font-bold uppercase opacity-60">Permanently Remove Data</div>
@@ -349,6 +365,7 @@ function InputRow({ label, description, icon, value, onChange, type = "text", is
       <input 
         type={type}
         value={value}
+        aria-label={label}
         onChange={(e) => onChange(e.target.value)}
         className="w-full bg-lucrix-dark/50 border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-brand-primary/50 transition-all font-sans"
       />
@@ -370,6 +387,7 @@ function SelectRow({ label, description, icon, value, options, onChange, isSaved
       <div className="relative">
         <select 
           value={value}
+          aria-label={label}
           onChange={(e) => onChange(e.target.value)}
           className="w-full bg-lucrix-dark/50 border border-white/10 rounded-xl p-3 px-4 text-xs text-white appearance-none outline-none focus:border-brand-cyan/50 transition-all font-sans"
         >
@@ -403,6 +421,7 @@ function ToggleRow({ label, description, icon, active, onToggle, disabled, isSav
       <button 
         onClick={onToggle}
         disabled={disabled}
+        aria-label={`Toggle ${label}`}
         className={clsx(
           "w-10 h-5 rounded-full relative transition-all duration-300 p-0.5 flex items-center",
           active ? "bg-brand-primary shadow-glow shadow-brand-primary/20" : "bg-white/10 border border-white/10"

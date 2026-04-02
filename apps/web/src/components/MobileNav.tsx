@@ -115,7 +115,11 @@ export function MobileNav() {
                                 <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white font-display">Command</h2>
                                 <p className="text-[10px] font-black text-brand-primary uppercase tracking-[0.2em] italic">Full Terminal Matrix</p>
                             </div>
-                            <button onClick={() => setIsMoreOpen(false)} className="p-3 bg-white/5 rounded-2xl border border-white/10 text-white">
+                            <button 
+                                onClick={() => setIsMoreOpen(false)} 
+                                aria-label="Close menu"
+                                className="p-3 bg-white/5 rounded-2xl border border-white/10 text-white"
+                            >
                                 <X size={24} />
                             </button>
                         </div>
