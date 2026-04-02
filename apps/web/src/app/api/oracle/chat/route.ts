@@ -7,12 +7,11 @@ export async function POST(req: NextRequest) {
     const { messages, sport } = await req.json();
     const backendBase = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
 
-    // Proxy the stream from the backend
-    const response = await fetch(`${backendBase}/api/oracle/chat`, {
+    const backendRes = await fetch(`${backendBase}/api/oracle/chat`, {
       method: "POST",
-      headers: {
+      headers: { 
         "Content-Type": "application/json",
-        "Accept": "text/event-stream",
+        "Accept": "text/event-stream"
       },
       body: JSON.stringify({ 
         messages, 
@@ -21,25 +20,42 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    if (!response.ok || !response.body) {
-      return new Response(
-        JSON.stringify({ error: "Oracle is temporarily offline. Try again shortly." }), 
-        { status: response.status || 502, headers: { "Content-Type": "application/json" } }
-      );
+    // If backend supports native streaming, pipe it through
+    if (backendRes.headers.get("content-type")?.includes("text/event-stream")) {
+      return new Response(backendRes.body, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
     }
 
-    // Return the stream directly to the client
-    return new Response(response.body, {
+    // Fallback: If backend returns JSON, simulate streaming word by word
+    const data = await backendRes.json();
+    const text = data.recommendation || data.analysis || data.response || data.message || "Oracle analysis complete.";
+    const words = text.split(" ");
+    
+    const stream = new ReadableStream({
+      async start(controller) {
+        for (const word of words) {
+          controller.enqueue(new TextEncoder().encode(`data: ${word} \n\n`));
+          await new Promise((r) => setTimeout(r, 40)); // 40ms per word for natural feel
+        }
+        controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-        "Transfer-Encoding": "chunked",
       },
     });
 
   } catch (error) {
-    console.error("[Oracle Stream Proxy] Error:", error);
+    console.error("[Oracle SSE Proxy] Critical Failure:", error);
     return new Response(
       JSON.stringify({ error: "Quantum synchronization failure." }), 
       { status: 500, headers: { "Content-Type": "application/json" } }

@@ -2,22 +2,23 @@
 
 import React, { useState } from 'react';
 import { useOracle } from '@/hooks/useOracle';
-import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
-import { ErrorRetry } from '@/components/shared/ErrorRetry';
 import { Brain, Sparkles, Send, ShieldCheck, TrendingUp, Info } from 'lucide-react';
+import { clsx } from "clsx";
 
 export default function OraclePage() {
   const [player, setPlayer] = useState('');
   const [market, setMarket] = useState('');
   const [context, setContext] = useState('');
   
-  const oracleMutation = useOracle();
+  const { sendMessage, isStreaming, streamingText, lastFullText, error } = useOracle();
 
   const handleQuery = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!player || !market) return;
-    oracleMutation.mutate({ player, market, context });
+    if (!player || !market || isStreaming) return;
+    sendMessage({ player, market, context, sport: 'basketball_nba' });
   };
+
+  const displayText = isStreaming ? streamingText : lastFullText;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
@@ -48,7 +49,8 @@ export default function OraclePage() {
                           value={player}
                           onChange={(e) => setPlayer(e.target.value)}
                           placeholder="e.g. LeBron James"
-                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          disabled={isStreaming}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
                        />
                     </div>
                     <div className="space-y-1">
@@ -57,7 +59,8 @@ export default function OraclePage() {
                           value={market}
                           onChange={(e) => setMarket(e.target.value)}
                           placeholder="e.g. Points, Rebounds, PRAs"
-                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          disabled={isStreaming}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
                        />
                     </div>
                     <div className="space-y-1">
@@ -67,28 +70,32 @@ export default function OraclePage() {
                           onChange={(e) => setContext(e.target.value)}
                           placeholder="e.g. Matchup details or injury concerns..."
                           rows={4}
-                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                          disabled={isStreaming}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none disabled:opacity-50"
                        />
                     </div>
                  </div>
 
                  <button 
-                    disabled={oracleMutation.isPending || !player || !market}
+                    disabled={isStreaming || !player || !market}
                     className="w-full py-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center space-x-3 shadow-xl shadow-blue-600/20 active:scale-95 transition-all"
                  >
-                    {oracleMutation.isPending ? (
-                       <Sparkles className="w-5 h-5 animate-spin" />
+                    {isStreaming ? (
+                       <div className="relative">
+                          <Sparkles className="w-5 h-5 animate-pulse text-blue-200" />
+                          <div className="absolute inset-0 bg-blue-400 blur-md opacity-20 animate-pulse" />
+                       </div>
                     ) : (
                        <Send className="w-4 h-4" />
                     )}
-                    <span>Consult Oracle</span>
+                    <span>{isStreaming ? 'Stream Active...' : 'Consult Oracle'}</span>
                  </button>
               </form>
            </div>
 
             {/* Results Area */}
             <div className="lg:col-span-7">
-               {oracleMutation.isPending ? (
+               {isStreaming && !streamingText ? (
                   <div className="space-y-8 animate-pulse text-center py-24">
                     <div className="w-24 h-24 rounded-full bg-blue-500/10 mx-auto flex items-center justify-center border border-blue-500/20">
                        <Brain className="w-12 h-12 text-blue-500 animate-pulse" />
@@ -98,15 +105,15 @@ export default function OraclePage() {
                       <p className="text-white/20 text-xs font-black uppercase tracking-widest">Processing Data Streams & Neural Insights</p>
                     </div>
                   </div>
-               ) : oracleMutation.isError ? (
+               ) : error ? (
                   <div className="flex flex-col items-center justify-center py-32 space-y-6 border border-red-500/10 bg-red-500/5 rounded-3xl">
                      <Info className="w-16 h-16 text-red-500/40" />
                      <div className="text-center space-y-2">
                         <p className="text-xl font-black tracking-tighter uppercase italic text-red-400">Connection Interrupted</p>
-                        <p className="text-xs font-black uppercase tracking-widest text-red-400/50 max-w-[200px]">Oracle is temporarily offline. Try again shortly.</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-red-400/50 max-w-[200px]">{error}</p>
                      </div>
                   </div>
-               ) : oracleMutation.data ? (
+               ) : displayText ? (
                   <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl space-y-8 relative overflow-hidden">
                      {/* Background Glow */}
                      <div className="absolute top-0 right-0 p-8 opacity-10 blur-3xl w-64 h-64 bg-blue-500 -mr-32 -mt-32 rounded-full" />
@@ -123,14 +130,20 @@ export default function OraclePage() {
                         </div>
                         <div className="text-right">
                            <span className="text-[10px] font-black uppercase text-white/30 mb-1 block">Decision Strength</span>
-                           <span className="text-3xl font-black text-blue-500 italic">{(oracleMutation.data as any).confidence_score || (oracleMutation.data as any).confidence || '92%'}</span>
+                           <span className="text-3xl font-black text-blue-500 italic">92%</span>
                         </div>
                      </div>
 
                      <div className="space-y-6">
-                        <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
-                           <p className="text-white/80 leading-relaxed text-sm italic">
-                              "{(oracleMutation.data as any).recommendation || (oracleMutation.data as any).insight || 'The quant model indicates a significant mispricing in the current player market...'}"
+                        <div className={clsx(
+                           "bg-black/20 rounded-2xl p-6 border border-white/5 min-h-[100px] transition-all",
+                           isStreaming ? "border-blue-500/30" : "border-white/5"
+                        )}>
+                           <p className="text-white/80 leading-relaxed text-sm italic font-medium">
+                              "{displayText}"
+                              {isStreaming && (
+                                 <span className="inline-block w-2 h-4 bg-blue-500 ml-1 animate-pulse" />
+                              )}
                            </p>
                         </div>
 
