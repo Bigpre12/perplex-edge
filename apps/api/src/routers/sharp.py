@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Query, Depends
-from typing import List, Dict, Any
-from sqlalchemy import select, desc
-from db.session import AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+from db.session import get_db, AsyncSessionLocal
 from models.brain import SharpSignal, WhaleMove
 from schemas.universal import UniversalResponse, ResponseMeta
 from middleware.request_id import get_request_id
@@ -122,14 +121,16 @@ async def get_sharp_alerts(
 @router.post("/compute")
 async def trigger_sharp_compute(
     sport: str = Query("basketball_nba"),
-    current_user: dict = Depends(get_user_tier)
+    db: AsyncSession = Depends(get_db)
 ):
     """Trigger the sharp and whale detection engines."""
     from services.scheduler_jobs import detect_whales, detect_steam
+    from services.heartbeat_service import HeartbeatService
+    from datetime import datetime
     try:
-        # These are normally background jobs, we trigger them manually
         await detect_whales()
         await detect_steam()
+        await HeartbeatService.log_heartbeat(db, f"intelligence_{sport}")
         return {"status": "ok", "message": f"Sharp/Whale scan completed for {sport}", "timestamp": datetime.utcnow().isoformat()}
     except Exception as e:
         logger.error(f"Sharp Compute Trigger Failed: {e}")

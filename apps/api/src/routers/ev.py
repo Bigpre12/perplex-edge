@@ -1,5 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from datetime import datetime
 from sqlalchemy import text
@@ -143,12 +144,15 @@ async def get_ev_by_sport(
 @router.post("/compute")
 async def trigger_ev_compute(
     sport: str = Query("basketball_nba"),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_tier("pro"))
 ):
     """Trigger the EV scoring engine for a specific sport."""
     from services.ev_service import ev_service
+    from services.heartbeat_service import HeartbeatService
     try:
         await ev_service.run_ev_cycle(sport)
+        await HeartbeatService.log_heartbeat(db, f"ev_grader_{sport}")
         return {"status": "ok", "message": f"EV computation triggered for {sport}", "timestamp": datetime.utcnow().isoformat()}
     except Exception as e:
         logger.error(f"EV Compute Trigger Failed: {e}")
