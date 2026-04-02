@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useEV, EVRecord } from '@/hooks/useEV';
 import { UpgradeGate } from '@/components/UpgradeGate';
@@ -22,6 +22,19 @@ export default function EVPage() {
 
 function EVPageContent() {
   const { sport } = useSport();
+
+  // On-demand computation trigger
+  useEffect(() => {
+    const triggerCompute = async () => {
+      try {
+        await fetch(`/api/compute?sport=${sport}`, { method: 'POST' });
+        console.log(`[EV] Intelligence cycle triggered for ${sport}`);
+      } catch (err) {
+        console.error("[EV] Compute trigger failed:", err);
+      }
+    };
+    triggerCompute();
+  }, [sport]);
 
   const getEVColor = (val: number | undefined | null) => {
     const n = Number(val) || 0;

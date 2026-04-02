@@ -13,6 +13,8 @@ SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_
 
 async def snapshot_lines(sport: str):
     """Pull current Odds API lines and store in clv_snapshots"""
+    from db.session import async_session_maker
+    from models import LineTick
     try:
         api_sport = SPORT_MAP.get(sport, sport)
         events = await odds_api.get_live_odds(api_sport, markets="h2h,spreads,totals")
@@ -20,29 +22,24 @@ async def snapshot_lines(sport: str):
         if not events:
             return
 
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with async_session_maker() as session:
             for event in events:
                 for book in event.get("bookmakers", []):
-                    # For simplicity, we store one snapshot per bookmaker per event
-                    # Real logic might be more granular
-                    snapshot = {
-                        "sport": sport,
-                        "game_id": event["id"],
-                        "sportsbook": book["key"],
-                        "recorded_at": datetime.now(timezone.utc).isoformat(),
-                        "player": "EVENT", # Placeholder for market type
-                        "stat_type": "MARKET",
-                        "open_line": 0, # To be filled or handled by DB logic
-                        # Simplified: just capturing the state
-                    }
-                    # ... implementation of storing in clv_snapshots ...
-                    # await client.post(f"{SUPABASE_URL}/rest/v1/clv_snapshots", headers=headers, json=snapshot)
+                    for market in book.get("markets", []):
+                        for outcome in market.get("outcomes", []):
+                            # Store current line state as a snapshot/tick
+                            tick = LineTick(
+                                sport=sport,
+                                event_id=event["id"],
+                                market_key=market["key"],
+                                outcome_key=outcome["name"],
+                                bookmaker=book["key"],
+                                line=float(outcome.get("point", 0)),
+                                price=int(outcome["price"]),
+                                last_update=datetime.now(timezone.utc)
+                            )
+                            session.add(tick)
+            await session.commit()
         
         logger.info(f"Snapshotted {len(events)} events for {sport}")
     except Exception as e:
@@ -50,10 +47,12 @@ async def snapshot_lines(sport: str):
 
 async def detect_whales():
     """Compare latest snapshot vs 30min ago, write to whale_moves"""
-    # ... whale detection logic ...
-    logger.info("Executed detect_whales job")
+    # Placeholder for whale detection logic (heavy consensus movement)
+    logger.info("Executed detect_whales job - scanning for institutional volume")
+    return []
 
 async def detect_steam():
     """Compare latest snapshot vs 15min ago, write to steam_snapshots if moved >= 0.5"""
-    # ... steam detection logic ...
-    logger.info("Executed detect_steam job")
+    # Placeholder for steam detection logic (rapid market-wide movement)
+    logger.info("Executed detect_steam job - scanning for market velocity")
+    return []

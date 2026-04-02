@@ -1,16 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSharpMoney, SharpAlert } from '@/hooks/useSharpMoney';
+import { useSport } from '@/hooks/useSport';
 import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
+import SportSelector from '@/components/shared/SportSelector';
 import { Flame, Anchor, TrendingUp, Clock, Info, Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SharpPage() {
-  const { data: alerts, isLoading, isError, refetch } = useSharpMoney();
+  const { sport } = useSport();
+  const { data: alerts, isLoading, isError, refetch } = useSharpMoney(sport, '24h');
+
+  // On-demand computation trigger
+  useEffect(() => {
+    const triggerCompute = async () => {
+      try {
+        await fetch(`/api/compute?sport=${sport}`, { method: 'POST' });
+        console.log(`[SHARP] Intelligence cycle triggered for ${sport}`);
+      } catch (err) {
+        console.error("[SHARP] Compute trigger failed:", err);
+      }
+    };
+    triggerCompute();
+  }, [sport]);
 
   const columns = [
     { 
@@ -138,10 +154,13 @@ export default function SharpPage() {
            <h1 className="text-4xl font-black tracking-tighter uppercase italic">
              Sharp <span className="text-blue-500 not-italic">Money</span>
            </h1>
-           <p className="text-white/40 max-w-xl">
-             We track professional volume and institutional line movement in real-time. 
-             Follow the money, find the value.
-           </p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <p className="text-white/40 max-w-xl">
+                We track professional volume and institutional line movement in real-time. 
+                Follow the money, find the value.
+              </p>
+              <SportSelector />
+            </div>
         </div>
 
         {/* Featured Whale Move */}

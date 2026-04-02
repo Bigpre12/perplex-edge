@@ -7,11 +7,14 @@ export async function POST(req: NextRequest) {
     const { messages, sport } = await req.json();
     const backendBase = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
 
+    const authHeader = req.headers.get("authorization");
+
     const backendRes = await fetch(`${backendBase}/api/oracle/chat`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Accept": "text/event-stream"
+        "Accept": "text/event-stream",
+        ...(authHeader ? { "Authorization": authHeader } : {})
       },
       body: JSON.stringify({ 
         messages, 

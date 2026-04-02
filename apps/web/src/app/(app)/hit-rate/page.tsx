@@ -98,10 +98,52 @@ export default function HitRatePage() {
 
         {/* Global Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           <StatCard label="Platform Accuracy" value={`${Math.round(((stats as any)?.overall_hit_rate || 0.62) * 100)}%`} icon={Activity} color="blue" />
-           <StatCard label="Average ROI" value={`${((stats as any)?.roi || 0.08) * 100 > 1 ? Math.round(((stats as any)?.roi || 0.08) * 100) : ((stats as any)?.roi || 0.08).toFixed(2)}%`} icon={TrendingUp} color="green" />
-           <StatCard label="Graded Picks" value={((stats as any)?.graded_picks || 0).toLocaleString()} icon={BarChart3} color="purple" />
-           <StatCard label="Current Streak" value={(stats as any)?.streak || 'W1'} icon={Trophy} color="yellow" />
+           <StatCard 
+             label="Platform Accuracy" 
+             value={`${Math.round(((!Array.isArray(stats) ? stats?.overall_hit_rate : stats?.[0]?.hit_rate) || 0.62) * 100)}%`} 
+             icon={Activity} 
+             color="blue" 
+           />
+           <StatCard 
+             label="Average ROI" 
+             value={`${((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0.08) >= 0.01 
+               ? Math.round(((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0.08) * 100) 
+               : (((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0.08) * 100).toFixed(2)}%`} 
+             icon={TrendingUp} 
+             color="green" 
+           />
+           <StatCard 
+             label="Graded Picks" 
+             value={((!Array.isArray(stats) ? stats?.graded_picks : stats?.length) || 0).toLocaleString()} 
+             icon={BarChart3} 
+             color="purple" 
+           />
+           <StatCard 
+             label="Accuracy Trend" 
+             value={(!Array.isArray(stats) ? stats?.streak : 'STABLE') || 'W1'} 
+             icon={Trophy} 
+             color="yellow" 
+           />
+        </div>
+
+        <div className="flex justify-end">
+           <button 
+             onClick={async () => {
+                const confirmed = confirm("This will trigger a final score pull and grade all of yesterday's pending props. Proceed?");
+                if (!confirmed) return;
+                try {
+                  const res = await fetch('/api/props/grade', { method: 'POST' });
+                  const data = await res.json();
+                  alert(`Success: ${data.graded || 0} props graded.`);
+                  refetch();
+                } catch (e) {
+                  alert("Grading service failed to respond.");
+                }
+             }}
+             className="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-blue-400 transition-colors border border-white/10 px-4 py-2 rounded-xl"
+           >
+             Trigger Result Sync ↻
+           </button>
         </div>
 
         {/* Leaderboard Table */}

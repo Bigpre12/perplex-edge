@@ -6,8 +6,11 @@ export interface LiveGame {
   id: string;
   home_team: string;
   away_team: string;
-  score_home?: number;
-  score_away?: number;
+  home_score?: number;
+  away_score?: number;
+  score_home?: number; // legacy
+  score_away?: number; // legacy
+  matchup?: string;
   period?: string;
   clock?: string;
   sport: string;

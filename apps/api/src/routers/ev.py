@@ -139,3 +139,17 @@ async def get_ev_by_sport(
     current_user: User = Depends(require_tier("pro"))
 ):
     return await get_ev_signals(sport=sport_path, limit=limit, db=db, current_user=current_user)
+
+@router.post("/compute")
+async def trigger_ev_compute(
+    sport: str = Query("basketball_nba"),
+    current_user: User = Depends(require_tier("pro"))
+):
+    """Trigger the EV scoring engine for a specific sport."""
+    from services.ev_service import ev_service
+    try:
+        await ev_service.run_ev_cycle(sport)
+        return {"status": "ok", "message": f"EV computation triggered for {sport}", "timestamp": datetime.utcnow().isoformat()}
+    except Exception as e:
+        logger.error(f"EV Compute Trigger Failed: {e}")
+        return {"status": "error", "message": str(e)}

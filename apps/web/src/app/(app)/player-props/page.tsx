@@ -33,6 +33,19 @@ function PlayerPropsContent() {
     const { data: freshness, isLoading: freshnessLoading } = useFreshness(sport);
     const searchParams = useSearchParams();
 
+    // On-demand computation trigger
+    useEffect(() => {
+        const triggerCompute = async () => {
+            try {
+                await fetch(`/api/compute?sport=${sport}`, { method: 'POST' });
+                console.log(`[PROPS] Intelligence cycle triggered for ${sport}`);
+            } catch (err) {
+                console.error("[PROPS] Compute trigger failed:", err);
+            }
+        };
+        triggerCompute();
+    }, [sport]);
+
     const minEv = parseFloat(searchParams.get("minEdge") || "0");
     const [searchQuery, setSearchQuery] = useState("");
     const [isHistorical, setIsHistorical] = useState(false);

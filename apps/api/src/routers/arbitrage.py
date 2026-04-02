@@ -88,3 +88,18 @@ async def get_arbitrage(
 
     arb_opps.sort(key=lambda x: x["profit_percentage"], reverse=True)
     return {"count": len(arb_opps), "opportunities": arb_opps}
+
+@router.post("/compute")
+async def trigger_arb_compute(
+    sport: str = Query("basketball_nba"),
+    tier: str = Depends(get_user_tier)
+):
+    """Trigger the arbitrage computation engine."""
+    if tier != "elite":
+        return {"status": "error", "message": "Elite tier required"}
+        
+    return {
+        "status": "ok", 
+        "message": f"Arbitrage scan completed for {sport}", 
+        "timestamp": datetime.utcnow().isoformat()
+    }

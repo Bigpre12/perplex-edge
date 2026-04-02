@@ -11,6 +11,7 @@ router = APIRouter(tags=["sharp"])
 @router.get("/alerts", response_model=UniversalResponse[dict])
 async def get_sharp_alerts(
     sport: str = Query("basketball_nba"),
+    since: Optional[str] = Query(None, description="ISO timestamp or duration (e.g. 24h)"),
     limit: int = Query(20, ge=1, le=100)
 ):
     """
@@ -34,7 +35,22 @@ async def get_sharp_alerts(
             steam_res = await session.execute(steam_stmt)
             steam_events = steam_res.scalars().all()
 
-            # Combine and sort by created_at
+            # Filter by 'since' if provided
+            since_dt = None
+            if since:
+                from datetime import datetime, timedelta
+                if since.endswith('h'):
+                    since_dt = datetime.utcnow() - timedelta(hours=int(since[:-1]))
+                else:
+                    try:
+                        since_dt = datetime.fromisoformat(since.replace('Z', ''))
+                    except: pass
+
+            if since_dt:
+                sharp_stmt = sharp_stmt.where(SharpSignal.created_at >= since_dt)
+                whale_stmt = whale_stmt.where(WhaleMove.created_at >= since_dt)
+                steam_stmt = steam_stmt.where(SteamEvent.created_at >= since_dt)
+
             combined = []
             for s in sharp_signals:
                 combined.append({
@@ -102,3 +118,19 @@ async def get_sharp_alerts(
             meta=ResponseMeta(request_id=get_request_id()),
             data=[]
         )
+
+@router.post("/compute")
+async def trigger_sharp_compute(
+    sport: str = Query("basketball_nba"),
+    current_user: dict = Depends(get_user_tier)
+):
+    """Trigger the sharp and whale detection engines."""
+    from services.scheduler_jobs import detect_whales, detect_steam
+    try:
+        # These are normally background jobs, we trigger them manually
+        await detect_whales()
+        await detect_steam()
+        return {"status": "ok", "message": f"Sharp/Whale scan completed for {sport}", "timestamp": datetime.utcnow().isoformat()}
+    except Exception as e:
+        logger.error(f"Sharp Compute Trigger Failed: {e}")
+        return {"status": "error", "message": str(e)}

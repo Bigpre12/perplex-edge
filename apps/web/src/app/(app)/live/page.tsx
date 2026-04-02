@@ -21,6 +21,8 @@ export default function LivePage() {
 
   const ScoreBoard = ({ game, index }: { game: LiveGame, index: number }) => {
     const sportName = (game.sport || 'UNKNOWN').replace('_', ' ').toUpperCase();
+    const home_team = game.home_team || (game.matchup?.split(' @ ')[1]) || 'Home';
+    const away_team = game.away_team || (game.matchup?.split(' @ ')[0]) || 'Away';
     
     return (
       <motion.div 
@@ -47,18 +49,18 @@ export default function LivePage() {
         <div className="grid grid-cols-2 gap-10 items-center mb-10 relative z-10">
           <div className="flex flex-col items-center group/team">
              <div className="w-20 h-20 rounded-3xl bg-lucrix-dark border border-white/10 mb-6 flex items-center justify-center text-2xl font-black italic text-white transition-all group-hover/team:scale-110 group-hover/team:border-brand-primary/50 group-hover/team:shadow-glow group-hover/team:shadow-brand-primary/10">
-                {(game.home_team || 'H').charAt(0)}
+                {home_team.charAt(0)}
              </div>
-             <span className="text-xs font-black uppercase tracking-tight text-center h-8 line-clamp-2 leading-tight max-w-[120px] mb-2">{game.home_team || 'Unknown'}</span>
-             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{game.score_home || 0}</span>
+             <span className="text-xs font-black uppercase tracking-tight text-center h-8 line-clamp-2 leading-tight max-w-[120px] mb-2">{home_team}</span>
+             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{game.home_score ?? 0}</span>
           </div>
           
           <div className="flex flex-col items-center group/team">
              <div className="w-20 h-20 rounded-3xl bg-lucrix-dark border border-white/10 mb-6 flex items-center justify-center text-2xl font-black italic text-white transition-all group-hover/team:scale-110 group-hover/team:border-brand-primary/50 group-hover/team:shadow-glow group-hover/team:shadow-brand-primary/10">
-                {(game.away_team || 'A').charAt(0)}
+                {away_team.charAt(0)}
              </div>
-             <span className="text-xs font-black uppercase tracking-tight text-center h-8 line-clamp-2 leading-tight max-w-[120px] mb-2">{game.away_team || 'Unknown'}</span>
-             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{game.score_away || 0}</span>
+             <span className="text-xs font-black uppercase tracking-tight text-center h-8 line-clamp-2 leading-tight max-w-[120px] mb-2">{away_team}</span>
+             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{game.away_score ?? 0}</span>
           </div>
         </div>
 

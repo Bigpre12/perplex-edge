@@ -21,21 +21,21 @@ export interface SharpAlert {
   created_at: string;
 }
 
-export const useSharpMoney = () => {
+export const useSharpMoney = (sport = 'basketball_nba', since = '24h') => {
   return useQuery({
-    queryKey: ['sharp-money'],
+    queryKey: ['sharp-money', sport, since],
     queryFn: async () => {
       try {
-        const { data } = await api.get('/api/sharp-moves');
+        const { data } = await api.get(`/api/sharp/alerts?sport=${sport}&since=${since}`);
         const signals = Array.isArray(data) ? data : (data.data || data.alerts || []);
         
-        // Ensure we only show 'sharp' types as requested
-        return signals.filter((s: any) => s.type === 'sharp') as SharpAlert[];
+        return signals as SharpAlert[];
       } catch (err) {
-        console.warn('Backend sharp-money fetch failed, falling back to Supabase', err);
+        console.warn('Backend /api/sharp/alerts fetch failed, falling back to Supabase', err);
         const { data: supabaseData, error: supabaseError } = await supabase
           .from('sharp_alerts')
           .select('*')
+          .eq('sport', sport)
           .order('created_at', { ascending: false })
           .limit(30);
 

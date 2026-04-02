@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
 import { useTierGate } from "@/hooks/useTierGate";
@@ -21,6 +21,19 @@ export default function ArbitragePage() {
 
 function ArbitrageContent() {
   const { sport } = useSport();
+
+  // On-demand computation trigger
+  useEffect(() => {
+    const triggerCompute = async () => {
+      try {
+        await fetch(`/api/compute?sport=${sport}`, { method: 'POST' });
+        console.log(`[ARB] Intelligence cycle triggered for ${sport}`);
+      } catch (err) {
+        console.error("[ARB] Compute trigger failed:", err);
+      }
+    };
+    triggerCompute();
+  }, [sport]);
   const [totalStake, setTotalStake] = useState(100);
 
   const { data: arbData, isLoading, error, refetch } = useQuery({
@@ -171,8 +184,11 @@ function ArbitrageContent() {
         })}
 
         {!isLocked && opportunities.length === 0 && (
-          <div className="col-span-full text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
-            Scanning for risk-free pricing gaps...
+          <div className="col-span-full text-center py-24 space-y-4">
+            <div className="size-6 rounded-full border-2 border-brand-success border-t-transparent animate-spin mx-auto" />
+            <div className="text-textMuted font-black uppercase italic tracking-widest text-[10px] animate-pulse">
+              Computing neural arbitrage...
+            </div>
           </div>
         )}
       </div>
