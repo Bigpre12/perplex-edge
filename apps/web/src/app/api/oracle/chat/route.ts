@@ -5,7 +5,7 @@ export const runtime = "edge";
 export async function POST(req: NextRequest) {
   try {
     const { messages, sport } = await req.json();
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-production.up.railway.app";
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
 
     // Proxy the stream from the backend
     const response = await fetch(`${backendBase}/api/oracle/chat`, {
