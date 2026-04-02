@@ -496,6 +496,10 @@ app.include_router(hero_router, prefix="/api/hero", tags=["hero"])
 if alerts_router:        app.include_router(alerts_router)
 if audit_router:         app.include_router(audit_router)
 
+# Unified Orchestration
+from routers.unified import router as unified_router
+if unified_router:       app.include_router(unified_router, prefix="/api", tags=["unified"])
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}

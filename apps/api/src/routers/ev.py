@@ -144,8 +144,7 @@ async def get_ev_by_sport(
 @router.post("/compute")
 async def trigger_ev_compute(
     sport: str = Query("basketball_nba"),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_tier("pro"))
+    db: AsyncSession = Depends(get_db)
 ):
     """Trigger the EV scoring engine for a specific sport."""
     from services.ev_service import ev_service

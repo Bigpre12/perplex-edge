@@ -91,13 +91,10 @@ async def get_arbitrage(
 
 @router.post("/compute")
 async def trigger_arb_compute(
-    sport: str = Query("basketball_nba"),
-    tier: str = Depends(get_user_tier)
+    sport: str = Query("basketball_nba")
 ):
     """Trigger the arbitrage computation engine."""
-    if tier != "elite":
-        return {"status": "error", "message": "Elite tier required"}
-        
+    from datetime import datetime
     return {
         "status": "ok", 
         "message": f"Arbitrage scan completed for {sport}", 
