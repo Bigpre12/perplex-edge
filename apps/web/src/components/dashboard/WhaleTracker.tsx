@@ -59,7 +59,7 @@ function WhaleTrackerContent({ sport }: { sport: string }) {
         fetchMoves();
         const interval = setInterval(() => {
             if (!isDown) fetchMoves();
-        }, 60000);
+        }, 30000);
         return () => clearInterval(interval);
     }, [isDown, sport]);
 

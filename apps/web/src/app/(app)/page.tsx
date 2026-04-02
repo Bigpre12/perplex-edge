@@ -130,8 +130,8 @@ function DashboardContent() {
                                     const statType = prop?.stat_type || prop?.market?.stat_type || 'Stat';
                                     const line: number = prop?.line || prop?.line_value || 0;
                                     const side: 'over' | 'under' = prop?.side === 'under' ? 'under' : 'over';
-                                    const conf: number = prop?.confidence_score || prop?.model_probability || 0;
-                                    const currentValue = parseFloat((line * conf * (side === 'over' ? 0.95 : 1.05)).toFixed(1));
+                                    const conf: number = prop?.confidence_score || prop?.model_score || prop?.model_probability || 0;
+                                    const currentValue = parseFloat((line * (conf > 1 ? conf/100 : conf) * (side === 'over' ? 0.95 : 1.05)).toFixed(1));
                                     return (
                                         <LiveTrackCard
                                             key={prop?.id || idx}
@@ -141,6 +141,7 @@ function DashboardContent() {
                                             line={line}
                                             side={side}
                                             gameStatus={prop?.sportsbook || 'Model'}
+                                            confidence={conf > 1 ? conf/100 : conf}
                                         />
                                     );
                                 })}
@@ -166,7 +167,16 @@ function DashboardContent() {
                         <div className="space-y-4">
                             <InternalHealthItem label="Inference Engine" status={(healthData as any)?.inference_status || "IDLE"} />
                             <InternalHealthItem label="Data Pipeline" status={(healthData as any)?.pipeline_status || "IDLE"} />
-                            <InternalHealthItem label="Odds Stream" status={(healthData as any)?.odds_stream || "SYNCED"} />
+                            <InternalHealthItem 
+                                label="Odds Stream" 
+                                status={((healthData as any)?.odds_stream || "SYNCED") === "STALE" ? "DEGRADED" : ((healthData as any)?.odds_stream || "SYNCED")} 
+                            />
+                            <div className="pt-2 border-t border-lucrix-border/50">
+                                <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-textMuted italic">
+                                    <span>Last Matrix Sync</span>
+                                    <span>{healthData?.last_updated ? new Date(healthData.last_updated).toLocaleTimeString() : 'JUST NOW'}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

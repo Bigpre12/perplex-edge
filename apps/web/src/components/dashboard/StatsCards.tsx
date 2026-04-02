@@ -36,7 +36,7 @@ export default function StatsCards() {
       }
     };
     load();
-    const id = setInterval(load, 60_000);
+    const id = setInterval(load, 30_000);
     return () => clearInterval(id);
   }, []);
 

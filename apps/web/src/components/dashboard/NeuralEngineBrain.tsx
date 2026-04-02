@@ -56,7 +56,7 @@ export default function NeuralEngineBrain() {
       }
     };
     load();
-    const interval = setInterval(load, 60000);
+    const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, [selectedSport]);
 

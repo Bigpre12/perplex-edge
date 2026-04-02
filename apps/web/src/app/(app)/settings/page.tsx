@@ -39,7 +39,7 @@ export default function SettingsPage() {
 }
 
 function SettingsContent() {
-  const { token, user, signOut } = useAuth();
+  const { token, user, signOut, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
   const [isSaved, setIsSaved] = useState(false);
   const [lastSavedField, setLastSavedField] = useState<string | null>(null);
@@ -81,7 +81,7 @@ function SettingsContent() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="max-w-5xl mx-auto space-y-10 pt-16 px-6">
         <Skeleton className="h-16 w-80 mb-12" />
@@ -94,7 +94,29 @@ function SettingsContent() {
   }
 
   if (error) {
-    return <div className="p-10"><ErrorBanner message="Primary Command Sync Offline." /></div>;
+    return (
+      <div className="max-w-5xl mx-auto pt-16 px-6 text-white space-y-8">
+        <h1 className="text-4xl font-black uppercase italic font-display">Command Center</h1>
+        <div className="p-10 bg-red-500/10 border border-red-500/20 rounded-3xl">
+          <ErrorBanner message="Primary Command Sync Offline. Please check your connection." />
+        </div>
+      </div>
+    );
+  }
+
+  if (!token && !authLoading) {
+    return (
+      <div className="max-w-5xl mx-auto pt-32 px-6 text-center space-y-6">
+        <h1 className="text-4xl font-black uppercase italic font-display">Authentication Required</h1>
+        <p className="text-textMuted uppercase tracking-widest text-[10px] font-black">Please log in to access the Command Center.</p>
+        <button 
+           onClick={() => window.location.href = "/login"}
+           className="px-8 py-4 bg-brand-primary text-white font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/80 transition-all"
+        >
+          Return to Base
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -11,9 +11,19 @@ interface LiveTrackCardProps {
     side: 'over' | 'under';
     gameStatus: string;
     hedgeRecommendation?: string;
+    confidence?: number;
 }
 
-export default function LiveTrackCard({ player, statType, currentValue, line, side, gameStatus, hedgeRecommendation }: LiveTrackCardProps) {
+export default function LiveTrackCard({ 
+    player, 
+    statType, 
+    currentValue, 
+    line, 
+    side, 
+    gameStatus, 
+    hedgeRecommendation,
+    confidence 
+}: LiveTrackCardProps) {
     const progress = Math.min((currentValue / line) * 100, 100);
     const isHit = (side === 'over' && currentValue >= line) || (side === 'under' && currentValue < line);
 
@@ -97,7 +107,9 @@ export default function LiveTrackCard({ player, statType, currentValue, line, si
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
                             <Clock size={10} className="text-textMuted" />
-                            <span className="text-[8px] text-textMuted font-black uppercase tracking-widest">Conf: {Math.round(progress)}%</span>
+                            <span className="text-[8px] text-textMuted font-black uppercase tracking-widest">
+                                Conf: {confidence != null ? Math.round(confidence * 100) : Math.round(progress)}%
+                            </span>
                         </div>
                         {isHit && (
                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-brand-success/10 border border-brand-success/20">

@@ -22,7 +22,6 @@ export default function EVPage() {
 
 function EVPageContent() {
   const { sport } = useSport();
-  const { data: evSignals, isLoading, isError, refetch } = useEV(sport);
 
   const getEVColor = (val: number | undefined | null) => {
     const n = Number(val) || 0;
@@ -78,6 +77,8 @@ function EVPageContent() {
     },
   ];
 
+  const { data: evSignals, isLoading, isError, refetch, isFetching } = useEV(sport);
+
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -121,8 +122,14 @@ function EVPageContent() {
         </div>
 
         {/* Content */}
-        {isLoading ? (
-          <LoadingSkeleton rows={10} />
+        {isLoading || (isFetching && (!evSignals || evSignals.length === 0)) ? (
+          <div className="space-y-6">
+             <div className="flex items-center gap-3 px-2">
+                <div className="size-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 animate-pulse">Computing neural edges...</span>
+             </div>
+             <LoadingSkeleton rows={10} />
+          </div>
         ) : isError ? (
           <ErrorRetry onRetry={() => refetch()} />
         ) : (
