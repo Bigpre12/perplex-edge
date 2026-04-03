@@ -37,26 +37,41 @@ export function useHealthMonitor() {
     };
 
     useEffect(() => {
-        let timerId: NodeJS.Timeout;
+        let failures = 0;
+        let cooldownUntil = 0;
 
-        const runCheck = async () => {
-            const success = await check();
-            if (success) {
-                timerId = setTimeout(runCheck, 30000);
-            } else {
-                handleFailure();
-                const delays = [0, 3000, 8000, 15000];
-                const nextDelay = delays[failCount + 1] || 15000;
-                timerId = setTimeout(runCheck, nextDelay);
+        const interval = setInterval(async () => {
+            const now = Date.now();
+            if (now < cooldownUntil) return;
+
+            try {
+                const result = await API.health();
+                if (!isApiError(result)) {
+                    setBackendOnline(true);
+                    setIsConnecting(false);
+                    failures = 0;
+                } else {
+                    throw new Error("API response error");
+                }
+            } catch (err) {
+                failures++;
+                if (failures < 3) {
+                    setIsConnecting(true);
+                } else {
+                    setBackendOnline(false);
+                    setIsConnecting(false);
+                    // 5-minute cooldown (circuit breaker)
+                    console.error("[Health Monitor] 3 failures. Opening circuit for 5 minutes.");
+                    cooldownUntil = Date.now() + 300000;
+                    failures = 0; // Reset count to retry after cooldown
+                }
             }
-        };
-
-        runCheck();
+        }, 30000);
 
         return () => {
-            if (timerId) clearTimeout(timerId);
+            clearInterval(interval);
         };
-    }, [setBackendOnline, setIsConnecting]); 
+    }, [setBackendOnline, setIsConnecting]);
 
     return { 
         checkNow: check 

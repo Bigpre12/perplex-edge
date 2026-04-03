@@ -39,10 +39,12 @@ api.interceptors.response.use(
     config._retryCount = config._retryCount || 0;
 
     // Only retry on network errors or 5xx server errors
+    // DO NOT retry on 401/403 (Auth errors) as it trips backend circuit breakers
     const isNetworkError = !error.response;
     const isServerError = error.response && error.response.status >= 500 && error.response.status <= 599;
+    const isAuthError = error.response && (error.response.status === 401 || error.response.status === 403);
     
-    if ((isNetworkError || isServerError) && config._retryCount < 3) {
+    if ((isNetworkError || isServerError) && !isAuthError && config._retryCount < 3) {
       config._retryCount += 1;
       
       // Exponential backoff: 1s, 2s, 4s
@@ -57,12 +59,18 @@ api.interceptors.response.use(
   }
 );
 
-// Automatically inject JWT token from localStorage into every request
+// Automatically inject JWT token from localStorage or environment key into every request
 api.interceptors.request.use((config: any) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY) || process.env.NEXT_PUBLIC_API_KEY;
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Ensure strictly Bearer format
+      config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+    }
+
+    // Dev-only warning for missing auth header
+    if (process.env.NODE_ENV === 'development' && !config.headers.Authorization && !config.url?.includes('/api/auth/')) {
+        console.warn('[API] Missing auth header on', config.url);
     }
   }
   return config;

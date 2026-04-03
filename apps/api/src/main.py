@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.config import APP_NAME, settings
 from middleware.request_id import RequestIDMiddleware
+from middleware.tier_check import TierCheckMiddleware
+from middleware.auth_circuit_breaker import AuthCircuitBreakerMiddleware, auth_breaker # Import new circuit breaker
 from db.base import Base
 from db.session import engine
 from services.unified_ingestion import unified_ingestion
@@ -418,6 +420,8 @@ async def backend_lifespan(app: FastAPI):
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False, lifespan=backend_lifespan)
 
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(AuthCircuitBreakerMiddleware) # Register circuit breaker middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -507,6 +511,20 @@ async def health():
 @app.get("/")
 async def root():
     return {"name": APP_NAME, "status": "healthy"}
+
+@app.post("/api/admin/reset-circuit-breaker")
+async def reset_circuit_breaker(request: Request):
+    """Manually reset the auth circuit breaker."""
+    # Simple check for ADMIN_SECRET_KEY
+    import os
+    admin_key = os.getenv("ADMIN_SECRET_KEY")
+    auth_header = request.headers.get("Authorization", "")
+    
+    if not admin_key or auth_header != f"Bearer {admin_key}":
+        raise HTTPException(status_code=403, detail="Unauthorized reset attempt.")
+    
+    auth_breaker.reset()
+    return {"status": "success", "message": "Circuit breaker reset to CLOSED state."}
 
 if __name__ == "__main__":
     import uvicorn
