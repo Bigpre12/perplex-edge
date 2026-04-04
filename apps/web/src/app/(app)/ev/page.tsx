@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useEV, EVRecord } from '@/hooks/useEV';
-import { UpgradeGate } from '@/components/UpgradeGate';
+
 import { DataTable } from '@/components/shared/DataTable';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
@@ -14,14 +14,13 @@ import SportSelector from '@/components/shared/SportSelector';
 
 export default function EVPage() {
   return (
-    <UpgradeGate feature="evSignals">
-      <EVPageContent />
-    </UpgradeGate>
+    <EVPageContent />
   );
 }
 
 function EVPageContent() {
   const { sport } = useSport();
+  const [minEv, setMinEv] = useState<number>(2);
 
   // On-demand computation trigger
   useEffect(() => {
@@ -132,6 +131,19 @@ function EVPageContent() {
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <SportSelector />
+          <div className="flex items-center space-x-4 ml-auto">
+            <span className="text-sm text-white/50">Min EV%: {minEv}%</span>
+            <input 
+              type="range" 
+              min="0" 
+              max="15" 
+              step="0.5"
+              value={minEv} 
+              onChange={(e) => setMinEv(parseFloat(e.target.value))}
+              aria-label="Minimum Expected Value Percentage"
+              className="w-32 md:w-48 accent-blue-500 bg-white/10"
+            />
+          </div>
         </div>
 
         {/* Content */}
@@ -170,7 +182,7 @@ function EVPageContent() {
             
             <DataTable 
               columns={columns} 
-              data={evSignals ?? []} 
+              data={evSignals ? evSignals.filter((s: EVRecord) => (s.ev_pct || 0) >= minEv) : []} 
               onRowClick={(p: EVRecord) => console.log('Clicked signal:', p)}
             />
           </div>

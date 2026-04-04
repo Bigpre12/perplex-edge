@@ -216,11 +216,11 @@ function KalshiContent() {
             </div>
             <div className="text-center px-6">
               <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2 leading-none">
-                {timedOut ? "Indexing Delay Detected" : "Scanning Prediction Grids"}
+                {timedOut ? "API Key Not Configured" : "Scanning Prediction Grids"}
               </h3>
               <p className="text-[10px] text-textMuted font-black uppercase tracking-widest italic max-w-xs mx-auto">
                 {timedOut 
-                  ? "The exchange is responding slowly. We are maintaining the connection to sync active contracts." 
+                  ? "Kalshi API key not configured — add KALSHI_API_KEY to Railway environment variables." 
                   : "Indexing Kalshi exchange liquidity..."}
               </p>
             </div>

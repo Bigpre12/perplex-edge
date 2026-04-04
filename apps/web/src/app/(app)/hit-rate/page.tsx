@@ -100,15 +100,15 @@ export default function HitRatePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
            <StatCard 
              label="Platform Accuracy" 
-             value={`${Math.round(((!Array.isArray(stats) ? stats?.overall_hit_rate : stats?.[0]?.hit_rate) || 0.62) * 100)}%`} 
+             value={`${Math.round(((!Array.isArray(stats) ? stats?.overall_hit_rate : stats?.[0]?.hit_rate) || 0) * 100)}%`} 
              icon={Activity} 
              color="blue" 
            />
            <StatCard 
              label="Average ROI" 
-             value={`${((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0.08) >= 0.01 
-               ? Math.round(((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0.08) * 100) 
-               : (((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0.08) * 100).toFixed(2)}%`} 
+             value={`${((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0) >= 0.01 
+               ? Math.round(((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0) * 100) 
+               : (((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0) * 100).toFixed(2)}%`} 
              icon={TrendingUp} 
              color="green" 
            />
@@ -120,7 +120,7 @@ export default function HitRatePage() {
            />
            <StatCard 
              label="Accuracy Trend" 
-             value={(!Array.isArray(stats) ? stats?.streak : 'STABLE') || 'W1'} 
+             value={(!Array.isArray(stats) ? stats?.streak : null) || '-'} 
              icon={Trophy} 
              color="yellow" 
            />

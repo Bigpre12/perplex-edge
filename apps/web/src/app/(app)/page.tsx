@@ -95,11 +95,7 @@ function DashboardContent() {
 
                     {/* WhaleTracker only shown to pro+ */}
                     {mounted ? (
-                        (isPro || isDev) ? (
-                            <WhaleTracker />
-                        ) : (
-                            <UpgradeCTA feature="Whale Intel" description="Tracks high-stakes positions in real-time." />
-                        )
+                        <WhaleTracker />
                     ) : (
                         <div className="h-40 bg-lucrix-surface border border-lucrix-border rounded-xl animate-pulse" />
                     )}

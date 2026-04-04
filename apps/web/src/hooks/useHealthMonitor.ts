@@ -38,39 +38,35 @@ export function useHealthMonitor() {
 
     useEffect(() => {
         let failures = 0;
-        let cooldownUntil = 0;
 
         const interval = setInterval(async () => {
-            const now = Date.now();
-            if (now < cooldownUntil) return;
+            if (failures >= 3) return; // frontend circuit breaker — stop after 3 fails
 
             try {
-                const result = await API.health();
-                if (!isApiError(result)) {
-                    setBackendOnline(true);
-                    setIsConnecting(false);
-                    failures = 0;
-                } else {
-                    throw new Error("API response error");
+                const data = await API.health();
+                if (isApiError(data)) {
+                    throw data;
                 }
-            } catch (err) {
-                failures++;
-                if (failures < 3) {
-                    setIsConnecting(true);
-                } else {
+                setBackendOnline(true);
+                setIsConnecting(false);
+                failures = 0;
+            } catch (e: any) {
+                // Don't retry 401/403 — those are auth errors, not transient
+                if (e?.response?.status === 401 || e?.response?.status === 403) {
                     setBackendOnline(false);
                     setIsConnecting(false);
-                    // 5-minute cooldown (circuit breaker)
-                    console.error("[Health Monitor] 3 failures. Opening circuit for 5 minutes.");
-                    cooldownUntil = Date.now() + 300000;
-                    failures = 0; // Reset count to retry after cooldown
+                    failures = 3; // immediately open the frontend breaker
+                    return;
+                }
+                failures++;
+                if (failures >= 3) {
+                    setBackendOnline(false);
+                    setIsConnecting(false);
                 }
             }
         }, 30000);
 
-        return () => {
-            clearInterval(interval);
-        };
+        return () => clearInterval(interval); // CRITICAL cleanup
     }, [setBackendOnline, setIsConnecting]);
 
     return { 

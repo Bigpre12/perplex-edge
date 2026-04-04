@@ -41,6 +41,7 @@ export default function SettingsPage() {
 function SettingsContent() {
   const { token, user, signOut, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
+  const [localSettings, setLocalSettings] = useState<any>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [lastSavedField, setLastSavedField] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -53,6 +54,12 @@ function SettingsContent() {
     },
     enabled: !!token,
   });
+
+  React.useEffect(() => {
+    if (settings && !localSettings) {
+      setLocalSettings(settings);
+    }
+  }, [settings, localSettings]);
 
   const mutation = useMutation({
     mutationFn: async ({ field, value }: { field: string, value: any }) => {
@@ -71,7 +78,22 @@ function SettingsContent() {
   });
 
   const handleUpdate = (field: string, value: any) => {
-    mutation.mutate({ field, value });
+    setLocalSettings((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveAll = () => {
+    if (!localSettings || !settings) return;
+    let anyChanges = false;
+    Object.keys(localSettings).forEach(field => {
+      if (localSettings[field] !== settings[field]) {
+        mutation.mutate({ field, value: localSettings[field] });
+        anyChanges = true;
+      }
+    });
+    if (!anyChanges) {
+       setIsSaved(true);
+       setTimeout(() => setIsSaved(false), 3000);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -199,7 +221,7 @@ function SettingsContent() {
                     label="Bet Unit Size" 
                     icon={<DollarSign size={14} />}
                     description="Standard sizing for parlay math"
-                    value={settings?.unit_size || 100}
+                    value={localSettings?.unit_size ?? settings?.unit_size ?? 100}
                     type="number"
                     onChange={(val: string) => handleUpdate("unit_size", parseFloat(val))}
                     isSaving={mutation.isPending && lastSavedField === "unit_size"}
@@ -211,7 +233,7 @@ function SettingsContent() {
                     label="Primary Sport" 
                     icon={<Globe size={14} />}
                     description="Dashboard focus on boot"
-                    value={settings?.default_sport || "basketball_nba"}
+                    value={localSettings?.default_sport ?? settings?.default_sport ?? "basketball_nba"}
                     options={Object.keys(SPORTS_CONFIG).map(k => ({
                       value: k,
                       label: (SPORTS_CONFIG[k as SportKey] as any).label
@@ -226,7 +248,7 @@ function SettingsContent() {
                     label="Primary Sportsbook" 
                     icon={<Database size={14} />}
                     description="Preferred pricing source"
-                    value={settings?.default_sportsbook || "draftkings"}
+                    value={localSettings?.default_sportsbook ?? settings?.default_sportsbook ?? "draftkings"}
                     options={[
                       { value: "draftkings", label: "DraftKings" },
                       { value: "fanduel", label: "FanDuel" },
@@ -246,7 +268,7 @@ function SettingsContent() {
                     label="Interface Matrix" 
                     icon={<Monitor size={14} />}
                     description="Visual rendering protocol"
-                    value={settings?.theme || "dark"}
+                    value={localSettings?.theme ?? settings?.theme ?? "dark"}
                     options={[
                       { value: "dark", label: "Neural Dark" },
                       { value: "light", label: "High Contrast Light" },
@@ -261,8 +283,8 @@ function SettingsContent() {
                     label="Direct Relay" 
                     icon={<Bell size={14} />}
                     description="Mobile signal push protocol" 
-                    active={settings?.notifications_enabled} 
-                    onToggle={() => handleUpdate("notifications_enabled", !settings?.notifications_enabled)}
+                    active={localSettings?.notifications_enabled ?? settings?.notifications_enabled} 
+                    onToggle={() => handleUpdate("notifications_enabled", !(localSettings?.notifications_enabled ?? settings?.notifications_enabled))}
                     isSaving={mutation.isPending && lastSavedField === "notifications_enabled"}
                     isSaved={isSaved && lastSavedField === "notifications_enabled"}
                   />
@@ -272,11 +294,20 @@ function SettingsContent() {
                     label="API Grid Access" 
                     icon={<Key size={14} />}
                     description="Enable raw intelligence keys" 
-                    active={settings?.api_enabled} 
-                    onToggle={() => handleUpdate("api_enabled", !settings?.api_enabled)}
+                    active={localSettings?.api_enabled ?? settings?.api_enabled} 
+                    onToggle={() => handleUpdate("api_enabled", !(localSettings?.api_enabled ?? settings?.api_enabled))}
                     isSaving={mutation.isPending && lastSavedField === "api_enabled"}
                     isSaved={isSaved && lastSavedField === "api_enabled"}
                   />
+              </div>
+              <div className="mt-8">
+                 <button 
+                    onClick={handleSaveAll}
+                    disabled={mutation.isPending}
+                    className="w-full py-4 bg-brand-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-brand-primary-hover hover:scale-[1.01] transition-all shadow-glow shadow-brand-primary/20 flex flex-col items-center justify-center gap-1"
+                 >
+                    <span>{mutation.isPending ? "Syncing..." : "Save Configuration"}</span>
+                 </button>
               </div>
            </SectionContainer>
         </div>

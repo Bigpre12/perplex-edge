@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
+import { getAuthenticatedClient } from '@/lib/supabaseAuth';
 
 export interface HitRateStats {
   overall_hit_rate: number;
@@ -18,7 +18,8 @@ export const useHitRate = () => {
         return data as HitRateStats;
       } catch (err) {
         console.warn('Backend hit-rate fetch failed, falling back to Supabase', err);
-        const { data: supabaseData, error: supabaseError } = await supabase
+        const supabaseAuth = getAuthenticatedClient();
+        const { data: supabaseData, error: supabaseError } = await supabaseAuth
           .from('player_hit_rates')
           .select('*')
           .order('hit_rate', { ascending: false });
@@ -41,7 +42,14 @@ export const useHitRatePlayers = (sport = 'all') => {
         return (data || []) as any[];
       } catch (err) {
         console.warn('Backend hit-rate players fetch failed', err);
-        return [];
+        const supabaseAuth = getAuthenticatedClient();
+        const { data: supabaseData, error: supabaseError } = await supabaseAuth
+          .from('player_hit_rates')
+          .select('*')
+          .order('hit_rate', { ascending: false });
+
+        if (supabaseError) throw supabaseError;
+        return (supabaseData || []) as any[];
       }
     },
     refetchInterval: 120000,

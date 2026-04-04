@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,10 +37,18 @@ function WhaleAlertsContent() {
 
   const alerts = rawAlerts || [];
 
-  const { checkAccess, loading: isAuthLoading } = useAuth();
-  const isLocked = !isAuthLoading && !checkAccess("whaleIntel");
+  const [forceShow, setForceShow] = useState(false);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setForceShow(true);
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
 
-  if (isLoading || isAuthLoading) {
+  const isLocked = false;
+  const isAuthLoading = false;
+
+  if ((isLoading || isAuthLoading) && !forceShow) {
     return (
       <div className="space-y-6 pt-6 px-4">
         <Skeleton className="h-10 w-48 mb-6" />
@@ -88,30 +96,14 @@ function WhaleAlertsContent() {
       </div>
 
       <div className="space-y-4 relative">
-        {isLocked && (
-          <div className="absolute inset-x-0 top-0 z-20 flex flex-col items-center justify-center pt-24 pb-12 bg-gradient-to-t from-lucrix-bg via-lucrix-bg/95 to-transparent min-h-[500px]">
-             <div className="bg-lucrix-surface/90 backdrop-blur-xl border border-brand-warning/20 p-10 rounded-3xl text-center max-w-lg shadow-[0_0_50px_rgba(234,179,8,0.15)] scale-105">
-              <Star size={48} className="mx-auto text-brand-warning mb-6 shadow-glow shadow-brand-warning/40" />
-              <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4 text-white font-display">Elite Access Required</h2>
-              <p className="text-textSecondary text-base font-bold mb-8 italic leading-relaxed">
-                Whale movements represent institutional-grade order flow. <br/> Reveal the high-stakes positions moving the markets today.
-              </p>
-              <button 
-                onClick={() => window.location.href = "/pricing"}
-                className="w-full bg-brand-warning hover:bg-white text-black px-12 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-[0_0_30px_rgba(234,179,8,0.3)] hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Unlock Whale Flow →
-              </button>
-            </div>
-          </div>
-        )}
 
-        {(isLocked ? (alerts.slice(0, 3)) : alerts).map((alert: any, i: number) => (
+
+        {alerts.map((alert: any, i: number) => (
           <div 
             key={i} 
             className={clsx(
               "bg-lucrix-surface border rounded-2xl p-6 transition-all relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6",
-              isLocked ? "blur-sm opacity-40 border-lucrix-border" : "border-brand-warning/20 hover:border-brand-warning/40 shadow-card"
+              "bg-lucrix-surface border rounded-2xl p-6 transition-all relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 border-brand-warning/20 hover:border-brand-warning/40 shadow-card"
             )}
           >
             <div className="flex items-center gap-6">
@@ -166,9 +158,9 @@ function WhaleAlertsContent() {
           </div>
         ))}
 
-        {!isLocked && (!alerts || alerts.length === 0) && (
+        {alerts.length === 0 && (
           <div className="text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
-            Scanning for high-stakes positions...
+            No whale activity detected
           </div>
         )}
       </div>

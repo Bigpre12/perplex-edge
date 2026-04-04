@@ -39,12 +39,15 @@ api.interceptors.response.use(
     config._retryCount = config._retryCount || 0;
 
     // Only retry on network errors or 5xx server errors
-    // DO NOT retry on 401/403 (Auth errors) as it trips backend circuit breakers
     const isNetworkError = !error.response;
     const isServerError = error.response && error.response.status >= 500 && error.response.status <= 599;
-    const isAuthError = error.response && (error.response.status === 401 || error.response.status === 403);
-    
-    if ((isNetworkError || isServerError) && !isAuthError && config._retryCount < 3) {
+
+    // Check for circuit breaker or auth errors specifically - DO NOT retry these
+    const errorMessage = error?.response?.data?.error || '';
+    const isAuthRelatedError = error.response && (error.response.status === 401 || error.response.status === 403);
+    const isCircuitBreakerError = errorMessage.includes('Circuit breaker') || errorMessage.includes('authentication');
+
+    if ((isNetworkError || isServerError) && !isAuthRelatedError && !isCircuitBreakerError && config._retryCount < 3) {
       config._retryCount += 1;
       
       // Exponential backoff: 1s, 2s, 4s

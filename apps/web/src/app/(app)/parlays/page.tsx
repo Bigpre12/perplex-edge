@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Zap, Target, BarChart3, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { clsx } from "clsx";
-import GateLock from "@/components/GateLock";
+
 import { api, isApiError } from "@/lib/api";
 import { useSport } from "@/hooks/useSport";
 import { useLucrixStore } from "@/store";
@@ -133,7 +133,7 @@ export default function ParlayPage() {
                 </div>
             </div>
 
-            <GateLock feature="parlay">
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     <div className="lg:col-span-8 space-y-6">
                         <AnimatePresence mode="wait">
@@ -340,7 +340,7 @@ export default function ParlayPage() {
                         </div>
                     </div>
                 </div>
-            </GateLock>
+
         </div>
     );
 }
