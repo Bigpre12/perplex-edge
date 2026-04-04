@@ -13,7 +13,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.config import APP_NAME, settings
 from middleware.request_id import RequestIDMiddleware
-from middleware.tier_check import TierCheckMiddleware
 from middleware.auth_circuit_breaker import AuthCircuitBreakerMiddleware, auth_breaker # Import new circuit breaker
 from db.base import Base
 from db.session import engine

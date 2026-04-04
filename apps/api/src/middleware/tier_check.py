@@ -1,6 +1,19 @@
 from functools import wraps
 from fastapi import HTTPException, Depends
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from typing import Optional, List, Dict
+
+
+class TierCheckMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware stub for tier-based request gating.
+    Currently a pass-through — tier enforcement is handled per-route
+    via the require_tier() decorator below.
+    """
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        return response
 
 # Tier Levels Mapping
 TIER_LEVELS = {
