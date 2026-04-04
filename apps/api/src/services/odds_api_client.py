@@ -68,10 +68,17 @@ class OddsApiClient(ResilientBaseClient):
         markets = MAPPING.get(sport, cls.TEAM_MARKETS)
         return ",".join(markets)
     
+    # Cooldown period before retrying a dead key (seconds)
+    DEAD_KEY_COOLDOWN = 3600  # 1 hour
+
     def __init__(self):
         # Load keys from centralized settings
         self.api_keys = settings.ODDS_API_KEYS
         self.current_key_idx = 0
+        
+        # Dead-key tracking: {key_index: timestamp_marked_dead}
+        # Prevents infinite rotation when all keys are exhausted/deactivated
+        self._dead_keys: Dict[int, float] = {}
         
         # Security logging: Show hint of active keys
         safe_keys = [f"{k[:4]}****" for k in self.api_keys if k]
@@ -83,6 +90,29 @@ class OddsApiClient(ResilientBaseClient):
         
         # Limit per day (approx 100k/mo tier)
         self.max_daily_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
+
+    def _is_key_dead(self, idx: int) -> bool:
+        """Check if a key is marked dead and still within cooldown."""
+        if idx not in self._dead_keys:
+            return False
+        elapsed = time.time() - self._dead_keys[idx]
+        if elapsed >= self.DEAD_KEY_COOLDOWN:
+            # Cooldown expired — give the key another chance
+            del self._dead_keys[idx]
+            logger.info(f"🔓 Odds API key index {idx} cooldown expired, retrying.")
+            return False
+        return True
+
+    def _mark_key_dead(self, idx: int, reason: str):
+        """Mark a key as dead with a cooldown timestamp."""
+        self._dead_keys[idx] = time.time()
+        logger.warning(f"💀 Odds API key index {idx} marked dead: {reason}. Will retry in {self.DEAD_KEY_COOLDOWN}s.")
+
+    def _all_keys_dead(self) -> bool:
+        """Returns True if every key is currently marked dead."""
+        if not self.api_keys:
+            return True
+        return all(self._is_key_dead(i) for i in range(len(self.api_keys)))
 
     @property
     def is_configured(self) -> bool:
@@ -135,8 +165,20 @@ class OddsApiClient(ResilientBaseClient):
             if cached:
                 return cached
 
-        # 3. Execute Request with Rotation
+        # 3. Short-circuit if all keys are dead (prevents log spam)
+        if self._all_keys_dead():
+            logger.warning("🚨 All Odds API keys are dead/cooling down. Skipping request.")
+            return None
+
+        # 4. Execute Request with Rotation
         for attempt in range(len(self.api_keys) or 1):
+            # Skip dead keys
+            if self._is_key_dead(self.current_key_idx):
+                if self._rotate_key():
+                    continue
+                else:
+                    break
+
             key = self._get_api_key()
             if not key:
                 logger.error("No Odds API key available.")
@@ -175,7 +217,9 @@ class OddsApiClient(ResilientBaseClient):
                     
                     elif resp.status_code in (401, 403, 429):
                         error_body = resp.text[:200]
-                        logger.error(f"❌ Key index {self.current_key_idx} failure ({resp.status_code}): {error_body}. Rotating...")
+                        logger.error(f"❌ Key index {self.current_key_idx} failure ({resp.status_code}): {error_body}")
+                        # Mark this key as dead so we don't retry it for an hour
+                        self._mark_key_dead(self.current_key_idx, f"HTTP {resp.status_code}: {error_body[:80]}")
                         if self._rotate_key():
                             continue # Try next key
                         else:
