@@ -38,7 +38,7 @@ export const useLucrixStore = create<LucrixState>()(
         (set) => ({
             // Defaults
             activeSport: 'basketball_nba',
-            userTier: 'free',
+            userTier: 'elite', // PAYWALLS DISABLED
             backendOnline: false,
             isConnecting: false,
             unreadAlerts: 0,

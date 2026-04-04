@@ -12,14 +12,12 @@ import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
 import type { LucideIcon } from "lucide-react";
 
-import { UpgradeGate } from "@/components/UpgradeGate";
+
 
 export default function BrainPage() {
   return (
     <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING NEURAL ENGINE...</div>}>
-      <UpgradeGate feature="neuralBrain">
-        <BrainContent />
-      </UpgradeGate>
+      <BrainContent />
     </Suspense>
   );
 }

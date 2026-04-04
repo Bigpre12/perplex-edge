@@ -68,19 +68,18 @@ export function useAuth() {
         window.location.href = "/login";
     };
 
-    const tier: Tier = profile?.tier || 'free';
-    const isFree = tier === 'free';
-    const isPro = tier === 'pro';
-    const isElite = tier === 'elite';
-    const isAtLeastPro = tier === 'pro' || tier === 'elite';
+    const tier: Tier = 'elite'; // PAYWALLS DISABLED — treat all users as elite
+    const isFree = false;
+    const isPro = true;
+    const isElite = true;
+    const isAtLeastPro = true;
 
     /**
-     * checkAccess - Checks if the current user has access to a specific feature.
+     * checkAccess - PAYWALLS DISABLED. Always returns true for all authenticated users.
      */
-    const checkAccess = useCallback((feature: FeatureKey): boolean => {
-        const required = getRequiredTier(feature);
-        return checkTierAccess(tier, required);
-    }, [tier]);
+    const checkAccess = useCallback((_feature: FeatureKey): boolean => {
+        return true;
+    }, []);
 
     return {
         user: profile,
