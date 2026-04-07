@@ -26,9 +26,9 @@ if "sslmode=" in DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("&", "?", 1)
 
 # Fix for Supabase Transaction Pooler (Port 6543)
-if ":6543" in DATABASE_URL and "prepared_statement_cache_size" not in DATABASE_URL:
-    separator = "&" if "?" in DATABASE_URL else "?"
-    DATABASE_URL += f"{separator}prepared_statement_cache_size=0"
+if ":6543" in DATABASE_URL:
+    logger.info("Switching PgBouncer port 6543 to Session port 5432")
+    DATABASE_URL = DATABASE_URL.replace(":6543", ":5432")
 
 # Redacted logging for debugging
 db_url = os.environ.get("DATABASE_URL", "NOT SET")
@@ -47,7 +47,7 @@ else:
 # --- ASYNC ENGINE SETUP ---
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {
     "statement_cache_size": 0,
-    "prepared_statement_cache_size": 0
+    "prepared_statement_cache_size": 0,
 }
 
 engine = create_async_engine(
@@ -55,10 +55,9 @@ engine = create_async_engine(
     echo=False,
     connect_args=connect_args,
     pool_pre_ping=True,
-    # Supabase/Postgres Connection Pool Optimization — Tuned for Transaction Mode (Port 6543)
-    pool_size=5,              # Conservative pool for multiplexing
-    max_overflow=5,           # Allow small temporary surge
-    pool_recycle=1800,        # Recycle connections every 30 mins
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=300,
 )
 
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

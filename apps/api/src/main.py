@@ -460,6 +460,13 @@ async def get_sharp_signals():
     """Smart Money endpoint."""
     return {"status": "processing", "signal": "captured"}
 
+@app.post("/admin/reset-circuit-breaker", tags=["admin"])
+async def reset_circuit_breaker():
+    """Manual reset for Odds API circuit breaker"""
+    from services.odds_api_client import odds_api_client
+    odds_api_client._dead_keys.clear()
+    return {"status": "ok", "message": "Circuit breaker reset. Keys will retry immediately."}
+
 # --- Router Registration (all guarded) ---
 if health_router:        app.include_router(health_router, prefix="/api/health", tags=["health"])
 if intel_router:         app.include_router(intel_router, prefix="/api/intel", tags=["intel"])
