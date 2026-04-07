@@ -218,7 +218,7 @@ async def _probe_api_sports() -> dict:
 async def _probe_sportmonks() -> dict:
     """Probe Sportmonks profile endpoint."""
     from core.config import settings
-    key = settings.SPORTMONKS_KEY if hasattr(settings, 'SPORTMONKS_KEY') else os.getenv("SPORTMONKS_API_KEY", "")
+    key = getattr(settings, 'SPORTMONKS_KEY', None) or os.getenv("SPORTMONKS_API_KEY", "")
     if not key:
         return {"healthy": False, "error": "SPORTMONKS_KEY not set"}
     url = f"https://api.sportmonks.com/v3/my/profile?api_token={key}"

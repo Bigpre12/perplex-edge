@@ -141,73 +141,10 @@ class RealDataConnector:
 
     async def fetch_games_by_sport(self, sport_key: str) -> list:
         """
-        Fetch live games via BRANCHED waterfall logic with dynamic TTL caching.
-        TTLs: Live (60s), Stats (15m), Schedule (24h)
+        [UNIFIED] Delegated to WaterfallRouter (Branched Orchestrator).
         """
-        # 1. Check Global Cache First (unified results)
-        from services.cache import cache
-        cache_key = f"waterfall:games:{sport_key}"
-        cached = await cache.get_json(cache_key)
-        if cached:
-            return cached
-
-        chain = self.get_waterfall_chain(sport_key, data_type="stats")
-        logger.info(f"Waterfall: Using branched stats chain for {sport_key}: {chain}")
-
-        for provider in chain:
-            try:
-                # Dynamic TTL Assignment
-                ttl = 60 # Default for live scores
-                
-                if provider == "the_odds_api":
-                    raw = await odds_api.get_live_odds(sport_key, markets="h2h")
-                    if raw:
-                        formatted = [{"source": "the_odds_api", **g} for g in raw]
-                        await cache.set_json(cache_key, formatted, ttl=ttl)
-                        return formatted
-
-                elif provider == "api_sports":
-                    raw = await api_sports_client.get_live_scores(sport_key)
-                    if raw:
-                        formatted = [{"source": "api_sports", **g} for g in raw]
-                        await cache.set_json(cache_key, formatted, ttl=ttl)
-                        return formatted
-
-                elif provider == "balldontlie":
-                    # Optimized for NBA/WNBA/NCAAW
-                    raw = await balldontlie_client.get_nba_games()
-                    if raw:
-                        await cache.set_json(cache_key, raw, ttl=ttl)
-                        return raw
-
-                elif provider == "sportmonks":
-                    raw = await sportmonks_client.get_live_scores(sport_key)
-                    if raw:
-                        formatted = [{"source": "sportmonks", **g} for g in raw]
-                        await cache.set_json(cache_key, formatted, ttl=ttl)
-                        return formatted
-
-                elif provider == "thesportsdb":
-                    # TheSportsDB is better for schedules/metadata
-                    ttl = 3600 # 1 hour for metadata
-                    raw = await thesportsdb_client.get_events_by_day(sport_key)
-                    if raw:
-                        await cache.set_json(cache_key, raw, ttl=ttl)
-                        return raw
-
-                elif provider == "espn":
-                    # ESPN is unlimited but scraped/non-live
-                    ttl = 300 # 5 mins
-                    raw = await espn_client.get_scoreboard(sport_key)
-                    if raw:
-                        await cache.set_json(cache_key, raw, ttl=ttl)
-                        return raw
-
-            except Exception as e:
-                logger.warning(f"Waterfall: Provider {provider} skip for {sport_key}: {e}")
-
-        logger.error(f"Waterfall: CRITICAL FAIL - All providers in chain {chain} exhausted for {sport_key}")
-        return []
+        from services.waterfall_router import waterfall_router
+        return await waterfall_router.get_data(sport_key, data_type="stats")
 
     async def fetch_games_by_sport_OLD(self, sport_key: str) -> list:
         """[DEPRECATED] Standard linear waterfall."""
