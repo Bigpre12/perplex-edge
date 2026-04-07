@@ -61,10 +61,10 @@ class Settings:
         # Aggregate all unique keys
         all_keys = [k.strip() for k in raw_list.split(",") if k.strip()]
         
-        # User Provided Key (2026-03-29)
-        new_key = "e9b6956ba6e50da9cc6a11511cb7e372"
-        if new_key not in all_keys:
-            all_keys.append(new_key)
+        # User Provided Key (2026-03-29) - Hardcoded legacy, disabled to favor env configuration
+        # new_key = "e9b6956ba6e50da9cc6a11511cb7e372"
+        # if new_key not in all_keys:
+        #     all_keys.append(new_key)
 
         if primary and primary not in all_keys:
             all_keys.insert(0, primary)
@@ -95,6 +95,11 @@ class Settings:
         self.RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
         
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
+        
+        # New Waterfall Providers
+        self.API_SPORTS_KEY = os.getenv("API_SPORTS_KEY", "")
+        self.SPORTMONKS_KEY = os.getenv("SPORTMONKS_KEY", "")
+        self.ISPORTS_API_KEY = os.getenv("ISPORTS_API_KEY", "")
         
         # Betting Engine Configuration
         self.SHARP_BOOKMAKERS = ["pinnacle", "betonline", "betonlineag", "bookmaker", "circa", "circasports", "lowvig", "cris"]

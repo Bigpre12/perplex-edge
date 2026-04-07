@@ -89,11 +89,38 @@ PROVIDER_META = {
         "capabilities": ["ufc_odds", "alt_lines", "all_sports"],
         "probe_url": None,
     },
+    "api_sports": {
+        "name": "API-Sports",
+        "url": "https://api-sports.io",
+        "quota": "100 requests/day (Free)",
+        "key_env": "API_SPORTS_KEY",
+        "capabilities": ["live_scores", "fixtures", "all_major_sports"],
+        "probe_url": "https://v3.football.api-sports.io/status",
+    },
+    "sportmonks": {
+        "name": "Sportmonks",
+        "url": "https://sportmonks.com",
+        "quota": "V3 Free tier",
+        "key_env": "SPORTMONKS_KEY",
+        "capabilities": ["football_v3", "basketball", "odds"],
+        "probe_url": "https://api.sportmonks.com/v3/my/profile",
+    },
+    "isports_api": {
+        "name": "iSports API",
+        "url": "https://isportsapi.com",
+        "quota": "Trial tier",
+        "key_env": "ISPORTS_API_KEY",
+        "capabilities": ["schedules", "scores", "odds"],
+        "probe_url": "https://api.isportsapi.com/sport/football/schedule",
+    },
 }
 
 # Ordered waterfall chain (default)
 WATERFALL_ORDER = [
     "the_odds_api",
+    "api_sports",
+    "sportmonks",
+    "isports_api",
     "espn",
     "thesportsdb",
     "therundown",
@@ -127,10 +154,11 @@ async def _probe_espn() -> dict:
 
 async def _probe_odds_api() -> dict:
     """Probe The Odds API sports list (very cheap — 0 credits used)."""
-    import os
-    key = os.getenv("THE_ODDS_API_KEY", "")
-    if not key:
-        return {"healthy": False, "error": "THE_ODDS_API_KEY not set"}
+    from core.config import settings
+    keys = settings.ODDS_API_KEYS
+    if not keys:
+        return {"healthy": False, "error": "No Odds API keys configured"}
+    key = keys[0]
     url = f"https://api.the-odds-api.com/v4/sports?apiKey={key}"
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -159,13 +187,58 @@ async def _probe_thesportsdb() -> dict:
 
 async def _probe_balldontlie() -> dict:
     """Probe BallDontLie top-level games list."""
-    import os
-    key = os.getenv("BALLDONTLIE_API_KEY", "")
+    from core.config import settings
+    key = settings.BALLDONTLIE_API_KEY if hasattr(settings, 'BALLDONTLIE_API_KEY') else os.getenv("BALLDONTLIE_API_KEY", "")
     headers = {"Authorization": key} if key else {}
     url = "https://api.balldontlie.io/v1/games"
     try:
         async with httpx.AsyncClient(timeout=5.0, headers=headers) as client:
             r = await client.get(url, params={"per_page": 1})
+            return {"healthy": r.status_code == 200, "status_code": r.status_code}
+    except Exception as e:
+        return {"healthy": False, "error": str(e)}
+
+
+async def _probe_api_sports() -> dict:
+    """Probe API-Sports status endpoint."""
+    from core.config import settings
+    key = settings.API_SPORTS_KEY
+    if not key:
+        return {"healthy": False, "error": "API_SPORTS_KEY not set"}
+    url = "https://v3.football.api-sports.io/status"
+    try:
+        async with httpx.AsyncClient(timeout=5.0, headers={"x-apisports-key": key}) as client:
+            r = await client.get(url)
+            return {"healthy": r.status_code == 200, "status_code": r.status_code}
+    except Exception as e:
+        return {"healthy": False, "error": str(e)}
+
+
+async def _probe_sportmonks() -> dict:
+    """Probe Sportmonks profile endpoint."""
+    from core.config import settings
+    key = settings.SPORTMONKS_KEY
+    if not key:
+        return {"healthy": False, "error": "SPORTMONKS_KEY not set"}
+    url = f"https://api.sportmonks.com/v3/my/profile?api_token={key}"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(url)
+            return {"healthy": r.status_code == 200, "status_code": r.status_code}
+    except Exception as e:
+        return {"healthy": False, "error": str(e)}
+
+
+async def _probe_isports_api() -> dict:
+    """Probe iSports API with a simple schedule call."""
+    from core.config import settings
+    key = settings.ISPORTS_API_KEY
+    if not key:
+        return {"healthy": False, "error": "ISPORTS_API_KEY not set"}
+    url = f"https://api.isportsapi.com/sport/football/schedule?api_key={key}"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(url)
             return {"healthy": r.status_code == 200, "status_code": r.status_code}
     except Exception as e:
         return {"healthy": False, "error": str(e)}
@@ -181,6 +254,9 @@ PROBE_FNS = {
     "espn": _probe_espn,
     "thesportsdb": _probe_thesportsdb,
     "balldontlie": _probe_balldontlie,
+    "api_sports": _probe_api_sports,
+    "sportmonks": _probe_sportmonks,
+    "isports_api": _probe_isports_api,
     "therundown":    lambda: _probe_unprobed("therundown"),
     "mysportsfeeds": lambda: _probe_unprobed("mysportsfeeds"),
     "sportsgameodds": lambda: _probe_unprobed("sportsgameodds"),
@@ -221,8 +297,8 @@ async def list_sports():
             "sport_key": sport_key,
             "display_name": display,
             "sport_id": SPORT_KEY_TO_ID.get(sport_key),
-            "stats_providers": STATS_PROVIDER.get(sport_key, []),
-            "odds_providers": ODDS_PROVIDER.get(sport_key, []),
+            "stats_providers": real_data_connector.get_waterfall_chain(sport_key, data_type="stats"),
+            "odds_providers": real_data_connector.get_waterfall_chain(sport_key, data_type="odds"),
         }
 
     return {
