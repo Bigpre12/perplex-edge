@@ -22,7 +22,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Query, HTTPException
 
-from real_data_connector import real_data_connector, STATS_PROVIDER, ODDS_PROVIDER, SPORT_KEY_TO_ID
+from real_data_connector import real_data_connector, ODDS_PROVIDER, SPORT_KEY_TO_ID
 from services.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -289,7 +289,7 @@ async def list_sports():
     Useful for the frontend to render provider badges and capability matrices.
     """
     sports = {}
-    all_keys = set(list(STATS_PROVIDER.keys()) + list(ODDS_PROVIDER.keys()) + list(SPORT_KEY_TO_ID.keys()))
+    all_keys = set(list(ODDS_PROVIDER.keys()) + list(SPORT_KEY_TO_ID.keys()))
 
     for sport_key in sorted(all_keys):
         display = sport_key.replace("_", " ").title()

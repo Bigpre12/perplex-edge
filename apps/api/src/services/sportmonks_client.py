@@ -1,61 +1,60 @@
 import httpx
 import logging
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timezone
-
 from core.config import settings
 from services.cache import cache
 
 logger = logging.getLogger(__name__)
 
+class ProviderUnavailableError(Exception):
+    """Custom exception for unified error handling in waterfall."""
+    pass
+
 class SportMonksClient:
     """
-    Client for Sportmonks V3 API.
-    Uses api_token query parameter for authentication.
+    Official Sportmonks API Client (V3).
+    Soccer-focused, uses api_token query param.
     """
     BASE_URL = "https://api.sportmonks.com/v3"
 
     def __init__(self):
-        self.api_token = settings.SPORTMONKS_KEY
+        self.api_token = settings.SPORTMONKS_KEY if hasattr(settings, 'SPORTMONKS_KEY') else ""
         self.timeout = 10.0
 
-    def _get_url(self, endpoint: str) -> str:
-        return f"{self.BASE_URL}{endpoint}"
-
-    async def get_live_scores(self, sport: str) -> List[Dict]:
-        """Fetch live scores and games for a sport."""
+    async def _fetch(self, endpoint: str, params: Optional[Dict] = None) -> Any:
+        """Unified fetch with api_token query parameter."""
         if not self.api_token:
-            return []
+            raise ProviderUnavailableError("SPORTMONKS_KEY not configured")
 
-        # Map internal sport names to Sportmonks paths
-        path = "football/fixtures" if sport == "soccer" else f"{sport}/scores"
-        url = self._get_url(path)
+        url = f"{self.BASE_URL}{endpoint}"
+        query_params = params or {}
+        query_params["api_token"] = self.api_token
         
-        params = {
-            "api_token": self.api_token,
-            "include": "participants;scores",
-            "filter[status]": "LIVE"
-        }
-        
-        cache_key = f"sportmonks:{sport}:live"
-        cached = await cache.get_json(cache_key)
-        if cached:
-            return cached
-
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                logger.info(f"🌐 Calling Sportmonks: {url} (params: {list(params.keys())})")
-                resp = await client.get(url, params=params)
+                logger.info(f"🌐 Sportmonks: Fetching {endpoint} (params={list(query_params.keys())})")
+                resp = await client.get(url, params=query_params)
                 
                 if resp.status_code == 200:
-                    data = resp.json().get("data", [])
-                    await cache.set_json(cache_key, data, ttl=60)
-                    return data
+                    return resp.json().get("data", [])
+                elif resp.status_code in [401, 429]:
+                    raise ProviderUnavailableError(f"Sportmonks auth/rate failure: {resp.status_code}")
                 else:
-                    logger.error(f"❌ Sportmonks error {resp.status_code}: {resp.text}")
                     return []
-        except Exception as e:
-            logger.error(f"Sportmonks connection error: {e}")
-            return []
+        except httpx.HTTPError as e:
+            raise ProviderUnavailableError(f"Sportmonks connection failed: {e}")
+
+    async def get_fixtures(self, date: Optional[str] = None) -> List[Dict]:
+        """Fetch fixtures for a specific date."""
+        path = f"/football/fixtures/date/{date}" if date else "/football/fixtures"
+        return await self._fetch(path)
+
+    async def get_standings(self, season_id: int) -> List[Dict]:
+        """Fetch standings for a season."""
+        return await self._fetch(f"/football/standings/seasons/{season_id}")
+
+    async def get_odds(self, fixture_id: int) -> List[Dict]:
+        """Fetch odds for a fixture."""
+        return await self._fetch(f"/football/odds/fixtures/{fixture_id}")
 
 sportmonks_client = SportMonksClient()

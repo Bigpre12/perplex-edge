@@ -1,4 +1,6 @@
+from typing import Optional, List
 from fastapi import APIRouter, Query, Depends
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.session import get_db, AsyncSessionLocal
 from models.brain import SharpSignal, WhaleMove

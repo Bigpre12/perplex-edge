@@ -460,6 +460,20 @@ async def get_sharp_signals():
     """Smart Money endpoint."""
     return {"status": "processing", "signal": "captured"}
 
+@app.get("/api/debug/routers")
+async def debug_routers():
+    """Diagnostic endpoint to see which routers loaded successfully."""
+    return {
+        "waterfall": waterfall_router is not None,
+        "sharp": sharp_router is not None,
+        "news": news_router is not None,
+        "auth": auth_router is not None,
+        "health": health_router is not None,
+        "intel": intel_router is not None,
+        "props": props_router is not None,
+        "ev": ev_router is not None
+    }
+
 # --- Router Registration (all guarded) ---
 if health_router:        app.include_router(health_router, prefix="/api/health", tags=["health"])
 if intel_router:         app.include_router(intel_router, prefix="/api/intel", tags=["intel"])

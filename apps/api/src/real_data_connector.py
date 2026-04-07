@@ -28,7 +28,7 @@ from services.mysportsfeeds_client import mysportsfeeds_client
 from services.sportsgameodds_client import sportsgameodds_client
 from services.api_sports_client import api_sports_client
 from services.sportmonks_client import sportmonks_client
-from services.isports_api_client import isports_api_client
+from services.isports_client import isports_client
 from services.statsbomb_client import statsbomb_client
 from services.sportsgameodds_client import sportsgameodds_client
 
