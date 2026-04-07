@@ -45,13 +45,16 @@ else:
     logger.warning("Database Initialization: DATABASE_URL is NOT SET in current environment!")
 
 # --- ASYNC ENGINE SETUP ---
-connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {
+    "statement_cache_size": 0,
+    "prepared_statement_cache_size": 0
+}
 
 engine = create_async_engine(
     DATABASE_URL, 
     echo=False,
     connect_args=connect_args,
-    pool_pre_ping=True if "sqlite" not in DATABASE_URL else False,
+    pool_pre_ping=True,
     # Supabase/Postgres Connection Pool Optimization — Tuned for Transaction Mode (Port 6543)
     pool_size=5,              # Conservative pool for multiplexing
     max_overflow=5,           # Allow small temporary surge

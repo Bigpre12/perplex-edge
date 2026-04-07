@@ -99,7 +99,7 @@ class KalshiWSManager:
                     continue
                     
                 headers = await self.get_auth_headers()
-                async with websockets.connect(self.ws_url, extra_headers=headers) as websocket:
+                async with websockets.connect(self.ws_url, additional_headers=headers) as websocket:
                     await self.subscribe(websocket, tickers)
                     
                     retry_delay = 1 # Reset retry delay on successful connect
