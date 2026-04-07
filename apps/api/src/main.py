@@ -91,6 +91,7 @@ parlays_router       = safe_import("parlays", "router")
 props_history_router = safe_import("props_history", "router")
 alerts_router        = safe_import("alerts", "router")
 audit_router         = safe_import("audit", "router")
+waterfall_router     = safe_import("waterfall", "router")
 
 async def initialize_backend_services():
     """Background task to initialize heavy services without blocking /health."""
@@ -491,6 +492,7 @@ if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalsh
 if sharp_router:         app.include_router(sharp_router, prefix="/api/sharp", tags=["sharp"])
 if parlays_router:       app.include_router(parlays_router, prefix="/api/parlays", tags=["parlays"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
+if waterfall_router:     app.include_router(waterfall_router, prefix="/api/waterfall", tags=["waterfall"])
 
 # Hero Stats (Analytics Modal)
 from routers.hero import router as hero_router
