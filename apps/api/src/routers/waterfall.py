@@ -14,6 +14,7 @@ Endpoints:
   POST /api/waterfall/refresh         — force-bust cache + re-fetch a sport from scratch
 """
 
+import os
 import asyncio
 import logging
 import httpx
@@ -101,7 +102,7 @@ PROVIDER_META = {
         "name": "Sportmonks",
         "url": "https://sportmonks.com",
         "quota": "V3 Free tier",
-        "key_env": "SPORTMONKS_KEY",
+        "key_env": "SPORTMONKS_API_KEY",
         "capabilities": ["football_v3", "basketball", "odds"],
         "probe_url": "https://api.sportmonks.com/v3/my/profile",
     },
@@ -217,7 +218,7 @@ async def _probe_api_sports() -> dict:
 async def _probe_sportmonks() -> dict:
     """Probe Sportmonks profile endpoint."""
     from core.config import settings
-    key = settings.SPORTMONKS_KEY
+    key = settings.SPORTMONKS_KEY if hasattr(settings, 'SPORTMONKS_KEY') else os.getenv("SPORTMONKS_API_KEY", "")
     if not key:
         return {"healthy": False, "error": "SPORTMONKS_KEY not set"}
     url = f"https://api.sportmonks.com/v3/my/profile?api_token={key}"
@@ -232,10 +233,12 @@ async def _probe_sportmonks() -> dict:
 async def _probe_isports_api() -> dict:
     """Probe iSports API with a simple schedule call."""
     from core.config import settings
-    key = settings.ISPORTS_API_KEY
-    if not key:
-        return {"healthy": False, "error": "ISPORTS_API_KEY not set"}
-    url = f"https://api.isportsapi.com/sport/football/schedule?api_key={key}"
+    # iSports V3 uses account + secret auth
+    account = os.getenv("ISPORTS_ACCOUNT", "")
+    secret = os.getenv("ISPORTS_SECRET", "")
+    if not account or not secret:
+        return {"healthy": False, "error": "ISPORTS credentials not set"}
+    url = f"https://api.isportsapi.com/sport/football/schedule?account={account}&secret={secret}"
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             r = await client.get(url)

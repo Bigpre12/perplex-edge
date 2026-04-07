@@ -47,6 +47,9 @@ def validate_env():
 # Run validation immediately
 validate_env()
 
+# --- Global Router Error Registry for Diagnostics ---
+router_errors = {}
+
 def safe_import(module_path, alias):
     try:
         mod = __import__(f"routers.{module_path}", fromlist=["router"])
@@ -54,7 +57,9 @@ def safe_import(module_path, alias):
             return mod.router
         return getattr(mod, alias)
     except Exception as e:
-        logging.error(f"Error importing router '{module_path}': {e}\n{traceback.format_exc()}")
+        err_msg = f"{type(e).__name__}: {str(e)}"
+        router_errors[module_path] = err_msg
+        logging.error(f"Error importing router '{module_path}': {err_msg}\n{traceback.format_exc()}")
         return None
 
 # --- Router Imports (each guarded by safe_import) ---
@@ -464,14 +469,17 @@ async def get_sharp_signals():
 async def debug_routers():
     """Diagnostic endpoint to see which routers loaded successfully."""
     return {
-        "waterfall": waterfall_router is not None,
-        "sharp": sharp_router is not None,
-        "news": news_router is not None,
-        "auth": auth_router is not None,
-        "health": health_router is not None,
-        "intel": intel_router is not None,
-        "props": props_router is not None,
-        "ev": ev_router is not None
+        "statuses": {
+            "waterfall": waterfall_router is not None,
+            "sharp": sharp_router is not None,
+            "news": news_router is not None,
+            "auth": auth_router is not None,
+            "health": health_router is not None,
+            "intel": intel_router is not None,
+            "props": props_router is not None,
+            "ev": ev_router is not None
+        },
+        "errors": router_errors
     }
 
 # --- Router Registration (all guarded) ---
