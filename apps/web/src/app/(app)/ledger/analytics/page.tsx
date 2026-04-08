@@ -255,7 +255,7 @@ export default function PortfolioAnalytics() {
                 </div>
 
                 <div className="h-[400px] w-full mt-4 min-w-0">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                         <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                             <XAxis
                                 type="number"

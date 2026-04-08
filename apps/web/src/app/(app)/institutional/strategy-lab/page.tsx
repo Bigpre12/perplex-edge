@@ -153,7 +153,7 @@ function StrategyContent() {
 
                             {/* Equity Curve Chart */}
                             <div className="h-[450px] w-full min-w-0">
-                                    <ResponsiveContainer width="100%" height="85%">
+                                    <ResponsiveContainer width="100%" height="85%" minHeight={1} minWidth={1}>
                                     <AreaChart data={backtestResult.equity_curve}>
                                         <defs>
                                             <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">

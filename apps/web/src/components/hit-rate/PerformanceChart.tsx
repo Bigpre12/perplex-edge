@@ -49,7 +49,7 @@ export function PerformanceChart({ data, loading }: PerformanceChartProps) {
             </div>
 
             <div className="h-[250px] w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                     <LineChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#2D2D3D" vertical={false} />
                         <XAxis 

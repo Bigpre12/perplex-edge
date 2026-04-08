@@ -18,7 +18,7 @@ interface TrendChartProps {
 export default function TrendChart({ data, line, statType }: TrendChartProps) {
     return (
         <div className="w-full h-32 mt-2 min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                 <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                     <XAxis
                         dataKey="game"
