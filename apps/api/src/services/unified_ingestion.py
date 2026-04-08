@@ -99,10 +99,10 @@ class UnifiedIngestionService:
 
         # 2d. Fetch Player Props (Requires per-event calls)
         PROP_MARKETS_BY_SPORT = {
-            "basketball_nba": "player_points,player_rebounds,player_assists,player_threes",
-            "americanfootball_nfl": "player_pass_tds,player_pass_yds,player_rush_yds,player_anytime_td",
-            "icehockey_nhl": "player_points,player_power_play_points,player_shots_on_goal",
-            "baseball_mlb": "pitcher_strikeouts,batter_hits,batter_home_runs"
+            "basketball_nba": "player_points,player_rebounds,player_assists",
+            "americanfootball_nfl": "player_pass_yds,player_rush_yds",
+            "icehockey_nhl": "player_points,player_shots_on_goal",
+            "baseball_mlb": "pitcher_strikeouts,batter_hits"
         }
         
         # Quota Safety: Only fetch props for sports currently in-season (March 2026)
@@ -110,10 +110,10 @@ class UnifiedIngestionService:
         IN_SEASON_PROP_SPORTS = ["basketball_nba", "baseball_mlb", "icehockey_nhl"]
 
         if sport_key in PROP_MARKETS_BY_SPORT and sport_key in IN_SEASON_PROP_SPORTS:
-            # Quota Protection: Cap at 20 events per cycle to prevent credit drain
+            # Quota Protection: Cap at 15 events per cycle to prevent credit drain
             active_events: List[str] = []
             for i, k in enumerate(metadata_map.keys()):
-                if i >= 20: break
+                if i >= 15: break
                 active_events.append(k)
             
             logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")

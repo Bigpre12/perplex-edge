@@ -67,21 +67,39 @@ async def write_lines_to_db(sport_id: int, lines_data: list):
         logger.error(f"Failed to write lines to DB for {sport_key}: {e}")
 
 
-async def ingest_all_odds():
-    """Combined cycle to ingest both props and lines for all sports safely into the Unified model."""
+ACTIVE_SPORTS = ["basketball_nba", "baseball_mlb", "icehockey_nhl"]
+
+async def ingest_active_odds():
+    """Ingest props and lines for highly active, in-season sports."""
     from services.unified_ingestion import unified_ingestion
-    logger.info("Starting combined odds ingestion cycle (Unified)...")
+    logger.info("Starting active odds ingestion cycle (Unified)...")
 
-    for sport_id in list(SPORT_KEY_MAP.keys()):
-        try:
-            sport_key = SPORT_KEY_MAP[sport_id]
-            logger.info(f"Syncing {sport_key} via UnifiedIngestion...")
-            await unified_ingestion.run(sport_key)
-        except Exception as e:
-            logger.error(f"Ingestion failed for sport {sport_id}: {e}")
-            continue
+    for sport_id, sport_key in SPORT_KEY_MAP.items():
+        if sport_key in ACTIVE_SPORTS:
+            try:
+                logger.info(f"Syncing ACTIVE {sport_key} via UnifiedIngestion...")
+                await unified_ingestion.run(sport_key)
+            except Exception as e:
+                logger.error(f"Ingestion failed for sport {sport_key}: {e}")
+                continue
 
-    logger.info("Odds ingestion cycle complete.")
+    logger.info("Active odds ingestion cycle complete.")
+
+async def ingest_idle_odds():
+    """Ingest props and lines for off-season or less active sports in a spread-out interval."""
+    from services.unified_ingestion import unified_ingestion
+    logger.info("Starting idle odds ingestion cycle (Unified)...")
+
+    for sport_id, sport_key in SPORT_KEY_MAP.items():
+        if sport_key not in ACTIVE_SPORTS:
+            try:
+                logger.info(f"Syncing IDLE {sport_key} via UnifiedIngestion...")
+                await unified_ingestion.run(sport_key)
+            except Exception as e:
+                logger.error(f"Ingestion failed for sport {sport_key}: {e}")
+                continue
+
+    logger.info("Idle odds ingestion cycle complete.")
 
 def transform_odds_api_props(odds_events, game_info, home_team='TBD', away_team='TBD'):
     """Transform The Odds API prop format to internal Brain format."""

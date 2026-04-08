@@ -58,15 +58,8 @@ class OddsApiClient(ResilientBaseClient):
 
     @classmethod
     def get_markets_for_sport(cls, sport: str) -> str:
-        """Returns only the valid markets for the specified sport to avoid 422 errors."""
-        MAPPING = {
-            "basketball_nba": cls.TEAM_MARKETS + ["player_points", "player_rebounds", "player_assists", "player_threes", "player_blocks", "player_steals", "player_points_rebounds_assists"],
-            "americanfootball_nfl": cls.TEAM_MARKETS + ["player_pass_yds", "player_pass_tds", "player_rush_yds", "player_reception_yds", "player_receptions", "player_anytime_touchdown_scorer"],
-            "baseball_mlb": cls.TEAM_MARKETS,
-            "icehockey_nhl": cls.TEAM_MARKETS + ["player_points", "player_power_play_points", "player_shots_on_goal"]
-        }
-        markets = MAPPING.get(sport, cls.TEAM_MARKETS)
-        return ",".join(markets)
+        """Returns only the valid team markets for the specified sport. Player props are fetched separately."""
+        return ",".join(cls.TEAM_MARKETS)
     
     # Cooldown period before retrying a dead key (seconds)
     DEAD_KEY_COOLDOWN = 3600  # 1 hour
@@ -249,6 +242,7 @@ class OddsApiClient(ResilientBaseClient):
         params = {
             "regions": regions,
             "markets": markets or self.get_markets_for_sport(sport),
+            "bookmakers": "pinnacle,draftkings,fanduel,betmgm,caesars,bet365",
             "oddsFormat": "american",
             "dateFormat": "iso"
         }
@@ -259,6 +253,7 @@ class OddsApiClient(ResilientBaseClient):
         params = {
             "regions": regions,
             "markets": markets,
+            "bookmakers": "pinnacle,draftkings,fanduel,betmgm,caesars,bet365",
             "oddsFormat": "american",
             "dateFormat": "iso"
         }
