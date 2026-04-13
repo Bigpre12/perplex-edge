@@ -19,7 +19,7 @@ export default function OnboardingFlow() {
   const finish = async () => {
     await api.post('/user/preferences', { sports, bankroll, books });
     localStorage.setItem('lola-onboarded', 'true');
-    router.push('/');
+    router.push('/dashboard');
   };
 
   const btnStyle = (active: boolean) => ({

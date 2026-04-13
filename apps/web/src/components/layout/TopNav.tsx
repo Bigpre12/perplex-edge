@@ -66,7 +66,7 @@ function TopNavContent() {
             
             {/* Left section: Wordmark + Health */}
             <div className="flex items-center gap-4 flex-shrink-0 w-48">
-                <Link href="/" className="flex flex-col hover:opacity-80 transition-opacity">
+                <Link href="/dashboard" className="flex flex-col hover:opacity-80 transition-opacity">
                     <span className="text-white font-display font-bold text-[20px] tracking-tight leading-none">
                         LUCRIX
                     </span>

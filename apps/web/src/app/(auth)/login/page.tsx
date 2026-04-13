@@ -41,7 +41,7 @@ export default function LoginPage() {
             if (data.user) authStorage.saveUser(data.user);
 
             // Hard redirect to dashboard
-            window.location.href = "/";
+            window.location.href = "/dashboard";
         } catch (err: any) {
             setError(err.message || "Cannot connect to server — make sure backend is running");
         } finally {

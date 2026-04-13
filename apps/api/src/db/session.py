@@ -18,11 +18,28 @@ elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("p
 elif DATABASE_URL.startswith("sqlite://"):
     DATABASE_URL = DATABASE_URL.replace("sqlite://", "sqlite+aiosqlite://", 1)
 
+# Auto-switch Supabase pooler URLs from Session Mode (5432) to Transaction Mode (6543)
+if "pooler" in DATABASE_URL and ":5432" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
+
+_is_pg = "postgresql" in DATABASE_URL
+
 logger = logging.getLogger(__name__)
 
 # --- ASYNC ENGINE SETUP ---
-connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-engine = create_async_engine(DATABASE_URL, connect_args=connect_args)
+if _is_pg:
+    connect_args = {"prepared_statement_cache_size": 0}
+else:
+    connect_args = {"check_same_thread": False}
+
+engine = create_async_engine(
+    DATABASE_URL,
+    connect_args=connect_args,
+    pool_size=3,
+    max_overflow=2,
+    pool_recycle=300,
+    pool_pre_ping=True,
+)
 
 # AsyncSessionLocal is the primary session factory
 AsyncSessionLocal = sessionmaker(
@@ -53,5 +70,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker as sync_sessionmaker
 
 sync_url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://").replace("sqlite+aiosqlite://", "sqlite://")
-sync_engine = create_engine(sync_url, connect_args=connect_args if "sqlite" in sync_url else {})
+_sync_connect_args = {"check_same_thread": False} if "sqlite" in sync_url else {}
+sync_engine = create_engine(sync_url, connect_args=_sync_connect_args)
 SessionLocal = sync_sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)
