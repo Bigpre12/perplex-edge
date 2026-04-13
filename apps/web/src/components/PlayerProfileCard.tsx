@@ -68,7 +68,7 @@ export function PlayerProfileCard({ playerId, propType, line }: Props) {
                         <span className={`text-lg font-bold ${Number(val) >= 0.7 ? "text-green-400" :
                                 Number(val) >= 0.5 ? "text-yellow-400" : "text-red-400"
                             }`}>
-                            {val != null ? `${(Number(val) * 100).toFixed(0)}%` : "—"}
+                            {val != null && !isNaN(Number(val)) ? `${(Number(val) * 100).toFixed(0)}%` : "—"}
                         </span>
                     </div>
                 ))}
@@ -83,8 +83,8 @@ export function PlayerProfileCard({ playerId, propType, line }: Props) {
 
             {/* Trend Chart */}
             {chartData.length > 0 && (
-                <div className="h-40 w-full bg-gray-950/50 rounded-xl p-2 border border-gray-800/50">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="h-40 w-full bg-gray-950/50 rounded-xl p-2 border border-gray-800/50 min-w-0">
+                    <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                         <LineChart data={chartData}>
                             <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} hide />

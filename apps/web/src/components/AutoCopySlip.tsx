@@ -1,3 +1,4 @@
+"use client";
 'use client';
 import { useState } from 'react';
 import { api, isApiError } from '@/lib/api';
@@ -32,7 +33,7 @@ export default function AutoCopySlip({ props }: { props: Prop[] }) {
           background: copied ? '#16a34a' : '#3b82f6', color: '#fff', border: 'none',
           borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontWeight: 600
         }}>
-        {copied ? '✓ Copied!' : `Copy ${platform === 'prizepicks' ? 'PrizePicks' : 'Fliff'} Slip`}
+        {copied ? 'âœ“ Copied!' : `Copy ${platform === 'prizepicks' ? 'PrizePicks' : 'Fliff'} Slip`}
       </button>
     </div>
   );

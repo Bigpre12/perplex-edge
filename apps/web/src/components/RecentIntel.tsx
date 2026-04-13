@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api, isApiError, API } from "@/lib/api";
+import { api, isApiError, API, unwrap } from "@/lib/api";
 
 interface IntelItem {
     id: string;
@@ -22,18 +22,17 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
 
             // 1. Backend Injuries — includes real-time corrections
             try {
-                const data = await API.get("/intel/injuries", { sport });
-                if (!isApiError(data)) {
-                    const injuries = (data as any).injuries || [];
-                    injuries.slice(0, 10).forEach((inj: any) => {
-                        results.push({
-                            id: `inj-${inj.player}-${inj.team}`,
-                            type: "INJURY",
-                            message: inj.comment ? `${inj.comment} (${inj.team})` : `${inj.player} (${inj.team}) — ${inj.status}. Monitor for line movement.`,
-                            timestamp: new Date().toISOString(), // Backend doesn't always send timestamp down, using current
-                        });
+                // Using the specific injuries helper from lib/api or the direct /api/intel/injuries which now proxies
+                const data = await API.injuries(sport);
+                const injuries = unwrap(data);
+                injuries.slice(0, 10).forEach((inj: any) => {
+                    results.push({
+                        id: `inj-${inj.player}-${inj.team}`,
+                        type: "INJURY",
+                        message: inj.comment ? `${inj.comment} (${inj.team})` : `${inj.player} (${inj.team}) — ${inj.status}. Monitor for line movement.`,
+                        timestamp: inj.created_at || new Date().toISOString(),
                     });
-                }
+                });
             } catch (e) {
                 console.warn("Backend Injuries error:", e);
             }
@@ -69,7 +68,7 @@ export default function RecentIntel({ sport = "basketball_nba" }) {
                         results.push({
                             id: a.id || Math.random().toString(),
                             type: "SHARP",
-                            message: a.message || `${a.player} ${a.stat} move detected`,
+                            message: a.message || `${a.player || 'Sharp'} ${a.stat || 'market'} move detected`,
                             timestamp: a.timestamp || a.alert_time || new Date().toISOString(),
                         });
                     });

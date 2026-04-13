@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Share2, Copy, CheckCircle, Users } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-import { api, isApiError } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import API, { isApiError } from "@/lib/api";
 
 export function ReferralCard() {
     const [userId, setUserId] = useState<string | null>(null);
@@ -16,7 +16,7 @@ export function ReferralCard() {
     const { data } = useQuery({
         queryKey: ["referrals", userId],
         queryFn: async () => {
-            const res = await api.referrals(userId as string);
+            const res = await API.referrals();
             return isApiError(res) ? { total_referrals: 0 } : res;
         },
         enabled: !!userId

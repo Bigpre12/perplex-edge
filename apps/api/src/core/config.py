@@ -18,9 +18,31 @@ class Settings:
         self.DATABASE_URL = DATABASE_URL
         self.PORT = PORT
         self.REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-        self.SECRET_KEY = os.environ.get("SECRET_KEY", "lucrix_dev_secret")
-        self.STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "")
-        self.STRIPE_ELITE_PRICE_ID = os.getenv("STRIPE_ELITE_PRICE_ID", "")
+        self.BETSTACK_BASE_URL = os.getenv("BETSTACK_BASE_URL", "https://api.betstack.io/v1")
+        self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        
+        # Diagnostic logging for Redis (redacted host)
+        try:
+            from urllib.parse import urlparse
+            parsed_redis = urlparse(self.REDIS_URL)
+            logging.info(f"Infrastructure: Redis configured at host={parsed_redis.hostname} port={parsed_redis.port}")
+        except Exception:
+            pass
+        
+        # FIX 4: Secure defaults for production
+        secret = os.environ.get("SECRET_KEY", "")
+        if not secret:
+            logging.critical("FATAL: SECRET_KEY environment variable is not set. Using insecure default.")
+            secret = "CHANGE_ME_IN_PRODUCTION"
+        self.SECRET_KEY = secret
+        self.STRIPE_PRO_MONTHLY_PRICE_ID = os.getenv("STRIPE_PRO_MONTHLY_PRICE_ID", os.getenv("STRIPE_PRO_PRICE_ID", ""))
+        self.STRIPE_PRO_ANNUAL_PRICE_ID = os.getenv("STRIPE_PRO_ANNUAL_PRICE_ID", "")
+        self.STRIPE_ELITE_MONTHLY_PRICE_ID = os.getenv("STRIPE_ELITE_MONTHLY_PRICE_ID", os.getenv("STRIPE_ELITE_PRICE_ID", ""))
+        self.STRIPE_ELITE_ANNUAL_PRICE_ID = os.getenv("STRIPE_ELITE_ANNUAL_PRICE_ID", "")
+        
+        # Legacy Aliases
+        self.STRIPE_PRO_PRICE_ID = self.STRIPE_PRO_MONTHLY_PRICE_ID
+        self.STRIPE_ELITE_PRICE_ID = self.STRIPE_ELITE_MONTHLY_PRICE_ID
         self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
         
         self.SUPABASE_URL: str = os.getenv("SUPABASE_URL", os.getenv("NEXT_PUBLIC_SUPABASE_URL", ""))
@@ -28,35 +50,73 @@ class Settings:
         self.SUPABASE_ANON_KEY: str = self.SUPABASE_KEY
         self.SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
         
-        # Ensure default values are set for Pydantic-like compatibility if needed
-        # although this class is not inherited from pydantic.BaseSettings here.
+        # Odds API Configuration - Centralized for Rotation
+        primary = os.getenv("ODDS_API_KEY", os.getenv("THE_ODDS_API_KEY", ""))
+        backup = os.getenv("ODDS_API_KEY_BACKUP", "")
+        raw_list = os.getenv("ODDS_API_KEYS", "")
         
-        # Odds API Configuration
-        self.ODDS_API_KEY = os.getenv("ODDS_API_KEY", os.getenv("THE_ODDS_API_KEY", ""))
+        # Aggregate all unique keys
+        all_keys = [k.strip() for k in raw_list.split(",") if k.strip()]
+
+        if primary and primary not in all_keys:
+            all_keys.insert(0, primary)
+        if backup and backup not in all_keys:
+            all_keys.append(backup)
+            
+        self.ODDS_API_KEYS = all_keys
+        self.ODDS_API_KEY = all_keys[0] if all_keys else ""
         self.ODDS_API_KEY_PRIMARY = self.ODDS_API_KEY
-        raw_keys = os.getenv("ODDS_API_KEYS", "")
-        self.ODDS_API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
-        self.ODDS_API_KEY_BACKUP = os.getenv("ODDS_API_KEY_BACKUP", "")
+        self.ODDS_API_KEY_BACKUP = backup
         
-        self.DEVELOPMENT_MODE = os.getenv("DEV_MODE", "true").lower() == "true"
-        self.DEBUG = os.getenv("DEBUG", "true").lower() == "true"
+        self.DEVELOPMENT_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
+        self.DEBUG = os.getenv("DEBUG", "false").lower() == "true"
         self.ALGORITHM = os.getenv("ALGORITHM", "HS256")
         self.STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
         self.STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
         
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+        self.ORACLE_MODEL = os.getenv("ORACLE_MODEL", "gpt-4o")
+        self.ORACLE_MAX_TOKENS = int(os.getenv("ORACLE_MAX_TOKENS", "1000"))
+        self.ORACLE_TEMPERATURE = float(os.getenv("ORACLE_TEMPERATURE", "0.2"))
+        
         self.GROQ_API_KEY = os.getenv("GROQ_API_KEY", os.getenv("AI_API_KEY", ""))
         self.BETSTACK_API_KEY = os.getenv("BETSTACK_API_KEY", "")
         self.ODDSPAPI_API_KEY = os.getenv("ODDSPAPI_API_KEY", "")
         self.ROSTER_API_KEY = os.getenv("ROSTER_API_KEY", "")
         self.DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+        self.RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
         
         self.INGEST_EVENT_WINDOW_HOURS = int(os.getenv("INGEST_EVENT_WINDOW_HOURS", "36"))
         
-        # CORS Setup
-        raw_origins = os.getenv("ALLOWED_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"))
+        # New Waterfall Providers
+        self.API_SPORTS_KEY = os.getenv("API_SPORTS_KEY", "")
+        self.SPORTMONKS_KEY = os.getenv("SPORTMONKS_KEY", "")
+        self.ISPORTS_API_KEY = os.getenv("ISPORTS_API_KEY", "")
+        
+        # Betting Engine Configuration
+        self.SHARP_BOOKMAKERS = ["pinnacle", "betonline", "betonlineag", "bookmaker", "circa", "circasports", "lowvig", "cris"]
+        self.SOFT_BOOKMAKERS = ["draftkings", "fanduel", "betmgm", "caesars", "pointsbet", "williamhill", "betrivers", "unibet", "bovada", "betway"]
+        self.EV_MIN_THRESHOLD = float(os.getenv("EV_MIN_THRESHOLD", "-100.0"))
+        self.MAJOR_LINE_MOVE_THRESHOLD = float(os.getenv("MAJOR_LINE_MOVE_THRESHOLD", "5.0"))
+        self.LIVE_DATA_POLLING_INTERVAL = int(os.getenv("LIVE_DATA_POLLING_INTERVAL", "30"))
+        
+        # CORS Setup — allow Vercel preview/production domains automatically
+        raw_origins = os.getenv("ALLOWED_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:5173"))
         self.CORS_ORIGINS = [o.strip() for o in raw_origins.split(",") if o.strip()]
-        self.CORS_ORIGIN_REGEX = os.getenv("CORS_ORIGIN_REGEX", r"^https://.*\.vercel\.app$")
+        
+        # Always allow the configured FRONTEND_URL
+        if self.FRONTEND_URL and self.FRONTEND_URL not in self.CORS_ORIGINS:
+            self.CORS_ORIGINS.append(self.FRONTEND_URL)
+            
+        # Auto-allow all Vercel preview URLs for this project
+        vercel_patterns = [
+            "https://perplex-edge.vercel.app",
+            "https://perplex-edge-git-main-bigpre12s-projects.vercel.app",
+            "https://perplex-edge-mu2vm4wb2-bigpre12s-projects.vercel.app",
+        ]
+        for vp in vercel_patterns:
+            if vp not in self.CORS_ORIGINS:
+                self.CORS_ORIGINS.append(vp)
 
         class Config:
             extra = "ignore"

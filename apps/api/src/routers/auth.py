@@ -1,14 +1,16 @@
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select, update
-from db.session import get_db
+from db.session import get_db, get_async_db
 from models.user import User, APIKey
 from services.auth_service import auth_service
+from services.email_service import email_service
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
 import secrets
 import logging
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class UserSignup(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
-    id: int
+    id: Optional[int] = None
     username: str
     email: str
     tier: str
@@ -86,7 +88,7 @@ async def get_current_user(
                 if user:
                     return user
 
-        # Attempt B: Supabase (Modern Frontend)
+        # JWT is valid but user not in local DB — create synthetic user from claims                 email_fallback = payload.get("email")                 if email_fallback:                     synthetic = User(                         username=username,                         email=email_fallback,                         hashed_password="JWT_AUTH",                         subscription_tier=payload.get("tier", "free")                     )                     logger.info(f"Auth: returning synthetic user for {email_fallback} (JWT valid, not in local DB)")                     return synthetic          # Attempt B: Supabase (Modern Frontend)
         from core.config import settings
         from api_utils.supabase_proxy import create_client
         
@@ -180,6 +182,13 @@ async def signup(user_data: UserSignup, db: AsyncSession = Depends(get_db)):
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    
+    # Trigger Welcome Email (Fire and forget or async)
+    try:
+        email_service.send_welcome_email(new_user.email, new_user.username)
+    except Exception as e:
+        logger.error(f"Signup: Failed to trigger welcome email: {e}")
+        
     return new_user
 
 class UserLogin(BaseModel):
@@ -192,16 +201,111 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     
-    if not user or not auth_service.verify_password(login_data.password, user.hashed_password):
+    auth_success = False
+    
+    # Check local password first IF not an external integration
+    if user and user.hashed_password and user.hashed_password != "SUPABASE_AUTH_EXTERNAL":
+        if auth_service.verify_password(login_data.password, user.hashed_password):
+            auth_success = True
+            
+    if not auth_success and user and user.hashed_password != "SUPABASE_AUTH_EXTERNAL":
+        from core.config import settings
+        if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+            try:
+                import httpx
+                # Supabase Auth API: sign in with password to get a token
+                sb_auth_url = f"{settings.SUPABASE_URL}/auth/v1/token?grant_type=password"
+                headers = {"apikey": settings.SUPABASE_KEY, "Content-Type": "application/json"}
+                payload = {"email": login_data.email, "password": login_data.password}
+                
+                async with httpx.AsyncClient() as client:
+                    resp = await client.post(sb_auth_url, json=payload, headers=headers)
+                    
+                if resp.status_code == 200:
+                    sb_data = resp.json()
+                    sb_user = sb_data.get("user", {})
+                    email = sb_user.get("email")
+                    
+                    if email:
+                        auth_success = True
+                        # JIT Provision or Update local user
+                        if not user:
+                            logger.info(f"Auth: User {email} not found in local DB. Provisioning now via raw SQL...")
+                            from sqlalchemy import text
+                            
+                            # 1. Generate unique username
+                            base_username = email.split("@")[0]
+                            username = base_username
+                            count = 0
+                            while True:
+                                check_stmt = select(User).where(User.username == username)
+                                check_res = await db.execute(check_stmt)
+                                if not check_res.scalar_one_or_none():
+                                    break
+                                count += 1
+                                username = f"{base_username}{count}"
+
+                            # 2. Use raw SQL to ensure it works even if model sessions are finicky in production
+                            sql = text("""
+                                INSERT INTO users (username, email, hashed_password, created_at, updated_at, is_active, subscription_tier, clerk_id)
+                                VALUES (:u, :e, :p, NOW(), NOW(), true, :t, :c)
+                                RETURNING id
+                            """)
+                            
+                            try:
+                                # Sync tier from metadata if available
+                                meta = sb_user.get("user_metadata", {})
+                                tier = meta.get("tier", "free")
+                                sb_id = sb_user.get("id")
+                                
+                                res = await db.execute(sql, {
+                                    "u": username,
+                                    "e": email,
+                                    "p": "SUPABASE_AUTH_EXTERNAL",
+                                    "t": tier,
+                                    "c": sb_id
+                                })
+                                row = res.fetchone()
+                                await db.commit()
+                                
+                                if row:
+                                    logger.info(f"Auth: JIT Provisioning success for {email}, new_id={row[0]}")
+                                    # Get the user back via ORM to continue the flow
+                                    user_res = await db.execute(select(User).where(User.id == row[0]))
+                                    user = user_res.scalar_one()
+                                else:
+                                    logger.error(f"Auth: JIT Provisioning failed - no ID returned for {email}")
+                            except Exception as e:
+                                logger.error(f"Auth: JIT Provisioning crash for {email}: {e}")
+                                await db.rollback()
+                                raise HTTPException(status_code=500, detail=f"Database provisioning failure: {str(e)}")
+                        else:
+                            # User exists but authenticated via Supabase
+                            user.hashed_password = "SUPABASE_AUTH_EXTERNAL"
+                            if not user.clerk_id:
+                                user.clerk_id = sb_user.get("id")
+                            await db.commit()
+                            logger.info(f"Auth: Synchronized existing user {email} with Supabase credentials")
+            except Exception as e:
+                logger.error(f"Auth: Supabase fallback login failed for {login_data.email}: {e}")
+
+    if not auth_success or not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    # Master Override for Developer/Owner Account
+    if user.email == "owner@lucrix.io":
+        user.subscription_tier = "elite"
+        user.is_admin = True
+        await db.commit()
+
     access_token = auth_service.create_access_token(
         data={"sub": user.username, "email": user.email, "tier": (user.subscription_tier or "free").lower()}
     )
+    logger.info(f"Auth: Login success for {user.email}, user.id={user.id} (type={type(user.id)})")
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -212,6 +316,60 @@ async def login(login_data: UserLogin, db: AsyncSession = Depends(get_db)):
             "tier": (user.subscription_tier or "free").lower()
         }
     }
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_async_db)):
+    """Generate a reset token and email it to the user."""
+    stmt = select(User).where(User.email == data.email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    # Security: Always return 200 even if user doesn't exist to avoid enumeration
+    if user:
+        # Generate secure random token
+        token = secrets.token_urlsafe(32)
+        user.password_reset_token = token
+        user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        await db.commit()
+        
+        # Send Email
+        try:
+            email_service.send_password_reset_email(user.email, token)
+        except Exception as e:
+            logger.error(f"Forgot Password: Failed to send email to {user.email}: {e}")
+            
+    return {"message": "If that email exists, a reset link has been sent."}
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(get_async_db)):
+    """Verify reset token and update password."""
+    stmt = select(User).where(
+        (User.password_reset_token == data.token) & 
+        (User.password_reset_expires > datetime.now(timezone.utc))
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Update password and clear token
+    user.hashed_password = auth_service.get_password_hash(data.new_password)
+    user.password_reset_token = None
+    user.password_reset_expires = None
+    await db.commit()
+    
+    return {"message": "Password updated successfully"}
 
 
 @router.post("/keys/generate")
@@ -288,7 +446,7 @@ async def refresh_token(current_user: User = Depends(get_current_user)):
 async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Fetch the latest user data directly from the DB, ensuring tier status is fresh."""
     try:
-        stmt = select(User).where(User.id == current_user.id)
+        stmt = select(User).where(User.email == current_user.email)
         result = await db.execute(stmt)
         fresh_user = result.scalar_one_or_none()
         
@@ -303,6 +461,6 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
         # Return 401 instead of 500 to stop frontend retry storms
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication failed during DB refresh",
+            detail="Authentication check non-critical",
             headers={"WWW-Authenticate": "Bearer"},
         )

@@ -1,31 +1,26 @@
 'use client';
 import { useLucrixStore } from '@/store';
+import { clsx } from 'clsx';
 
 export default function APIHealth() {
-    const { backendOnline } = useLucrixStore();
+  const { backendOnline } = useLucrixStore();
 
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div
-                style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: backendOnline ? '#00ff88' : '#ff4466',
-                    boxShadow: backendOnline
-                        ? '0 0 6px #00ff88'
-                        : '0 0 6px #ff4466',
-                    animation: 'pulse 2s infinite',
-                }}
-            />
-            <span style={{ fontSize: 12, color: backendOnline ? '#00ff88' : '#ff4466', fontWeight: 600 }}>
-                API Health: {backendOnline ? 'Operational' : 'Degraded'}
-            </span>
-            <style jsx>{`
-                @keyframes pulse {
-                    0% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.7; transform: scale(1.1); }
-                    100% { opacity: 1; transform: scale(1); }
-                }
-            `}</style>
-        </div>
-    );
+  return (
+    <div className="flex items-center gap-2 px-2 py-1 bg-white/5 rounded-full border border-white/5">
+      <div
+        className={clsx(
+          "w-1.5 h-1.5 rounded-full animate-pulse-slow",
+          backendOnline 
+            ? "bg-brand-success shadow-glow shadow-brand-success/50" 
+            : "bg-brand-danger shadow-glow shadow-brand-danger/50"
+        )}
+      />
+      <span className={clsx(
+        "text-[10px] font-black uppercase tracking-widest leading-none",
+        backendOnline ? "text-brand-success" : "text-brand-danger"
+      )}>
+        API: {backendOnline ? 'Sync' : 'ERR'}
+      </span>
+    </div>
+  );
 }

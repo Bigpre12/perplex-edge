@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.getcwd(), "apps", "api", "src"))
 os.environ["DEVELOPMENT_MODE"] = "1"
 
 from db.session import async_session_maker
-from models.analytical import WhaleMove, SteamEvent, HitRateModel
+from models import WhaleMove, SteamEvent, HitRateModel
 from models.prop import PropLine, GameLine, GameLineOdds
 from sqlalchemy import select, delete, update
 

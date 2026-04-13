@@ -20,7 +20,7 @@ class KalshiWSManager:
         self.private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH")
         self.private_key_content = os.getenv("KALSHI_PRIVATE_KEY")
         self.ws_url = os.getenv("KALSHI_WS_URL", "wss://demo-api.kalshi.co/trade-api/ws/v2")
-        self.redis_url = os.getenv("REDIS_URL")
+        self.redis_url = settings.REDIS_URL
         self.redis = None
         self._stop_event = asyncio.Event()
         self._private_key = None
@@ -71,9 +71,11 @@ class KalshiWSManager:
         }
 
     async def connect_redis(self):
-        if not self.redis:
+        if not self.redis and self.redis_url:
             self.redis = aioredis.from_url(self.redis_url, decode_responses=True)
             logger.info("KalshiWS: Connected to Redis for Pub/Sub")
+        elif not self.redis_url:
+            logger.warning("KalshiWS: REDIS_URL not configured, skipping Redis")
 
     async def subscribe(self, websocket, tickers: List[str]):
         sub_msg = {
@@ -91,8 +93,13 @@ class KalshiWSManager:
         
         while not self._stop_event.is_set():
             try:
+                if not self.api_key_id:
+                    logger.error("KalshiWS: KALSHI_API_KEY_ID not configured")
+                    await asyncio.sleep(60)
+                    continue
+                    
                 headers = await self.get_auth_headers()
-                async with websockets.connect(self.ws_url, extra_headers=headers) as websocket:
+                async with websockets.connect(self.ws_url, additional_headers=headers) as websocket:
                     await self.subscribe(websocket, tickers)
                     
                     retry_delay = 1 # Reset retry delay on successful connect

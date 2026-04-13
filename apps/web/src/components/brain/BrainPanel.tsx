@@ -1,3 +1,4 @@
+"use client";
 'use client';
 import { useEffect, useState } from 'react';
 import { api, isApiError } from '@/lib/api';
@@ -58,7 +59,7 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
         <div className="brain-panel">
             <div className="brain-header">
                 <div className="brain-title-wrap">
-                    <span>🧠</span>
+                    <span>ðŸ§ </span>
                     <h3>Lucrix Brain</h3>
                 </div>
                 <div className="brain-tab-btn-group">
@@ -81,7 +82,7 @@ export default function BrainPanel({ sport }: { sport: SportKey }) {
                 <div className="brain-picks-container">
                     {decisions.length === 0 && (
                         <p className="brain-empty-state">
-                            No active decisions — brain is analyzing...
+                            No active decisions â€” brain is analyzing...
                         </p>
                     )}
                     {decisions.map(d => (

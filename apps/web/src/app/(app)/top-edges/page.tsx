@@ -4,17 +4,22 @@ import { useState, useCallback } from "react";
 import { Zap, Target, Gauge, TrendingUp, Info } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
 import { api } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
-import GateLock from "@/components/GateLock";
+
 
 export default function TopEdgesPage() {
     const [minEV, setMinEV] = useState(2);
-    const { data: edgesData, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.edges(minEV),
-        [minEV],
-        { refreshInterval: 180000 } // 3 minutes
-    );
+    const { data: edgesData, isLoading: loading, error, dataUpdatedAt, refetch: refresh } = useQuery({
+        queryKey: ['top-edges', minEV],
+        queryFn: () => api.get(`/api/ev/top?limit=30&min_ev=${minEV}`).then(r => r.data),
+        refetchInterval: 180_000,
+    });
+
+    const isStale = dataUpdatedAt ? (Date.now() - dataUpdatedAt) > 300_000 : false;
+    const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+    const errorMsg = error ? (error as Error).message : null;
 
     const props = edgesData?.props || [];
 
@@ -41,6 +46,7 @@ export default function TopEdgesPage() {
                                 max="15"
                                 step="1"
                                 value={minEV}
+                                aria-label="Minimum edge percentage"
                                 onChange={(e) => setMinEV(parseInt(e.target.value))}
                                 className="w-32 accent-primary h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer"
                             />
@@ -51,7 +57,7 @@ export default function TopEdgesPage() {
                         lastUpdated={lastUpdated}
                         isStale={isStale}
                         loading={loading}
-                        error={error}
+                        error={errorMsg}
                         onRefresh={refresh}
                         refreshInterval={180}
                     />
@@ -60,11 +66,10 @@ export default function TopEdgesPage() {
 
             <PageStates
                 loading={loading && !edgesData}
-                error={error}
+                error={errorMsg}
                 empty={!loading && props.length === 0}
                 emptyMessage={`No edges found above ${minEV}% threshold.`}
             >
-                <GateLock feature="edges" reason="Proprietary model edges are reserved for Premium athletes.">
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {props.map((prop: any, i: number) => (
                             <div key={i} className="bg-[#0D0D14] border border-white/5 rounded-2xl p-6 shadow-2xl hover:border-primary/30 transition-all group overflow-hidden relative">
@@ -114,7 +119,6 @@ export default function TopEdgesPage() {
                             </div>
                         ))}
                     </div>
-                </GateLock>
             </PageStates>
 
             {/* Disclaimer */}

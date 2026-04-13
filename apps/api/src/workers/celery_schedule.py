@@ -1,29 +1,32 @@
 # apps/api/src/workers/celery_schedule.py
-from core.sports_config import HIGH_FREQUENCY, MEDIUM_FREQUENCY, LOW_FREQUENCY
+from core.sports_config import (
+    HIGH_FREQUENCY, MEDIUM_FREQUENCY, LOW_FREQUENCY,
+    HIGH_FREQUENCY_SPORTS, MEDIUM_FREQUENCY_SPORTS, LOW_FREQUENCY_SPORTS
+)
 
 CELERYBEAT_SCHEDULE = {
     **{
         f"ingest-{sport}": {
             "task": "workers.ev_engine.run_ev_cycle_task",
-            "schedule": 120.0,   # 2 min
+            "schedule": float(HIGH_FREQUENCY),
             "args": [sport],
         }
-        for sport in HIGH_FREQUENCY
+        for sport in HIGH_FREQUENCY_SPORTS
     },
     **{
         f"ingest-{sport}": {
             "task": "workers.ev_engine.run_ev_cycle_task",
-            "schedule": 300.0,   # 5 min
+            "schedule": float(MEDIUM_FREQUENCY),
             "args": [sport],
         }
-        for sport in MEDIUM_FREQUENCY
+        for sport in MEDIUM_FREQUENCY_SPORTS
     },
     **{
         f"ingest-{sport}": {
             "task": "workers.ev_engine.run_ev_cycle_task",
-            "schedule": 1800.0,  # 30 min
+            "schedule": float(LOW_FREQUENCY),
             "args": [sport],
         }
-        for sport in LOW_FREQUENCY
+        for sport in LOW_FREQUENCY_SPORTS
     },
 }

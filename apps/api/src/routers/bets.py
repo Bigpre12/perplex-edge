@@ -1,18 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from db.session import get_db, get_async_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from db.session import get_db
 from models.bet import Bet
 from schemas.bet import BetOut, BetCreate
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("", response_model=list[BetOut])
 async def list_bets(db: AsyncSession = Depends(get_db)):
-    stmt = select(Bet).order_by(Bet.created_at.desc())
-    result = await db.execute(stmt)
-    return result.scalars().all()
+    try:
+        stmt = select(Bet).order_by(Bet.created_at.desc())
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        logger.error(f"Error listing bets: {e}")
+        return []
 
 @router.post("", response_model=BetOut)
 async def create_bet(payload: BetCreate, db: AsyncSession = Depends(get_db)):
@@ -21,6 +26,7 @@ async def create_bet(payload: BetCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(bet)
     return bet
+
 
 @router.get("/stats")
 async def bet_stats(db: AsyncSession = Depends(get_db)):

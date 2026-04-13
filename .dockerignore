@@ -1,0 +1,25 @@
+# Ignore frontend (not needed for API Docker build)
+apps/web/node_modules
+apps/web/.next
+apps/web/out
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Misc
+*.md
+*.log
+.env.local
+.env.development.local

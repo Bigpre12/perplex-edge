@@ -15,37 +15,36 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from core.config import settings
+from services.odds_api_client import odds_api_client
 
 class RealSportsAPI:
     def __init__(self):
         # API Keys from centralized settings
         self.betstack_api_key = settings.BETSTACK_API_KEY
-        self.odds_api_key = settings.ODDS_API_KEY
+        self.odds_api_keys = settings.ODDS_API_KEYS
+        self.odds_api_key_index = 0
         self.roster_api_key = settings.ROSTER_API_KEY
         self.ai_api_key = settings.GROQ_API_KEY
         
         # API Base URLs
-        self.betstack_base_url = "https://api.betstack.com/v1"
+        self.betstack_base_url = settings.BETSTACK_BASE_URL
         self.odds_api_base_url = "https://api.the-odds-api.com/v4"
         self.groq_api_base_url = "https://api.groq.com/openai/v1"
         
+    def _get_current_odds_api_key(self) -> str:
+        if not self.odds_api_keys:
+            return ""
+        return self.odds_api_keys[self.odds_api_key_index % len(self.odds_api_keys)]
+
+    def _rotate_odds_api_key(self):
+        if self.odds_api_keys:
+            self.odds_api_key_index += 1
+            new_key = self._get_current_odds_api_key()
+            logger.info(f"🔄 Rotating Odds API Key. New Slot: {self.odds_api_key_index % len(self.odds_api_keys)}.")
+
     async def fetch_odds_from_theodds(self, sport: str = "basketball_nba"):
-        """Fetch real-time odds from The Odds API"""
-        async with httpx.AsyncClient() as client:
-            url = f"{self.odds_api_base_url}/sports/{sport}/odds"
-            params = {
-                "apiKey": self.odds_api_key,
-                "regions": "us",
-                "markets": "h2h,spreads,totals,player_props",
-                "oddsFormat": "american"
-            }
-            try:
-                response = await client.get(url, params=params, timeout=10.0)
-                response.raise_for_status()
-                return response.json()
-            except Exception as e:
-                logger.error(f"Error fetching odds: {e}")
-                return {"error": str(e)}
+        """Fetch real-time odds via the centralized OddsApiClient"""
+        return await odds_api_client.get_live_odds(sport)
     
     async def fetch_props_from_betstack(self, sport: str = "nba"):
         """Fetch player props from Betstack"""
@@ -63,34 +62,26 @@ class RealSportsAPI:
     
     async def fetch_roster_data(self, team: str, sport: str = "nba"):
         """Fetch roster data using BallDontLie API with fallback logic"""
-        if sport.lower() != "nba":
-            return self._get_mock_roster(team, sport)
+        if "nba" not in sport.lower():
+            logger.warning(f"RealSportsAPI: Roster fetching only supported for NBA. Requested: {sport}")
+            return []
 
         if not balldontlie_client.available:
-            logger.warning(f"BallDontLie API key missing. Returning mock roster for {team}")
-            return self._get_mock_roster(team, sport)
+            logger.warning(f"RealSportsAPI: BallDontLie API key missing. Cannot fetch roster for {team}")
+            return []
 
         try:
             roster = await balldontlie_client.get_team_roster(team)
             if not roster:
-                return self._get_mock_roster(team, sport)
+                return []
             return roster
         except Exception as e:
-            logger.error(f"Error fetching roster for {team} from BallDontLie: {e}")
-            return self._get_mock_roster(team, sport)
+            logger.error(f"RealSportsAPI: Error fetching roster for {team} from BallDontLie: {e}")
+            return []
 
-    def _get_mock_roster(self, team: str, sport: str) -> List[Dict]:
-        """Provide a healthy mock roster for seeding when API is unavailable"""
-        mock_players = [
-            {"player_name": f"{team} Star 1", "position": "Star", "jersey": 1, "is_active": True},
-            {"player_name": f"{team} Star 2", "position": "Star", "jersey": 2, "is_active": True},
-            {"player_name": f"{team} Role 1", "position": "Role", "jersey": 10, "is_active": True},
-            {"player_name": f"{team} Role 2", "position": "Role", "jersey": 11, "is_active": True},
-            {"player_name": f"{team} Bench 1", "position": "Bench", "jersey": 20, "is_active": True},
-        ]
-        return mock_players
+    # _get_mock_roster removed for production.
 
-    async def fetch_league_rosters(self, sport: str = "nba") -> Dict[str, List[Dict]]:
+    async def fetch_league_rosters(self, sport: str = "nba") -> dict:
         """Fetch rosters for all major teams in a league for seeding pipeline"""
         common_teams = {
             "nba": ["Lakers", "Celtics", "Warriors", "Knicks", "Nuggets", "Suns", "Bucks", "76ers"],
@@ -229,21 +220,23 @@ class TrackRecordBuilder:
                     
                     # Only include positive EV picks
                     if ev > 0:
+                        st = game.get("start_time")
+                        game_date_str = st.isoformat() if isinstance(st, datetime) else datetime.now(timezone.utc).isoformat()
                         pick = {
                             "id": len(picks) + 1,
                             "game_id": game["id"],
-                            "game_date": game.get("start_time").isoformat() if isinstance(game.get("start_time"), datetime) else datetime.now(timezone.utc).isoformat(),
+                            "game_date": game_date_str,
                             "teams": f"{game.get('away_team_name', 'Away')} @ {game.get('home_team_name', 'Home')}",
                             "player_name": prop["player_name"],
                             "stat_type": prop["stat_type"],
                             "line": float(point),
                             "over_odds": int(price),
                             "bookmaker": prop.get("sportsbook", "Unknown"),
-                            "model_probability": round(float(model_prob), 3),
-                            "implied_probability": round(float(implied_prob), 3),
-                            "ev_percentage": round(float(ev), 2),
-                            "confidence": round(50 + (float(ev or 0) * 10), 1),
-                            "predicted_hit_rate": round(float(model_prob or 0) * 100, 1),
+                            "model_probability": float(f"{model_prob:.3f}"),
+                            "implied_probability": float(f"{implied_prob:.3f}"),
+                            "ev_percentage": float(f"{ev:.2f}"),
+                            "confidence": float(f"{(50 + (float(ev or 0) * 10)):.1f}"),
+                            "predicted_hit_rate": float(f"{(float(model_prob or 0) * 100):.1f}"),
                             "created_at": datetime.now(timezone.utc).isoformat(),
                             "status": "pending"
                         }
@@ -260,7 +253,9 @@ class TrackRecordBuilder:
         try:
             graded_picks = []
             
-            for pick in picks:
+            for p in picks:
+                if not isinstance(p, dict): continue
+                pick: dict = p
                 # Get game results
                 results = await self.api.get_game_results(pick.get("game_id", ""))
                 
@@ -273,6 +268,7 @@ class TrackRecordBuilder:
                             break
                     
                     if player_stats:
+                        # type: ignore
                         actual_value = float(player_stats.get(pick.get("stat_type", ""), 0))
                         line = float(pick.get("line", 0))
                         
@@ -280,14 +276,14 @@ class TrackRecordBuilder:
                         won = actual_value > line
                         
                         # Calculate profit/loss
-                        odds = int(pick.get("over_odds", -110))
-                        stake = 110  # Standard stake
+                        odds = float(pick.get("over_odds", -110))
+                        stake = 110.0  # Standard stake
                         
                         if won:
                             if odds > 0:
-                                profit = (float(odds) / 100) * stake
+                                profit = float((odds / 100) * stake)
                             else:
-                                profit = (100 / abs(float(odds))) * stake
+                                profit = float((100 / abs(odds)) * stake)
                         else:
                             profit = -stake
                         
@@ -301,10 +297,10 @@ class TrackRecordBuilder:
                             "actual_value": actual_value,
                             "line_result": f"{actual_value} vs {line}",
                             "won": won,
-                            "profit_loss": round(float(profit), 2),
-                            "roi": round(float(profit / stake) * 100, 2),
-                            "closing_odds": closing_odds,
-                            "clv_cents": round(float(clv_cents), 2),
+                            "profit_loss": float(f"{profit:.2f}"),
+                            "roi": float(f"{(profit / stake) * 100:.2f}"),
+                            "closing_odds": float(f"{closing_odds:.2f}"),
+                            "clv_cents": float(f"{clv_cents:.2f}"),
                             "graded_at": datetime.now(timezone.utc).isoformat(),
                             "status": "graded"
                         }
@@ -337,8 +333,8 @@ class TrackRecordBuilder:
         clv_win_rate = (positive_clv_picks / total_picks) * 100 if total_picks > 0 else 0
         
         # EV validation
-        avg_ev = sum(p.get("ev_percentage", 0) for p in graded_picks) / total_picks if total_picks > 0 else 0
-        realized_ev = roi  # ROI approximates realized EV
+        avg_ev = float(sum(p.get("ev_percentage", 0.0) for p in graded_picks) / total_picks) if total_picks > 0 else 0.0
+        realized_ev = float(roi)  # ROI approximates realized EV
         
         # Performance by bookmaker
         bookmaker_performance = {}
@@ -348,14 +344,14 @@ class TrackRecordBuilder:
                 bookmaker_performance[bookmaker] = {
                     "picks": 0,
                     "wins": 0,
-                    "profit": 0,
-                    "roi": 0
+                    "profit": 0.0,
+                    "roi": 0.0
                 }
             
-            bookmaker_performance[bookmaker]["picks"] += 1
+            bookmaker_performance[bookmaker]["picks"] += int(1)
             if pick.get("won", False):
-                bookmaker_performance[bookmaker]["wins"] += 1
-            bookmaker_performance[bookmaker]["profit"] += pick.get("profit_loss", 0)
+                bookmaker_performance[bookmaker]["wins"] += int(1)
+            bookmaker_performance[bookmaker]["profit"] += float(pick.get("profit_loss", 0.0))
         
         # Calculate ROI for each bookmaker
         for bookmaker in bookmaker_performance:
@@ -368,15 +364,15 @@ class TrackRecordBuilder:
             "total_picks": total_picks,
             "won_picks": won_picks,
             "lost_picks": lost_picks,
-            "hit_rate": round(float(hit_rate), 2),
-            "total_profit": round(float(total_profit), 2),
+            "hit_rate": float(f"{hit_rate:.2f}"),
+            "total_profit": float(f"{total_profit:.2f}"),
             "total_stake": total_stake,
-            "roi": round(float(roi), 2),
-            "avg_clv": round(float(avg_clv), 2),
-            "clv_win_rate": round(float(clv_win_rate), 2),
-            "avg_ev": round(float(avg_ev), 2),
-            "realized_ev": round(float(realized_ev), 2),
-            "ev_accuracy": round(float(realized_ev / avg_ev) * 100, 2) if avg_ev > 0 else 0,
+            "roi": float(f"{roi:.2f}"),
+            "avg_clv": float(f"{avg_clv:.2f}"),
+            "clv_win_rate": float(f"{clv_win_rate:.2f}"),
+            "avg_ev": float(f"{avg_ev:.2f}"),
+            "realized_ev": float(f"{realized_ev:.2f}"),
+            "ev_accuracy": float(f"{(realized_ev / avg_ev) * 100:.2f}") if avg_ev > 0 else 0.0,
             "bookmaker_performance": bookmaker_performance,
             "track_record_built": datetime.now(timezone.utc).isoformat(),
             "validation_status": "complete"
@@ -414,6 +410,26 @@ async def build_transparent_track_record():
             "track_record_status": "failed",
             "last_updated": datetime.now(timezone.utc).isoformat()
         }
+
+# --- Top-Level API Access (Rotating) ---
+_real_sports_api_instance = RealSportsAPI()
+
+async def get_events(sport: str):
+    """Wrapper for get_live_odds (events only)"""
+    return await _real_sports_api_instance.fetch_odds_from_theodds(sport)
+
+async def get_odds(sport: str, regions: str = "us", markets: str = "h2h,spreads"):
+    """Wrapper for fetch_odds_from_theodds with specific markets"""
+    # Note: fetch_odds_from_theodds in this file currently ignores specific 'markets' arg,
+    # but we'll pass it if we update the method later.
+    return await _real_sports_api_instance.fetch_odds_from_theodds(sport)
+
+async def get_player_props(sport: str, event_id: str, markets: str = "player_points", regions: str = "us"):
+    """Wrapper for fetch_odds_from_theodds (specific event focus)"""
+    # The Odds API /odds endpoint returns multiple games, so we filter if needed,
+    # or use a dedicated props endpoint if implemented.
+    # For now, we reuse the existing fetcher.
+    return await _real_sports_api_instance.fetch_odds_from_theodds(sport)
 
 if __name__ == "__main__":
     async def test():

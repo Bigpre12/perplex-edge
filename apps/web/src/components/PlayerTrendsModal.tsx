@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, TrendingUp, Activity, Crosshair, Brain } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
     const [trendData, setTrendData] = useState<any[]>([]);
@@ -23,12 +23,12 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                 const statType = propData.market?.stat_type || propData.stat_type;
 
                 // Fetch real historical trends
-                const res = await api.playerTrends(playerName, statType);
+                const res = await API.playerTrends(playerName, statType);
                 const history = res?.history || [];
                 setTrendData(history);
 
                 // Fetch AI Prediction
-                const mlData = await api.mlPredict({
+                const mlData = await API.mlPredict({
                     player_name: playerName,
                     stat_type: statType,
                     line: currentLine,
@@ -85,7 +85,7 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                                 </p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#6B7280] hover:text-white">
+                        <button onClick={onClose} aria-label="Close" className="p-2 hover:bg-white/5 rounded-full transition-colors text-[#6B7280] hover:text-white">
                             <X size={20} />
                         </button>
                     </div>
@@ -117,8 +117,8 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                                 <Activity size={12} /> Syncing...
                             </div>}
                         </div>
-                        <div className="h-64 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-64 w-full min-w-0">
+                            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                                 <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">

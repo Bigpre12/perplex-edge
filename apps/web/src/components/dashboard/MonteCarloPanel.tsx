@@ -1,3 +1,4 @@
+"use client";
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -31,7 +32,7 @@ export function MonteCarloPanel({ sport }: { sport: SportKey }) {
         <div className="bg-[#12121e] border border-[#2a2a3a] rounded-xl overflow-hidden shadow-2xl">
             <div className="bg-[#1a1c2e] p-4 border-b border-[#2a2a3a] flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <span className="text-xl">🧠</span>
+                    <span className="text-xl">ðŸ§ </span>
                     <h3 className="font-bold text-[#f0f0ff] uppercase tracking-tighter text-sm">Neural Engine Simulation</h3>
                 </div>
                 <span className="text-[10px] text-[#00ff88] font-black bg-[#00ff88]/10 px-2 py-0.5 rounded border border-[#00ff88]/20">LIVE ENGINE</span>

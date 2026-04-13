@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Activity, Users, DollarSign, ShieldAlert, Cpu, Database, RefreshCw, Send } from "lucide-react";
 import { getUser } from "@/lib/auth";
 
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export default function AdminCommandCenter() {
     const [stats, setStats] = useState<any>(null);
@@ -22,7 +22,7 @@ export default function AdminCommandCenter() {
                     return;
                 }
 
-                const data = await api.adminStats(user.email);
+                const data = await API.adminStats(user.email);
 
                 if (isApiError(data)) {
                     if (data.status === 403) {

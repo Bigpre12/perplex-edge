@@ -36,10 +36,8 @@ async def clv_tracking_loop():
                 if props_to_track:
                     logger.info(f"Found {len(props_to_track)} props entering CLV phase.")
                     
-                    # Group by sport to potentially optimize, but for now process list
-                    # track_closing_lines handles individual prop updates
-                    # We pass the objects or dicts
-                    await brain_clv_tracker.track_closing_lines(props_to_track, "multi") 
+                    # Call the refactored batch tracker
+                    await brain_clv_tracker.track_closing_lines(props_to_track) 
                     
                 else:
                     logger.debug("No new props for CLV tracking.")

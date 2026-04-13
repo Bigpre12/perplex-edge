@@ -9,31 +9,12 @@ Path("data").mkdir(exist_ok=True)
 from db.session import engine, Base, SessionLocal
 import models.users, models.props, models.brain
 from models.brain import ModelPick
+from services.odds_api_client import odds_api_client
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("seed")
 
-KEY = os.getenv("THE_ODDS_API_KEY")
-if not KEY:
-    log.error("THE_ODDS_API_KEY environment variable is required. Set it in .env or your shell.")
-    sys.exit(1)
-BASE = "https://api.the-odds-api.com/v4"
-
-SPORTS = {
-    "basketball_nba": (30, ["player_points","player_rebounds","player_assists","player_threes","player_points_rebounds_assists"]),
-    "basketball_ncaab": (39, ["player_points","player_rebounds","player_assists"]),
-    "icehockey_nhl": (22, ["player_points","player_shots_on_goal"]),
-    "baseball_mlb": (40, ["batter_hits","pitcher_strikeouts","batter_total_bases"]),
-    "mma_mixed_martial_arts": (54, ["h2h"]),
-    "tennis_atp_indian_wells": (42, ["h2h"]),
-    "tennis_wta_indian_wells": (43, ["h2h"]),
-}
-
-def to_prob(odds):
-    return (100/(odds+100)) if odds>0 else (abs(odds)/(abs(odds)+100))
-
-def calc_ev(prob, odds):
-    return (prob*(odds/100)-(1-prob)) if odds>0 else (prob*(100/abs(odds))-(1-prob))
+# Configuration moved to centralized OddsApiClient
 
 async def run():
     Path("data").mkdir(exist_ok=True)
@@ -41,27 +22,27 @@ async def run():
     db = SessionLocal()
     total = 0
 
+    # We'll use the centralized client for everything
     async with httpx.AsyncClient(timeout=30.0) as c:
-        # Get active sports
-        r = await c.get(f"{BASE}/sports", params={"apiKey": KEY, "all": "false"})
-        active = {s["key"] for s in r.json() if s.get("active")} if r.status_code == 200 else set()
-        log.info(f"Active sports: {len(active)}")
+        # Map our internal SPORTS dict to the seeder's needed format
+        # Note: In production, we usually trust OddsApiClient to handle these
+        target_sports = [
+            ("basketball_nba", 30, ["player_points","player_rebounds","player_assists","player_threes","player_points_rebounds_assists"]),
+            ("basketball_ncaab", 39, ["player_points","player_rebounds","player_assists"]),
+            ("icehockey_nhl", 22, ["player_points","player_shots_on_goal"]),
+            ("baseball_mlb", 40, ["batter_hits","pitcher_strikeouts","batter_total_bases"]),
+        ]
 
-        for sport_key, (sport_id, markets) in SPORTS.items():
-            if sport_key not in active:
-                log.info(f"Skipping {sport_key} - not active")
-                continue
-
+        for sport_key, sport_id, markets in target_sports:
             log.info(f"\nProcessing {sport_key}...")
             try:
-                # Get events
-                r_ev = await c.get(f"{BASE}/sports/{sport_key}/events", params={"apiKey": KEY})
-                if r_ev.status_code != 200:
-                    log.warning(f"  Events failed: {r_ev.status_code}"); continue
-                events = r_ev.json()
-                log.info(f"  {len(events)} events found")
-                if not events:
+                # 1. Get Events via client
+                events = await odds_api_client.get_live_odds(sport_key)
+                if not events or (isinstance(events, dict) and "error" in events):
+                    log.warning(f"  No events for {sport_key}")
                     continue
+                
+                log.info(f"  {len(events)} events found")
 
                 db.query(ModelPick).filter(ModelPick.sport_id == sport_id).delete()
                 db.commit()
@@ -71,33 +52,13 @@ async def run():
                     event_id = event.get("id")
                     home = event.get("home_team","")
                     away = event.get("away_team","")
-                    if not event_id:
-                        continue
+                    if not event_id: continue
 
-                    await asyncio.sleep(0.6)  # Respect rate limit
-
-                    r_odds = await c.get(
-                        f"{BASE}/sports/{sport_key}/events/{event_id}/odds",
-                        params={
-                            "apiKey": KEY,
-                            "regions": "us",
-                            "markets": ",".join(markets),
-                            "oddsFormat": "american",
-                            "bookmakers": "draftkings,fanduel,betmgm,caesars,betrivers",
-                        }
-                    )
-                    rem = r_odds.headers.get("x-requests-remaining","?")
-
-                    if r_odds.status_code == 429:
-                        log.warning(f"  Rate limited, waiting 5s...")
-                        await asyncio.sleep(5)
-                        continue
-                    if r_odds.status_code != 200:
-                        log.warning(f"  {away} @ {home}: {r_odds.status_code}")
-                        continue
-
-                    data = r_odds.json()
-                    log.info(f"  {away} @ {home} | remaining={rem}")
+                    # 2. Get Props via client
+                    data = await odds_api_client.get_player_props(sport_key, event_id, markets=",".join(markets))
+                    if not data: continue
+                    
+                    log.info(f"  {away} @ {home} | props found")
 
                     for bm in data.get("bookmakers", []):
                         bm_title = bm.get("title","")

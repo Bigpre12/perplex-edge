@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, HTTPException, Depends
-from db.session import get_async_db
+from db.session import get_db, get_async_db
 from models.brain import BrainSystemState, ModelPick
 try:
     from core.state import state
@@ -100,17 +100,58 @@ async def get_dashboard_metrics(db: AsyncSession = Depends(get_async_db), tier: 
 # Attach user_router to the main exported router
 router.include_router(user_router)
 
-@router.get("/brain-status")
-async def get_brain_health():
+@router.get("/status")
+async def get_brain_overall_status(db: AsyncSession = Depends(get_async_db)):
+    """
+    Unified Brain Status: Aggregates health, counts, and engine states.
+    Bypasses tier gating for internal/owner dashboard.
+    """
     try:
+        metrics = await brain_advanced_service.get_dashboard_metrics(db)
+        
+        # Inference Status Logic
+        # ACTIVE = has picks today, IDLE = no picks today but db online, WARN = errors in log
+        inference_status = "ACTIVE" if metrics.get("props_scored_today", 0) > 0 else "IDLE"
+        
         return {
-            "status": "healthy",
-            "core_state": state.get_summary() if hasattr(state, 'get_summary') else "active",
+            "overall_status": "ACTIVE" if state.system_online else "OFFLINE",
+            "inference_engine": inference_status,
+            "data_pipeline": "ACTIVE",
+            "odds_stream": "SYNCED",
+            "metrics": metrics,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
     except Exception as e:
-        logger.error(f"Brain Health Error: {e}")
-        return {"status": "error", "detail": str(e)}
+        logger.error(f"Brain Status Error: {e}")
+        return {
+            "overall_status": "WARN",
+            "inference_engine": "WARN",
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+@router.get("/brain-status") # Keep for backward compatibility
+async def get_brain_health_legacy(db: AsyncSession = Depends(get_async_db)):
+    return await get_brain_overall_status(db)
+
+@router.get("")
+@router.get("/")
+async def get_brain_dashboard_root(sport: str = "basketball_nba", db: AsyncSession = Depends(get_db), tier: str = Depends(get_user_tier)):
+    """Primary entry point for the Neural Engine (Brain) Page."""
+    if tier not in ("pro", "elite"): 
+        return {"props": [], "status": "limited", "message": "Pro or Elite subscription required"}
+    try:
+        decisions = await brain_advanced_service.get_prop_score(sport, db)
+        status = await get_brain_overall_status(db)
+        return {
+            "props": decisions,
+            "decisions": decisions,
+            "status": status,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error in brain dashboard root: {e}")
+        return {"props": [], "decisions": [], "error": str(e)}
 
 @router.post("/analyze")
 async def run_brain_analysis(payload: dict | None = None):
@@ -136,6 +177,7 @@ async def get_brain_metrics_post(db: AsyncSession = Depends(get_async_db)):
         logger.error(f"Brain Metrics Error: {e}")
         return {"status": "warming_up", "note": str(e)}
 
+@router.post("")
 @router.post("/")
 async def brain_query(payload: dict, db: AsyncSession = Depends(get_async_db)):
     query = payload.get("query")

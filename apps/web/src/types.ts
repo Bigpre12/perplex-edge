@@ -110,3 +110,80 @@ export interface ParlayLeg {
     team?: string;
     ev?: number;
 }
+
+/** Universal API Response Wrapper */
+export interface UniversalResponse<T> {
+    status: 'ok' | 'no_data' | 'upstream_error' | 'pipeline_error';
+    message?: string | null;
+    meta?: {
+        source?: string;
+        db_rows?: number;
+        last_sync?: string;
+        request_id?: string;
+    };
+    data: T;
+}
+
+/** Prop Live Schema (Consolidated Over/Under) */
+export interface PropLiveSchema {
+    id: number;
+    sport: string;
+    league?: string | null;
+    game_id: string;
+    game_start_time?: string | null;
+    player_name?: string | null;
+    market_key: string;
+    line: number;
+    book: string;
+    odds_over?: number | null;
+    odds_under?: number | null;
+    implied_over?: number | null;
+    implied_under?: number | null;
+    last_updated_at?: string | null;
+    is_best_over: boolean;
+    is_best_under: boolean;
+    is_soft_book: boolean;
+    is_sharp_book: boolean;
+    confidence?: number | null;
+}
+
+export interface EvEdgeSchema {
+    id: number;
+    event_id: string;
+    market_key: string;
+    side: string;
+    player_name?: string | null;
+    bookmaker: string;
+    edge: number;
+    price: number;
+    line?: number | null;
+    model_prob?: number | null;
+    implied_prob: number;
+    updated_at: string;
+    trend: number[];
+}
+
+export interface WhaleEventSchema {
+    id: number;
+    sport: string;
+    event_id: string;
+    market_key: string;
+    player_name?: string | null;
+    bookmaker: string;
+    price: number;
+    line?: number | null;
+    move_type: string;
+    created_at: string;
+}
+
+export interface ClvTradeSchema {
+    id: number;
+    player: string;
+    sport: string;
+    market: string;
+    open_line: number;
+    close_line: number;
+    clv_value: number;
+    beat: boolean;
+    timestamp: string;
+}

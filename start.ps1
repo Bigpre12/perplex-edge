@@ -5,7 +5,7 @@ $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # 1. Kill any existing processes on ports 8000 and 3300
 Write-Host "Cleaning up ports 8000 and 3300..." -ForegroundColor Gray
-$ports = @(3300, 3000, 8000)
+$ports = @(3300, 3000, 8080)
 foreach ($port in $ports) {
     $proc = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
     if ($proc) {
@@ -61,7 +61,7 @@ while ($retryCount -lt $maxRetries -and -not $healthy) {
 if ($healthy) {
     Write-Host "`nAll servers are stabilized!" -ForegroundColor Green
     Write-Host "Frontend: http://localhost:3000" -ForegroundColor Yellow
-    Write-Host "Backend:  http://localhost:8000/api/health" -ForegroundColor Yellow
+    Write-Host "Backend:  http://localhost:8080/api/health" -ForegroundColor Yellow
 } else {
     Write-Host "`nBackend failed to stabilize. Check server_boot.log" -ForegroundColor Red
 }

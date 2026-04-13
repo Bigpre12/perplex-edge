@@ -1,3 +1,4 @@
+"use client";
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -98,7 +99,7 @@ export default function PropsFeed({ sport }: { sport: SportKey }) {
                                 : 'text-textSecondary hover:text-white'
                                 }`}
                         >
-                            {f === 'sharp' ? '🐋 SHARP' : f === 'top' ? '⭐ ELITE' : 'ALL'}
+                            {f === 'sharp' ? 'ðŸ‹ SHARP' : f === 'top' ? 'â­ ELITE' : 'ALL'}
                         </button>
                     ))}
                 </div>
@@ -106,7 +107,7 @@ export default function PropsFeed({ sport }: { sport: SportKey }) {
 
             {filtered.length === 0 ? (
                 <div className="text-center py-20 bg-lucrix-dark/50 rounded-2xl border border-dashed border-lucrix-border backdrop-blur-sm">
-                    <div className="text-3xl mb-4">🔦</div>
+                    <div className="text-3xl mb-4">ðŸ”¦</div>
                     <h3 className="text-sm font-black text-white uppercase tracking-tighter italic">No Matches Found</h3>
                     <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mt-2">
                         Try adjusting your filters for the current slate.

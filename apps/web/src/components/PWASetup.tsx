@@ -1,3 +1,4 @@
+"use client";
 // components/PWASetup.tsx
 // Add <PWASetup /> to your root layout.tsx
 'use client';
@@ -14,7 +15,7 @@ export default function PWASetup() {
         return;
       }
 
-      // Production only — register SW
+      // Production only â€” register SW
       navigator.serviceWorker.register("/sw.js").catch(console.error);
     }
   }, []);

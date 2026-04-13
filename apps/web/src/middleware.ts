@@ -1,45 +1,11 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = [
-    '/login',
-    '/signup',
-    '/pricing',
-    '/api',
-    '/_next',
-    '/favicon',
-    '/icon',
-    '/manifest',
-    '/robots',
-    '/api/auth',
-];
-
+// AUTH GATE REMOVED — All routes publicly accessible
 export function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
-
-    // Never block CORS preflight requests
-    if (request.method === 'OPTIONS') {
-        return NextResponse.next();
-    }
-
-    // Always allow public paths
-    if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
-        return NextResponse.next();
-    }
-
-    // Check for token in cookies
-    const token = request.cookies.get('lucrix_token')?.value;
-
-    // No token on a protected route → redirect to login
-    if (!token && pathname !== '/') {
-        const loginUrl = new URL('/login', request.url);
-        loginUrl.searchParams.set('from', pathname);
-        return NextResponse.redirect(loginUrl);
-    }
-
-    return NextResponse.next();
+  return NextResponse.next()
 }
 
 export const config = {
-    matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
-};
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}

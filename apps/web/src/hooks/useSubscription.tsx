@@ -1,8 +1,21 @@
 "use client";
 import { useState, useEffect, createContext, useContext, useCallback, ReactNode } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import { canAccess, FeatureKey, Tier } from "@/lib/permissions";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
+import { useLucrixStore } from "@/store";
+
+const BYPASS = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true" || process.env.NEXT_PUBLIC_DEV_MODE === "true";
+
+const BYPASS_SUBSCRIPTION = {
+    tier: "elite" as Tier,
+    status: "active",
+    loading: false,
+    can: (_feature: FeatureKey) => true,
+    isPro: true,
+    isElite: true,
+    refresh: () => { },
+};
 
 interface SubContext {
     tier: Tier;
@@ -19,8 +32,6 @@ const SubscriptionContext = createContext<SubContext>({
     can: () => false, isPro: false, isElite: false,
     refresh: () => { },
 });
-
-import { useLucrixStore } from "@/store";
 
 export function SubscriptionProvider({ children }: { children: ReactNode }): JSX.Element {
     const tier = useLucrixStore((state: any) => state.userTier);
@@ -39,14 +50,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
         }
 
         try {
-            const data = await api.authMe();
-            if (isApiError(data)) {
+            const res = await API.authMe();
+            if (isApiError(res)) {
                 setStoreTier("free");
                 return;
             }
-            const normalizedTier = ((data as any).tier || "free").toLowerCase() as Tier;
+            const normalizedTier = ((res as any).tier || "free").toLowerCase() as Tier;
             setStoreTier(normalizedTier);
-            setStatus((data as any).status || "active");
+            setStatus((res as any).status || "active");
         } catch (err) {
             console.error("Fetch tier error:", err);
             setStoreTier("free");
@@ -66,8 +77,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
                   window.location.hostname.startsWith('192.168.') || 
                   window.location.hostname.startsWith('172.'));
 
-    const effectiveTier = mounted ? (isDev ? "elite" : tier) : "free";
-    const effectiveLoading = mounted ? (isDev ? false : loading) : true;
+    const effectiveTier = mounted ? (isDev || BYPASS ? "elite" : tier) : "free";
+    const effectiveLoading = mounted ? (isDev || BYPASS ? false : loading) : true;
 
     return (
         <SubscriptionContext.Provider value={{
@@ -84,4 +95,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
     );
 }
 
-export const useSubscription = () => useContext(SubscriptionContext);
+export const useSubscription = () => {
+    if (process.env.NEXT_PUBLIC_DEV_MODE === "true") {
+        return { tier: "elite" as Tier, status: "active", loading: false, can: () => true, isPro: true, isElite: true, refresh: () => { } };
+    }
+    const context = useContext(SubscriptionContext);
+    if (BYPASS) return BYPASS_SUBSCRIPTION;
+    return context;
+};

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from 'react';
 import OracleChatbot from "@/components/OracleChatbot";
 import { ArbNotificationBanner } from "@/components/kalshi/ArbNotificationBanner";
 import CommandCenter from "@/components/CommandCenter";
@@ -15,8 +16,7 @@ import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { SportProvider } from "@/context/SportContext";
 import StatusBar from "@/components/shared/StatusBar";
 import PrefetchWrapper from "@/components/shared/PrefetchWrapper";
-
-
+import GlobalHelp from "@/components/shared/GlobalHelp";
 
 export default function AppLayout({
     children,
@@ -45,10 +45,12 @@ export default function AppLayout({
                         <TabBar />
 
                         {/* Main Content Scroll Area */}
-                        <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-none relative">
-                            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6">
+                        <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth scrollbar-none relative bg-lucrix-dark min-h-screen">
+                            <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 min-h-[calc(100vh-10rem)]">
                                 <PageTransition>
-                                    {children}
+                                    <Suspense fallback={<div className="text-textMuted p-8 uppercase font-black text-[10px] tracking-widest animate-pulse">Synchronizing Neural Data...</div>}>
+                                        {children}
+                                    </Suspense>
                                 </PageTransition>
                             </div>
                         </main>
@@ -58,6 +60,7 @@ export default function AppLayout({
                 {/* Global Modals & Listeners */}
                 <CommandCenter />
                 <OracleChatbot />
+                <GlobalHelp />
                 <ArbNotificationBanner />
                 <MobileNav />
             </div>

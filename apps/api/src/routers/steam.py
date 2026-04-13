@@ -1,15 +1,13 @@
-class AsyncSession: pass
 # apps/api/src/routers/steam.py
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Query, Depends
 from typing import Optional
-from db.session import get_async_db
-from services.steam_service import steam_service
+from db.session import get_db, get_async_db
 from datetime import datetime, timedelta, timezone
 
 router = APIRouter(tags=["steam"])
 
 # In-memory store for deduplication across requests
-steam_log: list = []
 
 @router.get("")
 @router.get("/alerts")
@@ -18,42 +16,36 @@ async def steam_alerts(
     db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Returns live steam and sharp money alerts with server-side deduplication.
+    Returns live steam alerts from the persistent steam_events table.
     """
-    global steam_log
-    new_alerts = await steam_service.detect_and_persist_steam(sport, db)
+    from models.brain import SteamEvent
+    from sqlalchemy import select, desc
     
-    # 1. Update in-memory log with new alerts
-    now = datetime.now(timezone.utc)
-    for alert in new_alerts:
-        alert["detected_at"] = now
-        steam_log.append(alert)
-        
-    # 2. Cleanup: Only keep last 30 minutes of history
-    cutoff = now - timedelta(minutes=30)
-    steam_log = [a for a in steam_log if a.get("detected_at", now) > cutoff]
+    stmt = select(SteamEvent).where(SteamEvent.sport == sport)
+    stmt = stmt.where(SteamEvent.timestamp >= datetime.now(timezone.utc) - timedelta(hours=24))
+    stmt = stmt.order_by(desc(SteamEvent.timestamp)).limit(20)
     
-    # 3. Server-side dedupe by fingerprint (player-line-side-minute)
-    seen = set()
-    unique = []
-    # Process newest first to keep latest metadata if any
-    for alert in sorted(steam_log, key=lambda x: x.get("detected_at", now), reverse=True):
-        time_key = alert.get("detected_at").strftime("%H:%M")
-        fingerprint = f"{alert.get('player_name', 'Unknown')}-{alert.get('line', '0')}-{alert.get('side', 'over')}-{time_key}"
-        if fingerprint not in seen:
-            seen.add(fingerprint)
-            unique.append(alert)
+    result = await db.execute(stmt)
+    events = result.scalars().all()
+    
+    # Map to expected frontend format
+    alerts = []
+    for e in events:
+        alerts.append({
+            "player_name": e.player_name,
+            "stat_type": e.stat_type,
+            "side": e.side,
+            "line": float(e.line) if e.line else 0.0,
+            "movement": float(e.movement) if e.movement else 0.0,
+            "severity": float(e.severity) if e.severity else 0.0,
+            "description": e.description,
+            "detected_at": e.timestamp.isoformat() if e.timestamp else None,
+            "book_count": e.book_count
+        })
 
     return {
-        "alerts": unique[:20],  # Return last 20 unique alerts
-        "total": len(unique),
-        "tracked_props": len(steam_service.line_history),
+        "alerts": alerts,
+        "total": len(alerts),
         "sport": sport,
+        "status": "success"
     }
-
-@router.get("/history/{player_key}")
-async def line_history_for_player(player_key: str):
-    """
-    Returns the snapshot history for a specific player/prop key.
-    """
-    return steam_service.line_history.get(player_key, [])

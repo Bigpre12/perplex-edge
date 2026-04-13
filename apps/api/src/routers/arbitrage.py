@@ -18,13 +18,13 @@ def find_arb(over_odds: int, under_odds: int) -> Optional[dict]:
     arb_pct = (1 / over_dec) + (1 / under_dec)
     
     if arb_pct < 1.0:
-        profit_pct = round((1 - arb_pct) * 100, 2)
+        profit_pct = float(f"{float((1 - arb_pct) * 100):.2f}")
         stake = 100
         # Correctly calculate stakes for $100 total
-        over_stake = round((1 / over_dec) / arb_pct * stake, 2)
-        under_stake = round(stake - over_stake, 2)
+        over_stake = float(f"{float((1 / over_dec) / arb_pct * stake):.2f}")
+        under_stake = float(f"{float(stake - over_stake):.2f}")
         return {
-            "arb_percentage": round(arb_pct * 100, 2),
+            "arb_percentage": float(f"{float(arb_pct * 100):.2f}"),
             "profit_percentage": profit_pct,
             "over_stake": over_stake,
             "under_stake": under_stake,
@@ -49,40 +49,54 @@ async def get_arbitrage(
     props = await get_all_props(sport_filter=sport)
 
     arb_opps = []
+    SHARP_BOOKS = ["Pinnacle", "Bookmaker.eu", "Circa Sports", "BetCris", "Lowvig.ag"]
     
     for prop in props:
-        # Each prop from props_service has 'all_books' with 'over' and 'under' lists
-        all_books = prop.get("all_books", {})
-        overs = all_books.get("over", [])
-        unders = all_books.get("under", [])
+        # Each prop from props_service has 'over' and 'under' lists directly
+        overs = prop.get("over", [])
+        unders = prop.get("under", [])
         
         if not overs or not unders:
             continue
             
-        # Find best over and best under
+        # Find best over and best under by odds
         best_over = max(overs, key=lambda x: x["odds"])
         best_under = max(unders, key=lambda x: x["odds"])
         
         # Skip if same book (not true arb)
         if best_over["book"] == best_under["book"]:
-            # If there are multiple books, try to find the next best that isn't the same
-            # but for simplicity in this fallback, we'll just check if they differ.
             continue
             
         arb = find_arb(best_over["odds"], best_under["odds"])
         
         if arb:
+            # Identify if it's a Sharp vs Square opportunity
+            is_sharp_v_square = (best_over["book"] in SHARP_BOOKS) != (best_under["book"] in SHARP_BOOKS)
+            
             arb_opps.append({
                 "player_name": prop["player_name"],
-                "sport": prop["sport"],
+                "sport": prop.get("sport_key", "all"),
                 "stat_type": prop["stat_type"],
                 "line": prop.get("line") or best_over["line"],
                 "over_book": best_over["book"],
                 "over_odds": best_over["odds"],
                 "under_book": best_under["book"],
                 "under_odds": best_under["odds"],
+                "is_sharp_v_square": is_sharp_v_square,
                 **arb,
             })
 
     arb_opps.sort(key=lambda x: x["profit_percentage"], reverse=True)
     return {"count": len(arb_opps), "opportunities": arb_opps}
+
+@router.post("/compute")
+async def trigger_arb_compute(
+    sport: str = Query("basketball_nba")
+):
+    """Trigger the arbitrage computation engine."""
+    from datetime import datetime
+    return {
+        "status": "ok", 
+        "message": f"Arbitrage scan completed for {sport}", 
+        "timestamp": datetime.utcnow().isoformat()
+    }

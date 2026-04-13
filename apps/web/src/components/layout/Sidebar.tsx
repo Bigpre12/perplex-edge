@@ -7,6 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useFreshness } from '@/hooks/useFreshness';
 import { useSport } from '@/context/SportContext';
 import { formatDistanceToNow } from 'date-fns';
+import { safeDate } from '@/lib/dateUtils';
 import { 
     Home, 
     Target, 
@@ -16,8 +17,14 @@ import {
     Activity, 
     TrendingUp, 
     Diamond, 
-    Settings 
+    Settings,
+    ArrowRightLeft,
+    TrendingDown,
+    History,
+    CloudOff,
+    Loader2
 } from 'lucide-react';
+import { useLucrixStore } from '@/store';
 
 export default function Sidebar() {
     const { tier } = useSubscription();
@@ -31,18 +38,35 @@ export default function Sidebar() {
     }, [pathname]);
 
     const { selectedSport } = useSport();
-    const freshness = useFreshness(selectedSport);
+    const { data: freshness, isLoading } = useFreshness(selectedSport);
+    const { backendOnline, isConnecting } = useLucrixStore();
+    const [scanningTimedOut, setScanningTimedOut] = useState(false);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (isLoading || !freshness?.last_odds_update) {
+            timer = setTimeout(() => {
+                setScanningTimedOut(true);
+            }, 10000);
+        } else {
+            setScanningTimedOut(false);
+        }
+        return () => clearTimeout(timer);
+    }, [isLoading, freshness]);
 
     // Navigation items based on spec
     const navItems = [
         { href: "/", icon: <Home size={20} />, label: "Home" },
-        { href: "/props", icon: <Target size={20} />, label: "Props" },
+        { href: "/player-props", icon: <Target size={20} />, label: "Props" },
         { href: "/ev", icon: <Zap size={20} />, label: "EV+" },
         { href: "/sharp", icon: <Zap size={20} />, label: "Sharp" },
         { href: "/hit-rate", icon: <BarChart2 size={20} />, label: "Hit Rate" },
         { href: "/parlays", icon: <LinkIcon size={20} />, label: "Parlay" },
         { href: "/live", icon: <Activity size={20} />, label: "Live", showLiveDot: true },
         { href: "/line-movement", icon: <TrendingUp size={20} />, label: "Move" },
+        { href: "/arbitrage", icon: <ArrowRightLeft size={20} />, label: "Arb" },
+        { href: "/whale", icon: <TrendingDown size={20} />, label: "Whale" },
+        { href: "/props-history", icon: <History size={20} />, label: "History" },
         { href: "/kalshi", icon: <Diamond size={20} />, label: "Kalshi", badge: "ELITE" },
         { href: "/settings", icon: <Settings size={20} />, label: "Settings" },
     ];
@@ -95,10 +119,26 @@ export default function Sidebar() {
             {/* Bottom Footer Info */}
             <div className="p-4 border-t border-lucrix-border flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-bold text-textMuted tracking-wider">Data Freshness</span>
-                </div>
-                <div className="text-brand-success font-mono text-xs font-medium">
-                    ODDS · {freshness?.odds_last_updated ? formatDistanceToNow(new Date(freshness.odds_last_updated), { addSuffix: true }).replace('about ', '') : 'Scanning...'}
+                    {isConnecting ? (
+                        <div className="text-amber-500 font-mono text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-1.5">
+                            <Loader2 size={10} className="animate-spin" /> Connecting...
+                        </div>
+                    ) : !backendOnline ? (
+                        <div className="text-brand-danger font-mono text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                            <CloudOff size={10} /> Backend Offline
+                        </div>
+                    ) : isLoading || (!freshness?.last_odds_update && !scanningTimedOut) ? (
+                        <div className="text-brand-cyan font-mono text-[10px] font-black uppercase tracking-widest animate-pulse flex items-center gap-1.5">
+                            <Loader2 size={10} className="animate-spin" /> Scanning...
+                        </div>
+                    ) : (
+                        <div className="text-brand-success font-mono text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-success animate-pulse" />
+                            ODDS · {safeDate(freshness?.last_odds_update) 
+                                ? formatDistanceToNow(safeDate(freshness?.last_odds_update)!, { addSuffix: true }).replace('about ', '') 
+                                : (scanningTimedOut ? 'LATENCY DETECTED' : 'SCANNING...')}
+                        </div>
+                    )}
                 </div>
                 <div className="text-textMuted font-mono text-[10px] mt-2">
                     v2.1.0

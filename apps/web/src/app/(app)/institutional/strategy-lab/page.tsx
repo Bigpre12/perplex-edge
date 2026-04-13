@@ -14,7 +14,7 @@ import {
     Line,
     LineChart as RechartLine
 } from "recharts";
-import { api, isApiError } from "@/lib/api";
+import API, { api, isApiError } from "@/lib/api";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 
@@ -34,7 +34,7 @@ function StrategyContent() {
         setLoading(true);
         setError(null);
         try {
-            const data = await api.backtestRun({
+            const data = await API.backtestRun({
                 ...params,
                 start_date: new Date(Date.now() - params.days * 24 * 60 * 60 * 1000).toISOString()
             });
@@ -152,16 +152,8 @@ function StrategyContent() {
                             </div>
 
                             {/* Equity Curve Chart */}
-                            <div className="glass-panel p-8 rounded-3xl border-white/[0.05] h-[450px]">
-                                <div className="flex items-center justify-between mb-8">
-                                    <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase italic tracking-widest">
-                                        <TrendingUp size={18} className="text-primary" /> Equity Curve Simulation
-                                    </h3>
-                                    <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500">
-                                        <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-primary/30"></span> Bankroll Path</span>
-                                    </div>
-                                </div>
-                                <ResponsiveContainer width="100%" height="85%">
+                            <div className="h-[450px] w-full min-w-0">
+                                    <ResponsiveContainer width="100%" height="85%" minHeight={1} minWidth={1}>
                                     <AreaChart data={backtestResult.equity_curve}>
                                         <defs>
                                             <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">

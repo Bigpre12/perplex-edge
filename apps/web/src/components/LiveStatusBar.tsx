@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import { useLucrixStore } from '@/store';
-import { api } from '@/lib/api';
+import API, { api } from '@/lib/api';
 
 interface LiveStatusBarProps {
     lastUpdated?: Date | null;
@@ -31,8 +31,13 @@ export default function LiveStatusBar({
         const check = async () => {
             const start = Date.now();
             try {
-                const res = await api.health();
-                if (res && !('error' in res)) {
+                const res = await API.health();
+                const isHealthy = 
+                    res?.status === "healthy" || 
+                    res?.status === "ok" ||
+                    res?.system_status === "ONLINE";
+                
+                if (isHealthy) {
                     setLatency(Date.now() - start);
                     setBackendOnline(true);
                 } else {

@@ -3,51 +3,35 @@ import { useHealthMonitor } from "@/hooks/useHealthMonitor";
 import { useLucrixStore } from "@/store";
 
 export default function HealthCheck() {
-    const { check } = useHealthMonitor();
-    const { backendOnline } = useLucrixStore();
+    const { checkNow } = useHealthMonitor();
+    const { backendOnline, isConnecting } = useLucrixStore();
 
     if (backendOnline) return null;
 
+    if (isConnecting) {
+        return (
+            <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-950/95 text-amber-400 px-5 py-3 text-center text-[13px] font-bold border-b border-amber-400/20 backdrop-blur-md flex items-center justify-center gap-[15px]">
+                <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-amber-400 rounded-full inline-block animate-pulse"></span>
+                    🔶 CONNECTING... (Cold Start Grace Period)
+                </span>
+                <div className="text-[10px] uppercase font-black tracking-widest opacity-60 italic shrink-0">Waking Railway Backend</div>
+            </div>
+        );
+    }
+
     return (
-        <div style={{
-            position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999,
-            background: "rgba(127, 29, 29, 0.95)", color: "#f87171",
-            padding: "12px 20px", textAlign: "center",
-            fontSize: "13px", fontWeight: 700,
-            borderBottom: "1px solid rgba(248, 113, 113, 0.2)",
-            backdropFilter: "blur(10px)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: "15px"
-        }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{
-                    width: "8px", height: "8px", background: "#f87171",
-                    borderRadius: "50%", display: "inline-block",
-                    animation: "pulse 2s infinite"
-                }}></span>
-                🔴 Backend offline — Start your FastAPI server: cd backend && python -m uvicorn app.main:app --reload --port 8000
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-red-950/95 text-red-400 px-5 py-3 text-center text-[13px] font-bold border-b border-red-400/20 backdrop-blur-md flex items-center justify-center gap-[15px]">
+            <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-red-400 rounded-full inline-block animate-pulse"></span>
+                🔴 Backend offline — Critical connection lost.
             </span>
             <button
-                onClick={() => check()}
-                style={{
-                    background: "#f87171", color: "#450a0a",
-                    border: "none", borderRadius: "6px",
-                    padding: "4px 12px", fontSize: "11px",
-                    fontWeight: 800, cursor: "pointer",
-                    textTransform: "uppercase", letterSpacing: "0.05em",
-                    transition: "all 0.2s ease"
-                }}
-                onMouseOver={(e) => e.currentTarget.style.opacity = "0.8"}
-                onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
+                onClick={() => checkNow()}
+                className="bg-red-400 text-red-950 border-none rounded-md px-3 py-1 text-[11px] font-extrabold cursor-pointer uppercase tracking-wider transition-all duration-200 hover:opacity-80 active:scale-95"
             >
-                Retry Request
+                Force Retry
             </button>
-            <style>{`
-                @keyframes pulse {
-                    0% { transform: scale(0.95); opacity: 0.5; }
-                    50% { transform: scale(1.05); opacity: 1; }
-                    100% { transform: scale(0.95); opacity: 0.5; }
-                }
-            `}</style>
         </div>
     );
 }

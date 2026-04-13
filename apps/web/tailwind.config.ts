@@ -28,6 +28,8 @@ const config: Config = {
           warning: '#FFB800',
           danger: '#FF4466',
         },
+        primary: '#6C63FF', // Alias for brand.purple
+        'brand-primary': '#6C63FF', // Alias for brand.purple
         background: "var(--background)",
         foreground: "var(--foreground)",
         textPrimary: '#FFFFFF',

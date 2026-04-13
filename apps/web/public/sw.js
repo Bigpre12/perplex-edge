@@ -1,15 +1,15 @@
-// sw.js — LUCRIX Service Worker v2
-const CACHE_NAME = "lucrix-cache-v2";
+// sw.js — LUCRIX Service Worker v3
+const CACHE_NAME = "lucrix-cache-v3";
 
 // ── Install ──────────────────────────────────────────────
 self.addEventListener("install", (event) => {
-    console.log("[SW] Installing...");
+    console.log("[SW] Installing v3...");
     self.skipWaiting();
 });
 
 // ── Activate ─────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
-    console.log("[SW] Activating...");
+    console.log("[SW] Activating v3...");
     event.waitUntil(
         caches.keys().then((keys) =>
             Promise.all(
@@ -27,24 +27,39 @@ self.addEventListener("fetch", (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // ✅ NEVER intercept — pass straight through to network
+    // 1. Navigation requests (HTML pages) should ALWAYS be Network-First.
+    // This prevents stale index.html from pointing to deleted _next chunks.
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request).catch(async () => {
+                const cache = await caches.open(CACHE_NAME);
+                const cachedResponse = await cache.match(request);
+                return cachedResponse || new Response("Offline - Content Unavailable", {
+                    status: 503,
+                    statusText: "Service Unavailable",
+                    headers: { "Content-Type": "text/html" }
+                });
+            })
+        );
+        return;
+    }
+
+    // 2. ✅ NEVER intercept — pass straight through to network
     const skipPatterns = [
         url.port === "8000",                          // FastAPI backend
         url.pathname.startsWith("/api/"),             // API routes
-        url.pathname.startsWith("/_next/"),           // Next.js internals
+        url.pathname.startsWith("/_next/"),           // Next.js internals (already hashed)
         url.pathname.includes("hot-update"),          // HMR
         url.pathname.includes("webpack"),             // Webpack
-        url.hostname !== self.location.hostname,      // External URLs (ESPN, Odds API)
+        url.hostname !== self.location.hostname,      // External URLs
         request.method !== "GET",                     // POST/PUT/DELETE
     ];
 
     if (skipPatterns.some(Boolean)) {
-        // Pass through — do NOT intercept. Let browser handle it natively.
-        // This prevents "Failed to convert value to 'Response'" errors when SW fetch fails.
         return;
     }
 
-    // For static assets only — cache then network
+    // 3. For static assets (images, fonts) — Cache First with Network Fallback
     event.respondWith(
         (async () => {
             const cache = await caches.open(CACHE_NAME);
@@ -53,7 +68,7 @@ self.addEventListener("fetch", (event) => {
 
             try {
                 const response = await fetch(request);
-                // Only cache valid same-origin responses
+                // Only cache valid same-origin GET responses
                 if (
                     response &&
                     response.status === 200 &&
@@ -64,13 +79,9 @@ self.addEventListener("fetch", (event) => {
                 return response;
             } catch (err) {
                 console.warn("[SW] Fetch failed:", request.url, err);
-                // Return a valid empty response — never reject or return undefined
-                return new Response("Network error - Service Unavailable", {
-                    status: 503,
-                    statusText: "Service Unavailable",
-                    headers: { "Content-Type": "text/plain" },
-                });
+                return new Response("Network error", { status: 408 });
             }
         })()
     );
 });
+

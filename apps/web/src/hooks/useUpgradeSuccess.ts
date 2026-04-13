@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from 'react';
 import { api, isApiError } from '@/lib/api';
 import { useSubscription } from './useSubscription';

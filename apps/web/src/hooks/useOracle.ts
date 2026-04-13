@@ -1,57 +1,71 @@
-import { useState, useCallback } from "react";
-import { api, isApiError } from "@/lib/api";
+"use client";
 
-interface Message {
-    role: "user" | "assistant";
-    content: string;
+import { useState } from "react";
+
+export interface OracleRequest {
+  player: string;
+  market: string;
+  context: string;
+  sport: string;
 }
 
-export function useOracle() {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            role: "assistant",
-            content: "Oracle online. Ask me about tonight's props, sharp money, or parlays. What are you looking at?",
-        },
-    ]);
-    const [loading, setLoading] = useState(false);
+export const useOracle = () => {
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
+  const [lastFullText, setLastFullText] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-    const ask = useCallback(async (input: string, propsContext?: any) => {
-        const userMessage: Message = { role: "user", content: input };
-        const updated = [...messages, userMessage];
-        setMessages(updated);
-        setLoading(true);
+  const sendMessage = async (req: OracleRequest) => {
+    setIsStreaming(true);
+    setStreamingText("");
+    setError(null);
+    
+    try {
+      const response = await fetch("/api/oracle/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          messages: [{ role: "user", content: req.context || `${req.player} - ${req.market}` }],
+          sport: req.sport || "basketball_nba" 
+        }),
+      });
 
-        try {
-            const res = await api.oracle({
-                messages: updated,
-                propsContext,
-            });
+      if (!response.ok) throw new Error("Oracle is temporarily offline.");
 
-            if (!isApiError(res)) {
-                setMessages((prev) => [
-                    ...prev,
-                    { role: "assistant", content: res.message },
-                ]);
-            } else {
-                throw new Error(res.message);
-            }
-        } catch {
-            setMessages((prev) => [
-                ...prev,
-                { role: "assistant", content: "Connection lost. Try again." },
-            ]);
-        } finally {
-            setLoading(false);
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n\n").filter(Boolean);
+        
+        for (const line of lines) {
+          const data = line.replace("data: ", "");
+          if (data === "[DONE]") {
+            setIsStreaming(false);
+            setLastFullText(fullText);
+            break;
+          }
+          fullText += data;
+          setStreamingText(fullText);
         }
-    }, [messages]);
+      }
+    } catch (err: any) {
+      setError(err.message || "Quantum synchronization failure.");
+      setIsStreaming(false);
+    }
+  };
 
-    const reset = () =>
-        setMessages([
-            {
-                role: "assistant",
-                content: "Oracle online. Ask me about tonight's props, sharp money, or parlays. What are you looking at?",
-            },
-        ]);
-
-    return { messages, loading, ask, reset };
-}
+  return {
+    sendMessage,
+    isStreaming,
+    streamingText,
+    lastFullText,
+    error,
+    isPending: isStreaming, // backwards compatibility
+  };
+};

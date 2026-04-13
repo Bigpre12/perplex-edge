@@ -1,224 +1,390 @@
-import { API_BASE, API_HOST } from "./apiConfig";
+import axios from 'axios';
+import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
+const isServer = typeof window === 'undefined';
 
-const API_BASE_URL = API_BASE;
+// --- CONFIGURATION ---
+const PROD_URL = "https://perplex-edge-backend-copy-production.up.railway.app";
+const LOCAL_URL = "http://localhost:8000";
 
-type QueryValue = string | number | boolean | undefined | null;
+// On server, we need the full URL. On client, we use the /backend proxy for better CORS/SSL support.
+const rawUrl = (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL : null) || PROD_URL;
+let configuredUrl = rawUrl;
 
-export const unwrap = (d: any): any => {
-    if (!d || isApiError(d)) return [];
-    if (Array.isArray(d)) return d;
-    return d.data || d.results || d.items || d.props || d.games || d.decisions || d.injuries || d.alerts || d;
-};
-
-function buildUrl(path: string, params?: Record<string, QueryValue>) {
-    const base = API_BASE;
-
-    // In the browser we intentionally use relative `/api/*` so Next rewrites can proxy.
-    if (!base) {
-        if (!params) return path;
-        const sp = new URLSearchParams();
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) sp.set(key, String(value));
-        });
-        const qs = sp.toString();
-        return qs ? `${path}?${qs}` : path;
-    }
-
-    // On the server we need an absolute URL.
-    const url = new URL(`${base}${path}`);
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
-        });
-    }
-    return url.toString();
+// Sanity check: Ensure we don't use localhost in production mode on the server
+if (isServer && process.env.NODE_ENV === "production" && configuredUrl.includes("localhost")) {
+    configuredUrl = PROD_URL;
 }
 
-let failureCount = 0;
-let lastFailureTime = 0;
-const BREAKER_THRESHOLD = 5;
-const BREAKER_COOLDOWN = 30000; // 30s
+export const API_BASE = isServer ? configuredUrl : "/backend";
+const API_URL = isServer ? configuredUrl : "/backend";
 
-async function request<T = any>(
-    path: string,
-    options?: RequestInit,
-    params?: Record<string, QueryValue>
-): Promise<T | Error> {
-    // Circuit Breaker Logic
-    if (failureCount >= BREAKER_THRESHOLD) {
-        const now = Date.now();
-        if (now - lastFailureTime < BREAKER_COOLDOWN) {
-            return new Error("Circuit breaker is open. Request blocked.");
-        } else {
-            // Half-open: allow one request to test the waters
-            failureCount = BREAKER_THRESHOLD - 1;
-        }
+// WebSocket Base URL: swapping http -> ws, https -> wss
+const wsBase = isServer ? configuredUrl : window.location.origin;
+export const WS_BASE = wsBase.replace('https://', 'wss://').replace('http://', 'ws://');
+export const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Implementation of exponential backoff retry logic (Phase 1)
+api.interceptors.response.use(
+  (response) => response,
+  async (error: any) => {
+    const config = error.config;
+    if (!config) return Promise.reject(error);
+
+    // Initialize retry count
+    config._retryCount = config._retryCount || 0;
+
+    // Only retry on network errors or 5xx server errors
+    const isNetworkError = !error.response;
+    const isServerError = error.response && error.response.status >= 500 && error.response.status <= 599;
+
+    // Check for circuit breaker or auth errors specifically - DO NOT retry these
+    const errorMessage = error?.response?.data?.error || '';
+    const isAuthRelatedError = error.response && (error.response.status === 401 || error.response.status === 403);
+    const isCircuitBreakerError = errorMessage.includes('Circuit breaker') || errorMessage.includes('authentication');
+
+    if ((isNetworkError || isServerError) && !isAuthRelatedError && !isCircuitBreakerError && config._retryCount < 3) {
+      config._retryCount += 1;
+      
+      // Exponential backoff: 1s, 2s, 4s
+      const backoffDelay = Math.pow(2, config._retryCount - 1) * 1000;
+      console.warn(`[API Retry] ${config.url} failed. Attempt ${config._retryCount}/3 in ${backoffDelay}ms...`);
+      
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      return api(config);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Automatically inject JWT token from localStorage or environment key into every request
+api.interceptors.request.use((config: any) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY) || process.env.NEXT_PUBLIC_API_KEY;
+    if (token) {
+      // Ensure strictly Bearer format
+      config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
     }
 
+    // Dev-only warning for missing auth header
+    if (process.env.NODE_ENV === 'development' && !config.headers.Authorization && !config.url?.includes('/api/auth/')) {
+        console.warn('[API] Missing auth header on', config.url);
+    }
+  }
+  return config;
+}, (error: any) => {
+  return Promise.reject(error);
+});
+// Automatically handle 401 Unauthorized by clearing session and redirecting
+// But NOT on auth pages (login, signup, etc.) to prevent redirect loops
+api.interceptors.response.use((response: any) => {
+  return response;
+}, (error: any) => {
+  const AUTH_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'];
+  const isOnAuthPage = typeof window !== 'undefined' && AUTH_PATHS.some(p => window.location.pathname.startsWith(p));
+  if (error.response && error.response.status === 401 && !isOnAuthPage) {
+    console.warn('Authentication expired (401). Clearing session and redirecting...');
+    handleUnauthorized();
+  }
+  return Promise.reject(error);
+});
+// Augment the axios instance with methods expected by various components
+(api as any).auth = {
+  login: async (credentials: any) => {
+    const { data } = await api.post('/api/auth/login', credentials);
+    return data;
+  },
+  signup: async (userData: any) => {
+    const { data } = await api.post('/api/auth/signup', userData);
+    return data;
+  },
+  forgotPassword: async (payload: any) => {
+    const { data } = await api.post('/api/auth/forgot-password', payload);
+    return data;
+  },
+  resetPassword: async (payload: any) => {
+    const { data } = await api.post('/api/auth/reset-password', payload);
+    return data;
+  }
+};
+(api as any).adminStats = async (email: string) => {
+  const { data } = await api.get(`/api/admin/stats?email=${email}`);
+  return data;
+};
+(api as any).simulate = async (legs: any[], sims = 100, trials = 10000) => {
+  const { data } = await api.post('/api/parlays/simulate', { legs, n_sims: trials });
+  return data;
+};
+(api as any).buildParlay = async (sport: string) => {
+  const { data } = await api.get(`/api/oracle/build-parlay`, { params: { sport } });
+  return data;
+};
+(api as any).ledgerMyBets = async () => {
+  const { data } = await api.get('/api/bets/my');
+  return data;
+};
+(api as any).ledgerStats = async () => {
+  const { data } = await api.get('/api/bets/stats');
+  return data;
+};
+(api as any).ledgerCreateBet = async (betData: any) => {
+  const { data } = await api.post('/api/bets', betData);
+  return data;
+};
+(api as any).socialShare = async (shareData: any) => {
+  const { data } = await api.post('/api/social/share', shareData);
+  return data;
+};
+// Helper for error handling
+export const handleApiError = (error: any) => {
+  console.error('API Error:', error.response?.data || error.message);
+  return error.response?.data || { detail: 'An unexpected error occurred' };
+};
+export const isApiError = (data: any) => {
+  return !data || data.detail || data.error || data.message === 'error';
+};
+export const unwrap = (d: any): any[] => {
+  if (!d) return [];
+  if (Array.isArray(d)) return d;
+  const nested = d.data || d.results || d.items || d.props || d.games || d.edges || d.alerts || d.injuries || d.decisions || d.news || d.moves || [];
+  return Array.isArray(nested) ? nested : [];
+};
+// Legacy API methods needed by dashboard and hooks
+export const API = {
+  auth: {
+    login: async (credentials: any) => {
+      try {
+        const { data } = await api.post('/api/auth/login', credentials);
+        return data;
+      } catch (err) {
+        return handleApiError(err);
+      }
+    },
+    signup: async (userData: any) => {
+      try {
+        const { data } = await api.post('/api/auth/signup', userData);
+        return data;
+      } catch (err) {
+        return handleApiError(err);
+      }
+    },
+    forgotPassword: async (payload: any) => {
+      try {
+        const { data } = await api.post('/api/auth/forgot-password', payload);
+        return data;
+      } catch (err) {
+        return handleApiError(err);
+      }
+    },
+    resetPassword: async (payload: any) => {
+      try {
+        const { data } = await api.post('/api/auth/reset-password', payload);
+        return data;
+      } catch (err) {
+        return handleApiError(err);
+      }
+    }
+  },
+  brain: {
+    status: async () => {
+      try {
+        const { data } = await api.get('/api/brain');
+        return data;
+      } catch (err) { return handleApiError(err); }
+    },
+    decisions: async (sport?: string) => {
+      try {
+        const { data } = await api.get(sport ? `/api/brain/decisions?sport=${sport}` : '/api/brain/decisions');
+        return data;
+      } catch (err) { return handleApiError(err); }
+    },
+    metrics: async () => {
+      try {
+        const { data } = await api.get('/api/brain/metrics');
+        return data;
+      } catch (err) { return handleApiError(err); }
+    }
+  },
+  ev: {
+    top: async (sport?: string, limit = 10) => {
+      try {
+        const { data } = await api.get(`/api/ev/top?sport=${sport || ''}&limit=${limit}`);
+        return data;
+      } catch (err) { return handleApiError(err); }
+    }
+  },
+  signals: {
+    freshness: async (sport?: string) => {
+      try {
+        const { data } = await api.get(`/api/signals/freshness?sport=${sport || ''}`);
+        return data;
+      } catch (err) { return handleApiError(err); }
+    }
+  },
+  props: async (sport?: string) => {
     try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
-        
-        const res = await fetch(buildUrl(path, params), {
-            headers: {
-                "Content-Type": "application/json",
-                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-                ...(options?.headers || {}),
-            },
-            ...options,
-        });
-
-        if (!res.ok) {
-            failureCount++;
-            lastFailureTime = Date.now();
-            const text = await res.text();
-            let errorMessage = `${res.status} ${res.statusText}`;
-            try {
-                const json = JSON.parse(text);
-                errorMessage = json.detail || json.message || errorMessage;
-            } catch {
-                if (text && text.length < 100) errorMessage = text;
-            }
-            return new Error(errorMessage);
-        }
-
-        failureCount = 0; // Success! Reset breaker
-        return await res.json();
-    } catch (e: any) {
-        failureCount++;
-        lastFailureTime = Date.now();
-        return e instanceof Error ? e : new Error(String(e));
+      const { data } = await api.get(sport ? `/api/props/graded?sport=${sport}` : '/api/props/graded');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  propsScored: async (sport?: string, limit = 50) => {
+    try {
+      const { data } = await api.get(`/api/props/scored?sport=${sport || ''}&limit=${limit}`);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  injuries: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/injuries?sport=${sport}` : '/api/injuries');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  news: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/news?sport=${sport}` : '/api/news');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  lineMovement: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/line-movement?sport=${sport}` : '/api/line-movement');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  health: async () => {
+    try {
+      const { data } = await api.get('/api/health', { params: { t: Date.now() } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  metrics: async () => {
+    try {
+      const { data } = await api.get('/api/brain/metrics');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  brainMetrics: async () => {
+    try {
+      const { data } = await api.get('/api/brain/metrics');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  recentIntel: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/intel?sport=${sport}` : '/api/intel');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  alerts: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
+      return data;
+    } catch (err) {
+      return { alerts: [], total: 0, status: 'unavailable', sport: sport || 'all' };
     }
-}
-
-export function isApiError(val: any): val is Error {
-    return val instanceof Error || (val && typeof val === 'object' && ('error' in val || 'detail' in val));
-}
-
-export const api = {
-    // Generic
-    get: <T = any>(path: string, params?: Record<string, QueryValue>) =>
-        request<T>(path, { method: "GET" }, params),
-    post: <T = any>(path: string, body?: any, params?: Record<string, QueryValue>) =>
-        request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }, params),
-    
-    // Core
-    health: () => request("/api/health"),
-    meta: {
-        health: () => request("/api/meta/health"),
-        summary: () => request("/api/meta/summary"),
-    },
-    auth: {
-        me: () => request("/api/auth/me"),
-        login: (creds: any) => request("/api/auth/login", { method: "POST", body: JSON.stringify(creds) }),
-    },
-
-    // Models
-    props: (sport = "basketball_nba", limit = 25) =>
-        request("/api/props", undefined, { sport, limit }),
-    propsScored: (sport = "basketball_nba", limit = 50) =>
-        request("/api/props/scored", undefined, { sport, limit }),
-
-    // Intel & Signals
-    ev: {
-        top: (sport = "basketball_nba", limit = 50) =>
-            request("/api/ev/ev-top", undefined, { sport, limit }),
-        scanner: (sport = "basketball_nba") =>
-            request("/api/ev/", undefined, { sport }),
-    },
-    clv: (sport = "basketball_nba") =>
-        request("/api/clv/", undefined, { sport }),
-    signals: {
-        sharp: (sport = "basketball_nba") =>
-            request("/api/signals/sharp-moves", undefined, { sport }),
-        scanner: (sport = "basketball_nba") =>
-            request("/api/ev/ev-top", undefined, { sport }),
-    },
-    wsEv: API_HOST.replace(/^http/, 'ws'),
-
-    // Features
-    injuries: (sport = "basketball_nba") =>
-        request("/api/injuries", undefined, { sport }),
-    news: (sport = "basketball_nba") =>
-        request("/api/news", undefined, { sport }),
-    lineMovement: (sport = "basketball_nba") =>
-        request("/api/lines", undefined, { sport }),
-    liveGames: (sport = "basketball_nba") =>
-        request("/api/live/games", undefined, { sport }),
-    
-    // Intelligence Tier Aliases (for useBrainData etc)
-    recentIntel: (sport = "basketball_nba") =>
-        request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
-    
-    // Misc
-    metrics: () => request("/api/metrics"),
-    picksStats: () => request("/api/metrics/picks-stats"),
-    hitRate: (sport = "all") => request("/api/hit-rate", undefined, { sport }),
-    whale: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
-    parlay: (sport = "basketball_nba") => request("/api/parlay", undefined, { sport }),
-    steam: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
-    search: (q: string) => request("/api/search", undefined, { q }),
-    ledgerMyBets: () => request("/api/bets"),
-    ledgerStats: (sport = "all") => request("/api/bets/stats", undefined, { sport }),
-    socialShare: (data: any, token: string) => request("/api/meta/share", { method: "POST", body: JSON.stringify(data), headers: { "Authorization": `Bearer ${token}` } }),
-
-    // Brain
-    brain: {
-        status: () => request("/api/brain/brain-status"),
-        metrics: () => request("/api/metrics"), // Added alias for useBrainData
-        decisions: (sport = "basketball_nba") => 
-            request("/api/brain/decisions", undefined, { sport }),
-        parlays: (sport = "basketball_nba") =>
-            request("/api/brain/parlay-builder", undefined, { sport }),
-    },
-
-    // Legacy Aliases for Component Backward Compatibility
-    authMe: () => request("/api/auth/me"),
-    evTop: (sport = "basketball_nba", limit = 50) => request("/api/ev/ev-top", undefined, { sport, limit }),
-    getEV: (sport = "basketball_nba", limit = 50) => request("/api/ev/ev-top", undefined, { sport, limit }),
-    getProps: (sport = "basketball_nba", limit = 25) => request("/api/props", undefined, { sport, limit }),
-    brainMetrics: () => request("/api/metrics"),
-    getHealth: () => request("/api/health"),
-    activeMoves: (sport = "basketball_nba") => request("/api/whale", undefined, { sport }),
-    steamAlerts: (sport = "basketball_nba") => request("/api/steam", undefined, { sport }),
-    alerts: (sport = "basketball_nba") => request("/api/intel/ev-top", undefined, { sport, limit: 10 }),
-    wsBaseUrl: API_HOST.replace(/^http/, 'ws'),
-    wsOdds: `${API_HOST.replace(/^http/, 'ws')}/api/ev/ws`,
-    wsKalshi: `${API_HOST.replace(/^http/, 'ws')}/api/kalshi/ws`,
-    share: () => "/api/meta/share",
-    reportingExport: (format: string) => `/api/metrics/export?format=${format}`,
-
-    // Institutional / Execution
-    authKeys: () => request("/api/auth/keys"),
-    generateKey: (label: string) =>
-        request("/api/auth/keys", { method: "POST", body: JSON.stringify({ label }) }),
-    updateWebhooks: (data: any) =>
-        request("/api/settings/webhooks", { method: "POST", body: JSON.stringify(data) }),
-    edgeConfig: () => request("/api/settings/edge-config"),
-    saveEdgeConfig: (config: any) =>
-        request("/api/settings/edge-config", { method: "POST", body: JSON.stringify(config) }),
-    backtestRun: (params: any) =>
-        request("/api/backtest/run", { method: "POST", body: JSON.stringify(params) }),
-
-    // Hit Rate & Trends
-    hitRateSummary: (sport = "all") =>
-        request("/api/hit-rate/summary", undefined, { sport }),
-    hitRateByPlayer: (sport = "all", slateOnly = false) =>
-        request("/api/hit-rate/by-player", undefined, { sport, slate_only: slateOnly }),
-    trendHunter: (sport = "basketball_nba", timeframe = "10g") =>
-        request("/api/trends/hunter", undefined, { sport, timeframe }),
+  },
+  authMe: async () => {
+    try {
+      const { data } = await api.get('/api/auth/me');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  referrals: async () => {
+    try {
+      const { data } = await api.get('/api/referrals');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  hero: async (playerName: string, sport: string) => {
+    try {
+      const { data } = await api.get('/api/hero', { params: { name: playerName, sport } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  whale: async (sport?: string, minUnits = 0) => {
+    try {
+      const { data } = await api.get(`/api/whale`, { params: { sport, min_units: minUnits } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  activeMoves: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
+      return data?.alerts || data || [];
+    } catch (err) { return []; }
+  },
+  evTop: async (sport?: string, limit = 10) => {
+    try {
+      const { data } = await api.get(`/api/ev?sport=${sport || ''}&limit=${limit}`);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  sharpMoves: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/alerts?sport=${sport}` : '/api/alerts');
+      return data;
+    } catch (err) {
+      return { alerts: [], total: 0, status: 'unavailable' };
+    }
+  },
+  hitRateSummary: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/hit-rate?sport=${sport}` : '/api/hit-rate');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  playerTrends: async (playerName: string, statType: string) => {
+    try {
+      const { data } = await api.get(`/api/props/history`, {
+        params: { player_name: playerName, market_key: statType, sport: 'basketball_nba', book: 'draftkings' }
+      });
+      return { history: data };
+    } catch (err) { return { history: [] }; }
+  },
+  mlPredict: async (payload: any) => {
+    try {
+      const { data } = await api.post(`/api/oracle/analyze-prop`, payload);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  buildParlay: async (sport: string) => {
+    try {
+      const { data } = await api.get(`/api/oracle/build-parlay`, { params: { sport } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  ledgerStats: async () => {
+    try {
+      const { data } = await api.get('/api/bets/stats');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  backtestRun: async (payload: any) => {
+    try {
+      const { data } = await api.post('/api/backtest', payload);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  reportingExport: (format: string) => {
+    return `${API_BASE}/api/reporting/export?format=${format}`;
+  },
+  playerProfile: async (playerName: string) => {
+    try {
+      const { data } = await api.get('/api/hero', { params: { name: playerName, sport: 'basketball_nba' } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  wsBaseUrl: isServer ? WS_BASE : (window.location.origin.replace('http', 'ws') + '/backend'),
+  adminStats: async (email: string) => {
+    try {
+      const { data } = await api.get(`/api/admin/stats?email=${email}`);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  }
 };
-
-
-
-export const API = api;
-export const apiFetch = request;
-export default api;
-
-/**
- * Circuit breaker reset — called by useHealthMonitor when the API comes back
- * online. Currently a no-op; extend if a real breaker is added in future.
- */
-export function resetCircuit(): void {
-    failureCount = 0;
-    lastFailureTime = 0;
-}
+export default API;

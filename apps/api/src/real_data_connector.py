@@ -26,6 +26,10 @@ from services.balldontlie_client import balldontlie_client
 from services.thesportsdb_client import thesportsdb_client
 from services.mysportsfeeds_client import mysportsfeeds_client
 from services.sportsgameodds_client import sportsgameodds_client
+from services.api_sports_client import api_sports_client
+from services.sportmonks_client import sportmonks_client
+from services.isports_client import isports_client
+from services.statsbomb_client import statsbomb_client
 from services.sportsgameodds_client import sportsgameodds_client
 
 logger = logging.getLogger(__name__)
@@ -51,22 +55,15 @@ def get_sport_id_local(sport_key: str) -> Optional[int]:
         return None
     return SPORT_KEY_TO_ID.get(sport_key.lower())
 
-# Sport-specific provider routing — determines which fallback chain to use per sport
-STATS_PROVIDER = {
-    "basketball_nba": ["balldontlie", "mysportsfeeds", "espn", "thesportsdb"],
-    "americanfootball_nfl": ["balldontlie", "mysportsfeeds", "espn", "thesportsdb"],
-    "baseball_mlb": ["balldontlie", "mysportsfeeds", "espn", "thesportsdb"],
-    "icehockey_nhl": ["balldontlie", "mysportsfeeds", "espn", "thesportsdb"],
-    "basketball_ncaab": ["balldontlie", "espn", "thesportsdb"],
-    "americanfootball_ncaaf": ["balldontlie", "espn", "thesportsdb"],
-    "basketball_wnba": ["balldontlie", "espn", "thesportsdb"],
-    "tennis_atp": ["espn", "thesportsdb"],
-    "tennis_wta": ["espn", "thesportsdb"],
-    "golf_pga": ["espn", "thesportsdb"],
-    "mma_mixed_martial_arts": ["thesportsdb", "sportsgameodds"],
-    "soccer_epl": ["espn", "thesportsdb"],
-    "soccer_usa_mls": ["espn", "thesportsdb"],
-}
+# Branched Waterfall Logic (Recommended Architecture 2026-04-07)
+# 🏀 US Sports: NBA, NFL, MLB, NHL, NCAAF, NCAAB, WNBA, NCAAW
+# ⚽ Soccer: EPL, MLS, UEFA, etc.
+# 🥊 MMA: UFC, etc.
+
+US_SPORTS = ["basketball_nba", "americanfootball_nfl", "baseball_mlb", "icehockey_nhl", 
+             "basketball_ncaab", "americanfootball_ncaaf", "basketball_wnba", "basketball_ncaaw"]
+SOCCER_SPORTS = ["soccer_epl", "soccer_usa_mls", "soccer_uefa_champions_league"]
+MMA_SPORTS = ["mma_mixed_martial_arts"]
 
 ODDS_PROVIDER = {
     "basketball_nba": ["the_odds_api", "therundown", "sportsgameodds"],
@@ -117,94 +114,40 @@ class RealDataConnector:
             # Wraps around year (e.g., NBA Oct-June)
             return month >= start or month <= end
             
-    async def fetch_games_by_sport(self, sport_key: str) -> List[Dict]:
-        """Fetch live games via full waterfall: Odds API → ESPN → TheSportsDB → TheRundown → BallDontLie → MySportsFeeds → SportsGameOdds"""
-        # === Provider 1: The Odds API (burns credits, has full odds) ===
-        try:
-            raw_games = await odds_api.get_live_odds(sport_key, markets="h2h,spreads,totals")
-            if raw_games:
-                formatted = []
-                for game in raw_games:
-                    start_dt = datetime.fromisoformat(game.get("commence_time", "").replace("Z", "+00:00"))
-                    status = "scheduled" if start_dt > datetime.now(timezone.utc) else "in_progress"
-                    display_name = sport_key.split("_")[1].upper() if "_" in sport_key else sport_key.upper()
-                    formatted.append({
-                        "id": game.get("id"),
-                        "sport_id": get_sport_id_local(sport_key) or 0,
-                        "external_game_id": game.get("id"),
-                        "home_team": game.get("home_team"),
-                        "away_team": game.get("away_team"),
-                        "home_team_name": game.get("home_team"),
-                        "away_team_name": game.get("away_team"),
-                        "sport_name": display_name,
-                        "start_time": start_dt,
-                        "status": status,
-                        "bookmakers_count": len(game.get("bookmakers", [])),
-                        "raw_bookmakers_data": game.get("bookmakers", []),
-                        "source": "odds_api",
-                    })
-                logger.info(f"Waterfall: {len(formatted)} games from Odds API for {sport_key}")
-                return formatted
-        except Exception as e:
-            logger.warning(f"Waterfall: Odds API failed for {sport_key}: {e}")
+    def get_waterfall_chain(self, sport_key: str, data_type: str = "stats") -> List[str]:
+        """
+        Returns the branched waterfall chain based on sport and data type.
+        Hierarchy optimized for US Sports vs International/Specialized.
+        """
+        if data_type == "odds":
+            # Primary Odds Branch: All sports follow this for pricing consistency
+            return ["the_odds_api", "isports_api", "api_sports", "therundown", "sportsgameodds"]
 
-        # === Provider 2: ESPN (free, no key, unlimited, ALL sports) ===
-        try:
-            espn_games = await espn_client.get_scoreboard(sport_key)
-            if espn_games:
-                logger.info(f"Waterfall: {len(espn_games)} games from ESPN for {sport_key}")
-                return espn_games
-        except Exception as e:
-            logger.warning(f"Waterfall: ESPN failed for {sport_key}: {e}")
+        # Stats/Scores Branching
+        if sport_key in US_SPORTS:
+            # 🏀 US Sports: Optimized for BallDontLie integration
+            return ["balldontlie", "api_sports", "thesportsdb", "espn"]
+        
+        if sport_key in SOCCER_SPORTS:
+            # ⚽ Soccer: Optimized for international depth
+            return ["api_sports", "sportmonks", "thesportsdb", "espn"]
 
-        # === Provider 3: TheSportsDB (free, ALL sports incl. UFC) ===
-        try:
-            tsdb_games = await thesportsdb_client.get_events_by_day(sport_key)
-            if tsdb_games:
-                logger.info(f"Waterfall: {len(tsdb_games)} games from TheSportsDB for {sport_key}")
-                return tsdb_games
-        except Exception as e:
-            logger.warning(f"Waterfall: TheSportsDB failed for {sport_key}: {e}")
+        if sport_key in MMA_SPORTS:
+            # 🥊 MMA: Specialized metadata fallback
+            return ["api_sports", "thesportsdb", "espn", "sportsgameodds"]
 
-        # === Provider 4: TheRundown (20k pts/day, major sports) ===
-        try:
-            rundown_games = await therundown_client.get_games(sport_key)
-            if rundown_games:
-                logger.info(f"Waterfall: {len(rundown_games)} games from TheRundown for {sport_key}")
-                return rundown_games
-        except Exception as e:
-            logger.warning(f"Waterfall: TheRundown failed for {sport_key}: {e}")
+        # 🌐 Default Catch-All
+        return ["thesportsdb", "espn"]
 
-        # === Provider 5: BallDontLie (NBA only) ===
-        if "nba" in sport_key:
-            try:
-                bdl_games = await balldontlie_client.get_nba_games()
-                if bdl_games:
-                    logger.info(f"Waterfall: {len(bdl_games)} games from BallDontLie")
-                    return bdl_games
-            except Exception as e:
-                logger.warning(f"Waterfall: BallDontLie failed: {e}")
+    async def fetch_games_by_sport(self, sport_key: str) -> list:
+        """
+        [UNIFIED] Delegated to WaterfallRouter (Branched Orchestrator).
+        """
+        from services.waterfall_router import waterfall_router
+        return await waterfall_router.get_data(sport_key, data_type="stats")
 
-        # === Provider 6: MySportsFeeds (NFL/NBA/MLB/NHL) ===
-        try:
-            msf_games = await mysportsfeeds_client.get_daily_games(sport_key)
-            if msf_games:
-                logger.info(f"Waterfall: {len(msf_games)} games from MySportsFeeds for {sport_key}")
-                return msf_games
-        except Exception as e:
-            logger.warning(f"Waterfall: MySportsFeeds failed for {sport_key}: {e}")
-
-        # === Provider 7: SportsGameOdds (UFC + alt lines, 1k/mo) ===
-        try:
-            sgo_games = await sportsgameodds_client.get_events(sport_key)
-            if sgo_games:
-                logger.info(f"Waterfall: {len(sgo_games)} games from SportsGameOdds for {sport_key}")
-                return sgo_games
-        except Exception as e:
-            logger.warning(f"Waterfall: SportsGameOdds failed for {sport_key}: {e}")
-
-        logger.warning(f"Waterfall: All 7 providers exhausted for {sport_key}")
-        return []
+    async def fetch_games_by_sport_OLD(self, sport_key: str) -> list:
+        """[DEPRECATED] Standard linear waterfall."""
         
     async def fetch_nba_games(self) -> List[Dict]:
         """Fetch NBA games via waterfall — always returns data if any provider works."""
@@ -274,7 +217,7 @@ class RealDataConnector:
                                 under_odds = out.get("price")
                                 line = out.get("point", line)
                                 
-                        if line > 0:
+                        if float(line) > 0:
                             props.append({
                                 "game_id": game_id,
                                 "player_name": player,
@@ -366,7 +309,7 @@ class RealDataConnector:
                             if "over" in out.get("name", "").lower():
                                 over_odds = out.get("price", over_odds)
 
-                        if line > 0:
+                        if float(line) > 0:
                             dfs_props.append({
                                 "game_id": game_id,
                                 "player_name": player,

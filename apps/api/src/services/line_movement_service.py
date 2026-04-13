@@ -1,65 +1,94 @@
+# apps/api/src/services/line_movement_service.py
 import logging
-import asyncio
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Any
+from datetime import datetime, timedelta, timezone
+from typing import List, Dict, Any
+from sqlalchemy import select, func, and_
+from db.session import async_session_maker
+from models import LineTick
 
 logger = logging.getLogger(__name__)
 
 class LineMovementService:
-    def __init__(self):
-        self.history: Dict[str, List[Dict[str, Any]]] = {}
-        self.sharp_threshold = 30 # odds points (e.g. -110 to -140)
-    
-    def record_movement(self, market_id: str, odds: int, sportsbook: str):
-        """Record a snapshot of the current odds for a market"""
-        if market_id not in self.history:
-            self.history[market_id] = []
-        
-        self.history[market_id].append({
-            "odds": odds,
-            "book": sportsbook,
-            "timestamp": datetime.now(timezone.utc)
-        })
-        
-        # Keep only last 24h
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
-        self.history[market_id] = [h for h in self.history[market_id] if h['timestamp'] > cutoff]
-
-    def get_velocity(self, market_id: str) -> float:
-        """Calculate movement velocity (odds change per hour)"""
-        hits = self.history.get(market_id, [])
-        if len(hits) < 2:
-            return 0.0
-        
-        latest = hits[-1]
-        earliest = hits[0]
-        
-        time_diff = (latest['timestamp'] - earliest['timestamp']).total_seconds() / 3600.0
-        if time_diff == 0: return 0.0
-        
-        odds_diff = latest['odds'] - earliest['odds']
-        return round(odds_diff / time_diff, 2)
-
-    def detect_steam(self, market_id: str) -> Optional[Dict[str, Any]]:
-        """Identify if a move is 'Sharp' / 'Steam'"""
-        hits = self.history.get(market_id, [])
-        if len(hits) < 2: return None
-        
-        latest = hits[-1]
-        # Look back 1 hour
-        window = datetime.now(timezone.utc) - timedelta(hours=1)
-        recent_hits = [h for h in hits if h['timestamp'] > window]
-        
-        if len(recent_hits) < 2: return None
-        
-        diff = recent_hits[-1]['odds'] - recent_hits[0]['odds']
-        if abs(diff) >= self.sharp_threshold:
-            return {
-                "market_id": market_id,
-                "move": diff,
-                "velocity": self.get_velocity(market_id),
-                "severity": "High" if abs(diff) >= 50 else "Medium"
-            }
-        return None
+    async def get_active_moves(self, sport: str, lookback_minutes: int = 15) -> List[Dict[str, Any]]:
+        """
+        Detect significant line movements (Steam/Whales) in the last N minutes.
+        1. Query recent LineTicks.
+        2. Group by (prop/event).
+        3. Identify trend (direction, velocity).
+        """
+        async with async_session_maker() as session:
+            now = datetime.now(timezone.utc)
+            start_time = now - timedelta(minutes=lookback_minutes)
+            
+            # Subquery to find the earliest and latest price for each book/prop in the window
+            # For simplicity, we'll just get all ticks and compute in memory
+            stmt = select(LineTick).where(
+                and_(
+                    LineTick.sport == sport,
+                    LineTick.created_at >= start_time
+                )
+            ).order_by(LineTick.created_at.desc())
+            
+            result = await session.execute(stmt)
+            ticks = result.scalars().all()
+            
+            if not ticks:
+                return []
+            
+            # Grouping: (event_id, player, market) -> book -> [ticks]
+            grouped = {}
+            for t in ticks:
+                key = (t.event_id, t.player_name, t.market_key, t.outcome_key)
+                if key not in grouped:
+                    grouped[key] = {}
+                if t.bookmaker not in grouped[key]:
+                    grouped[key][t.bookmaker] = []
+                grouped[key][t.bookmaker].append(t)
+            
+            moves = []
+            for key, books in grouped.items():
+                event_id, player, market, outcome = key
+                
+                total_move = 0
+                books_moving = 0
+                max_velocity = 0
+                
+                for book, b_ticks in books.items():
+                    if len(b_ticks) < 2:
+                        continue
+                        
+                    # b_ticks is ordered by created_at desc (latest first)
+                    latest = b_ticks[0]
+                    earliest = b_ticks[-1]
+                    
+                    price_diff = float(latest.price) - float(earliest.price)
+                    if abs(price_diff) >= 5: # Threshold: 5 cents
+                        total_move += price_diff
+                        books_moving += 1
+                        max_velocity = max(max_velocity, abs(price_diff))
+                
+                if books_moving >= 2 or (books_moving == 1 and max_velocity >= 15):
+                    # Signal detected
+                    type = "STEAM" if books_moving >= 3 else "WHALE" if max_velocity >= 20 else "MOVE"
+                    
+                    # Estimate "Average Line" if line exists
+                    latest_line = next((float(b[0].line) for b in books.values() if b[0].line), 0.0)
+                    
+                    moves.append({
+                        "id": f"{event_id}_{player}_{market}_{outcome}",
+                        "player": player,
+                        "market": market.replace("player_", "").replace("_", " ").title(),
+                        "outcome": outcome.title(),
+                        "line": latest_line,
+                        "type": type,
+                        "intensity": min(100, int(abs(total_move) * 2)),
+                        "direction": "UP" if total_move > 0 else "DOWN",
+                        "books_count": books_moving,
+                        "timestamp": books[next(iter(books))][0].created_at.isoformat()
+                    })
+                    
+            # Sort by intensity (strongest moves first)
+            moves.sort(key=lambda x: x["intensity"], reverse=True)
+            return moves[:20]
 
 line_movement_service = LineMovementService()

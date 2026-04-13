@@ -144,11 +144,48 @@ class ESPNClient:
 
         return games
 
+    async def fetch_injuries(self, sport_key: str) -> List[Dict]:
+        """Fetch latest injury data for a given sport from ESPN's public API."""
+        mapping = SPORT_MAP.get(sport_key)
+        if not mapping: return []
+        
+        sport, league = mapping
+        # site.api.espn.com/apis/site/v2/sports/{sport}/{league}/injuries
+        url = f"{self.BASE_URL}/{sport}/{league}/injuries"
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                data = resp.json()
+                # ESPN nested structure: { injuries: [ { displayName: 'Team X', injuries: [...] } ] }
+                return data.get("injuries", [])
+        except Exception as e:
+            logger.error(f"ESPN: Injuries fetch failed for {sport_key}: {e}")
+            return []
+
+    async def fetch_news(self, sport_key: str) -> List[Dict]:
+        """Fetch latest news articles for a given sport from ESPN's public API."""
+        mapping = SPORT_MAP.get(sport_key)
+        if not mapping: return []
+        
+        sport, league = mapping
+        # site.api.espn.com/apis/site/v2/sports/{sport}/{league}/news
+        url = f"{self.BASE_URL}/{sport}/{league}/news"
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                data = resp.json()
+                return data.get("articles", [])
+        except Exception as e:
+            logger.error(f"ESPN: News fetch failed for {sport_key}: {e}")
+            return []
+
     async def get_injuries(self, sport_key: str) -> List[Dict]:
-        """Fetch injury data from ESPN (if available in scoreboard data)."""
-        # ESPN doesn't have a dedicated free injury endpoint,
-        # but we can extract injury notes from game data
-        return []
+        """Legacy compatibility method mapping to fetch_injuries."""
+        return await self.fetch_injuries(sport_key)
 
 
 # Singleton

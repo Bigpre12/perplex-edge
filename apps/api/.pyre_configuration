@@ -1,0 +1,12 @@
+{
+  "source_directories": [
+    "src"
+  ],
+  "python_version": "3.12",
+  "site_package_search_strategy": "all",
+  "python_interpreter": "C:\\Users\\preio\\OneDrive\\Documents\\Untitled\\perplex_engine\\perplex-edge\\.venv\\Scripts\\python.exe",
+  "search_path": [
+    "src",
+    "C:\\Users\\preio\\OneDrive\\Documents\\Untitled\\perplex_engine\\perplex-edge\\.venv\\Lib\\site-packages"
+  ]
+}

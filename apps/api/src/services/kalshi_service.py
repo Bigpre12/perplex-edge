@@ -5,6 +5,8 @@ import base64
 import logging
 from typing import Optional, List, Dict, Any
 from urllib.parse import urlparse
+from services.cache import cache
+from api_utils.http import build_headers
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -21,10 +23,11 @@ class KalshiService:
         self._private_key = None
         
         # Priority 1: Direct content from environment variable (useful for Railway/Secrets)
-        if self.private_key_content:
+        val = self.private_key_content
+        if val is not None:
             try:
                 # Handle potentially encoded newlines in env vars
-                key_bytes = self.private_key_content.replace("\\n", "\n").encode('utf-8')
+                key_bytes = val.replace("\\n", "\n").encode('utf-8')
                 self._private_key = serialization.load_pem_private_key(
                     key_bytes,
                     password=None,
@@ -35,9 +38,9 @@ class KalshiService:
                 logger.error(f"KalshiService: Failed to load private key from env: {e}")
         
         # Priority 2: Load from file path if not already loaded
-        if not self._private_key and self.private_key_path and os.path.exists(self.private_key_path):
+        if not self._private_key and self.private_key_path and os.path.exists(str(self.private_key_path)):
             try:
-                with open(self.private_key_path, "rb") as key_file:
+                with open(str(self.private_key_path), "rb") as key_file:
                     self._private_key = serialization.load_pem_private_key(
                         key_file.read(),
                         password=None,
@@ -51,23 +54,27 @@ class KalshiService:
         """Create RSA-PSS signature for Kalshi v2 auth"""
         if not self._private_key:
             return ""
-            
-        # Strip query parameters before signing
         path_without_query = path.split('?')[0]
-        message = f"{timestamp}{method}{path_without_query}".encode('utf-8')
+        payload = f"{timestamp}{method}{path_without_query}" # Renamed 'message' to 'payload'
         
-        signature = self._private_key.sign(
-            message,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.DIGEST_LENGTH
-            ),
-            hashes.SHA256()
-        )
-        return base64.b64encode(signature).decode('utf-8')
+        pk = self._private_key
+        if pk is not None:
+            signature = pk.sign(
+                payload.encode('utf-8'),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return base64.b64encode(signature).decode('utf-8')
+        return ""
 
-    async def _get_auth_headers(self, method: str, path: str) -> Dict[str, str]:
+    async def _get_auth_headers(self, method: str, path: str) -> Optional[Dict[str, str]]:
         """Generate mandatory Kalshi v2 authenticated headers"""
+        if not self.api_key_id or not self._private_key:
+            return None
+            
         timestamp = str(int(datetime.datetime.now().timestamp() * 1000))
         
         # Kalshi requires the full path including /trade-api/v2 for signing
@@ -79,17 +86,21 @@ class KalshiService:
         
         signature = self._create_signature(timestamp, method, full_path)
         
-        return {
+        return build_headers({
             "Content-Type": "application/json",
             "KALSHI-ACCESS-KEY": self.api_key_id,
             "KALSHI-ACCESS-SIGNATURE": signature,
             "KALSHI-ACCESS-TIMESTAMP": timestamp
-        }
+        })
 
     async def get_kalshi_sports_markets(self, sport: str) -> List[Dict[str, Any]]:
         """Fetch open markets filtered by sport keyword"""
         path = "/markets"
         headers = await self._get_auth_headers("GET", path)
+        if not headers:
+            logger.warning("KalshiService: Skipping fetch_markets - Credentials not configured")
+            return []
+            
         params = {"status": "open", "series_ticker": sport}
         try:
             response = await self.client.get(path, headers=headers, params=params)
@@ -103,6 +114,9 @@ class KalshiService:
         """Return full bid/ask orderbook"""
         path = f"/markets/{ticker}/orderbook"
         headers = await self._get_auth_headers("GET", path)
+        if not headers:
+            return {}
+            
         try:
             response = await self.client.get(path, headers=headers)
             response.raise_for_status()
@@ -115,6 +129,9 @@ class KalshiService:
         """Fetch open Kalshi events (sports + politics + economics)"""
         path = "/events"
         headers = await self._get_auth_headers("GET", path)
+        if not headers:
+            return []
+            
         params = {"status": "open"}
         if series:
             params["series_ticker"] = series
@@ -130,6 +147,9 @@ class KalshiService:
         """POST to /portfolio/orders with limit order payload"""
         path = "/portfolio/orders"
         headers = await self._get_auth_headers("POST", path)
+        if not headers:
+            return {"error": "Missing credentials"}
+            
         payload = {
             "ticker": ticker,
             "side": side,
@@ -153,10 +173,14 @@ class KalshiService:
         try:
             balance_path = "/portfolio/balance"
             balance_headers = await self._get_auth_headers("GET", balance_path)
-            balance_resp = await self.client.get(balance_path, headers=balance_headers)
             
             positions_path = "/portfolio/positions"
             positions_headers = await self._get_auth_headers("GET", positions_path)
+            
+            if not balance_headers or not positions_headers:
+                return {"error": "Missing credentials"}
+                
+            balance_resp = await self.client.get(balance_path, headers=balance_headers)
             positions_resp = await self.client.get(positions_path, headers=positions_headers)
             balance_resp.raise_for_status()
             positions_resp.raise_for_status()
@@ -172,6 +196,9 @@ class KalshiService:
         """GET market price history for chart rendering"""
         path = f"/markets/{ticker}/history"
         headers = await self._get_auth_headers("GET", path)
+        if not headers:
+            return []
+            
         try:
             # Assuming history endpoint exists in v2 context or similar
             response = await self.client.get(path, headers=headers)
@@ -181,4 +208,12 @@ class KalshiService:
             logger.error(f"Error fetching Kalshi market history for {ticker}: {e}")
             return []
 
+# Global instance
 kalshi_service = KalshiService()
+
+def get_kalshi_service() -> Optional[KalshiService]:
+    """Factory function for safe service access."""
+    if not kalshi_service.api_key_id or not kalshi_service._private_key:
+        logger.warning("Kalshi service requested but credentials not set.")
+        return None
+    return kalshi_service

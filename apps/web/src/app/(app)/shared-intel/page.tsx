@@ -15,7 +15,7 @@ import {
     Plus
 } from "lucide-react";
 import { getAuthToken, getUser } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/apiConfig";
+import { API_BASE as API_BASE_URL } from "@/lib/api";
 import { SteamAlerts } from "@/components/SteamAlerts";
 
 export default function SharedIntelPage() {

@@ -1,113 +1,75 @@
-# apps/api/src/routers/whale.py
 from fastapi import APIRouter, Query, Depends
-from common_deps import require_elite, get_user_tier
-from typing import Optional, List, Dict
-from services.whale_service import detect_whale_signals
+from api_utils.tier_guards import require_tier
+from typing import Optional, List, Dict, Any
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc
+from db.session import get_async_db
+from models.brain import WhaleMove
+from schemas.unified import WhaleEventSchema
+from datetime import datetime, timezone, timedelta
+from models.user import User
 
 router = APIRouter(tags=["whale"])
 
-@router.get("")
-async def whale_signals(sport: Optional[str] = Query("basketball_nba"), tier: str = Depends(get_user_tier)):
+@router.get("/live", response_model=Dict[str, Any])
+@router.get("", response_model=Dict[str, Any])
+async def whale_signals(
+    sport: Optional[str] = Query("basketball_nba"), 
+    min_units: int = Query(0, description="Minimum units threshold"),
+    current_user: User = Depends(require_tier("elite")),
+    db: AsyncSession = Depends(get_async_db)
+):
     """
-    Returns live sharp money and whale signals. Elite only.
+    Returns live whale moves from the last 24 hours.
+    Access restricted to ELITE users.
     """
-    if tier != "elite":
-        return {"status": "limited", "data": [], "message": "Elite subscription required"}
-    signals = await detect_whale_signals(sport)
+        
+    stmt = select(WhaleMove).where(WhaleMove.sport == sport)
+    if min_units > 0:
+        stmt = stmt.where(WhaleMove.units >= min_units)
+        
+    stmt = stmt.where(WhaleMove.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
+    stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(20)
+    
+    result = await db.execute(stmt)
+    moves = result.scalars().all()
+    
     return {
         "status": "success",
-        "data": signals,
-        "total": len(signals),
+        "data": [WhaleEventSchema.model_validate(m) for m in moves],
+        "total": len(moves),
         "sport": sport,
-        "methodology": "Pinnacle vs US Book splits + single-book market outliers",
+        "min_units": min_units
     }
 
+@router.get("/history", response_model=Dict[str, Any])
+async def whale_history(
+    sport: str = Query("basketball_nba"),
+    limit: int = Query(50),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(require_tier("elite"))
+):
+    """
+    Returns historical whale moves for trend analysis.
+    Access restricted to ELITE users.
+    """
+    stmt = select(WhaleMove).where(WhaleMove.sport == sport)
+    stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(limit)
+    
+    result = await db.execute(stmt)
+    history = result.scalars().all()
+    
+    return {
+        "status": "success",
+        "data": [WhaleEventSchema.model_validate(h) for h in history],
+        "total": len(history)
+    }
+
+# Legacy endpoint for backward compatibility
 @router.get("/active-moves")
-async def get_active_moves(sport: str = Query("basketball_nba"), tier: str = Depends(get_user_tier)):
-    """
-    Returns confirmed whale moves. Returns simulated data for non-elite users.
-    """
-    # If not elite, return the simulation fallback immediately
-    if tier != "elite":
-        from datetime import datetime, timezone, timedelta
-        return [
-            {
-                "player": "Upgrade Required",
-                "stat_type": "Pro/Elite Feature",
-                "line_before": 0,
-                "line_after": 0,
-                "move_size": "Upgrade to see whale moves",
-                "time_detected": datetime.now(timezone.utc).isoformat(),
-                "sportsbook": "Institutional Data",
-                "whale_rating": 0,
-                "is_limited": True
-            }
-        ]
-    """
-    Returns confirmed whale moves from Supabase with a realistic simulation fallback.
-    """
-    try:
-        import httpx
-        import os
-        from datetime import datetime, timezone, timedelta
-        
-        SUPABASE_URL = os.getenv("SUPABASE_URL")
-        SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-        
-        headers = {
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}"
-        }
-        
-        moves = []
-        async with httpx.AsyncClient() as client:
-            if SUPABASE_URL:
-                url = f"{SUPABASE_URL}/rest/v1/whale_moves?sport=eq.{sport}&order=time_detected.desc"
-                r = await client.get(url, headers=headers)
-                moves = r.json() if r.status_code == 200 else []
-            
-        if not moves:
-            # High-Impact Fallback for Elite Experience
-            return [
-                {
-                    "player": "Victor Wembanyama",
-                    "stat_type": "Points",
-                    "line_before": 22.5,
-                    "line_after": 23.5,
-                    "odds_before": -110,
-                    "odds_after": -125,
-                    "move_size": "Wormhole Detected",
-                    "time_detected": (datetime.now(timezone.utc) - timedelta(minutes=14)).isoformat(),
-                    "sportsbook": "Pinnacle Sharp",
-                    "whale_rating": 9.8,
-                    "is_simulated": True
-                },
-                {
-                    "player": "Cade Cunningham",
-                    "stat_type": "Assists",
-                    "line_before": 8.5,
-                    "line_after": 9.5,
-                    "odds_before": +105,
-                    "odds_after": -118,
-                    "move_size": "Significant Steam",
-                    "time_detected": (datetime.now(timezone.utc) - timedelta(minutes=42)).isoformat(),
-                    "sportsbook": "Circa Sports",
-                    "whale_rating": 8.4,
-                    "is_simulated": True
-                }
-            ]
-            
-        return [{
-            "player": m.get("player"),
-            "stat_type": m.get("stat_type"),
-            "line_before": m.get("line_before"),
-            "line_after": m.get("line_after"),
-            "odds_before": m.get("odds_before"),
-            "odds_after": m.get("odds_after"),
-            "move_size": m.get("move_size"),
-            "time_detected": m.get("time_detected"),
-            "sportsbook": m.get("sportsbook"),
-            "whale_rating": m.get("whale_rating")
-        } for m in moves]
-    except Exception as e:
-        return []
+async def get_active_moves(
+    sport: str = Query("basketball_nba"), 
+    current_user: User = Depends(require_tier("elite")), 
+    db: AsyncSession = Depends(get_async_db)
+):
+    return await whale_signals(sport, 0, current_user, db)

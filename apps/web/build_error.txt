@@ -1,0 +1,493 @@
+﻿  [1m[38;2;173;127;168mΓû▓ Next.js 14.2.35[39m[22m
+  - Environments: .env.local, .env.production
+
+ [37m[1m [22m[39m Creating an optimized production build ...
+node.exe : [31mFailed to 
+compile.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: ([31m  
+  Failed to compile.:Stri   
+ ng) [], RemoteException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+[39m
+./src/app/globals.css.webpac
+k[javascript/auto]!=!./node_
+modules/next/dist/build/webp
+ack/loaders/css-loader/src/i
+ndex.js??ruleSet[1].rules[14
+].oneOf[12].use[2]!./node_mo
+dules/next/dist/build/webpac
+k/loaders/postcss-loader/src
+/index.js??ruleSet[1].rules[
+14].oneOf[12].use[3]!./src/a
+pp/globals.css
+Error: Cannot find module 
+'autoprefixer'
+Require stack:
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\blocks\css\plu
+gins.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\blocks\css\ind
+ex.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\index.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack-config.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack-build\impl.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\compile
+d\jest-worker\processChild.j
+s
+    at Module.<anonymous> (n
+ode:internal/modules/cjs/loa
+der:1421:15)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\se
+rver\require-hook.js:55:36
+    at require.resolve (node
+:internal/modules/helpers:16
+3:19)
+    at loadPlugin (C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\build\webpack\conf
+ig\blocks\css\plugins.js:49:
+32)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\bu
+ild\webpack\config\blocks\cs
+s\plugins.js:157:56
+    at Array.map 
+(<anonymous>)
+    at getPostCssPlugins (C:
+\Users\preio\OneDrive\Docume
+nts\Untitled\perplex_engine\
+perplex-edge\apps\web\node_m
+odules\next\dist\build\webpa
+ck\config\blocks\css\plugins
+.js:157:47)
+    at async C:\Users\preio\
+OneDrive\Documents\Untitled\
+perplex_engine\perplex-edge\
+apps\web\node_modules\next\d
+ist\build\webpack\config\blo
+cks\css\index.js:124:36
+    at async C:\Users\preio\
+OneDrive\Documents\Untitled\
+perplex_engine\perplex-edge\
+apps\web\node_modules\next\d
+ist\build\webpack\loaders\po
+stcss-loader\src\index.js:51
+:40
+    at async 
+Span.traceAsyncFn (C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\trace\trace.js:154
+:20)
+
+Import trace for requested 
+module:
+./src/app/globals.css.webpac
+k[javascript/auto]!=!./node_
+modules/next/dist/build/webp
+ack/loaders/css-loader/src/i
+ndex.js??ruleSet[1].rules[14
+].oneOf[12].use[2]!./node_mo
+dules/next/dist/build/webpac
+k/loaders/postcss-loader/src
+/index.js??ruleSet[1].rules[
+14].oneOf[12].use[3]!./src/a
+pp/globals.css
+./src/app/globals.css
+
+./src/app/globals.css
+Error: Cannot find module 
+'autoprefixer'
+Require stack:
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\blocks\css\plu
+gins.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\blocks\css\ind
+ex.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\index.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack-config.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack-build\impl.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\compile
+d\jest-worker\processChild.j
+s
+    at Module.<anonymous> (n
+ode:internal/modules/cjs/loa
+der:1421:15)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\se
+rver\require-hook.js:55:36
+    at require.resolve (node
+:internal/modules/helpers:16
+3:19)
+    at loadPlugin (C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\build\webpack\conf
+ig\blocks\css\plugins.js:49:
+32)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\bu
+ild\webpack\config\blocks\cs
+s\plugins.js:157:56
+    at Array.map 
+(<anonymous>)
+    at getPostCssPlugins (C:
+\Users\preio\OneDrive\Docume
+nts\Untitled\perplex_engine\
+perplex-edge\apps\web\node_m
+odules\next\dist\build\webpa
+ck\config\blocks\css\plugins
+.js:157:47)
+    at async C:\Users\preio\
+OneDrive\Documents\Untitled\
+perplex_engine\perplex-edge\
+apps\web\node_modules\next\d
+ist\build\webpack\config\blo
+cks\css\index.js:124:36
+    at async C:\Users\preio\
+OneDrive\Documents\Untitled\
+perplex_engine\perplex-edge\
+apps\web\node_modules\next\d
+ist\build\webpack\loaders\po
+stcss-loader\src\index.js:51
+:40
+    at async 
+Span.traceAsyncFn (C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\trace\trace.js:154
+:20)
+    at tryRunOrWebpackError 
+(C:\Users\preio\OneDrive\Doc
+uments\Untitled\perplex_engi
+ne\perplex-edge\apps\web\nod
+e_modules\next\dist\compiled
+\webpack\bundle5.js:28:31298
+9)
+    at 
+__webpack_require_module__ (
+C:\Users\preio\OneDrive\Docu
+ments\Untitled\perplex_engin
+e\perplex-edge\apps\web\node
+_modules\next\dist\compiled\
+webpack\bundle5.js:28:131165
+)
+    at __nested_webpack_requ
+ire_153728__ (C:\Users\preio
+\OneDrive\Documents\Untitled
+\perplex_engine\perplex-edge
+\apps\web\node_modules\next\
+dist\compiled\webpack\bundle
+5.js:28:130607)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\co
+mpiled\webpack\bundle5.js:28
+:131454
+    at symbolIterator (C:\Us
+ers\preio\OneDrive\Documents
+\Untitled\perplex_engine\per
+plex-edge\apps\web\node_modu
+les\next\dist\compiled\neo-a
+sync\async.js:1:14444)
+    at done (C:\Users\preio\
+OneDrive\Documents\Untitled\
+perplex_engine\perplex-edge\
+apps\web\node_modules\next\d
+ist\compiled\neo-async\async
+.js:1:14824)
+    at Hook.eval [as 
+callAsync] (eval at create (
+C:\Users\preio\OneDrive\Docu
+ments\Untitled\perplex_engin
+e\perplex-edge\apps\web\node
+_modules\next\dist\compiled\
+webpack\bundle5.js:13:28858)
+, <anonymous>:15:1)
+    at 
+Hook.CALL_ASYNC_DELEGATE 
+[as _callAsync] (C:\Users\pr
+eio\OneDrive\Documents\Untit
+led\perplex_engine\perplex-e
+dge\apps\web\node_modules\ne
+xt\dist\compiled\webpack\bun
+dle5.js:13:26012)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\co
+mpiled\webpack\bundle5.js:28
+:130328
+    at symbolIterator (C:\Us
+ers\preio\OneDrive\Documents
+\Untitled\perplex_engine\per
+plex-edge\apps\web\node_modu
+les\next\dist\compiled\neo-a
+sync\async.js:1:14402)
+-- inner error --
+Error: Cannot find module 
+'autoprefixer'
+Require stack:
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\blocks\css\plu
+gins.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\blocks\css\ind
+ex.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack\config\index.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack-config.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\build\w
+ebpack-build\impl.js
+- C:\Users\preio\OneDrive\Do
+cuments\Untitled\perplex_eng
+ine\perplex-edge\apps\web\no
+de_modules\next\dist\compile
+d\jest-worker\processChild.j
+s
+    at Module.<anonymous> (n
+ode:internal/modules/cjs/loa
+der:1421:15)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\se
+rver\require-hook.js:55:36
+    at require.resolve (node
+:internal/modules/helpers:16
+3:19)
+    at loadPlugin (C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\build\webpack\conf
+ig\blocks\css\plugins.js:49:
+32)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\bu
+ild\webpack\config\blocks\cs
+s\plugins.js:157:56
+    at Array.map 
+(<anonymous>)
+    at getPostCssPlugins (C:
+\Users\preio\OneDrive\Docume
+nts\Untitled\perplex_engine\
+perplex-edge\apps\web\node_m
+odules\next\dist\build\webpa
+ck\config\blocks\css\plugins
+.js:157:47)
+    at async C:\Users\preio\
+OneDrive\Documents\Untitled\
+perplex_engine\perplex-edge\
+apps\web\node_modules\next\d
+ist\build\webpack\config\blo
+cks\css\index.js:124:36
+    at async C:\Users\preio\
+OneDrive\Documents\Untitled\
+perplex_engine\perplex-edge\
+apps\web\node_modules\next\d
+ist\build\webpack\loaders\po
+stcss-loader\src\index.js:51
+:40
+    at async 
+Span.traceAsyncFn (C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\trace\trace.js:154
+:20)
+    at Object.<anonymous> (C
+:\Users\preio\OneDrive\Docum
+ents\Untitled\perplex_engine
+\perplex-edge\apps\web\node_
+modules\next\dist\build\webp
+ack\loaders\css-loader\src\i
+ndex.js??ruleSet[1].rules[14
+].oneOf[12].use[2]!C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\build\webpack\load
+ers\postcss-loader\src\index
+.js??ruleSet[1].rules[14].on
+eOf[12].use[3]!C:\Users\prei
+o\OneDrive\Documents\Untitle
+d\perplex_engine\perplex-edg
+e\apps\web\src\app\globals.c
+ss:1:7)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\co
+mpiled\webpack\bundle5.js:28
+:922493
+    at Hook.eval [as call] 
+(eval at create (C:\Users\pr
+eio\OneDrive\Documents\Untit
+led\perplex_engine\perplex-e
+dge\apps\web\node_modules\ne
+xt\dist\compiled\webpack\bun
+dle5.js:13:28636), 
+<anonymous>:7:1)
+    at Hook.CALL_DELEGATE 
+[as _call] (C:\Users\preio\O
+neDrive\Documents\Untitled\p
+erplex_engine\perplex-edge\a
+pps\web\node_modules\next\di
+st\compiled\webpack\bundle5.
+js:13:25906)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\co
+mpiled\webpack\bundle5.js:28
+:131198
+    at tryRunOrWebpackError 
+(C:\Users\preio\OneDrive\Doc
+uments\Untitled\perplex_engi
+ne\perplex-edge\apps\web\nod
+e_modules\next\dist\compiled
+\webpack\bundle5.js:28:31294
+3)
+    at 
+__webpack_require_module__ (
+C:\Users\preio\OneDrive\Docu
+ments\Untitled\perplex_engin
+e\perplex-edge\apps\web\node
+_modules\next\dist\compiled\
+webpack\bundle5.js:28:131165
+)
+    at __nested_webpack_requ
+ire_153728__ (C:\Users\preio
+\OneDrive\Documents\Untitled
+\perplex_engine\perplex-edge
+\apps\web\node_modules\next\
+dist\compiled\webpack\bundle
+5.js:28:130607)
+    at C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\node_modules\next\dist\co
+mpiled\webpack\bundle5.js:28
+:131454
+    at symbolIterator (C:\Us
+ers\preio\OneDrive\Documents
+\Untitled\perplex_engine\per
+plex-edge\apps\web\node_modu
+les\next\dist\compiled\neo-a
+sync\async.js:1:14444)
+
+Generated code for C:\Users\
+preio\OneDrive\Documents\Unt
+itled\perplex_engine\perplex
+-edge\apps\web\node_modules\
+next\dist\build\webpack\load
+ers\css-loader\src\index.js?
+?ruleSet[1].rules[14].oneOf[
+12].use[2]!C:\Users\preio\On
+eDrive\Documents\Untitled\pe
+rplex_engine\perplex-edge\ap
+ps\web\node_modules\next\dis
+t\build\webpack\loaders\post
+css-loader\src\index.js??rul
+eSet[1].rules[14].oneOf[12].
+use[3]!C:\Users\preio\OneDri
+ve\Documents\Untitled\perple
+x_engine\perplex-edge\apps\w
+eb\src\app\globals.css
+
+Import trace for requested 
+module:
+./src/app/globals.css
+
+
+> Build failed because of 
+webpack errors

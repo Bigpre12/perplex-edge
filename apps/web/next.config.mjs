@@ -6,12 +6,28 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
-    async rewrites() {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    async redirects() {
         return [
             {
-                source: "/api/:path*",
-                destination: `${apiUrl}/api/:path*`,
+                source: "/props",
+                destination: "/player-props",
+                permanent: true,
+            },
+        ];
+    },
+    async rewrites() {
+        const isProd = process.env.NODE_ENV === "production";
+        let backendUrl = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
+        
+        // Prevent accidental localhost copy-paste to Vercel
+        if (isProd && backendUrl.includes("localhost")) {
+            backendUrl = "https://perplex-edge-backend-copy-production.up.railway.app";
+        }
+
+        return [
+            {
+                source: "/backend/:path*",
+                destination: `${backendUrl}/:path*`,
             },
         ];
     },

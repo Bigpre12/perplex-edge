@@ -6,26 +6,52 @@ import traceback
 from datetime import datetime, timezone
 from services.odds.fetchers import fetch_props_for_sport, fetch_lines_for_sport, SPORT_KEY_MAP
 from services.brain_odds_scout import brain_odds_scout
+from services.props_models import PropRecord
+from services.props_persistence import (
+    prop_group_to_records,
+    records_to_rows,
+    upsert_props_live,
+    insert_props_history,
+)
 
 logger = logging.getLogger(__name__)
 
 async def write_props_to_db(sport_id: int, props_data: list):
-    """Placeholder or adapter for persisting props."""
+    """Persist props to DB and pass grouped data to BrainOddsScout."""
     sport_key = SPORT_KEY_MAP.get(sport_id)
     if not sport_key or not props_data:
         return
-        
+
+    league = "NBA"  # TODO: derive per sport_key
+
     for event in props_data:
         try:
-            # event is the raw API dict for a single game
             logger.debug(f"Ingesting event data for {sport_key}")
-            home_team = event.get('home_team', 'TBD')
-            away_team = event.get('away_team', 'TBD')
-            transformed_props = transform_odds_api_props([event], event, home_team, away_team)
-            if transformed_props:
-                await brain_odds_scout.analyze_and_persist(transformed_props, sport_key)
+            home_team = event.get("home_team", "TBD")
+            away_team = event.get("away_team", "TBD")
+
+            # existing grouped format for brain
+            grouped_props = transform_odds_api_props([event], event, home_team, away_team)
+
+            # NEW: map grouped_props -> PropRecords -> DB rows
+            all_records: list[PropRecord] = []
+            for gp in grouped_props:
+                all_records.extend(prop_group_to_records(gp, sport_key=sport_key, league=league))
+
+            rows = records_to_rows(all_records)
+            if rows:
+                await upsert_props_live(rows)
+                await insert_props_history(rows)
+
+            # keep existing brain behaviour
+            if grouped_props:
+                await brain_odds_scout.analyze_and_persist(grouped_props, sport_key)
+
         except Exception as e:
-            logger.error(f"Failed to process props for event {event.get('id')} in sport {sport_key}: {e}")
+            logger.error(
+                f"Failed to process props for event {event.get('id')} in sport {sport_key}: {e}"
+            )
+            logger.debug(traceback.format_exc())
             continue
 
 async def write_lines_to_db(sport_id: int, lines_data: list):
@@ -41,21 +67,39 @@ async def write_lines_to_db(sport_id: int, lines_data: list):
         logger.error(f"Failed to write lines to DB for {sport_key}: {e}")
 
 
-async def ingest_all_odds():
-    """Combined cycle to ingest both props and lines for all sports safely into the Unified model."""
+ACTIVE_SPORTS = ["basketball_nba", "baseball_mlb", "icehockey_nhl"]
+
+async def ingest_active_odds():
+    """Ingest props and lines for highly active, in-season sports."""
     from services.unified_ingestion import unified_ingestion
-    logger.info("Starting combined odds ingestion cycle (Unified)...")
+    logger.info("Starting active odds ingestion cycle (Unified)...")
 
-    for sport_id in list(SPORT_KEY_MAP.keys()):
-        try:
-            sport_key = SPORT_KEY_MAP[sport_id]
-            logger.info(f"Syncing {sport_key} via UnifiedIngestion...")
-            await unified_ingestion.run(sport_key)
-        except Exception as e:
-            logger.error(f"Ingestion failed for sport {sport_id}: {e}")
-            continue
+    for sport_id, sport_key in SPORT_KEY_MAP.items():
+        if sport_key in ACTIVE_SPORTS:
+            try:
+                logger.info(f"Syncing ACTIVE {sport_key} via UnifiedIngestion...")
+                await unified_ingestion.run(sport_key)
+            except Exception as e:
+                logger.error(f"Ingestion failed for sport {sport_key}: {e}")
+                continue
 
-    logger.info("Odds ingestion cycle complete.")
+    logger.info("Active odds ingestion cycle complete.")
+
+async def ingest_idle_odds():
+    """Ingest props and lines for off-season or less active sports in a spread-out interval."""
+    from services.unified_ingestion import unified_ingestion
+    logger.info("Starting idle odds ingestion cycle (Unified)...")
+
+    for sport_id, sport_key in SPORT_KEY_MAP.items():
+        if sport_key not in ACTIVE_SPORTS:
+            try:
+                logger.info(f"Syncing IDLE {sport_key} via UnifiedIngestion...")
+                await unified_ingestion.run(sport_key)
+            except Exception as e:
+                logger.error(f"Ingestion failed for sport {sport_key}: {e}")
+                continue
+
+    logger.info("Idle odds ingestion cycle complete.")
 
 def transform_odds_api_props(odds_events, game_info, home_team='TBD', away_team='TBD'):
     """Transform The Odds API prop format to internal Brain format."""
@@ -126,20 +170,45 @@ def transform_odds_api_props(odds_events, game_info, home_team='TBD', away_team=
 
 async def run_steam_scout():
     """Rapid scan for line movements (Steam) for imminent games."""
+    from services.alert_writer import run_alert_detection
     logger.info("Starting Steam Scout scan for NBA/NFL imminent games...")
-    # Implementation targeted for games starting within 4h
+    # Trigger the optimized database-backed detection
     for sport_key in ["basketball_nba", "americanfootball_nfl"]:
         try:
-            # We fetch fresh lines and compare to cache/db
-            await fetch_lines_for_sport(sport_key)
-            # Steam analysis logic would go here, comparing current to prev in Redis
+            await run_alert_detection(sport_key)
             logger.debug(f"Steam scan complete for {sport_key}")
         except Exception as e:
             logger.error(f"Steam scout failed for {sport_key}: {e}")
 
 async def run_clv_snapshot():
     """Snapshot closing lines for games starting within 2 hours."""
+    from db.session import async_session_maker
+    from sqlalchemy import text
+    from services.persistence_helpers import insert_clv_trades
+    
     logger.info("Starting CLV snapshot for games starting within 2h...")
-    # Logic: query UnifiedOdds for games starting within 2h and log lines
-    # This acts as a 'closing line' record for later hit-rate analysis
-    pass
+    
+    async with async_session_maker() as session:
+        try:
+            # Query UnifiedOdds for games starting within 2h
+            query = text("""
+                SELECT sport, league, event_id as game_id, game_time, player_name, market_key, 
+                       line, bookmaker as book, price as odds, outcome_key as side
+                FROM unified_odds
+                WHERE game_time BETWEEN NOW() AND NOW() + INTERVAL '2 hours'
+            """)
+            result = await session.execute(query)
+            rows = result.mappings().all()
+            
+            if rows:
+                clv_records = []
+                for r in rows:
+                    clv_records.append({
+                        **dict(r),
+                        "snapshot_type": "closing",
+                        "recorded_at": datetime.now(timezone.utc)
+                    })
+                await insert_clv_trades(clv_records)
+                logger.info(f"CLV: Snapshotted {len(clv_records)} lines.")
+        except Exception as e:
+            logger.error(f"CLV snapshot failed: {e}")

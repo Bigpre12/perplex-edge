@@ -2,10 +2,11 @@
 
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabaseClient";
 import { clearUser } from "@/lib/auth";
-import { api } from "@/lib/api";
-import { Tier } from "@/lib/tier";
+import { TOKEN_STORAGE_KEY } from "@/lib/authStorage";
+import API from "@/lib/api";
+import { Tier, checkTierAccess } from "@/lib/tier";
+import { FeatureKey, getRequiredTier } from "@/lib/featureAccess";
 
 interface UserProfile {
     id: string;
@@ -20,22 +21,34 @@ interface UserProfile {
 export function useAuth() {
     const queryClient = useQueryClient();
 
+    // Helper to get token from localStorage
+    const getToken = () => {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem("accessToken");
+    };
+
     // Fetch fresh user profile from backend via React Query
     const {
-        data: user,
+        data: profile,
         isLoading,
         error
     } = useQuery<UserProfile | null>({
         queryKey: ["auth", "me"],
         queryFn: async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return null;
-
+            // Use custom backend JWT token (not Supabase)
+            const token = getToken();
+            if (!token) return null;
             try {
-                const data = await api.me() as UserProfile;
+                const data = await API.authMe() as UserProfile;
                 return data;
             } catch (err: any) {
-                if (err?.message?.startsWith("401")) return null;
+                // 401 means token expired or invalid - clear it
+                if (err?.response?.status === 401 || err?.message?.startsWith("401")) {
+                    clearUser();
+                    localStorage.removeItem(TOKEN_STORAGE_KEY);
+                    localStorage.removeItem("accessToken");
+                    return null;
+                }
                 throw err;
             }
         },
@@ -48,17 +61,37 @@ export function useAuth() {
     }, [queryClient]);
 
     const signOut = async () => {
-        await supabase.auth.signOut();
         clearUser();
-        localStorage.removeItem("perplex_edge_token");
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        localStorage.removeItem("accessToken");
         queryClient.setQueryData(["auth", "me"], null);
         window.location.href = "/login";
     };
 
+    const tier: Tier = 'elite'; // PAYWALLS DISABLED — treat all users as elite
+    const isFree = false;
+    const isPro = true;
+    const isElite = true;
+    const isAtLeastPro = true;
+
+    /**
+     * checkAccess - PAYWALLS DISABLED. Always returns true for all authenticated users.
+     */
+    const checkAccess = useCallback((_feature: FeatureKey): boolean => {
+        return true;
+    }, []);
+
     return {
-        user,
+        user: profile,
+        token: getToken(),
+        tier,
+        isFree,
+        isPro,
+        isElite,
+        isAtLeastPro,
+        checkAccess,
         loading: isLoading,
-        isSignedIn: !!user,
+        isSignedIn: !!profile,
         signOut,
         refreshUser,
         error

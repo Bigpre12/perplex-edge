@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Wallet, Calculator, TrendingUp, PieChart, Info, DollarSign, Activity } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
 import { api } from "@/lib/api";
@@ -9,10 +9,18 @@ import PageStates from "@/components/PageStates";
 
 export default function BankrollPage() {
     const { data: stats, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.fetch(`/api/ledger/stats`),
+        () => api.get(`/api/ledger/stats`),
         [],
         { refreshInterval: 60000 } // 1 minute
     );
+
+    const exposureRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (exposureRef.current) {
+            exposureRef.current.style.setProperty("--exposure-width", `${stats?.exposure_pct || 6.2}%`);
+        }
+    }, [stats?.exposure_pct]);
 
     return (
         <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 pb-24 text-white">
@@ -64,7 +72,10 @@ export default function BankrollPage() {
                         <p className="text-[10px] font-black text-[#6B7280] uppercase tracking-widest mb-2">Market Exposure</p>
                         <p className="text-4xl font-black text-blue-500 italic tracking-tighter">{(stats?.exposure_pct || 6.2).toFixed(1)}%</p>
                         <div className="mt-4 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${stats?.exposure_pct || 6.2}%` }} />
+                            <div 
+                                ref={exposureRef}
+                                className="h-full bg-blue-500 rounded-full transition-all exposure-bar" 
+                            />
                         </div>
                     </div>
                 </div>
@@ -80,6 +91,8 @@ export default function BankrollPage() {
                                     <label className="text-[10px] font-black uppercase text-[#6B7280] tracking-widest mb-2 block">Total Capital ($)</label>
                                     <input
                                         type="number"
+                                        title="Total Capital"
+                                        aria-label="Total Capital"
                                         className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 font-black text-lg text-white outline-none focus:border-primary/50 transition-all font-mono"
                                         defaultValue={10000}
                                     />
@@ -88,6 +101,8 @@ export default function BankrollPage() {
                                     <label className="text-[10px] font-black uppercase text-[#6B7280] tracking-widest mb-2 block">Target Unit ($)</label>
                                     <input
                                         type="number"
+                                        title="Target Unit"
+                                        aria-label="Target Unit"
                                         className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 font-black text-lg text-white outline-none focus:border-primary/50 transition-all font-mono"
                                         defaultValue={100}
                                     />

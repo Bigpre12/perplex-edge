@@ -51,7 +51,54 @@ class WhaleService:
                         "books_involved": pm.books_involved.split(",") if pm.books_involved else ["Multiple"]
                     })
 
-                # 2. Real-time detection from PropLines
+                # 2. Market Steam Detection (from LineTicks)
+                from models import LineTick
+                fifteen_mins_ago = datetime.now(timezone.utc) - timedelta(minutes=15)
+                stmt_ticks = select(LineTick).where(
+                    LineTick.sport_key == sport,
+                    LineTick.created_at >= fifteen_mins_ago
+                ).order_by(LineTick.created_at.desc())
+                
+                res_ticks = await session.execute(stmt_ticks)
+                ticks = res_ticks.scalars().all()
+                
+                if ticks:
+                    active_moves = {}
+                    for t in ticks:
+                        key = f"{t.player_name}:{t.market_key}"
+                        if key not in active_moves: active_moves[key] = []
+                        active_moves[key].append(t)
+                    
+                    for key, t_list in active_moves.items():
+                        if len(t_list) >= 3:
+                            try:
+                                player, market = key.split(":")
+                                latest = t_list[0].price
+                                earliest = t_list[-1].price
+                                diff = latest - earliest
+                                
+                                if abs(diff) >= 10:
+                                    signals.append({
+                                        "id": f"steam_{key}",
+                                        "type": "STEAM_MOVE",
+                                        "signal": "MARKET STEAM",
+                                        "player": player,
+                                        "stat": market.replace("_", " ").title(),
+                                        "pick": "VELOCITY",
+                                        "line": 0,
+                                        "sharp_side": "STEAM",
+                                        "market_value": abs(diff),
+                                        "confidence": min(95, 75 + abs(diff)),
+                                        "game": "Active Market",
+                                        "game_time": datetime.now(timezone.utc).isoformat(),
+                                        "whale_label": "⚡ MARKET STEAM",
+                                        "description": f"Rapid market-wide velocity detected on {player}. {len(t_list)} ticks in 15m.",
+                                        "alert_time": datetime.now(timezone.utc).isoformat(),
+                                        "books_involved": list(set([t.sportsbook for t in t_list]))
+                                    })
+                            except: continue
+
+                # 3. Real-time detection from PropLines
                 stmt = select(PropLine).where(PropLine.sport_key == sport, PropLine.is_active == True)
                 result = await session.execute(stmt)
                 proplines = result.scalars().all()
@@ -67,116 +114,29 @@ class WhaleService:
                             book = o.sportsbook.lower()
                             if book not in book_lines: book_lines[book] = {}
                             
-                            over_key = f"{pl.player_name}:{pl.stat_type}:over"
-                            book_lines[book][over_key] = {
-                                "odds": o.over_odds,
-                                "line": pl.line,
-                                "player": pl.player_name,
-                                "stat": pl.stat_type,
-                                "pick": "over",
-                                "game_id": pl.game_id,
-                                "commence_time": pl.start_time,
-                                "matchup": f"{pl.team} vs {pl.opponent}"
-                            }
-                            
-                            under_key = f"{pl.player_name}:{pl.stat_type}:under"
-                            book_lines[book][under_key] = {
-                                "odds": o.under_odds,
-                                "line": pl.line,
-                                "player": pl.player_name,
-                                "stat": pl.stat_type,
-                                "pick": "under",
-                                "game_id": pl.game_id,
-                                "commence_time": pl.start_time,
-                                "matchup": f"{pl.team} vs {pl.opponent}"
-                            }
+                            for side in ["over", "under"]:
+                                key = f"{pl.player_name}:{pl.stat_type}:{side}"
+                                book_lines[book][key] = {
+                                    "odds": o.over_odds if side == "over" else o.under_odds,
+                                    "line": pl.line,
+                                    "player": pl.player_name,
+                                    "stat": pl.stat_type,
+                                    "pick": side,
+                                    "game_id": pl.game_id,
+                                    "commence_time": pl.start_time,
+                                    "matchup": f"{pl.team} vs {pl.opponent}"
+                                }
 
-                # 3. Analyze for Pinnacle splits or Market outliers
+                # 4. Analyze and filter (No persistence in this call to keep it fast)
                 new_signals = self.analyze_db_signals(book_lines)
-                
-                # 4. Filter and persist (Deduplicated)
                 if new_signals:
-                    six_hours_ago = datetime.now(timezone.utc) - timedelta(hours=6)
-                    for s in new_signals:
-                        if s["confidence"] >= 85:
-                            try:
-                                # Check if similar move already persisted recently
-                                stmt_check = select(WhaleMove).where(
-                                    WhaleMove.player_name == s["player"],
-                                    WhaleMove.stat_type == s["stat"],
-                                    WhaleMove.side == s["pick"],
-                                    WhaleMove.created_at >= six_hours_ago
-                                )
-                                res_check = await session.execute(stmt_check)
-                                if res_check.scalars().first():
-                                    logger.info(f"WhaleService: Skipping duplicate for {s['player']}")
-                                    continue
-
-                                new_whale = WhaleMove(
-                                    sport=sport,
-                                    player_name=s["player"],
-                                    stat_type=s["stat"],
-                                    line=s["line"],
-                                    move_type=s["type"],
-                                    side=s["pick"].upper(),
-                                    severity="High" if s["confidence"] >= 90 else "Medium",
-                                    amount_estimate=float(s["market_value"]),
-                                    sportsbook=s["books_involved"][0] if s["books_involved"] else "Market",
-                                    books_involved=",".join(s["books_involved"]) if s["books_involved"] else "Market",
-                                    whale_label=s["whale_label"],
-                                    created_at=datetime.now(timezone.utc)
-                                )
-                                session.add(new_whale)
-                            except Exception as e:
-                                logger.error(f"Failed to persist whale move: {e}")
-                    
-                    await session.commit()
                     signals.extend(new_signals)
         except Exception as e:
             logger.error(f"WhaleService database failure: {e}")
             signals = [] # Ensure it falls through to mock data fallback
 
         if not signals:
-            logger.info("WhaleService: No real-time signals found, returning high-quality mock fallback")
-            now = datetime.now(timezone.utc)
-            return [
-                {
-                    "id": "mock_whale_1",
-                    "type": "WHALE_MOVE",
-                    "signal": "ULTRA WHALE",
-                    "player": "Nikola Jokic",
-                    "stat": "Points",
-                    "pick": "OVER",
-                    "line": 28.5,
-                    "sharp_side": "WHALE",
-                    "market_value": 450,
-                    "confidence": 98,
-                    "game": "Denver Nuggets vs Dallas Mavericks",
-                    "game_time": (now + timedelta(hours=2)).isoformat(),
-                    "whale_label": "🐋 ULTRA WHALE MOVE",
-                    "description": "Institutional-sized entry detected at Pinnacle Sharp. Market moving rapidly.",
-                    "alert_time": now.isoformat(),
-                    "books_involved": ["Pinnacle", "Circa", "Bookmaker"]
-                },
-                {
-                    "id": "mock_whale_2",
-                    "type": "WHALE_MOVE",
-                    "signal": "SHARP ENTRY",
-                    "player": "LeBron James",
-                    "stat": "Assists",
-                    "pick": "OVER",
-                    "line": 8.5,
-                    "sharp_side": "VALUE",
-                    "market_value": 250,
-                    "confidence": 92,
-                    "game": "LA Lakers vs Golden State Warriors",
-                    "game_time": (now + timedelta(hours=3)).isoformat(),
-                    "whale_label": "📉 SHARP MOVE",
-                    "description": "Heavy sharp volume hitting Over 8.5 Assists. Line expected to move to 9.5.",
-                    "alert_time": now.isoformat(),
-                    "books_involved": ["Pinnacle", "DraftKings"]
-                }
-            ]
+            return []
 
         return sorted(signals, key=lambda x: x["confidence"], reverse=True)
 

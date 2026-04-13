@@ -10,17 +10,15 @@ import { useLucrixStore } from "@/store";
 import { openBillingPortal } from "@/lib/stripe";
 import APIHealth from "@/components/shared/APIHealth";
 
+import { SPORTS_CONFIG, DISPLAY_SPORTS as SPORT_KEYS } from "@/lib/sports.config";
+
 const DISPLAY_SPORTS = [
     { id: 'all', name: 'All', emoji: '⚡' },
-    { id: 'basketball_nba', name: 'NBA', emoji: '🏀' },
-    { id: 'americanfootball_nfl', name: 'NFL', emoji: '🏈' },
-    { id: 'baseball_mlb', name: 'MLB', emoji: '⚾' },
-    { id: 'icehockey_nhl', name: 'NHL', emoji: '🏒' },
-    { id: 'tennis_atp', name: 'Tennis', emoji: '🎾' },
-    { id: 'boxing_boxing', name: 'Boxing', emoji: '🥊' },
-    { id: 'mma_mixed_martial_arts', name: 'MMA', emoji: '🥋' },
-    { id: 'soccer_mls', name: 'Soccer', emoji: '⚽' },
-    { id: 'golf_pga', name: 'Golf', emoji: '🏌️' },
+    ...SPORT_KEYS.map(key => ({
+        id: key,
+        name: (SPORTS_CONFIG as any)[key]?.label || key,
+        emoji: (SPORTS_CONFIG as any)[key]?.icon || '⚡'
+    }))
 ];
 
 function NavUpgradeButton() {
@@ -77,12 +75,12 @@ function TopNavContent() {
             </div>
 
             {/* Center section: Sport Pills */}
-            <div className="flex-1 overflow-x-auto scrollbar-none flex items-center justify-center mx-4 max-w-3xl">
-                <div className="flex items-center gap-1 px-2">
+            <div className="flex-1 overflow-x-auto scrollbar-hide flex items-center mx-4 max-w-3xl">
+                <div className="flex items-center gap-2 px-4 whitespace-nowrap">
                     {DISPLAY_SPORTS.map(sport => (
                         <button key={sport.id}
                             onClick={() => handleSort(sport.id)}
-                            className={`h-8 px-3 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5
+                            className={`h-8 px-4 rounded-full text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0
                             ${active === sport.id
                                     ? 'bg-brand-purple text-white shadow-glow'
                                     : 'bg-transparent text-textSecondary hover:bg-lucrix-elevated hover:text-white'

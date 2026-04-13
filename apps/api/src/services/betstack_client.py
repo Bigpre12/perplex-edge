@@ -11,26 +11,27 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 
 from core.config import settings
+from api_utils.http import build_headers
 
 class BetstackClient:
     def __init__(self):
         self.api_key = settings.BETSTACK_API_KEY
-        self.base_url = "https://api.betstack.com/v1"  # Base URL from legacy references
+        self.base_url = settings.BETSTACK_BASE_URL
         self.timeout = 15.0
 
     @property
     def available(self) -> bool:
         return bool(self.api_key)
 
-    async def _make_request(self, endpoint: str, method: str = "GET", params: Dict = None, json_data: Dict = None) -> Any:
+    async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None) -> Any:
         if not self.available:
-            logger.warning("Betstack API key missing")
+            logger.warning("Betstack API missing credentials: BETSTACK_API_KEY not set")
             return None
 
-        headers = {
+        headers = build_headers({
             "X-API-Key": self.api_key,
             "Content-Type": "application/json"
-        }
+        })
 
         async with httpx.AsyncClient() as client:
             try:
@@ -61,3 +62,10 @@ class BetstackClient:
 
 # Singleton instance
 betstack_client = BetstackClient()
+
+def get_betstack_client() -> Optional[BetstackClient]:
+    """Factory function for safe client access."""
+    if not betstack_client.available:
+        logger.warning("Betstack API client requested but credentials not set.")
+        return None
+    return betstack_client

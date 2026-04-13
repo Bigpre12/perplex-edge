@@ -14,7 +14,7 @@ export const BetSlipSidebar: React.FC = () => {
     const [legs, setLegs] = useState<Leg[]>([]);
 
     const calculateParlayOdds = (legs: Leg[]) => {
-        // Mock parlay multiplier logic
+        // Standardized parlay multiplier logic
         let multiplier = 1;
         legs.forEach(leg => {
             const dec = leg.odds > 0 ? (leg.odds / 100) + 1 : (100 / Math.abs(leg.odds)) + 1;
@@ -28,49 +28,43 @@ export const BetSlipSidebar: React.FC = () => {
     };
 
     return (
-        <div className="bet-slip-sidebar" style={{
-            position: 'fixed', right: 0, top: 0, width: '320px', height: '100vh',
-            background: '#121212', borderLeft: '1px solid #333', padding: '20px',
-            color: '#fff', display: 'flex', flexDirection: 'column'
-        }}>
-            <h3 style={{ borderBottom: '1px solid #333', paddingBottom: '10px' }}>Bet Slip</h3>
+        <div className="bet-slip-sidebar fixed right-0 top-0 w-80 h-screen bg-lucrix-surface border-l border-lucrix-border p-5 text-white flex flex-col z-[100] shadow-2xl">
+            <h3 className="border-b border-lucrix-border pb-2 text-lg font-black uppercase italic tracking-tighter">Bet Slip</h3>
 
-            <div style={{ flex: 1, overflowY: 'auto', margin: '15px 0' }}>
+            <div className="flex-1 overflow-y-auto my-4 space-y-3 pr-2 custom-scrollbar">
                 {legs.length === 0 ? (
-                    <p style={{ color: '#666', textAlign: 'center' }}>Your slip is empty.</p>
+                    <p className="text-textMuted text-center text-sm font-bold uppercase tracking-widest mt-8">Your slip is empty.</p>
                 ) : (
                     legs.map(leg => (
-                        <div key={leg.id} style={{
-                            background: '#1a1a1a', padding: '12px', borderRadius: '8px',
-                            marginBottom: '10px', position: 'relative'
-                        }}>
-                            <button onClick={() => removeLeg(leg.id)} style={{
-                                position: 'absolute', right: '5px', top: '5px', background: 'none',
-                                border: 'none', color: '#ff4444', cursor: 'pointer'
-                            }}>×</button>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{leg.player}</div>
-                            <div style={{ fontSize: '0.8rem', color: '#aaa' }}>{leg.stat} {leg.line}</div>
-                            <div style={{ color: '#00ff00', fontSize: '0.9rem' }}>{leg.odds > 0 ? '+' : ''}{leg.odds}</div>
+                        <div key={leg.id} className="bg-lucrix-dark p-3.5 rounded-xl relative border border-lucrix-border/50 hover:border-lucrix-border transition-colors">
+                            <button 
+                                onClick={() => removeLeg(leg.id)} 
+                                className="absolute right-3 top-3 bg-transparent border-none text-textMuted hover:text-brand-danger transition-colors cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                            <div className="text-sm font-black uppercase italic tracking-tight">{leg.player}</div>
+                            <div className="text-xs font-bold text-textMuted uppercase tracking-widest mt-0.5">{leg.stat} {leg.line}</div>
+                            <div className="text-brand-success font-mono font-black mt-2 text-base">
+                                {leg.odds > 0 ? '+' : ''}{leg.odds}
+                            </div>
                         </div>
                     ))
                 )}
             </div>
 
             {legs.length > 0 && (
-                <div style={{ borderTop: '1px solid #333', paddingTop: '15px' }}>
-                    <div style={{ display: 'flex', justifyItems: 'space-between', marginBottom: '10px' }}>
-                        <span>Parlay Odds:</span>
-                        <span style={{ marginLeft: 'auto', color: '#00ff00', fontWeight: 'bold' }}>
+                <div className="border-t border-lucrix-border pt-5">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs font-black uppercase text-textMuted tracking-widest">Parlay Odds:</span>
+                        <span className="text-brand-success font-display font-black text-2xl">
                             +{calculateParlayOdds(legs)}
                         </span>
                     </div>
-                    <button style={{
-                        width: '100%', padding: '15px', background: '#00ff00', color: '#000',
-                        border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'
-                    }}>
+                    <button className="w-full py-4 bg-brand-success hover:bg-brand-success/90 text-lucrix-dark rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-glow shadow-brand-success/20">
                         Place Bet on DraftKings
                     </button>
-                    <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '10px', textAlign: 'center' }}>
+                    <p className="text-[9px] text-textMuted mt-4 text-center uppercase tracking-widest font-bold opacity-70">
                         * Affiliate link triggers on click
                     </p>
                 </div>
