@@ -19,7 +19,7 @@ class Settings:
         self.PORT = PORT
         self.REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
         self.BETSTACK_BASE_URL = os.getenv("BETSTACK_BASE_URL", "https://api.betstack.io/v1")
-        self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        self.FRONTEND_URL = os.getenv("FRONTEND_URL", "https://perplex-edge.vercel.app")
         
         # Diagnostic logging for Redis (redacted host)
         try:
@@ -43,7 +43,6 @@ class Settings:
         # Legacy Aliases
         self.STRIPE_PRO_PRICE_ID = self.STRIPE_PRO_MONTHLY_PRICE_ID
         self.STRIPE_ELITE_PRICE_ID = self.STRIPE_ELITE_MONTHLY_PRICE_ID
-        self.FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
         
         self.SUPABASE_URL: str = os.getenv("SUPABASE_URL", os.getenv("NEXT_PUBLIC_SUPABASE_URL", ""))
         self.SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY", ""))
