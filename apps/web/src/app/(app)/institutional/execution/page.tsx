@@ -20,7 +20,7 @@ import {
     Webhook,
     Bot
 } from "lucide-react";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
@@ -43,7 +43,7 @@ function ExecutionContent() {
     const fetchKeys = async () => {
         setLoading(true);
         try {
-            const data = await api.authKeys();
+            const data = await API.authKeys();
             if (!isApiError(data)) {
                 setApiKeys(data);
             }
@@ -61,7 +61,7 @@ function ExecutionContent() {
         }
         setError(null);
         try {
-            const data = await api.generateKey(newKeyLabel);
+            const data = await API.generateKey(newKeyLabel);
             if (!isApiError(data)) {
                 setJustGeneratedKey(data.api_key);
                 fetchKeys();
@@ -81,7 +81,7 @@ function ExecutionContent() {
     const saveWebhooks = async () => {
         setSaving(true);
         try {
-            const data = await api.updateWebhooks({
+            const data = await API.updateWebhooks({
                 discord_webhook_url: discordUrl,
                 telegram_bot_token: tgToken,
                 telegram_chat_id: tgChatId

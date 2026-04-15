@@ -68,7 +68,7 @@ async def get_current_user(
             if user:
                 # Update request count
                 await db.execute(
-                    update(APIKey).where(APIKey.key_hash == key_hash).values(requests_count=APIKey.requests_count + 1)
+                    update(APIKey).where(APIKey.key_hash == key_hash).values(total_requests=APIKey.total_requests + 1)
                 )
                 await db.commit()
                 return user

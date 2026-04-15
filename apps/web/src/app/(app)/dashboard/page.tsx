@@ -14,7 +14,7 @@ import LiveTrackCard from '@/components/dashboard/LiveTrackCard';
 import RecentIntel from '@/components/RecentIntel';
 
 import { useSport } from '@/context/SportContext';
-import { api, isApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { REFRESH_INTERVALS } from '@/hooks/useLiveData';
 import UpgradeCTA from '@/components/UpgradeCTA';
@@ -54,21 +54,21 @@ function DashboardContent() {
 
     const { data: propsData, isLoading: propsLoading } = useQuery({
         queryKey: ['props', activeSport],
-        queryFn: () => api.get(`/api/props/graded?sport=${activeSport || ''}`).then(r => r.data),
+        queryFn: () => api.get<any>(`/api/props/graded?sport=${activeSport || ''}`).then((r: any) => r.data),
         refetchInterval: REFRESH_INTERVALS.PROPS,
     });
     const liveProps = unwrap(propsData);
 
     const { data: injuriesData } = useQuery({
         queryKey: ['injuries', activeSport],
-        queryFn: () => api.get(`/api/injuries?sport=${activeSport || ''}`).then(r => r.data),
+        queryFn: () => api.get<any>(`/api/injuries?sport=${activeSport || ''}`).then((r: any) => r.data),
         refetchInterval: REFRESH_INTERVALS.INJURIES,
     });
     const injuries = unwrap(injuriesData);
 
     const { data: healthData } = useQuery({
         queryKey: ['health'],
-        queryFn: () => api.get('/api/health').then(r => r.data),
+        queryFn: () => api.get<any>('/api/health').then((r: any) => r.data),
         refetchInterval: REFRESH_INTERVALS.HEALTH,
     });
 

@@ -61,15 +61,19 @@ class EvEdgeSchema(BaseModel):
 class WhaleEventSchema(BaseModel):
     id: int
     sport: str
-    event_id: str
+    event_id: Optional[str] = None
     player_name: Optional[str] = None
-    market: str = Field(alias="market_key")
-    book: str = Field(alias="bookmaker")
-    odds: float = Field(alias="price")
+    market: Optional[str] = Field(default=None, alias="market_key")
+    book: Optional[str] = Field(default=None, alias="bookmaker")
+    price_before: Optional[float] = None
+    price_after: Optional[float] = None
     line: Optional[float] = None
-    units: float = Field(default=10.0, alias="whale_rating") 
+    whale_rating: Optional[float] = Field(default=0.0)
+    move_size: Optional[str] = None
+    side: Optional[str] = None
+    selection: Optional[str] = None
     move_type: Optional[str] = "WHALE"
-    timestamp: datetime = Field(alias="created_at")
+    timestamp: Optional[datetime] = Field(default=None, alias="created_at")
 
     model_config = {"from_attributes": True, "populate_by_name": True}
 

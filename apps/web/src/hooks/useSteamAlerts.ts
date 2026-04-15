@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { api, API, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export interface SteamAlert {
     id?: string;
@@ -24,7 +24,7 @@ export function useSteamAlerts(sport = "basketball_nba") {
     useEffect(() => {
         const poll = async () => {
             try {
-                const data = await api.get<any>(API.steamAlerts(sport));
+                const data = await API.steamAlerts(sport);
                 if (isApiError(data)) return;
 
                 const incoming: SteamAlert[] = Array.isArray(data?.alerts) ? data.alerts : (Array.isArray(data) ? data : []);

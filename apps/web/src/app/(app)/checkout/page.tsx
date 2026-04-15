@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Sparkles, ShieldCheck, Zap, ArrowRight, Check } from "lucide-react";
 import { getUser } from "@/lib/auth";
 
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export default function CheckoutPage() {
     const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function CheckoutPage() {
                 return;
             }
 
-            const data = await api.stripeCheckout('price_pro_monthly'); // Defaulting to pro monthly
+            const data = await API.stripeCheckout('price_pro_monthly'); // Defaulting to pro monthly
 
             if (isApiError(data)) {
                 throw new Error(data.message || "Failed to initialize secure checkout");

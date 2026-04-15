@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { TrendingUp, Calendar, ChevronRight } from "lucide-react";
-import api from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function MarketsPage() {
     const [slate, setSlate] = useState<any[]>([]);
@@ -10,8 +10,9 @@ export default function MarketsPage() {
     useEffect(() => {
         const fetchSlate = async () => {
             setLoading(true);
-            const res = await api.get("/api/props/slate/today?sport=basketball_nba");
-            setSlate(Array.isArray(res) ? res : []);
+            const { data } = await api.get("/api/props/slate/today?sport=basketball_nba");
+            const items = data?.data || data;
+            setSlate(Array.isArray(items) ? items : []);
             setLoading(false);
         };
         fetchSlate();

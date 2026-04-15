@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Search, Bell, ChevronDown, Filter, BarChart3, Database } from 'lucide-react';
-import { api, isApiError } from '@/lib/api';
+import API, { isApiError } from '@/lib/api';
 import { TrendCard } from '@/components/TrendHunter/TrendCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -32,7 +32,7 @@ function TrendHunterContent() {
     const fetchTrends = async () => {
         setLoading(true);
         try {
-            const data = await api.trendHunter(activeSport, timeframe);
+            const data = await API.trendHunter(activeSport, timeframe);
             if (!isApiError(data)) {
                 setTrends(data.items || []);
             }

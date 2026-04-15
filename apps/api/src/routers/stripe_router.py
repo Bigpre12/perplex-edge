@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 import stripe, os
-from db.session import get_db
-from sqlalchemy.orm import Session
 from core.config import settings
 from common_deps import get_db, require_elite
 from api_utils.supabase_proxy import supabase

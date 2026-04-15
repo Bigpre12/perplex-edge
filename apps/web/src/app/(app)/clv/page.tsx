@@ -4,7 +4,8 @@ import React, { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useSport } from "@/hooks/useSport";
-import { API_BASE } from "@/lib/api";
+import API, { API_BASE, isApiError } from "@/lib/api";
+import { Sparkles, Target, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
@@ -186,7 +187,7 @@ function MonteCarloView() {
     setIsSimulating(true);
     try {
       // simulate() expects legs, n_sims
-      const data = await (API as any).simulate([{ player: "Test", line: 2.5, type: "OVER" }], 100);
+      const data = await API.simulate([{ player: "Test", line: 2.5, type: "OVER" }], 100);
       setSimResult(data);
     } catch (err) {
       console.error("Simulation failed", err);
@@ -234,8 +235,6 @@ function MonteCarloView() {
   );
 }
 
-import { API, isApiError } from "@/lib/api";
-import { Sparkles, Target, Zap } from "lucide-react";
 
 const Trophy = ({ size, className }: any) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>

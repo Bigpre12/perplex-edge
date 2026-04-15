@@ -13,7 +13,7 @@ export default function TopEdgesPage() {
     const [minEV, setMinEV] = useState(2);
     const { data: edgesData, isLoading: loading, error, dataUpdatedAt, refetch: refresh } = useQuery({
         queryKey: ['top-edges', minEV],
-        queryFn: () => api.get(`/api/ev/top?limit=30&min_ev=${minEV}`).then(r => r.data),
+        queryFn: () => api.get<any>(`/api/ev/top?limit=30&min_ev=${minEV}`).then((r: any) => r.data),
         refetchInterval: 180_000,
     });
 

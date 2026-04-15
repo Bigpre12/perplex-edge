@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { Settings, Cpu, ShieldAlert, Save, TrendingUp, Loader2, Zap } from "lucide-react";
 import { motion } from "framer-motion";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
@@ -26,7 +26,7 @@ function EdgeSettingsContent() {
     useEffect(() => {
         async function fetchConfig() {
             try {
-                const data = await api.edgeConfig();
+                const data = await API.edgeConfig();
                 if (!isApiError(data)) {
                     setConfig(data);
                 }
@@ -43,7 +43,7 @@ function EdgeSettingsContent() {
         setSaving(true);
         setStatusBlock(null);
         try {
-            const data = await api.saveEdgeConfig(config);
+            const data = await API.saveEdgeConfig(config);
             if (!isApiError(data)) {
                 setStatusBlock({ msg: "Settings saved and deployed to AI Edge Engine.", isError: false });
             } else {

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, cast, Integer
 from db.session import get_db, get_async_db
 from models.brain import CLVRecord
 from schemas.unified import ClvTradeSchema
@@ -119,7 +119,7 @@ async def get_clv_summary(
     """
     stmt = select(
         func.count(CLVRecord.id).label("total"),
-        func.sum(func.cast(CLVRecord.clv_beat, func.Integer)).label("beats"),
+        func.sum(cast(CLVRecord.clv_beat, Integer)).label("beats"),
         func.avg(CLVRecord.clv_percentage).label("avg_clv")
     )
     if sport:

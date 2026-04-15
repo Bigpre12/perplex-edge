@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import Link from "next/link";
-import API, { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 import {
     ScatterChart,
     Scatter,

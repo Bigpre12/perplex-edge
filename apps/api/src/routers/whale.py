@@ -26,7 +26,7 @@ async def whale_signals(
         
     stmt = select(WhaleMove).where(WhaleMove.sport == sport)
     if min_units > 0:
-        stmt = stmt.where(WhaleMove.units >= min_units)
+        stmt = stmt.where(WhaleMove.whale_rating >= min_units)
         
     stmt = stmt.where(WhaleMove.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
     stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(20)

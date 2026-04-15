@@ -1,13 +1,13 @@
 "use client";
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import API from '@/lib/api';
 import { CanonicalBoardResponse } from './usePropsBoard';
 
 export function useEVBoard(sport = "basketball_nba", minEv?: number) {
     return useQuery<CanonicalBoardResponse, Error>({
         queryKey: ['evBoard', sport, minEv],
         queryFn: async () => {
-            const res = await api.evBoard(sport, minEv);
+            const res = await API.evBoard(sport, minEv);
             if (res instanceof Error) throw res;
             if (res?.status === "pipeline_error" || res?.error) {
                 throw new Error(res.message || res.error || "Failed to fetch EV board");

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api, isApiError, API, unwrap } from "@/lib/api";
+import { isApiError, API, unwrap } from "@/lib/api";
 
 interface IntelItem {
     id: string;

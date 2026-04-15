@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, List
 from fastapi import APIRouter, Query, Depends
 from sqlalchemy import select, desc
@@ -7,6 +8,7 @@ from models.brain import SharpSignal, WhaleMove
 from schemas.universal import UniversalResponse, ResponseMeta
 from middleware.request_id import get_request_id
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sharp"])
 
 @router.get("/alerts", response_model=UniversalResponse[dict])
@@ -48,9 +50,9 @@ async def get_sharp_alerts(
                     except: pass
 
             if since_dt:
-                sharp_stmt = sharp_stmt.where(SharpSignal.created_at >= since_dt)
-                whale_stmt = whale_stmt.where(WhaleMove.created_at >= since_dt)
-                steam_stmt = steam_stmt.where(SteamEvent.created_at >= since_dt)
+                sharp_signals = [s for s in sharp_signals if s.created_at and s.created_at.replace(tzinfo=None) >= since_dt]
+                whale_moves = [w for w in whale_moves if w.created_at and w.created_at.replace(tzinfo=None) >= since_dt]
+                steam_events = [s for s in steam_events if s.created_at and s.created_at.replace(tzinfo=None) >= since_dt]
 
             combined = []
             for s in sharp_signals:

@@ -1,6 +1,6 @@
 // apps/web/src/lib/stripe.ts
 import { loadStripe, Stripe } from "@stripe/stripe-js";
-import { api, isApiError } from "./api";
+import API, { isApiError } from "./api";
 import { PRICING } from "@/constants/pricing";
 
 // Lazy load — only loads when actually needed, prevents crash on missing key
@@ -62,7 +62,7 @@ export type PlanKey = keyof typeof PLANS;
 
 // Checkout helper — calls your FastAPI backend
 export async function startCheckout(priceId: string) {
-    const data = await api.stripeCheckout(priceId);
+    const data = await API.stripeCheckout(priceId);
 
     if (isApiError(data)) {
         throw new Error(data.message || "Failed to create checkout session");
@@ -75,7 +75,7 @@ export async function startCheckout(priceId: string) {
 
 // Portal helper — manage existing subscription
 export async function openBillingPortal() {
-    const data = await api.billing.createPortalSession();
+    const data = await API.billing.createPortalSession();
 
     if (isApiError(data)) {
         throw new Error(data.message || "Failed to open billing portal");

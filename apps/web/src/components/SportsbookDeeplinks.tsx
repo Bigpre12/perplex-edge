@@ -53,8 +53,8 @@ export const SportsbookDeeplinks: React.FC<Props> = ({
                 playerName, statType, line, side, odds, id
             };
 
-            const data = await api.post<any>(API.share(), shareData);
-
+            const res = await api.post<any>(API.share(), shareData);
+            const data = res.data;
             if (!isApiError(data) && data.share_id) {
                 const shareUrl = `${window.location.origin}/share/${data.share_id}`;
                 await navigator.clipboard.writeText(shareUrl);

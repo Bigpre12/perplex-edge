@@ -1,11 +1,11 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/api";
+import API from "@/lib/api";
 
 export function useMe() {
   return useQuery({
     queryKey: ["me"],
-    queryFn: api.me,
+    queryFn: API.me,
     staleTime: 5 * 60_000,
   });
 }

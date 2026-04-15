@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { CircleDollarSign, Plus, CheckCircle, XCircle, MinusCircle } from "lucide-react";
 import { useState } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export default function BetTracker() {
     const { data, refetch } = useQuery({
         queryKey: ["bets"],
         queryFn: async () => {
-            const res = await api.bets();
+            const res = await API.bets();
             return isApiError(res) ? { bets: [], stats: {} } : res;
         },
     });
@@ -17,7 +17,7 @@ export default function BetTracker() {
     const [isAdding, setIsAdding] = useState(false);
 
     async function settleBet(id: number, result: string) {
-        const res = await api.settleBet(id, result);
+        const res = await API.settleBet(id, result);
         if (!isApiError(res)) {
             refetch();
         }

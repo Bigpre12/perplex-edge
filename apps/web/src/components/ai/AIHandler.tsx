@@ -14,7 +14,7 @@ import {
     Target
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export default function AIHandler() {
     const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +41,7 @@ export default function AIHandler() {
 
         try {
             const token = getAuthToken();
-            const data = await api.aiChat(query, token as string);
+            const data = await API.aiChat(query, token as string);
 
             if (!isApiError(data)) {
                 setMessages(prev => [...prev, { role: "assistant", content: data.response }]);

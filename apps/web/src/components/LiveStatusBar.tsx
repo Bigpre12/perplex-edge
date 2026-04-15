@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLucrixStore } from '@/store';
-import API, { api } from '@/lib/api';
+import API from '@/lib/api';
 
 interface LiveStatusBarProps {
     lastUpdated?: Date | null;

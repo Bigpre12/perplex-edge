@@ -14,7 +14,7 @@ import {
     Line,
     LineChart as RechartLine
 } from "recharts";
-import API, { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
 

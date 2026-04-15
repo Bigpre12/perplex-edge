@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Database, ShieldCheck, Globe } from "lucide-react";
-import api from "@/lib/api";
+import { api } from "@/lib/api";
 
 export default function BooksPage() {
     const [books, setBooks] = useState<any[]>([]);
@@ -10,8 +10,9 @@ export default function BooksPage() {
     useEffect(() => {
         const fetchBooks = async () => {
             setLoading(true);
-            const res = await api.get("/api/props/books/available?sport=basketball_nba");
-            setBooks(Array.isArray(res) ? res : []);
+            const { data } = await api.get("/api/props/books/available?sport=basketball_nba");
+            const items = data?.data || data;
+            setBooks(Array.isArray(items) ? items : []);
             setLoading(false);
         };
         fetchBooks();

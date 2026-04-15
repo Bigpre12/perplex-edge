@@ -3,14 +3,14 @@
 import React from "react";
 import { Zap, Calculator, TrendingUp, Info } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
+import API from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
 import GateLock from "@/components/GateLock";
 
 export default function MiddleBoostPage() {
     const { data, loading, error, lastUpdated, isStale, refresh } = useLiveData<any>(
-        () => api.middleBoost(),
+        () => API.middleBoost(),
         [],
         { refreshInterval: 300000 }
     );

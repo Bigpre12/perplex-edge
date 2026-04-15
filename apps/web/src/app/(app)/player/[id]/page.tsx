@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import API, { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 interface PlayerProfile {
     player_name: string;

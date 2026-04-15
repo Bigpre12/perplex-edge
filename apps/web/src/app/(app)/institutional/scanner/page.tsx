@@ -4,7 +4,7 @@ import { useState, useCallback, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Radar, Zap, Activity, Server, Globe, Share2, CheckCircle2 } from "lucide-react";
 import { useLiveData } from "@/hooks/useLiveData";
-import { api } from "@/lib/api";
+import API from "@/lib/api";
 import LiveStatusBar from "@/components/LiveStatusBar";
 import PageStates from "@/components/PageStates";
 import GateLock from "@/components/GateLock";
@@ -14,7 +14,7 @@ import { useSport } from "@/context/SportContext";
 function InstitutionalScannerContent() {
     const { selectedSport: sport } = useSport();
     const { data: allProps, loading, error, lastUpdated, isStale, refresh } = useLiveData<any[]>(
-        () => api.props(sport || "basketball_nba"),
+        () => API.props(sport || "basketball_nba"),
         [sport],
         { refreshInterval: 60000 } // 1 minute
     );
@@ -81,7 +81,7 @@ function InstitutionalScannerContent() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/[0.03]">
-                                        {(allProps || []).map((prop, i) => (
+                                        {(allProps || []).map((prop: any, i: number) => (
                                             <ScannerRow
                                                 key={`${prop.event_id}-${i}`}
                                                 prop={prop}

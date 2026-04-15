@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Copy, Users, Link2, DollarSign, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 import { getUser } from "@/lib/auth";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 import GateLock from "@/components/GateLock";
 import { useGate } from "@/hooks/useGate";
@@ -20,7 +20,7 @@ function AffiliateContent() {
                 const user = getUser();
                 if (!user) return;
 
-                const data = await api.affiliateMyLink(user.id);
+                const data = await API.affiliateMyLink(user.id);
                 if (!isApiError(data)) {
                     setReferralData(data);
                 }

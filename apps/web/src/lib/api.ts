@@ -197,9 +197,12 @@ export const API = {
         return data;
       } catch (err) { return handleApiError(err); }
     },
-    decisions: async (sport?: string) => {
+    decisions: async (sport?: string, limit?: number) => {
       try {
-        const { data } = await api.get(sport ? `/api/brain/decisions?sport=${sport}` : '/api/brain/decisions');
+        const params: any = {};
+        if (sport) params.sport = sport;
+        if (limit) params.limit = limit;
+        const { data } = await api.get('/api/brain/decisions', { params });
         return data;
       } catch (err) { return handleApiError(err); }
     },
@@ -214,6 +217,12 @@ export const API = {
     top: async (sport?: string, limit = 10) => {
       try {
         const { data } = await api.get(`/api/ev/top?sport=${sport || ''}&limit=${limit}`);
+        return data;
+      } catch (err) { return handleApiError(err); }
+    },
+    scanner: async (sport?: string) => {
+      try {
+        const { data } = await api.get(`/api/ev?sport=${sport || ''}`);
         return data;
       } catch (err) { return handleApiError(err); }
     }
@@ -380,11 +389,164 @@ export const API = {
     } catch (err) { return handleApiError(err); }
   },
   wsBaseUrl: isServer ? WS_BASE : (window.location.origin.replace('http', 'ws') + '/backend'),
+  wsOdds: (isServer ? WS_BASE : (typeof window !== 'undefined' ? window.location.origin.replace('http', 'ws') + '/backend' : '')) + '/api/ev/ws',
+  wsKalshi: (isServer ? WS_BASE : (typeof window !== 'undefined' ? window.location.origin.replace('http', 'ws') + '/backend' : '')) + '/api/kalshi/ws',
+  wsEv: isServer ? WS_BASE : (typeof window !== 'undefined' ? window.location.origin.replace('http', 'ws') + '/backend' : ''),
+  pollMs: 15000,
   adminStats: async (email: string) => {
     try {
       const { data } = await api.get(`/api/admin/stats?email=${email}`);
       return data;
     } catch (err) { return handleApiError(err); }
-  }
+  },
+  steamAlerts: async (sport?: string) => {
+    try {
+      const { data } = await api.get(sport ? `/api/steam?sport=${sport}` : '/api/steam');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  search: async (q: string) => {
+    try {
+      const { data } = await api.get('/api/search', { params: { q } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  simulate: async (legs: any[], nSims = 100, trials = 10000) => {
+    try {
+      const { data } = await api.post('/api/parlays/simulate', { legs, n_sims: trials });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  getProps: async (sport?: string, limit = 25) => {
+    try {
+      const { data } = await api.get(`/api/props/graded?sport=${sport || ''}&limit=${limit}`);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  me: async () => {
+    try {
+      const { data } = await api.get('/api/auth/me');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  metaHealth: async () => {
+    try {
+      const { data } = await api.get('/api/meta/health');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  bets: async () => {
+    try {
+      const { data } = await api.get('/api/bets/my');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  settleBet: async (betId: number, result: string) => {
+    try {
+      const { data } = await api.post(`/api/bets/${betId}/settle`, { result });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  clvLeaderboard: async (sport?: string) => {
+    try {
+      const { data } = await api.get('/api/clv/summary', { params: { sport } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  aiChat: async (message: string, context?: any) => {
+    try {
+      const { data } = await api.post('/api/oracle/chat', { message, context });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  middleBoost: async (sport?: string) => {
+    try {
+      const { data } = await api.get('/api/middle-boost', { params: { sport } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  trendHunter: async (sport?: string, timeframe?: string) => {
+    try {
+      const { data } = await api.get('/api/props/history', { params: { sport, timeframe } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  affiliateMyLink: async (userId?: string | number) => {
+    try {
+      const { data } = await api.get('/api/referrals/my-link', { params: userId ? { user_id: userId } : {} });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  authKeys: async () => {
+    try {
+      const { data } = await api.get('/api/auth/keys');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  generateKey: async (label: string) => {
+    try {
+      const { data } = await api.post('/api/auth/keys', { label });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  updateWebhooks: async (webhookData: any) => {
+    try {
+      const { data } = await api.post('/api/settings/webhooks', webhookData);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  edgeConfig: async () => {
+    try {
+      const { data } = await api.get('/api/settings/edge-config');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  saveEdgeConfig: async (config: any) => {
+    try {
+      const { data } = await api.post('/api/settings/edge-config', config);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  evBoard: async (sport?: string, minEv?: number) => {
+    try {
+      const params: any = { sport: sport || '' };
+      if (minEv !== undefined) params.min_ev = minEv;
+      const { data } = await api.get('/api/ev', { params });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  trackRecordSummary: async () => {
+    try {
+      const { data } = await api.get('/api/hit-rate/summary');
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  trackRecordRecent: async (limit = 20) => {
+    try {
+      const { data } = await api.get(`/api/bets/recent?limit=${limit}`);
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  stripeCheckout: async (priceId: string) => {
+    try {
+      const { data } = await api.post('/api/stripe/checkout', { price_id: priceId });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  billing: {
+    createPortalSession: async () => {
+      try {
+        const { data } = await api.post('/api/billing/portal');
+        return data;
+      } catch (err) { return handleApiError(err); }
+    }
+  },
+  autocopy: async (endpoint: string, ids?: any[]) => {
+    try {
+      const { data } = await api.post(`/api/bets/${endpoint}`, { ids });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  share: () => `${API_BASE}/api/social/share`,
 };
 export default API;

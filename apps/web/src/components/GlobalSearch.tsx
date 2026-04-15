@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Search, X, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { api, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 export function GlobalSearch() {
     const [open, setOpen] = useState(false);
@@ -31,7 +31,7 @@ export function GlobalSearch() {
         queryKey: ["search", debouncedQuery],
         queryFn: async () => {
             if (debouncedQuery.length < 3) return { results: [] };
-            const res = await api.search(debouncedQuery);
+            const res = await API.search(debouncedQuery);
             return isApiError(res) ? { results: [] } : res;
         },
         enabled: debouncedQuery.length >= 3,

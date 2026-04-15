@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { api, isApiError } from '@/lib/api';
+import API, { isApiError } from '@/lib/api';
 import { useSubscription } from './useSubscription';
 
 /**
@@ -22,7 +22,7 @@ export function useUpgradeSuccess(targetTier: string, onSuccess: () => void) {
         }
 
         const interval = setInterval(async () => {
-            const res = await api.authMe();
+            const res = await API.authMe();
             if (!isApiError(res)) {
                 if (res.subscription_tier === targetTier) {
                     setIsPolling(false);

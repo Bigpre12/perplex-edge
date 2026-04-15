@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { Zap, AlertTriangle, TrendingUp, Globe } from 'lucide-react';
-import { api, API, isApiError } from "@/lib/api";
+import API, { isApiError } from "@/lib/api";
 
 interface Alert {
     id: string;
@@ -17,7 +17,7 @@ export default function AlertFeed() {
     useEffect(() => {
         const fetchAlerts = async () => {
             try {
-                const data = await api.get<any>(API.recentIntel('basketball_nba' as any));
+                const data = await API.recentIntel('basketball_nba');
                 if (!isApiError(data) && data.items && data.items.length > 0) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     setAlerts(data.items.map((item: any, i: number) => ({
