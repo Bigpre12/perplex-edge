@@ -4,14 +4,16 @@ import { useSport as useSportFromContext } from "@/context/SportContext";
 
 /**
  * Shared hook for accessing the global sport selector state.
- * Wraps the SportContext to provide a consistent interface in the hooks directory.
+ * `sport` normalizes 'all' to 'basketball_nba' so API calls always have a valid sport key.
+ * `rawSport` gives the unmodified store value for UI display (e.g. TopNav highlight).
  */
 export function useSport() {
   const { selectedSport, setSelectedSport } = useSportFromContext();
+  const normalized = (!selectedSport || selectedSport === 'all') ? 'basketball_nba' : selectedSport;
   
   return {
-    sport: selectedSport,
+    sport: normalized,
+    rawSport: selectedSport,
     setSport: setSelectedSport,
-    // Note: This hook was clean-re-written to resolve a ghost IDE error on line 90.
   };
 }

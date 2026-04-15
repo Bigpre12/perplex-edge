@@ -49,19 +49,20 @@ function DashboardContent() {
                   process.env.NEXT_PUBLIC_DEV_MODE === 'true');
     
     const { selectedSport: activeSport } = useSport();
+    const sportParam = (!activeSport || activeSport === 'all') ? '' : activeSport;
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
 
     const { data: propsData, isLoading: propsLoading } = useQuery({
-        queryKey: ['props', activeSport],
-        queryFn: () => api.get<any>(`/api/props/graded?sport=${activeSport || ''}`).then((r: any) => r.data),
+        queryKey: ['props', sportParam || 'all'],
+        queryFn: () => api.get<any>(sportParam ? `/api/props/graded?sport=${sportParam}` : '/api/props/graded').then((r: any) => r.data),
         refetchInterval: REFRESH_INTERVALS.PROPS,
     });
     const liveProps = unwrap(propsData);
 
     const { data: injuriesData } = useQuery({
-        queryKey: ['injuries', activeSport],
-        queryFn: () => api.get<any>(`/api/injuries?sport=${activeSport || ''}`).then((r: any) => r.data),
+        queryKey: ['injuries', sportParam || 'all'],
+        queryFn: () => api.get<any>(sportParam ? `/api/injuries?sport=${sportParam}` : '/api/injuries').then((r: any) => r.data),
         refetchInterval: REFRESH_INTERVALS.INJURIES,
     });
     const injuries = unwrap(injuriesData);

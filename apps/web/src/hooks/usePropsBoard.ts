@@ -42,11 +42,14 @@ export interface CanonicalBoardResponse {
 }
 
 export function usePropsBoard(sport = "basketball_nba", minEv?: number) {
+    const effectiveSport = (!sport || sport === 'all') ? '' : sport;
     return useQuery<CanonicalBoardResponse, Error>({
-        queryKey: ['propsBoard', sport, minEv],
+        queryKey: ['propsBoard', effectiveSport || 'all', minEv],
         queryFn: async () => {
-            // TARGET LIVE ODDS DIRECTLY (Reliability Fix)
-            const { data } = await api.get(`/api/props/live?sport=${sport}`);
+            const url = effectiveSport
+                ? `/api/props/live?sport=${effectiveSport}`
+                : `/api/props/live`;
+            const { data } = await api.get(url);
             
             const raw = Array.isArray(data) ? data : (data?.data || data?.props || []);
             

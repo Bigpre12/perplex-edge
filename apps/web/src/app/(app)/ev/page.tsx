@@ -22,14 +22,12 @@ function EVPageContent() {
   const { sport } = useSport();
   const [minEv, setMinEv] = useState<number>(2);
 
-  // On-demand computation trigger
   useEffect(() => {
     const triggerCompute = async () => {
       try {
         await fetch(`/api/compute?sport=${sport}`, { method: 'POST' });
-        console.log(`[EV] Intelligence cycle triggered for ${sport}`);
-      } catch (err) {
-        console.error("[EV] Compute trigger failed:", err);
+      } catch {
+        // Compute trigger is best-effort
       }
     };
     triggerCompute();

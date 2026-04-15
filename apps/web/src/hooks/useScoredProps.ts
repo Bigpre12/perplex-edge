@@ -4,10 +4,14 @@ import { api } from '@/lib/api';
 import { CanonicalProp } from './usePropsBoard';
 
 export function useScoredProps(sport = "basketball_nba") {
+    const effectiveSport = (!sport || sport === 'all') ? '' : sport;
     return useQuery<CanonicalProp[], Error>({
-        queryKey: ['scoredProps', sport],
+        queryKey: ['scoredProps', effectiveSport || 'all'],
         queryFn: async () => {
-            const { data } = await api.get(`/api/props/scored?sport=${sport}`);
+            const url = effectiveSport
+                ? `/api/props/scored?sport=${effectiveSport}`
+                : `/api/props/scored`;
+            const { data } = await api.get(url);
             
             // Standardize format - handle both { data: [...] } and direct array
             const signals = Array.isArray(data) ? data : data?.data || data?.props || [];

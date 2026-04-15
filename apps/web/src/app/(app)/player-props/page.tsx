@@ -30,16 +30,15 @@ export default function PlayerPropsPage() {
 }
 
 function PlayerPropsContent() {
-    const sport = useLucrixStore((state: any) => state.activeSport);
+    const rawSport = useLucrixStore((state: any) => state.activeSport);
+    const sport = (!rawSport || rawSport === 'all') ? 'basketball_nba' : rawSport;
     const { data: freshness, isLoading: freshnessLoading } = useFreshness(sport);
     const searchParams = useSearchParams();
 
-    // On-demand computation trigger
     useEffect(() => {
         const triggerCompute = async () => {
             try {
                 await fetch(`/api/compute?sport=${sport}`, { method: 'POST' });
-                console.log(`[PROPS] Intelligence cycle triggered for ${sport}`);
             } catch (err) {
                 console.error("[PROPS] Compute trigger failed:", err);
             }
