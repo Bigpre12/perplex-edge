@@ -263,6 +263,25 @@ async def initialize_backend_services():
                 WHERE player_name IS NULL
             """)
             
+            # Cleanup corrupt hit rate data (>100% rates, NaN values)
+            await run_migration_step("""
+                DELETE FROM player_hit_rates
+                WHERE l5_hit_rate > 1.0 OR l10_hit_rate > 1.0 OR l20_hit_rate > 1.0
+                   OR l5_hit_rate != l5_hit_rate OR l10_hit_rate != l10_hit_rate OR l20_hit_rate != l20_hit_rate
+            """)
+
+            # System Sync State table for tracking waterfall pipeline timestamps
+            await run_migration_step("""
+                CREATE TABLE IF NOT EXISTS system_sync_state (
+                    id INTEGER PRIMARY KEY DEFAULT 1,
+                    last_odds_sync TIMESTAMPTZ,
+                    last_ev_sync TIMESTAMPTZ,
+                    last_grade_sync TIMESTAMPTZ,
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            """)
+            await run_migration_step("INSERT INTO system_sync_state (id) VALUES (1) ON CONFLICT DO NOTHING")
+
             logger.info("📡 [Background Init] Schema migrations and indexes complete.")
     except Exception as e:
         logger.error(f"❌ [Background Init] Startup DB error: {e}\n{traceback.format_exc()}")

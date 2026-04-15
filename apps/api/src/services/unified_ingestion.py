@@ -32,6 +32,7 @@ class UnifiedIngestionService:
 
     async def run(self, sport_key: str):
         start_time = datetime.now(timezone.utc)
+        logger.info(f"=== WATERFALL STAGE 0: INIT for {sport_key} START ===")
         source_name = "primary"
         from workers.ev_engine import ev_engine # type: ignore
         errors: List[str] = []
@@ -44,7 +45,8 @@ class UnifiedIngestionService:
             "errors": errors
         }
         
-        # 1. Fetch metadata (Teams and Times) — Attempt key rotating ingest
+        # 1. Fetch metadata (Teams and Times)
+        logger.info(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} START ===")
         if not odds_api_client.is_configured:
             logger.warning(f"UnifiedIngestion: Skipping {sport_key} - Odds API not configured")
             return
@@ -97,7 +99,9 @@ class UnifiedIngestionService:
                 'game_time': game_time
             }
 
+        logger.info(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} COMPLETE — {len(odds_raw)} events ===")
         # 2d. Fetch Player Props (Requires per-event calls)
+        logger.info(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} START ===")
         PROP_MARKETS_BY_SPORT = {
             "basketball_nba": "player_points,player_rebounds,player_assists",
             "americanfootball_nfl": "player_pass_yds,player_rush_yds",
@@ -194,7 +198,9 @@ class UnifiedIngestionService:
         except Exception as e:
             logger.error(f"UnifiedIngestion: Betstack fetch failed: {e}")
 
+        logger.info(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} COMPLETE ===")
         # 3. Normalize into PropRecords
+        logger.info(f"=== WATERFALL STAGE 3: NORMALIZE & ENRICH for {sport_key} START ===")
         records = odds_mapper.map_theodds_props_to_records(odds_raw, metadata_map, sport_key)
         
         # Merge logic (Betstack + Primary)
@@ -209,10 +215,16 @@ class UnifiedIngestionService:
         records = self.enrich_with_market_intel(combined_records)
         metrics["odds_count"] = len(records)
         
+        logger.info(f"=== WATERFALL STAGE 3: NORMALIZE & ENRICH for {sport_key} COMPLETE — {len(records)} records ===")
         # 4. Standardized Persistence
-        # CRITICAL FIX: Prevent wiping out historical live data if quota exhaustion caused 0 records
-        if sport_key in PROP_MARKETS_BY_SPORT and len(records) > 0:
+        logger.info(f"=== WATERFALL STAGE 4: PERSIST for {sport_key} START ===")
+        # Only delete old data if we have a substantial replacement set (>=10 records).
+        # This prevents partial API responses or exhausted keys from wiping the table.
+        MIN_RECORDS_FOR_DELETE = 10
+        if sport_key in PROP_MARKETS_BY_SPORT and len(records) >= MIN_RECORDS_FOR_DELETE:
             await delete_props_for_sport(sport_key)
+        elif sport_key in PROP_MARKETS_BY_SPORT and 0 < len(records) < MIN_RECORDS_FOR_DELETE:
+            logger.warning(f"UnifiedIngestion: Only {len(records)} records for {sport_key} — skipping delete to preserve existing data")
             
         if records:
             await upsert_props_live(records)
@@ -269,12 +281,14 @@ class UnifiedIngestionService:
         else:
             logger.warning(f"UnifiedIngestion: No unified rows generated for {sport_key}")
 
+        logger.info(f"=== WATERFALL STAGE 4: PERSIST for {sport_key} COMPLETE — {metrics['rows_upserted']} rows ===")
         # 5. Trigger Unified Intelligence Pipeline
+        logger.info(f"=== WATERFALL STAGE 5: INTELLIGENCE PIPELINE for {sport_key} START ===")
         await self.run_intelligence_pipeline(sport_key, records)
 
-        # Promote EV signals to ModelPicks for the dashboard
-
-        # Promote EV signals to ModelPicks for the dashboard
+        logger.info(f"=== WATERFALL STAGE 5: INTELLIGENCE PIPELINE for {sport_key} COMPLETE ===")
+        # 6. Promote EV signals to ModelPicks
+        logger.info(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} START ===")
         try:
             async with async_session_maker() as session:
                 await brain_advanced_service.generate_model_picks(sport_key, session)
@@ -283,10 +297,22 @@ class UnifiedIngestionService:
             metrics["errors"].append(f"ModelPick Promotion: {str(e)}")
             logger.error(f"UnifiedIngestion: ModelPick promotion failed: {e}")
 
+        logger.info(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} COMPLETE ===")
         metrics["status"] = "completed" if not metrics["errors"] else "partial_success"
         elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
         logger.info(f"INFO: [{sport_key}] Ingest complete — {metrics['events_count']} odds events, {metrics['rows_upserted']} props upserted, source: {source_name}, elapsed: {elapsed:.1f}s")
-        
+
+        # Update system_sync_state timestamps
+        try:
+            from sqlalchemy import text as sa_text
+            async with async_session_maker() as ss:
+                await ss.execute(sa_text(
+                    "UPDATE system_sync_state SET last_odds_sync = NOW(), updated_at = NOW() WHERE id = 1"
+                ))
+                await ss.commit()
+        except Exception as sync_err:
+            logger.warning(f"UnifiedIngestion: Failed to update sync state: {sync_err}")
+
         async with async_session_maker() as session:
             await HeartbeatService.log_heartbeat(
                 session, 

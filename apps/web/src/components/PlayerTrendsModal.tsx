@@ -10,11 +10,22 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
     const [trendData, setTrendData] = useState<any[]>([]);
     const [aiConfidence, setAiConfidence] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
+    const [timedOut, setTimedOut] = useState(false);
 
     const currentLine = parseFloat(propData?.line_value || propData?.line || 0);
 
     useEffect(() => {
         if (!isOpen || !propData) return;
+
+        let cancelled = false;
+        setTimedOut(false);
+
+        const timeout = setTimeout(() => {
+            if (loading) {
+                setTimedOut(true);
+                setLoading(false);
+            }
+        }, 15000);
 
         const fetchData = async () => {
             setLoading(true);
@@ -22,12 +33,10 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                 const playerName = propData.player?.name || propData.player_name;
                 const statType = propData.market?.stat_type || propData.stat_type;
 
-                // Fetch real historical trends
                 const res = await API.playerTrends(playerName, statType);
                 const history = res?.history || [];
-                setTrendData(history);
+                if (!cancelled) setTrendData(history);
 
-                // Fetch AI Prediction
                 const mlData = await API.mlPredict({
                     player_name: playerName,
                     stat_type: statType,
@@ -35,17 +44,18 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                     recent_performance: history.map((h: any) => h.value)
                 });
 
-                if (!isApiError(mlData) && mlData.ai_confidence_score) {
+                if (!cancelled && !isApiError(mlData) && mlData.ai_confidence_score) {
                     setAiConfidence(mlData.ai_confidence_score);
                 }
             } catch (err) {
                 console.error("Trends Fetch Failed:", err);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchData();
+        return () => { cancelled = true; clearTimeout(timeout); };
     }, [isOpen, propData, currentLine]);
 
     if (!isOpen || !propData) return null;
@@ -99,8 +109,8 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                         </div>
                         <div className="p-6 text-center">
                             <p className="text-[9px] font-black text-[#6B7280] uppercase tracking-widest mb-1 flex items-center justify-center gap-1 leading-none"><Brain size={12} className="text-primary" /> AI Conf.</p>
-                            <p className="text-xl font-black text-primary italic tracking-tighter leading-tight">{aiConfidence ? `${aiConfidence}%` : '---'}</p>
-                            <p className="text-[10px] font-bold text-[#6B7280] uppercase leading-tight">Monte Carlo</p>
+                            <p className="text-xl font-black text-primary italic tracking-tighter leading-tight">{timedOut ? 'N/A' : aiConfidence ? `${aiConfidence}%` : '---'}</p>
+                            <p className="text-[10px] font-bold text-[#6B7280] uppercase leading-tight">{timedOut ? 'Unavailable' : 'Monte Carlo'}</p>
                         </div>
                         <div className="p-6 text-center">
                             <p className="text-[9px] font-black text-[#6B7280] uppercase tracking-widest mb-1 flex items-center justify-center gap-1 leading-none"><TrendingUp size={12} /> Edge</p>
@@ -113,8 +123,11 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                     <div className="p-8">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-[10px] font-black text-[#6B7280] uppercase tracking-[0.2em] italic">Historical Performance vs Market</h3>
-                            {loading && <div className="animate-pulse flex items-center gap-2 text-[10px] font-black text-primary italic uppercase">
+                            {loading && !timedOut && <div className="animate-pulse flex items-center gap-2 text-[10px] font-black text-primary italic uppercase">
                                 <Activity size={12} /> Syncing...
+                            </div>}
+                            {timedOut && <div className="flex items-center gap-2 text-[10px] font-black text-yellow-500 italic uppercase">
+                                <Activity size={12} /> Engine Timeout
                             </div>}
                         </div>
                         <div className="h-64 w-full min-w-0">

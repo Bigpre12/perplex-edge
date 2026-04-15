@@ -31,7 +31,7 @@ async def grade_props_live(session):
             steam_signal = CASE WHEN ABS(odds_over) > 150 AND is_sharp_book = true THEN true ELSE false END,
             whale_signal = CASE WHEN is_sharp_book = true AND is_best_over = true THEN true ELSE false END,
             sharp_conflict = CASE WHEN is_sharp_book = true AND is_soft_book = false THEN true ELSE false END
-        WHERE last_updated_at > NOW() - INTERVAL '24 hours'
+        WHERE 1=1
     """
     try:
         await session.execute(text(query))
@@ -57,7 +57,6 @@ async def compute_ev_signals(session):
             line, book, ev_percentage, confidence, NOW(), 'v2'
         FROM props_live
         WHERE ev_percentage != 0
-          AND last_updated_at > NOW() - INTERVAL '24 hours'
         ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL DO NOTHING
     """
     query_team = """
@@ -71,7 +70,6 @@ async def compute_ev_signals(session):
         FROM props_live
         WHERE ev_percentage != 0
           AND player_name IS NULL
-          AND last_updated_at > NOW() - INTERVAL '24 hours'
         ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NULL DO NOTHING
     """
     try:

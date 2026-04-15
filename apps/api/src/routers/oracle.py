@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from typing import Optional, List, Dict
@@ -32,7 +33,6 @@ async def oracle_chat(
             yield f"data: {json.dumps({'content': chunk})}\n\n"
         yield "data: [DONE]\n\n"
 
-    import json
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.get("/suggestions")

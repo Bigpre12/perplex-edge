@@ -100,8 +100,7 @@ async def get_graded_props(
         # Try player props first (where player_name != team names)
         player_query = """
             SELECT * FROM props_live
-            WHERE last_updated_at > NOW() - INTERVAL '24 hours'
-              AND player_name IS NOT NULL
+            WHERE player_name IS NOT NULL
               AND player_name != home_team
               AND player_name != away_team
               AND market_key NOT IN ('h2h', 'spreads', 'totals')
@@ -129,7 +128,7 @@ async def get_graded_props(
     # Fallback: return ALL props_live (team markets included)
     fallback_query = """
         SELECT * FROM props_live
-        WHERE last_updated_at > NOW() - INTERVAL '24 hours'
+        WHERE 1=1
         ORDER BY confidence DESC NULLS LAST, is_best_over DESC NULLS LAST
         LIMIT :limit
     """
@@ -164,8 +163,7 @@ async def scored_props(
         from sqlalchemy import text
         query = """
             SELECT * FROM props_live
-            WHERE last_updated_at > NOW() - INTERVAL '24 hours'
-              AND confidence IS NOT NULL
+            WHERE confidence IS NOT NULL
             ORDER BY confidence DESC NULLS LAST
             LIMIT :limit
         """

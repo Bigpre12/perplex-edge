@@ -3,6 +3,21 @@
 import { motion } from "framer-motion";
 import { Activity, Target, ShieldAlert, TrendingUp, CheckCircle2, Clock } from "lucide-react";
 
+const STATUS_MAP: Record<string, string> = {
+    STATUS_FINAL: "FINAL",
+    STATUS_IN_PROGRESS: "LIVE",
+    STATUS_SCHEDULED: "SCHEDULED",
+    STATUS_POSTPONED: "PPD",
+    STATUS_CANCELED: "CANCELED",
+    STATUS_HALFTIME: "HALFTIME",
+    "1": "Q1", "2": "Q2", "3": "Q3", "4": "Q4",
+    "5": "OT",
+};
+
+function formatStatus(raw: string): string {
+    return STATUS_MAP[raw] || raw;
+}
+
 interface LiveTrackCardProps {
     player: string;
     statType: string;
@@ -37,7 +52,7 @@ export default function LiveTrackCard({
             <div className="absolute top-0 right-0 p-4 relative z-10">
                 <div className="flex items-center gap-2 bg-brand-purple/10 px-3 py-1 rounded-full border border-brand-purple/20 shadow-glow shadow-brand-purple/5">
                     <div className="size-1.5 bg-brand-purple rounded-full animate-pulse" />
-                    <span className="text-[9px] font-black text-brand-purple uppercase tracking-widest">{gameStatus}</span>
+                    <span className="text-[9px] font-black text-brand-purple uppercase tracking-widest">{formatStatus(gameStatus)}</span>
                 </div>
             </div>
 

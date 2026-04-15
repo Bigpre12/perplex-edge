@@ -23,14 +23,12 @@ function EVPageContent() {
   const [minEv, setMinEv] = useState<number>(2);
 
   useEffect(() => {
-    const triggerCompute = async () => {
-      try {
-        await fetch(`/api/compute?sport=${sport}`, { method: 'POST' });
-      } catch {
-        // Compute trigger is best-effort
-      }
-    };
-    triggerCompute();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    fetch(`/api/compute?sport=${sport}`, { method: 'POST', signal: controller.signal })
+      .catch(() => {})
+      .finally(() => clearTimeout(timeout));
+    return () => { controller.abort(); clearTimeout(timeout); };
   }, [sport]);
 
   const getEVColor = (val: number | undefined | null) => {

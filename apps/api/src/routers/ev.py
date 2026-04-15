@@ -24,7 +24,7 @@ async def get_ev_signals(
         sql = """
             SELECT *, edge_percent as ev_percentage, true_prob as fair_prob 
             FROM ev_signals 
-            WHERE created_at > NOW() - INTERVAL '24 hours'
+            WHERE 1=1
         """
         params = {"limit": limit}
         if sport:
@@ -67,8 +67,7 @@ async def get_ev_signals(
                 away_team,
                 last_updated_at
             FROM props_live
-            WHERE last_updated_at > NOW() - INTERVAL '24 hours'
-            AND implied_over IS NOT NULL
+            WHERE implied_over IS NOT NULL
             AND implied_over > 0
             AND implied_over < 1
             AND implied_under IS NOT NULL

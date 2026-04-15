@@ -9,13 +9,27 @@ export interface HitRateStats {
   streak?: number;
 }
 
+function sanitize(raw: any): HitRateStats {
+  const safe = (v: any, cap?: number) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return cap !== undefined ? Math.min(n, cap) : n;
+  };
+  return {
+    overall_hit_rate: safe(raw?.overall_hit_rate, 1.0),
+    roi: safe(raw?.roi),
+    graded_picks: safe(raw?.graded_picks),
+    streak: safe(raw?.streak),
+  };
+}
+
 export const useHitRate = () => {
   return useQuery({
     queryKey: ['hit-rate'],
     queryFn: async () => {
       try {
         const { data } = await api.get('/api/hit-rate');
-        return data as HitRateStats;
+        return sanitize(data);
       } catch (err) {
         console.warn('Backend hit-rate fetch failed, falling back to Supabase', err);
         const supabaseAuth = getAuthenticatedClient();

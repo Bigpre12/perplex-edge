@@ -11,45 +11,72 @@ router = APIRouter(tags=["Performance & Hit Rate"])
 @router.get("/summary")
 async def hit_rate_summary(sport: str = Query("all"), db: AsyncSession = Depends(get_async_db)):
     """Return overall hit rate summary for the given sport, with live fallback."""
+    import math
+    import logging as _log
+    _logger = _log.getLogger(__name__)
+
+    def _safe(val, default=0.0, cap=None):
+        if val is None:
+            return default
+        try:
+            f = float(val)
+            if math.isnan(f) or math.isinf(f):
+                return default
+            if cap is not None:
+                f = min(f, cap)
+            return round(f, 2)
+        except (TypeError, ValueError):
+            return default
+
     try:
         count_res = await db.execute(text("SELECT COUNT(*) FROM player_hit_rates"))
         count = count_res.scalar()
-        
-        if count > 0:
+
+        if count and count > 0:
             query = """
                 SELECT 
-                    AVG(hit_rate) as overall_hit_rate,
-                    AVG(roi) as roi,
+                    AVG(CASE WHEN hit_rate <= 1.0 THEN hit_rate ELSE NULL END) as overall_hit_rate,
+                    AVG(CASE WHEN roi BETWEEN -1000 AND 1000 THEN roi ELSE NULL END) as roi,
                     COUNT(*) as graded_picks,
-                    SUM(CASE WHEN hit_rate > 0.55 THEN 1 ELSE 0 END) as streak
+                    SUM(CASE WHEN hit_rate > 0.55 AND hit_rate <= 1.0 THEN 1 ELSE 0 END) as streak
                 FROM player_hit_rates
             """
             row_res = await db.execute(text(query))
             row = row_res.mappings().one_or_none()
             if row:
-                return {**dict(row), "status": "live", 
-                        "last_updated": datetime.utcnow().isoformat() + "Z"}
-        
-        # Fallback: compute from props_live confidence scores
+                return {
+                    "overall_hit_rate": _safe(row["overall_hit_rate"], cap=1.0),
+                    "roi": _safe(row["roi"]),
+                    "graded_picks": int(row["graded_picks"] or 0),
+                    "streak": int(row["streak"] or 0),
+                    "status": "live",
+                    "last_updated": datetime.utcnow().isoformat() + "Z",
+                }
+
         fallback_query = """
             SELECT 
                 ROUND(AVG(confidence)::numeric, 2) as overall_hit_rate,
-                ROUND((AVG(confidence) * 0.1)::numeric, 2) as roi,
+                ROUND(COALESCE(AVG(confidence) * 0.1, 0)::numeric, 2) as roi,
                 COUNT(*) as graded_picks,
                 SUM(CASE WHEN confidence > 0.6 THEN 1 ELSE 0 END) as streak
             FROM props_live
-            WHERE last_updated_at > NOW() - INTERVAL '24 hours'
+            WHERE 1=1
         """
         row_res = await db.execute(text(fallback_query))
         row = row_res.mappings().one_or_none()
         if row:
-            return {**dict(row), "status": "computed_live",
-                    "last_updated": datetime.utcnow().isoformat() + "Z"}
-                    
+            return {
+                "overall_hit_rate": _safe(row["overall_hit_rate"], cap=1.0),
+                "roi": _safe(row["roi"]),
+                "graded_picks": int(row["graded_picks"] or 0),
+                "streak": int(row["streak"] or 0),
+                "status": "computed_live",
+                "last_updated": datetime.utcnow().isoformat() + "Z",
+            }
+
         return {"overall_hit_rate": 0, "roi": 0, "graded_picks": 0, "streak": 0, "status": "awaiting_ingest"}
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"Hit rate summary error: {e}")
+        _logger.error(f"Hit rate summary error: {e}")
         return {"overall_hit_rate": 0, "roi": 0, "graded_picks": 0, "streak": 0, "status": "error"}
 
 @router.get("/players")

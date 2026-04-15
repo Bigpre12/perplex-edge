@@ -121,6 +121,20 @@ async def health_check(
     overall_status = "healthy" if db_status == "connected" and not is_stale else "degraded"
     system_status = "ONLINE" if db_status == "connected" else "OFFLINE"
 
+    # Fetch system_sync_state for pipeline timestamps
+    sync_state = {}
+    try:
+        ss_res = await db.execute(text("SELECT last_odds_sync, last_ev_sync, last_grade_sync, updated_at FROM system_sync_state WHERE id = 1"))
+        ss_row = ss_res.mappings().first()
+        if ss_row:
+            sync_state = {
+                "last_odds_sync": ss_row["last_odds_sync"].isoformat() if ss_row["last_odds_sync"] else None,
+                "last_ev_sync": ss_row["last_ev_sync"].isoformat() if ss_row["last_ev_sync"] else None,
+                "last_grade_sync": ss_row["last_grade_sync"].isoformat() if ss_row["last_grade_sync"] else None,
+            }
+    except Exception:
+        pass
+
     return {
         "status": overall_status,
         "database": db_status,
@@ -135,7 +149,42 @@ async def health_check(
         "timestamp": now.isoformat(),
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
-        "props_count": props_count
+        "props_count": props_count,
+        **sync_state,
+    }
+
+@router.get("/odds-api-status")
+async def odds_api_status():
+    """Check Odds API key health by calling the lightweight /sports endpoint."""
+    import os, httpx
+    from services.odds_api_client import odds_api_client
+
+    keys_raw = os.getenv("THE_ODDS_API_KEY", "")
+    keys = [k.strip() for k in keys_raw.split(",") if k.strip()]
+    results = []
+
+    for i, key in enumerate(keys):
+        entry = {"key_index": i, "key_prefix": key[:8] + "..."}
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(
+                    "https://api.the-odds-api.com/v4/sports",
+                    params={"apiKey": key},
+                )
+                entry["status_code"] = resp.status_code
+                entry["remaining"] = resp.headers.get("x-requests-remaining")
+                entry["used"] = resp.headers.get("x-requests-used")
+                entry["healthy"] = resp.status_code == 200
+        except Exception as e:
+            entry["healthy"] = False
+            entry["error"] = str(e)
+        results.append(entry)
+
+    dead_keys = list(odds_api_client._dead_keys.keys()) if hasattr(odds_api_client, "_dead_keys") else []
+    return {
+        "keys_checked": len(results),
+        "results": results,
+        "circuit_breaker_dead_keys": len(dead_keys),
     }
 
 @router.get("/summary")

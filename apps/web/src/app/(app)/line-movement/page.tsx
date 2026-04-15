@@ -26,7 +26,33 @@ function LineMovementContent() {
 
   const { data: slate, isLoading: slateLoading, error: slateError, refetch: refetchSlate } = useQuery({
     queryKey: ['slate', sport],
-    queryFn: () => fetch(`${API_BASE}/api/slate/today?sport=${sport}`).then(r => r.json()),
+    queryFn: async () => {
+      const slateRes = await fetch(`${API_BASE}/api/slate/today?sport=${sport}`).then(r => r.json());
+      const slateGames = Array.isArray(slateRes) ? slateRes : (slateRes?.games || []);
+      if (slateGames.length > 0) return slateGames;
+
+      // Fallback: derive game list from props_live data
+      try {
+        const propsRes = await fetch(`${API_BASE}/api/props/live?sport=${sport}&limit=100`).then(r => r.json());
+        const rows = propsRes?.data || [];
+        const seen = new Set<string>();
+        const derived: any[] = [];
+        for (const p of rows) {
+          const gid = p.game_id;
+          if (!gid || seen.has(gid)) continue;
+          seen.add(gid);
+          derived.push({
+            id: gid,
+            home_team: p.home_team || "TBD",
+            away_team: p.away_team || "TBD",
+            commence_time: p.game_start_time || p.last_updated_at || new Date().toISOString(),
+          });
+        }
+        return derived;
+      } catch {
+        return slateGames;
+      }
+    },
     refetchInterval: 300_000,
   });
 
@@ -47,7 +73,7 @@ function LineMovementContent() {
     return <div className="p-6"><ErrorBanner message="Slate Engine Offline." onRetry={refetchSlate} /></div>;
   }
 
-  const games = Array.isArray(slate) ? slate : (slate?.games || []);
+  const games = Array.isArray(slate) ? slate : [];
   const filteredSlate = games.filter((g: any) => 
     g.away_team?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     g.home_team?.toLowerCase().includes(searchQuery.toLowerCase())
