@@ -3,9 +3,13 @@ import io
 import os
 import traceback
 
+os.environ["PYTHONIOENCODING"] = "utf-8"
+
 # Force UTF-8 for Windows console
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+if hasattr(sys.stdout, 'buffer'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'buffer'):
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 import uvicorn
 import logging
@@ -13,12 +17,15 @@ import logging
 # Ensure src is in the path
 sys.path.insert(0, os.path.join(os.getcwd(), "src"))
 
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setLevel(logging.INFO)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
-        logging.FileHandler("../../server_boot.log"),
-        logging.StreamHandler(sys.stdout)
+        logging.FileHandler("../../server_boot.log", encoding='utf-8'),
+        stream_handler,
     ]
 )
 

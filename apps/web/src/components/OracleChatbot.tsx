@@ -186,7 +186,7 @@ export default function OracleChatbot() {
                         {messages.length > oracleLimit * 2 && tier === "free" ? (
                             <div className="text-center p-2">
                                 <p className="text-[10px] text-textMuted uppercase font-black mb-2">Daily Signal Limit Exceeded</p>
-                                <a href="/billing" className="text-brand-primary font-black uppercase tracking-widest text-[9px] hover:underline">
+                                <a href="/upgrade" className="text-brand-primary font-black uppercase tracking-widest text-[9px] hover:underline">
                                     Upgrade Terminal Access →
                                 </a>
                             </div>

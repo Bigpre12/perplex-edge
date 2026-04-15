@@ -11,7 +11,7 @@ load_dotenv(dotenv_path=os.path.join(os.getcwd(), ".env"))
 
 from db.session import SessionLocal, engine
 from models.prop import PropLine, PropOdds
-from models.history import PropHistory
+from models.history import PropHistoryLegacy as PropHistory
 from models.brain import ModelPick
 
 def purge():

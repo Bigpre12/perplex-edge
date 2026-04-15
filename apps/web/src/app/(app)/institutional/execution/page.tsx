@@ -100,12 +100,6 @@ function ExecutionContent() {
 
     useEffect(() => {
         fetchKeys();
-        // Mock Logs
-        setLogs([
-            { id: 1, type: 'SIGNAL', target: 'Discord', status: 'SUCCESS', details: 'Lebron James Over 24.5 Pts', time: '2 mins ago' },
-            { id: 2, type: 'BOT', target: 'ExecutionNode-01', status: 'POLL', details: 'Relay Active - 14 Props Scanned', time: '5 mins ago' },
-            { id: 3, type: 'SIGNAL', target: 'Telegram', status: 'FAILED', details: 'Invalid Token Configuration', time: '12 mins ago' }
-        ]);
     }, []);
 
     const copyToClipboard = (text: string, id: string) => {

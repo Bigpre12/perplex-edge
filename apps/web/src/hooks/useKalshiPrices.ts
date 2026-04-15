@@ -20,8 +20,7 @@ export function useKalshiPrices(tickers: string[]) {
         if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
         const tickerParams = tickers.length > 0 ? `&tickers=${tickers.join(",")}` : "";
-        // In production, get token from Clerk/Supabase
-        const token = "mock_token";
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
         const wsUrl = `${API.wsKalshi}?token=${token}${tickerParams}`;
 
         const ws = new WebSocket(wsUrl);

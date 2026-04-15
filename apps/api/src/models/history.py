@@ -19,8 +19,8 @@ class OddsHistory(Base):
     line = Column(Numeric, nullable=True)
     recorded_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
-class PropHistory(Base):
-    """Legacy prop history tracking."""
+class PropHistoryLegacy(Base):
+    """Legacy prop history tracking (renamed to avoid clash with brain.PropHistory)."""
     __tablename__ = "prop_history"
     id = Column(BigInteger, primary_key=True)
     prop_id = Column(String, nullable=False)

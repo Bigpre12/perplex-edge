@@ -3,9 +3,9 @@ Write-Host "Starting Perplex Edge..." -ForegroundColor Cyan
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 
-# 1. Kill any existing processes on ports 8000 and 3300
-Write-Host "Cleaning up ports 8000 and 3300..." -ForegroundColor Gray
-$ports = @(3300, 3000, 8080)
+# 1. Kill any existing processes on ports 8000 and 3000
+Write-Host "Cleaning up ports 8000 and 3000..." -ForegroundColor Gray
+$ports = @(8000, 3000)
 foreach ($port in $ports) {
     $proc = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
     if ($proc) {
@@ -19,11 +19,11 @@ foreach ($port in $ports) {
 }
 
 # 2. Start FastAPI in a new window
-Write-Host "Launching Backend (FastAPI)..." -ForegroundColor Green
+Write-Host "Launching Backend (FastAPI on :8000)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "cd '$repoRoot'; py run_api.py"
+    "cd '$repoRoot\apps\api'; py run_api.py"
 ) -WindowStyle Normal
 
 Start-Sleep -Seconds 2
@@ -32,7 +32,7 @@ Start-Sleep -Seconds 2
 Write-Host "Cleaning Next.js cache..." -ForegroundColor Gray
 Remove-Item -Path (Join-Path $repoRoot "apps\web\.next") -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "Launching Frontend (Next.js)..." -ForegroundColor Green
+Write-Host "Launching Frontend (Next.js on :3000)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
@@ -41,7 +41,7 @@ Start-Process powershell -ArgumentList @(
 
 # 4. Wait for Backend Health
 Write-Host "Waiting for Backend Health..." -ForegroundColor Cyan
-$maxRetries = 10
+$maxRetries = 15
 $retryCount = 0
 $healthy = $false
 
@@ -61,7 +61,7 @@ while ($retryCount -lt $maxRetries -and -not $healthy) {
 if ($healthy) {
     Write-Host "`nAll servers are stabilized!" -ForegroundColor Green
     Write-Host "Frontend: http://localhost:3000" -ForegroundColor Yellow
-    Write-Host "Backend:  http://localhost:8080/api/health" -ForegroundColor Yellow
+    Write-Host "Backend:  http://localhost:8000/api/health" -ForegroundColor Yellow
 } else {
-    Write-Host "`nBackend failed to stabilize. Check server_boot.log" -ForegroundColor Red
+    Write-Host "`nBackend failed to stabilize. Check server logs." -ForegroundColor Red
 }

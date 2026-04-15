@@ -26,7 +26,7 @@ export const PLANS = {
         description: PRICING.FREE.description,
         features: PRICING.FREE.features,
         cta: "Get Started Free",
-        href: "/sign-up",
+        href: "/signup",
     },
     pro: {
         name: "Pro",

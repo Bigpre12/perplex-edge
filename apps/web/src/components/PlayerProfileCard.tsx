@@ -16,15 +16,14 @@ const fetchInsight = (id: string, prop: string, line: number) =>
 const fetchDvp = (id: string) =>
     fetch(`/api/dvp/player/${id}`).then(r => r.json());
 
-// Mocking history fetch for visualization until history API is fully exposed
-const fetchHistory = (id: string, prop: string) =>
-    Promise.resolve([
-        { game_date: "2024-02-20", actual_value: 28, line: 24.5 },
-        { game_date: "2024-02-22", actual_value: 22, line: 24.5 },
-        { game_date: "2024-02-24", actual_value: 31, line: 24.5 },
-        { game_date: "2024-02-26", actual_value: 25, line: 24.5 },
-        { game_date: "2024-02-28", actual_value: 19, line: 24.5 },
-    ]);
+const fetchHistory = async (id: string, prop: string) => {
+    try {
+        const res = await fetch(`/backend/api/props/history?player_id=${id}&stat_type=${prop}`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data?.data || [];
+    } catch { return []; }
+};
 
 export function PlayerProfileCard({ playerId, propType, line }: Props) {
     const { data: insight } = useQuery({

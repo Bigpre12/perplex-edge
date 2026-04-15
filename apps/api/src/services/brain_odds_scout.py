@@ -6,7 +6,7 @@ from sqlalchemy import select, update, desc, cast, String # type: ignore
 from sqlalchemy.orm import Session # type: ignore
 from db.session import async_session_maker # type: ignore
 from models.prop import PropLine, PropOdds, GameLine, GameLineOdds # type: ignore
-from models.history import PropHistory # type: ignore
+from models.history import PropHistoryLegacy as PropHistory # type: ignore
 
 from services.ev_utils import american_to_implied
 from services.ev_persistence import insert_edges_ev_history
