@@ -1,8 +1,20 @@
-from typing import Generic, TypeVar, List, Optional
+from typing import Generic, TypeVar, List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime
 
 T = TypeVar("T")
+
+
+class LucrixErrorBody(BaseModel):
+    """Standard error envelope for API clients (LUCRIX / Perplex Edge)."""
+    code: str = "error"
+    message: str
+    request_id: Optional[str] = None
+    details: Optional[Any] = None
+
+
+class LucrixErrorResponse(BaseModel):
+    error: LucrixErrorBody
 
 class ResponseMeta(BaseModel):
     source: Optional[str] = None

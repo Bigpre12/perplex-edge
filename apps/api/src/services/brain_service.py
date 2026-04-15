@@ -58,7 +58,7 @@ class BrainService:
         }
         
         payload = {
-            "model": "llama3-8b-8192",
+            "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}

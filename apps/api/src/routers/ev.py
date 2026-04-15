@@ -131,6 +131,20 @@ async def get_ev_top(
     # Reuse the same logic, higher threshold
     return await get_ev_signals(sport=None, limit=limit, db=db, current_user=current_user)
 
+
+@router.get("/top")
+async def get_ev_top_edges_alias(
+    limit: int = Query(30, description="Max rows (Top Edges UI default)"),
+    min_ev: float = Query(0, description="Ignored here; filter client-side or extend query later"),
+    db=Depends(get_db),
+    current_user: User = Depends(require_tier("pro")),
+):
+    """
+    Alias for Top Edges and other clients that call GET /api/ev/top.
+    Previously only /ev-top existed, which broke the Next.js top-edges page.
+    """
+    return await get_ev_signals(sport=None, limit=limit, db=db, current_user=current_user)
+
 @router.get("/{sport_path}")
 async def get_ev_by_sport(
     sport_path: str, 

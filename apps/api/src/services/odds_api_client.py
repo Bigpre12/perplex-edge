@@ -61,13 +61,11 @@ class OddsApiClient(ResilientBaseClient):
         """Returns only the valid team markets for the specified sport. Player props are fetched separately."""
         return ",".join(cls.TEAM_MARKETS)
     
-    # Cooldown period before retrying a dead key (seconds)
-    DEAD_KEY_COOLDOWN = 3600  # 1 hour
-
     def __init__(self):
         # Load keys from centralized settings
         self.api_keys = settings.ODDS_API_KEYS
         self.current_key_idx = 0
+        self.dead_key_cooldown = int(os.getenv("ODDS_API_KEY_COOLDOWN_SECONDS", "3600"))
         
         # Dead-key tracking: {key_index: timestamp_marked_dead}
         # Prevents infinite rotation when all keys are exhausted/deactivated
@@ -89,7 +87,7 @@ class OddsApiClient(ResilientBaseClient):
         if idx not in self._dead_keys:
             return False
         elapsed = time.time() - self._dead_keys[idx]
-        if elapsed >= self.DEAD_KEY_COOLDOWN:
+        if elapsed >= self.dead_key_cooldown:
             # Cooldown expired — give the key another chance
             del self._dead_keys[idx]
             logger.info(f"🔓 Odds API key index {idx} cooldown expired, retrying.")
@@ -99,7 +97,7 @@ class OddsApiClient(ResilientBaseClient):
     def _mark_key_dead(self, idx: int, reason: str):
         """Mark a key as dead with a cooldown timestamp."""
         self._dead_keys[idx] = time.time()
-        logger.warning(f"💀 Odds API key index {idx} marked dead: {reason}. Will retry in {self.DEAD_KEY_COOLDOWN}s.")
+        logger.warning(f"💀 Odds API key index {idx} marked dead: {reason}. Will retry in {self.dead_key_cooldown}s.")
 
     def _all_keys_dead(self) -> bool:
         """Returns True if every key is currently marked dead."""

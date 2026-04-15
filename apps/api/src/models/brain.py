@@ -487,7 +487,7 @@ class PropLive(Base):
     is_soft_book = Column(Boolean, default=False)
     is_sharp_book = Column(Boolean, default=False)
     confidence = Column(Float, nullable=True) # 0.0 to 1.0
-    evpercentage = Column(Float, default=0.0) # For grading
+    ev_percentage = Column(Float, default=0.0)  # For grading (matches grader SQL)
     last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     home_team = Column(String, nullable=True)
     away_team = Column(String, nullable=True)

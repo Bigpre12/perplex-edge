@@ -10,6 +10,7 @@ from api_utils.http import build_headers
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
+from core.kalshi_urls import default_kalshi_rest_url
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class KalshiService:
         self.api_key_id = os.getenv("KALSHI_API_KEY_ID")
         self.private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH")
         self.private_key_content = os.getenv("KALSHI_PRIVATE_KEY")
-        self.base_url = os.getenv("KALSHI_BASE_URL", "https://demo-api.kalshi.co/trade-api/v2")
+        self.base_url = os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()).strip().rstrip("/")
         self.client = httpx.AsyncClient(base_url=self.base_url)
         self._private_key = None
         

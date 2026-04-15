@@ -9,8 +9,67 @@ from fastapi import Depends
 from schemas.universal import UniversalResponse, ResponseMeta
 from services.heartbeat_service import HeartbeatService
 from middleware.request_id import get_request_id
+from core.waterfall_config import KNOWN_PROVIDER_IDS
+
+LUCRIX_API_VERSION = os.getenv("LUCRIX_API_VERSION", "1.0.0")
 
 router = APIRouter()
+
+
+@router.get("/waterfall")
+async def meta_waterfall(db: AsyncSession = Depends(get_async_db)):
+    """
+    Last success per known provider where heartbeat rows exist; forward-compatible stub
+    fields for providers without a mapped feed.
+    """
+    heartbeats = await HeartbeatService.get_all_heartbeats(db)
+    by_feed = {h.feed_name: h for h in heartbeats}
+
+    def pick_heartbeat(provider_id: str):
+        for name in (
+            provider_id,
+            f"{provider_id}_ingest",
+            f"ingest_{provider_id}",
+            provider_id.replace("_", ""),
+        ):
+            if name in by_feed:
+                return by_feed[name]
+        return None
+
+    providers = []
+    for pid in KNOWN_PROVIDER_IDS:
+        hb = pick_heartbeat(pid)
+        providers.append(
+            {
+                "provider": pid,
+                "last_success_at": hb.last_success_at.isoformat() if hb and hb.last_success_at else None,
+                "last_run_at": hb.last_run_at.isoformat() if hb and hb.last_run_at else None,
+                "status": hb.status if hb else None,
+                "source": "heartbeat" if hb else "stub",
+            }
+        )
+
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "request_id": get_request_id(),
+        "providers": providers,
+    }
+
+
+@router.get("/build")
+async def api_build_metadata():
+    """
+    Deploy and API contract metadata for clients (versioning, support, debugging).
+    """
+    return {
+        "api_version": LUCRIX_API_VERSION,
+        "app": os.getenv("APP_NAME", "Lucrix"),
+        "git_sha": os.getenv("RAILWAY_GIT_COMMIT_SHA", os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown")),
+        "environment": os.getenv("RAILWAY_ENVIRONMENT_NAME", os.getenv("VERCEL_ENV", "local")),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
 
 @router.get("/inspect", response_model=UniversalResponse[dict])
 async def data_inspector(db: AsyncSession = Depends(get_async_db)):

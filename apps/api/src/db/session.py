@@ -55,8 +55,9 @@ engine = create_async_engine(
     echo=False,
     connect_args=connect_args,
     pool_pre_ping=True,
-    pool_size=3,
-    max_overflow=2,
+    pool_size=10,
+    max_overflow=5,
+    pool_timeout=60,
     pool_recycle=300,
 )
 
@@ -90,7 +91,7 @@ _sync_connect_args = {"check_same_thread": False} if "sqlite" in sync_url else {
 sync_engine = create_engine(
     sync_url,
     connect_args=_sync_connect_args,
-    pool_size=2,
-    max_overflow=1
+    pool_size=3,
+    max_overflow=2,
 )
 SessionLocal = sync_sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)

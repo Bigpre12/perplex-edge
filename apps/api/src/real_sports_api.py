@@ -46,19 +46,19 @@ class RealSportsAPI:
         """Fetch real-time odds via the centralized OddsApiClient"""
         return await odds_api_client.get_live_odds(sport)
     
-    async def fetch_props_from_betstack(self, sport: str = "nba"):
-        """Fetch player props from Betstack"""
+    async def fetch_props_from_betstack(self, sport_key: str = "basketball_nba"):
+        """Fetch BetStack consensus team markets (totals/spreads/h2h) as prop-shaped dicts for ingestion."""
         from services.betstack_client import betstack_client
         
         if not betstack_client.available:
-            logger.warning("Betstack API key missing. Returning empty props.")
+            logger.debug("Betstack skipped (no API key, no BETSTACK_BASE_URL, or client disabled after 401/404).")
             return []
             
         try:
-            return await betstack_client.get_player_props(sport)
+            return await betstack_client.get_player_props(sport_key)
         except Exception as e:
             logger.error(f"Error fetching props from BetstackClient: {e}")
-            return {"error": str(e)}
+            return []
     
     async def fetch_roster_data(self, team: str, sport: str = "nba"):
         """Fetch roster data using BallDontLie API with fallback logic"""

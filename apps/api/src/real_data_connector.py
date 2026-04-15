@@ -30,7 +30,7 @@ from services.api_sports_client import api_sports_client
 from services.sportmonks_client import sportmonks_client
 from services.isports_client import isports_client
 from services.statsbomb_client import statsbomb_client
-from services.sportsgameodds_client import sportsgameodds_client
+from core.waterfall_config import get_provider_chain
 
 logger = logging.getLogger(__name__)
 
@@ -64,22 +64,6 @@ US_SPORTS = ["basketball_nba", "americanfootball_nfl", "baseball_mlb", "icehocke
              "basketball_ncaab", "americanfootball_ncaaf", "basketball_wnba", "basketball_ncaaw"]
 SOCCER_SPORTS = ["soccer_epl", "soccer_usa_mls", "soccer_uefa_champions_league"]
 MMA_SPORTS = ["mma_mixed_martial_arts"]
-
-ODDS_PROVIDER = {
-    "basketball_nba": ["the_odds_api", "therundown", "sportsgameodds"],
-    "americanfootball_nfl": ["the_odds_api", "therundown", "sportsgameodds"],
-    "baseball_mlb": ["the_odds_api", "therundown", "sportsgameodds"],
-    "icehockey_nhl": ["the_odds_api", "therundown", "sportsgameodds"],
-    "basketball_ncaab": ["the_odds_api", "sportsgameodds"],
-    "americanfootball_ncaaf": ["the_odds_api", "sportsgameodds"],
-    "basketball_wnba": ["the_odds_api", "sportsgameodds"],
-    "tennis_atp": ["the_odds_api"],
-    "tennis_wta": ["the_odds_api"],
-    "golf_pga": ["the_odds_api"],
-    "mma_mixed_martial_arts": ["sportsgameodds"],  # Only free option for UFC odds
-    "soccer_epl": ["the_odds_api"],
-    "soccer_usa_mls": ["the_odds_api"],
-}
 
 class RealDataConnector:
     def __init__(self):
@@ -117,27 +101,9 @@ class RealDataConnector:
     def get_waterfall_chain(self, sport_key: str, data_type: str = "stats") -> List[str]:
         """
         Returns the branched waterfall chain based on sport and data type.
-        Hierarchy optimized for US Sports vs International/Specialized.
+        Delegates to ``core.waterfall_config`` (single source of truth).
         """
-        if data_type == "odds":
-            # Primary Odds Branch: All sports follow this for pricing consistency
-            return ["the_odds_api", "isports_api", "api_sports", "therundown", "sportsgameodds"]
-
-        # Stats/Scores Branching
-        if sport_key in US_SPORTS:
-            # 🏀 US Sports: Optimized for BallDontLie integration
-            return ["balldontlie", "api_sports", "thesportsdb", "espn"]
-        
-        if sport_key in SOCCER_SPORTS:
-            # ⚽ Soccer: Optimized for international depth
-            return ["api_sports", "sportmonks", "thesportsdb", "espn"]
-
-        if sport_key in MMA_SPORTS:
-            # 🥊 MMA: Specialized metadata fallback
-            return ["api_sports", "thesportsdb", "espn", "sportsgameodds"]
-
-        # 🌐 Default Catch-All
-        return ["thesportsdb", "espn"]
+        return get_provider_chain(sport_key, data_type)
 
     async def fetch_games_by_sport(self, sport_key: str) -> list:
         """

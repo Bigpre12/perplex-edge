@@ -210,6 +210,7 @@ class EVService:
                         'game_start_time': s.get('game_start_time'),
                         'player_id': s.get('player_name') or 'unknown',
                         'player_name': s['player_name'],
+                        'team': s.get('team') or s.get('home_team') or s.get('away_team'),
                         'market_key': s['market_key'],
                         'line': float(s['line']) if s.get('line') is not None else None,
                         'book': s['bookmaker'],

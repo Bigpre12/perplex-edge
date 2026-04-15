@@ -4,16 +4,18 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Mobile-first subset aligned with docs/PRODUCT_BLUEPRINT.md (Desk → Scanner → core → risk)
 const TABS = [
-    { id: 'home', label: 'Home', icon: '⌂', href: '/' },
-    { id: 'props', label: 'Props', icon: '🎯', href: '/player-props' },
-    { id: 'ev', label: 'EV+', icon: '📈', href: '/ev' },
-    { id: 'sharp', label: 'Sharp', icon: '⚡', href: '/sharp' },
-    { id: 'trends', label: 'Hit Rate', icon: '🔥', href: '/hit-rate' },
-    { id: 'parlay', label: 'Parlay', icon: '🔗', href: '/parlays' },
-    { id: 'live', label: 'Live', icon: '🔴', href: '/live' },
-    { id: 'movement', label: 'Move', icon: '📉', href: '/line-movement' },
-    { id: 'settings', label: 'Settings', icon: '⚙️', href: '/settings' },
+    { id: 'desk', label: 'Desk', icon: '▣', href: '/dashboard' },
+    { id: 'scanner', label: 'Scan', icon: '◎', href: '/institutional/scanner' },
+    { id: 'props', label: 'Props', icon: '◆', href: '/player-props' },
+    { id: 'ev', label: 'EV+', icon: '▲', href: '/ev' },
+    { id: 'clv', label: 'CLV', icon: '◇', href: '/clv' },
+    { id: 'trends', label: 'Hit', icon: '◉', href: '/hit-rate' },
+    { id: 'signals', label: 'Sig', icon: '◈', href: '/signals' },
+    { id: 'live', label: 'Live', icon: '●', href: '/live' },
+    { id: 'movement', label: 'Move', icon: '→', href: '/line-movement' },
+    { id: 'settings', label: 'Set', icon: '⚙', href: '/settings' },
 ];
 
 export function TabBar() {
@@ -28,7 +30,9 @@ export function TabBar() {
 
     const isActive = (href: string) => {
         if (!mounted) return false;
-        return activePath === href;
+        if (activePath === href) return true;
+        if (href !== '/dashboard' && href !== '/settings' && activePath.startsWith(href)) return true;
+        return false;
     };
 
     return (

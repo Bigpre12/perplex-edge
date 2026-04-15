@@ -18,8 +18,23 @@ class Settings:
         self.DATABASE_URL = DATABASE_URL
         self.PORT = PORT
         self.REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-        self.BETSTACK_BASE_URL = os.getenv("BETSTACK_BASE_URL", "https://api.betstack.io/v1")
+        # Betstack: no URL unless set, unless API key is set (legacy default host for backwards compatibility)
+        _betstack_url = (os.getenv("BETSTACK_BASE_URL") or "").strip().rstrip("/")
+        _betstack_key = (os.getenv("BETSTACK_API_KEY") or "").strip()
+        if _betstack_url:
+            self.BETSTACK_BASE_URL = _betstack_url
+        elif _betstack_key:
+            # Free sports API (betstack.dev signup); enterprise uses explicit BETSTACK_BASE_URL
+            self.BETSTACK_BASE_URL = "https://api.betstack.dev/api/v1"
+        else:
+            self.BETSTACK_BASE_URL = ""
         self.FRONTEND_URL = os.getenv("FRONTEND_URL", "https://perplex-edge.vercel.app")
+
+        # Kalshi Trade API v2 (RSA). Demo default; set KALSHI_BASE_URL + keys for production.
+        from core.kalshi_urls import default_kalshi_rest_url
+        self.KALSHI_BASE_URL = os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()).strip().rstrip("/")
+        self.KALSHI_KEY_ID = os.getenv("KALSHI_KEY_ID", os.getenv("KALSHI_API_KEY_ID", "")).strip()
+        self.KALSHI_PRIVATE_KEY = os.getenv("KALSHI_PRIVATE_KEY", "").strip()
         
         # Diagnostic logging for Redis (redacted host)
         try:

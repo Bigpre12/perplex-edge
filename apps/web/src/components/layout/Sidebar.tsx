@@ -9,7 +9,8 @@ import { useSport } from '@/context/SportContext';
 import { formatDistanceToNow } from 'date-fns';
 import { safeDate } from '@/lib/dateUtils';
 import { 
-    Home, 
+    LayoutDashboard,
+    ScanSearch,
     Target, 
     Zap, 
     BarChart2, 
@@ -22,7 +23,11 @@ import {
     TrendingDown,
     History,
     CloudOff,
-    Loader2
+    Loader2,
+    Wallet,
+    Brain,
+    Radio,
+    LineChart
 } from 'lucide-react';
 import { useLucrixStore } from '@/store';
 
@@ -54,16 +59,21 @@ export default function Sidebar() {
         return () => clearTimeout(timer);
     }, [isLoading, freshness]);
 
-    // Navigation items based on spec
+    // IA: Command → Scanner → core markets → risk → intel (see docs/PRODUCT_BLUEPRINT.md)
     const navItems = [
-        { href: "/", icon: <Home size={20} />, label: "Home" },
+        { href: "/dashboard", icon: <LayoutDashboard size={20} />, label: "Desk" },
+        { href: "/institutional/scanner", icon: <ScanSearch size={20} />, label: "Scanner" },
         { href: "/player-props", icon: <Target size={20} />, label: "Props" },
         { href: "/ev", icon: <Zap size={20} />, label: "EV+" },
-        { href: "/sharp", icon: <Zap size={20} />, label: "Sharp" },
-        { href: "/hit-rate", icon: <BarChart2 size={20} />, label: "Hit Rate" },
-        { href: "/parlays", icon: <LinkIcon size={20} />, label: "Parlay" },
+        { href: "/clv", icon: <LineChart size={20} />, label: "CLV" },
+        { href: "/hit-rate", icon: <BarChart2 size={20} />, label: "Hit rate" },
+        { href: "/signals", icon: <Radio size={20} />, label: "Signals" },
         { href: "/live", icon: <Activity size={20} />, label: "Live", showLiveDot: true },
         { href: "/line-movement", icon: <TrendingUp size={20} />, label: "Move" },
+        { href: "/bet-tracker", icon: <Wallet size={20} />, label: "Tracker" },
+        { href: "/brain", icon: <Brain size={20} />, label: "Brain" },
+        { href: "/parlays", icon: <LinkIcon size={20} />, label: "Parlay" },
+        { href: "/sharp", icon: <Zap size={20} />, label: "Sharp" },
         { href: "/arbitrage", icon: <ArrowRightLeft size={20} />, label: "Arb" },
         { href: "/whale", icon: <TrendingDown size={20} />, label: "Whale" },
         { href: "/props-history", icon: <History size={20} />, label: "History" },
@@ -76,7 +86,7 @@ export default function Sidebar() {
             <div className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto scrollbar-none">
                 <nav className="flex flex-col gap-1">
                     {navItems.map((item) => {
-                        const isActive = mounted && (activePath === item.href || (item.href !== "/" && activePath.startsWith(item.href)));
+                        const isActive = mounted && (activePath === item.href || (item.href !== "/dashboard" && activePath.startsWith(item.href)));
                         
                         return (
                             <Link

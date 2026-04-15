@@ -23,7 +23,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Query, HTTPException
 
-from real_data_connector import real_data_connector, ODDS_PROVIDER, SPORT_KEY_TO_ID
+from core.waterfall_config import all_registry_sport_keys
+from real_data_connector import real_data_connector, SPORT_KEY_TO_ID
+from services.waterfall_router import waterfall_router
 from services.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -41,6 +43,14 @@ PROVIDER_META = {
         "key_env": "THE_ODDS_API_KEY",
         "capabilities": ["h2h", "spreads", "totals", "player_props", "all_major_sports"],
         "probe_url": "https://api.the-odds-api.com/v4/sports?apiKey={key}",
+    },
+    "betstack": {
+        "name": "BetStack (free API)",
+        "url": "https://api.betstack.dev",
+        "quota": "Free tier rate limits",
+        "key_env": "BETSTACK_API_KEY",
+        "capabilities": ["consensus_lines", "events"],
+        "probe_url": None,
     },
     "espn": {
         "name": "ESPN Free API",
@@ -110,7 +120,15 @@ PROVIDER_META = {
         "name": "iSports API",
         "url": "https://isportsapi.com",
         "quota": "Trial tier",
-        "key_env": "ISPORTS_API_KEY",
+        "key_env": "ISPORTS_ACCOUNT / ISPORTS_SECRET",
+        "capabilities": ["schedules", "scores", "odds"],
+        "probe_url": "https://api.isportsapi.com/sport/football/schedule",
+    },
+    "isports": {
+        "name": "iSports API",
+        "url": "https://isportsapi.com",
+        "quota": "Trial tier",
+        "key_env": "ISPORTS_ACCOUNT / ISPORTS_SECRET",
         "capabilities": ["schedules", "scores", "odds"],
         "probe_url": "https://api.isportsapi.com/sport/football/schedule",
     },
@@ -119,9 +137,11 @@ PROVIDER_META = {
 # Ordered waterfall chain (default)
 WATERFALL_ORDER = [
     "the_odds_api",
+    "betstack",
     "api_sports",
     "sportmonks",
     "isports_api",
+    "isports",
     "espn",
     "thesportsdb",
     "therundown",
@@ -260,6 +280,8 @@ PROBE_FNS = {
     "api_sports": _probe_api_sports,
     "sportmonks": _probe_sportmonks,
     "isports_api": _probe_isports_api,
+    "isports": _probe_isports_api,
+    "betstack": lambda: _probe_unprobed("betstack"),
     "therundown":    lambda: _probe_unprobed("therundown"),
     "mysportsfeeds": lambda: _probe_unprobed("mysportsfeeds"),
     "sportsgameodds": lambda: _probe_unprobed("sportsgameodds"),
@@ -292,7 +314,7 @@ async def list_sports():
     Useful for the frontend to render provider badges and capability matrices.
     """
     sports = {}
-    all_keys = set(list(ODDS_PROVIDER.keys()) + list(SPORT_KEY_TO_ID.keys()))
+    all_keys = set(all_registry_sport_keys()) | set(SPORT_KEY_TO_ID.keys())
 
     for sport_key in sorted(all_keys):
         display = sport_key.replace("_", " ").title()
@@ -399,58 +421,20 @@ async def waterfall_odds(
     Markets: h2h (moneyline), spreads, totals.
     """
     try:
-        from services.odds_api_client import odds_api
-        raw = await odds_api.get_live_odds(sport, markets=markets)
-        if raw:
+        items = await waterfall_router.get_data(sport, data_type="odds", markets=markets)
+        if items:
+            prov = items[0].get("source_provider", "unknown")
             return {
                 "sport": sport,
                 "markets_requested": markets,
-                "count": len(raw),
-                "serving_provider": "the_odds_api",
-                "items": raw,
+                "count": len(items),
+                "serving_provider": prov,
+                "items": items,
                 "timestamp": _now_iso(),
                 "error": None,
             }
     except Exception as e:
-        logger.warning(f"[waterfall/odds] Odds API failed for {sport}: {e}")
-
-    # Fallback: cascade through configured odds chain
-    chain = ODDS_PROVIDER.get(sport, [])
-    logger.info(f"[waterfall/odds] Falling back through chain: {chain}")
-
-    # For TheRundown as next-best fallback
-    try:
-        from services.therundown_client import therundown_client
-        rundown = await therundown_client.get_games(sport)
-        if rundown:
-            return {
-                "sport": sport,
-                "markets_requested": markets,
-                "count": len(rundown),
-                "serving_provider": "therundown",
-                "items": rundown,
-                "timestamp": _now_iso(),
-                "error": None,
-            }
-    except Exception as e:
-        logger.warning(f"[waterfall/odds] TheRundown failed for {sport}: {e}")
-
-    # SportsGameOdds last resort
-    try:
-        from services.sportsgameodds_client import sportsgameodds_client
-        sgo = await sportsgameodds_client.get_events(sport)
-        if sgo:
-            return {
-                "sport": sport,
-                "markets_requested": markets,
-                "count": len(sgo),
-                "serving_provider": "sportsgameodds",
-                "items": sgo,
-                "timestamp": _now_iso(),
-                "error": None,
-            }
-    except Exception as e:
-        logger.warning(f"[waterfall/odds] SportsGameOdds failed for {sport}: {e}")
+        logger.warning(f"[waterfall/odds] Waterfall router failed for {sport}: {e}")
 
     return {
         "sport": sport,

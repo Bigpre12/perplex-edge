@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 import uuid
 from datetime import datetime, timezone, timedelta
-from sqlalchemy import select, func, desc, Integer
+from sqlalchemy import select, func, desc, Integer, or_
 from models.brain import BrainSystemState, ModelPick, SharpSignal, BrainLog, SteamSnapshot
 from models import InjuryImpact, UnifiedOdds, UnifiedEVSignal
 from typing import List, Optional, Dict
@@ -18,7 +18,7 @@ class BrainAdvancedService:
         try:
             stmt = select(ModelPick).where(
                 ModelPick.sport_key == sport,
-                ModelPick.status == 'active'
+                or_(ModelPick.status == "active", ModelPick.status == "pending"),
             ).order_by(desc(ModelPick.ev_percentage)).limit(20)
             
             res = await db.execute(stmt)

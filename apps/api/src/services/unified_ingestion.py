@@ -1,4 +1,22 @@
 # apps/api/src/services/unified_ingestion.py
+"""
+Unified odds/props ingestion — staged pipeline vs external providers.
+
+Layers (conceptual)::
+
+    [1] Multi-book odds/props — ``odds_api_client`` (The Odds API): ``get_live_odds``,
+        primary board and event ids for normalization.
+    [2] BetStack consensus — ``betstack_client``: consensus lines merge for EV/prop
+        shapes where configured (see ``LUCRIX_TO_BETSTACK_LEAGUE``).
+    [3] Optional Kalshi — cross-signal / contract context when tier flags allow
+        (not the primary American-odds source).
+    [4] Persistence — ``upsert_props_live``, ``upsert_unified_odds``, props history,
+        heartbeats, downstream EV/grader hooks.
+
+Waterfall router / ``real_data_connector`` game fetch is a **separate** fallback path
+when Odds API returns sparse data (see module body). Every external used here is listed
+in ``docs/WATERFALL_PROVIDER_MATRIX.md`` with “used in unified_ingestion stage N”.
+"""
 import logging
 import asyncio
 import json
@@ -32,7 +50,7 @@ class UnifiedIngestionService:
 
     async def run(self, sport_key: str):
         start_time = datetime.now(timezone.utc)
-        logger.info(f"=== WATERFALL STAGE 0: INIT for {sport_key} START ===")
+        logger.debug(f"=== WATERFALL STAGE 0: INIT for {sport_key} START ===")
         source_name = "primary"
         from workers.ev_engine import ev_engine # type: ignore
         errors: List[str] = []
@@ -46,7 +64,7 @@ class UnifiedIngestionService:
         }
         
         # 1. Fetch metadata (Teams and Times)
-        logger.info(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} START ===")
+        logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} START ===")
         if not odds_api_client.is_configured:
             logger.warning(f"UnifiedIngestion: Skipping {sport_key} - Odds API not configured")
             return
@@ -99,9 +117,9 @@ class UnifiedIngestionService:
                 'game_time': game_time
             }
 
-        logger.info(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} COMPLETE — {len(odds_raw)} events ===")
+        logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} COMPLETE — {len(odds_raw)} events ===")
         # 2d. Fetch Player Props (Requires per-event calls)
-        logger.info(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} START ===")
+        logger.debug(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} START ===")
         PROP_MARKETS_BY_SPORT = {
             "basketball_nba": "player_points,player_rebounds,player_assists",
             "americanfootball_nfl": "player_pass_yds,player_rush_yds",
@@ -173,34 +191,42 @@ class UnifiedIngestionService:
                     logger.error(f"UnifiedIngestion: Failed to fetch props for event {eid}: {e}")
             logger.info(f"UnifiedIngestion: Successfully fetched props for {prop_counts} events for {sport_key}")
 
-        # Task 4: Merge Betstack Props
+        # Task 4: Merge BetStack consensus lines (free API: events + lines, no player props)
         betstack_records = []
         try:
-            logger.info(f"UnifiedIngestion: Fetching Betstack props for {sport_key}")
-            # Normalize sport key for Betstack (e.g., basketball_nba -> nba)
-            betstack_sport = "nba" if "nba" in sport_key else sport_key
-            betstack_raw = await _real_sports_api_instance.fetch_props_from_betstack(betstack_sport)
+            logger.info(f"UnifiedIngestion: Fetching Betstack lines for {sport_key}")
+            betstack_raw = await _real_sports_api_instance.fetch_props_from_betstack(sport_key)
             if betstack_raw and isinstance(betstack_raw, list):
+                now_ts = datetime.now(timezone.utc)
                 for p in betstack_raw:
-                    # Normalize Betstack into PropRecord
-                    betstack_records.append(PropRecord(
-                        sport=sport_key,
-                        game_id=p.get("game_id"),
-                        player_name=p.get("player_name"),
-                        market_key=p.get("market_key"),
-                        book="betstack",
-                        line=Decimal(str(p.get("line", 0))),
-                        odds_over=Decimal(str(p.get("odds_over", -110))),
-                        odds_under=Decimal(str(p.get("odds_under", -110))),
-                        source_ts=datetime.now(timezone.utc)
-                    ))
+                    if not isinstance(p, dict) or not p.get("game_id"):
+                        continue
+                    gst = p.get("game_start_time")
+                    if gst is not None and not isinstance(gst, datetime):
+                        gst = None
+                    betstack_records.append(
+                        PropRecord(
+                            sport=sport_key,
+                            game_id=str(p["game_id"]),
+                            player_name=p.get("player_name"),
+                            home_team=p.get("home_team"),
+                            away_team=p.get("away_team"),
+                            game_start_time=gst,
+                            market_key=p.get("market_key") or "totals",
+                            book="betstack",
+                            line=Decimal(str(p.get("line", 0))),
+                            odds_over=Decimal(str(p.get("odds_over", -110))),
+                            odds_under=Decimal(str(p.get("odds_under", -110))),
+                            source_ts=now_ts,
+                        )
+                    )
                 logger.info(f"UnifiedIngestion: Merged {len(betstack_records)} Betstack records.")
         except Exception as e:
             logger.error(f"UnifiedIngestion: Betstack fetch failed: {e}")
 
-        logger.info(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} COMPLETE ===")
+        logger.debug(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} COMPLETE ===")
         # 3. Normalize into PropRecords
-        logger.info(f"=== WATERFALL STAGE 3: NORMALIZE & ENRICH for {sport_key} START ===")
+        logger.debug(f"=== WATERFALL STAGE 3: NORMALIZE & ENRICH for {sport_key} START ===")
         records = odds_mapper.map_theodds_props_to_records(odds_raw, metadata_map, sport_key)
         
         # Merge logic (Betstack + Primary)
@@ -215,9 +241,9 @@ class UnifiedIngestionService:
         records = self.enrich_with_market_intel(combined_records)
         metrics["odds_count"] = len(records)
         
-        logger.info(f"=== WATERFALL STAGE 3: NORMALIZE & ENRICH for {sport_key} COMPLETE — {len(records)} records ===")
+        logger.debug(f"=== WATERFALL STAGE 3: NORMALIZE & ENRICH for {sport_key} COMPLETE — {len(records)} records ===")
         # 4. Standardized Persistence
-        logger.info(f"=== WATERFALL STAGE 4: PERSIST for {sport_key} START ===")
+        logger.debug(f"=== WATERFALL STAGE 4: PERSIST for {sport_key} START ===")
         # Only delete old data if we have a substantial replacement set (>=10 records).
         # This prevents partial API responses or exhausted keys from wiping the table.
         MIN_RECORDS_FOR_DELETE = 10
@@ -281,14 +307,14 @@ class UnifiedIngestionService:
         else:
             logger.warning(f"UnifiedIngestion: No unified rows generated for {sport_key}")
 
-        logger.info(f"=== WATERFALL STAGE 4: PERSIST for {sport_key} COMPLETE — {metrics['rows_upserted']} rows ===")
+        logger.debug(f"=== WATERFALL STAGE 4: PERSIST for {sport_key} COMPLETE — {metrics['rows_upserted']} rows ===")
         # 5. Trigger Unified Intelligence Pipeline
-        logger.info(f"=== WATERFALL STAGE 5: INTELLIGENCE PIPELINE for {sport_key} START ===")
+        logger.debug(f"=== WATERFALL STAGE 5: INTELLIGENCE PIPELINE for {sport_key} START ===")
         await self.run_intelligence_pipeline(sport_key, records)
 
-        logger.info(f"=== WATERFALL STAGE 5: INTELLIGENCE PIPELINE for {sport_key} COMPLETE ===")
+        logger.debug(f"=== WATERFALL STAGE 5: INTELLIGENCE PIPELINE for {sport_key} COMPLETE ===")
         # 6. Promote EV signals to ModelPicks
-        logger.info(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} START ===")
+        logger.debug(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} START ===")
         try:
             async with async_session_maker() as session:
                 await brain_advanced_service.generate_model_picks(sport_key, session)
@@ -297,7 +323,7 @@ class UnifiedIngestionService:
             metrics["errors"].append(f"ModelPick Promotion: {str(e)}")
             logger.error(f"UnifiedIngestion: ModelPick promotion failed: {e}")
 
-        logger.info(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} COMPLETE ===")
+        logger.debug(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} COMPLETE ===")
         metrics["status"] = "completed" if not metrics["errors"] else "partial_success"
         elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
         logger.info(f"INFO: [{sport_key}] Ingest complete — {metrics['events_count']} odds events, {metrics['rows_upserted']} props upserted, source: {source_name}, elapsed: {elapsed:.1f}s")
@@ -365,19 +391,32 @@ class UnifiedIngestionService:
             from services.alert_writer import run_alert_detection # type: ignore
             await run_alert_detection(sport)
             
-            # Step 3: Analytical Extras
-            tasks = [
+            # Step 3–4: Analytical extras + news (explicit gather — all tasks are coroutines)
+            from services.news_service import news_service
+
+            extra_names = (
+                "sharp_money",
+                "clv_opening",
+                "injury_impact",
+                "news",
+            )
+            extras = await asyncio.gather(
                 sharp_money_brain.detect_signals(sport),
                 brain_clv_tracker.record_opening_line(records),
-                injury_impact_brain.analyze_impacts(sport)
-            ]
-            
-            # Step 4: Real-time News Ingestion
-            from services.news_service import news_service
-            tasks.append(news_service.get_news(sport))
-            
-            await asyncio.gather(*[t for t in tasks if asyncio.iscoroutine(t)], return_exceptions=True) # type: ignore
-            
+                injury_impact_brain.analyze_impacts(sport),
+                news_service.get_news(sport),
+                return_exceptions=True,
+            )
+            for name, res in zip(extra_names, extras):
+                if isinstance(res, BaseException):
+                    logger.error(
+                        "❌ [INTELLIGENCE PIPELINE] extra task %s failed for %s: %s",
+                        name,
+                        sport,
+                        res,
+                        exc_info=(type(res), res, res.__traceback__),
+                    )
+
             logger.info(f"✅ [INTELLIGENCE PIPELINE] Completed for {sport}")
         except Exception as e:
             logger.error(f"❌ [INTELLIGENCE PIPELINE] Failed for {sport}: {e}")

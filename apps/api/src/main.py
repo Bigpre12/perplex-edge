@@ -7,12 +7,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.config import APP_NAME, settings
-from middleware.request_id import RequestIDMiddleware
+from middleware.request_id import RequestIDMiddleware, get_request_id
 from middleware.auth_circuit_breaker import AuthCircuitBreakerMiddleware, auth_breaker # Import new circuit breaker
 from db.base import Base
 from db.session import engine
@@ -22,7 +23,7 @@ from services.live_data_service import live_data_service
 from services.kalshi_ws import kalshi_ws_manager
 
 logger = logging.getLogger(__name__)
-logging.getLogger("apscheduler").setLevel(logging.DEBUG)
+logging.getLogger("apscheduler").setLevel(logging.INFO)
 
 def validate_env():
     """Fail fast if critical environment variables are missing, but with descriptive error logs."""
@@ -114,7 +115,7 @@ async def initialize_backend_services():
                     await conn.execute(text(query))
             except Exception as e:
                 q_snippet = query[:100] if query else "NULL"
-                logger.warning(f"Migration step failed (continuing): {q_snippet}... Error: {e}")
+                logger.debug("Migration step skipped or failed (continuing): %s... Error: %s", q_snippet, e)
 
         if not is_sqlite:
             # Add columns
@@ -132,7 +133,21 @@ async def initialize_backend_services():
             await run_migration_step("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS sport VARCHAR")
             await run_migration_step("ALTER TABLE unified_odds ADD COLUMN IF NOT EXISTS implied_prob FLOAT")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sport VARCHAR")
-            await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS evpercentage FLOAT DEFAULT 0")
+            await run_migration_step("""
+                DO $migrate_ev_pct$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'props_live' AND column_name = 'evpercentage'
+                    ) AND NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'props_live' AND column_name = 'ev_percentage'
+                    ) THEN
+                        ALTER TABLE props_live RENAME COLUMN evpercentage TO ev_percentage;
+                    END IF;
+                END $migrate_ev_pct$
+            """)
+            await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS ev_percentage FLOAT DEFAULT 0")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS game_start_time TIMESTAMPTZ")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS home_team VARCHAR")
@@ -162,6 +177,8 @@ async def initialize_backend_services():
                 # ev_signals
                 ("ev_signals", "player_name"), ("ev_signals", "line"), ("ev_signals", "price"), 
                 ("ev_signals", "outcome_key"),
+                # edges_ev_history (legacy NOT NULL on team)
+                ("edges_ev_history", "team"),
                 # analytics/logging
                 ("line_ticks", "player_name"), ("line_ticks", "line"),
                 ("ev_signals_history", "player_name"), ("ev_signals_history", "line")
@@ -313,9 +330,10 @@ async def initialize_backend_services():
                 minutes=5,
                 args=[sport],
                 id=f"ingest_{sport}",
-                replace_existing=True
+                replace_existing=True,
+                jitter=30,
             )
-            logger.info(f"📡 [Scheduler] Added unified ingestion job {job.id}")
+            logger.debug("📡 [Scheduler] Added unified ingestion job %s", job.id)
 
         from services.grading_service import grading_service
         from services.kalshi_ingestion import kalshi_ingestion
@@ -327,7 +345,8 @@ async def initialize_backend_services():
             'interval',
             minutes=10,
             id="auto_grading",
-            replace_existing=True
+            replace_existing=True,
+            jitter=30,
         )
         
         scheduler.add_job(
@@ -335,7 +354,8 @@ async def initialize_backend_services():
             'interval',
             minutes=5,
             id="sql_grading",
-            replace_existing=True
+            replace_existing=True,
+            jitter=30,
         )
         
         # Kalshi Sync (NBA, MLB)
@@ -346,7 +366,8 @@ async def initialize_backend_services():
                 minutes=8,
                 args=[k_sport],
                 id=f"kalshi_sync_{k_sport.lower()}",
-                replace_existing=True
+                replace_existing=True,
+                jitter=30,
             )
         
         # Periodic Global Whale Check
@@ -355,20 +376,28 @@ async def initialize_backend_services():
             'interval',
             minutes=12,
             id="whale_global_check",
-            replace_existing=True
+            replace_existing=True,
+            jitter=30,
         )
         
         scheduler.start()
         logger.info("📡 [Background Init] Internal scheduler active.")
         logger.info("📡 [Background Init] Scheduler started.")
 
-        # 5. Initial Ingest (Parallel)
+        # 5. Initial Ingest (bounded concurrency to avoid DB pool exhaustion)
+        ingest_semaphore = asyncio.Semaphore(3)
+
         async def run_parallel_ingest():
             logger.info("📡 [Background Init] Starting parallel initial ingestion phase...")
-            # Sports + Kalshi
-            ingest_tasks = [unified_ingestion.run_with_retries(sport) for sport in sports_to_ingest]
-            ingest_tasks.append(kalshi_ingestion.run("NBA"))
-            ingest_tasks.append(kalshi_ingestion.run("MLB"))
+            async def bounded_ingest(coro):
+                async with ingest_semaphore:
+                    return await coro
+
+            ingest_tasks = [
+                bounded_ingest(unified_ingestion.run_with_retries(sport)) for sport in sports_to_ingest
+            ]
+            ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("NBA")))
+            ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("MLB")))
             
             results = await asyncio.gather(*ingest_tasks, return_exceptions=True)
             for sport, res in zip(sports_to_ingest + ["Kalshi_NBA", "Kalshi_MLB"], results):
@@ -450,28 +479,65 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Fail-safe for production: Ensure CORS headers are sent even on 500 errors."""
-    logger.error(f"GLOBAL EXCEPTION CAUGHT: {str(exc)}", exc_info=True)
-    
-    # Get origin from request or fallback to production
+def _cors_headers_for_request(request: Request) -> dict:
     origin = request.headers.get("Origin") or request.headers.get("origin")
-    
-    # If it's a vercel origin, use it. Otherwise fallback to primary.
     allow_origin = "https://perplex-edge.vercel.app"
     if origin and (origin.endswith(".vercel.app") or "localhost" in origin):
         allow_origin = origin
-    
+    return {
+        "Access-Control-Allow-Origin": allow_origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE, PATCH",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-ID",
+    }
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Standard JSON error shape for HTTP errors."""
+    rid = get_request_id()
+    detail = exc.detail
+    if isinstance(detail, dict):
+        message = detail.get("message") or detail.get("detail") or str(detail)
+        code = detail.get("code", "http_error")
+    else:
+        message = str(detail)
+        code = "http_error"
+    body = {"error": {"code": code, "message": message, "request_id": rid}}
+    headers = _cors_headers_for_request(request)
+    return JSONResponse(status_code=exc.status_code, content=body, headers=headers)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    rid = get_request_id()
+    body = {
+        "error": {
+            "code": "validation_error",
+            "message": "Request validation failed",
+            "request_id": rid,
+            "details": exc.errors(),
+        }
+    }
+    return JSONResponse(status_code=422, content=body, headers=_cors_headers_for_request(request))
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Fail-safe for production: CORS + standard error envelope."""
+    logger.error(f"GLOBAL EXCEPTION CAUGHT: {str(exc)}", exc_info=True)
+    rid = get_request_id()
+    headers = _cors_headers_for_request(request)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error", "error": str(exc)},
-        headers={
-            "Access-Control-Allow-Origin": allow_origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE, PATCH",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-ID"
-        }
+        content={
+            "error": {
+                "code": "internal_error",
+                "message": "Internal Server Error",
+                "request_id": rid,
+            }
+        },
+        headers=headers,
     )
 
 @app.get("/api/smart-money")

@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from core.config import settings
+from core.kalshi_urls import resolve_kalshi_ws_url
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,10 @@ class KalshiWSManager:
         self.api_key_id = os.getenv("KALSHI_API_KEY_ID")
         self.private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH")
         self.private_key_content = os.getenv("KALSHI_PRIVATE_KEY")
-        self.ws_url = os.getenv("KALSHI_WS_URL", "wss://demo-api.kalshi.co/trade-api/ws/v2")
+        self.ws_url = resolve_kalshi_ws_url(
+            os.getenv("KALSHI_WS_URL"),
+            os.getenv("KALSHI_BASE_URL"),
+        )
         self.redis_url = settings.REDIS_URL
         self.redis = None
         self._stop_event = asyncio.Event()
@@ -48,6 +52,11 @@ class KalshiWSManager:
                     )
             except Exception as e:
                 logger.error(f"KalshiWS: Failed to load private key from file: {e}")
+
+        self._disabled = not (self.api_key_id and self._private_key)
+        self._disabled_logged = False
+        self._auth_failure_count = 0
+        self._auth_disabled = False
 
     def _create_signature(self, timestamp: str, method: str, path: str) -> str:
         if not self._private_key: return ""
@@ -88,16 +97,25 @@ class KalshiWSManager:
         logger.info(f"KalshiWS: Subscribed to {tickers}")
 
     async def run(self, tickers: List[str]):
+        if self._disabled:
+            if not self._disabled_logged:
+                logger.warning(
+                    "KalshiWS: Disabled — missing KALSHI_API_KEY_ID or private key "
+                    "(KALSHI_PRIVATE_KEY / KALSHI_PRIVATE_KEY_PATH). WebSocket will not connect."
+                )
+                self._disabled_logged = True
+            await self._stop_event.wait()
+            return
+
+        if self._auth_disabled:
+            await self._stop_event.wait()
+            return
+
         await self.connect_redis()
         retry_delay = 1
         
         while not self._stop_event.is_set():
             try:
-                if not self.api_key_id:
-                    logger.error("KalshiWS: KALSHI_API_KEY_ID not configured")
-                    await asyncio.sleep(60)
-                    continue
-                    
                 headers = await self.get_auth_headers()
                 async with websockets.connect(self.ws_url, additional_headers=headers) as websocket:
                     await self.subscribe(websocket, tickers)
@@ -111,6 +129,20 @@ class KalshiWSManager:
                             await self.redis.publish("kalshi:prices", json.dumps(data))
                             
             except Exception as e:
+                err_s = str(e).lower()
+                if "401" in err_s or "403" in err_s or "unauthorized" in err_s:
+                    self._auth_failure_count += 1
+                    if self._auth_failure_count >= 2:
+                        self._auth_disabled = True
+                        logger.error(
+                            "KalshiWS: Repeated HTTP 401/403 on WebSocket handshake. "
+                            "Use the same environment as your API keys: demo REST "
+                            "(https://demo-api.kalshi.co/trade-api/v2) + demo WS, or production "
+                            "(https://api.elections.kalshi.com/trade-api/v2) + set KALSHI_WS_URL "
+                            "or KALSHI_BASE_URL so the WS host matches. Disabling Kalshi WS."
+                        )
+                        await self._stop_event.wait()
+                        return
                 logger.error(f"KalshiWS: Connection error: {e}. Retrying in {retry_delay}s...")
                 await asyncio.sleep(retry_delay)
                 retry_delay = min(retry_delay * 2, 30) # Exponential backoff

@@ -32,12 +32,19 @@ class InjuryImpactBrain:
             team_name = tg.get("displayName", "Unknown")
             for inj_raw in tg.get("injuries", []):
                 athlete = inj_raw.get("athlete", {})
+                pos_raw = athlete.get("position") or {}
+                position_abbrev = (
+                    pos_raw.get("abbreviation")
+                    if isinstance(pos_raw, dict)
+                    else (pos_raw if isinstance(pos_raw, str) else "")
+                ) or ""
                 injuries.append({
                     "player": athlete.get("displayName", "Unknown"),
                     "team": team_name,
                     "status": inj_raw.get("status", "Unknown"),
                     "impact": inj_raw.get("impact", "low"),
-                    "description": inj_raw.get("shortComment", "No description")
+                    "description": inj_raw.get("shortComment", "No description"),
+                    "position": position_abbrev,
                 })
 
         async with async_session_maker() as session:
@@ -62,9 +69,10 @@ class InjuryImpactBrain:
                             teammate_boosts.append({"player": "Backup X", "boost": 0.08})
                     
                     elif sport_short == 'nfl':
-                        if inj['position'] in ['QB']:
+                        pos = (inj.get("position") or "").upper()
+                        if pos == "QB":
                             affected_markets.append({"market": "team_total", "adjustment": -6.5})
-                        elif inj['position'] in ['WR', 'RB'] and inj['impact'] == 'high':
+                        elif pos in ("WR", "RB") and inj["impact"] == "high":
                             affected_markets.append({"market": "passing_yards", "adjustment": -25.0})
 
                     # 3. Build Impact Record

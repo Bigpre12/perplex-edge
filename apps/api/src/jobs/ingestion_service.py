@@ -17,7 +17,13 @@ from services.props_persistence import (
 logger = logging.getLogger(__name__)
 
 async def write_props_to_db(sport_id: int, props_data: list):
-    """Persist props to DB and pass grouped data to BrainOddsScout."""
+    """
+    DEPRECATED / ORPHAN ENTRYPOINT — not called by ingest_active_odds.
+
+    Active ingestion is ``unified_ingestion.run(sport_key)`` (see ``ingestion_service.ingest_active_odds``).
+    This function remains for manual scripts only; ``brain_odds_scout`` duplicates logic and should
+    not be used for production paths. See docs/BRAINS_AUDIT_AND_REBUILD_SPEC.md.
+    """
     sport_key = SPORT_KEY_MAP.get(sport_id)
     if not sport_key or not props_data:
         return

@@ -69,17 +69,23 @@ async def upsert_props_live(records: List[PropRecord]):
             """
             
             if player_rows:
-                logger.warning(f"⚠️ [TEMP DIAGNOSTIC] upsert_props_live -> {len(player_rows)} PLAYER rows. Using ON CONFLICT (sport, game_id, player_name, market_key, book) WHERE player_name IS NOT NULL.")
+                logger.debug(
+                    "upsert_props_live: %s player rows (ON CONFLICT player_name IS NOT NULL)",
+                    len(player_rows),
+                )
                 q_player = base_insert + " ON CONFLICT (sport, game_id, player_name, market_key, book) WHERE player_name IS NOT NULL " + update_clause
                 await session.execute(text(q_player), player_rows)
             
             if team_rows:
-                logger.warning(f"⚠️ [TEMP DIAGNOSTIC] upsert_props_live -> {len(team_rows)} TEAM rows. Using ON CONFLICT (sport, game_id, market_key, book) WHERE player_name IS NULL.")
+                logger.debug(
+                    "upsert_props_live: %s team rows (ON CONFLICT player_name IS NULL)",
+                    len(team_rows),
+                )
                 q_team = base_insert + " ON CONFLICT (sport, game_id, market_key, book) WHERE player_name IS NULL " + update_clause
                 await session.execute(text(q_team), team_rows)
                 
             await session.commit()
-            logger.info(f"Persistence: Successfully upserted {len(records)} props to props_live using raw SQL")
+            logger.debug("Persistence: upserted %s props to props_live", len(records))
         except Exception as e:
             await session.rollback()
             logger.error(f"Persistence: props_live upsert failed: {e}", exc_info=True)
