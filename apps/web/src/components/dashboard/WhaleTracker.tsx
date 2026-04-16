@@ -35,18 +35,37 @@ function WhaleTrackerContent({ sport }: { sport: string }) {
             const resultData = result as any;
             const data = Array.isArray(resultData) ? resultData : (resultData.data || resultData.items || []);
             
-            const mappedMoves = data.map((m: any) => ({
-                id: m.id || m.event_id || Math.random().toString(),
-                player: m.player_name || m.home_team || 'N/A',
-                stat: m.market || m.market_key || 'N/A',
-                line: m.line,
-                move_type: "WHALE",
-                delta: m.whale_rating || 0,
-                severity: (m.whale_rating > 0.7) ? 'High' : 'Medium',
-                books_involved: m.book ? [m.book] : ["Institutional"],
-                whale_label: (m.units > 50) ? "MAX VALUE" : "SHARP MONEY",
-                confidence: m.whale_rating || 0
-            }));
+            const trust01 = (m: any): number => {
+                if (m.confidence != null && m.confidence !== "") {
+                    const n = Number(m.confidence);
+                    if (!Number.isFinite(n)) return 0;
+                    return n > 1 ? n / 100 : n;
+                }
+                const w = Number(m.whale_rating);
+                if (!Number.isFinite(w)) return 0;
+                if (w <= 1) return w;
+                if (w <= 10) return w / 10;
+                return w / 100;
+            };
+
+            const mappedMoves = data.map((m: any) => {
+                const confidence01 = trust01(m);
+                const whaleRating = Number(m.whale_rating);
+                const severityHigh =
+                    (Number.isFinite(whaleRating) && whaleRating > 0.7) || confidence01 >= 0.85;
+                return {
+                    id: m.id || m.event_id || Math.random().toString(),
+                    player: m.player_name || m.home_team || 'N/A',
+                    stat: m.market || m.market_key || 'N/A',
+                    line: m.line,
+                    move_type: "WHALE",
+                    delta: m.whale_rating || 0,
+                    severity: severityHigh ? 'High' : 'Medium',
+                    books_involved: m.book ? [m.book] : ["Institutional"],
+                    whale_label: (m.units > 50) ? "MAX VALUE" : "SHARP MONEY",
+                    confidence: confidence01,
+                };
+            });
             
             setMoves(mappedMoves);
         } else {

@@ -48,14 +48,21 @@ class WaterfallRouter:
         data_type: str = "stats",
         *,
         markets: Optional[str] = None,
+        skip_cache: bool = False,
     ) -> Any:
-        """Entry point for all waterfall data requests."""
+        """Entry point for all waterfall data requests.
+
+        ``skip_cache`` — when True, bypass Redis read/write (used by scheduled ingest so odds
+        are not served from a stale snapshot while the router still walks the provider chain).
+        """
         sport_lower = sport.lower()
         if resolve_data_type(data_type) == PLAYER_PROPS:
             logger.info("Waterfall: player_props requires event context; use Odds API props endpoint")
             return []
         chain = get_provider_chain(sport_lower, data_type)
-        return await self._execute_waterfall(sport_lower, data_type, chain, markets=markets)
+        return await self._execute_waterfall(
+            sport_lower, data_type, chain, markets=markets, skip_cache=skip_cache
+        )
 
     def _is_odds_like(self, data_type: str) -> bool:
         r = resolve_data_type(data_type)
@@ -102,6 +109,7 @@ class WaterfallRouter:
         chain: List[str],
         *,
         markets: Optional[str] = None,
+        skip_cache: bool = False,
     ) -> Any:
         """Executes the provider chain with try/except and caching logic."""
         canonical = canonical_sport_key(sport)
@@ -109,9 +117,10 @@ class WaterfallRouter:
         cache_key = f"wf:{resolved}:{canonical}:{markets or ''}"
         
         # 1. Check Redis Cache
-        cached = await cache.get_json(cache_key)
-        if cached:
-            return cached
+        if not skip_cache:
+            cached = await cache.get_json(cache_key)
+            if cached:
+                return cached
 
         # 2. Iterate through providers
         for provider_key in chain:
@@ -120,6 +129,18 @@ class WaterfallRouter:
                     provider_key, sport, data_type, markets=markets
                 )
                 if data:
+                    if isinstance(data, dict):
+                        if data.get("error"):
+                            continue
+                        logger.warning(
+                            "Waterfall: %s returned non-list payload for %s %s; skipping",
+                            provider_key,
+                            sport,
+                            data_type,
+                        )
+                        continue
+                    if not isinstance(data, list):
+                        continue
                     # 3. Label source and cache
                     for item in data:
                         if isinstance(item, dict):
@@ -129,7 +150,8 @@ class WaterfallRouter:
                     ttl = self.TTL_LIVE if resolved == ODDS_LIVE else self.TTL_STATS
                     if resolved == SCHEDULE: ttl = self.TTL_SCHEDULE
                     
-                    await cache.set_json(cache_key, data, ttl=ttl)
+                    if not skip_cache:
+                        await cache.set_json(cache_key, data, ttl=ttl)
                     logger.info(f"✅ Waterfall: {provider_key} served {sport} {data_type}")
                     return data
             except Exception as e:

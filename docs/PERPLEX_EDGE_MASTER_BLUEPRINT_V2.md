@@ -6,6 +6,7 @@
 
 **Companion specs**
 
+- [PERPLEX_EDGE_V2_RUNTIME_CONTRACT.md](./PERPLEX_EDGE_V2_RUNTIME_CONTRACT.md) — **operational truth:** failure-class matrix, `/health` vs `/health/deps`, API `meta.degradation` + freshness envelope, DLQ / mapping defenses, WS reconnect rules, MVP engineering slice (binds “200 OK” to honest UI).
 - [WATERFALL_PROVIDER_MATRIX.md](./WATERFALL_PROVIDER_MATRIX.md) — Part I (inventory + legacy matrix); **Part II — V2 routing** (domain matrix with Primary / Secondary / Tertiary / Cached / Degraded, provider routing contract, audit schema).
 - [UI_DATA_PROVENANCE.md](./UI_DATA_PROVENANCE.md) — badges, stale copy, confidence.
 - [BRAINS_AUDIT_AND_REBUILD_SPEC.md](./BRAINS_AUDIT_AND_REBUILD_SPEC.md) — treat every brain as **broken until proven**; registry, health architecture, recovery, UI no-silent-failure rules.

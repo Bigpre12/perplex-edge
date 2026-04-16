@@ -191,9 +191,17 @@ export const API = {
     }
   },
   brain: {
+    /** Full brain dashboard root: props, decisions, nested status (brain page). */
     status: async () => {
       try {
         const { data } = await api.get('/api/brain');
+        return data;
+      } catch (err) { return handleApiError(err); }
+    },
+    /** Lightweight status + metrics only (Command Center / health widgets). */
+    overallStatus: async () => {
+      try {
+        const { data } = await api.get('/api/brain/status');
         return data;
       } catch (err) { return handleApiError(err); }
     },
@@ -268,6 +276,13 @@ export const API = {
   health: async () => {
     try {
       const { data } = await api.get('/api/health', { params: { t: Date.now() } });
+      return data;
+    } catch (err) { return handleApiError(err); }
+  },
+  /** Dependency-aware health (degradation level, freshness) — prefer for UI truth labels. */
+  healthDeps: async () => {
+    try {
+      const { data } = await api.get('/api/health/deps', { params: { t: Date.now() } });
       return data;
     } catch (err) { return handleApiError(err); }
   },

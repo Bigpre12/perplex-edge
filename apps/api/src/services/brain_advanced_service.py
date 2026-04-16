@@ -334,7 +334,9 @@ class BrainAdvancedService:
             acc_res = (await db.execute(accuracy_stmt)).first()
             total_resolved = acc_res[0] if acc_res else 0
             total_won = acc_res[1] if acc_res and acc_res[1] else 0
-            accuracy = round((total_won / total_resolved) * 100, 1) if total_resolved > 0 else 0.0
+            accuracy_pct = (
+                round((total_won / total_resolved) * 100, 1) if total_resolved > 0 else None
+            )
 
             # Dynamic injuries count
             try:
@@ -355,15 +357,23 @@ class BrainAdvancedService:
                 "injury_impacts": injury_count,
                 "parlay_combos": elite_count, # Using elite_signals as proxy for high-end parlay opportunities
                 "clv_enabled": True,
-                "accuracy_7d": accuracy,
+                "resolved_picks_7d": int(total_resolved),
+                "accuracy_7d": accuracy_pct,
                 "active_edges": elite_count, # Alias for dashboard
-                "hit_rate": accuracy, # Alias for StatsCards
+                "hit_rate": accuracy_pct, # null when no graded picks in window (StatsCards shows —)
                 "avg_ev": round(float(avg_ev_val), 1) if avg_ev_val else 0.0, # Used by StatsCards
                 "live_volume": scored_count # Alias for StatsCards
             }
         except Exception as e:
             logger.error(f"Error in get_dashboard_metrics: {e}")
-            return {"props_scored_today": 0, "elite_signals": 0, "active_edges": 0}
+            return {
+                "props_scored_today": 0,
+                "elite_signals": 0,
+                "active_edges": 0,
+                "resolved_picks_7d": 0,
+                "hit_rate": None,
+                "accuracy_7d": None,
+            }
 
     async def get_heatmap(self, sport: str, db: AsyncSession) -> List[dict]:
         """Feature 8: Neural Market Heatmap (Real Data Aggregation)"""

@@ -7,6 +7,7 @@ import { Activity, Loader2 } from "lucide-react";
 import { ErrorBoundary } from 'react-error-boundary';
 
 import SystemStatusBanner from "@/components/SystemStatusBanner";
+import DataDegradationBanner from "@/components/DataDegradationBanner";
 import StatsCards from "@/components/dashboard/StatsCards";
 import NeuralEngineBrain from "@/components/dashboard/NeuralEngineBrain";
 import { WhaleTracker } from '@/components/dashboard/WhaleTracker';
@@ -76,6 +77,7 @@ function DashboardContent() {
     return (
         <main className="space-y-6 pb-20">
             <SystemStatusBanner />
+            <DataDegradationBanner />
 
             {/* Header */}
             <div className="flex flex-col gap-1 pt-2">

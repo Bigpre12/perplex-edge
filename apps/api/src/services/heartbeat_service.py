@@ -6,6 +6,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Pipeline completed successfully (possibly zero rows). Keeps freshness in sync with idle EV/ingest paths.
+_SUCCESS_LAST_SUCCESS_STATUSES = frozenset({"ok", "idle_no_data", "idle_no_edges"})
+
+
 class HeartbeatService:
     @staticmethod
     async def log_heartbeat(
@@ -26,7 +30,7 @@ class HeartbeatService:
             
             if record:
                 record.last_run_at = now
-                if status == "ok":
+                if status in _SUCCESS_LAST_SUCCESS_STATUSES:
                     record.last_success_at = now
                 record.rows_written_today += rows_written
                 record.error_count_today += error_count
@@ -37,7 +41,7 @@ class HeartbeatService:
                 new_record = Heartbeat(
                     feed_name=feed_name,
                     last_run_at=now,
-                    last_success_at=now if status == "ok" else None,
+                    last_success_at=now if status in _SUCCESS_LAST_SUCCESS_STATUSES else None,
                     rows_written_today=rows_written,
                     error_count_today=error_count,
                     status=status,

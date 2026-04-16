@@ -23,9 +23,15 @@ export default function StatsCards() {
         const result = await API.brainMetrics();
         if (!isApiError(result)) {
           const data = result as any;
+          const resolved = data?.resolved_picks_7d;
+          const rawHit =
+            data?.hit_rate ?? data?.win_rate ?? data?.avg_confidence ?? null;
+          const hitRate =
+            resolved === 0 ? null : rawHit !== undefined && rawHit !== null ? Number(rawHit) : null;
+
           setStats({
-            hit_rate:    data?.hit_rate ?? data?.win_rate ?? data?.avg_confidence ?? null,
-            avg_ev:      data?.avg_ev ?? null,
+            hit_rate: hitRate,
+            avg_ev: data?.avg_ev ?? null,
             live_volume: data?.total_picks ?? data?.live_volume ?? 0,
           });
         }

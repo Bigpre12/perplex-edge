@@ -140,23 +140,64 @@ async def insert_props_history(records: List[PropRecord], source: str = 'live_in
             await session.rollback()
             logger.error(f"Persistence: props_history append failed: {e}")
 
+def _sanitize_ev_history_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Validate and normalize a row before insert into edges_ev_history.
+    Skips rows that would violate NOT NULL / integrity (e.g. missing market label).
+    """
+    sport = raw.get("sport")
+    game_id = raw.get("game_id")
+    market_key = raw.get("market_key")
+    book = raw.get("book")
+    side = raw.get("side")
+    if not sport or not game_id or not market_key or not book or not side:
+        return None
+    ml = raw.get("market_label") or raw.get("marketlabel") or market_key
+    if ml is None or (isinstance(ml, str) and not ml.strip()):
+        logger.warning(
+            "Persistence: edges_ev_history row skipped (missing market_label)",
+            extra={"game_id": game_id, "market_key": market_key},
+        )
+        return None
+    out = dict(raw)
+    out["market_label"] = str(ml).strip()[:512]
+    return out
+
+
 async def insert_edges_ev_history(ev_rows: List[Dict]):
     """Standardized append into public.edges_ev_history."""
-    if not ev_rows: return
-    
+    if not ev_rows:
+        return
+
+    cleaned = []
+    skipped = 0
+    for r in ev_rows:
+        norm = _sanitize_ev_history_row(r)
+        if norm:
+            cleaned.append(norm)
+        else:
+            skipped += 1
+    if skipped:
+        logger.warning("Persistence: edges_ev_history skipped %s invalid rows (DLQ-style log)", skipped)
+    if not cleaned:
+        return
+
     async with async_session_maker() as session:
         try:
             is_sqlite = "sqlite" in str(engine.url)
             ins_obj = sqlite_insert(EdgeEVHistory) if is_sqlite else pg_insert(EdgeEVHistory)
-            
-            # Chunk inserts
+
             batch_size = 500
-            for i in range(0, len(ev_rows), batch_size):
-                batch = ev_rows[i:i + batch_size]
+            for i in range(0, len(cleaned), batch_size):
+                batch = cleaned[i : i + batch_size]
                 await session.execute(ins_obj.values(batch))
-                
+
             await session.commit()
-            logger.info(f"Persistence: Inserted {len(ev_rows)} edges into edges_ev_history.")
+            logger.info(
+                "Persistence: Inserted %s edges into edges_ev_history (%s skipped).",
+                len(cleaned),
+                skipped,
+            )
         except Exception as e:
             await session.rollback()
             logger.error(f"Persistence: edges_ev_history insert failed: {e}")

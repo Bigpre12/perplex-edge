@@ -39,18 +39,40 @@ export default function NeuralEngineBrain() {
     setMounted(true);
     const load = async () => {
       try {
-        const brainStatus = await API.brain.status();
-        if (!isApiError(brainStatus)) {
-          const stats = (brainStatus as any)?.metrics || (brainStatus as any)?.brain?.metrics || (brainStatus as any) || {};
-          setData({
-            props_scored: stats?.props_scored_today ?? stats?.props_scored ?? 0,
-            injury_impacts: stats?.injury_impacts ?? 0,
-            decisions: stats?.decisions ?? [],
-            active_edges: stats?.active_edges ?? stats?.elite_signals ?? stats?.edges ?? 0,
-            clv_enabled: stats?.clv_enabled ?? true,
-            brain_health: (brainStatus as any)?.inference_engine ?? (brainStatus as any)?.brain?.status ?? 'IDLE'
-          });
+        const sportKey =
+          !selectedSport || selectedSport === "all" ? "basketball_nba" : selectedSport;
+
+        const [overall, decisionsRes] = await Promise.all([
+          API.brain.overallStatus(),
+          API.brain.decisions(sportKey, 500),
+        ]);
+
+        if (isApiError(overall)) return;
+
+        const root = overall as any;
+        // GET /api/brain/status: metrics + inference_engine on root.
+        // GET /api/brain (dashboard root): nested status.metrics.
+        const nested = root?.status;
+        const stats =
+          nested?.metrics ?? root?.metrics ?? root?.brain?.metrics ?? {};
+
+        let decisions: any[] = [];
+        if (!isApiError(decisionsRes)) {
+          const d = decisionsRes as any;
+          decisions = d?.decisions ?? d?.items ?? (Array.isArray(d) ? d : []);
         }
+
+        const inference =
+          nested?.inference_engine ?? root?.inference_engine ?? stats?.inference_engine;
+
+        setData({
+          props_scored: stats?.props_scored_today ?? stats?.props_scored ?? 0,
+          injury_impacts: stats?.injury_impacts ?? 0,
+          decisions: Array.isArray(decisions) ? decisions : [],
+          active_edges: stats?.active_edges ?? stats?.elite_signals ?? stats?.edges ?? 0,
+          clv_enabled: stats?.clv_enabled ?? true,
+          brain_health: inference ?? "IDLE",
+        });
       } catch (err) {
         console.error("Brain data load error:", err);
       }

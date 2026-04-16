@@ -4,18 +4,19 @@ Unified odds/props ingestion — staged pipeline vs external providers.
 
 Layers (conceptual)::
 
-    [1] Multi-book odds/props — ``odds_api_client`` (The Odds API): ``get_live_odds``,
-        primary board and event ids for normalization.
-    [2] BetStack consensus — ``betstack_client``: consensus lines merge for EV/prop
-        shapes where configured (see ``LUCRIX_TO_BETSTACK_LEAGUE``).
+    [1] Odds board — ``waterfall_router.get_data(..., data_type="odds", skip_cache=True)``
+        walks ``core.waterfall_config`` (The Odds API, BetStack, TheRundown, SportsGameOdds,
+        iSports, API-Sports, …) until a provider returns events. Player props still use
+        ``odds_api_client`` when keys exist (no multi-provider props client in-repo yet).
+    [2] BetStack consensus — ``_real_sports_api_instance.fetch_props_from_betstack``: extra
+        consensus rows where configured (see ``LUCRIX_TO_BETSTACK_LEAGUE``).
     [3] Optional Kalshi — cross-signal / contract context when tier flags allow
-        (not the primary American-odds source).
+        (not wired as the primary American-odds waterfall slot).
     [4] Persistence — ``upsert_props_live``, ``upsert_unified_odds``, props history,
         heartbeats, downstream EV/grader hooks.
 
-Waterfall router / ``real_data_connector`` game fetch is a **separate** fallback path
-when Odds API returns sparse data (see module body). Every external used here is listed
-in ``docs/WATERFALL_PROVIDER_MATRIX.md`` with “used in unified_ingestion stage N”.
+``real_data_connector.fetch_games_by_sport`` (schedule-shaped waterfall) is used only when
+the odds chain returns no events. See ``docs/WATERFALL_PROVIDER_MATRIX.md``.
 """
 import logging
 import asyncio
@@ -38,6 +39,7 @@ from real_sports_api import _real_sports_api_instance # type: ignore
 from real_data_connector import real_data_connector # type: ignore
 from services.alert_writer import run_alert_detection # type: ignore
 from services.ev_writer import run_ev_grader # type: ignore
+from services.waterfall_router import waterfall_router # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ class UnifiedIngestionService:
     async def run(self, sport_key: str):
         start_time = datetime.now(timezone.utc)
         logger.debug(f"=== WATERFALL STAGE 0: INIT for {sport_key} START ===")
-        source_name = "primary"
+        source_name = "none"
         from workers.ev_engine import ev_engine # type: ignore
         errors: List[str] = []
         metrics: Dict[str, Any] = {
@@ -63,38 +65,76 @@ class UnifiedIngestionService:
             "errors": errors
         }
         
-        # 1. Fetch metadata (Teams and Times)
+        # 1. Fetch odds-shaped events (multi-provider chain, not TOA-only)
         logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} START ===")
         if not odds_api_client.is_configured:
-            logger.warning(f"UnifiedIngestion: Skipping {sport_key} - Odds API not configured")
-            return
-            
+            logger.info(
+                "UnifiedIngestion: The Odds API keys not set — using odds waterfall only "
+                "(BetStack / other configured providers); player props via TOA are skipped"
+            )
+
         try:
-            # Task 1: Use key-rotating instance
-            odds_raw = await odds_api_client.get_live_odds(sport_key)
-            
-            # Task 2: Waterfall Fallback
-            if not odds_raw or (isinstance(odds_raw, dict) and "error" in odds_raw) or len(odds_raw) < 2:
-                logger.info(f"UnifiedIngestion: Waterfall fallback triggered for {sport_key}")
+            odds_raw = await waterfall_router.get_data(
+                sport_key, data_type="odds", skip_cache=True
+            )
+            if not isinstance(odds_raw, list):
+                odds_raw = []
+
+            if odds_raw:
+                prov = next(
+                    (
+                        e.get("source_provider")
+                        for e in odds_raw
+                        if isinstance(e, dict) and e.get("source_provider")
+                    ),
+                    None,
+                )
+                source_name = prov or "waterfall"
+
+            if not odds_raw:
+                logger.info(
+                    "UnifiedIngestion: Odds waterfall returned no events for %s; trying schedule fallback",
+                    sport_key,
+                )
                 fallback_data = await real_data_connector.fetch_games_by_sport(sport_key)
                 if fallback_data:
-                    source_name = f"waterfall({fallback_data[0].get('source', 'unknown')})"
-                    # Map fallback format to Odds API style for the mapper
+                    fb0 = fallback_data[0] if fallback_data else {}
+                    source_name = (
+                        fb0.get("source_provider")
+                        or fb0.get("source")
+                        or "schedule_fallback"
+                    )
                     odds_raw = []
                     for g in fallback_data:
-                        odds_raw.append({
-                            "id": g.get("id"),
-                            "sport_key": sport_key,
-                            "home_team": g.get("home_team"),
-                            "away_team": g.get("away_team"),
-                            "commence_time": g.get("start_time").isoformat() if isinstance(g.get("start_time"), datetime) else str(g.get("start_time") or g.get("date") or ""),
-                            "bookmakers": g.get("raw_bookmakers_data", [])
-                        })
-                else:
-                    odds_raw = []
-            
+                        odds_raw.append(
+                            {
+                                "id": g.get("id"),
+                                "sport_key": sport_key,
+                                "home_team": g.get("home_team"),
+                                "away_team": g.get("away_team"),
+                                "commence_time": (
+                                    g.get("start_time").isoformat()
+                                    if isinstance(g.get("start_time"), datetime)
+                                    else str(
+                                        g.get("start_time") or g.get("date") or ""
+                                    )
+                                ),
+                                "bookmakers": g.get("raw_bookmakers_data", []),
+                            }
+                        )
+                elif not odds_api_client.is_configured:
+                    logger.warning(
+                        "UnifiedIngestion: No odds events for %s and The Odds API not configured",
+                        sport_key,
+                    )
+
             metrics["events_count"] = len(odds_raw)
-            logger.info(f"UnifiedIngestion: Fetched {metrics['events_count']} events from {source_name} for {sport_key}")
+            logger.info(
+                "UnifiedIngestion: Fetched %s events from %s for %s",
+                metrics["events_count"],
+                source_name,
+                sport_key,
+            )
         except Exception as e:
             metrics["errors"].append(f"Ingest Fetch: {str(e)}")
             logger.error(f"UnifiedIngestion: Failed to fetch data: {e}")
@@ -131,7 +171,11 @@ class UnifiedIngestionService:
         # NFL is in off-season, NHL/NBA/MLB are active.
         IN_SEASON_PROP_SPORTS = ["basketball_nba", "baseball_mlb", "icehockey_nhl"]
 
-        if sport_key in PROP_MARKETS_BY_SPORT and sport_key in IN_SEASON_PROP_SPORTS:
+        if (
+            odds_api_client.is_configured
+            and sport_key in PROP_MARKETS_BY_SPORT
+            and sport_key in IN_SEASON_PROP_SPORTS
+        ):
             # Quota Protection: Cap at 15 events per cycle to prevent credit drain
             active_events: List[str] = []
             for i, k in enumerate(metadata_map.keys()):

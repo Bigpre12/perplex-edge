@@ -1,9 +1,10 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any, Tuple
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
+import os
 
 from db.session import get_db
 
@@ -11,19 +12,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.get("")
-@router.get("/")
-async def health_check(
-    db: AsyncSession = Depends(get_db)
-):
+
+async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     """
-    Enhanced Health check endpoint.
-    Reports DB, Odds API, Cache, and Kalshi status.
+    Shared health payload for GET /api/health and GET /api/health/deps.
+    Legacy shape preserved for existing clients (strip _internal before return).
     """
-    import os
-    from services.odds_api_client import odds_api_client
-    
-    # 1. Database Check
+    from services.heartbeat_service import HeartbeatService
+
     try:
         await db.execute(text("SELECT 1"))
         db_status = "connected"
@@ -31,56 +27,43 @@ async def health_check(
         db_status = f"disconnected: {str(e)}"
         logger.error(f"Health Check: DB failure: {e}")
 
-    # 2. Odds API Check
     try:
-        # Just check if key exists and is non-empty for a quick check,
-        # or ping a lightweight endpoint if we want to be sure.
         api_key = os.getenv("THE_ODDS_API_KEY")
         if not api_key:
             odds_status = "error: missing_key"
         else:
-            # We can't easily "ping" without consuming a quota, 
-            # so we check if the client is initialized correctly.
             odds_status = "active"
     except Exception as e:
         odds_status = f"error: {str(e)}"
 
-    # 3. Kalshi Check (if creds present)
     kalshi_status = "not_configured"
     if os.getenv("KALSHI_API_KEY") or os.getenv("KALSHI_EMAIL"):
-        kalshi_status = "configured" # Placeholder for more complex check
+        kalshi_status = "configured"
 
-    # 4. Ingestion & Heartbeat Status from HeartbeatService
-    from services.heartbeat_service import HeartbeatService
-    from datetime import timedelta
-    
     heartbeats = await HeartbeatService.get_all_heartbeats(db)
     hb_map = {hb.feed_name: hb for hb in heartbeats}
-    
-    # Check main sports for pipeline status (Basketball/NBA is our primary focus)
+
     pipeline_hb = hb_map.get("ingest_basketball_nba")
-    inference_hb = hb_map.get("model_inference") 
-    
+    inference_hb = hb_map.get("model_inference")
+
     now = datetime.now(timezone.utc)
-    
+
     def get_status_label(hb, threshold_min=60):
         if not hb or not hb.last_success_at:
             return "IDLE"
-        
+
         last_success = hb.last_success_at
         if last_success.tzinfo is None:
             last_success = last_success.replace(tzinfo=timezone.utc)
-            
+
         if now - last_success > timedelta(minutes=threshold_min):
             return "STALE"
         return "ACTIVE"
 
     pipeline_status = get_status_label(pipeline_hb)
     inference_status = get_status_label(inference_hb)
-    
-    # 5. Get metrics and freshness
+
     try:
-        # Get count and freshness in one go - optimized for Postgres
         query = text("""
             SELECT 
                 (SELECT COUNT(*) FROM props_live) as props_count,
@@ -90,17 +73,17 @@ async def health_check(
         """)
         result = await db.execute(query)
         row = result.mappings().first()
-        
+
         props_count = row["props_count"] if row else 0
         last_odds = row["last_odds"].isoformat() if row and row["last_odds"] else None
         last_ev = row["last_ev"].isoformat() if row and row["last_ev"] else None
-        
-        # If last_odds is older than 3 hours, force status to DEGRADED
+
         is_stale = False
         odds_stream_status = "SYNCED"
         if row and row["last_odds"]:
             lo = row["last_odds"]
-            if lo.tzinfo is None: lo = lo.replace(tzinfo=timezone.utc)
+            if lo.tzinfo is None:
+                lo = lo.replace(tzinfo=timezone.utc)
             if now - lo > timedelta(hours=1):
                 odds_stream_status = "DELAYED"
             if now - lo > timedelta(hours=3):
@@ -109,7 +92,7 @@ async def health_check(
         elif props_count == 0:
             odds_stream_status = "EMPTY"
             is_stale = True
-            
+
     except Exception as e:
         logger.error(f"Health Check: Metrics failure: {e}")
         props_count = 0
@@ -121,10 +104,13 @@ async def health_check(
     overall_status = "healthy" if db_status == "connected" and not is_stale else "degraded"
     system_status = "ONLINE" if db_status == "connected" else "OFFLINE"
 
-    # Fetch system_sync_state for pipeline timestamps
-    sync_state = {}
+    sync_state: Dict[str, Any] = {}
     try:
-        ss_res = await db.execute(text("SELECT last_odds_sync, last_ev_sync, last_grade_sync, updated_at FROM system_sync_state WHERE id = 1"))
+        ss_res = await db.execute(
+            text(
+                "SELECT last_odds_sync, last_ev_sync, last_grade_sync, updated_at FROM system_sync_state WHERE id = 1"
+            )
+        )
         ss_row = ss_res.mappings().first()
         if ss_row:
             sync_state = {
@@ -150,7 +136,104 @@ async def health_check(
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
         "props_count": props_count,
+        "_internal": {
+            "is_stale": is_stale,
+            "odds_stream_status": odds_stream_status,
+            "now": now,
+        },
         **sync_state,
+    }
+
+
+def _build_degradation_payload(base: Dict[str, Any], internal: Dict[str, Any]) -> Tuple[str, List[str], str]:
+    """Returns (level, reasons, user_message)."""
+    reasons: List[str] = []
+    oss = internal.get("odds_stream_status") or base.get("odds_stream")
+
+    if not str(base.get("database", "")).startswith("connected"):
+        reasons.append("database_disconnected")
+        return "severe", reasons, "Service is reachable; database is not."
+
+    if internal.get("is_stale"):
+        reasons.append("stale_or_empty_odds_stream")
+    if oss in ("STALE", "ERROR", "EMPTY"):
+        reasons.append(f"odds_stream_{str(oss).lower()}")
+
+    if str(base.get("odds_api", "")).startswith("error"):
+        reasons.append("odds_api_config")
+
+    if base.get("pipeline_status") == "STALE":
+        reasons.append("ingest_heartbeat_stale")
+    if base.get("inference_status") == "STALE":
+        reasons.append("inference_heartbeat_stale")
+
+    if "database_disconnected" in reasons:
+        level = "severe"
+    elif reasons:
+        level = "severe" if oss in ("STALE", "ERROR", "EMPTY") else "partial"
+    else:
+        level = "none"
+
+    if level == "severe":
+        msg = "Service is up — market data may be stale, empty, or degraded. Check freshness timestamps."
+    elif level == "partial":
+        msg = "Market data is delayed or partially degraded; verify odds and EV timestamps before acting."
+    else:
+        msg = ""
+
+    return level, reasons, msg
+
+
+@router.get("")
+@router.get("/")
+async def health_check(db: AsyncSession = Depends(get_db)):
+    """
+    Enhanced Health check endpoint (legacy shape).
+    Reports DB, Odds API, Cache, and Kalshi status.
+    """
+    base = await compute_health(db)
+    base.pop("_internal", None)
+    return base
+
+
+@router.get("/deps")
+async def health_dependencies(db: AsyncSession = Depends(get_db)):
+    """
+    Dependency-aware health: explicit degradation level for UI truthfulness.
+    Prefer this over inferring health from HTTP 200 alone.
+    """
+    base = await compute_health(db)
+    internal = base.pop("_internal", None) or {}
+    level, reasons, user_message = _build_degradation_payload(base, internal)
+
+    return {
+        "overall": base.get("status"),
+        "system_status": base.get("system_status"),
+        "degradation": {
+            "level": level,
+            "reasons": reasons,
+            "user_message": user_message,
+        },
+        "freshness": {
+            "odds": base.get("last_odds_update"),
+            "ev": base.get("last_ev_update"),
+        },
+        "components": {
+            "database": base.get("database"),
+            "odds_api": base.get("odds_api"),
+            "kalshi": base.get("kalshi"),
+            "pipeline_status": base.get("pipeline_status"),
+            "inference_status": base.get("inference_status"),
+            "odds_stream": internal.get("odds_stream_status") or base.get("odds_stream"),
+            "props_count": base.get("props_count"),
+        },
+        "timestamp": base.get("timestamp"),
+        "version": base.get("version"),
+        "sync": {
+            "last_odds_sync": base.get("last_odds_sync"),
+            "last_ev_sync": base.get("last_ev_sync"),
+            "last_grade_sync": base.get("last_grade_sync"),
+        },
     }
 
 @router.get("/odds-api-status")
