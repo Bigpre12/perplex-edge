@@ -6,6 +6,7 @@ Auth: X-API-Key header. Enterprise stack (api.betstack.io/bc, /be) is separate.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import time
@@ -19,8 +20,12 @@ from core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Free-tier spacing: default 60s between successful Betstack HTTP calls (per process).
-_betstack_last_success_monotonic: float = 0.0
+# Free-tier spacing: default 60s between Betstack HTTP attempts (per process).
+# Interval check + stamp run under _betstack_http_lock (stamp before I/O); HTTP runs outside the
+# lock so waiters are not blocked for the full round-trip. Multiple replicas still share one
+# key's quota unless each worker uses its own key or a higher tier.
+_betstack_last_request_monotonic: float = 0.0
+_betstack_http_lock = asyncio.Lock()
 
 # Lucrix sport_key -> BetStack `league` query param (see /docs Events section)
 LUCRIX_TO_BETSTACK_LEAGUE: Dict[str, str] = {
@@ -81,7 +86,7 @@ class BetstackClient:
             )
 
     async def _get_json(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
-        global _betstack_last_success_monotonic
+        global _betstack_last_request_monotonic
         if not self.api_key:
             if not self._missing_key_logged:
                 logger.warning("Betstack API missing credentials: BETSTACK_API_KEY not set")
@@ -98,16 +103,6 @@ class BetstackClient:
             return None
 
         min_iv = float(os.getenv("BETSTACK_MIN_INTERVAL_SECONDS", "60"))
-        now_m = time.monotonic()
-        if min_iv > 0 and _betstack_last_success_monotonic > 0:
-            elapsed = now_m - _betstack_last_success_monotonic
-            if elapsed < min_iv:
-                logger.info(
-                    "Betstack: skipping request (spacing %.1fs < %.0fs); set BETSTACK_MIN_INTERVAL_SECONDS to adjust",
-                    elapsed,
-                    min_iv,
-                )
-                return None
 
         headers = build_headers(
             {
@@ -118,11 +113,23 @@ class BetstackClient:
         rel = path.lstrip("/")
         url = f"{self.base_url}/{rel}"
 
+        async with _betstack_http_lock:
+            now_m = time.monotonic()
+            elapsed = now_m - _betstack_last_request_monotonic
+            if min_iv > 0 and _betstack_last_request_monotonic > 0 and elapsed < min_iv:
+                logger.info(
+                    "Betstack: skipping request (spacing %.1fs < %.0fs); set BETSTACK_MIN_INTERVAL_SECONDS to adjust",
+                    elapsed,
+                    min_iv,
+                )
+                return None
+            if min_iv > 0:
+                _betstack_last_request_monotonic = time.monotonic()
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(url, headers=headers, params=params or {}, timeout=self.timeout)
                 response.raise_for_status()
-                _betstack_last_success_monotonic = time.monotonic()
                 return response.json()
             except httpx.HTTPStatusError as e:
                 code = e.response.status_code
@@ -130,7 +137,6 @@ class BetstackClient:
                     logger.warning(
                         "Betstack rate limit (429): free tier allows ~1 req/60s per key. Skipping this call."
                     )
-                    _betstack_last_success_monotonic = time.monotonic()
                     return None
                 if code in (401, 403, 404):
                     if not self._warned_remote:
