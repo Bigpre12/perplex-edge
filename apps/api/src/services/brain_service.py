@@ -1,5 +1,7 @@
 import os
 import json
+import asyncio
+import time
 import httpx
 import logging
 from datetime import datetime, timezone, timedelta
@@ -7,6 +9,10 @@ from datetime import datetime, timezone, timedelta
 from .alert_service import alert_service
 
 logger = logging.getLogger(__name__)
+
+# Serialize Groq calls across the process so parallel ingest / brain jobs do not burst 429s.
+_groq_llm_lock = asyncio.Lock()
+
 
 class BrainService:
     def __init__(self):
@@ -67,59 +73,73 @@ class BrainService:
             "max_tokens": 1024
         }
         
+        delay_s = float(os.getenv("GROQ_REQUEST_DELAY_SECONDS", "0.55"))
+        try:
+            async with _groq_llm_lock:
+                if delay_s > 0:
+                    await asyncio.sleep(delay_s)
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(groq_url, headers=groq_headers, json=payload, timeout=15.0)
+                    response.raise_for_status()
+                    data = response.json()
+                    return data["choices"][0]["message"]["content"]
+        except httpx.HTTPStatusError as e:
+            if e.response is not None and e.response.status_code == 429:
+                self._last_429_time = time.time()
+                logger.warning(
+                    "Groq rate limited (429); returning static copy and skipping secondary burst."
+                )
+                return (
+                    "Our deep-learning models have identified a significant mathematical edge on this market. "
+                    "Line value currently outpaces the implied probability, making this a sharply +EV position."
+                )
+            logger.warning("Primary Groq HTTP error (%s). Attempting Secondary LLM Fallback...", e)
+        except Exception as e:
+            logger.warning("Primary Groq API failed (%s). Attempting Secondary LLM Fallback...", e)
+
+        # Circuit Breaker Logic (shared: Groq non-429 HTTP errors and other failures)
+        current_time = time.time()
+        from core.config import settings
+        if self._openai_circuit_open and not settings.DEVELOPMENT_MODE:
+            if current_time - self._last_429_time < self._cooldown_period:
+                logger.warning("Secondary LLM Circuit is OPEN (429 Cooldown). Skipping OpenAI fallback.")
+                return "Our deep-learning models have identified a significant mathematical edge on this market. Line value currently outpaces the implied probability, making this a sharply +EV position."
+            else:
+                self._openai_circuit_open = False  # Reset circuit after cooldown
+
+        # Check for Fallback Keys
+        fallback_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+
+        if not fallback_key:
+            logger.error("No fallback API Key (OpenRouter/OpenAI) configured.")
+            return "Our deep-learning models have identified a significant mathematical edge on this market. Line value outpaces implied probability."
+
+        fallback_url = "https://openrouter.ai/api/v1/chat/completions" if os.getenv("OPENROUTER_API_KEY") else "https://api.openai.com/v1/chat/completions"
+        fallback_model = "meta-llama/llama-3.3-70b-instruct" if os.getenv("OPENROUTER_API_KEY") else "gpt-3.5-turbo"
+
+        fallback_headers = {
+            "Authorization": f"Bearer {fallback_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload["model"] = fallback_model
+
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(groq_url, headers=groq_headers, json=payload, timeout=15.0)
-                response.raise_for_status()
-                data = response.json()
+                resp2 = await client.post(fallback_url, headers=fallback_headers, json=payload, timeout=20.0)
+
+                if resp2.status_code == 429:
+                    self._openai_circuit_open = True
+                    self._last_429_time = current_time
+                    logger.error("Secondary LLM (OpenAI/Router) returned 429. Opening Circuit.")
+                    return "High-volume market action detected. Quantitative models indicate strong +EV value based on real-time line movement and historical hit rates, though narrative synthesis is temporarily degraded due to volume."
+
+                resp2.raise_for_status()
+                data = resp2.json()
+                logger.info("Successfully recovered using fallback LLM (%s)", fallback_model)
                 return data["choices"][0]["message"]["content"]
-        except Exception as e:
-            logger.warning(f"Primary Groq API failed ({str(e)}). Attempting Secondary LLM Fallback...")
-            
-            # Circuit Breaker Logic
-            import time
-            current_time = time.time()
-            from core.config import settings
-            if self._openai_circuit_open and not settings.DEVELOPMENT_MODE:
-                if current_time - self._last_429_time < self._cooldown_period:
-                    logger.warning("Secondary LLM Circuit is OPEN (429 Cooldown). Skipping OpenAI fallback.")
-                    return "Our deep-learning models have identified a significant mathematical edge on this market. Line value currently outpaces the implied probability, making this a sharply +EV position."
-                else:
-                    self._openai_circuit_open = False # Reset circuit after cooldown
-            
-            # Check for Fallback Keys
-            fallback_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
-            
-            if not fallback_key:
-                logger.error("No fallback API Key (OpenRouter/OpenAI) configured.")
-                return "Our deep-learning models have identified a significant mathematical edge on this market. Line value outpaces implied probability."
-                
-            fallback_url = "https://openrouter.ai/api/v1/chat/completions" if os.getenv("OPENROUTER_API_KEY") else "https://api.openai.com/v1/chat/completions"
-            fallback_model = "meta-llama/llama-3.3-70b-instruct" if os.getenv("OPENROUTER_API_KEY") else "gpt-3.5-turbo"
-            
-            fallback_headers = {
-                "Authorization": f"Bearer {fallback_key}",
-                "Content-Type": "application/json"
-            }
-            
-            payload["model"] = fallback_model
-            
-            try:
-                async with httpx.AsyncClient() as client:
-                    resp2 = await client.post(fallback_url, headers=fallback_headers, json=payload, timeout=20.0)
-                    
-                    if resp2.status_code == 429:
-                        self._openai_circuit_open = True
-                        self._last_429_time = current_time
-                        logger.error("Secondary LLM (OpenAI/Router) returned 429. Opening Circuit.")
-                        return "High-volume market action detected. Quantitative models indicate strong +EV value based on real-time line movement and historical hit rates, though narrative synthesis is temporarily degraded due to volume."
-                        
-                    resp2.raise_for_status()
-                    data = resp2.json()
-                    logger.info(f"Successfully recovered using fallback LLM ({fallback_model})")
-                    return data["choices"][0]["message"]["content"]
-            except Exception as fallback_err:
-                return "Our deep-learning models have identified a significant mathematical edge on this market. Line value currently outpaces the implied probability, making this a sharply +EV position."
+        except Exception:
+            return "Our deep-learning models have identified a significant mathematical edge on this market. Line value currently outpaces the implied probability, making this a sharply +EV position."
 
     async def score_and_recommend(self, props: list) -> list:
         """

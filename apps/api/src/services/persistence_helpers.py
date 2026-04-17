@@ -178,6 +178,9 @@ def _sanitize_ev_history_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             out["model_prob"] = float(out["model_prob"])
         except (TypeError, ValueError):
             out["model_prob"] = None
+    # Postgres bulk insert may omit server_default; many deployments enforce NOT NULL on snapshot_at.
+    if out.get("snapshot_at") is None:
+        out["snapshot_at"] = datetime.now(timezone.utc)
     return out
 
 
