@@ -62,8 +62,38 @@ class UnifiedIngestionService:
             "events_count": 0,
             "odds_count": 0,
             "rows_upserted": 0,
-            "errors": errors
+            "errors": errors,
+            "odds_api_all_keys_cooldown": False,
         }
+
+        # All Odds API keys in cooldown: skip this cycle (avoids waterfall/TOA hammer + log spam).
+        if odds_api_client.is_configured and odds_api_client.all_keys_unavailable():
+            logger.info(
+                "UnifiedIngestion: All The Odds API keys cooling down — skipping full cycle for %s",
+                sport_key,
+            )
+            metrics["status"] = "skipped"
+            metrics["skipped_reason"] = "all_odds_keys_cooldown"
+            metrics["odds_api_all_keys_cooldown"] = True
+            try:
+                async with async_session_maker() as session:
+                    await HeartbeatService.log_heartbeat(
+                        session,
+                        f"ingest_{sport_key}",
+                        status="idle_no_data",
+                        rows_written=0,
+                        error_count=0,
+                        meta={
+                            "metrics": metrics,
+                            "skipped_reason": "all_odds_keys_cooldown",
+                        },
+                    )
+            except Exception as hb_err:
+                logger.warning(
+                    "UnifiedIngestion: heartbeat after odds cooldown skip failed: %s",
+                    hb_err,
+                )
+            return metrics
         
         # 1. Fetch odds-shaped events (multi-provider chain, not TOA-only)
         logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} START ===")
@@ -181,11 +211,25 @@ class UnifiedIngestionService:
             for i, k in enumerate(metadata_map.keys()):
                 if i >= 15: break
                 active_events.append(k)
-            
-            logger.info(f"UnifiedIngestion: Fetching player props for {len(active_events)} {sport_key} events...")
-            
+
+            toa_keys_cooldown = odds_api_client.all_keys_unavailable()
+            metrics["odds_api_all_keys_cooldown"] = toa_keys_cooldown
+            if toa_keys_cooldown:
+                logger.info(
+                    "UnifiedIngestion: All The Odds API keys cooling down — skipping TOA player props "
+                    "for %s (%s events); waterfall/Betstack paths still run",
+                    sport_key,
+                    len(active_events),
+                )
+            else:
+                logger.info(
+                    "UnifiedIngestion: Fetching player props for %s %s events...",
+                    len(active_events),
+                    sport_key,
+                )
+
             prop_counts: int = 0
-            for eid in active_events:
+            for eid in ([] if toa_keys_cooldown else active_events):
                 try:
                     # Attempt primary prop fetch
                     event_props = await odds_api_client.get_player_props(

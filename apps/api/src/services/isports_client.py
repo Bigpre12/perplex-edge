@@ -23,6 +23,12 @@ class ISportsClient:
         self.account = os.getenv("ISPORTS_ACCOUNT", "")
         self.secret = os.getenv("ISPORTS_SECRET", "")
         self.timeout = 10.0
+        self._verify_tls = os.getenv("ISPORTS_VERIFY_TLS", "true").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        self._logged_insecure_tls = False
 
     async def _fetch(self, endpoint: str, params: Optional[Dict] = None) -> Any:
         """Unified fetch with twin-key query parameters."""
@@ -35,7 +41,13 @@ class ISportsClient:
         query_params["secret"] = self.secret
         
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            if not self._verify_tls and not self._logged_insecure_tls:
+                logger.warning(
+                    "iSports: TLS certificate verification disabled (ISPORTS_VERIFY_TLS=false); "
+                    "use only if upstream has a broken chain."
+                )
+                self._logged_insecure_tls = True
+            async with httpx.AsyncClient(timeout=self.timeout, verify=self._verify_tls) as client:
                 logger.info(f"🌐 iSports: Fetching {endpoint} (params={list(query_params.keys())})")
                 resp = await client.get(url, params=query_params)
                 

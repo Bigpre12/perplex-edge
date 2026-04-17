@@ -28,11 +28,19 @@ class ESPNClient(ResilientBaseClient):
             "icehockey_nhl": ("hockey", "nhl"),
             "soccer_usa_mls": ("soccer", "usa.1"),
             "soccer_epl": ("soccer", "eng.1"),
+            "soccer_uefa_champs_league": ("soccer", "uefa.champions"),
             "mma_mixed_martial_arts": ("mma", "ufc"),
+            "mmamixedmartialarts": ("mma", "ufc"),
+            "mma_mma": ("mma", "ufc"),
+            "mixed_martial_arts": ("mma", "ufc"),
             "basketball_ncaab": ("basketball", "mens-college-basketball"),
-            "americanfootball_ncaaf": ("football", "college-football")
+            "americanfootball_ncaaf": ("football", "college-football"),
+            "rugbyleague_nrl": ("rugby-league", "nrl"),
+            "rugby_league_nrl": ("rugby-league", "nrl"),
+            "soccer_uefachampsleague": ("soccer", "uefa.champions"),
         }
-        return mapping.get(sport, ("unknown", "unknown"))
+        sk = (sport or "").strip().lower().replace("-", "_")
+        return mapping.get(sk, ("unknown", "unknown"))
 
     async def fetch_injuries(self, sport: str) -> list:
         """ESPN injury feed per sport"""

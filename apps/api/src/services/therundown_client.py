@@ -27,7 +27,8 @@ SPORT_ID_MAP = {
 
 
 class TheRundownClient:
-    BASE_URL = "https://api.therundown.io/v2"
+    # Current docs: https://therundown.io/api/v2 (legacy api.therundown.io may 301)
+    BASE_URL = "https://therundown.io/api/v2"
 
     def __init__(self):
         self.api_key = os.getenv("THERUNDOWN_API_KEY", "")
@@ -67,10 +68,10 @@ class TheRundownClient:
 
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         url = f"{self.BASE_URL}/sports/{sport_id}/events/{today}"
-        headers = {"x-therundown-key": self.api_key}
+        headers = {"X-TheRundown-Key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
                 resp = await client.get(url, headers=headers)
                 resp.raise_for_status()
                 raw = resp.json()
@@ -91,6 +92,8 @@ class TheRundownClient:
 
         games = []
         events = raw.get("events", [])
+        if not events and isinstance(raw.get("data"), dict):
+            events = raw["data"].get("events", [])
 
         for event in events:
             try:

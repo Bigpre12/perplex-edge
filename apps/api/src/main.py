@@ -549,7 +549,11 @@ async def get_sharp_signals():
 async def reset_circuit_breaker():
     """Manual reset for Odds API circuit breaker"""
     from services.odds_api_client import odds_api_client
-    odds_api_client._dead_keys.clear()
+
+    if hasattr(odds_api_client, "_dead_until"):
+        odds_api_client._dead_until.clear()
+    elif hasattr(odds_api_client, "_dead_keys"):
+        odds_api_client._dead_keys.clear()
     return {"status": "ok", "message": "Circuit breaker reset. Keys will retry immediately."}
 
 # --- Router Registration (all guarded) ---

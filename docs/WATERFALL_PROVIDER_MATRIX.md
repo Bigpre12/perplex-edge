@@ -36,7 +36,7 @@ Rows are **logical data products**. Columns describe the **runtime waterfall** (
 
 | Data type | Primary | Secondary | Tertiary | Cache (Redis / DB) | Degraded mode | Conflict rule | UI label (fallback / stale) |
 |-----------|---------|-----------|----------|-------------------|---------------|----------------|------------------------------|
-| Pregame odds | The Odds API | BetStack consensus | TheRundown → SGO → iSports → API-Sports | `wf:odds_pregame:*`, odds client cache | Older cached snapshot; widen book list | Prefer higher trust tier; newer `commence_time` wins tie | “Consensus / backup feed” |
+| Pregame odds | The Odds API | BetStack consensus | TheRundown → SGO → iSports → API-Sports → **ESPN → TheSportsDB → BallDontLie → MySportsFeeds** (v2 tail: schedule-shaped fallbacks, normalized to event rows) | `wf:odds_pregame:*`, odds client cache | Older cached snapshot; widen book list | Prefer higher trust tier; newer `commence_time` wins tie | “Consensus / backup feed” |
 | Live odds | The Odds API (same chain as pregame until live-specific client) | BetStack (if lines updating) | TheRundown / SGO | Same + short TTL | Show last known with **stale** banner | Do not mix in-play with pregame without flag | “Live data delayed” |
 | Player props | The Odds API | OddsPapi (roadmap) | — | props tables | Hide thin markets | Same player + market: prefer primary book set | “Props from alternate source” |
 | Alt lines | The Odds API | SportsGameOdds (quota) | — | SGO client cache | Strip alt markets | Primary book line wins for CLV base | “Alt line (low-volume source)” |

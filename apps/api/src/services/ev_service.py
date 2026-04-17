@@ -5,8 +5,9 @@ from sqlalchemy import select, func, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker, engine
-from models import UnifiedOdds, UnifiedEVSignal, EdgeEVHistory
+from models import UnifiedOdds, UnifiedEVSignal
 from services.heartbeat_service import HeartbeatService
+from services.persistence_helpers import insert_edges_ev_history
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -200,35 +201,39 @@ class EVService:
                             
                         await session.execute(text(sql), row)
                 
-                # 2. Add Historical Records
+                # 2. Historical edges_ev_history via shared persistence (market_label + validation)
                 history_rows = []
                 for s in signals:
-                    h_row = {
-                        'sport': s['sport'],
-                        'league': s.get('league'),
-                        'game_id': s['event_id'],
-                        'game_start_time': s.get('game_start_time'),
-                        'player_id': s.get('player_name') or 'unknown',
-                        'player_name': s['player_name'],
-                        'team': s.get('team') or s.get('home_team') or s.get('away_team'),
-                        'market_key': s['market_key'],
-                        'line': float(s['line']) if s.get('line') is not None else None,
-                        'book': s['bookmaker'],
-                        'side': s['outcome_key'],
-                        'odds': float(s['price']),
-                        'model_prob': float(s['true_prob']),
-                        'implied_prob': float(s['implied_prob']),
-                        'edge_pct': float(s['edge_percent']),
-                        'snapshot_at': func.now(),
-                        'source': f"brain_ev_{self.version}"
-                    }
-                    history_rows.append(h_row)
-                
-                if history_rows:
-                    h_ins_obj = sqlite_insert(EdgeEVHistory) if is_sqlite else pg_insert(EdgeEVHistory)
-                    await session.execute(h_ins_obj.values(history_rows))
-                
+                    ln = s.get("line")
+                    try:
+                        line_f = float(ln) if ln is not None else 0.0
+                    except (TypeError, ValueError):
+                        line_f = 0.0
+                    history_rows.append(
+                        {
+                            "sport": s["sport"],
+                            "league": s.get("league"),
+                            "game_id": s["event_id"],
+                            "game_start_time": s.get("game_start_time"),
+                            "player_id": s.get("player_name") or "unknown",
+                            "player_name": s.get("player_name"),
+                            "team": s.get("team") or s.get("home_team") or s.get("away_team"),
+                            "market_key": s["market_key"],
+                            "line": line_f,
+                            "book": s["bookmaker"],
+                            "side": s["outcome_key"],
+                            "odds": float(s["price"]),
+                            "model_prob": float(s["true_prob"]),
+                            "implied_prob": float(s["implied_prob"]),
+                            "edge_pct": float(s["edge_percent"]),
+                            "source": f"brain_ev_{self.version}",
+                        }
+                    )
+
                 await session.commit()
+
+                if history_rows:
+                    await insert_edges_ev_history(history_rows)
             except Exception as e:
                 await session.rollback()
                 logger.error(f"EVService: Signal persistence failed: {e}")

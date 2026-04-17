@@ -7,6 +7,8 @@ Auth: X-API-Key header. Enterprise stack (api.betstack.io/bc, /be) is separate.
 from __future__ import annotations
 
 import logging
+import os
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -16,6 +18,9 @@ from api_utils.http import build_headers
 from core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Free-tier spacing: default 60s between successful Betstack HTTP calls (per process).
+_betstack_last_success_monotonic: float = 0.0
 
 # Lucrix sport_key -> BetStack `league` query param (see /docs Events section)
 LUCRIX_TO_BETSTACK_LEAGUE: Dict[str, str] = {
@@ -76,6 +81,7 @@ class BetstackClient:
             )
 
     async def _get_json(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        global _betstack_last_success_monotonic
         if not self.api_key:
             if not self._missing_key_logged:
                 logger.warning("Betstack API missing credentials: BETSTACK_API_KEY not set")
@@ -91,6 +97,18 @@ class BetstackClient:
         if self._remote_disabled:
             return None
 
+        min_iv = float(os.getenv("BETSTACK_MIN_INTERVAL_SECONDS", "60"))
+        now_m = time.monotonic()
+        if min_iv > 0 and _betstack_last_success_monotonic > 0:
+            elapsed = now_m - _betstack_last_success_monotonic
+            if elapsed < min_iv:
+                logger.info(
+                    "Betstack: skipping request (spacing %.1fs < %.0fs); set BETSTACK_MIN_INTERVAL_SECONDS to adjust",
+                    elapsed,
+                    min_iv,
+                )
+                return None
+
         headers = build_headers(
             {
                 "X-API-Key": self.api_key,
@@ -104,6 +122,7 @@ class BetstackClient:
             try:
                 response = await client.get(url, headers=headers, params=params or {}, timeout=self.timeout)
                 response.raise_for_status()
+                _betstack_last_success_monotonic = time.monotonic()
                 return response.json()
             except httpx.HTTPStatusError as e:
                 code = e.response.status_code
@@ -111,6 +130,7 @@ class BetstackClient:
                     logger.warning(
                         "Betstack rate limit (429): free tier allows ~1 req/60s per key. Skipping this call."
                     )
+                    _betstack_last_success_monotonic = time.monotonic()
                     return None
                 if code in (401, 403, 404):
                     if not self._warned_remote:

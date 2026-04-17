@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker, engine
 from models import PropLive, PropHistory, EdgeEVHistory
+from services.market_labeling import derive_market_label
 from models.brain import WhaleMove, CLVRecord, InjuryImpactEvent
 from schemas.props import PropRecord
 from sqlalchemy import text
@@ -143,7 +144,7 @@ async def insert_props_history(records: List[PropRecord], source: str = 'live_in
 def _sanitize_ev_history_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
     Validate and normalize a row before insert into edges_ev_history.
-    Skips rows that would violate NOT NULL / integrity (e.g. missing market label).
+    Always assigns market_label via derive_market_label at the persistence boundary.
     """
     sport = raw.get("sport")
     game_id = raw.get("game_id")
@@ -152,15 +153,31 @@ def _sanitize_ev_history_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     side = raw.get("side")
     if not sport or not game_id or not market_key or not book or not side:
         return None
-    ml = raw.get("market_label") or raw.get("marketlabel") or market_key
-    if ml is None or (isinstance(ml, str) and not ml.strip()):
-        logger.warning(
-            "Persistence: edges_ev_history row skipped (missing market_label)",
-            extra={"game_id": game_id, "market_key": market_key},
-        )
-        return None
     out = dict(raw)
-    out["market_label"] = str(ml).strip()[:512]
+    out["market_label"] = derive_market_label(out)[:512]
+    # edges_ev_history.line is NOT NULL in many deployments
+    if out.get("line") is None:
+        out["line"] = 0.0
+    else:
+        try:
+            out["line"] = float(out["line"])
+        except (TypeError, ValueError):
+            out["line"] = 0.0
+    ep = out.get("edge_pct", raw.get("edge_pct", raw.get("edge_percent")))
+    try:
+        out["edge_pct"] = float(ep) if ep is not None else 0.0
+    except (TypeError, ValueError):
+        out["edge_pct"] = 0.0
+    try:
+        out["odds"] = float(out.get("odds"))
+        out["implied_prob"] = float(out.get("implied_prob"))
+    except (TypeError, ValueError):
+        return None
+    if out.get("model_prob") is not None:
+        try:
+            out["model_prob"] = float(out["model_prob"])
+        except (TypeError, ValueError):
+            out["model_prob"] = None
     return out
 
 

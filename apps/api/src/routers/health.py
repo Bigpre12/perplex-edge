@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any, Tuple
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime, timezone, timedelta
@@ -40,6 +41,14 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     if os.getenv("KALSHI_API_KEY") or os.getenv("KALSHI_EMAIL"):
         kalshi_status = "configured"
 
+    sportmonks_status = "not_configured"
+    if os.getenv("SPORTMONKS_KEY", "").strip():
+        sportmonks_status = "configured"
+
+    from services.odds_api_client import odds_api_client
+
+    odds_api_all_keys_cooldown = odds_api_client.all_keys_unavailable()
+
     heartbeats = await HeartbeatService.get_all_heartbeats(db)
     hb_map = {hb.feed_name: hb for hb in heartbeats}
 
@@ -62,6 +71,20 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
 
     pipeline_status = get_status_label(pipeline_hb)
     inference_status = get_status_label(inference_hb)
+
+    ingest_hb_max = int(os.getenv("READINESS_INGEST_HEARTBEAT_MAX_MINUTES", "120"))
+    recent_ingest_heartbeat_ok = False
+    for name, hb in hb_map.items():
+        if not name.startswith("ingest_"):
+            continue
+        if not hb or not hb.last_success_at:
+            continue
+        ls = hb.last_success_at
+        if ls.tzinfo is None:
+            ls = ls.replace(tzinfo=timezone.utc)
+        if now - ls <= timedelta(minutes=ingest_hb_max):
+            recent_ingest_heartbeat_ok = True
+            break
 
     try:
         query = text("""
@@ -126,6 +149,8 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         "database": db_status,
         "odds_api": odds_status,
         "kalshi": kalshi_status,
+        "sportmonks": sportmonks_status,
+        "odds_api_all_keys_cooldown": odds_api_all_keys_cooldown,
         "cache": "active",
         "inference_status": inference_status,
         "pipeline_status": pipeline_status,
@@ -140,6 +165,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
             "is_stale": is_stale,
             "odds_stream_status": odds_stream_status,
             "now": now,
+            "recent_ingest_heartbeat_ok": recent_ingest_heartbeat_ok,
         },
         **sync_state,
     }
@@ -222,6 +248,8 @@ async def health_dependencies(db: AsyncSession = Depends(get_db)):
             "database": base.get("database"),
             "odds_api": base.get("odds_api"),
             "kalshi": base.get("kalshi"),
+            "sportmonks": base.get("sportmonks"),
+            "odds_api_all_keys_cooldown": base.get("odds_api_all_keys_cooldown"),
             "pipeline_status": base.get("pipeline_status"),
             "inference_status": base.get("inference_status"),
             "odds_stream": internal.get("odds_stream_status") or base.get("odds_stream"),
@@ -235,6 +263,40 @@ async def health_dependencies(db: AsyncSession = Depends(get_db)):
             "last_grade_sync": base.get("last_grade_sync"),
         },
     }
+
+
+@router.get("/ready")
+async def health_ready(db: AsyncSession = Depends(get_db)):
+    """
+    Readiness for schedulers / orchestrators: 200 when DB is up, degradation is none,
+    and either props meet READINESS_MIN_PROPS (default 1) or a recent ingest heartbeat exists
+    (READINESS_INGEST_HEARTBEAT_MAX_MINUTES, default 120). Otherwise 503 JSON.
+    """
+    base = await compute_health(db)
+    internal = base.pop("_internal", None) or {}
+    level, reasons, user_message = _build_degradation_payload(base, internal)
+    db_ok = str(base.get("database", "")).startswith("connected")
+    min_props = int(os.getenv("READINESS_MIN_PROPS", "1"))
+    props_ct = int(base.get("props_count") or 0)
+    props_ok = props_ct >= min_props
+    recent_ing = bool(internal.get("recent_ingest_heartbeat_ok"))
+    data_plane = props_ok or recent_ing
+    ready = bool(db_ok and level == "none" and data_plane)
+    body: Dict[str, Any] = {
+        "ready": ready,
+        "degradation": {"level": level, "reasons": reasons, "user_message": user_message},
+        "props_count": props_ct,
+        "readiness": {
+            "min_props": min_props,
+            "props_ok": props_ok,
+            "recent_ingest_heartbeat_ok": recent_ing,
+        },
+        "timestamp": base.get("timestamp"),
+    }
+    if ready:
+        return body
+    return JSONResponse(status_code=503, content=body)
+
 
 @router.get("/odds-api-status")
 async def odds_api_status():
@@ -263,11 +325,16 @@ async def odds_api_status():
             entry["error"] = str(e)
         results.append(entry)
 
-    dead_keys = list(odds_api_client._dead_keys.keys()) if hasattr(odds_api_client, "_dead_keys") else []
+    if hasattr(odds_api_client, "_dead_until"):
+        cooling = list(odds_api_client._dead_until.keys())
+    elif hasattr(odds_api_client, "_dead_keys"):
+        cooling = list(odds_api_client._dead_keys.keys())
+    else:
+        cooling = []
     return {
         "keys_checked": len(results),
         "results": results,
-        "circuit_breaker_dead_keys": len(dead_keys),
+        "circuit_breaker_dead_keys": len(cooling),
     }
 
 @router.get("/summary")

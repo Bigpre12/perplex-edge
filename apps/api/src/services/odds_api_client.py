@@ -65,11 +65,18 @@ class OddsApiClient(ResilientBaseClient):
         # Load keys from centralized settings
         self.api_keys = settings.ODDS_API_KEYS
         self.current_key_idx = 0
-        self.dead_key_cooldown = int(os.getenv("ODDS_API_KEY_COOLDOWN_SECONDS", "3600"))
-        
-        # Dead-key tracking: {key_index: timestamp_marked_dead}
-        # Prevents infinite rotation when all keys are exhausted/deactivated
-        self._dead_keys: Dict[int, float] = {}
+        # Auth/config failures: long cooldown (legacy env ODDS_API_KEY_COOLDOWN_SECONDS)
+        self.dead_key_cooldown_auth = int(
+            os.getenv(
+                "ODDS_API_KEY_AUTH_COOLDOWN_SECONDS",
+                os.getenv("ODDS_API_KEY_COOLDOWN_SECONDS", "3600"),
+            )
+        )
+        # 429: short backoff so keys are not shelved for an hour on quota spikes
+        self.dead_key_cooldown_429 = int(os.getenv("ODDS_API_KEY_RATE_LIMIT_COOLDOWN_SECONDS", "90"))
+
+        # key_index -> unix time until this key is skipped
+        self._dead_until: Dict[int, float] = {}
         
         # Security logging: Show hint of active keys
         safe_keys = [f"{k[:4]}****" for k in self.api_keys if k]
@@ -83,27 +90,43 @@ class OddsApiClient(ResilientBaseClient):
         self.max_daily_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
 
     def _is_key_dead(self, idx: int) -> bool:
-        """Check if a key is marked dead and still within cooldown."""
-        if idx not in self._dead_keys:
+        """True if key index is in cooldown until _dead_until[idx]."""
+        until = self._dead_until.get(idx)
+        if until is None:
             return False
-        elapsed = time.time() - self._dead_keys[idx]
-        if elapsed >= self.dead_key_cooldown:
-            # Cooldown expired — give the key another chance
-            del self._dead_keys[idx]
-            logger.info(f"🔓 Odds API key index {idx} cooldown expired, retrying.")
+        now = time.time()
+        if now >= until:
+            del self._dead_until[idx]
+            logger.info("Odds API key index %s cooldown expired, retrying.", idx)
             return False
         return True
 
-    def _mark_key_dead(self, idx: int, reason: str):
-        """Mark a key as dead with a cooldown timestamp."""
-        self._dead_keys[idx] = time.time()
-        logger.warning(f"💀 Odds API key index {idx} marked dead: {reason}. Will retry in {self.dead_key_cooldown}s.")
+    def _mark_key_dead(self, idx: int, reason: str, *, status_code: Optional[int] = None):
+        """Block key index until now + cooldown (shorter for 429 than for 401/403)."""
+        cooldown = self.dead_key_cooldown_429 if status_code == 429 else self.dead_key_cooldown_auth
+        self._dead_until[idx] = time.time() + cooldown
+        logger.warning(
+            "Odds API key index %s cooling %ss (%s): %s",
+            idx,
+            cooldown,
+            "rate_limit" if status_code == 429 else "auth_or_config",
+            reason,
+        )
 
     def _all_keys_dead(self) -> bool:
         """Returns True if every key is currently marked dead."""
         if not self.api_keys:
             return True
         return all(self._is_key_dead(i) for i in range(len(self.api_keys)))
+
+    def all_keys_unavailable(self) -> bool:
+        """
+        True when The Odds API cannot be called (no keys configured, or all keys in cooldown).
+        Used to skip doomed per-event prop fetches without log spam.
+        """
+        if not self.api_keys:
+            return True
+        return self._all_keys_dead()
 
     @property
     def is_configured(self) -> bool:
@@ -206,16 +229,39 @@ class OddsApiClient(ResilientBaseClient):
                         await cache.set_json(cache_key, data, ttl=ttl)
                         return data
                     
-                    elif resp.status_code in (401, 403, 429):
+                    elif resp.status_code in (401, 403):
                         error_body = resp.text[:200]
-                        logger.error(f"❌ Key index {self.current_key_idx} failure ({resp.status_code}): {error_body}")
-                        # Mark this key as dead so we don't retry it for an hour
-                        self._mark_key_dead(self.current_key_idx, f"HTTP {resp.status_code}: {error_body[:80]}")
+                        logger.error(
+                            "Key index %s auth failure (%s): %s",
+                            self.current_key_idx,
+                            resp.status_code,
+                            error_body,
+                        )
+                        self._mark_key_dead(
+                            self.current_key_idx,
+                            f"HTTP {resp.status_code}: {error_body[:80]}",
+                            status_code=resp.status_code,
+                        )
                         if self._rotate_key():
-                            continue # Try next key
-                        else:
-                            logger.critical("🚨 ALL Odds API keys exhausted or rate-limited. Ingestion will stall.")
-                            break # No more keys
+                            continue
+                        logger.critical("ALL Odds API keys exhausted (auth). Ingestion will stall.")
+                        break
+                    elif resp.status_code == 429:
+                        error_body = resp.text[:200]
+                        logger.error(
+                            "Key index %s rate limited (429): %s",
+                            self.current_key_idx,
+                            error_body,
+                        )
+                        self._mark_key_dead(
+                            self.current_key_idx,
+                            f"HTTP 429: {error_body[:80]}",
+                            status_code=429,
+                        )
+                        if self._rotate_key():
+                            continue
+                        logger.critical("ALL Odds API keys rate-limited. Ingestion will stall.")
+                        break
                     else:
                         logger.error(f"❌ Odds API error {resp.status_code}: {resp.text[:200]}")
                         return None

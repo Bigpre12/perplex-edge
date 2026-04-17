@@ -5,8 +5,17 @@ Chains are ordered provider IDs per (sport_key, data_type). Callers map
 `data_type` aliases (e.g. ``stats``) to canonical types via ``resolve_data_type``.
 
 Env:
-    WATERFALL_CONFIG_VERSION — ``1`` preserves legacy router chains; ``2`` (default)
-    uses the unified matrix-aligned ordering.
+    WATERFALL_CONFIG_VERSION — ``1`` legacy odds chains (short, pre–matrix); ``2`` (default)
+    matrix-aligned ordering.
+
+    Odds pregame chains (summary):
+    - **v2 (default):** priced sources first (The Odds API, BetStack, TheRundown, …), then
+      schedule-shaped fallbacks (**espn**, **thesportsdb**, **balldontlie**, **mysportsfeeds**
+      for supported US slugs) so ingest still gets event IDs when keys or quotas fail.
+    - **v1:** older minimal chains; set ``WATERFALL_CONFIG_VERSION=1`` only for rollback.
+      Confirm prod is **not** stuck on v1 if logs show only three odds providers.
+
+    Soccer EPL: configure **SPORTMONKS_KEY** (see ``sportmonks_client`` / health ``sportmonks``).
 """
 from __future__ import annotations
 
@@ -97,13 +106,27 @@ def _chain_schedule_v2(sport: str) -> List[str]:
     return ["thesportsdb", "espn"]
 
 
+# After priced/API slots: keyless scoreboard/schedules → Odds-shaped rows for mappers.
+_ODDS_TAIL_SCHEDULE = ["espn", "thesportsdb"]
+# US leagues supported by BallDontLie + MySportsFeeds clients
+_ODDS_TAIL_US_STATS = ["balldontlie", "mysportsfeeds"]
+
+
 def _chain_odds_pregame_v2(sport: str) -> List[str]:
     sk = canonical_sport_key(sport)
     # MMA: free UFC-heavy path first when keys exist
     if _is_mma(sk):
-        return ["sportsgameodds", "the_odds_api", "betstack", "therundown", "isports", "api_sports"]
+        return [
+            "sportsgameodds",
+            "the_odds_api",
+            "betstack",
+            "therundown",
+            "isports",
+            "api_sports",
+            *_ODDS_TAIL_SCHEDULE,
+        ]
     if sk.startswith("tennis_") or sk.startswith("golf_"):
-        return ["the_odds_api", "betstack", "sportsgameodds"]
+        return ["the_odds_api", "betstack", "sportsgameodds", *_ODDS_TAIL_SCHEDULE]
     if _is_soccer(sk):
         return [
             "the_odds_api",
@@ -113,6 +136,7 @@ def _chain_odds_pregame_v2(sport: str) -> List[str]:
             "therundown",
             "sportsgameodds",
             "api_sports",
+            *_ODDS_TAIL_SCHEDULE,
         ]
     # Default US + global major leagues
     return [
@@ -122,15 +146,35 @@ def _chain_odds_pregame_v2(sport: str) -> List[str]:
         "sportsgameodds",
         "isports",
         "api_sports",
+        *_ODDS_TAIL_SCHEDULE,
+        *_ODDS_TAIL_US_STATS,
     ]
 
 
 def _chain_odds_pregame_v1(sport: str) -> List[str]:
-    """Legacy chains from pre-unification router."""
+    """Legacy chains from pre-unification router (extended with schedule fallbacks)."""
     sk = canonical_sport_key(sport)
     if _is_soccer(sk):
-        return ["the_odds_api", "isports", "sportmonks"]
-    return ["the_odds_api", "isports", "api_sports"]
+        return [
+            "the_odds_api",
+            "isports",
+            "sportmonks",
+            "therundown",
+            "sportsgameodds",
+            "betstack",
+            "api_sports",
+            *_ODDS_TAIL_SCHEDULE,
+        ]
+    return [
+        "the_odds_api",
+        "isports",
+        "api_sports",
+        "therundown",
+        "sportsgameodds",
+        "betstack",
+        *_ODDS_TAIL_SCHEDULE,
+        *_ODDS_TAIL_US_STATS,
+    ]
 
 
 def _chain_schedule_v1(sport: str) -> List[str]:
@@ -230,6 +274,7 @@ KNOWN_PROVIDER_IDS: List[str] = [
     "balldontlie",
     "thesportsdb",
     "espn",
+    "mysportsfeeds",
     "kalshi",
     "oddspapi",
     "statsbomb",

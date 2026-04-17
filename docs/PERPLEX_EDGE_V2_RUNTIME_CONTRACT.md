@@ -100,6 +100,7 @@ All **user-facing list and summary** endpoints SHOULD return:
 |-------|---------|----------|
 | `GET /health` | Process liveness (cheap) | API process up |
 | `GET /health/deps` | **Dependency + data truth** | Returns JSON with **component statuses**: DB, Redis (if used), critical queues, **odds path**, **EV writer**, **last successful odds/ev timestamps**, **DLQ depth**, **mapping_exception_rate**. May return 200 with **`overall: degraded`** — that is **valid** and preferred over lying. |
+| `GET /api/health/ready` | **Orchestrator readiness** (process up vs board usable) | **200** when DB is connected, `degradation.level == none`, and either `props_count >= READINESS_MIN_PROPS` (default `1`) **or** any `ingest_*` heartbeat has `last_success_at` within `READINESS_INGEST_HEARTBEAT_MAX_MINUTES` (default `120`). **503** with the same JSON shape when not ready (liveness remains on `GET /health` / `GET /api/health`). |
 
 **Frontend rule:** Command Center and Scanner MUST consume **`/health/deps` or BFF summary**, not raw `/health`, for any “system healthy” indicator.
 
@@ -135,7 +136,7 @@ Minimum additive concepts (table or JSONB columns as appropriate):
 
 **Shipped in repo (baseline):**
 
-1. **`GET /api/health/deps`** — [`apps/api/src/routers/health.py`](../apps/api/src/routers/health.py): `overall`, `degradation{level,reasons,user_message}`, `freshness`, `components`, `sync`. Legacy **`GET /api/health`** unchanged for clients.  
+1. **`GET /api/health/deps`** — [`apps/api/src/routers/health.py`](../apps/api/src/routers/health.py): `overall`, `degradation{level,reasons,user_message}`, `freshness`, `components` (incl. `sportmonks`, `odds_api_all_keys_cooldown`), `sync`. Legacy **`GET /api/health`** unchanged for clients. **`GET /api/health/ready`** — readiness probe (§5 table); **503** when DB/degradation/data-plane gates fail.  
 2. **`meta.degradation`** on **`GET /api/signals/freshness`** — [`apps/api/src/routers/signals.py`](../apps/api/src/routers/signals.py) (top-level freshness fields preserved).  
 3. **`edges_ev_history` write path** — [`apps/api/src/services/persistence_helpers.py`](../apps/api/src/services/persistence_helpers.py): sanitize rows, skip invalid / missing `market_label`, log skip count (DLQ-style logging; no silent crash).  
 4. **UI** — [`DataDegradationBanner`](../apps/web/src/components/DataDegradationBanner.tsx) on Command Center ([`dashboard/page.tsx`](../apps/web/src/app/(app)/dashboard/page.tsx)) + [`API.healthDeps()`](../apps/web/src/lib/api.ts).

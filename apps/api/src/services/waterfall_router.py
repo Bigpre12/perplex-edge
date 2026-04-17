@@ -23,6 +23,7 @@ from services.espn_client import espn_client
 from services.therundown_client import therundown_client
 from services.sportsgameodds_client import sportsgameodds_client
 from services.betstack_client import betstack_client
+from services.mysportsfeeds_client import mysportsfeeds_client
 from services.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -174,7 +175,10 @@ class WaterfallRouter:
         odds_like = self._is_odds_like(data_type)
 
         if provider == "balldontlie":
-            return await balldontlie_client.get_games(sport)
+            raw = await balldontlie_client.get_games(sk)
+            if odds_like and raw:
+                return self._normalize_to_odds_events(raw, sk)
+            return raw
         elif provider == "api_sports":
             raw = await api_sports_client.get_games(sport)
             if odds_like and raw:
@@ -190,9 +194,15 @@ class WaterfallRouter:
         elif provider == "the_odds_api":
             return await odds_api.get_live_odds(sk, markets=markets)
         elif provider == "thesportsdb":
-            return await thesportsdb_client.get_events_by_day(sport)
+            raw = await thesportsdb_client.get_events_by_day(sk)
+            if odds_like and raw:
+                return self._normalize_to_odds_events(raw, sk)
+            return raw
         elif provider == "espn":
-            return await espn_client.get_scoreboard(sport)
+            raw = await espn_client.get_scoreboard(sk)
+            if odds_like and raw:
+                return self._normalize_to_odds_events(raw, sk)
+            return raw
         elif provider == "therundown":
             raw = await therundown_client.get_games(sk)
             if odds_like and raw:
@@ -214,6 +224,13 @@ class WaterfallRouter:
             # Roadmap: thin client + legal keys — placeholder keeps chain order explicit
             logger.debug("OddsPapi: no client wired; skipping provider slot")
             return None
+        elif provider == "mysportsfeeds":
+            if not mysportsfeeds_client.available:
+                return None
+            raw = await mysportsfeeds_client.get_daily_games(sk)
+            if odds_like and raw:
+                return self._normalize_to_odds_events(raw, sk)
+            return raw
         elif provider == "kalshi":
             logger.debug("Kalshi: waterfall batch fetch not used for this data_type")
             return None

@@ -9,7 +9,7 @@ from models.prop import PropLine, PropOdds, GameLine, GameLineOdds # type: ignor
 from models.history import PropHistoryLegacy as PropHistory # type: ignore
 
 from services.ev_utils import american_to_implied
-from services.ev_persistence import insert_edges_ev_history
+from services.persistence_helpers import insert_edges_ev_history
 
 logger = logging.getLogger(__name__)
 
