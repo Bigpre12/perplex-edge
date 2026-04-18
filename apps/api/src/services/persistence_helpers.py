@@ -185,7 +185,7 @@ def _sanitize_ev_history_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 
 async def insert_edges_ev_history(ev_rows: List[Dict]):
-    """Standardized append into public.edges_ev_history."""
+    """Standardized append into public.edges_ev_history (app code should use this path only)."""
     if not ev_rows:
         return
 

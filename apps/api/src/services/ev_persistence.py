@@ -1,3 +1,10 @@
+"""
+EV signal upserts into ``ev_signals`` (model: ``UnifiedEVSignal``).
+
+Note: This module's ``insert_edges_ev_history`` name is historical; it does **not**
+write to the ``edges_ev_history`` table. Use ``persistence_helpers.insert_edges_ev_history``
+for ``edges_ev_history`` rows.
+"""
 import logging
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert

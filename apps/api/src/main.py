@@ -152,6 +152,15 @@ async def initialize_backend_services():
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS last_updated_at TIMESTAMPTZ")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS home_team VARCHAR")
             await run_migration_step("ALTER TABLE props_live ADD COLUMN IF NOT EXISTS away_team VARCHAR")
+            await run_migration_step(
+                "ALTER TABLE props_live ADD COLUMN IF NOT EXISTS steam_signal BOOLEAN DEFAULT FALSE"
+            )
+            await run_migration_step(
+                "ALTER TABLE props_live ADD COLUMN IF NOT EXISTS whale_signal BOOLEAN DEFAULT FALSE"
+            )
+            await run_migration_step(
+                "ALTER TABLE props_live ADD COLUMN IF NOT EXISTS sharp_conflict BOOLEAN DEFAULT FALSE"
+            )
             await run_migration_step("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS home_team VARCHAR")
             await run_migration_step("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS away_team VARCHAR")
             await run_migration_step("ALTER TABLE props_history ADD COLUMN IF NOT EXISTS is_best_over BOOLEAN DEFAULT FALSE")
@@ -177,8 +186,9 @@ async def initialize_backend_services():
                 # ev_signals
                 ("ev_signals", "player_name"), ("ev_signals", "line"), ("ev_signals", "price"), 
                 ("ev_signals", "outcome_key"),
-                # edges_ev_history (legacy NOT NULL on team)
+                # edges_ev_history (legacy NOT NULL on team / market_label)
                 ("edges_ev_history", "team"),
+                ("edges_ev_history", "market_label"),
                 # analytics/logging
                 ("line_ticks", "player_name"), ("line_ticks", "line"),
                 ("ev_signals_history", "player_name"), ("ev_signals_history", "line")

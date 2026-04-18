@@ -14,6 +14,10 @@ from core.kalshi_urls import default_kalshi_rest_url
 
 logger = logging.getLogger(__name__)
 
+# Railway / production: set KALSHI_API_KEY_ID plus KALSHI_PRIVATE_KEY (PEM, use \n for newlines)
+# or KALSHI_PRIVATE_KEY_PATH. Optional: KALSHI_BASE_URL. iSports TLS: ISPORTS_VERIFY_TLS=false if
+# the provider cert chain mismatches in your region.
+
 class KalshiService:
     def __init__(self):
         self.api_key_id = os.getenv("KALSHI_API_KEY_ID")

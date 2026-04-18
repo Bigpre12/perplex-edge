@@ -491,6 +491,9 @@ class PropLive(Base):
     last_updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     home_team = Column(String, nullable=True)
     away_team = Column(String, nullable=True)
+    steam_signal = Column(Boolean, default=False)
+    whale_signal = Column(Boolean, default=False)
+    sharp_conflict = Column(Boolean, default=False)
     # Note: We manage unique indexes manually in main.py to be robust across environments
     __table_args__ = (
         Index('idx_props_live_sport_game', 'sport', 'game_id'),

@@ -15,6 +15,9 @@ class ISportsClient:
     """
     Twin-Key Authentication Client for iSports API.
     Uses account + secret query parameters.
+
+    If TLS verification fails against this host (hostname mismatch), set
+    ``ISPORTS_VERIFY_TLS=false`` in Railway and redeploy.
     """
     BASE_URL = "https://api.isportsapi.com"
 

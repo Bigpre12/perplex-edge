@@ -21,8 +21,9 @@ the odds chain returns no events. See ``docs/WATERFALL_PROVIDER_MATRIX.md``.
 import logging
 import asyncio
 import json
+import os
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Dict, Any, Optional
 
@@ -49,6 +50,70 @@ class UnifiedIngestionService:
         if american > 0:
             return Decimal(100) / Decimal(american + 100)
         return Decimal(abs(american)) / Decimal(abs(american) + 100)
+
+    @staticmethod
+    def _event_commence_utc(event: Dict[str, Any]) -> Optional[datetime]:
+        ct = event.get("commence_time") or event.get("commenceTime")
+        if isinstance(ct, datetime):
+            if ct.tzinfo is None:
+                return ct.replace(tzinfo=timezone.utc)
+            return ct.astimezone(timezone.utc)
+        if isinstance(ct, str) and ct.strip():
+            try:
+                return datetime.fromisoformat(ct.replace("Z", "+00:00")).astimezone(timezone.utc)
+            except ValueError:
+                return None
+        return None
+
+    @staticmethod
+    def _filter_stale_odds_events(odds_raw: List[Any], sport_key: str) -> List[Dict[str, Any]]:
+        """Drop odds-shaped events older than INGEST_DROP_EVENTS_OLDER_THAN_DAYS (default 10)."""
+        max_days = int(os.getenv("INGEST_DROP_EVENTS_OLDER_THAN_DAYS", "10"))
+        if max_days <= 0:
+            return [e for e in odds_raw if isinstance(e, dict)]
+        cutoff = datetime.now(timezone.utc) - timedelta(days=max_days)
+        out: List[Dict[str, Any]] = []
+        dropped = 0
+        for e in odds_raw:
+            if not isinstance(e, dict):
+                continue
+            t = UnifiedIngestionService._event_commence_utc(e)
+            if t is None:
+                out.append(e)
+                continue
+            if t >= cutoff:
+                out.append(e)
+            else:
+                dropped += 1
+        if dropped:
+            logger.info(
+                "UnifiedIngestion: dropped %s stale odds_raw rows (commence before %sd cutoff) for %s",
+                dropped,
+                max_days,
+                sport_key,
+            )
+        return out
+
+    @staticmethod
+    def _build_metadata_map(odds_raw: List[Dict[str, Any]]) -> Dict[str, Any]:
+        metadata_map: Dict[str, Any] = {}
+        for e in odds_raw:
+            eid = e.get("id")
+            if not eid:
+                continue
+            commence_time = e.get("commence_time")
+            game_time = None
+            if isinstance(commence_time, str):
+                try:
+                    game_time = datetime.fromisoformat(commence_time.replace("Z", "+00:00"))
+                except ValueError:
+                    game_time = None
+            metadata_map[eid] = {
+                "home_team": e.get("home_team"),
+                "away_team": e.get("away_team"),
+                "game_time": game_time,
+            }
+        return metadata_map
 
     async def run(self, sport_key: str):
         start_time = datetime.now(timezone.utc)
@@ -158,34 +223,20 @@ class UnifiedIngestionService:
                         sport_key,
                     )
 
-            metrics["events_count"] = len(odds_raw)
-            logger.info(
-                "UnifiedIngestion: Fetched %s events from %s for %s",
-                metrics["events_count"],
-                source_name,
-                sport_key,
-            )
         except Exception as e:
             metrics["errors"].append(f"Ingest Fetch: {str(e)}")
             logger.error(f"UnifiedIngestion: Failed to fetch data: {e}")
             odds_raw = []
 
-        # Map event_id -> metadata
-        metadata_map = {}
-        for e in odds_raw:
-            eid = e.get('id')
-            if not eid: continue
-            
-            commence_time = e.get('commence_time')
-            game_time = None
-            if isinstance(commence_time, str):
-                game_time = datetime.fromisoformat(commence_time.replace('Z', '+00:00'))
-            
-            metadata_map[eid] = {
-                'home_team': e.get('home_team'),
-                'away_team': e.get('away_team'),
-                'game_time': game_time
-            }
+        odds_raw = UnifiedIngestionService._filter_stale_odds_events(odds_raw, sport_key)
+        metadata_map = UnifiedIngestionService._build_metadata_map(odds_raw)
+        metrics["events_count"] = len(odds_raw)
+        logger.info(
+            "UnifiedIngestion: %s events from %s for %s (after stale-event filter)",
+            metrics["events_count"],
+            source_name,
+            sport_key,
+        )
 
         logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} COMPLETE — {len(odds_raw)} events ===")
         # 2d. Fetch Player Props (Requires per-event calls)
@@ -311,6 +362,9 @@ class UnifiedIngestionService:
                 logger.info(f"UnifiedIngestion: Merged {len(betstack_records)} Betstack records.")
         except Exception as e:
             logger.error(f"UnifiedIngestion: Betstack fetch failed: {e}")
+
+        odds_raw = UnifiedIngestionService._filter_stale_odds_events(odds_raw, sport_key)
+        metadata_map = UnifiedIngestionService._build_metadata_map(odds_raw)
 
         logger.debug(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} COMPLETE ===")
         # 3. Normalize into PropRecords
