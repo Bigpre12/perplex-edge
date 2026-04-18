@@ -1,15 +1,15 @@
-// sw.js — LUCRIX Service Worker v3
-const CACHE_NAME = "lucrix-cache-v3";
+// sw.js — LUCRIX Service Worker v4 (bust caches; never intercept App Router RSC fetches)
+const CACHE_NAME = "lucrix-cache-v4";
 
 // ── Install ──────────────────────────────────────────────
 self.addEventListener("install", (event) => {
-    console.log("[SW] Installing v3...");
+    console.log("[SW] Installing v4...");
     self.skipWaiting();
 });
 
 // ── Activate ─────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
-    console.log("[SW] Activating v3...");
+    console.log("[SW] Activating v4...");
     event.waitUntil(
         caches.keys().then((keys) =>
             Promise.all(
@@ -45,7 +45,17 @@ self.addEventListener("fetch", (event) => {
     }
 
     // 2. ✅ NEVER intercept — pass straight through to network
+    // Next.js App Router: RSC / flight requests are same-origin GETs to route URLs (not /_next/).
+    // Cache-first on those serves stale flight data across deploys and breaks chunk loading.
+    const h = request.headers;
+    const isNextDataFlight =
+        h.get("RSC") === "1" ||
+        h.has("Next-Router-State-Tree") ||
+        h.get("Next-Router-Prefetch") === "1" ||
+        h.has("Next-Action");
+
     const skipPatterns = [
+        isNextDataFlight,
         url.port === "8000",                          // FastAPI backend
         url.pathname.startsWith("/api/"),             // API routes
         url.pathname.startsWith("/_next/"),           // Next.js internals (already hashed)

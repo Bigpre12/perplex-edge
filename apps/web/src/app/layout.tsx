@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import "./globals.css";
 import PWASetup from "@/components/PWASetup";
+import DeploymentChunkRecovery from "@/components/DeploymentChunkRecovery";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { Providers } from "@/components/Providers";
 
@@ -58,6 +59,7 @@ export default function RootLayout({
       <head />
       <body className="antialiased bg-lucrix-dark text-textPrimary font-sans selection:bg-brand-purple selection:text-white relative" suppressHydrationWarning>
         <PWASetup />
+        <DeploymentChunkRecovery />
         <Providers>
           <OnboardingModal />
           {children}
