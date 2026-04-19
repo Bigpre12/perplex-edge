@@ -1,13 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { getAnonBrowserClient } from "./supabase/browserSingleton";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export { getAnonBrowserClient } from "./supabase/browserSingleton";
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase env variables are missing. Direct DB queries will fail.');
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.warn("Supabase env variables are missing. Direct DB queries will fail.");
 }
 
-export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-);
+export const supabase = getAnonBrowserClient();

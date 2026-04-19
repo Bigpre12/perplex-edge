@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { TOKEN_STORAGE_KEY, handleUnauthorized } from './authStorage';
+import { toArray } from './utils/data-guards';
 const isServer = typeof window === 'undefined';
 
 // --- CONFIGURATION ---
@@ -367,7 +368,11 @@ export const API = {
       const { data } = await api.get(`/api/props/history`, {
         params: { player_name: playerName, market_key: statType, sport: 'basketball_nba', book: 'draftkings' }
       });
-      return { history: data };
+      const raw = (data as Record<string, unknown> | null)?.items
+        ?? (data as Record<string, unknown> | null)?.history
+        ?? (data as Record<string, unknown> | null)?.records
+        ?? data;
+      return { history: toArray(raw) };
     } catch (err) { return { history: [] }; }
   },
   mlPredict: async (payload: any) => {
@@ -483,7 +488,15 @@ export const API = {
   trendHunter: async (sport?: string, timeframe?: string) => {
     try {
       const { data } = await api.get('/api/props/history', { params: { sport, timeframe } });
-      return data;
+      if (Array.isArray(data)) {
+        return { items: toArray(data) };
+      }
+      if (data == null || typeof data !== "object") {
+        return { items: [] as unknown[] };
+      }
+      const d = data as Record<string, unknown>;
+      const items = toArray(d.items ?? d.trends ?? d.results ?? d.data ?? []);
+      return { ...d, items };
     } catch (err) { return handleApiError(err); }
   },
   affiliateMyLink: async (userId?: string | number) => {

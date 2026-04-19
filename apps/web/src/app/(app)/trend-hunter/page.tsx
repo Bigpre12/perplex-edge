@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Search, Bell, ChevronDown, Filter, BarChart3, Database } from 'lucide-react';
 import API, { isApiError } from '@/lib/api';
+import { toArray } from '@/lib/utils/data-guards';
 import { TrendCard } from '@/components/TrendHunter/TrendCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -34,7 +35,7 @@ function TrendHunterContent() {
         try {
             const data = await API.trendHunter(activeSport, timeframe);
             if (!isApiError(data)) {
-                setTrends(data.items || []);
+                setTrends(toArray((data as { items?: unknown }).items ?? data));
             }
         } catch (err) {
             console.error("Failed to fetch trends", err);

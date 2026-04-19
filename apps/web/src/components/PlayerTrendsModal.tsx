@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, TrendingUp, Activity, Crosshair, Brain } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import API, { isApiError } from "@/lib/api";
+import { toArray } from "@/lib/utils/data-guards";
+import { SafeChart } from "@/components/charts/SafeChart";
 
 export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
     const [trendData, setTrendData] = useState<any[]>([]);
@@ -34,7 +36,7 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                 const statType = propData.market?.stat_type || propData.stat_type;
 
                 const res = await API.playerTrends(playerName, statType);
-                const history = res?.history || [];
+                const history = toArray(res?.history);
                 if (!cancelled) setTrendData(history);
 
                 const mlData = await API.mlPredict({
@@ -61,6 +63,7 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
     if (!isOpen || !propData) return null;
 
     const hasEdge = (propData.edge || 0) > 0;
+    const chartData = toArray(trendData);
 
     return (
         <AnimatePresence>
@@ -131,8 +134,9 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                             </div>}
                         </div>
                         <div className="h-64 w-full min-w-0">
-                            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
-                                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <SafeChart minHeight={240}>
+                            <ResponsiveContainer width="100%" height={220} minHeight={1} minWidth={1}>
+                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#0df233" stopOpacity={0.2} />
@@ -156,6 +160,7 @@ export default function PlayerTrendsModal({ isOpen, onClose, propData }: any) {
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
+                            </SafeChart>
                         </div>
                         <p className="text-[9px] font-black text-[#6B7280] uppercase tracking-widest text-center mt-6">Data audited via SportsDataIO Performance API</p>
                     </div>
