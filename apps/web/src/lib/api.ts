@@ -274,6 +274,15 @@ export const API = {
       return data;
     } catch (err) { return handleApiError(err); }
   },
+  /** Process liveness only (no DB). Use for connectivity / "backend online" — avoids false offline when DB is down. */
+  livePing: async () => {
+    try {
+      const { data } = await api.get('/health', { params: { t: Date.now() } });
+      return data;
+    } catch (err) {
+      return handleApiError(err);
+    }
+  },
   health: async () => {
     try {
       const { data } = await api.get('/api/health', { params: { t: Date.now() } });

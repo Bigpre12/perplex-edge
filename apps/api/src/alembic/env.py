@@ -7,13 +7,22 @@ from alembic import context
 
 import os
 import sys
-from dotenv import load_dotenv
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-load_dotenv()
+
+from core.env_loader import load_project_dotenv
+
+load_project_dotenv()
 
 from db.base import Base
 import models
+
+
+def _default_sqlite_url() -> str:
+    data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
+    os.makedirs(data_dir, exist_ok=True)
+    db_path = os.path.join(data_dir, "perplex_local.db").replace("\\", "/")
+    return f"sqlite:///{db_path}"
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -22,7 +31,7 @@ config = context.config
 # Overwrite the sqlalchemy.url from the env file
 config.set_main_option(
     "sqlalchemy.url",
-    os.environ.get("DATABASE_URL", "sqlite:///./data/perplex_local.db")
+    (os.environ.get("DATABASE_URL") or _default_sqlite_url())
         .replace("postgresql+asyncpg", "postgresql")
         .replace("sqlite+aiosqlite", "sqlite")
 )

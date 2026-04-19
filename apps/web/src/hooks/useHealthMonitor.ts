@@ -9,7 +9,7 @@ export function useHealthMonitor() {
 
     const check = async () => {
         try {
-            const result = await API.health();
+            const result = await API.livePing();
             if (!isApiError(result)) {
                 setBackendOnline(true);
                 setIsConnecting(false);
@@ -43,7 +43,7 @@ export function useHealthMonitor() {
             if (failures >= 3) return; // frontend circuit breaker — stop after 3 fails
 
             try {
-                const data = await API.health();
+                const data = await API.livePing();
                 if (isApiError(data)) {
                     throw data;
                 }

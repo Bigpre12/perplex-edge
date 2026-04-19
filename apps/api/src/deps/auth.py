@@ -7,19 +7,23 @@ from core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
+def _asyncpg_dsn(url: str) -> str:
+    """asyncpg.connect expects postgresql:// or postgres://, not SQLAlchemy +asyncpg."""
+    u = url.replace("postgresql+asyncpg://", "postgresql://")
+    if u.startswith("postgres://"):
+        u = u.replace("postgres://", "postgresql://", 1)
+    return u
+
+
 async def get_db_conn():
     """Helper to get a direct asyncpg connection"""
-    # Replace sqlalchemy+driver prefix with just postgresql://
-    url = settings.DATABASE_URL
-    if "postgresql" in url and "asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://")
-    elif "postgres://" in url:
-        url = url.replace("postgres://", "postgresql://")
-    
-    # asyncpg doesn't support sqlite, so we shim or skip if using sqlite
+    url = _asyncpg_dsn(settings.DATABASE_URL)
+
+    # asyncpg doesn't support sqlite; yield nothing (async generator cannot return a value).
     if "sqlite" in url:
-        return None
-        
+        return
+
     conn = await asyncpg.connect(url)
     try:
         yield conn

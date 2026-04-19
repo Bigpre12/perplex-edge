@@ -1,9 +1,9 @@
 import os
 import logging
-from dotenv import load_dotenv # type: ignore
 
-# Try to load .env from current working directory (root)
-load_dotenv(os.path.join(os.getcwd(), ".env"))
+from core.env_loader import load_project_dotenv
+
+load_project_dotenv()
 
 APP_NAME = os.getenv("APP_NAME", "Lucrix")
 DATABASE_URL = os.getenv(
