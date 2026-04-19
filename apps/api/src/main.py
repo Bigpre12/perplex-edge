@@ -4,7 +4,9 @@ import asyncio
 import logging
 import traceback
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -87,6 +89,7 @@ middle_boost_router  = safe_import("middle_boost", "router")
 kalshi_router        = safe_import("kalshi", "kalshi")
 kalshi_ws_router     = safe_import("kalshi_ws_proxy", "kalshi_ws")
 intel_router         = safe_import("intel", "router")
+pick_intel_router    = safe_import("pick_intel", "router")
 sharp_router         = safe_import("sharp", "router")
 parlays_router       = safe_import("parlays", "router")
 props_history_router = safe_import("props_history", "router")
@@ -332,12 +335,17 @@ async def initialize_backend_services():
             "aussierules_afl", "rugbyleague_nrl",
         ]
 
+        ingest_interval = max(1, int(os.getenv("INGEST_INTERVAL_MINUTES", "5")))
+        logger.info(
+            "📡 [Scheduler] Unified ingestion interval: %s minutes (INGEST_INTERVAL_MINUTES)",
+            ingest_interval,
+        )
         # NOTE: Internal scheduler is re-enabled to ensure data freshness.
         for sport in sports_to_ingest:
             job = scheduler.add_job(
                 unified_ingestion.run_with_retries,
                 'interval',
-                minutes=5,
+                minutes=ingest_interval,
                 args=[sport],
                 id=f"ingest_{sport}",
                 replace_existing=True,
@@ -569,6 +577,7 @@ async def reset_circuit_breaker():
 # --- Router Registration (all guarded) ---
 if health_router:        app.include_router(health_router, prefix="/api/health", tags=["health"])
 if intel_router:         app.include_router(intel_router, prefix="/api/intel", tags=["intel"])
+if pick_intel_router:    app.include_router(pick_intel_router, prefix="/api", tags=["pick-intel"])
 if meta_router:          app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
 if auth_router:          app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 if props_router:         app.include_router(props_router, prefix="/api/props", tags=["props"])
@@ -632,6 +641,42 @@ async def reset_circuit_breaker(request: Request):
     
     auth_breaker.reset()
     return {"status": "success", "message": "Circuit breaker reset to CLOSED state."}
+
+
+def _require_admin_bearer(request: Request) -> None:
+    admin_key = os.getenv("ADMIN_SECRET_KEY")
+    auth_header = request.headers.get("Authorization", "")
+    if not admin_key or auth_header != f"Bearer {admin_key}":
+        raise HTTPException(status_code=403, detail="Unauthorized admin request.")
+
+
+@app.post("/api/admin/trigger-ingestion")
+@app.post("/admin/trigger-ingestion")
+async def admin_trigger_ingestion(
+    request: Request,
+    sport: Optional[str] = Query(
+        None,
+        description="Sport key (e.g. basketball_nba). Overrides JSON body if both sent.",
+    ),
+):
+    """
+    Ops: run one unified_ingestion cycle for a sport (same as /api/health/ingest/{sport})
+    but matches common runbook URL. JSON body may include {"sport": "basketball_nba"}.
+    """
+    _require_admin_bearer(request)
+    resolved = "basketball_nba"
+    try:
+        body = await request.json()
+        if isinstance(body, dict) and body.get("sport"):
+            resolved = str(body["sport"]).strip() or resolved
+    except Exception:
+        pass
+    if sport:
+        resolved = str(sport).strip() or resolved
+
+    logger.info("🚦 [Admin trigger-ingestion] starting sport=%s", resolved)
+    metrics = await unified_ingestion.run(resolved)
+    return {"status": "ok", "sport": resolved, "metrics": metrics}
 
 if __name__ == "__main__":
     import uvicorn

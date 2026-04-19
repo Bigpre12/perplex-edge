@@ -25,6 +25,7 @@ from services.sportsgameodds_client import sportsgameodds_client
 from services.betstack_client import betstack_client
 from services.mysportsfeeds_client import mysportsfeeds_client
 from services.cache import cache
+from services.commence_time import event_commence_utc, reject_absurd_future, parse_commence_to_utc
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +86,16 @@ class WaterfallRouter:
             at = g.get("away_team") or g.get("away_team_name") or ""
             st = g.get("commence_time") or g.get("start_time")
             if isinstance(st, datetime):
-                commence = st.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                parsed = reject_absurd_future(parse_commence_to_utc(st))
             elif st:
-                commence = str(st)
+                parsed = reject_absurd_future(event_commence_utc({"commence_time": st}))
             else:
-                commence = ""
+                parsed = None
+            commence = (
+                parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                if parsed
+                else ""
+            )
             eid = str(g.get("id") or g.get("event_id") or "")
             out.append(
                 {

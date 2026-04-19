@@ -17,6 +17,7 @@ import httpx
 
 from api_utils.http import build_headers
 from core.config import settings
+from services.commence_time import reject_absurd_future
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +219,7 @@ class BetstackClient:
             if isinstance(commence, str):
                 try:
                     gtime = datetime.fromisoformat(commence.replace("Z", "+00:00"))
+                    gtime = reject_absurd_future(gtime)
                 except ValueError:
                     gtime = None
 

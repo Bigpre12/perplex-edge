@@ -41,6 +41,11 @@ from real_data_connector import real_data_connector # type: ignore
 from services.alert_writer import run_alert_detection # type: ignore
 from services.ev_writer import run_ev_grader # type: ignore
 from services.waterfall_router import waterfall_router # type: ignore
+from services.commence_time import (  # type: ignore
+    event_commence_utc,
+    reject_absurd_future,
+    parse_commence_to_utc,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,17 +58,7 @@ class UnifiedIngestionService:
 
     @staticmethod
     def _event_commence_utc(event: Dict[str, Any]) -> Optional[datetime]:
-        ct = event.get("commence_time") or event.get("commenceTime")
-        if isinstance(ct, datetime):
-            if ct.tzinfo is None:
-                return ct.replace(tzinfo=timezone.utc)
-            return ct.astimezone(timezone.utc)
-        if isinstance(ct, str) and ct.strip():
-            try:
-                return datetime.fromisoformat(ct.replace("Z", "+00:00")).astimezone(timezone.utc)
-            except ValueError:
-                return None
-        return None
+        return event_commence_utc(event)
 
     @staticmethod
     def _filter_stale_odds_events(odds_raw: List[Any], sport_key: str) -> List[Dict[str, Any]]:
@@ -96,21 +91,31 @@ class UnifiedIngestionService:
 
     @staticmethod
     def _build_metadata_map(odds_raw: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Per-event metadata for props mapping. Same event id can appear multiple times in
+        odds_raw (board snapshot + per-event player props). Merge so a later row without
+        commence_time does not wipe a valid game_time, and reject far-future placeholders.
+        """
         metadata_map: Dict[str, Any] = {}
         for e in odds_raw:
             eid = e.get("id")
             if not eid:
                 continue
-            commence_time = e.get("commence_time")
-            game_time = None
-            if isinstance(commence_time, str):
-                try:
-                    game_time = datetime.fromisoformat(commence_time.replace("Z", "+00:00"))
-                except ValueError:
-                    game_time = None
+            new_t = reject_absurd_future(event_commence_utc(e))
+            ht = e.get("home_team")
+            at = e.get("away_team")
+            prev = metadata_map.get(eid)
+            if prev:
+                game_time = new_t or prev.get("game_time")
+                home_team = ht or prev.get("home_team")
+                away_team = at or prev.get("away_team")
+            else:
+                game_time = new_t
+                home_team = ht
+                away_team = at
             metadata_map[eid] = {
-                "home_team": e.get("home_team"),
-                "away_team": e.get("away_team"),
+                "home_team": home_team,
+                "away_team": away_team,
                 "game_time": game_time,
             }
         return metadata_map
@@ -201,19 +206,25 @@ class UnifiedIngestionService:
                     )
                     odds_raw = []
                     for g in fallback_data:
+                        st = g.get("start_time")
+                        if isinstance(st, datetime):
+                            dt = reject_absurd_future(parse_commence_to_utc(st))
+                        else:
+                            dt = reject_absurd_future(
+                                parse_commence_to_utc(st) or parse_commence_to_utc(g.get("date"))
+                            )
+                        commence_iso = (
+                            dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                            if dt
+                            else ""
+                        )
                         odds_raw.append(
                             {
                                 "id": g.get("id"),
                                 "sport_key": sport_key,
                                 "home_team": g.get("home_team"),
                                 "away_team": g.get("away_team"),
-                                "commence_time": (
-                                    g.get("start_time").isoformat()
-                                    if isinstance(g.get("start_time"), datetime)
-                                    else str(
-                                        g.get("start_time") or g.get("date") or ""
-                                    )
-                                ),
+                                "commence_time": commence_iso,
                                 "bookmakers": g.get("raw_bookmakers_data", []),
                             }
                         )
@@ -257,10 +268,12 @@ class UnifiedIngestionService:
             and sport_key in PROP_MARKETS_BY_SPORT
             and sport_key in IN_SEASON_PROP_SPORTS
         ):
-            # Quota Protection: Cap at 15 events per cycle to prevent credit drain
+            # Quota: cap per-event TOA calls (INGEST_TOA_MAX_EVENTS_PER_CYCLE, default 15)
+            max_events = max(1, int(os.getenv("INGEST_TOA_MAX_EVENTS_PER_CYCLE", "15")))
             active_events: List[str] = []
             for i, k in enumerate(metadata_map.keys()):
-                if i >= 15: break
+                if i >= max_events:
+                    break
                 active_events.append(k)
 
             toa_keys_cooldown = odds_api_client.all_keys_unavailable()
@@ -281,6 +294,14 @@ class UnifiedIngestionService:
 
             prop_counts: int = 0
             for eid in ([] if toa_keys_cooldown else active_events):
+                if odds_api_client.quota_conserve_player_props():
+                    logger.info(
+                        "UnifiedIngestion: Stopping TOA player props early (quota conserve / "
+                        "THE_ODDS_API_MIN_REMAINING_BEFORE_STOP) for %s after %s events",
+                        sport_key,
+                        prop_counts,
+                    )
+                    break
                 try:
                     # Attempt primary prop fetch
                     event_props = await odds_api_client.get_player_props(
@@ -378,7 +399,9 @@ class UnifiedIngestionService:
         for r in combined_records:
             if not r.player_name:
                 r.player_name = r.home_team or "Matchup"
-        
+            if r.game_start_time is not None and reject_absurd_future(r.game_start_time) is None:
+                r.game_start_time = None
+
         # 3b. Market Intelligence: Best Odds, Soft/Sharp flagging
         records = self.enrich_with_market_intel(combined_records)
         metrics["odds_count"] = len(records)
@@ -490,6 +513,8 @@ class UnifiedIngestionService:
                 error_count=len(metrics["errors"]),
                 meta={"metrics": metrics}
             )
+
+        return metrics
 
     async def run_with_retries(self, sport_key: str, retries: int = 3):
         """Robust entrypoint with exponential backoff for transient API failures."""

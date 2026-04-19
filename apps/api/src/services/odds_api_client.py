@@ -70,6 +70,8 @@ class OddsApiClient(ResilientBaseClient):
                 key_list.append(extra)
         self.api_keys = key_list
         self.current_key_idx = 0
+        # Last x-requests-remaining from The Odds API (used to skip expensive per-event prop calls)
+        self._last_requests_remaining: Optional[int] = None
         # Auth/config failures: long cooldown (legacy env ODDS_API_KEY_COOLDOWN_SECONDS)
         self.dead_key_cooldown_auth = int(
             os.getenv(
@@ -82,17 +84,30 @@ class OddsApiClient(ResilientBaseClient):
 
         # key_index -> unix time until this key is skipped
         self._dead_until: Dict[int, float] = {}
-        
-        # Security logging: Show hint of active keys
-        safe_keys = [f"{k[:4]}****" for k in self.api_keys if k]
-        logger.info(f"OddsApiClient initialized with {len(self.api_keys)} keys: {', '.join(safe_keys)}")
-        
+
         self.default_ttl = 300  # 5 min — standard odds
         self.long_ttl = 3600    # 1 hour — sports/metadata
         self.timeout = 15.0
-        
+
         # Limit per day (approx 100k/mo tier)
         self.max_daily_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
+        # Optional hard cap on successful calls per calendar month (Redis counter)
+        self.max_monthly_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_MONTH", "0"))
+        # If >0 and remaining header falls below this, skip further get_player_props in ingest
+        self.min_remaining_before_stop = int(os.getenv("THE_ODDS_API_MIN_REMAINING_BEFORE_STOP", "0"))
+
+        if not self.api_keys:
+            logger.warning(
+                "OddsApiClient: no keys configured — The Odds API disabled "
+                "(set ODDS_API_KEYS, THE_ODDS_API_KEY, or ODDS_API_KEY)"
+            )
+        else:
+            safe_keys = [f"{k[:4]}****" for k in self.api_keys if k]
+            logger.info(
+                "OddsApiClient: %s key(s) configured (prefixes): %s",
+                len(self.api_keys),
+                ", ".join(safe_keys),
+            )
 
     def _is_key_dead(self, idx: int) -> bool:
         """True if key index is in cooldown until _dead_until[idx]."""
@@ -162,6 +177,43 @@ class OddsApiClient(ResilientBaseClient):
         count = await self._get_today_count()
         await cache.set(key, str(count + 1), ttl=86400)
 
+    async def _get_month_count(self) -> int:
+        if self.max_monthly_calls <= 0:
+            return 0
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+        key = f"odds_api_usage_month:{month}"
+        raw = await cache.get(key)
+        return int(raw) if raw else 0
+
+    async def _increment_month_count(self) -> None:
+        if self.max_monthly_calls <= 0:
+            return
+        month = datetime.now(timezone.utc).strftime("%Y-%m")
+        key = f"odds_api_usage_month:{month}"
+        n = await self._get_month_count()
+        await cache.set(key, str(n + 1), ttl=2678400)
+
+    def _capture_quota_headers(self, resp: Any) -> None:
+        rem = resp.headers.get("x-requests-remaining") or resp.headers.get(
+            "X-Requests-Remaining"
+        )
+        if rem is None:
+            return
+        try:
+            self._last_requests_remaining = int(rem)
+        except (TypeError, ValueError):
+            pass
+
+    def quota_conserve_player_props(self) -> bool:
+        """
+        True when ingest should stop issuing further TOA per-event player prop requests.
+        Uses last x-requests-remaining vs THE_ODDS_API_MIN_REMAINING_BEFORE_STOP (0 = off).
+        """
+        if self.min_remaining_before_stop <= 0:
+            return False
+        r = self._last_requests_remaining
+        return r is not None and r < self.min_remaining_before_stop
+
     async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None, use_cache: bool = True, ttl: Optional[int] = None) -> Any:
         # 1. Check Configuration
         if not self.is_configured:
@@ -173,6 +225,16 @@ class OddsApiClient(ResilientBaseClient):
         if count >= self.max_daily_calls and not settings.DEVELOPMENT_MODE:
             logger.warning(f"🚨 Odds API daily limit ({self.max_daily_calls}) reached. Aborting.")
             return None
+
+        if self.max_monthly_calls > 0 and not settings.DEVELOPMENT_MODE:
+            mcount = await self._get_month_count()
+            if mcount >= self.max_monthly_calls:
+                logger.warning(
+                    "🚨 Odds API monthly limit (%s) reached (%s). Aborting.",
+                    self.max_monthly_calls,
+                    mcount,
+                )
+                return None
 
         params = params.copy() if params else {}
         ttl = ttl if ttl is not None else self.default_ttl
@@ -217,23 +279,25 @@ class OddsApiClient(ResilientBaseClient):
                     else:
                         logger.error(f"Unsupported HTTP method: {method}")
                         return None
-                    
+
+                    self._capture_quota_headers(resp)
+
                     # Log quota headers
                     used = resp.headers.get("x-requests-used")
                     rem = resp.headers.get("x-requests-remaining")
-                    
                     log_msg = f"📡 TheOddsAPI Response [{resp.status_code}] | Path: {endpoint}"
                     if rem:
                         log_msg += f" | Quota: {rem} left (Used: {used})"
                     logger.info(log_msg)
-                    
+
                     if resp.status_code == 200:
                         data = resp.json()
                         await self._increment_count()
+                        await self._increment_month_count()
                         # Always populate the cache on a successful fetch to keep data fresh for other consumers
                         await cache.set_json(cache_key, data, ttl=ttl)
                         return data
-                    
+
                     elif resp.status_code in (401, 403):
                         error_body = resp.text[:200]
                         logger.error(

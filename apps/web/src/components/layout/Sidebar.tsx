@@ -27,7 +27,8 @@ import {
     Wallet,
     Brain,
     Radio,
-    LineChart
+    LineChart,
+    Sparkles
 } from 'lucide-react';
 import { useLucrixStore } from '@/store';
 
@@ -68,6 +69,7 @@ export default function Sidebar() {
         { href: "/clv", icon: <LineChart size={20} />, label: "CLV" },
         { href: "/hit-rate", icon: <BarChart2 size={20} />, label: "Hit rate" },
         { href: "/signals", icon: <Radio size={20} />, label: "Signals" },
+        { href: "/pick-intel", icon: <Sparkles size={20} />, label: "Pick Intel" },
         { href: "/live", icon: <Activity size={20} />, label: "Live", showLiveDot: true },
         { href: "/line-movement", icon: <TrendingUp size={20} />, label: "Move" },
         { href: "/bet-tracker", icon: <Wallet size={20} />, label: "Tracker" },

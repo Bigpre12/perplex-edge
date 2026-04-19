@@ -42,6 +42,8 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+.claude/
+.windsurf/
 *.sublime-project
 *.sublime-workspace
 
