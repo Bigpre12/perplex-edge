@@ -37,7 +37,9 @@ class TheSportsDBClient:
 
     def __init__(self):
         # "1" is the free public test key, or use your own
-        self.api_key = os.getenv("THESPORTSDB_KEY", "1")
+        self.api_key = (
+            os.getenv("THESPORTSDB_KEY") or os.getenv("THESPORTSDB_API_KEY") or "1"
+        ).strip()
         self._cache: Dict[str, dict] = {}
         self.default_ttl = 900  # 15 min
         self.timeout = 10.0

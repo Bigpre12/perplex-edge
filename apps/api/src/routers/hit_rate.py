@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from datetime import datetime
 from services.hit_rate_service import hit_rate_service
+from services.props_live_query import props_live_window_params, props_live_window_sql_clause
 
 router = APIRouter(tags=["Performance & Hit Rate"])
 
@@ -53,6 +54,7 @@ async def hit_rate_summary(sport: str = Query("all"), db: AsyncSession = Depends
                     "last_updated": datetime.utcnow().isoformat() + "Z",
                 }
 
+        t_lo, t_hi = props_live_window_params()
         fallback_query = """
             SELECT 
                 ROUND(AVG(confidence)::numeric, 2) as overall_hit_rate,
@@ -61,8 +63,8 @@ async def hit_rate_summary(sport: str = Query("all"), db: AsyncSession = Depends
                 SUM(CASE WHEN confidence > 0.6 THEN 1 ELSE 0 END) as streak
             FROM props_live
             WHERE 1=1
-        """
-        row_res = await db.execute(text(fallback_query))
+        """ + props_live_window_sql_clause("game_start_time")
+        row_res = await db.execute(text(fallback_query), {"t_lo": t_lo, "t_hi": t_hi})
         row = row_res.mappings().one_or_none()
         if row:
             return {

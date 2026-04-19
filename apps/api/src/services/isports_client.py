@@ -18,6 +18,9 @@ class ISportsClient:
 
     If TLS verification fails against this host (hostname mismatch), set
     ``ISPORTS_VERIFY_TLS=false`` in Railway and redeploy.
+
+    Environment variables (Railway): ``ISPORTS_ACCOUNT``, ``ISPORTS_SECRET``;
+    optional ``ISPORTS_VERIFY_TLS`` (default true).
     """
     BASE_URL = "https://api.isportsapi.com"
 

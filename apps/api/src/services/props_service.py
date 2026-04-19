@@ -167,9 +167,15 @@ class PropsService:
         from sqlalchemy import text
         from datetime import datetime, timezone
         import uuid
-        
+        from services.props_live_query import (
+            props_live_game_time_window,
+            props_live_window_params,
+            props_live_window_sql_clause,
+        )
+
         try:
             async with async_session_maker() as session:
+                t_lo, t_hi = props_live_window_params()
                 # Optimized query: fetch all UnifiedOdds joined with UnifiedEVSignal
                 sql = """
                 SELECT 
@@ -200,7 +206,9 @@ class PropsService:
                     o.bookmaker = e.bookmaker
                 WHERE o.sport = :sport
                   AND o.market_key NOT IN ('h2h', 'spreads', 'totals')
-                """
+                """ + props_live_window_sql_clause(
+                    "o.game_time"
+                )
                 
                 # Check DB dialect
                 engine_url = str(session.bind.url)
@@ -219,7 +227,8 @@ class PropsService:
                             )
                         )
                     ).where(UnifiedOdds.sport == sport).where(
-                        UnifiedOdds.market_key.notin_(['h2h', 'spreads', 'totals'])
+                        UnifiedOdds.market_key.notin_(['h2h', 'spreads', 'totals']),
+                        props_live_game_time_window(UnifiedOdds.game_time),
                     )
                     result = await session.execute(stmt)
                     raw_rows = []
@@ -245,7 +254,10 @@ class PropsService:
                         })
                 else:
                     from sqlalchemy import text
-                    result = await session.execute(text(sql), {"sport": sport})
+                    result = await session.execute(
+                        text(sql),
+                        {"sport": sport, "t_lo": t_lo, "t_hi": t_hi},
+                    )
                     raw_rows = [dict(r._mapping) for r in result.all()]
                 
                 # Group by Unique Prop Entity: Event + Player + Market + Line

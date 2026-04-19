@@ -3,6 +3,8 @@ import logging
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+
+from services.props_live_query import props_live_game_time_window
 from db.session import get_async_db
 from models.brain import PropLive, PropHistory, HitRateModel
 from schemas.unified import PropHistorySchema
@@ -27,7 +29,8 @@ async def get_player_hero_stats(
         # 1. Get current live line
         stmt = select(PropLive).where(
             PropLive.player_name == name,
-            PropLive.sport == sport
+            PropLive.sport == sport,
+            props_live_game_time_window(PropLive.game_start_time),
         ).order_by(desc(PropLive.last_updated_at)).limit(1)
         
         res = await db.execute(stmt)

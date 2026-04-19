@@ -104,7 +104,9 @@ class Settings:
         
         # New Waterfall Providers
         self.API_SPORTS_KEY = os.getenv("API_SPORTS_KEY", "")
-        self.SPORTMONKS_KEY = os.getenv("SPORTMONKS_KEY", "")
+        self.SPORTMONKS_KEY = (
+            os.getenv("SPORTMONKS_KEY") or os.getenv("SPORTMONKS_API_KEY") or ""
+        ).strip()
         self.ISPORTS_API_KEY = os.getenv("ISPORTS_API_KEY", "")
         
         # Betting Engine Configuration

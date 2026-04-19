@@ -20,40 +20,44 @@ logger = logging.getLogger(__name__)
 
 class KalshiService:
     def __init__(self):
-        self.api_key_id = os.getenv("KALSHI_API_KEY_ID")
+        self.api_key_id = os.getenv("KALSHI_API_KEY_ID") or os.getenv("KALSHI_API_KEY")
         self.private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH")
         self.private_key_content = os.getenv("KALSHI_PRIVATE_KEY")
         self.base_url = os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()).strip().rstrip("/")
         self.client = httpx.AsyncClient(base_url=self.base_url)
         self._private_key = None
-        
-        # Priority 1: Direct content from environment variable (useful for Railway/Secrets)
-        val = self.private_key_content
-        if val is not None:
+
+        # Prefer inline PEM (KALSHI_PRIVATE_KEY), then file path (KALSHI_PRIVATE_KEY_PATH)
+        raw = (self.private_key_content or "").strip()
+        if not raw and self.private_key_path and os.path.exists(str(self.private_key_path)):
             try:
-                # Handle potentially encoded newlines in env vars
-                key_bytes = val.replace("\\n", "\n").encode('utf-8')
+                with open(str(self.private_key_path), encoding="utf-8") as f:
+                    raw = f.read()
+            except OSError:
+                try:
+                    with open(str(self.private_key_path), "rb") as f:
+                        raw = f.read().decode("utf-8", errors="replace")
+                except OSError as e:
+                    logger.error("KalshiService: Could not read private key file: %s", e)
+
+        if raw:
+            try:
+                key_bytes = raw.replace("\\n", "\n").encode("utf-8")
                 self._private_key = serialization.load_pem_private_key(
                     key_bytes,
                     password=None,
-                    backend=default_backend()
+                    backend=default_backend(),
                 )
-                logger.info("KalshiService: RSA private key loaded from environment variable")
+                logger.info("KalshiService: RSA private key loaded")
             except Exception as e:
-                logger.error(f"KalshiService: Failed to load private key from env: {e}")
-        
-        # Priority 2: Load from file path if not already loaded
-        if not self._private_key and self.private_key_path and os.path.exists(str(self.private_key_path)):
-            try:
-                with open(str(self.private_key_path), "rb") as key_file:
-                    self._private_key = serialization.load_pem_private_key(
-                        key_file.read(),
-                        password=None,
-                        backend=default_backend()
-                    )
-                logger.info("KalshiService: RSA private key loaded from file")
-            except Exception as e:
-                logger.error(f"KalshiService: Failed to load private key from file: {e}")
+                logger.error("KalshiService: Failed to load private key: %s", e)
+
+        self.available = bool(self.api_key_id and self._private_key)
+        if not self.available:
+            logger.warning(
+                "Kalshi: no private key configured (KALSHI_PRIVATE_KEY or KALSHI_PRIVATE_KEY_PATH) "
+                "and/or key id (KALSHI_API_KEY_ID or KALSHI_API_KEY)"
+            )
 
     def _create_signature(self, timestamp: str, method: str, path: str) -> str:
         """Create RSA-PSS signature for Kalshi v2 auth"""
@@ -218,7 +222,7 @@ kalshi_service = KalshiService()
 
 def get_kalshi_service() -> Optional[KalshiService]:
     """Factory function for safe service access."""
-    if not kalshi_service.api_key_id or not kalshi_service._private_key:
+    if not kalshi_service.available:
         logger.warning("Kalshi service requested but credentials not set.")
         return None
     return kalshi_service

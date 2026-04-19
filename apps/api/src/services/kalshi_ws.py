@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class KalshiWSManager:
     def __init__(self):
-        self.api_key_id = os.getenv("KALSHI_API_KEY_ID")
+        self.api_key_id = os.getenv("KALSHI_API_KEY_ID") or os.getenv("KALSHI_API_KEY")
         self.private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH")
         self.private_key_content = os.getenv("KALSHI_PRIVATE_KEY")
         self.ws_url = resolve_kalshi_ws_url(
@@ -28,32 +28,38 @@ class KalshiWSManager:
         self.redis = None
         self._stop_event = asyncio.Event()
         self._private_key = None
-        
-        # Priority 1: Direct content from environment variable
-        if self.private_key_content:
+
+        raw = (self.private_key_content or "").strip()
+        if not raw and self.private_key_path and os.path.exists(self.private_key_path):
             try:
-                key_bytes = self.private_key_content.replace("\\n", "\n").encode('utf-8')
+                with open(self.private_key_path, encoding="utf-8") as f:
+                    raw = f.read()
+            except OSError:
+                try:
+                    with open(self.private_key_path, "rb") as f:
+                        raw = f.read().decode("utf-8", errors="replace")
+                except OSError as e:
+                    logger.error("KalshiWS: Could not read private key file: %s", e)
+
+        if raw:
+            try:
+                key_bytes = raw.replace("\\n", "\n").encode("utf-8")
                 self._private_key = serialization.load_pem_private_key(
                     key_bytes,
                     password=None,
-                    backend=default_backend()
+                    backend=default_backend(),
                 )
             except Exception as e:
-                logger.error(f"KalshiWS: Failed to load private key from env: {e}")
-        
-        # Priority 2: Load from file path if not already loaded
-        if not self._private_key and self.private_key_path and os.path.exists(self.private_key_path):
-            try:
-                with open(self.private_key_path, "rb") as key_file:
-                    self._private_key = serialization.load_pem_private_key(
-                        key_file.read(),
-                        password=None,
-                        backend=default_backend()
-                    )
-            except Exception as e:
-                logger.error(f"KalshiWS: Failed to load private key from file: {e}")
+                logger.error("KalshiWS: Failed to load private key: %s", e)
 
-        self._disabled = not (self.api_key_id and self._private_key)
+        self.available = bool(self.api_key_id and self._private_key)
+        if not self.available:
+            logger.warning(
+                "Kalshi: no private key configured (KALSHI_PRIVATE_KEY or KALSHI_PRIVATE_KEY_PATH) "
+                "and/or key id (KALSHI_API_KEY_ID or KALSHI_API_KEY)"
+            )
+
+        self._disabled = not self.available
         self._disabled_logged = False
         self._auth_failure_count = 0
         self._auth_disabled = False
@@ -100,7 +106,7 @@ class KalshiWSManager:
         if self._disabled:
             if not self._disabled_logged:
                 logger.warning(
-                    "KalshiWS: Disabled — missing KALSHI_API_KEY_ID or private key "
+                    "KalshiWS: Disabled — missing KALSHI_API_KEY_ID (or KALSHI_API_KEY) or private key "
                     "(KALSHI_PRIVATE_KEY / KALSHI_PRIVATE_KEY_PATH). WebSocket will not connect."
                 )
                 self._disabled_logged = True

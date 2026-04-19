@@ -31,6 +31,10 @@ SPORT_MAP = {
     "baseball_mlb": ("baseball", "mlb"),
     "soccer_epl": ("soccer", "eng.1"),
     "soccer_usa_mls": ("soccer", "usa.1"),
+    "soccer_uefa_champs_league": ("soccer", "uefa.champions_league"),
+    "rugby_league_nrl": ("rugby-league", "nrl"),
+    "aussie_rules_afl": ("australian-football", "afl"),
+    "mma_mixed_martial_arts": None,
 }
 
 
@@ -62,6 +66,9 @@ class ESPNClient:
         Fetch today's scoreboard for a sport. Returns normalized game objects
         compatible with the real_data_connector format.
         """
+        if SPORT_MAP.get(sport_key) is None:
+            return []
+
         mapping = SPORT_MAP.get(sport_key)
         if not mapping:
             logger.warning(f"ESPN: No mapping for sport_key '{sport_key}'")
@@ -146,8 +153,11 @@ class ESPNClient:
 
     async def fetch_injuries(self, sport_key: str) -> List[Dict]:
         """Fetch latest injury data for a given sport from ESPN's public API."""
+        if SPORT_MAP.get(sport_key) is None:
+            return []
         mapping = SPORT_MAP.get(sport_key)
-        if not mapping: return []
+        if not mapping:
+            return []
         
         sport, league = mapping
         # site.api.espn.com/apis/site/v2/sports/{sport}/{league}/injuries
@@ -166,8 +176,11 @@ class ESPNClient:
 
     async def fetch_news(self, sport_key: str) -> List[Dict]:
         """Fetch latest news articles for a given sport from ESPN's public API."""
+        if SPORT_MAP.get(sport_key) is None:
+            return []
         mapping = SPORT_MAP.get(sport_key)
-        if not mapping: return []
+        if not mapping:
+            return []
         
         sport, league = mapping
         # site.api.espn.com/apis/site/v2/sports/{sport}/{league}/news

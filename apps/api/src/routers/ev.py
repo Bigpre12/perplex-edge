@@ -7,6 +7,7 @@ from sqlalchemy import text
 from db.session import get_db
 from api_utils.tier_guards import require_tier
 from models.user import User
+from services.props_live_query import props_live_window_params, props_live_window_sql_clause
 
 router = APIRouter(tags=["ev"])
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ async def get_ev_signals(
 
     # 2. Fallback: pull from props_live with on-the-fly EV calc
     try:
+        t_lo, t_hi = props_live_window_params()
         query = """
             SELECT
                 player_name,
@@ -74,12 +76,12 @@ async def get_ev_signals(
             AND implied_under > 0
             AND implied_under < 1
             AND (implied_over + implied_under) BETWEEN 0.85 AND 1.15
-        """
-        params: dict = {"limit": limit}
+        """ + props_live_window_sql_clause("game_start_time")
+        params: dict = {"limit": limit, "t_lo": t_lo, "t_hi": t_hi}
         if sport:
             query += " AND sport = :sport"
             params["sport"] = sport
-            
+
         query += " ORDER BY confidence DESC LIMIT :limit"
 
         result = await db.execute(text(query), params)

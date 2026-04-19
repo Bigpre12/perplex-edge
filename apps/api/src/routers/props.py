@@ -13,6 +13,11 @@ from sqlalchemy import select, desc, or_, and_
 from schemas.universal import UniversalResponse, ResponseMeta
 from services.heartbeat_service import HeartbeatService
 from middleware.request_id import get_request_id
+from services.props_live_query import (
+    props_live_game_time_window,
+    props_live_window_params,
+    props_live_window_sql_clause,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +32,11 @@ async def get_props_live(
 ):
     """Returns market-based live props (Over/Under consolidated)."""
     # Build query - prioritize player props if no market filter specified
-    stmt = select(PropLive).where(PropLive.sport == sport)
-    
+    stmt = select(PropLive).where(
+        PropLive.sport == sport,
+        props_live_game_time_window(PropLive.game_start_time),
+    )
+
     if market == "player_props":
         # Exclude team-level markets
         stmt = stmt.where(PropLive.market_key.notin_(["h2h", "spreads", "totals"]))
@@ -38,7 +46,8 @@ async def get_props_live(
         # Default: try player props first, fall back to all
         player_stmt = select(PropLive).where(
             PropLive.sport == sport,
-            PropLive.market_key.notin_(["h2h", "spreads", "totals"])
+            PropLive.market_key.notin_(["h2h", "spreads", "totals"]),
+            props_live_game_time_window(PropLive.game_start_time),
         ).order_by(desc(PropLive.last_updated_at)).limit(1)
         player_check = await db.execute(player_stmt)
         has_player_props = player_check.scalar_one_or_none()
@@ -93,10 +102,12 @@ async def get_graded_props(
     db: AsyncSession = Depends(get_async_db)
 ):
     """Returns graded/scored props. Falls back to all props_live if no player props."""
+    t_lo, t_hi = props_live_window_params()
+    params: Dict[str, Any] = {"limit": limit, "t_lo": t_lo, "t_hi": t_hi}
+    rows: List[Any] = []
     try:
         from sqlalchemy import text
-        params = {"limit": limit}
-        
+
         # Try player props first (where player_name != team names)
         player_query = """
             SELECT * FROM props_live
@@ -104,6 +115,9 @@ async def get_graded_props(
               AND player_name != home_team
               AND player_name != away_team
               AND market_key NOT IN ('h2h', 'spreads', 'totals')
+        """ + props_live_window_sql_clause(
+            "game_start_time"
+        ) + """
             ORDER BY confidence DESC NULLS LAST
             LIMIT :limit
         """
@@ -113,7 +127,7 @@ async def get_graded_props(
             )
             params["sport"] = sport
 
-        rows = (await db.execute(text(player_query), params)).mappings().all()
+        rows = list((await db.execute(text(player_query), params)).mappings().all())
     except Exception:
         rows = []
 
@@ -129,6 +143,9 @@ async def get_graded_props(
     fallback_query = """
         SELECT * FROM props_live
         WHERE 1=1
+    """ + props_live_window_sql_clause(
+        "game_start_time"
+    ) + """
         ORDER BY confidence DESC NULLS LAST, is_best_over DESC NULLS LAST
         LIMIT :limit
     """
@@ -161,13 +178,17 @@ async def scored_props(
 ):
     try:
         from sqlalchemy import text
+        t_lo, t_hi = props_live_window_params()
         query = """
             SELECT * FROM props_live
             WHERE confidence IS NOT NULL
+        """ + props_live_window_sql_clause(
+            "game_start_time"
+        ) + """
             ORDER BY confidence DESC NULLS LAST
             LIMIT :limit
         """
-        params = {"limit": limit}
+        params = {"limit": limit, "t_lo": t_lo, "t_hi": t_hi}
         if sport and sport != "all":
             query = query.replace("ORDER BY", "AND sport = :sport ORDER BY")
             params["sport"] = sport

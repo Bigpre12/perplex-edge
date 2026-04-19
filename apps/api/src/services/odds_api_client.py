@@ -62,8 +62,13 @@ class OddsApiClient(ResilientBaseClient):
         return ",".join(cls.TEAM_MARKETS)
     
     def __init__(self):
-        # Load keys from centralized settings
-        self.api_keys = settings.ODDS_API_KEYS
+        # Load keys from centralized settings, then merge backup / legacy vars (deduped)
+        key_list = [k for k in (settings.ODDS_API_KEYS or []) if k and str(k).strip()]
+        for extra_var in ("ODDS_API_KEY_BACKUP", "THE_ODDS_API_KEY"):
+            extra = (os.getenv(extra_var) or "").strip()
+            if extra and extra not in key_list:
+                key_list.append(extra)
+        self.api_keys = key_list
         self.current_key_idx = 0
         # Auth/config failures: long cooldown (legacy env ODDS_API_KEY_COOLDOWN_SECONDS)
         self.dead_key_cooldown_auth = int(
