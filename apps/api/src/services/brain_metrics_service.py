@@ -10,12 +10,14 @@ from datetime import datetime, timezone
 from typing import Dict, Any
 import logging
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class BrainMetricsService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         self.running = False
         
     async def get_system_metrics(self) -> Dict[str, Any]:

@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,7 @@ class HistoricalPerformance:
 
 class HistoricalPerformanceService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         
     async def create_performance_record(self, player_name: str, stat_type: str, total_picks: int,
                                      hits: int, misses: int, avg_ev: float) -> bool:

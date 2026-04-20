@@ -29,26 +29,47 @@ logging.getLogger("apscheduler").setLevel(logging.INFO)
 
 def validate_env():
     """Fail fast if critical environment variables are missing, but with descriptive error logs."""
-    critical_vars = [
-        "DATABASE_URL",
-        "THE_ODDS_API_KEY",
-        "SUPABASE_URL",
-        "SUPABASE_KEY"
-    ]
-    missing = [v for v in critical_vars if not os.getenv(v)]
+    def _strip(v: Optional[str]) -> str:
+        return (v or "").strip()
+
+    missing: list[str] = []
+    if not _strip(os.getenv("DATABASE_URL")):
+        missing.append("DATABASE_URL")
+
+    supabase_url = _strip(os.getenv("SUPABASE_URL")) or _strip(os.getenv("NEXT_PUBLIC_SUPABASE_URL"))
+    if not supabase_url:
+        missing.append("SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL)")
+
+    supabase_key = _strip(os.getenv("SUPABASE_KEY")) or _strip(os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY"))
+    if not supabase_key:
+        missing.append("SUPABASE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)")
+
+    primary = _strip(os.getenv("ODDS_API_KEY")) or _strip(os.getenv("THE_ODDS_API_KEY"))
+    backup = _strip(os.getenv("ODDS_API_KEY_BACKUP"))
+    raw_list = os.getenv("ODDS_API_KEYS") or ""
+    list_keys = [k.strip() for k in raw_list.split(",") if k.strip()]
+    if not primary and not backup and not list_keys:
+        missing.append(
+            "odds API credentials (set ODDS_API_KEY, THE_ODDS_API_KEY, ODDS_API_KEYS, and/or ODDS_API_KEY_BACKUP)"
+        )
+
     if missing:
-        msg = f"❌ CONFIGURATION WARNING: Missing environment variables: {', '.join(missing)}"
+        msg = f"❌ CONFIGURATION WARNING: Missing or empty: {', '.join(missing)}"
         logger.warning("**************************************************")
         logger.warning(msg)
         logger.warning("Please ensure these variables are set in the Railway dashboard.")
         logger.warning("**************************************************")
-        
+
         # Only hard crash on DATABASE_URL in production
-        if os.getenv("RAILWAY_ENVIRONMENT_NAME") and not os.getenv("DATABASE_URL"):
+        if os.getenv("RAILWAY_ENVIRONMENT_NAME") and not _strip(os.getenv("DATABASE_URL")):
             raise RuntimeError("CRITICAL: DATABASE_URL is missing. Backend cannot start.")
+
 
 # Run validation immediately
 validate_env()
+
+_failed_router_imports: list[tuple[str, str]] = []
+
 
 def safe_import(module_path, alias):
     try:
@@ -57,7 +78,8 @@ def safe_import(module_path, alias):
             return mod.router
         return getattr(mod, alias)
     except Exception as e:
-        logger.error(f"Error importing router '{module_path}': {e}", exc_info=True)
+        _failed_router_imports.append((module_path, str(e)))
+        logger.debug("Error importing router '%s': %s", module_path, e, exc_info=True)
         return None
 
 # --- Router Imports (each guarded by safe_import) ---
@@ -96,6 +118,17 @@ props_history_router = safe_import("props_history", "router")
 alerts_router        = safe_import("alerts", "router")
 audit_router         = safe_import("audit", "router")
 waterfall_router     = safe_import("waterfall", "router")
+
+if _failed_router_imports:
+    parts = []
+    for name, err in _failed_router_imports:
+        short = err if len(err) <= 120 else err[:117] + "..."
+        parts.append(f"{name} ({short})")
+    logger.warning(
+        "Router import summary: %d module(s) not loaded — %s",
+        len(_failed_router_imports),
+        "; ".join(parts),
+    )
 
 async def initialize_backend_services():
     """Background task to initialize heavy services without blocking /health."""

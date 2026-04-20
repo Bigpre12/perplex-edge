@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,7 @@ class Game:
 
 class GamesService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         
     async def create_game(self, sport_id: int, external_game_id: str, home_team_id: int, 
                         away_team_id: int, start_time: datetime, season_id: int = None) -> bool:

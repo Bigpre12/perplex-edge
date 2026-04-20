@@ -1,24 +1,15 @@
-import os
 import asyncpg
 import logging
-from typing import Optional, Dict, Any
-from fastapi import Depends, HTTPException
+from typing import Dict, Any
 from core.config import settings
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
 
 logger = logging.getLogger(__name__)
 
 
-def _asyncpg_dsn(url: str) -> str:
-    """asyncpg.connect expects postgresql:// or postgres://, not SQLAlchemy +asyncpg."""
-    u = url.replace("postgresql+asyncpg://", "postgresql://")
-    if u.startswith("postgres://"):
-        u = u.replace("postgres://", "postgresql://", 1)
-    return u
-
-
 async def get_db_conn():
     """Helper to get a direct asyncpg connection"""
-    url = _asyncpg_dsn(settings.DATABASE_URL)
+    url = asyncpg_dsn_from_database_url(settings.DATABASE_URL)
 
     # asyncpg doesn't support sqlite; yield nothing (async generator cannot return a value).
     if "sqlite" in url:

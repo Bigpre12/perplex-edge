@@ -13,6 +13,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,7 @@ class CalibrationAnalysis:
 
 class BrainCalibrationService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         
     async def get_calibration_data(self, sport_id: int, start_date: str = None, end_date: str = None) -> List[CalibrationBucket]:
         """Get calibration data for a specific sport"""

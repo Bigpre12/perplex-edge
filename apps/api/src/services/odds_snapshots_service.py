@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ class OddsSnapshot:
 
 class OddsSnapshotsService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         
     async def create_odds_snapshot(self, game_id: int, market_id: int, player_id: Optional[int],
                                   external_fixture_id: str, external_market_id: str, external_outcome_id: str,

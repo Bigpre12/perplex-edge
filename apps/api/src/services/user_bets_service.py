@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ class UserBet:
 
 class UserBetsService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         
     async def create_user_bet(self, sport_id: int, game_id: int, player_id: Optional[int],
                              market_type: str, side: str, line_value: Optional[float],

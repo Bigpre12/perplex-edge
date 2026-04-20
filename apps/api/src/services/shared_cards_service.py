@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,7 @@ class SharedCard:
 
 class SharedCardsService:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         
     async def create_shared_card(self, platform: str, sport_id: int, legs: List[Dict[str, Any]], 
                                 label: str, total_odds: float, decimal_odds: float,

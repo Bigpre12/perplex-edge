@@ -159,7 +159,7 @@ function PlayerPropsContent() {
             </div>
 
             <UniversalDataGate
-                status={(loading ? "loading" : error ? "error" : "ok") as DataStatus}
+                status={(loading ? "loading" : error ? "upstream_error" : "ok") satisfies DataStatus}
                 isLoading={loading && !boardData}
                 data={filtered}
                 onRetry={() => refresh()}

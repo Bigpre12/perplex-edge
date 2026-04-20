@@ -9,12 +9,14 @@ from typing import Dict, List, Optional, Tuple
 import logging
 import statistics
 
+from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class BrainAnomalyDetector:
     def __init__(self):
-        self.db_url = os.getenv("DATABASE_URL")
+        self.db_url = asyncpg_dsn_from_database_url(os.getenv("DATABASE_URL") or "")
         self.thresholds = {
             'error_rate': {'warning': 0.05, 'critical': 0.10},  # 5%, 10%
             'recommendation_hit_rate': {'warning': 0.45, 'critical': 0.35},  # Below 45%, 35%
