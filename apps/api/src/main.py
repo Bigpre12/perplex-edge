@@ -15,6 +15,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.config import APP_NAME, settings
+from core.ingest_scheduler_config import build_unified_ingest_schedule, scheduled_sport_keys
 from middleware.request_id import RequestIDMiddleware, get_request_id
 from middleware.auth_circuit_breaker import AuthCircuitBreakerMiddleware, auth_breaker # Import new circuit breaker
 from db.base import Base
@@ -361,28 +362,41 @@ async def initialize_backend_services():
     try:
         logger.info("📡 [Background Init] Configuring Scheduler...")
         scheduler = AsyncIOScheduler()
-        sports_to_ingest = [
-            "americanfootball_nfl", "americanfootball_ncaaf", "basketball_nba",
-            "baseball_mlb", "icehockey_nhl", "soccer_usa_mls",
-            "soccer_uefa_champs_league", "soccer_epl", "mma_mixed_martial_arts",
-            "aussierules_afl", "rugbyleague_nrl",
-        ]
+        ingest_job_specs, ingest_meta = build_unified_ingest_schedule()
+        sports_to_ingest = scheduled_sport_keys(ingest_job_specs)
 
-        ingest_interval = max(1, int(os.getenv("INGEST_INTERVAL_MINUTES", "5")))
-        logger.info(
-            "📡 [Scheduler] Unified ingestion interval: %s minutes (INGEST_INTERVAL_MINUTES)",
-            ingest_interval,
-        )
-        # NOTE: Internal scheduler is re-enabled to ensure data freshness.
-        for sport in sports_to_ingest:
+        if ingest_meta.get("mode") == "legacy":
+            logger.info(
+                "📡 [Scheduler] Unified ingestion (legacy): %s sports every %s min — set INGEST_USE_LEGACY_SCHEDULER=false for tiered polling",
+                ingest_meta.get("sport_count"),
+                ingest_meta.get("interval_minutes"),
+            )
+        else:
+            logger.info(
+                "📡 [Scheduler] Tiered ingest: %s jobs — active=%s every %s min, inactive=%s every %s h, disabled=%s",
+                ingest_meta.get("sport_count"),
+                len(ingest_meta.get("active_sports") or []),
+                ingest_meta.get("active_interval_minutes"),
+                len(ingest_meta.get("inactive_sports") or []),
+                ingest_meta.get("inactive_interval_hours"),
+                ingest_meta.get("disabled") or [],
+            )
+
+        for spec in ingest_job_specs:
+            job_kw: dict = {
+                "args": [spec.sport_key],
+                "id": f"ingest_{spec.sport_key}",
+                "replace_existing": True,
+                "jitter": 30,
+            }
+            if spec.minutes is not None:
+                job_kw["minutes"] = spec.minutes
+            else:
+                job_kw["hours"] = spec.hours
             job = scheduler.add_job(
                 unified_ingestion.run_with_retries,
-                'interval',
-                minutes=ingest_interval,
-                args=[sport],
-                id=f"ingest_{sport}",
-                replace_existing=True,
-                jitter=30,
+                "interval",
+                **job_kw,
             )
             logger.debug("📡 [Scheduler] Added unified ingestion job %s", job.id)
 
@@ -655,7 +669,21 @@ if unified_router:       app.include_router(unified_router, prefix="/api", tags=
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    """
+    Railway / load-balancer probe. Runs a real DB round-trip so Errno 101 / bad DATABASE_URL
+    surfaces as HTTP 503 instead of a false 200. Prefer /api/health/ready for full readiness.
+    """
+    from sqlalchemy import text
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "database": str(e)},
+        )
 
 @app.get("/")
 async def root():

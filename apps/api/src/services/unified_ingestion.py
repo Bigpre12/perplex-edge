@@ -145,24 +145,31 @@ class UnifiedIngestionService:
             metrics["status"] = "skipped"
             metrics["skipped_reason"] = "all_odds_keys_cooldown"
             metrics["odds_api_all_keys_cooldown"] = True
-            try:
-                async with async_session_maker() as session:
-                    await HeartbeatService.log_heartbeat(
-                        session,
-                        f"ingest_{sport_key}",
-                        status="idle_no_data",
-                        rows_written=0,
-                        error_count=0,
-                        meta={
-                            "metrics": metrics,
-                            "skipped_reason": "all_odds_keys_cooldown",
-                        },
+            skip_hb = os.getenv("SKIP_HEARTBEAT_WHEN_ODDS_KEYS_COOLDOWN", "true").strip().lower() in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            )
+            if not skip_hb:
+                try:
+                    async with async_session_maker() as session:
+                        await HeartbeatService.log_heartbeat(
+                            session,
+                            f"ingest_{sport_key}",
+                            status="idle_no_data",
+                            rows_written=0,
+                            error_count=0,
+                            meta={
+                                "metrics": metrics,
+                                "skipped_reason": "all_odds_keys_cooldown",
+                            },
+                        )
+                except Exception as hb_err:
+                    logger.warning(
+                        "UnifiedIngestion: heartbeat after odds cooldown skip failed: %s",
+                        hb_err,
                     )
-            except Exception as hb_err:
-                logger.warning(
-                    "UnifiedIngestion: heartbeat after odds cooldown skip failed: %s",
-                    hb_err,
-                )
             return metrics
         
         # 1. Fetch odds-shaped events (multi-provider chain, not TOA-only)
