@@ -5,6 +5,6 @@ dockerfilePath = "apps/api/Dockerfile"
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 301
-startCommand = "sh -c \"PYTHONPATH=/app/src uvicorn src.main:app --host 0.0.0.0 --port $PORT\""
+startCommand = "sh -c \"PYTHONPATH=/app/src exec uvicorn main:app --host 0.0.0.0 --port $PORT\""
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

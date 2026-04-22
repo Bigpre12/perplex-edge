@@ -525,11 +525,26 @@ async def backend_lifespan(app: FastAPI):
     logger.info(f"   ► Service Role : API + Ingest Worker + Heartbeat")
     logger.info("=" * 60)
 
-    # Run heavy tasks in the background so they don't block /health
-    init_task = asyncio.create_task(initialize_backend_services())
+    async def _safe_initialize_backend_services() -> None:
+        try:
+            await initialize_backend_services()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            logger.error(
+                "Startup services failed (non-fatal; API stays up): %s",
+                e,
+                exc_info=True,
+            )
+
+    # Run heavy tasks in the background so they don't block liveness (/health)
+    init_task = asyncio.create_task(_safe_initialize_backend_services())
     yield
-    # Clean up tasks if necessary on shutdown
     init_task.cancel()
+    try:
+        await init_task
+    except asyncio.CancelledError:
+        pass
 
 app = FastAPI(title=APP_NAME, redirect_slashes=False, lifespan=backend_lifespan)
 
@@ -670,20 +685,23 @@ if unified_router:       app.include_router(unified_router, prefix="/api", tags=
 @app.get("/health")
 async def health():
     """
-    Railway / load-balancer probe. Runs a real DB round-trip so Errno 101 / bad DATABASE_URL
-    surfaces as HTTP 503 instead of a false 200. Prefer /api/health/ready for full readiness.
+    Liveness probe for Railway / load balancers: always HTTP 200 if the process is up.
+    Database status is included in JSON; strict readiness (including 503 when not ready)
+    is GET /api/health/ready.
     """
     from sqlalchemy import text
 
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
+        return {"status": "alive", "database_connected": True}
     except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={"status": "error", "database": str(e)},
-        )
+        logger.warning("Liveness /health: database check failed: %s", e)
+        return {
+            "status": "alive",
+            "database_connected": False,
+            "database_error": str(e),
+        }
 
 @app.get("/")
 async def root():

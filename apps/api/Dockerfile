@@ -22,8 +22,8 @@ COPY apps/api/ .
 # The FastAPI app lives in src/main.py → "main:app"
 ENV PYTHONPATH=/app/src
 
-# Railway injects $PORT automatically
-EXPOSE ${PORT:-8000}
+# Documented listen port (Railway sets $PORT at runtime)
+EXPOSE 8000
 
-# Production entry point (Shell form expands $PORT)
-CMD uvicorn src.main:app --host 0.0.0.0 --port $PORT
+# Exec-form + exec uvicorn: correct signals to PID 1; ${PORT:-8000} for local runs
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

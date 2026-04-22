@@ -1,6 +1,9 @@
 #!/bin/bash
 # apps/api/start-api.sh
 # Production start script with Gunicorn and Uvicorn workers
+# Match Dockerfile: app module is main:app with PYTHONPATH=/app/src
+
+export PYTHONPATH=/app/src
 
 echo "🚀 Starting Lucrix API with Gunicorn..."
 
@@ -18,4 +21,4 @@ exec gunicorn -w 4 -k uvicorn.workers.UvicornWorker \
      --bind 0.0.0.0:${PORT:-8080} \
      --timeout 120 \
      --access-logfile - \
-     src.main:app
+     main:app
