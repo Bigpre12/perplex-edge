@@ -11,6 +11,7 @@ import { SportFilter } from '@/components/shared/SportFilter';
 import { TrendingUp, Percent, Info } from 'lucide-react';
 import { useSport } from '@/hooks/useSport';
 import SportSelector from '@/components/shared/SportSelector';
+import { EmptyState } from '@/components/shared/EmptyState';
 
 export default function EVPage() {
   return (
@@ -88,8 +89,21 @@ function EVPageContent() {
   const { data: evSignals, isLoading, isError, refetch, isFetching } = useEV(sport);
 
   const filteredSignals = evSignals
-    ? evSignals.filter((s: EVRecord) => (s.ev_pct || 0) >= minEv)
+    ? evSignals.filter((s: EVRecord) => (Number(s.ev_pct) || 0) >= minEv)
     : [];
+
+  /** Hero stats: only rows with real positive EV at or above the slider (avoids “50 edges” vs empty table). */
+  const qualifyingForHero = evSignals
+    ? evSignals.filter((s: EVRecord) => {
+        const ev = Number(s.ev_pct) || 0;
+        return ev >= minEv && ev > 0;
+      })
+    : [];
+
+  const maxVisibleEv =
+    qualifyingForHero.length > 0
+      ? Math.max(...qualifyingForHero.map((s: EVRecord) => Number(s.ev_pct) || 0))
+      : null;
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
@@ -113,15 +127,13 @@ function EVPageContent() {
             <div className="flex gap-4">
                <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
                  <div className="text-white/30 text-xs font-bold uppercase mb-1">Visible edges (min {minEv}%)</div>
-                 <div className="text-3xl font-black">{filteredSignals.length}</div>
+                 <div className="text-3xl font-black">{qualifyingForHero.length}</div>
                  <div className="text-white/20 text-[10px] font-bold uppercase mt-1">of {evSignals?.length ?? 0} loaded</div>
                </div>
                 <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
                   <div className="text-white/30 text-xs font-bold uppercase mb-1">Max edge (visible)</div>
                   <div className="text-3xl font-black text-green-400">
-                     {(filteredSignals.length > 0
-                        ? Math.max(...filteredSignals.map((s: EVRecord) => s.ev_pct || 0))
-                        : 0).toFixed(1)}%
+                     {maxVisibleEv != null ? `${maxVisibleEv.toFixed(1)}%` : "—"}
                   </div>
                 </div>
             </div>
@@ -181,6 +193,13 @@ function EVPageContent() {
               </span>
             </div>
             
+            {filteredSignals.length === 0 ? (
+              <EmptyState
+                title="No data available. Waiting for market sync."
+                description="No EV signals match the current filter. The engine needs fresh odds to compute edges."
+                onRetry={() => refetch()}
+              />
+            ) : null}
             <DataTable 
               columns={columns} 
               data={filteredSignals} 

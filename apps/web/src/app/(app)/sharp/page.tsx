@@ -150,17 +150,17 @@ export default function SharpPage() {
     <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Page Title */}
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col gap-6">
            <h1 className="text-4xl font-black tracking-tighter uppercase italic">
              Sharp <span className="text-blue-500 not-italic">Money</span>
            </h1>
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <p className="text-white/40 max-w-xl">
-                We track professional volume and institutional line movement in real-time. 
-                Follow the money, find the value.
-              </p>
+           <p className="text-white/40 text-sm leading-relaxed max-w-[280px]">
+             We track professional volume and institutional line movement in real-time.
+             Follow the money, find the value.
+           </p>
+           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <SportSelector />
-            </div>
+           </div>
         </div>
 
         {/* Featured Whale Move */}

@@ -3,13 +3,13 @@
 import React, { Suspense } from "react";
 import { useWSFallback } from "@/hooks/useWSFallback";
 import { useSport } from "@/hooks/useSport";
-import { API_BASE } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { Activity, Zap, ArrowDown, ArrowUp, Clock, Info, BarChart3, TrendingUp, ShieldCheck } from "lucide-react";
 import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function KalshiPage() {
@@ -23,10 +23,13 @@ export default function KalshiPage() {
 function KalshiContent() {
   const { sport } = useSport();
 
-  const { data: kalshiData, isLoading, isError, isWSOpen } = useWSFallback({
+  const { data: kalshiData, isLoading, isError, isWSOpen, refetch } = useWSFallback({
     wsEndpoint: "/api/ws_kalshi",
     queryKey: ["kalshi", sport],
-    queryFn: () => fetch(`${API_BASE}/api/kalshi?sport=${sport}`).then(r => r.json()),
+    queryFn: async () => {
+      const { data } = await api.get(`/api/kalshi?sport=${sport}`, { timeout: 10_000 });
+      return data;
+    },
     refetchInterval: 10_000,
   });
 
@@ -38,7 +41,7 @@ function KalshiContent() {
       setTimedOut(false);
       timer = setTimeout(() => {
         setTimedOut(true);
-      }, 12_000);
+      }, 10_000);
     }
     return () => clearTimeout(timer);
   }, [isLoading]);
@@ -56,7 +59,15 @@ function KalshiContent() {
   }
 
   if (isError) {
-    return <div className="p-10"><ErrorBanner message="Kalshi Data Stream Offline." /></div>;
+    return (
+      <div className="p-10 max-w-lg mx-auto">
+        <EmptyState
+          title="Kalshi market data unavailable."
+          description="Running in polling mode. Next attempt in 10s."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
   }
 
   const markets = Array.isArray(kalshiData) ? kalshiData : (kalshiData?.markets || []);
@@ -210,20 +221,12 @@ function KalshiContent() {
         })}
 
         {markets.length === 0 && (
-          <div className="col-span-full py-48 bg-lucrix-surface border border-dashed border-white/10 rounded-[3rem] flex flex-col items-center justify-center space-y-6">
-            <div className="p-8 bg-white/5 rounded-full">
-              <Zap size={48} className="text-textMuted opacity-20" />
-            </div>
-            <div className="text-center px-6">
-              <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2 leading-none">
-                {timedOut ? "No Markets Or Slow Response" : "Scanning Prediction Grids"}
-              </h3>
-              <p className="text-[10px] text-textMuted font-black uppercase tracking-widest italic max-w-xs mx-auto">
-                {timedOut 
-                  ? "Request timed out, returned empty, or Kalshi is not configured. Check KALSHI keys on the server or try again." 
-                  : "Indexing Kalshi exchange liquidity..."}
-              </p>
-            </div>
+          <div className="col-span-full">
+            <EmptyState
+              title="Kalshi market data unavailable."
+              description="Running in polling mode. Next attempt in 10s."
+              onRetry={() => refetch()}
+            />
           </div>
         )}
       </div>

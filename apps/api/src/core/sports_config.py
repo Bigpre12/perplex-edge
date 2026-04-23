@@ -1,4 +1,5 @@
 # apps/api/src/core/sports_config.py
+"""Sport keys and scheduling. Ingest intervals are minimum spacing for quota safety (FIX 16)."""
 
 SPORT_MAP = {
     "basketball_nba": "NBA",
@@ -19,15 +20,22 @@ ALL_SPORTS = list(SPORT_MAP.keys())
 VALID_SPORTS = ALL_SPORTS
 SPORT_KEYS = ALL_SPORTS
 
-# Frequency Constants (in seconds)
-HIGH_FREQUENCY = 120    # 2 minutes (Relaxed from 60s for quota safety)
-MEDIUM_FREQUENCY = 600 # 10 minutes (Relaxed from 300s)
-LOW_FREQUENCY = 3600   # 1 hour
+# --- Minimum minutes between scheduled odds ingests per sport (FIX 16 / quota) ---
+_INGEST_MINUTES_BY_SPORT = {
+    "basketball_nba": 8,
+    "americanfootball_nfl": 15,
+    "baseball_mlb": 10,
+}
+_DEFAULT_INGEST_MINUTES = 20
 
-# Sport Lists for Scheduling
-HIGH_FREQUENCY_SPORTS = ["basketball_nba", "americanfootball_nfl"]
-MEDIUM_FREQUENCY_SPORTS = ["soccer_epl", "mma_mixed_martial_arts", "baseball_mlb"]
-LOW_FREQUENCY_SPORTS = [s for s in ALL_SPORTS if s not in HIGH_FREQUENCY_SPORTS + MEDIUM_FREQUENCY_SPORTS]
+
+def ingest_interval_minutes_for_sport(sport_key: str) -> int:
+    """Minimum minutes between scheduled ingest jobs for this sport."""
+    return int(_INGEST_MINUTES_BY_SPORT.get(sport_key, _DEFAULT_INGEST_MINUTES))
+
+
+def ingest_interval_seconds_for_sport(sport_key: str) -> float:
+    return float(ingest_interval_minutes_for_sport(sport_key) * 60)
 
 # Market Definitions
 PROP_MARKETS = ["points", "rebounds", "assists", "threes", "blocks", "steals", "turnovers"]

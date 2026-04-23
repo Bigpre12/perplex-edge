@@ -24,7 +24,7 @@ function LineMovementContent() {
   const { sport } = useSport();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: slate, isLoading: slateLoading, error: slateError, refetch: refetchSlate } = useQuery({
+  const { data: slate, isLoading: slateLoading, error: slateError, refetch: refetchSlate, dataUpdatedAt } = useQuery({
     queryKey: ['slate', sport],
     queryFn: async () => {
       const slateRes = await fetch(`${API_BASE}/api/slate/today?sport=${sport}`).then(r => r.json());
@@ -74,6 +74,10 @@ function LineMovementContent() {
   }
 
   const games = Array.isArray(slate) ? slate : [];
+  const lastChecked =
+    typeof dataUpdatedAt === "number" && dataUpdatedAt > 0
+      ? new Date(dataUpdatedAt).toLocaleString()
+      : null;
   const filteredSlate = games.filter((g: any) => 
     g.away_team?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     g.home_team?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,9 +114,15 @@ function LineMovementContent() {
             <EventRow key={game.id} game={game} sport={sport} />
           ))
         ) : (
-          <div className="text-center py-32 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10">
+          <div className="text-center py-32 bg-white/5 rounded-[2.5rem] border border-dashed border-white/10 px-6">
               <Zap className="mx-auto text-textMuted opacity-20 mb-4" size={48} />
               <p className="text-textMuted font-black uppercase italic tracking-widest text-[10px]">No active market flux detected for this slate.</p>
+              <p className="text-[10px] text-white/35 font-bold mt-3 normal-case tracking-normal">
+                Line movement needs an active TheOddsAPI feed and recent odds snapshots in the database.
+              </p>
+              <p className="text-[10px] text-textMuted font-mono mt-2">
+                Last checked: {lastChecked ?? "—"}
+              </p>
           </div>
         )}
       </div>
@@ -131,7 +141,8 @@ function EventRow({ game, sport }: any) {
   });
 
   // Deterministic move strength for UI stability if data not yet loaded
-  const moveStrength = (game.id.charCodeAt(game.id.length - 1) % 2 === 0) ? 'steam' : 'resistance';
+  const gid = String(game.id ?? "");
+  const moveStrength = gid.length > 0 && gid.charCodeAt(gid.length - 1) % 2 === 0 ? 'steam' : 'resistance';
   const accentColor = moveStrength === 'steam' ? '#10b981' : '#f59e0b';
 
   return (
@@ -151,7 +162,7 @@ function EventRow({ game, sport }: any) {
             <div className="flex items-center gap-2">
                <span className="text-[9px] font-black text-textMuted uppercase tracking-widest">{new Date(game.commence_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                <span className="w-1 h-1 rounded-full bg-white/10" />
-               <span className="text-[9px] font-black text-brand-primary uppercase italic tracking-[0.1em]">{game.id.slice(-8)}</span>
+               <span className="text-[9px] font-black text-brand-primary uppercase italic tracking-[0.1em]">{gid.slice(-8)}</span>
             </div>
           </div>
         </div>

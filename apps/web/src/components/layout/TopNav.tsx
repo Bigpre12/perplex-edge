@@ -9,6 +9,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { useLucrixStore } from "@/store";
 import { openBillingPortal } from "@/lib/stripe";
 import APIHealth from "@/components/shared/APIHealth";
+import { useDataFreshness } from "@/context/DataFreshnessContext";
 
 import { SPORTS_CONFIG, DISPLAY_SPORTS as SPORT_KEYS } from "@/lib/sports.config";
 
@@ -58,18 +59,27 @@ function TopNavContent() {
     };
 
     const active = mounted ? activeSport : "all";
+    const { isStale, stalenessLabel } = useDataFreshness();
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-lucrix-dark h-14 border-b border-lucrix-border flex items-center justify-between px-4 sm:px-6">
             
             {/* Left section: Wordmark + Health */}
-            <div className="flex items-center gap-4 flex-shrink-0 w-48">
-                <Link href="/dashboard" className="flex flex-col hover:opacity-80 transition-opacity">
+            <div className="flex items-center gap-4 flex-shrink-0 min-w-[11rem] max-w-[14rem]">
+                <Link href="/dashboard" className="flex flex-col hover:opacity-80 transition-opacity min-w-0">
                     <span className="text-white font-display font-bold text-[20px] tracking-tight leading-none">
                         LUCRIX
                     </span>
-                    <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <APIHealth />
+                        {isStale ? (
+                            <span
+                                title={stalenessLabel || "Market data may be stale"}
+                                className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/35"
+                            >
+                                Stale
+                            </span>
+                        ) : null}
                     </div>
                 </Link>
             </div>

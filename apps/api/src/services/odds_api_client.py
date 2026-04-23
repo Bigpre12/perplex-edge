@@ -91,8 +91,12 @@ class OddsApiClient(ResilientBaseClient):
 
         # Limit per day (approx 100k/mo tier)
         self.max_daily_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
-        # Optional hard cap on successful calls per calendar month (Redis counter)
-        self.max_monthly_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_MONTH", "0"))
+        # Optional hard cap on successful calls per calendar month (Redis counter).
+        # Set THE_ODDS_API_MAX_CALLS_PER_MONTH or ODDS_API_MONTHLY_LIMIT (e.g. 20000) to enforce.
+        self.max_monthly_calls = int(
+            os.getenv("THE_ODDS_API_MAX_CALLS_PER_MONTH")
+            or os.getenv("ODDS_API_MONTHLY_LIMIT", "0")
+        )
         # If >0 and remaining header falls below this, skip further get_player_props in ingest
         self.min_remaining_before_stop = int(os.getenv("THE_ODDS_API_MIN_REMAINING_BEFORE_STOP", "0"))
 
@@ -246,6 +250,19 @@ class OddsApiClient(ResilientBaseClient):
             if cached:
                 return cached
 
+        # 2b. DB-backed monthly quota / hard stop (no HTTP when exhausted)
+        try:
+            from db.session import async_session_maker
+            from services.odds_quota_store import raise_if_quota_blocked
+
+            async with async_session_maker() as _qs:
+                blocked, reason = await raise_if_quota_blocked(_qs)
+            if blocked:
+                logger.warning("Odds API request skipped (%s): monthly quota exhausted.", reason)
+                return None
+        except Exception as e:
+            logger.debug("Odds quota pre-check failed (continuing): %s", e)
+
         # 3. Short-circuit if all keys are dead (prevents log spam)
         if self._all_keys_dead():
             logger.warning("🚨 All Odds API keys are dead/cooling down. Skipping request.")
@@ -294,6 +311,20 @@ class OddsApiClient(ResilientBaseClient):
                         data = resp.json()
                         await self._increment_count()
                         await self._increment_month_count()
+                        try:
+                            from db.session import async_session_maker
+                            from services.odds_quota_store import apply_quota_headers
+
+                            async with async_session_maker() as _qs:
+                                await apply_quota_headers(
+                                    _qs,
+                                    remaining_header=resp.headers.get("x-requests-remaining")
+                                    or resp.headers.get("X-Requests-Remaining"),
+                                    used_header=resp.headers.get("x-requests-used")
+                                    or resp.headers.get("X-Requests-Used"),
+                                )
+                        except Exception as e:
+                            logger.warning("Odds quota header persist failed: %s", e)
                         # Always populate the cache on a successful fetch to keep data fresh for other consumers
                         await cache.set_json(cache_key, data, ttl=ttl)
                         return data

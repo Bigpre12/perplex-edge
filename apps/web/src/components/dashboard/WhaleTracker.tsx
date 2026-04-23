@@ -66,8 +66,19 @@ function WhaleTrackerContent({ sport }: { sport: string }) {
                     confidence: confidence01,
                 };
             });
-            
-            setMoves(mappedMoves);
+
+            const uniqueWhaleSignals = mappedMoves.filter(
+                (signal, index, self) =>
+                    index ===
+                    self.findIndex(
+                        (s) =>
+                            s.player === signal.player &&
+                            s.line === signal.line &&
+                            s.stat === signal.stat
+                    )
+            );
+
+            setMoves(uniqueWhaleSignals);
         } else {
             setMoves([]);
         }

@@ -10,26 +10,63 @@ import { useSport } from '@/hooks/useSport';
 import SportSelector from '@/components/shared/SportSelector';
 import { clsx } from "clsx";
 
-/** Backend /by-player uses 0–100 for hit_rate; Supabase may use 0–1. */
+function safeDivide(a: number, b: number): number {
+  if (b === 0 || !Number.isFinite(b)) return 0;
+  return a / b;
+}
+
+/** Backend /by-player may use 0–100 or 0–1; cap display at 100%. */
 function displayHitRatePct(raw: unknown): string {
   const n = Number(raw);
   if (!Number.isFinite(n)) return "—";
-  const pct = n > 1 ? n : n * 100;
+  let pct = n > 1 ? n : n * 100;
+  if (!Number.isFinite(pct) || pct < 0) return "—";
+  if (pct > 100) pct = 100;
   return `${pct.toFixed(1)}%`;
 }
 
 function displayRoiPct(raw: unknown): string {
-  if (raw === undefined || raw === null) return "0.0%";
+  if (raw === undefined || raw === null) return "—";
   const n = Number(raw);
-  if (!Number.isFinite(n)) return "0.0%";
+  if (!Number.isFinite(n)) return "—";
   const pct = Math.abs(n) > 1 ? n : n * 100;
+  if (!Number.isFinite(pct)) return "—";
   const sign = pct > 0 ? "+" : "";
   return `${sign}${pct.toFixed(1)}%`;
 }
 
 function playerDisplayName(p: Record<string, unknown>): string {
-  const a = p.player_name ?? p.player;
-  return typeof a === "string" && a.length > 0 ? a : "—";
+  const o = p as { player_name?: unknown; player?: unknown; name?: unknown };
+  const a = o.player_name ?? o.player ?? o.name;
+  return typeof a === "string" && a.length > 0 ? a : "Unknown Player";
+}
+
+/** Stat card: overall hit rate may be fraction (0–1) or percent (0–100). */
+function statPlatformAccuracyPct(stats: HitRateStats | unknown[] | undefined): string {
+  const raw = !Array.isArray(stats)
+    ? (stats as HitRateStats | undefined)?.overall_hit_rate
+    : (stats as { hit_rate?: number }[])?.[0]?.hit_rate;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return "0%";
+  const pct = n > 1 ? n : n * 100;
+  const capped = Math.min(Math.max(pct, 0), 100);
+  return `${Math.round(capped)}%`;
+}
+
+function statAverageRoi(stats: HitRateStats | unknown[] | undefined): string {
+  const raw = !Array.isArray(stats)
+    ? (stats as HitRateStats | undefined)?.roi
+    : (stats as { roi?: number }[])?.[0]?.roi;
+  const s = displayRoiPct(raw);
+  return s === "—" ? "0.0%" : s;
+}
+
+function statGradedPicks(stats: HitRateStats | unknown[] | undefined): string {
+  const n = !Array.isArray(stats)
+    ? (stats as HitRateStats | undefined)?.graded_picks
+    : (stats as unknown[])?.length;
+  const num = Number(n);
+  return Number.isFinite(num) ? String(Math.round(num)) : "0";
 }
 
 export default function HitRatePage() {
@@ -51,9 +88,17 @@ export default function HitRatePage() {
     },
     { 
       header: 'Hit Rate', 
-      accessor: (p: any) => (
-        <span className="text-green-400 font-black">{displayHitRatePct(p.hit_rate)}</span>
-      )
+      accessor: (p: any) => {
+        const hits = Number(p.hits);
+        const total = Number(p.total_picks ?? p.picks ?? p.sample_size);
+        const derived =
+          Number.isFinite(hits) && Number.isFinite(total) && total > 0
+            ? safeDivide(hits, total) * 100
+            : Number(p.hit_rate);
+        return (
+        <span className="text-green-400 font-black">{displayHitRatePct(derived)}</span>
+        );
+      }
     },
     { 
       header: 'ROI', 
@@ -132,27 +177,29 @@ export default function HitRatePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
            <StatCard 
              label="Platform Accuracy" 
-             value={`${Math.round(((!Array.isArray(stats) ? stats?.overall_hit_rate : stats?.[0]?.hit_rate) || 0) * 100)}%`} 
+             value={statPlatformAccuracyPct(stats)} 
              icon={Activity} 
              color="blue" 
            />
            <StatCard 
              label="Average ROI" 
-             value={`${((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0) >= 0.01 
-               ? Math.round(((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0) * 100) 
-               : (((!Array.isArray(stats) ? stats?.roi : stats?.[0]?.roi) || 0) * 100).toFixed(2)}%`} 
+             value={statAverageRoi(stats)} 
              icon={TrendingUp} 
              color="green" 
            />
            <StatCard 
              label="Graded Picks" 
-             value={((!Array.isArray(stats) ? stats?.graded_picks : stats?.length) || 0).toLocaleString()} 
+             value={statGradedPicks(stats)} 
              icon={BarChart3} 
              color="purple" 
            />
            <StatCard 
              label="Accuracy Trend" 
-             value={(!Array.isArray(stats) ? stats?.streak : null) || '-'} 
+             value={
+               !Array.isArray(stats) && stats?.streak != null && Number.isFinite(Number(stats.streak))
+                 ? String(stats.streak)
+                 : "—"
+             } 
              icon={Trophy} 
              color="yellow" 
            />

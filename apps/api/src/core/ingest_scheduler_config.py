@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
 
 logger = logging.getLogger(__name__)
 
+from core.sports_config import ingest_interval_minutes_for_sport
+
 # Canonical sport keys (The Odds API style) — keep in sync with main scheduler expectations.
 ALL_SPORTS: Tuple[str, ...] = (
     "americanfootball_nfl",
@@ -105,7 +107,8 @@ def build_unified_ingest_schedule() -> Tuple[List[IngestJobSpec], Dict[str, Any]
     # Remove overlap (prefer active tier)
     inactive = [s for s in inactive if s not in set(active)]
 
-    active_min = max(1, int(os.getenv("INGEST_INTERVAL_ACTIVE_MINUTES", "30")))
+    env_active_floor = os.getenv("INGEST_INTERVAL_ACTIVE_MINUTES", "").strip()
+    active_floor = max(1, int(env_active_floor)) if env_active_floor else None
     inactive_h = max(1, int(os.getenv("INGEST_INTERVAL_INACTIVE_HOURS", "6")))
 
     for bucket, label in ((active, "INGEST_ACTIVE_SPORTS"), (inactive, "INGEST_INACTIVE_SPORTS")):
@@ -121,7 +124,9 @@ def build_unified_ingest_schedule() -> Tuple[List[IngestJobSpec], Dict[str, Any]
     for s in active:
         if s in disabled:
             continue
-        jobs.append(IngestJobSpec(sport_key=s, minutes=active_min))
+        per_sport = ingest_interval_minutes_for_sport(s)
+        minutes = per_sport if active_floor is None else max(per_sport, active_floor)
+        jobs.append(IngestJobSpec(sport_key=s, minutes=max(1, minutes)))
     for s in inactive:
         if s in disabled:
             continue
@@ -132,7 +137,7 @@ def build_unified_ingest_schedule() -> Tuple[List[IngestJobSpec], Dict[str, Any]
         "active_sports": list(active),
         "inactive_sports": list(inactive),
         "disabled": sorted(disabled),
-        "active_interval_minutes": active_min,
+        "active_interval_minutes_floor": active_floor,
         "inactive_interval_hours": inactive_h,
         "sport_count": len(jobs),
     }

@@ -5,10 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { Radio, Zap, Users, Shield, Clock, Search } from "lucide-react";
 import { clsx } from "clsx";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function SignalsPage() {
   return (
@@ -26,12 +26,13 @@ function SignalsContent() {
     queryKey: ['signals', sport, filterType],
     queryFn: async () => {
       const typeParam = filterType === "all" ? "" : `&type=${filterType}`;
-      const { data } = await api.get(`/api/signals?sport=${sport}${typeParam}`);
+      const { data } = await api.get(`/api/signals?sport=${sport}${typeParam}`, {
+        timeout: 10_000,
+      });
       return data;
     },
     refetchInterval: 30_000,
-    retry: 2,
-    retryDelay: (a) => Math.min(2000 * 2 ** a, 15_000),
+    retry: false,
   });
 
   if (isLoading) {
@@ -48,7 +49,15 @@ function SignalsContent() {
   }
 
   if (isError) {
-    return <div className="p-6"><ErrorBanner message="Signal Feed Interrupted." onRetry={refetch} /></div>;
+    return (
+      <div className="p-6 pt-10 max-w-lg mx-auto">
+        <EmptyState
+          title="No market anomalies detected for this slate."
+          description="The engine requires fresh odds data to compute signals. Check API sync status and try again."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
   }
 
   const signalList = Array.isArray(signals) ? signals : signals?.results || [];
@@ -87,10 +96,11 @@ function SignalsContent() {
           <SignalCard key={i} signal={signal} />
         ))}
         {isFetched && signalList.length === 0 && (
-          <div className="text-center py-24 text-textMuted font-black uppercase italic tracking-widest space-y-2">
-            <p>No market anomalies in this slate.</p>
-            <p className="text-[10px] text-white/30">Try another sport or check back after the next odds sync.</p>
-          </div>
+          <EmptyState
+            title="No market anomalies detected for this slate."
+            description="The engine requires fresh odds data to compute signals."
+            onRetry={() => refetch()}
+          />
         )}
       </div>
     </div>

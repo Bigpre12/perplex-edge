@@ -1,11 +1,43 @@
 'use client';
 
 import React from 'react';
-import { useLiveGames, LiveGame } from '@/hooks/useLiveGames';
+import { useLiveGames } from '@/hooks/useLiveGames';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { ErrorRetry } from '@/components/shared/ErrorRetry';
 import { Radio, Clock, Trophy, Activity, Zap } from 'lucide-react';
 import { clsx } from 'clsx';
+import { TeamAvatar } from '@/components/shared/TeamAvatar';
+import type { LiveGame } from '@/hooks/useLiveGames';
+
+function isScheduledLike(game: LiveGame): boolean {
+  const st = String(game.status ?? '').toLowerCase();
+  return (
+    st.includes('scheduled') ||
+    st.includes('pregame') ||
+    st.includes('pre-game') ||
+    st === 'status_scheduled'
+  );
+}
+
+function formatClockLine(game: LiveGame): string {
+  const period = game.period != null && game.period !== '' ? String(game.period) : '';
+  const clock = game.clock != null && String(game.clock).trim() !== '' ? String(game.clock) : '';
+  if (period || clock) return [period, clock].filter(Boolean).join(' ').trim();
+  const st = String(game.status ?? game.sport ?? '').trim();
+  if (st) return st.replace(/_/g, ' ');
+  return 'Scheduled';
+}
+
+function scoreDisplay(game: LiveGame, side: 'home' | 'away'): string {
+  const raw =
+    side === 'home'
+      ? (game.home_score ?? game.score_home)
+      : (game.away_score ?? game.score_away);
+  if (raw === null || raw === undefined) return '—';
+  if (isScheduledLike(game) && Number(raw) === 0) return '—';
+  const n = Number(raw);
+  return Number.isFinite(n) ? String(n) : '—';
+}
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LivePage() {
@@ -20,9 +52,10 @@ export default function LivePage() {
   const currentStatus = statusMap[socketStatus as keyof typeof statusMap] || statusMap.closed;
 
   const ScoreBoard = ({ game, index }: { game: LiveGame, index: number }) => {
-    const sportName = (game.sport || 'UNKNOWN').replace('_', ' ').toUpperCase();
+    const sportName = (game.sport_key || game.sport || 'UNKNOWN').replace(/_/g, ' ').toUpperCase();
     const home_team = game.home_team || (game.matchup?.split(' @ ')[1]) || 'Home';
     const away_team = game.away_team || (game.matchup?.split(' @ ')[0]) || 'Away';
+    const clockLine = formatClockLine(game);
     
     return (
       <motion.div 
@@ -42,25 +75,31 @@ export default function LivePage() {
           </div>
           <div className="flex items-center space-x-2 text-textMuted bg-white/5 px-3 py-1 rounded-full border border-white/5">
              <Clock className="w-3 h-3" />
-             <span className="text-[10px] font-black uppercase tracking-widest">{game.period} {game.clock}</span>
+             <span className="text-[10px] font-black uppercase tracking-widest">{clockLine}</span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-10 items-center mb-10 relative z-10">
           <div className="flex flex-col items-center group/team">
-             <div className="w-20 h-20 rounded-3xl bg-lucrix-dark border border-white/10 mb-6 flex items-center justify-center text-2xl font-black italic text-white transition-all group-hover/team:scale-110 group-hover/team:border-brand-primary/50 group-hover/team:shadow-glow group-hover/team:shadow-brand-primary/10">
-                {home_team.charAt(0)}
-             </div>
+             <TeamAvatar
+                teamName={home_team}
+                logoUrl={game.home_logo}
+                abbr={game.home_team_abbr}
+                className="w-20 h-20 rounded-3xl mb-6 transition-all group-hover/team:scale-110 group-hover/team:border-brand-primary/50 group-hover/team:shadow-glow group-hover/team:shadow-brand-primary/10 text-xl"
+             />
              <span className="text-xs font-black uppercase tracking-tight text-center h-8 line-clamp-2 leading-tight max-w-[120px] mb-2">{home_team}</span>
-             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{game.home_score ?? 0}</span>
+             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{scoreDisplay(game, 'home')}</span>
           </div>
           
           <div className="flex flex-col items-center group/team">
-             <div className="w-20 h-20 rounded-3xl bg-lucrix-dark border border-white/10 mb-6 flex items-center justify-center text-2xl font-black italic text-white transition-all group-hover/team:scale-110 group-hover/team:border-brand-primary/50 group-hover/team:shadow-glow group-hover/team:shadow-brand-primary/10">
-                {away_team.charAt(0)}
-             </div>
+             <TeamAvatar
+                teamName={away_team}
+                logoUrl={game.away_logo}
+                abbr={game.away_team_abbr}
+                className="w-20 h-20 rounded-3xl mb-6 transition-all group-hover/team:scale-110 group-hover/team:border-brand-primary/50 group-hover/team:shadow-glow group-hover/team:shadow-brand-primary/10 text-xl"
+             />
              <span className="text-xs font-black uppercase tracking-tight text-center h-8 line-clamp-2 leading-tight max-w-[120px] mb-2">{away_team}</span>
-             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{game.away_score ?? 0}</span>
+             <span className="text-5xl font-black italic tracking-tighter text-white drop-shadow-lg">{scoreDisplay(game, 'away')}</span>
           </div>
         </div>
 

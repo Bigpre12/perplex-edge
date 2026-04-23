@@ -3,10 +3,7 @@ import { triggerIntelligenceCycle } from "@/lib/triggerIntelligenceCycle";
 
 export const runtime = "nodejs";
 
-/**
- * Unified Intelligence Gateway
- * POST /api/compute?sport=basketball_nba
- */
+/** POST /api/sync/odds?sport=basketball_nba — alias for the compute gateway (manual odds / pipeline refresh). */
 export async function POST(req: NextRequest) {
   return triggerIntelligenceCycle(req);
 }

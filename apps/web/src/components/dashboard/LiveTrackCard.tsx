@@ -18,6 +18,17 @@ function formatStatus(raw: string): string {
     return STATUS_MAP[raw] || raw;
 }
 
+/** Show pace bar only for in-progress (or completed) game states — not model-only / scheduled rows. */
+function liveTrackingActive(raw: string): boolean {
+    const u = String(raw || "").toUpperCase();
+    const f = formatStatus(String(raw)).toUpperCase().replace(/\s/g, "");
+    if (u.includes("MODEL") && !u.includes("LIVE")) return false;
+    if (/SCHEDULED|PRE-GAME|PREGAME|^MODEL$/.test(u)) return false;
+    if (/Q[1-4]|OT|HALF|LIVE|PROGRESS|FINAL/.test(f)) return true;
+    if (/Q[1-4]|OT|HALF|LIVE|FINAL/.test(u)) return true;
+    return false;
+}
+
 interface LiveTrackCardProps {
     player: string;
     statType: string;
@@ -39,8 +50,10 @@ export default function LiveTrackCard({
     hedgeRecommendation,
     confidence 
 }: LiveTrackCardProps) {
-    const progress = Math.min((currentValue / line) * 100, 100);
+    const inGame = liveTrackingActive(gameStatus);
+    const progress = line > 0 ? Math.min((currentValue / line) * 100, 100) : 0;
     const isHit = (side === 'over' && currentValue >= line) || (side === 'under' && currentValue < line);
+    const statusLabel = inGame ? formatStatus(gameStatus) : "PRE-GAME";
 
     return (
         <motion.div
@@ -52,7 +65,7 @@ export default function LiveTrackCard({
             <div className="absolute top-0 right-0 p-4 relative z-10">
                 <div className="flex items-center gap-2 bg-brand-purple/10 px-3 py-1 rounded-full border border-brand-purple/20 shadow-glow shadow-brand-purple/5">
                     <div className="size-1.5 bg-brand-purple rounded-full animate-pulse" />
-                    <span className="text-[9px] font-black text-brand-purple uppercase tracking-widest">{formatStatus(gameStatus)}</span>
+                    <span className="text-[9px] font-black text-brand-purple uppercase tracking-widest">{statusLabel}</span>
                 </div>
             </div>
 
@@ -72,6 +85,8 @@ export default function LiveTrackCard({
                 </div>
 
                 <div className="space-y-3">
+                    {inGame ? (
+                        <>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Activity size={12} className="text-textMuted" />
@@ -100,6 +115,15 @@ export default function LiveTrackCard({
                             {isHit ? "HIT DETECTED" : `${Math.round(progress)}% COMPLETE`}
                         </span>
                     </div>
+                        </>
+                    ) : (
+                        <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center space-y-2">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-textSecondary italic">Pre-game</p>
+                            <p className="text-[9px] text-textMuted font-bold leading-relaxed normal-case tracking-normal">
+                                Live pace tracking starts when the game goes in-progress and stat data is available.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {hedgeRecommendation && (
@@ -123,7 +147,7 @@ export default function LiveTrackCard({
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
                             <Clock size={10} className="text-textMuted" />
                             <span className="text-[8px] text-textMuted font-black uppercase tracking-widest">
-                                Conf: {confidence != null ? Math.round(confidence * 100) : Math.round(progress)}%
+                                Conf: {confidence != null ? Math.round(confidence > 1 ? confidence : confidence * 100) : inGame ? Math.round(progress) : 0}%
                             </span>
                         </div>
                         {isHit && (

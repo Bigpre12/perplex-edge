@@ -23,7 +23,7 @@ import LiveStatusBar from "@/components/LiveStatusBar";
 
 export default function PlayerPropsPage() {
     return (
-        <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING INTEL...</div>}>
+        <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING PLAYER PROPS...</div>}>
             <PlayerPropsContent />
         </Suspense>
     );
@@ -117,7 +117,7 @@ function PlayerPropsContent() {
                         <div className="bg-brand-cyan/10 p-2 rounded-lg border border-brand-cyan/20">
                             <Trophy size={24} className="text-brand-cyan shadow-glow shadow-brand-cyan" />
                         </div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase font-display text-white">Pick Intel</h1>
+                        <h1 className="text-3xl font-black italic tracking-tighter uppercase font-display text-white">Player Props</h1>
                     </div>
                     <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mb-4">Elite Player Prop Decisioning</p>
 

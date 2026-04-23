@@ -46,6 +46,7 @@ from services.commence_time import (  # type: ignore
     reject_absurd_future,
     parse_commence_to_utc,
 )
+from brain.engine import brain_governor  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -171,6 +172,41 @@ class UnifiedIngestionService:
                         hb_err,
                     )
             return metrics
+
+        # 0b. Active Brain governor — skip network when quota is hard-stopped or cache is fresh enough
+        async with async_session_maker() as _brain_sess:
+            plan = await brain_governor.plan_ingest(_brain_sess, sport_key)
+        async with async_session_maker() as _log_sess:
+            await brain_governor.log_decision(_log_sess, plan)
+
+        if plan.skip_network:
+            logger.info(
+                "[BRAIN] %s — skip_network (%s) quota_pct=%.3f cache_age_min=%s",
+                sport_key,
+                plan.reason,
+                plan.quota_pct,
+                plan.cache_age_minutes,
+            )
+            metrics["status"] = "skipped"
+            metrics["skipped_reason"] = plan.reason
+            metrics["brain"] = plan.to_metrics_dict()
+            await self.run_intelligence_pipeline(sport_key, [])
+            try:
+                async with async_session_maker() as session:
+                    await brain_advanced_service.generate_model_picks(sport_key, session)
+            except Exception as e:
+                metrics["errors"].append(f"ModelPick Promotion: {str(e)}")
+                logger.error("UnifiedIngestion: ModelPick promotion failed (brain skip path): %s", e)
+            async with async_session_maker() as session:
+                await HeartbeatService.log_heartbeat(
+                    session,
+                    f"ingest_{sport_key}",
+                    status="idle_no_data" if not plan.blocked_quota else "error",
+                    rows_written=0,
+                    error_count=len(metrics["errors"]),
+                    meta={"metrics": metrics, "brain_skip": True},
+                )
+            return metrics
         
         # 1. Fetch odds-shaped events (multi-provider chain, not TOA-only)
         logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} START ===")
@@ -255,6 +291,15 @@ class UnifiedIngestionService:
             source_name,
             sport_key,
         )
+
+        if odds_raw:
+            try:
+                async with async_session_maker() as _oc:
+                    await brain_governor.persist_odds_cache_snapshot(
+                        _oc, sport_key, odds_raw, source_name
+                    )
+            except Exception as snap_err:
+                logger.debug("odds_cache snapshot: %s", snap_err)
 
         logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} COMPLETE — {len(odds_raw)} events ===")
         # 2d. Fetch Player Props (Requires per-event calls)

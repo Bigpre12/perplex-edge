@@ -10,6 +10,7 @@ import { usePropsHistory, PropsHistoryRecord } from "@/hooks/usePropsHistory";
 import { DataTable } from "@/components/shared/DataTable";
 import { Sparklines, SparklinesLine, SparklinesSpots } from "react-sparklines";
 import { clsx } from "clsx";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function PropsHistoryPage() {
   return (
@@ -88,8 +89,19 @@ function PropsHistoryContent() {
   }
 
   if (error) {
-    return <div className="p-6"><ErrorBanner message="Settlement stream interrupted." onRetry={refetch} /></div>;
+    return (
+      <div className="p-6 space-y-4">
+        <ErrorBanner message="Settlement stream interrupted." onRetry={refetch} />
+        <EmptyState
+          title="No data available. Waiting for market sync."
+          description="Settled props history requires graded results from the backend."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
   }
+
+  const rows = Array.isArray(history) ? history : [];
 
   return (
     <div className="pb-24 space-y-8 pt-6 px-4">
@@ -108,7 +120,7 @@ function PropsHistoryContent() {
            <div className="bg-lucrix-surface border border-lucrix-border px-4 py-2 rounded-xl text-right">
              <div className="text-[8px] font-black text-textMuted uppercase tracking-widest">Global Win Rate</div>
              <div className="text-xl font-black text-white italic font-display">
-               {history?.length ? ((history.filter(p => p.status === 'HIT').length / history.length) * 100).toFixed(1) : '00.0'}%
+               {rows.length ? ((rows.filter(p => p.status === 'HIT').length / rows.length) * 100).toFixed(1) : '00.0'}%
              </div>
            </div>
         </div>
@@ -117,15 +129,17 @@ function PropsHistoryContent() {
       <div className="bg-lucrix-surface border border-lucrix-border rounded-2xl shadow-card overflow-hidden">
         <DataTable 
           columns={columns} 
-          data={history || []} 
+          data={rows} 
           onRowClick={(p) => console.log('Historical record:', p)}
         />
       </div>
 
-      {(!history || history.length === 0) && (
-        <div className="text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
-            Brain has not settled any recent props for this sport...
-        </div>
+      {rows.length === 0 && (
+        <EmptyState
+          title="No data available. Waiting for market sync."
+          description="No settled props for this sport yet. Grading runs after games complete."
+          onRetry={() => refetch()}
+        />
       )}
     </div>
   );

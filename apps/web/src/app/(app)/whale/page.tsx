@@ -10,6 +10,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { ShieldAlert, Zap, Star, Clock, Filter, AlertCircle } from "lucide-react";
 import { clsx } from "clsx";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function WhaleAlertsPage() {
   return (
@@ -62,6 +63,19 @@ function WhaleAlertsContent() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="pb-24 pt-6 px-4 space-y-4">
+        <ErrorBanner message="Whale feed interrupted. Check connection or try again." onRetry={() => refetch()} />
+        <EmptyState
+          title="No data available. Waiting for market sync."
+          description="Whale signals need live order-flow and fresh props. Retry after the pipeline catches up."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-24 space-y-8 pt-6 px-4">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -100,7 +114,7 @@ function WhaleAlertsContent() {
 
         {alerts.map((alert: any, i: number) => (
           <div 
-            key={i} 
+            key={alert?.id ?? alert?.event_id ?? `whale-${i}`} 
             className={clsx(
               "bg-lucrix-surface border rounded-2xl p-6 transition-all relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6",
               "bg-lucrix-surface border rounded-2xl p-6 transition-all relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6 border-brand-warning/20 hover:border-brand-warning/40 shadow-card"
@@ -159,9 +173,11 @@ function WhaleAlertsContent() {
         ))}
 
         {alerts.length === 0 && (
-          <div className="text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
-            No whale activity detected
-          </div>
+          <EmptyState
+            title="No data available. Waiting for market sync."
+            description="No whale activity detected for this slate yet. Fresh multi-book odds improve detection."
+            onRetry={() => refetch()}
+          />
         )}
       </div>
     </div>

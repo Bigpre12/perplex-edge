@@ -6,14 +6,21 @@ export interface LiveGame {
   id: string;
   home_team: string;
   away_team: string;
-  home_score?: number;
-  away_score?: number;
-  score_home?: number; // legacy
-  score_away?: number; // legacy
+  home_score?: number | null;
+  away_score?: number | null;
+  score_home?: number | null; // legacy
+  score_away?: number | null; // legacy
   matchup?: string;
-  period?: string;
+  period?: string | number;
   clock?: string;
-  sport: string;
+  sport?: string;
+  sport_key?: string;
+  status?: string;
+  commence_time?: string;
+  home_logo?: string | null;
+  away_logo?: string | null;
+  home_team_abbr?: string | null;
+  away_team_abbr?: string | null;
 }
 
 export const useLiveGames = () => {

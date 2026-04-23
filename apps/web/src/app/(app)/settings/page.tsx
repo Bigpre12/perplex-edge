@@ -28,6 +28,16 @@ import {
 import { clsx } from "clsx";
 import { motion } from "framer-motion";
 
+const DEFAULT_USER_SETTINGS: Record<string, unknown> = {
+  unit_size: 100,
+  default_sport: "basketball_nba",
+  default_sportsbook: "draftkings",
+  theme: "dark",
+  notifications_enabled: true,
+  api_enabled: false,
+  tier: "Free",
+};
+
 export default function SettingsPage() {
   return (
     <ErrorBoundary>
@@ -41,7 +51,9 @@ export default function SettingsPage() {
 function SettingsContent() {
   const { token, user, signOut, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
-  const [localSettings, setLocalSettings] = useState<any>(null);
+  const [localSettings, setLocalSettings] = useState<any>(() => ({
+    ...DEFAULT_USER_SETTINGS,
+  }));
   const [isSaved, setIsSaved] = useState(false);
   const [lastSavedField, setLastSavedField] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -69,10 +81,10 @@ function SettingsContent() {
   }, [token, isLoading]);
 
   React.useEffect(() => {
-    if (settings && !localSettings) {
+    if (settings && typeof settings === "object") {
       setLocalSettings(settings);
     }
-  }, [settings, localSettings]);
+  }, [settings]);
 
   const mutation = useMutation({
     mutationFn: async ({ field, value }: { field: string, value: any }) => {
@@ -95,10 +107,11 @@ function SettingsContent() {
   };
 
   const handleSaveAll = () => {
-    if (!localSettings || !settings) return;
+    if (!localSettings) return;
+    const baseline = settings ?? DEFAULT_USER_SETTINGS;
     let anyChanges = false;
-    Object.keys(localSettings).forEach(field => {
-      if (localSettings[field] !== settings[field]) {
+    Object.keys(localSettings).forEach((field) => {
+      if (localSettings[field] !== baseline[field]) {
         mutation.mutate({ field, value: localSettings[field] });
         anyChanges = true;
       }
@@ -145,17 +158,6 @@ function SettingsContent() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="max-w-5xl mx-auto pt-16 px-6 text-white space-y-8">
-        <h1 className="text-4xl font-black uppercase italic font-display">Command Center</h1>
-        <div className="p-10 bg-red-500/10 border border-red-500/20 rounded-3xl">
-          <ErrorBanner message="Primary Command Sync Offline. Please check your connection." />
-        </div>
-      </div>
-    );
-  }
-
   if (!token && !authLoading) {
     return (
       <div className="max-w-5xl mx-auto pt-32 px-6 text-center space-y-6">
@@ -173,6 +175,20 @@ function SettingsContent() {
 
   return (
     <div className="max-w-5xl mx-auto pb-32 space-y-12 pt-16 px-6 text-white">
+      {error ? (
+        <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-[11px] font-bold text-amber-100">
+            Could not load saved settings. Changes will apply to defaults until sync succeeds.
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-[10px] font-black uppercase tracking-widest"
+          >
+            <RefreshCw size={14} /> Retry
+          </button>
+        </div>
+      ) : null}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/5 pb-10">
         <div>
@@ -226,7 +242,7 @@ function SettingsContent() {
                   <div className="text-xl font-black text-white leading-tight uppercase font-display">{user?.email}</div>
                   <div className="flex justify-center sm:justify-start gap-2 pt-1">
                     <span className="text-[8px] px-2 py-0.5 bg-brand-primary/20 text-brand-primary rounded border border-brand-primary/30 font-black uppercase tracking-widest leading-none">
-                      {settings?.tier || "Free"} ACCESS
+                      {(settings?.tier as string) || (localSettings?.tier as string) || "Free"} ACCESS
                     </span>
                     <span className="text-[8px] px-2 py-0.5 bg-brand-success/20 text-brand-success rounded border border-brand-success/30 font-black uppercase tracking-widest leading-none">
                       SECURED

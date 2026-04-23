@@ -10,7 +10,7 @@ import SportSelector from "@/components/shared/SportSelector";
 import { BrainCircuit, Zap, ShieldCheck, Activity, Target, TrendingUp } from "lucide-react";
 import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
-import type { LucideIcon } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 
 
@@ -64,7 +64,7 @@ function BrainContent() {
     return <div className="p-6"><ErrorBanner message="Neural Core Overload." onRetry={refetchBrain} /></div>;
   }
 
-  const props = brainData?.props || [];
+  const props = Array.isArray(brainData?.props) ? brainData.props : [];
   const alignedProps: string[] = Array.isArray((smartMoney as { aligned_props?: unknown })?.aligned_props)
     ? ((smartMoney as { aligned_props: string[] }).aligned_props)
     : [];
@@ -99,16 +99,19 @@ function BrainContent() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {props.map((prop: { id: string; player: string; market: string; line: string; score: number; reasoning: string; projection: string; recommendation: string }, i: number) => {
-          const isSmartAligned = alignedProps.includes(prop.id);
+        {props.map((prop: { id?: string; player?: string; market?: string; line?: string | number; score?: number; reasoning?: string; projection?: string; recommendation?: string }, i: number) => {
+          const pid = prop?.id ?? `brain-${i}`;
+          const isSmartAligned = alignedProps.includes(pid);
+          const scoreN = Number(prop?.score);
+          const score = Number.isFinite(scoreN) ? scoreN : 0;
           
           return (
-            <div key={i} className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-6 hover:border-brand-purple/30 transition-all group relative overflow-hidden shadow-card">
+            <div key={pid} className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-6 hover:border-brand-purple/30 transition-all group relative overflow-hidden shadow-card">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <div className="text-lg font-black text-white font-display italic uppercase tracking-tight group-hover:text-brand-purple transition-colors">{prop.player}</div>
+                  <div className="text-lg font-black text-white font-display italic uppercase tracking-tight group-hover:text-brand-purple transition-colors">{prop?.player ?? "Unknown"}</div>
                   <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-1">
-                    {prop.market} — {prop.line}
+                    {prop?.market ?? "—"} — {prop?.line ?? "—"}
                   </div>
                 </div>
                 {isSmartAligned && (
@@ -124,20 +127,20 @@ function BrainContent() {
                   <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2">
                     <span className="text-textMuted">Model Confidence</span>
                     <span className={clsx(
-                      prop.score >= 75 ? "text-brand-success" : prop.score >= 50 ? "text-brand-warning" : "text-brand-danger"
-                    )}>{prop.score}%</span>
+                      score >= 75 ? "text-brand-success" : score >= 50 ? "text-brand-warning" : "text-brand-danger"
+                    )}>{score}%</span>
                   </div>
                   <div className="h-1.5 bg-lucrix-dark rounded-full overflow-hidden border border-lucrix-border/50">
                     <Progress 
-                      value={prop.score} 
-                      color={prop.score >= 75 ? "success" : prop.score >= 50 ? "warning" : "danger"} 
+                      value={score} 
+                      color={score >= 75 ? "success" : score >= 50 ? "warning" : "danger"} 
                     />
                   </div>
                 </div>
 
                 <div className="bg-lucrix-dark/50 rounded-xl p-3 border border-lucrix-border/50">
                   <p className="text-[11px] text-textSecondary font-bold italic leading-relaxed">
-                    "{prop.reasoning || "Neural models detect high-volume correlation between opening markets and historical player performance."}"
+                    "{prop?.reasoning || "Neural models detect high-volume correlation between opening markets and historical player performance."}"
                   </p>
                 </div>
               </div>
@@ -147,13 +150,13 @@ function BrainContent() {
                   <div className="p-1.5 bg-lucrix-dark rounded-lg border border-lucrix-border">
                     <Target size={12} className="text-textMuted" />
                   </div>
-                  <span className="text-[9px] font-black text-textMuted uppercase tracking-widest">Projection: {prop.projection}</span>
+                  <span className="text-[9px] font-black text-textMuted uppercase tracking-widest">Projection: {prop?.projection ?? "—"}</span>
                 </div>
-                <button className={clsx(
+                <button type="button" className={clsx(
                   "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                  prop.recommendation === "OVER" ? "bg-brand-success/10 text-brand-success border border-brand-success/20" : "bg-brand-danger/10 text-brand-danger border border-brand-danger/20"
+                  prop?.recommendation === "OVER" ? "bg-brand-success/10 text-brand-success border border-brand-success/20" : "bg-brand-danger/10 text-brand-danger border border-brand-danger/20"
                 )}>
-                  {prop.recommendation}
+                  {prop?.recommendation ?? "—"}
                 </button>
               </div>
             </div>
@@ -161,8 +164,12 @@ function BrainContent() {
         })}
 
         {props.length === 0 && (
-          <div className="col-span-full text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
-            Neural Engine is calculating the next wave of edges...
+          <div className="col-span-full">
+            <EmptyState
+              title="No data available. Waiting for market sync."
+              description="The neural engine needs fresh props and model scores. Try again after the next odds sync."
+              onRetry={() => refetchBrain()}
+            />
           </div>
         )}
       </div>

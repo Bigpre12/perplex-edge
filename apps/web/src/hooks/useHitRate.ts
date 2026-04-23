@@ -10,13 +10,12 @@ export interface HitRateStats {
 }
 
 function sanitize(raw: any): HitRateStats {
-  const safe = (v: any, cap?: number) => {
+  const safe = (v: any) => {
     const n = Number(v);
-    if (!Number.isFinite(n)) return 0;
-    return cap !== undefined ? Math.min(n, cap) : n;
+    return Number.isFinite(n) ? n : 0;
   };
   return {
-    overall_hit_rate: safe(raw?.overall_hit_rate, 1.0),
+    overall_hit_rate: safe(raw?.overall_hit_rate),
     roi: safe(raw?.roi),
     graded_picks: safe(raw?.graded_picks),
     streak: safe(raw?.streak),
@@ -53,7 +52,11 @@ export const useHitRatePlayers = (sport = 'all') => {
     queryFn: async () => {
       try {
         const { data } = await api.get(`/api/hit-rate/players?sport=${sport}`);
-        return (data || []) as any[];
+        const rows = (data || []) as any[];
+        return rows.map((r, i) => ({
+          ...r,
+          id: r?.id ?? r?.player_id ?? `hrp-${i}`,
+        }));
       } catch (err) {
         console.warn('Backend hit-rate players fetch failed', err);
         const supabaseAuth = getAuthenticatedClient();
@@ -63,7 +66,11 @@ export const useHitRatePlayers = (sport = 'all') => {
           .order('hit_rate', { ascending: false });
 
         if (supabaseError) throw supabaseError;
-        return (supabaseData || []) as any[];
+        const rows = (supabaseData || []) as any[];
+        return rows.map((r, i) => ({
+          ...r,
+          id: r?.id ?? r?.player_id ?? `hrp-${i}`,
+        }));
       }
     },
     refetchInterval: 120000,

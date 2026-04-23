@@ -83,7 +83,9 @@ class HitRateService:
                 
                 results = []
                 for r in rows:
-                    win_rate = float(f"{(r.wins / r.sample_size * 100):.1f}")
+                    ss = int(r.sample_size or 0)
+                    wn = int(r.wins or 0)
+                    win_rate = float(f"{(wn / ss * 100):.1f}") if ss > 0 else 0.0
                     
                     # Confidence Tier
                     if r.sample_size >= 100:
@@ -99,6 +101,7 @@ class HitRateService:
                         "player": r.player_name,
                         "player_name": r.player_name,
                         "prop_type": r.stat_type,
+                        "hits": wn,
                         "hit_rate": win_rate,
                         "sample_size": r.sample_size,
                         "total_picks": r.sample_size,

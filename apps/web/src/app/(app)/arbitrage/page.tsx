@@ -6,10 +6,10 @@ import { useSport } from "@/hooks/useSport";
 
 import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { ArrowRightLeft, Calculator, Zap, Star, Info, Scaling } from "lucide-react";
 import { clsx } from "clsx";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function ArbitragePage() {
   return (
@@ -36,16 +36,17 @@ function ArbitrageContent() {
   }, [sport]);
   const [totalStake, setTotalStake] = useState(100);
 
-  const { data: arbData, isLoading, isError, error, refetch } = useQuery({
+  const { data: arbData, isLoading, isError, refetch } = useQuery({
     queryKey: ['arbitrage', sport],
     queryFn: async () => {
-      const { data } = await api.get(`/api/arbitrage?sport=${sport}`);
+      const { data } = await api.get(`/api/arbitrage?sport=${sport}`, {
+        timeout: 10_000,
+      });
       return data;
     },
     refetchInterval: 30_000,
     staleTime: 15_000,
-    retry: 2,
-    retryDelay: (a) => Math.min(2000 * 2 ** a, 15_000),
+    retry: false,
   });
 
   const isLocked = false;
@@ -67,9 +68,10 @@ function ArbitrageContent() {
 
   if (isError) {
     return (
-      <div className="p-6 pt-10">
-        <ErrorBanner
-          message={error instanceof Error ? error.message : "Arbitrage scanner failed to load."}
+      <div className="p-6 pt-10 max-w-lg mx-auto">
+        <EmptyState
+          title="No arbitrage opportunities found."
+          description="Arb detection requires live multi-book odds. Check API sync status."
           onRetry={() => refetch()}
         />
       </div>
@@ -175,20 +177,12 @@ function ArbitrageContent() {
         })}
 
         {opportunities.length === 0 && (
-          <div className="col-span-full text-center py-24 space-y-4 border border-dashed border-white/10 rounded-2xl">
-            <div className="text-textMuted font-black uppercase italic tracking-widest text-[10px]">
-              No arbitrage opportunities for this sport right now.
-            </div>
-            <p className="text-[10px] text-white/30 max-w-md mx-auto">
-              Arbs need divergent lines across books. Refresh after odds update or try another league.
-            </p>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="text-[10px] font-black uppercase tracking-widest text-brand-success underline"
-            >
-              Retry scan
-            </button>
+          <div className="col-span-full">
+            <EmptyState
+              title="No arbitrage opportunities found."
+              description="Arb detection requires live multi-book odds. Check API sync status."
+              onRetry={() => refetch()}
+            />
           </div>
         )}
       </div>

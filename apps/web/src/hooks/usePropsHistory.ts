@@ -24,7 +24,12 @@ export const usePropsHistory = (sport: string = 'basketball_nba') => {
         // Fallback to /api/props/graded as suggested if /api/history is specialized
         const { data } = await api.get(`/api/props/graded?sport=${sport}&status=settled`);
         const results = Array.isArray(data) ? data : (data.props || data.data || []);
-        return results as PropsHistoryRecord[];
+        return (results as PropsHistoryRecord[]).map((r, i) => ({
+          ...r,
+          id: r?.id ?? `ph-${i}`,
+          player_name: r?.player_name ?? "Unknown",
+          market_key: r?.market_key ?? "—",
+        }));
       } catch (err) {
         console.warn('History fetch failed', err);
         return [];

@@ -11,6 +11,7 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { BarChart3, Clock, TrendingUp, Info } from "lucide-react";
 import { clsx } from "clsx";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 function fmtMetaFixed(v: unknown, digits: number, fallback: string): string {
   const n = Number(v);
@@ -63,8 +64,19 @@ function CLVPageContent() {
   }
 
   if (error) {
-    return <div className="p-6"><ErrorBanner message="CLV Analytics Engine is currently offline." onRetry={refetch} /></div>;
+    return (
+      <div className="p-6 space-y-4">
+        <ErrorBanner message="CLV Analytics Engine is currently offline." onRetry={refetch} />
+        <EmptyState
+          title="No data available. Waiting for market sync."
+          description="CLV requires fresh lines from the odds pipeline. Try again after sync completes."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
   }
+
+  const results = Array.isArray(clvData?.results) ? clvData.results : [];
 
   return (
     <div className="pb-24 space-y-8 pt-6 px-4">
@@ -123,13 +135,20 @@ function CLVPageContent() {
         />
         <AnalyticsCard
           title="Total Events"
-          value={clvData?.results?.length || '0'}
+          value={String(results.length)}
           icon={<Info size={20} className="text-brand-warning" />}
           description="Events tracked in current window"
         />
       </div>
 
       {activeTab === 'clv' ? (
+        results.length === 0 ? (
+          <EmptyState
+            title="No data available. Waiting for market sync."
+            description="Closing line value needs settled markets and fresh odds. Use Force sync on the dashboard if available."
+            onRetry={() => refetch()}
+          />
+        ) : (
         <div className="bg-lucrix-surface border border-lucrix-border rounded-xl overflow-hidden shadow-card">
           <table className="w-full text-left">
             <thead>
@@ -142,7 +161,7 @@ function CLVPageContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-lucrix-border/50">
-              {clvData?.results?.map((item: any, i: number) => (
+              {results.map((item: any, i: number) => (
                 <tr key={i} className="group hover:bg-lucrix-dark/50 transition-colors">
                   <td className="px-6 py-5">
                     <div className="font-black text-white font-display italic uppercase tracking-tight">{item.event}</div>
@@ -171,6 +190,7 @@ function CLVPageContent() {
             </tbody>
           </table>
         </div>
+        )
       ) : (
         <MonteCarloView />
       )}
@@ -231,13 +251,13 @@ function MonteCarloView() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
            <AnalyticsCard
              title="Simulated Win %"
-             value={`${(simResult.win_prob * 100).toFixed(1)}%`}
+             value={`${(Number(simResult?.win_prob) * 100 || 0).toFixed(1)}%`}
              icon={<Target size={20} className="text-brand-success" />}
              description="Probability of all legs hitting"
            />
            <AnalyticsCard
              title="Projected EV"
-             value={`${simResult.ev > 0 ? '+' : ''}${simResult.ev.toFixed(2)}%`}
+             value={`${Number(simResult?.ev) > 0 ? '+' : ''}${Number.isFinite(Number(simResult?.ev)) ? Number(simResult.ev).toFixed(2) : '0.00'}%`}
              icon={<TrendingUp size={20} className="text-brand-cyan" />}
              description="Edge vs implied probability"
            />

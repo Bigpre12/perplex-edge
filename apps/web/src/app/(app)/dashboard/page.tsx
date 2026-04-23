@@ -15,6 +15,7 @@ import LiveTrackCard from '@/components/dashboard/LiveTrackCard';
 import RecentIntel from '@/components/RecentIntel';
 
 import { useSport } from '@/context/SportContext';
+import { useDataFreshness } from '@/context/DataFreshnessContext';
 import { api } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { REFRESH_INTERVALS } from '@/hooks/useLiveData';
@@ -43,6 +44,7 @@ function FallbackUI({ error }: { error: any }) {
 
 function DashboardContent() {
     useUpgradeSuccess("", () => { });
+    const { raw: healthDepsRaw } = useDataFreshness();
     const { tier, loading: subLoading, isPro } = useSubscription();
     const isDev = typeof window !== 'undefined' && 
                  (window.location.hostname === 'localhost' || 
@@ -139,7 +141,13 @@ function DashboardContent() {
                                             currentValue={currentValue}
                                             line={line}
                                             side={side}
-                                            gameStatus={prop?.sportsbook || 'Model'}
+                                            gameStatus={
+                                                prop?.game_status ||
+                                                prop?.gameStatus ||
+                                                prop?.event_status ||
+                                                prop?.sportsbook ||
+                                                'Model'
+                                            }
                                             confidence={conf > 1 ? conf/100 : conf}
                                         />
                                     );
@@ -170,6 +178,7 @@ function DashboardContent() {
                                 label="Odds Stream" 
                                 status={((healthData as any)?.odds_stream || "SYNCED") === "STALE" ? "DEGRADED" : ((healthData as any)?.odds_stream || "SYNCED")} 
                             />
+                            <OddsApiUsageMeter quota={healthDepsRaw?.components?.odds_quota} />
                             <div className="pt-2 border-t border-lucrix-border/50">
                                 <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-textMuted italic">
                                     <span>Last Matrix Sync</span>
@@ -229,6 +238,49 @@ function DashboardContent() {
                 </div>
             </div>
         </main>
+    );
+}
+
+function OddsApiUsageMeter({ quota }: { quota?: Record<string, unknown> | null }) {
+    const limit = typeof quota?.limit === "number" && quota.limit > 0 ? quota.limit : 20000;
+    const used = typeof quota?.used === "number" ? quota.used : null;
+    const pct =
+        typeof quota?.percent_used === "number"
+            ? quota.percent_used
+            : used != null
+              ? Math.round((used / limit) * 1000) / 10
+              : null;
+    const exhausted = Boolean(quota?.is_exhausted);
+    const colorClass =
+        exhausted || (pct != null && pct > 80)
+            ? "text-red-400 border-red-500/30 bg-red-500/10"
+            : pct != null && pct >= 50
+              ? "text-amber-300 border-amber-500/30 bg-amber-500/10"
+              : "text-brand-success border-brand-success/25 bg-brand-success/10";
+    const labelUsed = used != null ? used.toLocaleString() : "—";
+    return (
+        <div className={`rounded-lg border px-3 py-2.5 ${colorClass}`}>
+            <div className="text-[8px] font-black uppercase tracking-widest opacity-90 mb-1">
+                TheOddsAPI (this month)
+            </div>
+            <div className="text-[11px] font-bold font-mono tabular-nums">
+                {labelUsed} / {limit.toLocaleString()} requests
+                {pct != null ? (
+                    <span className="text-[9px] font-black uppercase ml-1 opacity-80">
+                        ({pct}%)
+                    </span>
+                ) : null}
+            </div>
+            {exhausted ? (
+                <p className="text-[9px] mt-1.5 font-semibold normal-case opacity-95">
+                    Quota exhausted — data frozen until the next billing cycle.
+                </p>
+            ) : pct != null && pct >= 80 ? (
+                <p className="text-[9px] mt-1.5 opacity-80 normal-case">
+                    Approaching monthly limit — ingestion may pause soon.
+                </p>
+            ) : null}
+        </div>
     );
 }
 

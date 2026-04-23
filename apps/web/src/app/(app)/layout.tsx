@@ -14,6 +14,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { OnboardingProvider } from "@/components/OnboardingProvider";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import { SportProvider } from "@/context/SportContext";
+import { DataFreshnessProvider } from "@/context/DataFreshnessContext";
 import StatusBar from "@/components/shared/StatusBar";
 import PrefetchWrapper from "@/components/shared/PrefetchWrapper";
 import GlobalHelp from "@/components/shared/GlobalHelp";
@@ -25,6 +26,7 @@ export default function AppLayout({
 }) {
     return (
         <SportProvider>
+            <DataFreshnessProvider>
             <SubscriptionProvider>
                 <OnboardingProvider>
                     <PrefetchWrapper />
@@ -63,6 +65,7 @@ export default function AppLayout({
                     </div>
                 </OnboardingProvider>
             </SubscriptionProvider>
+            </DataFreshnessProvider>
         </SportProvider>
     );
 }

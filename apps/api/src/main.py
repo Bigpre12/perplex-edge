@@ -6,7 +6,8 @@ import traceback
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -19,7 +20,7 @@ from core.ingest_scheduler_config import build_unified_ingest_schedule, schedule
 from middleware.request_id import RequestIDMiddleware, get_request_id
 from middleware.auth_circuit_breaker import AuthCircuitBreakerMiddleware, auth_breaker # Import new circuit breaker
 from db.base import Base
-from db.session import engine
+from db.session import engine, get_db
 from services.unified_ingestion import unified_ingestion
 from core.connection_manager import manager
 from services.live_data_service import live_data_service
@@ -372,11 +373,13 @@ async def initialize_backend_services():
                 ingest_meta.get("interval_minutes"),
             )
         else:
+            floor = ingest_meta.get("active_interval_minutes_floor")
+            floor_note = f", active floor={floor} min" if floor else ""
             logger.info(
-                "📡 [Scheduler] Tiered ingest: %s jobs — active=%s every %s min, inactive=%s every %s h, disabled=%s",
+                "📡 [Scheduler] Tiered ingest: %s jobs — active=%s (per-sport min interval%s), inactive=%s every %s h, disabled=%s",
                 ingest_meta.get("sport_count"),
                 len(ingest_meta.get("active_sports") or []),
-                ingest_meta.get("active_interval_minutes"),
+                floor_note,
                 len(ingest_meta.get("inactive_sports") or []),
                 ingest_meta.get("inactive_interval_hours"),
                 ingest_meta.get("disabled") or [],
@@ -706,6 +709,14 @@ async def health():
 @app.get("/")
 async def root():
     return {"name": APP_NAME, "status": "healthy"}
+
+@app.get("/api/admin/odds-usage", tags=["admin"])
+async def admin_odds_usage(db: AsyncSession = Depends(get_db)):
+    """Monthly TheOddsAPI request usage (from DB + last known headers). Same fields as health/deps components.odds_quota."""
+    from services.odds_quota_store import fetch_usage_summary
+
+    return await fetch_usage_summary(db)
+
 
 @app.post("/api/admin/reset-circuit-breaker")
 async def reset_circuit_breaker(request: Request):

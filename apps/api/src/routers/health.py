@@ -29,7 +29,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         logger.error(f"Health Check: DB failure: {e}")
 
     try:
-        api_key = os.getenv("THE_ODDS_API_KEY")
+        api_key = (os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY") or "").strip()
         if not api_key:
             odds_status = "error: missing_key"
         else:
@@ -144,6 +144,41 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     except Exception:
         pass
 
+    odds_quota: Dict[str, Any] = {}
+    try:
+        from services.odds_quota_store import fetch_usage_summary
+
+        odds_quota = await fetch_usage_summary(db)
+    except Exception as e:
+        logger.warning("Health: odds quota summary unavailable: %s", e)
+        odds_quota = {
+            "month": datetime.now(timezone.utc).strftime("%Y-%m"),
+            "used": 0,
+            "remaining": None,
+            "limit": int(os.getenv("ODDS_API_MONTHLY_LIMIT") or os.getenv("THE_ODDS_API_MAX_CALLS_PER_MONTH", "20000")),
+            "percent_used": 0.0,
+            "is_exhausted": False,
+            "is_warning": False,
+        }
+
+    quota_exhausted = bool(odds_quota.get("is_exhausted"))
+    ingest_quota_blocked = False
+    ingest_quota_block_reason: Optional[str] = None
+    try:
+        from services.odds_quota_store import raise_if_quota_blocked
+
+        ingest_quota_blocked, ingest_quota_block_reason = await raise_if_quota_blocked(db)
+        odds_quota = {**odds_quota, "ingest_blocked": ingest_quota_blocked, "ingest_block_reason": ingest_quota_block_reason}
+    except Exception as e:
+        logger.debug("Health: ingest quota block check: %s", e)
+
+    if quota_exhausted:
+        overall_status = "degraded"
+        odds_stream_status = "STALE"
+        is_stale = True
+    elif ingest_quota_blocked and ingest_quota_block_reason == "odds_api_quota_hard_stop_pct":
+        overall_status = "degraded"
+
     return {
         "status": overall_status,
         "database": db_status,
@@ -161,11 +196,14 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         "last_odds_update": last_odds,
         "last_ev_update": last_ev,
         "props_count": props_count,
+        "odds_quota": odds_quota,
         "_internal": {
             "is_stale": is_stale,
             "odds_stream_status": odds_stream_status,
             "now": now,
             "recent_ingest_heartbeat_ok": recent_ingest_heartbeat_ok,
+            "odds_api_quota_exhausted": quota_exhausted,
+            "odds_api_ingest_blocked_reason": ingest_quota_block_reason if ingest_quota_blocked else None,
         },
         **sync_state,
     }
@@ -188,6 +226,12 @@ def _build_degradation_payload(base: Dict[str, Any], internal: Dict[str, Any]) -
     if str(base.get("odds_api", "")).startswith("error"):
         reasons.append("odds_api_config")
 
+    if internal.get("odds_api_quota_exhausted"):
+        reasons.append("odds_api_quota_exhausted")
+    _ibr = internal.get("odds_api_ingest_blocked_reason")
+    if _ibr == "odds_api_quota_hard_stop_pct":
+        reasons.append("odds_api_quota_hard_stop")
+
     if base.get("pipeline_status") == "STALE":
         reasons.append("ingest_heartbeat_stale")
     if base.get("inference_status") == "STALE":
@@ -196,11 +240,27 @@ def _build_degradation_payload(base: Dict[str, Any], internal: Dict[str, Any]) -
     if "database_disconnected" in reasons:
         level = "severe"
     elif reasons:
-        level = "severe" if oss in ("STALE", "ERROR", "EMPTY") else "partial"
+        level = (
+            "severe"
+            if oss in ("STALE", "ERROR", "EMPTY")
+            or "odds_api_quota_exhausted" in reasons
+            or "odds_api_quota_hard_stop" in reasons
+            else "partial"
+        )
     else:
         level = "none"
 
-    if level == "severe":
+    if "odds_api_quota_exhausted" in reasons:
+        msg = (
+            "TheOddsAPI monthly quota is exhausted. Market data is frozen until the next billing cycle "
+            "or quota reset — do not force sync."
+        )
+    elif "odds_api_quota_hard_stop" in reasons:
+        msg = (
+            "TheOddsAPI quota is near its monthly limit (ingest hard-stop). Fetches are paused to preserve "
+            "remaining requests; the app uses cached lines where possible."
+        )
+    elif level == "severe":
         msg = "Service is up — market data may be stale, empty, or degraded. Check freshness timestamps."
     elif level == "partial":
         msg = "Market data is delayed or partially degraded; verify odds and EV timestamps before acting."
@@ -254,6 +314,7 @@ async def health_dependencies(db: AsyncSession = Depends(get_db)):
             "inference_status": base.get("inference_status"),
             "odds_stream": internal.get("odds_stream_status") or base.get("odds_stream"),
             "props_count": base.get("props_count"),
+            "odds_quota": base.get("odds_quota"),
         },
         "timestamp": base.get("timestamp"),
         "version": base.get("version"),
@@ -280,8 +341,11 @@ async def health_ready(db: AsyncSession = Depends(get_db)):
     props_ct = int(base.get("props_count") or 0)
     props_ok = props_ct >= min_props
     recent_ing = bool(internal.get("recent_ingest_heartbeat_ok"))
+    quota_ok = not bool(internal.get("odds_api_quota_exhausted")) and internal.get(
+        "odds_api_ingest_blocked_reason"
+    ) not in ("odds_api_quota_hard_stop_pct", "odds_api_quota_exhausted")
     data_plane = props_ok or recent_ing
-    ready = bool(db_ok and level == "none" and data_plane)
+    ready = bool(db_ok and level == "none" and data_plane and quota_ok)
     body: Dict[str, Any] = {
         "ready": ready,
         "degradation": {"level": level, "reasons": reasons, "user_message": user_message},
@@ -290,6 +354,7 @@ async def health_ready(db: AsyncSession = Depends(get_db)):
             "min_props": min_props,
             "props_ok": props_ok,
             "recent_ingest_heartbeat_ok": recent_ing,
+            "odds_api_quota_ok": quota_ok,
         },
         "timestamp": base.get("timestamp"),
     }
