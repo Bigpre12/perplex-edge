@@ -300,6 +300,21 @@ class UnifiedIngestionService:
                     )
             except Exception as snap_err:
                 logger.debug("odds_cache snapshot: %s", snap_err)
+            try:
+                from services.line_tracker import (
+                    snapshot_lines_from_odds_api,
+                    cleanup_old_snapshots,
+                )
+                from services.arb_calculator import find_and_store_arbs
+
+                async with async_session_maker() as _lt:
+                    await snapshot_lines_from_odds_api(_lt, sport_key, odds_raw)
+                async with async_session_maker() as _cl:
+                    await cleanup_old_snapshots(_cl, 48)
+                async with async_session_maker() as _arb:
+                    await find_and_store_arbs(_arb, sport_key, odds_raw)
+            except Exception as post_err:
+                logger.debug("post-odds snapshot/arb: %s", post_err)
 
         logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} COMPLETE — {len(odds_raw)} events ===")
         # 2d. Fetch Player Props (Requires per-event calls)
@@ -541,6 +556,18 @@ class UnifiedIngestionService:
             logger.error(f"UnifiedIngestion: ModelPick promotion failed: {e}")
 
         logger.debug(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} COMPLETE ===")
+        try:
+            from services.props_service import get_all_props
+            from services.arb_calculator import find_and_store_arb_from_props
+
+            props_arb = await get_all_props(sport_filter=sport_key)
+            async with async_session_maker() as _ab:
+                n_arb = await find_and_store_arb_from_props(_ab, sport_key, props_arb)
+            if n_arb:
+                logger.info("UnifiedIngestion: stored %s prop-based arb rows for %s", n_arb, sport_key)
+        except Exception as arb_err:
+            logger.debug("UnifiedIngestion: prop arb persistence skipped: %s", arb_err)
+
         metrics["status"] = "completed" if not metrics["errors"] else "partial_success"
         elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
         logger.info(f"INFO: [{sport_key}] Ingest complete — {metrics['events_count']} odds events, {metrics['rows_upserted']} props upserted, source: {source_name}, elapsed: {elapsed:.1f}s")

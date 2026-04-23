@@ -2,8 +2,39 @@ from fastapi import APIRouter, Query, Depends
 from typing import Optional, List, Dict, Any
 from services.line_movement_service import line_movement_service
 from common_deps import get_user_tier
+from db.session import AsyncSessionLocal
 
 router = APIRouter(tags=["line_movement"])
+
+
+@router.get("/history/{sport}")
+async def get_line_movement_history(
+    sport: str,
+    hours: int = Query(24, ge=1, le=168),
+    tier: str = Depends(get_user_tier),
+):
+    """
+    Line movement from line_movement_history (TheOddsAPI snapshots after ingest).
+    """
+    if tier == "free":
+        return {
+            "status": "gated",
+            "message": "Premium subscription required.",
+            "data": [],
+            "count": 0,
+        }
+    try:
+        from services.line_tracker import get_movement_for_sport
+
+        async with AsyncSessionLocal() as db:
+            rows = await get_movement_for_sport(db, sport, hours=hours)
+        return {"status": "ok", "count": len(rows), "data": rows, "sport": sport}
+    except Exception as e:
+        import logging
+
+        logging.error("line_movement history: %s", e)
+        return {"status": "error", "message": str(e), "data": [], "count": 0}
+
 
 @router.get("")
 @router.get("/")

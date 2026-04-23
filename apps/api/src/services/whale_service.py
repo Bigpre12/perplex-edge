@@ -55,8 +55,8 @@ class WhaleService:
                 from models import LineTick
                 fifteen_mins_ago = datetime.now(timezone.utc) - timedelta(minutes=15)
                 stmt_ticks = select(LineTick).where(
-                    LineTick.sport_key == sport,
-                    LineTick.created_at >= fifteen_mins_ago
+                    LineTick.sport == sport,
+                    LineTick.created_at >= fifteen_mins_ago,
                 ).order_by(LineTick.created_at.desc())
                 
                 res_ticks = await session.execute(stmt_ticks)
@@ -65,16 +65,17 @@ class WhaleService:
                 if ticks:
                     active_moves = {}
                     for t in ticks:
-                        key = f"{t.player_name}:{t.market_key}"
+                        pn = t.player_name or "Matchup"
+                        key = f"{pn}:{t.market_key}"
                         if key not in active_moves: active_moves[key] = []
                         active_moves[key].append(t)
                     
                     for key, t_list in active_moves.items():
                         if len(t_list) >= 3:
                             try:
-                                player, market = key.split(":")
-                                latest = t_list[0].price
-                                earliest = t_list[-1].price
+                                player, market = key.split(":", 1)
+                                latest = float(t_list[0].price)
+                                earliest = float(t_list[-1].price)
                                 diff = latest - earliest
                                 
                                 if abs(diff) >= 10:
@@ -94,7 +95,9 @@ class WhaleService:
                                         "whale_label": "⚡ MARKET STEAM",
                                         "description": f"Rapid market-wide velocity detected on {player}. {len(t_list)} ticks in 15m.",
                                         "alert_time": datetime.now(timezone.utc).isoformat(),
-                                        "books_involved": list(set([t.sportsbook for t in t_list]))
+                                        "books_involved": list(
+                                            set([t.bookmaker for t in t_list if t.bookmaker])
+                                        ),
                                     })
                             except: continue
 

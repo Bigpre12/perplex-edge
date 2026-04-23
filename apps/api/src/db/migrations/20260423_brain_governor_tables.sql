@@ -1,4 +1,5 @@
 -- Active Brain governor: decision log + lightweight odds cache snapshots (not full API payloads)
+-- Apply in Supabase SQL editor before 20260424_gap_tables.sql.
 CREATE TABLE IF NOT EXISTS brain_decisions (
   id SERIAL PRIMARY KEY,
   sport VARCHAR(50),

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { motion } from "framer-motion";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 const DEFAULT_USER_SETTINGS: Record<string, unknown> = {
   unit_size: 100,
@@ -175,19 +176,12 @@ function SettingsContent() {
 
   return (
     <div className="max-w-5xl mx-auto pb-32 space-y-12 pt-16 px-6 text-white">
-      {error ? (
-        <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-[11px] font-bold text-amber-100">
-            Could not load saved settings. Changes will apply to defaults until sync succeeds.
-          </p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-[10px] font-black uppercase tracking-widest"
-          >
-            <RefreshCw size={14} /> Retry
-          </button>
-        </div>
+      {(error || settings === null || settings === undefined) && !isLoading ? (
+        <EmptyState
+          title="Unable to load settings."
+          description="Showing defaults — your changes will still save."
+          onRetry={() => refetch()}
+        />
       ) : null}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/5 pb-10">

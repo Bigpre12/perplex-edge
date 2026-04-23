@@ -1,40 +1,43 @@
 # apps/api/src/routers/arbitrage.py
 from fastapi import APIRouter, Query, Depends
-from typing import Optional
-from services.props_service import get_all_props
-from core.sports_config import SPORT_DISPLAY
-from common_deps import get_user_tier, require_elite
+from typing import Optional, Any, Dict, List
+from sqlalchemy.ext.asyncio import AsyncSession
+from common_deps import get_user_tier
+from db.session import get_async_db
 
 router = APIRouter(tags=["arbitrage"])
 
-def american_to_decimal(odds: int) -> float:
-    if odds > 0:
-        return (odds / 100) + 1
-    return (100 / abs(odds)) + 1
 
-def find_arb(over_odds: int, under_odds: int) -> Optional[dict]:
-    over_dec = american_to_decimal(over_odds)
-    under_dec = american_to_decimal(under_odds)
-    arb_pct = (1 / over_dec) + (1 / under_dec)
-    
-    if arb_pct < 1.0:
-        profit_pct = float(f"{float((1 - arb_pct) * 100):.2f}")
-        stake = 100
-        # Correctly calculate stakes for $100 total
-        over_stake = float(f"{float((1 / over_dec) / arb_pct * stake):.2f}")
-        under_stake = float(f"{float(stake - over_stake):.2f}")
-        return {
-            "arb_percentage": float(f"{float(arb_pct * 100):.2f}"),
-            "profit_percentage": profit_pct,
-            "over_stake": over_stake,
-            "under_stake": under_stake,
-        }
-    return None
+def _row_to_opportunity(row: Dict[str, Any]) -> Dict[str, Any]:
+    oa = row.get("outcome_a") or ""
+    player_guess = oa.split(" OVER ")[0] if " OVER " in oa else oa
+    return {
+        "source": "persisted",
+        "event_id": row.get("event_id"),
+        "sport": row.get("sport"),
+        "market": row.get("market"),
+        "outcome_a": row.get("outcome_a"),
+        "outcome_b": row.get("outcome_b"),
+        "player_name": player_guess,
+        "stat_type": row.get("market"),
+        "line": None,
+        "over_book": row.get("book_a"),
+        "over_odds": row.get("odds_a"),
+        "under_book": row.get("book_b"),
+        "under_odds": row.get("odds_b"),
+        "profit_percentage": float(row.get("profit_per_100") or 0),
+        "arb_percentage": float(row.get("arb_pct") or 0),
+        "arb_pct": float(row.get("arb_pct") or 0),
+        "detected_at": str(row.get("detected_at")) if row.get("detected_at") else None,
+        "expires_at": str(row.get("expires_at")) if row.get("expires_at") else None,
+    }
+
 
 @router.get("")
 async def get_arbitrage(
     sport: Optional[str] = Query(None),
-    tier: str = Depends(get_user_tier)
+    tier: str = Depends(get_user_tier),
+    db: AsyncSession = Depends(get_async_db),
 ):
     # Tier check: Arbitrage is elite only
     if tier != "elite":
@@ -45,49 +48,21 @@ async def get_arbitrage(
             "tier_required": "elite"
         }
 
-    # Grouped data from props_service
-    props = await get_all_props(sport_filter=sport)
+    persisted: List[Dict[str, Any]] = []
+    try:
+        from services.arb_calculator import fetch_recent_arbs
 
-    arb_opps = []
-    SHARP_BOOKS = ["Pinnacle", "Bookmaker.eu", "Circa Sports", "BetCris", "Lowvig.ag"]
-    
-    for prop in props:
-        # Each prop from props_service has 'over' and 'under' lists directly
-        overs = prop.get("over", [])
-        unders = prop.get("under", [])
-        
-        if not overs or not unders:
-            continue
-            
-        # Find best over and best under by odds
-        best_over = max(overs, key=lambda x: x["odds"])
-        best_under = max(unders, key=lambda x: x["odds"])
-        
-        # Skip if same book (not true arb)
-        if best_over["book"] == best_under["book"]:
-            continue
-            
-        arb = find_arb(best_over["odds"], best_under["odds"])
-        
-        if arb:
-            # Identify if it's a Sharp vs Square opportunity
-            is_sharp_v_square = (best_over["book"] in SHARP_BOOKS) != (best_under["book"] in SHARP_BOOKS)
-            
-            arb_opps.append({
-                "player_name": prop["player_name"],
-                "sport": prop.get("sport_key", "all"),
-                "stat_type": prop["stat_type"],
-                "line": prop.get("line") or best_over["line"],
-                "over_book": best_over["book"],
-                "over_odds": best_over["odds"],
-                "under_book": best_under["book"],
-                "under_odds": best_under["odds"],
-                "is_sharp_v_square": is_sharp_v_square,
-                **arb,
-            })
+        persisted = await fetch_recent_arbs(db, sport, limit=50)
+    except Exception:
+        pass
 
-    arb_opps.sort(key=lambda x: x["profit_percentage"], reverse=True)
-    return {"count": len(arb_opps), "opportunities": arb_opps}
+    merged = [_row_to_opportunity(row) for row in persisted]
+    merged.sort(key=lambda x: x.get("profit_percentage") or 0, reverse=True)
+    return {
+        "count": len(merged),
+        "opportunities": merged,
+        "persisted_count": len(persisted),
+    }
 
 @router.post("/compute")
 async def trigger_arb_compute(

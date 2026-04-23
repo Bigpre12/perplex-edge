@@ -223,16 +223,63 @@ async def insert_edges_ev_history(ev_rows: List[Dict]):
             logger.error(f"Persistence: edges_ev_history insert failed: {e}")
 
 async def insert_whale_moves(moves: List[Dict]):
-    if not moves: return
+    if not moves:
+        return
+    is_sqlite = "sqlite" in str(engine.url)
     async with async_session_maker() as session:
         try:
-            is_sqlite = "sqlite" in str(engine.url)
             ins_obj = sqlite_insert(WhaleMove) if is_sqlite else pg_insert(WhaleMove)
             await session.execute(ins_obj.values(moves))
             await session.commit()
         except Exception as e:
             await session.rollback()
             logger.error(f"Persistence: whale_moves insert failed: {e}")
+            return
+
+    if is_sqlite:
+        return
+    async with async_session_maker() as session:
+        try:
+            for m in moves:
+                po = m.get("price_after")
+                try:
+                    odds_i = int(round(float(po))) if po is not None else None
+                except (TypeError, ValueError):
+                    odds_i = None
+                try:
+                    await session.execute(
+                        text(
+                            """
+                            INSERT INTO whale_signals (
+                              event_id, sport, player, market, line, bookmaker, odds,
+                              trust_level, signal_type, is_sharp_money, detected_at
+                            ) VALUES (
+                              :event_id, :sport, :player, :market, :line, :bookmaker, :odds,
+                              :trust_level, :signal_type, :is_sharp_money, NOW()
+                            )
+                            """
+                        ),
+                        {
+                            "event_id": m.get("event_id"),
+                            "sport": m.get("sport"),
+                            "player": (m.get("player_name") or m.get("selection") or "")[:100],
+                            "market": (m.get("market_key") or "")[:50],
+                            "line": m.get("line_after"),
+                            "bookmaker": (m.get("bookmaker") or "")[:50],
+                            "odds": odds_i,
+                            "trust_level": m.get("whale_rating"),
+                            "signal_type": (m.get("move_size") or m.get("move_type") or "whale")[
+                                :50
+                            ],
+                            "is_sharp_money": False,
+                        },
+                    )
+                except Exception as sig_err:
+                    logger.debug("whale_signals dual-write skipped: %s", sig_err)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            logger.debug("Persistence: whale_signals batch: %s", e)
 
 async def insert_clv_trades(records: List[Dict]):
     """Persists CLV records to clv_trades table."""

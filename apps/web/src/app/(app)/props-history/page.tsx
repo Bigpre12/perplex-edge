@@ -11,12 +11,15 @@ import { DataTable } from "@/components/shared/DataTable";
 import { Sparklines, SparklinesLine, SparklinesSpots } from "react-sparklines";
 import { clsx } from "clsx";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function PropsHistoryPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">RETRIEVING SETTLED DATA...</div>}>
-      <PropsHistoryContent />
-    </Suspense>
+    <ErrorBoundary label="Props history failed to render.">
+      <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">RETRIEVING SETTLED DATA...</div>}>
+        <PropsHistoryContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -93,8 +96,20 @@ function PropsHistoryContent() {
       <div className="p-6 space-y-4">
         <ErrorBanner message="Settlement stream interrupted." onRetry={refetch} />
         <EmptyState
-          title="No data available. Waiting for market sync."
-          description="Settled props history requires graded results from the backend."
+          title="No graded picks yet."
+          description="History builds as picks are logged and results come in."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (history === null || history === undefined) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          title="No graded picks yet."
+          description="History builds as picks are logged and results come in."
           onRetry={() => refetch()}
         />
       </div>
@@ -136,8 +151,8 @@ function PropsHistoryContent() {
 
       {rows.length === 0 && (
         <EmptyState
-          title="No data available. Waiting for market sync."
-          description="No settled props for this sport yet. Grading runs after games complete."
+          title="No graded picks yet."
+          description="History builds as picks are logged and results come in."
           onRetry={() => refetch()}
         />
       )}

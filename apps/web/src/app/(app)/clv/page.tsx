@@ -12,6 +12,7 @@ import SportSelector from "@/components/shared/SportSelector";
 import { BarChart3, Clock, TrendingUp, Info } from "lucide-react";
 import { clsx } from "clsx";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 function fmtMetaFixed(v: unknown, digits: number, fallback: string): string {
   const n = Number(v);
@@ -26,9 +27,11 @@ function numOrZero(v: unknown): number {
 
 export default function CLVPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING CLV ANALYTICS...</div>}>
-      <CLVPageContent />
-    </Suspense>
+    <ErrorBoundary label="CLV page failed to render.">
+      <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING CLV ANALYTICS...</div>}>
+        <CLVPageContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -68,8 +71,20 @@ function CLVPageContent() {
       <div className="p-6 space-y-4">
         <ErrorBanner message="CLV Analytics Engine is currently offline." onRetry={refetch} />
         <EmptyState
-          title="No data available. Waiting for market sync."
-          description="CLV requires fresh lines from the odds pipeline. Try again after sync completes."
+          title="No closing line data yet."
+          description="CLV will populate after the first odds sync."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (clvData === null || clvData === undefined) {
+    return (
+      <div className="p-6 space-y-4">
+        <EmptyState
+          title="No closing line data yet."
+          description="CLV will populate after the first odds sync."
           onRetry={() => refetch()}
         />
       </div>
@@ -144,8 +159,8 @@ function CLVPageContent() {
       {activeTab === 'clv' ? (
         results.length === 0 ? (
           <EmptyState
-            title="No data available. Waiting for market sync."
-            description="Closing line value needs settled markets and fresh odds. Use Force sync on the dashboard if available."
+            title="No closing line data yet."
+            description="CLV will populate after the first odds sync."
             onRetry={() => refetch()}
           />
         ) : (

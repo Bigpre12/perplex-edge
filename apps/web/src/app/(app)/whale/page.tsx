@@ -11,12 +11,15 @@ import SportSelector from "@/components/shared/SportSelector";
 import { ShieldAlert, Zap, Star, Clock, Filter, AlertCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function WhaleAlertsPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING WHALE TRACKER...</div>}>
-      <WhaleAlertsContent />
-    </Suspense>
+    <ErrorBoundary label="Whale page failed to render.">
+      <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING WHALE TRACKER...</div>}>
+        <WhaleAlertsContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -68,8 +71,20 @@ function WhaleAlertsContent() {
       <div className="pb-24 pt-6 px-4 space-y-4">
         <ErrorBanner message="Whale feed interrupted. Check connection or try again." onRetry={() => refetch()} />
         <EmptyState
-          title="No data available. Waiting for market sync."
-          description="Whale signals need live order-flow and fresh props. Retry after the pipeline catches up."
+          title="No whale signals detected in the current window."
+          description="Retry after the next ingest cycle or widen your filters."
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (rawAlerts === null || rawAlerts === undefined) {
+    return (
+      <div className="pb-24 pt-6 px-4">
+        <EmptyState
+          title="No whale signals detected in the current window."
+          description="Retry after the next ingest cycle or widen your filters."
           onRetry={() => refetch()}
         />
       </div>
@@ -174,8 +189,8 @@ function WhaleAlertsContent() {
 
         {alerts.length === 0 && (
           <EmptyState
-            title="No data available. Waiting for market sync."
-            description="No whale activity detected for this slate yet. Fresh multi-book odds improve detection."
+            title="No whale signals detected in the current window."
+            description="Retry after the next ingest cycle or widen your filters."
             onRetry={() => refetch()}
           />
         )}

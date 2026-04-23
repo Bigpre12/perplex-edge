@@ -116,6 +116,7 @@ intel_router         = safe_import("intel", "router")
 pick_intel_router    = safe_import("pick_intel", "router")
 sharp_router         = safe_import("sharp", "router")
 parlays_router       = safe_import("parlays", "router")
+simulation_router    = safe_import("simulation", "router")
 props_history_router = safe_import("props_history", "router")
 alerts_router        = safe_import("alerts", "router")
 audit_router         = safe_import("audit", "router")
@@ -671,6 +672,7 @@ if kalshi_router:        app.include_router(kalshi_router, prefix="/api/kalshi",
 if kalshi_ws_router:     app.include_router(kalshi_ws_router, prefix="/api/kalshi_ws", tags=["kalshi_ws"])
 if sharp_router:         app.include_router(sharp_router, prefix="/api/sharp", tags=["sharp"])
 if parlays_router:       app.include_router(parlays_router, prefix="/api/parlays", tags=["parlays"])
+if simulation_router:    app.include_router(simulation_router, prefix="/api/simulation", tags=["simulation"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
 if waterfall_router:     app.include_router(waterfall_router, prefix="/api/waterfall", tags=["waterfall"])
 
@@ -716,6 +718,48 @@ async def admin_odds_usage(db: AsyncSession = Depends(get_db)):
     from services.odds_quota_store import fetch_usage_summary
 
     return await fetch_usage_summary(db)
+
+
+@app.get("/api/admin/system-health", tags=["admin"])
+async def admin_system_health(db: AsyncSession = Depends(get_db)):
+    """
+    Compact ops snapshot: DB / pipeline / odds stream + quota (no full /api/health/deps degradation object).
+    """
+    from routers.health import compute_health
+
+    base = await compute_health(db)
+    internal = base.pop("_internal", None) or {}
+    return {
+        "status": base.get("status"),
+        "system_status": base.get("system_status"),
+        "odds_stream": base.get("odds_stream"),
+        "components": {
+            "database": base.get("database"),
+            "odds_api": base.get("odds_api"),
+            "kalshi": base.get("kalshi"),
+            "pipeline_status": base.get("pipeline_status"),
+            "inference_status": base.get("inference_status"),
+            "props_count": base.get("props_count"),
+        },
+        "odds_quota": base.get("odds_quota"),
+        "flags": {
+            "is_stale": internal.get("is_stale"),
+            "odds_api_quota_exhausted": internal.get("odds_api_quota_exhausted"),
+            "odds_api_ingest_blocked_reason": internal.get("odds_api_ingest_blocked_reason"),
+            "recent_ingest_heartbeat_ok": internal.get("recent_ingest_heartbeat_ok"),
+        },
+        "freshness": {
+            "last_odds_update": base.get("last_odds_update"),
+            "last_ev_update": base.get("last_ev_update"),
+        },
+        "sync": {
+            "last_odds_sync": base.get("last_odds_sync"),
+            "last_ev_sync": base.get("last_ev_sync"),
+            "last_grade_sync": base.get("last_grade_sync"),
+        },
+        "timestamp": base.get("timestamp"),
+        "version": base.get("version"),
+    }
 
 
 @app.post("/api/admin/reset-circuit-breaker")

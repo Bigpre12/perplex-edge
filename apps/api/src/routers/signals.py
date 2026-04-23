@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from sqlalchemy import text, select, desc
 from db.session import get_db
 from datetime import datetime, timezone
 from services.heartbeat_service import HeartbeatService
 import logging
 from typing import Optional
+
+from models.brain import SharpSignal
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +23,36 @@ def _max_dt(*values: Optional[datetime]) -> Optional[datetime]:
 async def sharp_moves(
     sport: str = Query("basketball_nba"),
     db: AsyncSession = Depends(get_db),
+    limit: int = Query(100, ge=1, le=500),
 ):
-    return {"sport": sport, "items": []}
+    try:
+        res = await db.execute(
+            select(SharpSignal)
+            .where(SharpSignal.sport == sport)
+            .order_by(desc(SharpSignal.created_at))
+            .limit(limit)
+        )
+        rows = res.scalars().all()
+    except Exception as e:
+        logger.warning("sharp-moves query failed: %s", e)
+        return {"sport": sport, "items": [], "count": 0, "error": str(e)}
+
+    items = []
+    for r in rows:
+        items.append(
+            {
+                "id": r.id,
+                "event_id": r.event_id,
+                "sport": r.sport,
+                "market_key": r.market_key,
+                "selection": r.selection,
+                "signal_type": r.signal_type,
+                "severity": r.severity,
+                "bookmakers_involved": r.bookmakers_involved,
+                "detected_at": r.created_at.isoformat() if r.created_at else None,
+            }
+        )
+    return {"sport": sport, "items": items, "count": len(items)}
 
 @router.get("/freshness")
 async def freshness(

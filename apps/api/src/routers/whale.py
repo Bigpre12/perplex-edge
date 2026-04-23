@@ -1,10 +1,13 @@
+import logging
 from fastapi import APIRouter, Query, Depends
 from api_utils.tier_guards import require_tier
 from typing import Optional, List, Dict, Any
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from db.session import get_async_db
-from models.brain import WhaleMove
+from models.brain import WhaleMove, WhaleSignal
 from schemas.unified import WhaleEventSchema
 from datetime import datetime, timezone, timedelta
 from models.user import User
@@ -24,22 +27,59 @@ async def whale_signals(
     Access restricted to ELITE users.
     """
         
-    stmt = select(WhaleMove).where(WhaleMove.sport == sport)
-    if min_units > 0:
-        stmt = stmt.where(WhaleMove.whale_rating >= min_units)
-        
-    stmt = stmt.where(WhaleMove.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
-    stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(20)
-    
-    result = await db.execute(stmt)
-    moves = result.scalars().all()
-    
+    sig_rows = []
+    try:
+        sig_stmt = (
+            select(WhaleSignal)
+            .where(WhaleSignal.sport == sport)
+            .order_by(desc(WhaleSignal.detected_at))
+            .limit(50)
+        )
+        sig_res = await db.execute(sig_stmt)
+        sig_rows = sig_res.scalars().all()
+    except Exception as e:
+        logger.debug("whale_signals read skipped: %s", e)
+
+    out: List[WhaleEventSchema] = []
+    for w in sig_rows:
+        out.append(
+            WhaleEventSchema.model_validate(
+                {
+                    "id": w.id,
+                    "sport": w.sport or sport,
+                    "event_id": w.event_id,
+                    "player_name": w.player,
+                    "market_key": w.market,
+                    "bookmaker": w.bookmaker,
+                    "price_after": float(w.odds) if w.odds is not None else None,
+                    "line": w.line,
+                    "whale_rating": w.trust_level or 0.0,
+                    "move_size": w.signal_type,
+                    "created_at": w.detected_at,
+                }
+            )
+        )
+
+    if len(out) < 50:
+        stmt = select(WhaleMove).where(WhaleMove.sport == sport)
+        if min_units > 0:
+            stmt = stmt.where(WhaleMove.whale_rating >= min_units)
+        stmt = stmt.where(WhaleMove.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
+        stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(50 - len(out))
+        result = await db.execute(stmt)
+        moves = result.scalars().all()
+        for m in moves:
+            out.append(WhaleEventSchema.model_validate(m))
+    else:
+        moves = []
+
     return {
         "status": "success",
-        "data": [WhaleEventSchema.model_validate(m) for m in moves],
-        "total": len(moves),
+        "data": out[:50],
+        "total": len(out[:50]),
         "sport": sport,
-        "min_units": min_units
+        "min_units": min_units,
+        "sources": {"whale_signals": len(sig_rows), "whale_moves_fallback": len(moves)},
     }
 
 @router.get("/history", response_model=Dict[str, Any])

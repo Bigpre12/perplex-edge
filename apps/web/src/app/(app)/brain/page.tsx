@@ -11,14 +11,17 @@ import { BrainCircuit, Zap, ShieldCheck, Activity, Target, TrendingUp } from "lu
 import { Progress } from "@/components/ui/Progress";
 import { clsx } from "clsx";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 
 
 export default function BrainPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING NEURAL ENGINE...</div>}>
-      <BrainContent />
-    </Suspense>
+    <ErrorBoundary label="Brain page failed to render.">
+      <Suspense fallback={<div className="p-6 text-white font-black italic uppercase tracking-widest animate-pulse font-display text-center py-24">BOOTING NEURAL ENGINE...</div>}>
+        <BrainContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -61,7 +64,28 @@ function BrainContent() {
   }
 
   if (brainError) {
-    return <div className="p-6"><ErrorBanner message="Neural Core Overload." onRetry={refetchBrain} /></div>;
+    return (
+      <div className="p-6 space-y-4">
+        <ErrorBanner message="Neural Core Overload." onRetry={refetchBrain} />
+        <EmptyState
+          title="Brain engine is warming up."
+          description="Decisions will appear after the first ingest cycle."
+          onRetry={() => refetchBrain()}
+        />
+      </div>
+    );
+  }
+
+  if (brainData === null || brainData === undefined) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          title="Brain engine is warming up."
+          description="Decisions will appear after the first ingest cycle."
+          onRetry={() => refetchBrain()}
+        />
+      </div>
+    );
   }
 
   const props = Array.isArray(brainData?.props) ? brainData.props : [];
@@ -166,8 +190,8 @@ function BrainContent() {
         {props.length === 0 && (
           <div className="col-span-full">
             <EmptyState
-              title="No data available. Waiting for market sync."
-              description="The neural engine needs fresh props and model scores. Try again after the next odds sync."
+              title="Brain engine is warming up."
+              description="Decisions will appear after the first ingest cycle."
               onRetry={() => refetchBrain()}
             />
           </div>

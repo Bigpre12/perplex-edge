@@ -6,7 +6,7 @@ celery_app = Celery(
     "perplex_edge_worker",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["workers.ev_engine"] # Register tasks here
+    include=["workers.ev_engine", "workers.ingest_coordinator", "workers.arb_cleanup"]
 )
 
 celery_app.conf.update(

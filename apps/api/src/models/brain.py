@@ -195,6 +195,25 @@ class InferenceLog(Base):
     sport = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class WhaleSignal(Base):
+    """Dual-write mirror of high-intent whale detections (see whale_moves)."""
+
+    __tablename__ = "whale_signals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(String(100), nullable=True, index=True)
+    sport = Column(String(50), nullable=True, index=True)
+    player = Column(String(100), nullable=True)
+    market = Column(String(50), nullable=True)
+    line = Column(Float, nullable=True)
+    bookmaker = Column(String(50), nullable=True)
+    odds = Column(Integer, nullable=True)
+    trust_level = Column(Float, nullable=True)
+    signal_type = Column(String(50), nullable=True)
+    is_sharp_money = Column(Boolean, nullable=False, default=False)
+    detected_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
 class WhaleMove(Base):
     """
     Consolidated Sharp/Whale activity with before/after state.

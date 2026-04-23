@@ -122,6 +122,76 @@ async def get_sharp_alerts(
             data=[]
         )
 
+
+@router.get("/{sport}", response_model=UniversalResponse[dict])
+async def get_sharp_by_sport_path(
+    sport: str,
+    since: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=100),
+):
+    """Latest rows from sharp_signals only (path-param REST shape)."""
+    try:
+        async with AsyncSessionLocal() as session:
+            sharp_stmt = (
+                select(SharpSignal)
+                .where(SharpSignal.sport == sport)
+                .order_by(desc(SharpSignal.created_at))
+                .limit(limit)
+            )
+            sharp_res = await session.execute(sharp_stmt)
+            sharp_signals = sharp_res.scalars().all()
+
+            since_dt = None
+            if since:
+                from datetime import datetime, timedelta
+
+                if since.endswith("h"):
+                    since_dt = datetime.utcnow() - timedelta(hours=int(since[:-1]))
+                else:
+                    try:
+                        since_dt = datetime.fromisoformat(since.replace("Z", ""))
+                    except Exception:
+                        pass
+            if since_dt:
+                sharp_signals = [
+                    s
+                    for s in sharp_signals
+                    if s.created_at and s.created_at.replace(tzinfo=None) >= since_dt
+                ]
+
+            results = []
+            for s in sharp_signals:
+                results.append(
+                    {
+                        "id": f"sharp_{s.id}",
+                        "type": "sharp",
+                        "signal_type": s.signal_type,
+                        "severity": float(s.severity) if s.severity else 0.0,
+                        "event_id": s.event_id,
+                        "market": s.market_key,
+                        "selection": s.selection,
+                        "created_at": s.created_at.isoformat() if s.created_at else None,
+                    }
+                )
+            return UniversalResponse(
+                status="ok" if results else "no_data",
+                meta=ResponseMeta(
+                    source="sharp_signals",
+                    db_rows=len(results),
+                    request_id=get_request_id(),
+                ),
+                data=results,
+            )
+    except Exception as e:
+        logger.error("get_sharp_by_sport_path: %s", e)
+        return UniversalResponse(
+            status="error",
+            message=str(e),
+            meta=ResponseMeta(request_id=get_request_id()),
+            data=[],
+        )
+
+
 @router.post("/compute")
 async def trigger_sharp_compute(
     sport: str = Query("basketball_nba"),

@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 
 from services.odds_api_client import odds_api_client
 from core.config import settings
+from real_data_connector import real_data_connector
+from db.session import AsyncSessionLocal
+from services.live_scores_cache import upsert_live_scores_from_games
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,20 @@ class LiveDataService:
             except Exception as e:
                 logger.error(f"❌ [Live Polling] Failed to refresh props for {sport}: {e}")
 
+    async def poll_scores(self):
+        """Refresh live_scores cache from the same waterfall used by /api/live (ESPN → …)."""
+        for sport in self.hot_sports:
+            try:
+                games = await real_data_connector.fetch_games_by_sport(sport)
+                if not games:
+                    continue
+                async with AsyncSessionLocal() as session:
+                    n = await upsert_live_scores_from_games(session, sport, games)
+                    if n:
+                        logger.info(f"🔥 [Live Polling] Cached {n} score rows for {sport}")
+            except Exception as e:
+                logger.error(f"❌ [Live Polling] Failed to refresh live_scores for {sport}: {e}")
+
     async def run_loop(self):
         """Main orchestrator loop."""
         logger.info(f"🚀 [Live Polling] Service started. Interval: {self.polling_interval}s")
@@ -79,6 +96,7 @@ class LiveDataService:
                 # Run polling
                 await self.poll_odds()
                 await self.poll_props()
+                await self.poll_scores()
                 
                 elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
                 wait_time = max(0.0, float(self.polling_interval) - elapsed)
