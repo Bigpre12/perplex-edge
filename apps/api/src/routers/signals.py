@@ -23,7 +23,7 @@ def _max_dt(*values: Optional[datetime]) -> Optional[datetime]:
 async def sharp_moves(
     sport: str = Query("basketball_nba"),
     db: AsyncSession = Depends(get_db),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(50, ge=1, le=200),
 ):
     try:
         res = await db.execute(

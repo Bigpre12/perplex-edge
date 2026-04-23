@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from brain.decisions import props_live_age_minutes, should_skip_fetch_for_fresh_cache
 from services.odds_quota_store import fetch_usage_summary, raise_if_quota_blocked
 
+# Railway: BRAIN_SKIP_WHEN_FRESH_MINUTES, BRAIN_CACHE_SKIP — read in brain.env_reads (used by brain.decisions).
+
 logger = logging.getLogger(__name__)
 
 

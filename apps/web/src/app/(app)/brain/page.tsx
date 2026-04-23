@@ -68,8 +68,8 @@ function BrainContent() {
       <div className="p-6 space-y-4">
         <ErrorBanner message="Neural Core Overload." onRetry={refetchBrain} />
         <EmptyState
-          title="Brain engine is warming up."
-          description="Decisions will appear after the first ingest cycle."
+          title="Brain engine warming up."
+          description="Decisions appear after the first ingest cycle."
           onRetry={() => refetchBrain()}
         />
       </div>
@@ -80,8 +80,8 @@ function BrainContent() {
     return (
       <div className="p-6">
         <EmptyState
-          title="Brain engine is warming up."
-          description="Decisions will appear after the first ingest cycle."
+          title="Brain engine warming up."
+          description="Decisions appear after the first ingest cycle."
           onRetry={() => refetchBrain()}
         />
       </div>
@@ -89,7 +89,9 @@ function BrainContent() {
   }
 
   const props = Array.isArray(brainData?.props) ? brainData.props : [];
-  const alignedProps: string[] = Array.isArray((smartMoney as { aligned_props?: unknown })?.aligned_props)
+  const alignedProps: string[] = Array.isArray(
+    (smartMoney as { aligned_props?: unknown } | null | undefined)?.aligned_props
+  )
     ? ((smartMoney as { aligned_props: string[] }).aligned_props)
     : [];
 
@@ -190,8 +192,8 @@ function BrainContent() {
         {props.length === 0 && (
           <div className="col-span-full">
             <EmptyState
-              title="Brain engine is warming up."
-              description="Decisions will appear after the first ingest cycle."
+              title="Brain engine warming up."
+              description="Decisions appear after the first ingest cycle."
               onRetry={() => refetchBrain()}
             />
           </div>

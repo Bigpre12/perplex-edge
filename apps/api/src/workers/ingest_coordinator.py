@@ -4,10 +4,10 @@ Quota-aware Celery ingest: single beat tick decides per-sport whether to run uni
 from __future__ import annotations
 
 import logging
-import os
 import time
 
 from celery_app import celery_app
+from core.ingest_coordinator_env import INGEST_COORDINATOR_MAX_PER_TICK
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ async def run_ingest_coordinator_tick() -> None:
 
     now = time.time()
     ran = 0
-    max_per_tick = max(1, int(os.getenv("INGEST_COORDINATOR_MAX_PER_TICK", "3")))
+    max_per_tick = INGEST_COORDINATOR_MAX_PER_TICK
     for sport in ALL_SPORTS:
         if ran >= max_per_tick:
             break

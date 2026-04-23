@@ -93,10 +93,9 @@ class LiveDataService:
             try:
                 start_time = datetime.now(timezone.utc)
                 
-                # Run polling
+                # Run polling (live_scores upsert runs on APScheduler in main.py)
                 await self.poll_odds()
                 await self.poll_props()
-                await self.poll_scores()
                 
                 elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
                 wait_time = max(0.0, float(self.polling_interval) - elapsed)

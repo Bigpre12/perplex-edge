@@ -98,28 +98,17 @@ async def simulate_parlay(payload: Dict[str, Any]):
                 leg["std_dev"] = abs(leg["mean"]) * 0.15 if leg["mean"] != 0 else 1.0
                 leg["distribution"] = "normal"
 
-        from services.monte_carlo_results_store import (
-            fetch_cached_parlay,
-            parlay_cache_keys,
-            save_parlay_result,
-            cached_row_to_api_response,
-        )
-
-        event_id, outcome_fp = parlay_cache_keys(sport, legs)
-        async with AsyncSessionLocal() as session:
-            cached = await fetch_cached_parlay(session, sport, event_id, outcome_fp)
-            if cached:
-                return cached_row_to_api_response(cached, [])
-
-        results = monte_carlo_service.simulate_parlay(legs, n_sims=n_sims)
+        from services.monte_carlo_service import simulate_parlay_with_cache_and_persist
 
         async with AsyncSessionLocal() as session:
             try:
-                await save_parlay_result(session, sport, event_id, outcome_fp, legs, n_sims, results)
+                return await simulate_parlay_with_cache_and_persist(
+                    session, sport, legs, n_sims=n_sims
+                )
             except Exception as persist_err:
                 log.debug("Monte Carlo persist skipped: %s", persist_err)
 
-        # Format for frontend expectations (page.tsx Line 72-81)
+        results = monte_carlo_service.simulate_parlay(legs, n_sims=n_sims)
         return {
             "roi": results["parlay_ev"] * 100,
             "edge": results["parlay_ev"],
@@ -127,7 +116,7 @@ async def simulate_parlay(payload: Dict[str, Any]):
             "expected_value": results["parlay_ev"],
             "true_probability": results["parlay_hit_rate"],
             "confidence": "high" if results["parlay_ev"] > 0.05 else "medium",
-            "max_drawdown": 0.15, # Placeholder
+            "max_drawdown": 0.15,
             "leg_results": results["leg_results"],
             "cached": False,
         }

@@ -1,20 +1,13 @@
 """Rules: when to skip network ingest and rely on DB cache (props_live)."""
 from __future__ import annotations
 
-import os
 from typing import Optional, Tuple
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from brain.env_reads import BRAIN_SKIP_WHEN_FRESH_MINUTES, brain_cache_skip_enabled
 from brain.quota_guard import CONSERVATIVE_PCT
-
-# If props_live for this sport is newer than this, we may skip a fetch when quota is tight.
-_DEFAULT_FRESH = int(os.getenv("BRAIN_SKIP_WHEN_FRESH_MINUTES", "7"))
-
-
-def cache_skip_enabled() -> bool:
-    return os.getenv("BRAIN_CACHE_SKIP", "true").strip().lower() in ("1", "true", "yes", "on")
 
 
 async def props_live_age_minutes(session: AsyncSession, sport: str) -> Optional[float]:
@@ -47,13 +40,13 @@ def should_skip_fetch_for_fresh_cache(
     When quota_pct >= CONSERVATIVE_PCT and props_live is fresher than threshold,
     skip hitting TheOddsAPI for this cycle.
     """
-    if not cache_skip_enabled():
+    if not brain_cache_skip_enabled():
         return False, "cache_skip_disabled"
     if cache_age_minutes is None:
         return False, "no_cache_timestamp"
     if quota_pct < CONSERVATIVE_PCT:
         return False, "quota_comfortable"
-    fresh = max(1, _DEFAULT_FRESH)
+    fresh = max(1, BRAIN_SKIP_WHEN_FRESH_MINUTES)
     if cache_age_minutes <= float(fresh):
         return True, f"cache_fresh_under_{fresh}m_quota_conservative"
     return False, "cache_stale_or_quota_ok"

@@ -63,16 +63,11 @@ async def upsert_live_scores_from_games(session: AsyncSession, sport: str, games
           :status, :period, :clock, :home_abbr, :away_abbr, NOW()
         )
         ON CONFLICT (event_id) DO UPDATE SET
-          sport = EXCLUDED.sport,
-          home_team = EXCLUDED.home_team,
-          away_team = EXCLUDED.away_team,
           home_score = EXCLUDED.home_score,
           away_score = EXCLUDED.away_score,
           status = EXCLUDED.status,
           period = EXCLUDED.period,
           clock = EXCLUDED.clock,
-          home_abbr = EXCLUDED.home_abbr,
-          away_abbr = EXCLUDED.away_abbr,
           last_updated = NOW()
         """
     )
@@ -135,15 +130,39 @@ async def fetch_cached_games(session: AsyncSession, sport: str) -> List[Dict[str
         return []
 
 
+async def fetch_fresh_live_scores(session: AsyncSession, sport: str) -> List[Dict[str, Any]]:
+    """Rows for this sport updated within the last 60 seconds (Postgres)."""
+    if _is_sqlite():
+        return []
+    try:
+        q = text(
+            """
+            SELECT event_id, sport, home_team, away_team, home_score, away_score,
+                   status, period, clock, home_abbr, away_abbr, last_updated
+            FROM live_scores
+            WHERE sport = :sport
+              AND last_updated > NOW() - INTERVAL '60 seconds'
+            ORDER BY last_updated DESC
+            """
+        )
+        res = await session.execute(q, {"sport": sport})
+        return [dict(r._mapping) for r in res.fetchall()]
+    except Exception:
+        return []
+
+
 async def read_cache_or_stale(
     session: AsyncSession, sport: str, max_age_sec: float = 60.0
 ) -> Tuple[List[Dict[str, Any]], bool]:
     """
-    Returns (rows, is_fresh). When is_fresh, caller should use rows without hitting ESPN.
-    When not fresh, rows may still be returned for optional use; caller should refresh externally.
+    Returns (rows, is_fresh). Fresh rows match ``last_updated > NOW() - 60 seconds`` for the sport.
+    When not fresh, returns all cached rows for the sport (may be stale) with is_fresh=False.
     """
-    age = await cache_freshness_seconds(session, sport)
-    rows = await fetch_cached_games(session, sport)
-    if age is None or not rows:
-        return [], False
-    return rows, age <= max_age_sec
+    _ = max_age_sec  # retained for API compatibility; SQL uses fixed 60s interval
+    fresh_rows = await fetch_fresh_live_scores(session, sport)
+    if fresh_rows:
+        return fresh_rows, True
+    stale_rows = await fetch_cached_games(session, sport)
+    if stale_rows:
+        return stale_rows, False
+    return [], False

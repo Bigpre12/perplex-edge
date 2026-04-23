@@ -71,7 +71,7 @@ function WhaleAlertsContent() {
       <div className="pb-24 pt-6 px-4 space-y-4">
         <ErrorBanner message="Whale feed interrupted. Check connection or try again." onRetry={() => refetch()} />
         <EmptyState
-          title="No whale signals detected in the current window."
+          title="No whale signals in the current window."
           description="Retry after the next ingest cycle or widen your filters."
           onRetry={() => refetch()}
         />
@@ -83,7 +83,7 @@ function WhaleAlertsContent() {
     return (
       <div className="pb-24 pt-6 px-4">
         <EmptyState
-          title="No whale signals detected in the current window."
+          title="No whale signals in the current window."
           description="Retry after the next ingest cycle or widen your filters."
           onRetry={() => refetch()}
         />
@@ -189,7 +189,7 @@ function WhaleAlertsContent() {
 
         {alerts.length === 0 && (
           <EmptyState
-            title="No whale signals detected in the current window."
+            title="No whale signals in the current window."
             description="Retry after the next ingest cycle or widen your filters."
             onRetry={() => refetch()}
           />

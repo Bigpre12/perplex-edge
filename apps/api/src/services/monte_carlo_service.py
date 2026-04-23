@@ -15,6 +15,8 @@ import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 logger = logging.getLogger(__name__)
 
 
@@ -333,3 +335,42 @@ american_to_implied = american_to_implied
 run_prop_simulation = run_prop_simulation
 run_parlay_simulation = run_parlay_simulation
 calculate_kelly_stake = calculate_kelly_stake
+
+
+async def simulate_parlay_with_cache_and_persist(
+    session: AsyncSession,
+    sport: str,
+    legs: List[Dict[str, Any]],
+    n_sims: int = 10000,
+    correlation_matrix: Optional[List[List[float]]] = None,
+) -> Dict[str, Any]:
+    """
+    30-minute DB cache + persist new runs to ``monte_carlo_results`` (Postgres).
+    Sync Monte Carlo work stays in this module; persistence helpers live in ``monte_carlo_results_store``.
+    """
+    from services.monte_carlo_results_store import (
+        cached_row_to_api_response,
+        fetch_cached_parlay,
+        parlay_cache_keys,
+        save_parlay_result,
+    )
+
+    event_id, outcome_fp = parlay_cache_keys(sport, legs)
+    cached = await fetch_cached_parlay(session, sport, event_id, outcome_fp)
+    if cached:
+        return cached_row_to_api_response(cached, [])
+
+    results = monte_carlo_service.simulate_parlay(legs, n_sims=n_sims, correlation_matrix=correlation_matrix)
+    await save_parlay_result(session, sport, event_id, outcome_fp, legs, n_sims, results)
+
+    return {
+        "roi": results["parlay_ev"] * 100,
+        "edge": results["parlay_ev"],
+        "win_rate": results["parlay_hit_rate"],
+        "expected_value": results["parlay_ev"],
+        "true_probability": results["parlay_hit_rate"],
+        "confidence": "high" if results["parlay_ev"] > 0.05 else "medium",
+        "max_drawdown": 0.15,
+        "leg_results": results["leg_results"],
+        "cached": False,
+    }

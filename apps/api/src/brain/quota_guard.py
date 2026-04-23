@@ -9,7 +9,17 @@ import os
 HARD_STOP_PCT = float(os.getenv("ODDS_API_HARD_STOP_PCT", "0.95"))
 # Above this fraction used, prefer skipping redundant fetches when cache is still fresh.
 CONSERVATIVE_PCT = float(os.getenv("ODDS_API_QUOTA_CONSERVATIVE_PCT", "0.60"))
-WARNING_PCT = float(os.getenv("ODDS_API_QUOTA_WARNING_PCT", "0.80"))
+WARNING_PCT = float(
+    os.getenv("ODDS_API_WARN_PCT")
+    or os.getenv("ODDS_API_USAGE_WARN_PCT")
+    or os.getenv("ODDS_API_QUOTA_WARNING_PCT", "0.80")
+)
+# Mirrors odds_quota_store.monthly_limit() for operators reading quota_guard only.
+_ml_raw = os.getenv("ODDS_API_MONTHLY_LIMIT") or os.getenv("THE_ODDS_API_MAX_CALLS_PER_MONTH", "20000")
+try:
+    MONTHLY_LIMIT = max(0, int(_ml_raw))
+except (TypeError, ValueError):
+    MONTHLY_LIMIT = 20_000
 
 
 def scale_interval_seconds(base_seconds: int, quota_pct: float) -> int:

@@ -115,6 +115,32 @@ class Settings:
         self.EV_MIN_THRESHOLD = float(os.getenv("EV_MIN_THRESHOLD", "-100.0"))
         self.MAJOR_LINE_MOVE_THRESHOLD = float(os.getenv("MAJOR_LINE_MOVE_THRESHOLD", "5.0"))
         self.LIVE_DATA_POLLING_INTERVAL = int(os.getenv("LIVE_DATA_POLLING_INTERVAL", "30"))
+
+        # Railway / quota governor (read here so deploy env is visible on Settings)
+        from core.ingest_coordinator_env import (
+            INGEST_COORDINATOR_MAX_PER_TICK,
+            INGEST_COORDINATOR_TICK_SECONDS,
+        )
+
+        self.BRAIN_SKIP_WHEN_FRESH_MINUTES = int(os.getenv("BRAIN_SKIP_WHEN_FRESH_MINUTES", "7"))
+        self.BRAIN_CACHE_SKIP = os.getenv("BRAIN_CACHE_SKIP", "true")
+        self.INGEST_COORDINATOR_TICK_SECONDS = INGEST_COORDINATOR_TICK_SECONDS
+        self.INGEST_COORDINATOR_MAX_PER_TICK = INGEST_COORDINATOR_MAX_PER_TICK
+        self.ODDS_API_HARD_STOP_PCT = float(os.getenv("ODDS_API_HARD_STOP_PCT", "0.95"))
+        self.ODDS_API_QUOTA_CONSERVATIVE_PCT = float(os.getenv("ODDS_API_QUOTA_CONSERVATIVE_PCT", "0.60"))
+        self.ODDS_API_WARN_PCT = float(
+            os.getenv("ODDS_API_WARN_PCT") or os.getenv("ODDS_API_USAGE_WARN_PCT", "0.80")
+        )
+        try:
+            self.ODDS_API_MONTHLY_LIMIT = max(
+                0,
+                int(
+                    os.getenv("ODDS_API_MONTHLY_LIMIT")
+                    or os.getenv("THE_ODDS_API_MAX_CALLS_PER_MONTH", "20000")
+                ),
+            )
+        except ValueError:
+            self.ODDS_API_MONTHLY_LIMIT = 20_000
         
         # CORS Setup — allow Vercel preview/production domains automatically
         raw_origins = os.getenv("ALLOWED_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:5173"))

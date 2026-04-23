@@ -448,6 +448,16 @@ async def initialize_backend_services():
             replace_existing=True,
             jitter=30,
         )
+
+        # Live scores → live_scores table (ESPN / waterfall) for instant /api/live reads
+        scheduler.add_job(
+            live_data_service.poll_scores,
+            "interval",
+            seconds=max(15, int(settings.LIVE_DATA_POLLING_INTERVAL)),
+            id="live_scores_cache_upsert",
+            replace_existing=True,
+            jitter=10,
+        )
         
         scheduler.start()
         logger.info("📡 [Background Init] Internal scheduler active.")

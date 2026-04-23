@@ -72,7 +72,7 @@ function CLVPageContent() {
         <ErrorBanner message="CLV Analytics Engine is currently offline." onRetry={refetch} />
         <EmptyState
           title="No closing line data yet."
-          description="CLV will populate after the first odds sync."
+          description="CLV populates after the first odds sync."
           onRetry={() => refetch()}
         />
       </div>
@@ -84,7 +84,7 @@ function CLVPageContent() {
       <div className="p-6 space-y-4">
         <EmptyState
           title="No closing line data yet."
-          description="CLV will populate after the first odds sync."
+          description="CLV populates after the first odds sync."
           onRetry={() => refetch()}
         />
       </div>
@@ -160,7 +160,7 @@ function CLVPageContent() {
         results.length === 0 ? (
           <EmptyState
             title="No closing line data yet."
-            description="CLV will populate after the first odds sync."
+            description="CLV populates after the first odds sync."
             onRetry={() => refetch()}
           />
         ) : (
