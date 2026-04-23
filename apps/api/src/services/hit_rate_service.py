@@ -97,11 +97,14 @@ class HitRateService:
                         
                     results.append({
                         "player": r.player_name,
+                        "player_name": r.player_name,
                         "prop_type": r.stat_type,
                         "hit_rate": win_rate,
                         "sample_size": r.sample_size,
+                        "total_picks": r.sample_size,
                         "confidence_badge": tier,
-                        "streak": "N/A" # Simplified for breakdown
+                        "roi": 0.0,
+                        "streak": "N/A",  # Simplified for breakdown
                     })
                 
                 return results

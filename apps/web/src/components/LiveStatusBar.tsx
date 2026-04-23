@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLucrixStore } from '@/store';
-import API, { isApiError } from '@/lib/api';
+import API, { isLivePingReachable } from '@/lib/api';
 
 interface LiveStatusBarProps {
     lastUpdated?: Date | null;
@@ -32,9 +32,7 @@ export default function LiveStatusBar({
             const start = Date.now();
             try {
                 const res = await API.livePing();
-                const reachable =
-                    !isApiError(res) &&
-                    (res?.status === "ok" || res?.status === "healthy");
+                const reachable = isLivePingReachable(res);
                 if (reachable) {
                     setLatency(Date.now() - start);
                     setBackendOnline(true);

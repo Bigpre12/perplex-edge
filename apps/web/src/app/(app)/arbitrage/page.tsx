@@ -4,7 +4,7 @@ import React, { useState, Suspense, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
 
-import { API_BASE } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
@@ -36,17 +36,16 @@ function ArbitrageContent() {
   }, [sport]);
   const [totalStake, setTotalStake] = useState(100);
 
-  const { data: arbData, isLoading, error, refetch } = useQuery({
+  const { data: arbData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['arbitrage', sport],
-    queryFn: () => fetch(`${API_BASE}/api/arbitrage?sport=${sport}`).then(r => {
-      if (!r.ok) {
-        if (r.status === 403) throw new Error("403");
-        throw new Error("Failed to fetch arbitrage opportunities");
-      }
-      return r.json();
-    }),
+    queryFn: async () => {
+      const { data } = await api.get(`/api/arbitrage?sport=${sport}`);
+      return data;
+    },
     refetchInterval: 30_000,
     staleTime: 15_000,
+    retry: 2,
+    retryDelay: (a) => Math.min(2000 * 2 ** a, 15_000),
   });
 
   const isLocked = false;
@@ -62,6 +61,17 @@ function ArbitrageContent() {
             <Skeleton key={i} className="h-64 w-full rounded-2xl" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-6 pt-10">
+        <ErrorBanner
+          message={error instanceof Error ? error.message : "Arbitrage scanner failed to load."}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
@@ -165,11 +175,20 @@ function ArbitrageContent() {
         })}
 
         {opportunities.length === 0 && (
-          <div className="col-span-full text-center py-24 space-y-4">
-            <div className="size-6 rounded-full border-2 border-brand-success border-t-transparent animate-spin mx-auto" />
-            <div className="text-textMuted font-black uppercase italic tracking-widest text-[10px] animate-pulse">
-              Computing neural arbitrage...
+          <div className="col-span-full text-center py-24 space-y-4 border border-dashed border-white/10 rounded-2xl">
+            <div className="text-textMuted font-black uppercase italic tracking-widest text-[10px]">
+              No arbitrage opportunities for this sport right now.
             </div>
+            <p className="text-[10px] text-white/30 max-w-md mx-auto">
+              Arbs need divergent lines across books. Refresh after odds update or try another league.
+            </p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="text-[10px] font-black uppercase tracking-widest text-brand-success underline"
+            >
+              Retry scan
+            </button>
           </div>
         )}
       </div>

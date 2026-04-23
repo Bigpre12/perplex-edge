@@ -19,9 +19,13 @@ export default function ApiHealthCard() {
     const check = async () => {
       try {
         const data = await API.health();
-        const isHealthy = 
-          data?.status === "healthy" || 
-          data?.status === "ok" ||
+        const st = typeof data?.status === "string" ? data.status.toLowerCase() : "";
+        const isHealthy =
+          st === "healthy" ||
+          st === "ok" ||
+          st === "alive" ||
+          st === "live" ||
+          st === "computed_live" ||
           data?.database === "connected" ||
           data?.system_status === "ONLINE";
         

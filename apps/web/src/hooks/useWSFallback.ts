@@ -30,6 +30,8 @@ export function useWSFallback<T>(options: WSFallbackOptions<T>) {
     queryFn: options.queryFn,
     enabled: options.enabled !== false && !isWSOpen, // Only poll if WS is not open
     refetchInterval: options.refetchInterval || 15_000, // Default 15s fallback
+    retry: 2,
+    retryDelay: (a) => Math.min(2000 * 2 ** a, 12_000),
   });
 
   // Use WS data if available, otherwise fallback to REST data

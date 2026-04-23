@@ -29,6 +29,19 @@ export const api = axios.create({
   },
 });
 
+/** Coerce API error JSON to a string so .includes() is safe (backend uses { error: { message } }). */
+function responseErrorText(data: unknown): string {
+  if (data == null || typeof data !== 'object') return '';
+  const d = data as Record<string, unknown>;
+  const err = d.error;
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object' && typeof (err as Record<string, unknown>).message === 'string') {
+    return String((err as Record<string, unknown>).message);
+  }
+  if (typeof d.detail === 'string') return d.detail;
+  return '';
+}
+
 // Implementation of exponential backoff retry logic (Phase 1)
 api.interceptors.response.use(
   (response) => response,
@@ -44,7 +57,7 @@ api.interceptors.response.use(
     const isServerError = error.response && error.response.status >= 500 && error.response.status <= 599;
 
     // Check for circuit breaker or auth errors specifically - DO NOT retry these
-    const errorMessage = error?.response?.data?.error || '';
+    const errorMessage = responseErrorText(error?.response?.data);
     const isAuthRelatedError = error.response && (error.response.status === 401 || error.response.status === 403);
     const isCircuitBreakerError = errorMessage.includes('Circuit breaker') || errorMessage.includes('authentication');
 
@@ -146,9 +159,31 @@ export const handleApiError = (error: any) => {
   console.error('API Error:', error.response?.data || error.message);
   return error.response?.data || { detail: 'An unexpected error occurred' };
 };
+/** True when the payload looks like an API failure (not a successful JSON body). */
 export const isApiError = (data: any) => {
-  return !data || data.detail || data.error || data.message === 'error';
+  if (data == null) return true;
+  if (data.message === 'error') return true;
+  const err = data.error;
+  if (err != null && err !== false) {
+    if (typeof err === 'string') return true;
+    if (typeof err === 'object' && (typeof err.message === 'string' || typeof err.code === 'string')) return true;
+  }
+  if (data.detail != null) {
+    if (typeof data.detail === 'string' && data.detail.length > 0) return true;
+    if (Array.isArray(data.detail) && data.detail.length > 0) return true;
+  }
+  return false;
 };
+
+/** True when GET /health indicates the API process is up (liveness). */
+export function isLivePingReachable(res: unknown): boolean {
+  if (isApiError(res)) return false;
+  if (!res || typeof res !== 'object') return false;
+  const s = (res as Record<string, unknown>).status;
+  if (typeof s !== 'string') return false;
+  const u = s.toLowerCase();
+  return u === 'ok' || u === 'healthy' || u === 'alive';
+}
 export const unwrap = (d: any): any[] => {
   if (!d) return [];
   if (Array.isArray(d)) return d;

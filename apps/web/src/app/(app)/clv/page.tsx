@@ -4,13 +4,24 @@ import React, { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useSport } from "@/hooks/useSport";
-import API, { API_BASE, isApiError } from "@/lib/api";
+import API, { api } from "@/lib/api";
 import { Sparkles, Target, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
 import { BarChart3, Clock, TrendingUp, Info } from "lucide-react";
 import { clsx } from "clsx";
+
+function fmtMetaFixed(v: unknown, digits: number, fallback: string): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return n.toFixed(digits);
+}
+
+function numOrZero(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
 
 export default function CLVPage() {
   return (
@@ -28,10 +39,11 @@ function CLVPageContent() {
 
   const { data: clvData, isLoading, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ['clv', sport, date, activeTab],
-    queryFn: () => fetch(`${API_BASE}/api/clv?sport=${sport}&date=${date}${activeTab === 'monte-carlo' ? '&type=monte-carlo' : ''}`).then(r => {
-      if (!r.ok) throw new Error("Failed to fetch CLV data");
-      return r.json();
-    }),
+    queryFn: async () => {
+      const type = activeTab === "monte-carlo" ? "&type=monte-carlo" : "";
+      const { data } = await api.get(`/api/clv?sport=${sport}&date=${date}${type}`);
+      return data;
+    },
     refetchInterval: 60_000,
     staleTime: 30_000
   });
@@ -99,13 +111,13 @@ function CLVPageContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <AnalyticsCard
           title="Avg CLV Edge"
-          value={`+${clvData?.meta?.avg_edge?.toFixed(2) || '0.00'}%`}
+          value={`+${fmtMetaFixed(clvData?.meta?.avg_edge, 2, "0.00")}%`}
           icon={<TrendingUp size={20} className="text-brand-success" />}
           description="Average edge vs final closing line"
         />
         <AnalyticsCard
           title="Win Rate vs CLV"
-          value={`${clvData?.meta?.win_rate?.toFixed(1) || '00.0'}%`}
+          value={`${fmtMetaFixed(clvData?.meta?.win_rate, 1, "0.0")}%`}
           icon={<Trophy size={20} className="text-brand-cyan" />}
           description="Percentage of bets that beat the CLV"
         />
@@ -141,9 +153,9 @@ function CLVPageContent() {
                   <td className="px-6 py-5 text-center">
                     <span className={clsx(
                       "font-mono font-black px-2 py-1 rounded border",
-                      item.delta > 0 ? "text-brand-success bg-brand-success/10 border-brand-success/20" : "text-brand-danger bg-brand-danger/10 border-brand-danger/20"
+                      numOrZero(item.delta) > 0 ? "text-brand-success bg-brand-success/10 border-brand-success/20" : "text-brand-danger bg-brand-danger/10 border-brand-danger/20"
                     )}>
-                      {item.delta > 0 ? `+${item.delta}` : item.delta}
+                      {numOrZero(item.delta) > 0 ? `+${numOrZero(item.delta)}` : numOrZero(item.delta)}
                     </span>
                   </td>
                   <td className="px-6 py-5 text-right">

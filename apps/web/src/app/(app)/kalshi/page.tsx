@@ -38,7 +38,7 @@ function KalshiContent() {
       setTimedOut(false);
       timer = setTimeout(() => {
         setTimedOut(true);
-      }, 8000);
+      }, 12_000);
     }
     return () => clearTimeout(timer);
   }, [isLoading]);
@@ -216,11 +216,11 @@ function KalshiContent() {
             </div>
             <div className="text-center px-6">
               <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2 leading-none">
-                {timedOut ? "API Key Not Configured" : "Scanning Prediction Grids"}
+                {timedOut ? "No Markets Or Slow Response" : "Scanning Prediction Grids"}
               </h3>
               <p className="text-[10px] text-textMuted font-black uppercase tracking-widest italic max-w-xs mx-auto">
                 {timedOut 
-                  ? "Kalshi API key not configured — add KALSHI_API_KEY to Railway environment variables." 
+                  ? "Request timed out, returned empty, or Kalshi is not configured. Check KALSHI keys on the server or try again." 
                   : "Indexing Kalshi exchange liquidity..."}
               </p>
             </div>

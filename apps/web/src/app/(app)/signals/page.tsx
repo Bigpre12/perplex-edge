@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
-import { API_BASE } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import SportSelector from "@/components/shared/SportSelector";
@@ -22,13 +22,16 @@ function SignalsContent() {
   const { sport } = useSport();
   const [filterType, setFilterType] = useState<string>("all");
 
-  const { data: signals, isLoading, error, refetch } = useQuery({
+  const { data: signals, isLoading, isError, refetch, isFetched } = useQuery({
     queryKey: ['signals', sport, filterType],
-    queryFn: () => {
+    queryFn: async () => {
       const typeParam = filterType === "all" ? "" : `&type=${filterType}`;
-      return fetch(`${API_BASE}/api/signals?sport=${sport}${typeParam}`).then(r => r.json());
+      const { data } = await api.get(`/api/signals?sport=${sport}${typeParam}`);
+      return data;
     },
     refetchInterval: 30_000,
+    retry: 2,
+    retryDelay: (a) => Math.min(2000 * 2 ** a, 15_000),
   });
 
   if (isLoading) {
@@ -44,7 +47,7 @@ function SignalsContent() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return <div className="p-6"><ErrorBanner message="Signal Feed Interrupted." onRetry={refetch} /></div>;
   }
 
@@ -83,9 +86,10 @@ function SignalsContent() {
         {signalList.map((signal: any, i: number) => (
           <SignalCard key={i} signal={signal} />
         ))}
-        {signalList.length === 0 && (
-          <div className="text-center py-24 text-textMuted font-black uppercase italic tracking-widest">
-            Scanning for market anomalies...
+        {isFetched && signalList.length === 0 && (
+          <div className="text-center py-24 text-textMuted font-black uppercase italic tracking-widest space-y-2">
+            <p>No market anomalies in this slate.</p>
+            <p className="text-[10px] text-white/30">Try another sport or check back after the next odds sync.</p>
           </div>
         )}
       </div>

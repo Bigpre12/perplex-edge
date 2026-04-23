@@ -46,14 +46,27 @@ function SettingsContent() {
   const [lastSavedField, setLastSavedField] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const { data: settings, isLoading, error } = useQuery({
+  const { data: settings, isLoading, error, refetch, failureCount } = useQuery({
     queryKey: ['user-settings'],
     queryFn: async () => {
       const { data } = await api.get('/api/user/settings');
       return data;
     },
     enabled: !!token,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
+    staleTime: 60_000,
   });
+
+  const [settingsLoadSlow, setSettingsLoadSlow] = React.useState(false);
+  React.useEffect(() => {
+    if (!token || !isLoading) {
+      setSettingsLoadSlow(false);
+      return;
+    }
+    const t = window.setTimeout(() => setSettingsLoadSlow(true), 12_000);
+    return () => window.clearTimeout(t);
+  }, [token, isLoading]);
 
   React.useEffect(() => {
     if (settings && !localSettings) {
@@ -106,11 +119,28 @@ function SettingsContent() {
   if (isLoading || authLoading) {
     return (
       <div className="max-w-5xl mx-auto space-y-10 pt-16 px-6">
+        {settingsLoadSlow && (
+          <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-[10px] font-black uppercase tracking-widest text-yellow-200 space-y-3">
+            <p>Settings are taking longer than usual. Check your connection or try again.</p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[9px] font-black uppercase"
+            >
+              Retry load
+            </button>
+          </div>
+        )}
         <Skeleton className="h-16 w-80 mb-12" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
            <Skeleton className="h-64 w-full rounded-[2rem]" />
            <Skeleton className="h-64 w-full rounded-[2rem]" />
         </div>
+        {failureCount > 0 && (
+          <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest">
+            Retry attempt {failureCount}…
+          </p>
+        )}
       </div>
     );
   }

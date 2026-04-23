@@ -87,6 +87,10 @@ function EVPageContent() {
 
   const { data: evSignals, isLoading, isError, refetch, isFetching } = useEV(sport);
 
+  const filteredSignals = evSignals
+    ? evSignals.filter((s: EVRecord) => (s.ev_pct || 0) >= minEv)
+    : [];
+
   return (
     <div className="min-h-screen bg-[#050505] text-white p-6 pb-24">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -108,14 +112,15 @@ function EVPageContent() {
 
             <div className="flex gap-4">
                <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                 <div className="text-white/30 text-xs font-bold uppercase mb-1">Total Edges</div>
-                 <div className="text-3xl font-black">{evSignals?.length || 0}</div>
+                 <div className="text-white/30 text-xs font-bold uppercase mb-1">Visible edges (min {minEv}%)</div>
+                 <div className="text-3xl font-black">{filteredSignals.length}</div>
+                 <div className="text-white/20 text-[10px] font-bold uppercase mt-1">of {evSignals?.length ?? 0} loaded</div>
                </div>
                 <div className="px-6 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                  <div className="text-white/30 text-xs font-bold uppercase mb-1">Max Edge</div>
+                  <div className="text-white/30 text-xs font-bold uppercase mb-1">Max edge (visible)</div>
                   <div className="text-3xl font-black text-green-400">
-                     {(evSignals && evSignals.length > 0
-                        ? Math.max(...evSignals.map((s: EVRecord) => s.ev_pct || 0))
+                     {(filteredSignals.length > 0
+                        ? Math.max(...filteredSignals.map((s: EVRecord) => s.ev_pct || 0))
                         : 0).toFixed(1)}%
                   </div>
                 </div>
@@ -178,7 +183,7 @@ function EVPageContent() {
             
             <DataTable 
               columns={columns} 
-              data={evSignals ? evSignals.filter((s: EVRecord) => (s.ev_pct || 0) >= minEv) : []} 
+              data={filteredSignals} 
               onRowClick={(p: EVRecord) => console.log('Clicked signal:', p)}
             />
           </div>

@@ -65,6 +65,9 @@ function BrainContent() {
   }
 
   const props = brainData?.props || [];
+  const alignedProps: string[] = Array.isArray((smartMoney as { aligned_props?: unknown })?.aligned_props)
+    ? ((smartMoney as { aligned_props: string[] }).aligned_props)
+    : [];
 
   return (
     <div className="pb-24 space-y-8 pt-6 px-4">
@@ -97,7 +100,7 @@ function BrainContent() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {props.map((prop: { id: string; player: string; market: string; line: string; score: number; reasoning: string; projection: string; recommendation: string }, i: number) => {
-          const isSmartAligned = (smartMoney as any)?.aligned_props?.includes(prop.id);
+          const isSmartAligned = alignedProps.includes(prop.id);
           
           return (
             <div key={i} className="bg-lucrix-surface border border-lucrix-border rounded-2xl p-6 hover:border-brand-purple/30 transition-all group relative overflow-hidden shadow-card">

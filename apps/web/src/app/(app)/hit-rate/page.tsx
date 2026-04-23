@@ -10,6 +10,28 @@ import { useSport } from '@/hooks/useSport';
 import SportSelector from '@/components/shared/SportSelector';
 import { clsx } from "clsx";
 
+/** Backend /by-player uses 0–100 for hit_rate; Supabase may use 0–1. */
+function displayHitRatePct(raw: unknown): string {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return "—";
+  const pct = n > 1 ? n : n * 100;
+  return `${pct.toFixed(1)}%`;
+}
+
+function displayRoiPct(raw: unknown): string {
+  if (raw === undefined || raw === null) return "0.0%";
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return "0.0%";
+  const pct = Math.abs(n) > 1 ? n : n * 100;
+  const sign = pct > 0 ? "+" : "";
+  return `${sign}${pct.toFixed(1)}%`;
+}
+
+function playerDisplayName(p: Record<string, unknown>): string {
+  const a = p.player_name ?? p.player;
+  return typeof a === "string" && a.length > 0 ? a : "—";
+}
+
 export default function HitRatePage() {
   const { sport } = useSport();
   const { data: stats, isLoading: statsLoading, isError: statsError } = useHitRate();
@@ -24,31 +46,41 @@ export default function HitRatePage() {
     { 
       header: 'Player', 
       accessor: (p: any) => (
-        <span className="font-bold text-white">{p.player_name}</span>
+        <span className="font-bold text-white">{playerDisplayName(p)}</span>
       ) 
     },
     { 
       header: 'Hit Rate', 
       accessor: (p: any) => (
-        <span className="text-green-400 font-black">{(p.hit_rate * 100).toFixed(1)}%</span>
+        <span className="text-green-400 font-black">{displayHitRatePct(p.hit_rate)}</span>
       )
     },
     { 
       header: 'ROI', 
-      accessor: (p: any) => (
-        <span className={`font-mono ${p.roi > 0 ? 'text-green-400' : 'text-red-400'}`}>
-          {p.roi > 0 ? `+${(p.roi * 100).toFixed(1)}` : (p.roi * 100).toFixed(1)}%
+      accessor: (p: any) => {
+        const roiNum = Number(p.roi);
+        const pos = Number.isFinite(roiNum) && roiNum > 0;
+        const neg = Number.isFinite(roiNum) && roiNum < 0;
+        return (
+        <span className={`font-mono ${pos ? 'text-green-400' : neg ? 'text-red-400' : 'text-white/50'}`}>
+          {displayRoiPct(p.roi)}
         </span>
-      )
+        );
+      }
     },
-    { header: 'Total Picks', accessor: (p: any) => p.total_picks || p.picks, className: 'text-white/40' },
+    { header: 'Total Picks', accessor: (p: any) => p.total_picks ?? p.picks ?? p.sample_size ?? '—', className: 'text-white/40' },
     { 
       header: 'Streak', 
-      accessor: (p: any) => (
-        <span className={`text-xs font-bold ${p.streak > 0 ? 'text-green-500' : 'text-red-500'}`}>
-          {p.streak > 0 ? `W${p.streak}` : p.streak < 0 ? `L${Math.abs(p.streak)}` : '-'}
+      accessor: (p: any) => {
+        const s = p.streak;
+        const n = typeof s === 'number' ? s : NaN;
+        if (!Number.isFinite(n)) return <span className="text-xs font-bold text-white/40">—</span>;
+        return (
+        <span className={`text-xs font-bold ${n > 0 ? 'text-green-500' : 'text-red-500'}`}>
+          {n > 0 ? `W${n}` : n < 0 ? `L${Math.abs(n)}` : '-'}
         </span>
-      )
+        );
+      }
     },
   ];
 

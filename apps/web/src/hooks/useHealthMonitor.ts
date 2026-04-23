@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import API, { isApiError } from '@/lib/api';
+import API, { isLivePingReachable } from '@/lib/api';
 import { useLucrixStore } from "@/store";
 
 export function useHealthMonitor() {
@@ -10,7 +10,7 @@ export function useHealthMonitor() {
     const check = async () => {
         try {
             const result = await API.livePing();
-            if (!isApiError(result)) {
+            if (isLivePingReachable(result)) {
                 setBackendOnline(true);
                 setIsConnecting(false);
                 setFailCount(0);
@@ -44,8 +44,8 @@ export function useHealthMonitor() {
 
             try {
                 const data = await API.livePing();
-                if (isApiError(data)) {
-                    throw data;
+                if (!isLivePingReachable(data)) {
+                    throw new Error('health ping not reachable');
                 }
                 setBackendOnline(true);
                 setIsConnecting(false);
