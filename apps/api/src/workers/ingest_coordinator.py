@@ -29,6 +29,12 @@ async def run_ingest_coordinator_tick() -> None:
             return
         usage = await fetch_usage_summary(session)
     quota_pct = float(usage.get("percent_used") or 0) / 100.0
+    logger.info(
+        "[INGEST_COORDINATOR] raise_if_quota_blocked passed — used=%s/%s (%.1f%% remaining header-sync)",
+        usage.get("used"),
+        usage.get("limit"),
+        usage.get("percent_used") or 0.0,
+    )
 
     now = time.time()
     ran = 0

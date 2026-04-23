@@ -172,6 +172,15 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     except Exception as e:
         logger.debug("Health: ingest quota block check: %s", e)
 
+    try:
+        from services.api_quota_db import try_fetch_monthly_summary_json
+
+        db_m = await try_fetch_monthly_summary_json(db)
+        if db_m:
+            odds_quota = {**odds_quota, "db_monthly_summary": db_m}
+    except Exception as e:
+        logger.debug("Health: db_monthly_summary unavailable: %s", e)
+
     if quota_exhausted:
         overall_status = "degraded"
         odds_stream_status = "STALE"

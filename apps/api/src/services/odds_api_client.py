@@ -218,7 +218,17 @@ class OddsApiClient(ResilientBaseClient):
         r = self._last_requests_remaining
         return r is not None and r < self.min_remaining_before_stop
 
-    async def _make_request(self, endpoint: str, method: str = "GET", params: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None, use_cache: bool = True, ttl: Optional[int] = None) -> Any:
+    async def _make_request(
+        self,
+        endpoint: str,
+        method: str = "GET",
+        params: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+        use_cache: bool = True,
+        ttl: Optional[int] = None,
+        quota_sport: Optional[str] = None,
+        quota_market: Optional[str] = None,
+    ) -> Any:
         # 1. Check Configuration
         if not self.is_configured:
             logger.warning("Odds API missing credentials: ODDS_API_KEYS not set or empty")
@@ -322,6 +332,9 @@ class OddsApiClient(ResilientBaseClient):
                                     or resp.headers.get("X-Requests-Remaining"),
                                     used_header=resp.headers.get("x-requests-used")
                                     or resp.headers.get("X-Requests-Used"),
+                                    sport=quota_sport,
+                                    market=quota_market,
+                                    endpoint_path=endpoint,
                                 )
                         except Exception as e:
                             logger.warning("Odds quota header persist failed: %s", e)
@@ -375,11 +388,28 @@ class OddsApiClient(ResilientBaseClient):
 
     async def get_active_sports(self, use_cache: bool = True, ttl: Optional[int] = None) -> List[Dict]:
         """Fetch all currently active sports."""
-        return await self._make_request("/sports", use_cache=use_cache, ttl=ttl or self.long_ttl) or []
+        return (
+            await self._make_request(
+                "/sports",
+                use_cache=use_cache,
+                ttl=ttl or self.long_ttl,
+                quota_market="sports_list",
+            )
+            or []
+        )
 
     async def get_events(self, sport: str, use_cache: bool = True, ttl: Optional[int] = None) -> List[Dict]:
         """Fetch game schedules (cheap, no odds results)."""
-        return await self._make_request(f"/sports/{sport}/events", use_cache=use_cache, ttl=ttl) or []
+        return (
+            await self._make_request(
+                f"/sports/{sport}/events",
+                use_cache=use_cache,
+                ttl=ttl,
+                quota_sport=sport,
+                quota_market="events",
+            )
+            or []
+        )
 
     async def get_live_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None, use_cache: bool = True, ttl: Optional[int] = None) -> List[Dict]:
         """Fetch real-time odds for games."""
@@ -390,7 +420,17 @@ class OddsApiClient(ResilientBaseClient):
             "oddsFormat": "american",
             "dateFormat": "iso"
         }
-        return await self._make_request(f"/sports/{sport}/odds", params=params, use_cache=use_cache, ttl=ttl) or []
+        return (
+            await self._make_request(
+                f"/sports/{sport}/odds",
+                params=params,
+                use_cache=use_cache,
+                ttl=ttl,
+                quota_sport=sport,
+                quota_market=str(params.get("markets") or "")[:256] or "team_odds",
+            )
+            or []
+        )
 
     async def get_player_props(self, sport: str, event_id: str, markets: str, regions: str = "us", use_cache: bool = True, ttl: Optional[int] = None) -> Dict:
         """Fetch specific player props for an event."""
@@ -402,7 +442,17 @@ class OddsApiClient(ResilientBaseClient):
             "dateFormat": "iso"
         }
         # Note: endpoint returns a dict for single event ID if passed as path param
-        return await self._make_request(f"/sports/{sport}/events/{event_id}/odds", params=params, use_cache=use_cache, ttl=ttl) or {}
+        return (
+            await self._make_request(
+                f"/sports/{sport}/events/{event_id}/odds",
+                params=params,
+                use_cache=use_cache,
+                ttl=ttl,
+                quota_sport=sport,
+                quota_market=(markets or "")[:256] or "player_props",
+            )
+            or {}
+        )
 
     # --- Compatibility Aliases ---
     async def get_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None) -> List[Dict]:
@@ -416,7 +466,15 @@ class OddsApiClient(ResilientBaseClient):
             "oddsFormat": "american",
             "dateFormat": "iso"
         }
-        return await self._make_request(f"/sports/{sport}/events/{event_id}/odds", params=params) or {}
+        return (
+            await self._make_request(
+                f"/sports/{sport}/events/{event_id}/odds",
+                params=params,
+                quota_sport=sport,
+                quota_market=str(params.get("markets") or "")[:256] or "event_odds",
+            )
+            or {}
+        )
 
     async def fetch_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None) -> List[Dict]:
         return await self.get_live_odds(sport, regions, markets)

@@ -56,6 +56,9 @@ async def apply_quota_headers(
     *,
     remaining_header: Optional[str],
     used_header: Optional[str],
+    sport: Optional[str] = None,
+    market: Optional[str] = None,
+    endpoint_path: Optional[str] = None,
 ) -> None:
     """
     Upsert monthly row from API response headers.
@@ -88,13 +91,16 @@ async def apply_quota_headers(
     now = datetime.now(timezone.utc)
     is_sqlite = "sqlite" in (DATABASE_URL or "").lower()
 
+    prev_row = await get_row(session, month)
+    prev_used = int(prev_row.requests_used or 0) if prev_row else 0
+    prev_pct = (prev_used / limit) if limit > 0 else 0.0
+
     if is_sqlite:
-        row = await get_row(session, month)
-        if row:
-            row.requests_used = used_store
-            row.requests_remaining = remaining
-            row.quota_exhausted = exhausted
-            row.last_updated = now
+        if prev_row:
+            prev_row.requests_used = used_store
+            prev_row.requests_remaining = remaining
+            prev_row.quota_exhausted = exhausted
+            prev_row.last_updated = now
         else:
             session.add(
                 OddsApiUsage(
@@ -124,7 +130,46 @@ async def apply_quota_headers(
             )
         )
         await session.execute(stmt)
+
+    new_pct = (used_store / limit) if limit > 0 else 0.0
+    if not is_sqlite:
+        try:
+            from services.api_quota_db import append_usage_row, maybe_append_alert
+
+            await append_usage_row(
+                session,
+                sport=sport,
+                market=market,
+                endpoint_path=endpoint_path,
+                requests_used=used_store,
+                requests_remaining=remaining,
+                month_key=month,
+            )
+            await maybe_append_alert(
+                session,
+                prev_pct=prev_pct,
+                new_pct=new_pct,
+                used=used_store,
+                remaining=remaining,
+                limit=limit,
+            )
+        except Exception as e:
+            logger.debug("api_quota_usage / quota_alerts side effects skipped: %s", e)
+
     await session.commit()
+
+    logger.info(
+        "[QUOTA_HEADERS_APPLIED] month=%s used=%s remaining=%s limit=%s pct_used=%.4f prev_pct=%.4f sport=%s market=%s path=%s",
+        month,
+        used_store,
+        remaining,
+        limit,
+        new_pct,
+        prev_pct,
+        sport or "-",
+        market or "-",
+        endpoint_path or "-",
+    )
 
     if limit > 0:
         pct = used_store / limit if limit else 0
