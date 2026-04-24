@@ -47,7 +47,7 @@ export default function EVPlusPage() {
             ev: Number(r?.ev_value ?? r?.ev_percentage ?? 0) || 0,
             expires: r?.expires_at ? new Date(r.expires_at).toLocaleTimeString() : "—",
           }))
-          .sort((a, b) => b.ev - a.ev);
+          .sort((a: EvRow, b: EvRow) => b.ev - a.ev);
         if (mounted) setRows(mapped);
       } catch {
         if (mounted) {
