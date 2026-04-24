@@ -100,6 +100,9 @@ async def apply_quota_headers(
             prev_row.requests_used = used_store
             prev_row.requests_remaining = remaining
             prev_row.quota_exhausted = exhausted
+            prev_row.sport = sport
+            prev_row.market = market
+            prev_row.endpoint = endpoint_path
             prev_row.last_updated = now
         else:
             session.add(
@@ -108,6 +111,9 @@ async def apply_quota_headers(
                     requests_used=used_store,
                     requests_remaining=remaining,
                     quota_exhausted=exhausted,
+                    sport=sport,
+                    market=market,
+                    endpoint=endpoint_path,
                 )
             )
     else:
@@ -118,6 +124,9 @@ async def apply_quota_headers(
                 requests_used=used_store,
                 requests_remaining=remaining,
                 quota_exhausted=exhausted,
+                sport=sport,
+                market=market,
+                endpoint=endpoint_path,
             )
             .on_conflict_do_update(
                 index_elements=["month"],
@@ -125,6 +134,9 @@ async def apply_quota_headers(
                     "requests_used": used_store,
                     "requests_remaining": remaining,
                     "quota_exhausted": exhausted,
+                    "sport": sport,
+                    "market": market,
+                    "endpoint": endpoint_path,
                     "last_updated": now,
                 },
             )

@@ -19,4 +19,7 @@ class OddsApiUsage(Base):
     requests_used = Column(Integer, nullable=False, server_default="0")
     requests_remaining = Column(Integer, nullable=True)
     quota_exhausted = Column(Boolean, nullable=False, server_default=false())
+    sport = Column(String, nullable=True)
+    market = Column(String, nullable=True)
+    endpoint = Column(String, nullable=True)
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
