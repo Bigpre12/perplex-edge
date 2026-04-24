@@ -68,10 +68,10 @@ function WhaleTrackerContent({ sport }: { sport: string }) {
             });
 
             const uniqueWhaleSignals = mappedMoves.filter(
-                (signal, index, self) =>
+                (signal: any, index: number, self: any[]) =>
                     index ===
                     self.findIndex(
-                        (s) =>
+                        (s: any) =>
                             s.player === signal.player &&
                             s.line === signal.line &&
                             s.stat === signal.stat
