@@ -9,7 +9,7 @@ import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 
 const PILL_LABELS = ["NBA", "NFL", "MLB", "NHL", "NCAAF", "NCAAB", "WNBA", "EPL", "UCL", "UFC", "MLS"];
 const PILL_SPORTS = DISPLAY_SPORTS.filter((k) => PILL_LABELS.includes(SPORTS_CONFIG[k].label)).sort(
-  (a, b) => PILL_LABELS.indexOf(SPORTS_CONFIG[a].label) - PILL_LABELS.indexOf(SPORTS_CONFIG[b].label)
+  (a: SportKey, b: SportKey) => PILL_LABELS.indexOf(SPORTS_CONFIG[a].label) - PILL_LABELS.indexOf(SPORTS_CONFIG[b].label)
 );
 
 type ArbRow = { id: string; event: string; market: string; book1: string; odds1: number; book2: string; odds2: number; arbPct: number; stakeA: number; stakeB: number; profit: number };
