@@ -206,9 +206,9 @@ class BrainAdvancedService:
             for s in signals:
                 # 2. Heuristic for confidence and hit rate (since mc_service needs mean/std_dev)
                 # In production, this would use real projections.
-                edge = float(s.edge_percent) / 100.0
-                implied = float(s.implied_prob)
-                true_prob = float(s.true_prob)
+                edge = float(s.edge_percent or 0) / 100.0
+                implied = float(s.implied_prob or 0)
+                true_prob = float(s.true_prob or 0)
                 
                 # Confidence is higher when edge is large and price is reasonable
                 confidence = min(0.95, true_prob + (edge * 0.5))
@@ -220,8 +220,8 @@ class BrainAdvancedService:
                     stat_type=s.market_key,
                     line=float(s.line) if s.line else 0.0,
                     side=s.outcome_key,
-                    odds=float(s.price),
-                    ev_percentage=float(s.edge_percent),
+                    odds=float(s.price or 0),
+                    ev_percentage=float(s.edge_percent or 0),
                     confidence=confidence,
                     hit_rate=true_prob,
                     sportsbook=s.bookmaker,
