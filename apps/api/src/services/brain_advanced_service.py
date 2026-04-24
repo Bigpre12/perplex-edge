@@ -236,7 +236,7 @@ class BrainAdvancedService:
                     stat_type=s.market_key,
                     line=float(s.line) if s.line else 0.0,
                     side=s.outcome_key,
-                    odds=int(s.price),
+                    odds=int(s.price or 0),
                     edge=edge,
                     hit_rate=true_prob
                 )
