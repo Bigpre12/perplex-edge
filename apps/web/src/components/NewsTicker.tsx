@@ -82,7 +82,7 @@ export default function NewsTicker() {
 
     const badgeLabel = useMemo(() => {
         const set = new Set(displayItems.map((d) => d.sport));
-        if (set.size <= 1) return [...set][0] || sportLabel;
+        if (set.size <= 1) return Array.from(set)[0] || sportLabel;
         return "MIXED";
     }, [displayItems, sportLabel]);
 
