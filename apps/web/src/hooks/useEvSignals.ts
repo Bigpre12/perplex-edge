@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import { useReconnectingWs } from "./useReconnectingWs";
-import api, { isApiError } from "@/lib/api";
+import { useMemo } from "react";
+import { useBackendData } from "@/hooks/useBackendData";
+import { normalizeSportKey } from "@/constants/sports";
 
 export type EVSignal = {
     event_id: string;
@@ -16,89 +16,52 @@ export type EVSignal = {
     edge_percent: number;
     confidence_score: number;
     updated_at: string;
+    type?: string;
+    timestamp?: string;
+    event?: string;
+    player?: string;
+    confidence?: number;
 };
 
 export function useEvSignals(sport: string, minEv = 2.0) {
-    const [signals, setSignals] = useState<EVSignal[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const normalizedSport = normalizeSportKey(sport);
+  const primary = useBackendData<any>("/api/signals/freshness", { params: { sport: normalizedSport }, pollMs: 30_000 });
+  const fallback = useBackendData<any>("/api/ev/top", { params: { sport: normalizedSport, limit: 50 }, pollMs: 30_000 });
 
-    const load = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await api.ev.scanner(sport);
-            if (isApiError(res)) throw res;
-            
-            const raw = res.data || [];
-            const mapped = raw.map((s: any) => ({
-                event_id: s.id || s.event_id,
-                sport_key: s.sport,
-                player_name: s.player_name,
-                market_key: s.stat_type || s.market_key,
-                line: s.line,
-                bookmaker: s.book || s.bookmaker,
-                current_price: s.odds || s.price,
-                true_prob: s.true_prob || s.fair_prob,
-                implied_prob: s.implied_prob || (s.odds ? 1 / s.odds : 0),
-                edge_percent: s.edge_percent || s.ev_percentage || 0,
-                confidence_score: s.edge_percent || s.ev_percentage || 0,
-                updated_at: s.updated_at
-            }));
-            const filtered = mapped.filter((s: any) => s.edge_percent >= minEv);
-            setSignals(filtered);
-            setError(null);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [sport, minEv]);
+  const signals = useMemo(() => {
+    const rawPrimary = primary.data?.results || primary.data?.signals || primary.data?.data || [];
+    const chosen = Array.isArray(rawPrimary) && rawPrimary.length > 0 ? rawPrimary : (fallback.data?.results || fallback.data?.data || fallback.data || []);
+    const arr = Array.isArray(chosen) ? chosen : [];
+    return arr
+      .map((s: any) => ({
+        event_id: s.id || s.event_id,
+        sport_key: s.sport || normalizedSport,
+        player_name: s.player_name || s.player || "Unknown",
+        market_key: s.market_key || s.stat_type || "market",
+        line: Number(s.line || 0),
+        bookmaker: s.bookmaker || s.book || "consensus",
+        current_price: Number(s.current_price || s.price || s.odds || 0),
+        true_prob: Number(s.true_prob || s.fair_prob || 0),
+        implied_prob: Number(s.implied_prob || 0),
+        edge_percent: Number(s.edge_percent || s.ev_pct || 0),
+        confidence_score: Number(s.confidence_score || s.edge_percent || 0),
+        updated_at: s.updated_at || new Date().toISOString(),
+        type: String(s.type || s.signal_type || "signal").toLowerCase(),
+        timestamp: s.timestamp || s.updated_at || new Date().toISOString(),
+        event: s.event || s.player_name || s.player,
+        player: s.player || s.player_name,
+        confidence: Number(s.confidence || s.confidence_score || s.edge_percent || 0),
+      }))
+      .filter((s: EVSignal) => s.edge_percent >= minEv);
+  }, [primary.data, fallback.data, minEv, normalizedSport]);
 
-    // WebSocket for live updates
-    useReconnectingWs(api.wsEv, (message: any) => {
-        if (message.type === "ev_signal") {
-            const s = message.data;
-            const newSignal: EVSignal = {
-                event_id: s.id || s.event_id,
-                sport_key: s.sport,
-                player_name: s.player_name,
-                market_key: s.stat_type || s.market_key,
-                line: s.line,
-                bookmaker: s.book || s.bookmaker,
-                current_price: s.odds || s.price,
-                true_prob: s.true_prob || s.fair_prob,
-                implied_prob: s.implied_prob || (s.odds ? 1 / s.odds : 0),
-                edge_percent: s.edge_percent || s.ev_percentage || 0,
-                confidence_score: s.edge_percent || s.ev_percentage || 0,
-                updated_at: s.updated_at
-            };
-            
-            if (newSignal.sport_key === sport && newSignal.edge_percent >= minEv) {
-                setSignals(prev => {
-                    const exists = prev.findIndex(p => 
-                        p.event_id === newSignal.event_id && 
-                        p.market_key === newSignal.market_key && 
-                        p.player_name === newSignal.player_name &&
-                        p.bookmaker === newSignal.bookmaker
-                    );
-                    
-                    if (exists > -1) {
-                        const next = [...prev];
-                        next[exists] = newSignal;
-                        return next.sort((a, b) => b.edge_percent - a.edge_percent);
-                    }
-                    
-                    return [newSignal, ...prev].sort((a, b) => b.edge_percent - a.edge_percent).slice(0, 50);
-                });
-            }
-        } else if (message.type === "ev_refresh_request") {
-            if (message.sport === sport) load();
-        }
-    });
-
-    useEffect(() => {
-        load();
-    }, [load]);
-
-    return { signals, loading, error, refetch: load };
+  return {
+    signals,
+    loading: primary.isLoading && fallback.isLoading,
+    error: primary.error || fallback.error,
+    lastUpdated: primary.lastUpdated || fallback.lastUpdated,
+    refetch: async () => {
+      await Promise.all([primary.refetch(), fallback.refetch()]);
+    },
+  };
 }

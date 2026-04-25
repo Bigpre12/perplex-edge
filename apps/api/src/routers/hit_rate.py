@@ -83,6 +83,7 @@ async def hit_rate_summary(sport: str = Query("all"), db: AsyncSession = Depends
 
 @router.get("/players")
 @router.get("/by-player")
+@router.get("/leaderboard")
 async def hit_rate_players(
     sport: str = Query("all"),
     slate_only: bool = Query(False),

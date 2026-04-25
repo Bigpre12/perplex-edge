@@ -13,6 +13,9 @@ import { BarChart3, Clock, TrendingUp, Info } from "lucide-react";
 import { clsx } from "clsx";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useCLV } from "@/hooks/useCLV";
+import { useMonteCarlo } from "@/hooks/useMonteCarlo";
+import DataFreshnessBanner from "@/components/shared/DataFreshnessBanner";
 
 function fmtMetaFixed(v: unknown, digits: number, fallback: string): string {
   const n = Number(v);
@@ -41,16 +44,7 @@ function CLVPageContent() {
   const [activeTab, setActiveTab] = useState<'clv' | 'monte-carlo'>('clv');
   const date = searchParams.get("date") || new Date().toISOString().split('T')[0];
 
-  const { data: clvData, isLoading, error, refetch, dataUpdatedAt } = useQuery({
-    queryKey: ['clv', sport, date, activeTab],
-    queryFn: async () => {
-      const type = activeTab === "monte-carlo" ? "&type=monte-carlo" : "";
-      const { data } = await api.get(`/api/clv?sport=${sport}&date=${date}${type}`);
-      return data;
-    },
-    refetchInterval: 60_000,
-    staleTime: 30_000
-  });
+  const { data: clvData, isLoading, error, refetch, lastUpdated: dataUpdatedAt } = useCLV(sport, date);
 
   const lastSync = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : 'N/A';
 
@@ -91,7 +85,13 @@ function CLVPageContent() {
     );
   }
 
-  const results = Array.isArray(clvData?.results) ? clvData.results : [];
+  const results = Array.isArray(clvData?.results)
+    ? clvData.results
+    : Array.isArray(clvData?.events)
+      ? clvData.events
+      : [];
+  const avgEdge = Number(clvData?.meta?.avg_edge ?? clvData?.avg_clv_edge ?? clvData?.avg_clv_pct ?? 0);
+  const winRate = Number(clvData?.meta?.win_rate ?? clvData?.win_rate_vs_clv ?? 0);
 
   return (
     <div className="pb-24 space-y-8 pt-6 px-4">
@@ -132,19 +132,20 @@ function CLVPageContent() {
             <Clock size={12} className="text-brand-purple" />
             Last Sync: {lastSync}
           </div>
+          <DataFreshnessBanner lastUpdated={dataUpdatedAt} label="CLV feed" />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <AnalyticsCard
           title="Avg CLV Edge"
-          value={`+${fmtMetaFixed(clvData?.meta?.avg_edge, 2, "0.00")}%`}
+          value={`${avgEdge >= 0 ? "+" : ""}${fmtMetaFixed(avgEdge, 2, "0.00")}%`}
           icon={<TrendingUp size={20} className="text-brand-success" />}
           description="Average edge vs final closing line"
         />
         <AnalyticsCard
           title="Win Rate vs CLV"
-          value={`${fmtMetaFixed(clvData?.meta?.win_rate, 1, "0.0")}%`}
+          value={`${fmtMetaFixed(winRate, 1, "0.0")}%`}
           icon={<Trophy size={20} className="text-brand-cyan" />}
           description="Percentage of bets that beat the CLV"
         />
@@ -179,25 +180,25 @@ function CLVPageContent() {
               {results.map((item: any, i: number) => (
                 <tr key={i} className="group hover:bg-lucrix-dark/50 transition-colors">
                   <td className="px-6 py-5">
-                    <div className="font-black text-white font-display italic uppercase tracking-tight">{item.event}</div>
-                    <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-0.5">{item.market}</div>
+                    <div className="font-black text-white font-display italic uppercase tracking-tight">{item.event || item.player_name || "Event"}</div>
+                    <div className="text-[10px] font-bold text-textSecondary uppercase tracking-widest mt-0.5">{item.market || item.market_key || "market"}</div>
                   </td>
                   <td className="px-6 py-5 text-center font-mono font-black text-white">{item.open_line}</td>
                   <td className="px-6 py-5 text-center font-mono font-black text-white">{item.close_line}</td>
                   <td className="px-6 py-5 text-center">
                     <span className={clsx(
                       "font-mono font-black px-2 py-1 rounded border",
-                      numOrZero(item.delta) > 0 ? "text-brand-success bg-brand-success/10 border-brand-success/20" : "text-brand-danger bg-brand-danger/10 border-brand-danger/20"
+                      numOrZero(item.delta ?? item.clv_edge) > 0 ? "text-brand-success bg-brand-success/10 border-brand-success/20" : "text-brand-danger bg-brand-danger/10 border-brand-danger/20"
                     )}>
-                      {numOrZero(item.delta) > 0 ? `+${numOrZero(item.delta)}` : numOrZero(item.delta)}
+                      {numOrZero(item.delta ?? item.clv_edge) > 0 ? `+${numOrZero(item.delta ?? item.clv_edge)}` : numOrZero(item.delta ?? item.clv_edge)}
                     </span>
                   </td>
                   <td className="px-6 py-5 text-right">
                     <span className={clsx(
                       "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
-                      item.status === "WIN" ? "bg-brand-success/20 text-brand-success" : "bg-lucrix-dark text-textMuted"
+                      (item.status || item.result) === "WIN" ? "bg-brand-success/20 text-brand-success" : "bg-lucrix-dark text-textMuted"
                     )}>
-                      {item.status}
+                      {item.status || item.result || "PENDING"}
                     </span>
                   </td>
                 </tr>
@@ -227,25 +228,16 @@ function AnalyticsCard({ title, value, icon, description }: any) {
 }
 
 function MonteCarloView() {
-  const [simResult, setSimResult] = useState<any>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const { result: simResult, isLoading: isSimulating, runSimulation: runMonteCarlo, lastUpdated } = useMonteCarlo();
 
   const runSimulation = async () => {
-    setIsSimulating(true);
-    try {
-      // simulate() expects legs, n_sims
-      const data = await API.simulate([{ player: "Test", line: 2.5, type: "OVER" }], 100);
-      setSimResult(data);
-    } catch (err) {
-      console.error("Simulation failed", err);
-    } finally {
-      setIsSimulating(false);
-    }
+    await runMonteCarlo([{ player: "Test", line: 2.5, type: "OVER" }], 10000);
   };
 
   return (
     <div className="space-y-6">
       <div className="bg-lucrix-surface border border-lucrix-border p-8 rounded-3xl text-center space-y-6">
+        <DataFreshnessBanner lastUpdated={lastUpdated} label="Simulation run" />
         <div className="max-w-md mx-auto space-y-4">
           <h2 className="text-2xl font-black italic uppercase tracking-tight text-white font-display">Neural Parlay Simulator</h2>
           <p className="text-sm text-textSecondary leading-relaxed">

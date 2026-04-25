@@ -8,18 +8,16 @@ import { useGate } from "@/hooks/useGate";
 import { useSearchParams } from "next/navigation";
 import SportSelector from "@/components/shared/SportSelector";
 import { UniversalDataGate, DataStatus } from "@/components/shared/UniversalDataGate";
-import { useFreshness } from "@/hooks/useFreshness";
 import { FreshnessBadge } from "@/components/dashboard/FreshnessBadge";
 import { LiveHistoricalToggle } from "@/components/dashboard/LiveHistoricalToggle";
 import TrendChart from "@/components/TrendChart";
 import { AnimatePresence } from "framer-motion";
-import { usePropsBoard } from "@/hooks/usePropsBoard";
-import { useScoredProps } from "@/hooks/useScoredProps";
-import { api, unwrap } from "@/lib/api";
+import { useProps } from "@/hooks/useProps";
 import { safeDate, formatTime } from "@/lib/dateUtils";
 import PlayerTrendsModal from "@/components/PlayerTrendsModal";
 import { isAfter } from "date-fns";
 import LiveStatusBar from "@/components/LiveStatusBar";
+import DataFreshnessBanner from "@/components/shared/DataFreshnessBanner";
 
 export default function PlayerPropsPage() {
     return (
@@ -32,7 +30,6 @@ export default function PlayerPropsPage() {
 function PlayerPropsContent() {
     const rawSport = useLucrixStore((state: any) => state.activeSport);
     const sport = (!rawSport || rawSport === 'all') ? 'basketball_nba' : rawSport;
-    const { data: freshness, isLoading: freshnessLoading } = useFreshness(sport);
     const searchParams = useSearchParams();
 
     useEffect(() => {
@@ -51,44 +48,26 @@ function PlayerPropsContent() {
     const [isHistorical, setIsHistorical] = useState(false);
     const [selectedProp, setSelectedProp] = useState<any>(null);
 
-    const { data: boardData, isLoading: loading, error, refetch: refresh } = usePropsBoard(sport, minEv > 0 ? minEv : undefined);
-    const { data: scoredData, isLoading: scoredLoading } = useScoredProps(sport);
+    const { data: propsData, isLoading: loading, error, refetch: refresh, updated_at } = useProps(sport, 200);
+    const scoredLoading = false;
 
     // Automatic retry for raw odds if empty
     useEffect(() => {
-        if (boardData && boardData.props.length === 0 && !loading) {
-            const timer = setTimeout(() => {
-                refresh();
-            }, 3000);
+        if (propsData && propsData.length === 0 && !loading) {
+            const timer = setTimeout(() => refresh(), 3000);
             return () => clearTimeout(timer);
         }
-    }, [boardData, loading, refresh]);
+    }, [propsData, loading, refresh]);
 
-    const lastUpdated = safeDate(boardData?.updated);
+    const lastUpdated = safeDate(updated_at || null);
     const isStale = lastUpdated ? (Date.now() - lastUpdated.getTime()) > 180000 : false;
     
     // Scored Data Mapping for Inline Merge
     const scoredMap: Record<string, any> = {};
-    if (scoredData && Array.isArray(scoredData)) {
-        scoredData.forEach((s: any) => {
-            const key = `${s.player_name}__${s.market_key}`;
-            scoredMap[key] = s;
-        });
-    }
-
-    const fullDataRaw = boardData?.props || [];
+    const fullDataRaw = propsData || [];
     
     // SAFE INLINE MERGE (Never blocks odds display)
-    const fullData = fullDataRaw.map(p => {
-        const key = `${p.player_name}__${p.market_key}`;
-        const scoredEnrichment = scoredMap[key] || {};
-        return {
-            ...p,
-            ...scoredEnrichment,
-            // Prioritize scored recommendation if available
-            recommendation: scoredEnrichment.recommendation || p.recommendation
-        };
-    });
+    const fullData = fullDataRaw.map((p: any) => ({ ...p }));
     const { propsLimit, tier: activeTier } = useGate();
 
     const isDev = typeof window !== 'undefined' &&
@@ -124,6 +103,7 @@ function PlayerPropsContent() {
                     <div className="mb-6">
                         <SportSelector />
                     </div>
+                    <DataFreshnessBanner lastUpdated={lastUpdated?.toISOString() || null} label="Props feed" />
 
                     <div className="flex flex-wrap items-center gap-4 mb-6">
                         <FreshnessBadge
@@ -160,7 +140,7 @@ function PlayerPropsContent() {
 
             <UniversalDataGate
                 status={(loading ? "loading" : error ? "upstream_error" : "ok") satisfies DataStatus}
-                isLoading={loading && !boardData}
+                isLoading={loading && !propsData}
                 data={filtered}
                 onRetry={() => refresh()}
             >

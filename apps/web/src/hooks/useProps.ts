@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
+import { useMemo } from "react";
+import { useBackendData } from "@/hooks/useBackendData";
+import { normalizeSportKey } from "@/constants/sports";
 
 export interface PropRecord {
   id: string;
@@ -16,27 +16,18 @@ export interface PropRecord {
   commence_time: string;
 }
 
-export const useProps = (sport: string = 'basketball_nba') => {
-  return useQuery({
-    queryKey: ['props', sport],
-    queryFn: async () => {
-      try {
-        const { data } = await api.get(`/api/props/scored?sport=${sport}`);
-        const props = Array.isArray(data) ? data : (data.props || data.data || []);
-        return props as PropRecord[];
-      } catch (err) {
-        console.warn('Backend props fetch failed, falling back to Supabase', err);
-        const { data: supabaseData, error: supabaseError } = await supabase
-          .from('props_live')
-          .select('*')
-          .eq('sport', sport)
-          .order('last_updated_at', { ascending: false })
-          .limit(50);
+export const useProps = (sport = "basketball_nba") => {
+  const normalizedSport = normalizeSportKey(sport);
+  const req = useBackendData<any>("/api/props", { params: { sport: normalizedSport }, pollMs: 30_000 });
+  const rows = useMemo(() => {
+    const raw = req.data;
+    if (Array.isArray(raw)) return raw as PropRecord[];
+    return ((raw?.props || raw?.data || raw?.results || []) as PropRecord[]);
+  }, [req.data]);
+  const freshness = useMemo(() => {
+    const newest = rows.find((row: any) => row?.updated_at)?.updated_at;
+    return newest || req.lastUpdated;
+  }, [rows, req.lastUpdated]);
 
-        if (supabaseError) throw supabaseError;
-        return (supabaseData || []) as PropRecord[];
-      }
-    },
-    refetchInterval: 60000, // 60s
-  });
+  return { ...req, data: rows, updated_at: freshness };
 };

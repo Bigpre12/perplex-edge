@@ -16,10 +16,9 @@ import RecentIntel from '@/components/RecentIntel';
 
 import { useSport } from '@/context/SportContext';
 import { useDataFreshness } from '@/context/DataFreshnessContext';
-import { api } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
-import { REFRESH_INTERVALS } from '@/hooks/useLiveData';
 import UpgradeCTA from '@/components/UpgradeCTA';
+import { useDashboard } from '@/hooks/useDashboard';
+import DataFreshnessBanner from '@/components/shared/DataFreshnessBanner';
 
 const unwrap = (d: any): any[] => {
     if (!d) return [];
@@ -56,30 +55,22 @@ function DashboardContent() {
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
 
-    const { data: propsData, isLoading: propsLoading } = useQuery({
-        queryKey: ['props', sportParam || 'all'],
-        queryFn: () => api.get<any>(sportParam ? `/api/props/graded?sport=${sportParam}` : '/api/props/graded').then((r: any) => r.data),
-        refetchInterval: REFRESH_INTERVALS.PROPS,
-    });
-    const liveProps = unwrap(propsData);
-
-    const { data: injuriesData } = useQuery({
-        queryKey: ['injuries', sportParam || 'all'],
-        queryFn: () => api.get<any>(sportParam ? `/api/injuries?sport=${sportParam}` : '/api/injuries').then((r: any) => r.data),
-        refetchInterval: REFRESH_INTERVALS.INJURIES,
-    });
-    const injuries = unwrap(injuriesData);
-
-    const { data: healthData } = useQuery({
-        queryKey: ['health'],
-        queryFn: () => api.get<any>('/api/health').then((r: any) => r.data),
-        refetchInterval: REFRESH_INTERVALS.HEALTH,
-    });
+    const { data: dashboardData, isLoading: dashboardLoading, isError: dashboardError, error: dashboardErrorMsg, refetch, lastUpdated } = useDashboard(sportParam || 'basketball_nba');
+    const liveProps = dashboardData?.props || [];
+    const propsLoading = dashboardLoading;
+    const injuries = [];
+    const healthData = dashboardData?.health || {};
 
     return (
         <main className="space-y-6 pb-20">
             <SystemStatusBanner />
             <DataDegradationBanner />
+            <DataFreshnessBanner lastUpdated={lastUpdated} label="Dashboard aggregate" />
+            {dashboardError ? (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                {dashboardErrorMsg || "Dashboard endpoints unavailable"} <button onClick={() => refetch()} className="ml-2 underline">Retry</button>
+              </div>
+            ) : null}
 
             {/* Header */}
             <div className="flex flex-col gap-1 pt-2">
@@ -118,7 +109,7 @@ function DashboardContent() {
                             )}
                         </div>
 
-                        {propsLoading ? (
+                        {propsLoading || dashboardLoading ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {[0, 1].map((i: number) => (
                                     <div key={i} className="h-40 bg-lucrix-dark rounded-xl animate-pulse border border-lucrix-border" />

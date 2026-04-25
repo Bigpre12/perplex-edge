@@ -6,6 +6,7 @@ import { API_BASE } from "@/lib/api";
 import { SPORTS_CONFIG, DISPLAY_SPORTS, SportKey } from "@/lib/sports.config";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
+import DataFreshnessBanner from "@/components/shared/DataFreshnessBanner";
 
 type ScannerRow = {
   id: string;
@@ -37,6 +38,7 @@ export default function ScannerPage() {
   const [rows, setRows] = useState<ScannerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !token) router.replace("/login");
@@ -48,9 +50,9 @@ export default function ScannerPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/scanner?sport=${sport}`);
+        const res = await fetch(`${API_BASE}/api/props?sport=${sport}`);
         const json = await res.json();
-        const data = Array.isArray(json?.data) ? json.data : Array.isArray(json?.items) ? json.items : Array.isArray(json) ? json : [];
+        const data = Array.isArray(json?.props) ? json.props : Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
         const mapped: ScannerRow[] = data.map((r: any, idx: number) => {
           const edge = Number(r?.ev_value ?? r?.ev_percentage ?? 0) || 0;
           return {
@@ -60,11 +62,13 @@ export default function ScannerPage() {
             line: r?.line != null ? String(r.line) : "—",
             bookOdds: r?.book_odds != null ? String(r.book_odds) : "—",
             fairValue: r?.fair_value != null ? String(r.fair_value) : "—",
-            edgePct: edge,
+            edgePct: Math.abs(edge),
             signal: edgeToSignal(edge),
           };
         });
+        mapped.sort((a, b) => Math.abs(b.edgePct) - Math.abs(a.edgePct));
         if (mounted) setRows(mapped);
+        if (mounted) setLastUpdated(new Date().toISOString());
       } catch {
         if (mounted) {
           setRows([]);
@@ -86,6 +90,7 @@ export default function ScannerPage() {
     const sharpAlerts = rows.filter((r) => r.signal === "SHARP").length;
     return { edgesFound, avgEv, sharpAlerts };
   }, [rows]);
+  const allZeroEdges = rows.length > 0 && rows.every((r) => Math.abs(r.edgePct) < 0.01);
 
   if (authLoading || !token) return <div className="min-h-[50vh] flex items-center justify-center"><LoadingSkeleton rows={5} /></div>;
 
@@ -94,9 +99,15 @@ export default function ScannerPage() {
       <div>
         <h1 className="text-4xl font-black uppercase tracking-tight">Market <span className="text-cyan-400">Scanner</span></h1>
         <p className="text-white/50 text-sm">Real-time edge detection across all markets</p>
+        <div className="mt-3"><DataFreshnessBanner lastUpdated={lastUpdated} label="Scanner source" /></div>
       </div>
 
       {error ? <div className="border border-red-500/30 bg-red-500/10 p-3 rounded-xl text-sm">{error}</div> : null}
+      {!error && allZeroEdges ? (
+        <div className="border border-amber-500/30 bg-amber-500/10 p-3 rounded-xl text-sm text-amber-200">
+          Odds loaded but edges are still flat. Compute cycle may still be warming.
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         {[

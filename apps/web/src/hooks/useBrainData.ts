@@ -1,10 +1,7 @@
 "use client";
-
-import { useState, useEffect } from 'react'
-import API, { isApiError, unwrap } from '@/lib/api'
-import { useBackendStatus } from './useBackendStatus'
-import { useLiveData } from './useLiveData'
-import { SportKey } from '@/lib/sports.config'
+import { SportKey } from "@/lib/sports.config";
+import { useBackendData } from "@/hooks/useBackendData";
+import { normalizeSportKey } from "@/constants/sports";
 
 export interface BrainDecision {
     action: string
@@ -41,62 +38,27 @@ export interface MarketIntelItem {
     timestamp: string
 }
 
-import { useSport } from '@/context/SportContext'
+import { useSport } from "@/context/SportContext";
 
 export const useBrainData = (requestedSportKey?: SportKey) => {
-    const { selectedSport } = useSport();
-    const sportKey = requestedSportKey || selectedSport;
-    const [decisions, setDecisions] = useState<BrainDecision[]>([])
-    const [health, setHealth] = useState<SystemHealth | null>(null)
-    const [marketIntel, setMarketIntel] = useState<MarketIntelItem[]>([])
-    const { isDown } = useBackendStatus()
+  const { selectedSport } = useSport();
+  const sportKey = normalizeSportKey(requestedSportKey || selectedSport);
+  const decisionsReq = useBackendData<any>("/api/brain/decisions", { params: { sport: sportKey }, pollMs: 30_000 });
+  const healthReq = useBackendData<SystemHealth>("/api/brain/status", { pollMs: 30_000 });
+  const metricsReq = useBackendData<any>("/api/brain/metrics", { pollMs: 60_000 });
+  const intelReq = useBackendData<any>("/api/intel", { params: { sport: sportKey }, pollMs: 60_000 });
 
-    // 1. Fetch Decisions
-    const { data: decData, loading: decLoading, refresh: decRefetch } = useLiveData(
-        () => API.brain.decisions(sportKey),
-        ['brain-decisions', sportKey],
-        { enabled: !isDown, refreshInterval: 30000 }
-    )
-
-    // 2. Fetch Health/Metrics
-    const { data: healthData, loading: healthLoading, refresh: healthRefetch } = useLiveData(
-        () => API.brain.metrics(),
-        ['brain-metrics', sportKey],
-        { enabled: !isDown, refreshInterval: 30000 }
-    )
-
-    // 3. Fetch Intel
-    const { data: intelData, loading: intelLoading, refresh: intelRefetch } = useLiveData(
-        () => API.recentIntel(sportKey),
-        ['recent-intel', sportKey],
-        { enabled: !isDown, refreshInterval: 60000 }
-    )
-
-    useEffect(() => {
-        if (intelData && !isApiError(intelData)) {
-            setMarketIntel(unwrap(intelData))
-        }
-    }, [intelData])
-
-    useEffect(() => {
-        if (healthData && !isApiError(healthData)) {
-            setHealth(healthData as SystemHealth)
-        }
-    }, [healthData])
-
-    const loading = decLoading || healthLoading || intelLoading
-
-    const refetch = () => {
-        decRefetch();
-        healthRefetch();
-        intelRefetch();
-    };
-
-    return {
-        decisions: unwrap(decData),
-        health,
-        marketIntel,
-        loading,
-        refetch
-    }
-}
+  return {
+    decisions: (decisionsReq.data?.decisions || decisionsReq.data?.data || []) as BrainDecision[],
+    health: (healthReq.data || null) as SystemHealth | null,
+    metrics: metricsReq.data || {},
+    marketIntel: (intelReq.data?.items || intelReq.data?.data || intelReq.data || []) as MarketIntelItem[],
+    loading: decisionsReq.isLoading || healthReq.isLoading || metricsReq.isLoading || intelReq.isLoading,
+    isError: decisionsReq.isError || healthReq.isError || metricsReq.isError || intelReq.isError,
+    error: decisionsReq.error || healthReq.error || metricsReq.error || intelReq.error,
+    lastUpdated: [decisionsReq.lastUpdated, healthReq.lastUpdated, metricsReq.lastUpdated, intelReq.lastUpdated].filter(Boolean).sort().at(-1) || null,
+    refetch: async () => {
+      await Promise.all([decisionsReq.refetch(), healthReq.refetch(), metricsReq.refetch(), intelReq.refetch()]);
+    },
+  };
+};

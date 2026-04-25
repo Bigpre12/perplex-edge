@@ -1,54 +1,53 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
-import api, { unwrap } from "@/lib/api";
 
-export function useMetrics() {
-  return useQuery({
-    queryKey: ["metrics"],
-    queryFn: api.metrics,
-    refetchInterval: 30000,
-  });
-}
+import { useMemo } from "react";
+import { useBackendData } from "@/hooks/useBackendData";
+import { normalizeSportKey } from "@/constants/sports";
 
-export function usePropsScored(sport = "basketball_nba") {
-  return useQuery({
-    queryKey: ["propsScored", sport],
-    queryFn: async () => unwrap(await api.propsScored(sport, 50)),
-  });
-}
+const toList = (value: unknown): any[] => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== "object") return [];
+  const v = value as Record<string, unknown>;
+  const nested = v.data ?? v.results ?? v.items ?? v.props ?? v.alerts ?? [];
+  return Array.isArray(nested) ? nested : [];
+};
 
-export function useEvTop(sport = "basketball_nba") {
-  return useQuery({
-    queryKey: ["evTop", sport],
-    queryFn: async () => unwrap(await api.ev.top(sport, 10)),
-  });
-}
+export function useDashboard(sport = "basketball_nba") {
+  const normalizedSport = normalizeSportKey(sport);
+  const health = useBackendData<any>("/api/health", { pollMs: 15_000 });
+  const brain = useBackendData<any>("/api/brain/status", { pollMs: 15_000 });
+  const props = useBackendData<any>("/api/props", { params: { sport: normalizedSport }, pollMs: 15_000 });
+  const whale = useBackendData<any>("/api/whale", { params: { sport: normalizedSport }, pollMs: 15_000 });
+  const evTop = useBackendData<any>("/api/ev/top", { params: { sport: normalizedSport, limit: 10 }, pollMs: 15_000 });
 
-export function useInjuries(sport = "basketball_nba") {
-  return useQuery({
-    queryKey: ["injuries", sport],
-    queryFn: async () => unwrap(await api.injuries(sport)),
-  });
-}
+  const isLoading = health.isLoading || brain.isLoading || props.isLoading || whale.isLoading || evTop.isLoading;
+  const isError = health.isError || brain.isError || props.isError || whale.isError || evTop.isError;
+  const error = health.error || brain.error || props.error || whale.error || evTop.error;
 
-export function useNews(sport = "basketball_nba") {
-  return useQuery({
-    queryKey: ["news", sport],
-    queryFn: async () => unwrap(await api.news(sport)),
-  });
-}
+  const data = useMemo(
+    () => ({
+      health: health.data,
+      brain: brain.data,
+      props: toList(props.data),
+      whales: toList(whale.data),
+      evTop: toList(evTop.data),
+    }),
+    [health.data, brain.data, props.data, whale.data, evTop.data],
+  );
 
-export function useLineMovement(sport = "basketball_nba") {
-  return useQuery({
-    queryKey: ["lineMovement", sport],
-    queryFn: async () => unwrap(await api.lineMovement(sport)),
-  });
-}
+  const lastUpdated = [health.lastUpdated, brain.lastUpdated, props.lastUpdated, whale.lastUpdated, evTop.lastUpdated]
+    .filter(Boolean)
+    .sort()
+    .at(-1) || null;
 
-export function useFreshness(sport = "basketball_nba") {
-  return useQuery({
-    queryKey: ["freshness", sport],
-    queryFn: async () => await api.signals.freshness(sport),
-    refetchInterval: 15000,
-  });
+  return {
+    data,
+    isLoading,
+    isError,
+    error,
+    lastUpdated,
+    refetch: async () => {
+      await Promise.all([health.refetch(), brain.refetch(), props.refetch(), whale.refetch(), evTop.refetch()]);
+    },
+  };
 }

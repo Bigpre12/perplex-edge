@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import { getAuthenticatedClient } from '@/lib/supabaseAuth';
+import { useBackendData } from "@/hooks/useBackendData";
+import { normalizeSportKey } from "@/constants/sports";
 
 export interface HitRateStats {
   overall_hit_rate: number;
@@ -22,57 +21,17 @@ function sanitize(raw: any): HitRateStats {
   };
 }
 
-export const useHitRate = () => {
-  return useQuery({
-    queryKey: ['hit-rate'],
-    queryFn: async () => {
-      try {
-        const { data } = await api.get('/api/hit-rate');
-        return sanitize(data);
-      } catch (err) {
-        console.warn('Backend hit-rate fetch failed, falling back to Supabase', err);
-        const supabaseAuth = getAuthenticatedClient();
-        const { data: supabaseData, error: supabaseError } = await supabaseAuth
-          .from('player_hit_rates')
-          .select('*')
-          .order('hit_rate', { ascending: false });
-
-        if (supabaseError) throw supabaseError;
-        // Map top results if needed or return list
-        return (supabaseData || []) as any;
-      }
-    },
-    refetchInterval: 120000, // 2min
-  });
+export const useHitRate = (sport = "basketball_nba") => {
+  const req = useBackendData<any>("/api/hit-rate/summary", { params: { sport: normalizeSportKey(sport) }, pollMs: 60_000 });
+  return { ...req, data: sanitize(req.data || {}) };
 };
 
-export const useHitRatePlayers = (sport = 'all') => {
-  return useQuery({
-    queryKey: ['hit-rate-players', sport],
-    queryFn: async () => {
-      try {
-        const { data } = await api.get(`/api/hit-rate/players?sport=${sport}`);
-        const rows = (data || []) as any[];
-        return rows.map((r, i) => ({
-          ...r,
-          id: r?.id ?? r?.player_id ?? `hrp-${i}`,
-        }));
-      } catch (err) {
-        console.warn('Backend hit-rate players fetch failed', err);
-        const supabaseAuth = getAuthenticatedClient();
-        const { data: supabaseData, error: supabaseError } = await supabaseAuth
-          .from('player_hit_rates')
-          .select('*')
-          .order('hit_rate', { ascending: false });
-
-        if (supabaseError) throw supabaseError;
-        const rows = (supabaseData || []) as any[];
-        return rows.map((r, i) => ({
-          ...r,
-          id: r?.id ?? r?.player_id ?? `hrp-${i}`,
-        }));
-      }
-    },
-    refetchInterval: 120000,
-  });
+export const useHitRatePlayers = (sport = "basketball_nba") => {
+  const req = useBackendData<any>("/api/hit-rate/leaderboard", { params: { sport: normalizeSportKey(sport) }, pollMs: 60_000 });
+  const rowsRaw = req.data;
+  const rows = (Array.isArray(rowsRaw) ? rowsRaw : (rowsRaw?.data || rowsRaw?.results || [])) as any[];
+  return {
+    ...req,
+    data: rows.map((r, i) => ({ ...r, id: r?.id ?? r?.player_id ?? `hrp-${i}` })),
+  };
 };

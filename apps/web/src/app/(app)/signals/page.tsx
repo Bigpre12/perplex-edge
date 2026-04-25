@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useSport } from "@/hooks/useSport";
-import { api } from "@/lib/api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import SportSelector from "@/components/shared/SportSelector";
 import { Radio, Zap, Users, Shield, Clock, Search } from "lucide-react";
 import { clsx } from "clsx";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useEvSignals } from "@/hooks/useEvSignals";
+import DataFreshnessBanner from "@/components/shared/DataFreshnessBanner";
 
 export default function SignalsPage() {
   return (
@@ -22,18 +22,9 @@ function SignalsContent() {
   const { sport } = useSport();
   const [filterType, setFilterType] = useState<string>("all");
 
-  const { data: signals, isLoading, isError, refetch, isFetched } = useQuery({
-    queryKey: ['signals', sport, filterType],
-    queryFn: async () => {
-      const typeParam = filterType === "all" ? "" : `&type=${filterType}`;
-      const { data } = await api.get(`/api/signals?sport=${sport}${typeParam}`, {
-        timeout: 10_000,
-      });
-      return data;
-    },
-    refetchInterval: 30_000,
-    retry: false,
-  });
+  const { signals, loading: isLoading, error, refetch, lastUpdated } = useEvSignals(sport, 0);
+  const isError = Boolean(error);
+  const isFetched = !isLoading;
 
   if (isLoading) {
     return (
@@ -60,7 +51,9 @@ function SignalsContent() {
     );
   }
 
-  const signalList = Array.isArray(signals) ? signals : signals?.results || [];
+  const signalList = (Array.isArray(signals) ? signals : []).filter((s: any) =>
+    filterType === "all" ? true : String(s?.type || "").toLowerCase() === filterType
+  );
 
   return (
     <div className="pb-24 space-y-8 pt-6 px-4">
@@ -75,6 +68,7 @@ function SignalsContent() {
           <p className="text-[10px] text-textMuted font-black uppercase tracking-widest mb-4 italic">Aggregated Institutional & Public Flow</p>
           <SportSelector />
         </div>
+        <DataFreshnessBanner lastUpdated={lastUpdated} label="Signals feed" />
         <div className="flex bg-lucrix-surface border border-lucrix-border rounded-xl p-1 shadow-inner">
           {["all", "steam", "sharp", "public"].map((t) => (
             <button

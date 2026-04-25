@@ -9,6 +9,7 @@ import { Trophy, TrendingUp, BarChart3, Activity } from 'lucide-react';
 import { useSport } from '@/hooks/useSport';
 import SportSelector from '@/components/shared/SportSelector';
 import { clsx } from "clsx";
+import DataFreshnessBanner from '@/components/shared/DataFreshnessBanner';
 
 function safeDivide(a: number, b: number): number {
   if (b === 0 || !Number.isFinite(b)) return 0;
@@ -71,7 +72,7 @@ function statGradedPicks(stats: HitRateStats | unknown[] | undefined): string {
 
 export default function HitRatePage() {
   const { sport } = useSport();
-  const { data: stats, isLoading: statsLoading, isError: statsError } = useHitRate();
+  const { data: stats, isLoading: statsLoading, isError: statsError, lastUpdated } = useHitRate(sport);
   const { 
     data: players, 
     isLoading: playersLoading, 
@@ -171,6 +172,7 @@ export default function HitRatePage() {
              HIT RATE <span className="text-blue-500 not-italic">TRACKER</span>
            </h1>
            <SportSelector />
+           <DataFreshnessBanner lastUpdated={lastUpdated} label="Hit-rate sync" />
         </div>
 
         {/* Global Stats Grid */}
@@ -211,9 +213,9 @@ export default function HitRatePage() {
                 const confirmed = confirm("This will trigger a final score pull and grade all of yesterday's pending props. Proceed?");
                 if (!confirmed) return;
                 try {
-                  const res = await fetch('/api/props/grade', { method: 'POST' });
+                  const res = await fetch('/backend/api/admin/trigger-ingestion', { method: 'POST' });
                   const data = await res.json();
-                  alert(`Success: ${data.graded || 0} props graded.`);
+                  alert(`Sync requested: ${data.status || "ok"}.`);
                   refetch();
                 } catch (e) {
                   alert("Grading service failed to respond.");

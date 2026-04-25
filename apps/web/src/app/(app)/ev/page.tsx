@@ -12,6 +12,7 @@ import { TrendingUp, Percent, Info } from 'lucide-react';
 import { useSport } from '@/hooks/useSport';
 import SportSelector from '@/components/shared/SportSelector';
 import { EmptyState } from '@/components/shared/EmptyState';
+import DataFreshnessBanner from '@/components/shared/DataFreshnessBanner';
 
 export default function EVPage() {
   return (
@@ -86,7 +87,7 @@ function EVPageContent() {
     },
   ];
 
-  const { data: evSignals, isLoading, isError, refetch, isFetching } = useEV(sport);
+  const { data: evSignals, isLoading, isError, refetch, isFetching, lastUpdated } = useEV(sport);
 
   const filteredSignals = evSignals
     ? evSignals.filter((s: EVRecord) => (Number(s.ev_pct) || 0) >= minEv)
@@ -144,6 +145,7 @@ function EVPageContent() {
 
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <SportSelector />
+          <DataFreshnessBanner lastUpdated={lastUpdated} label="EV feed" />
           <div className="flex items-center space-x-4 ml-auto">
             <span className="text-sm text-white/50">Min EV%: {minEv}%</span>
             <input 
