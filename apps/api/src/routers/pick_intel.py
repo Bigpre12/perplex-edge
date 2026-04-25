@@ -80,6 +80,7 @@ def enrich_prop(p: PropLive) -> Dict[str, Any]:
     implied_under = _f(p.implied_under)
     recommended_side = "OVER" if implied_over >= implied_under else "UNDER"
     recommended_odds = _f(p.odds_over) if recommended_side == "OVER" else _f(p.odds_under)
+    has_odds = bool(recommended_odds or p.line)
 
     ev = _f(p.ev_percentage)
     if ev >= 8:
@@ -132,6 +133,7 @@ def enrich_prop(p: PropLive) -> Dict[str, Any]:
         "line": _f(p.line),
         "recommended_side": recommended_side,
         "recommended_odds": recommended_odds,
+        "has_odds": has_odds,
         "best_book": p.book,
         "ev_percentage": round(ev, 2),
         "ev_tier": ev_tier,

@@ -36,8 +36,9 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         await _rollback_quietly()
 
     try:
-        api_key = (os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY") or "").strip()
-        if not api_key:
+        from core.config import settings
+
+        if not settings.ODDS_API_KEYS:
             odds_status = "error: missing_key"
         else:
             odds_status = "active"
@@ -395,8 +396,9 @@ async def odds_api_status():
     import os, httpx
     from services.odds_api_client import odds_api_client
 
-    keys_raw = os.getenv("THE_ODDS_API_KEY", "")
-    keys = [k.strip() for k in keys_raw.split(",") if k.strip()]
+    from core.config import settings
+
+    keys = list(settings.ODDS_API_KEYS or [])
     results = []
 
     for i, key in enumerate(keys):

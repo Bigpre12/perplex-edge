@@ -38,6 +38,7 @@ interface LiveTrackCardProps {
     gameStatus: string;
     hedgeRecommendation?: string;
     confidence?: number;
+    hasOddsData?: boolean;
 }
 
 export default function LiveTrackCard({ 
@@ -48,7 +49,8 @@ export default function LiveTrackCard({
     side, 
     gameStatus, 
     hedgeRecommendation,
-    confidence 
+    confidence,
+    hasOddsData = true,
 }: LiveTrackCardProps) {
     const inGame = liveTrackingActive(gameStatus);
     const progress = line > 0 ? Math.min((currentValue / line) * 100, 100) : 0;
@@ -147,7 +149,7 @@ export default function LiveTrackCard({
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
                             <Clock size={10} className="text-textMuted" />
                             <span className="text-[8px] text-textMuted font-black uppercase tracking-widest">
-                                Conf: {confidence != null ? Math.round(confidence > 1 ? confidence : confidence * 100) : inGame ? Math.round(progress) : 0}%
+                                Conf: {confidence === 0 && !hasOddsData ? "N/A" : `${confidence != null ? Math.round(confidence > 1 ? confidence : confidence * 100) : inGame ? Math.round(progress) : 0}%`}
                             </span>
                         </div>
                         {isHit && (

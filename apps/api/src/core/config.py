@@ -65,9 +65,15 @@ class Settings:
         self.SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
         
         # Odds API Configuration - Centralized for Rotation
-        primary = os.getenv("ODDS_API_KEY", os.getenv("THE_ODDS_API_KEY", ""))
-        backup = os.getenv("ODDS_API_KEY_BACKUP", "")
         raw_list = os.getenv("ODDS_API_KEYS", "")
+        primary = os.getenv("ODDS_API_KEY", os.getenv("THE_ODDS_API_KEY", ""))
+
+        # Support single-key deployments where the value is stored under ODDS_API_KEYS.
+        if not primary and raw_list and "," not in raw_list:
+            primary = raw_list.strip()
+            raw_list = ""
+
+        backup = os.getenv("ODDS_API_KEY_BACKUP", "")
         
         # Aggregate all unique keys
         all_keys = [k.strip() for k in raw_list.split(",") if k.strip()]

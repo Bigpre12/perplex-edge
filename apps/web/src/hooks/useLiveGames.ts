@@ -27,6 +27,8 @@ export const useLiveGames = () => {
   const queryClient = useQueryClient();
   const [socketStatus, setSocketStatus] = useState<'connecting' | 'open' | 'closed'>('connecting');
   const socketRef = useRef<WebSocket | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initial fetch + polling fallback (30s) against /api/live/scores
   const query = useQuery({
@@ -55,6 +57,7 @@ export const useLiveGames = () => {
         socket.onopen = () => {
           console.log('[LiveWS] Connected');
           setSocketStatus('open');
+          reconnectAttemptsRef.current = 0;
         };
 
         socket.onmessage = (event) => {
@@ -75,8 +78,9 @@ export const useLiveGames = () => {
         socket.onclose = () => {
           console.log('[LiveWS] Closed');
           setSocketStatus('closed');
-          // Reconnect after 5s
-          setTimeout(connect, 5000);
+          const reconnectDelay = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000);
+          reconnectAttemptsRef.current += 1;
+          reconnectTimerRef.current = setTimeout(connect, reconnectDelay);
         };
 
         socket.onerror = (err) => {
@@ -91,6 +95,9 @@ export const useLiveGames = () => {
     connect();
 
     return () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
       if (socketRef.current) {
         socketRef.current.close();
       }

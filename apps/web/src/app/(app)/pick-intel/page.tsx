@@ -29,6 +29,7 @@ export interface PickIntelRow {
   line: number;
   recommended_side: string;
   recommended_odds: number;
+  has_odds: boolean;
   best_book: string;
   ev_percentage: number;
   ev_tier: string;
@@ -44,6 +45,12 @@ export interface PickIntelRow {
   sport: string;
   action_score: number;
   game_id: string;
+}
+
+function formatAmericanOdds(odds?: number | null): string {
+  if (odds == null || Number.isNaN(Number(odds)) || Number(odds) === 0) return "—";
+  const n = Number(odds);
+  return n > 0 ? `+${n}` : `${n}`;
 }
 
 type SortKey = "brain" | "ev" | "confidence";
@@ -302,7 +309,7 @@ function PickIntelContent() {
               </span>
               <span className="text-textMuted">·</span>
               <span className="text-sm font-black italic text-white">
-                {row.recommended_side} {row.recommended_odds > 0 ? row.recommended_odds : "—"}
+                {row.recommended_side} {row.has_odds ? formatAmericanOdds(row.recommended_odds) : "—"}
               </span>
               <span className="text-[10px] text-textMuted uppercase">
                 @ {row.best_book}
@@ -334,7 +341,7 @@ function PickIntelContent() {
                   Confidence
                 </div>
                 <div className="text-lg font-black font-display italic text-white">
-                  {row.confidence.toFixed(0)}%
+                  {row.confidence === 0 && !row.has_odds ? "N/A" : `${row.confidence.toFixed(0)}%`}
                 </div>
               </div>
               <div>

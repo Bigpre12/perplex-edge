@@ -19,9 +19,17 @@ if (isServer && process.env.NODE_ENV === "production" && configuredUrl.includes(
 export const API_BASE = isServer ? configuredUrl : "/backend";
 const API_URL = isServer ? configuredUrl : "/backend";
 
-// WebSocket Base URL: swapping http -> ws, https -> wss
-const wsBase = isServer ? configuredUrl : window.location.origin;
-export const WS_BASE = wsBase.replace('https://', 'wss://').replace('http://', 'ws://');
+// WebSocket base URL:
+// 1) prefer explicit NEXT_PUBLIC_WS_URL
+// 2) fallback to existing API URL conversion
+const rawWsUrl =
+  (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_WS_URL : null) || '';
+const normalizeWsBase = (url: string) =>
+  url.replace('https://', 'wss://').replace('http://', 'ws://').replace(/\/+$/, '');
+const wsFallback = isServer
+  ? normalizeWsBase(configuredUrl)
+  : `${normalizeWsBase(window.location.origin)}/backend`;
+export const WS_BASE = rawWsUrl ? normalizeWsBase(rawWsUrl) : wsFallback;
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -452,10 +460,10 @@ export const API = {
       return data;
     } catch (err) { return handleApiError(err); }
   },
-  wsBaseUrl: isServer ? WS_BASE : (window.location.origin.replace('http', 'ws') + '/backend'),
-  wsOdds: (isServer ? WS_BASE : (typeof window !== 'undefined' ? window.location.origin.replace('http', 'ws') + '/backend' : '')) + '/api/ev/ws',
-  wsKalshi: (isServer ? WS_BASE : (typeof window !== 'undefined' ? window.location.origin.replace('http', 'ws') + '/backend' : '')) + '/api/kalshi/ws',
-  wsEv: isServer ? WS_BASE : (typeof window !== 'undefined' ? window.location.origin.replace('http', 'ws') + '/backend' : ''),
+  wsBaseUrl: WS_BASE,
+  wsOdds: `${WS_BASE}/api/ev/ws`,
+  wsKalshi: `${WS_BASE}/api/kalshi/ws`,
+  wsEv: WS_BASE,
   pollMs: 15000,
   adminStats: async (email: string) => {
     try {

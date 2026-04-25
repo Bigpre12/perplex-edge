@@ -37,13 +37,18 @@ export function useLiveOdds(sportId: SportKey) {
         }, API.pollMs || 30000);
 
         let reconnectTimeout: NodeJS.Timeout;
+        let reconnectAttempts = 0;
         const tryWS = () => {
             if (isDown) return;
             try {
                 const ws = new WebSocket(API.wsOdds);
                 wsRef.current = ws;
                 const killTimer = setTimeout(() => { if (ws.readyState !== WebSocket.OPEN) ws.close(); }, 5000);
-                ws.onopen = () => { clearTimeout(killTimer); if (mountedRef.current) setConnected(true); };
+                ws.onopen = () => {
+                    clearTimeout(killTimer);
+                    reconnectAttempts = 0;
+                    if (mountedRef.current) setConnected(true);
+                };
                 ws.onmessage = (e) => {
                     try {
                         if (e.data === 'pong') return;
@@ -55,7 +60,11 @@ export function useLiveOdds(sportId: SportKey) {
                         }
                     } catch (err) { console.warn('[useLiveOdds] WS message parse error:', err); }
                 };
-                ws.onclose = () => { reconnectTimeout = setTimeout(tryWS, 30000); };
+                ws.onclose = () => {
+                    const reconnectDelay = Math.min(1000 * 2 ** reconnectAttempts, 30000);
+                    reconnectAttempts += 1;
+                    reconnectTimeout = setTimeout(tryWS, reconnectDelay);
+                };
                 ws.onerror = () => ws.close();
             } catch (err) { console.warn('[useLiveOdds] WS connection error:', err); }
         };

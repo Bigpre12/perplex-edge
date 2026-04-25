@@ -168,6 +168,12 @@ function WhaleAlertsContent() {
                 <div className="text-xs font-black text-white italic uppercase">{alert.book || alert.source || 'INSTITUTIONAL'}</div>
               </div>
               <div className="text-center">
+                <div className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1 italic">Odds</div>
+                <div className="text-xs font-black text-white italic uppercase">
+                  {alert.odds ?? alert.bookmaker_odds ?? alert.price ?? "–"}
+                </div>
+              </div>
+              <div className="text-center">
                 <div className="text-[9px] font-black text-textMuted uppercase tracking-widest mb-1 italic">Bet Size</div>
                 <div className="text-xl font-black text-brand-warning font-display italic leading-none">{alert.units || alert.severity || 0}U</div>
               </div>
