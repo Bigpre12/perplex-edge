@@ -7,7 +7,7 @@ from services.heartbeat_service import HeartbeatService
 import logging
 from typing import Optional
 
-from models.brain import SharpSignal
+from models.brain import SharpSignal, WhaleMove
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,43 @@ def _max_dt(*values: Optional[datetime]) -> Optional[datetime]:
     """Return the latest non-null datetime, or None if all are null."""
     valid = [v for v in values if v is not None]
     return max(valid) if valid else None
+
+
+@router.get("")
+@router.get("/")
+async def list_signals(
+    sport: str = Query("basketball_nba"),
+    limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Canonical /api/signals list endpoint for frontend Signals tab.
+    Reads whale_moves and returns an empty list when no rows exist.
+    """
+    try:
+        res = await db.execute(
+            select(WhaleMove)
+            .where(WhaleMove.sport == sport)
+            .order_by(desc(WhaleMove.created_at))
+            .limit(limit)
+        )
+        rows = res.scalars().all()
+        items = [
+            {
+                "id": r.id,
+                "player_name": r.player_name or r.selection or "Unknown",
+                "stat_type": r.stat_type or r.market_key or "unknown",
+                "line": r.line,
+                "trust_level": r.whale_rating,
+                "signal_type": r.move_type or r.move_size or r.severity or "SHARP_MONEY",
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in rows
+        ]
+        return items
+    except Exception as e:
+        logger.warning("signals list query failed: %s", e)
+        return []
 
 @router.get("/sharp-moves")
 async def sharp_moves(

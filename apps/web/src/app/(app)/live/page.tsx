@@ -203,8 +203,8 @@ export default function LivePage() {
                 <Zap size={32} className="absolute -top-2 -right-2 text-brand-primary animate-pulse" />
              </div>
              <div className="text-center">
-                <p className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2 leading-none">Market Neutral</p>
-                <p className="text-xs font-bold text-textMuted uppercase tracking-widest italic">No active games in the high-liquidity tracking window.</p>
+                <p className="text-2xl font-black italic uppercase tracking-tighter text-white mb-2 leading-none">No Live Games</p>
+                <p className="text-xs font-bold text-textMuted uppercase tracking-widest italic">No live games at this time.</p>
              </div>
           </motion.div>
         ) : (

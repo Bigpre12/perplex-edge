@@ -26,6 +26,7 @@ class KalshiService:
         self.base_url = os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()).strip().rstrip("/")
         self.client = httpx.AsyncClient(base_url=self.base_url)
         self._private_key = None
+        self._missing_credentials_warned = False
 
         # Prefer inline PEM (KALSHI_PRIVATE_KEY), then file path (KALSHI_PRIVATE_KEY_PATH)
         raw = (self.private_key_content or "").strip()
@@ -58,6 +59,13 @@ class KalshiService:
                 "Kalshi: no private key configured (KALSHI_PRIVATE_KEY or KALSHI_PRIVATE_KEY_PATH) "
                 "and/or key id (KALSHI_API_KEY_ID or KALSHI_API_KEY)"
             )
+
+    def _warn_missing_credentials_once(self, context: str) -> None:
+        if self._missing_credentials_warned:
+            logger.debug("KalshiService: %s skipped - credentials not configured", context)
+            return
+        logger.warning("KalshiService: %s skipped - credentials not configured", context)
+        self._missing_credentials_warned = True
 
     def _create_signature(self, timestamp: str, method: str, path: str) -> str:
         """Create RSA-PSS signature for Kalshi v2 auth"""
@@ -107,7 +115,7 @@ class KalshiService:
         path = "/markets"
         headers = await self._get_auth_headers("GET", path)
         if not headers:
-            logger.warning("KalshiService: Skipping fetch_markets - Credentials not configured")
+            self._warn_missing_credentials_once("fetch_markets")
             return []
             
         params = {"status": "open", "series_ticker": sport}
@@ -223,6 +231,6 @@ kalshi_service = KalshiService()
 def get_kalshi_service() -> Optional[KalshiService]:
     """Factory function for safe service access."""
     if not kalshi_service.available:
-        logger.warning("Kalshi service requested but credentials not set.")
+        kalshi_service._warn_missing_credentials_once("service_access")
         return None
     return kalshi_service

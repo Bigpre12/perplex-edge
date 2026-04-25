@@ -63,7 +63,7 @@ export default function Sidebar() {
     // IA: Command → Scanner → core markets → risk → intel (see docs/PRODUCT_BLUEPRINT.md)
     const navItems = [
         { href: "/dashboard", icon: <LayoutDashboard size={20} />, label: "Desk" },
-        { href: "/institutional/scanner", icon: <ScanSearch size={20} />, label: "Scanner" },
+        { href: "/scanner", icon: <ScanSearch size={20} />, label: "Scanner" },
         { href: "/player-props", icon: <Target size={20} />, label: "Props" },
         { href: "/ev", icon: <Zap size={20} />, label: "EV+" },
         { href: "/clv", icon: <LineChart size={20} />, label: "CLV" },

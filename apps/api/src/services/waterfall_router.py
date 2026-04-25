@@ -162,7 +162,15 @@ class WaterfallRouter:
                     logger.info(f"✅ Waterfall: {provider_key} served {sport} {data_type}")
                     return data
             except Exception as e:
-                logger.warning(f"⚠️ Waterfall: {provider_key} failed for {sport}: {e}")
+                err_text = str(e).lower()
+                if (
+                    "not configured" in err_text
+                    or "missing api key" in err_text
+                    or "api key not configured" in err_text
+                ):
+                    logger.info("Waterfall: %s unavailable for %s (%s)", provider_key, sport, e)
+                else:
+                    logger.warning("⚠️ Waterfall: %s failed for %s: %s", provider_key, sport, e)
                 continue
 
         logger.error(f"❌ Waterfall: All providers exhausted for {sport} {data_type}")

@@ -35,44 +35,38 @@ export default function ArbPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/props/live?sport=${sport}&limit=200`);
+        const res = await fetch(`${API_BASE}/api/arb?sport=${sport}`);
         const json = await res.json();
-        const data = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-        const grouped: Record<string, any[]> = {};
-        data.forEach((r: any) => {
-          const key = `${r?.game_id ?? "g"}__${r?.market_label ?? r?.market_key ?? "m"}`;
-          grouped[key] = grouped[key] || [];
-          grouped[key].push(r);
-        });
-        const arbs: ArbRow[] = [];
-        Object.entries(grouped).forEach(([key, list], idx) => {
-          if (list.length < 2) return;
-          for (let i = 0; i < list.length; i += 1) for (let j = i + 1; j < list.length; j += 1) {
-            const a = Number(list[i]?.book_odds ?? list[i]?.odds ?? NaN);
-            const b = Number(list[j]?.book_odds ?? list[j]?.odds ?? NaN);
-            if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
-            const sum = implied(a) + implied(b);
-            if (sum >= 1) continue;
-            const arbPct = (1 - sum) * 100;
-            const total = 100;
-            const stakeA = total * (implied(a) / sum);
-            const stakeB = total - stakeA;
-            const decA = a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a);
-            const payout = stakeA * decA;
-            arbs.push({
-              id: `${key}-${idx}-${i}-${j}`,
-              event: list[i]?.player_name ?? list[i]?.home_team ?? "Event",
-              market: list[i]?.market_label ?? list[i]?.market_key ?? "Market",
-              book1: list[i]?.book ?? list[i]?.bookmaker ?? "Book 1",
-              odds1: a,
-              book2: list[j]?.book ?? list[j]?.bookmaker ?? "Book 2",
-              odds2: b,
-              arbPct,
-              stakeA,
-              stakeB,
-              profit: payout - 100,
-            });
-          }
+        const data = Array.isArray(json?.opportunities)
+          ? json.opportunities
+          : Array.isArray(json?.data)
+            ? json.data
+            : Array.isArray(json)
+              ? json
+              : [];
+        const arbs: ArbRow[] = data.map((r: any, idx: number) => {
+          const a = Number(r?.odds_a ?? r?.over_odds ?? NaN);
+          const b = Number(r?.odds_b ?? r?.under_odds ?? NaN);
+          const sum = Number.isFinite(a) && Number.isFinite(b) ? implied(a) + implied(b) : 1;
+          const arbPct = sum < 1 ? (1 - sum) * 100 : Number(r?.arb_pct ?? r?.arb_percentage ?? 0);
+          const total = 100;
+          const stakeA = sum < 1 ? total * (implied(a) / sum) : 50;
+          const stakeB = total - stakeA;
+          const decA = Number.isFinite(a) ? (a > 0 ? 1 + a / 100 : 1 + 100 / Math.abs(a)) : 2;
+          const payout = stakeA * decA;
+          return {
+            id: String(r?.id ?? idx),
+            event: r?.event ?? r?.event_id ?? r?.player_name ?? "Event",
+            market: r?.market ?? r?.stat_type ?? "Market",
+            book1: r?.book_a ?? r?.over_book ?? "Book 1",
+            odds1: Number.isFinite(a) ? a : 0,
+            book2: r?.book_b ?? r?.under_book ?? "Book 2",
+            odds2: Number.isFinite(b) ? b : 0,
+            arbPct: Number(arbPct) || 0,
+            stakeA,
+            stakeB,
+            profit: sum < 1 ? payout - 100 : Number(r?.profit_per_100 ?? r?.profit_percentage ?? 0),
+          };
         });
         if (mounted) setRows(arbs.sort((x, y) => y.arbPct - x.arbPct));
       } catch {

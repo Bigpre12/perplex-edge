@@ -20,6 +20,12 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     Legacy shape preserved for existing clients (strip _internal before return).
     """
     from services.heartbeat_service import HeartbeatService
+    
+    async def _rollback_quietly() -> None:
+        try:
+            await db.rollback()
+        except Exception:
+            pass
 
     try:
         await db.execute(text("SELECT 1"))
@@ -27,6 +33,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     except Exception as e:
         db_status = f"disconnected: {str(e)}"
         logger.error(f"Health Check: DB failure: {e}")
+        await _rollback_quietly()
 
     try:
         api_key = (os.getenv("THE_ODDS_API_KEY") or os.getenv("ODDS_API_KEY") or "").strip()
@@ -49,8 +56,13 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
 
     odds_api_all_keys_cooldown = odds_api_client.all_keys_unavailable()
 
-    heartbeats = await HeartbeatService.get_all_heartbeats(db)
-    hb_map = {hb.feed_name: hb for hb in heartbeats}
+    try:
+        heartbeats = await HeartbeatService.get_all_heartbeats(db)
+        hb_map = {hb.feed_name: hb for hb in heartbeats}
+    except Exception as e:
+        logger.error(f"Health Check: Heartbeat fetch failure: {e}")
+        await _rollback_quietly()
+        hb_map = {}
 
     pipeline_hb = hb_map.get("ingest_basketball_nba")
     inference_hb = hb_map.get("model_inference")
@@ -118,6 +130,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Health Check: Metrics failure: {e}")
+        await _rollback_quietly()
         props_count = 0
         last_odds = None
         last_ev = None
@@ -142,6 +155,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
                 "last_grade_sync": ss_row["last_grade_sync"].isoformat() if ss_row["last_grade_sync"] else None,
             }
     except Exception:
+        await _rollback_quietly()
         pass
 
     odds_quota: Dict[str, Any] = {}
@@ -151,6 +165,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         odds_quota = await fetch_usage_summary(db)
     except Exception as e:
         logger.warning("Health: odds quota summary unavailable: %s", e)
+        await _rollback_quietly()
         odds_quota = {
             "month": datetime.now(timezone.utc).strftime("%Y-%m"),
             "used": 0,
@@ -171,6 +186,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         odds_quota = {**odds_quota, "ingest_blocked": ingest_quota_blocked, "ingest_block_reason": ingest_quota_block_reason}
     except Exception as e:
         logger.debug("Health: ingest quota block check: %s", e)
+        await _rollback_quietly()
 
     try:
         from services.api_quota_db import try_fetch_monthly_summary_json
@@ -180,6 +196,7 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
             odds_quota = {**odds_quota, "db_monthly_summary": db_m}
     except Exception as e:
         logger.debug("Health: db_monthly_summary unavailable: %s", e)
+        await _rollback_quietly()
 
     if quota_exhausted:
         overall_status = "degraded"

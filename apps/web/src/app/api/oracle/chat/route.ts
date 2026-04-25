@@ -18,6 +18,42 @@ Rules:
 - Never say "I cannot" — always give your best analysis
 - Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`;
 
+function sanitizeModelPayload(model: string, payload: Record<string, any>) {
+  const cleaned = { ...payload };
+  const dropped: string[] = [];
+  const m = (model || "").toLowerCase();
+  const isReasoning =
+    m.includes("grok-4.20-reasoning") ||
+    m === "grok-4.20" ||
+    m === "grok-4-1-fast" ||
+    m === "grok-4.20-multi-agent";
+  const isMultiAgent = m === "grok-4.20-multi-agent";
+
+  if (isReasoning) {
+    for (const k of ["presence_penalty", "frequency_penalty", "stop"]) {
+      if (k in cleaned) {
+        delete cleaned[k];
+        dropped.push(k);
+      }
+    }
+  }
+  if (!isMultiAgent) {
+    if ("reasoning" in cleaned) {
+      delete cleaned.reasoning;
+      dropped.push("reasoning");
+    }
+    if ("reasoning_effort" in cleaned) {
+      delete cleaned.reasoning_effort;
+      dropped.push("reasoning_effort");
+    }
+  }
+
+  if (dropped.length) {
+    console.info("[Oracle] Sanitized payload", { model, dropped });
+  }
+  return cleaned;
+}
+
 async function tryBackendOracle(req: NextRequest, messages: any[], sport: string) {
   const backendBase = process.env.NEXT_PUBLIC_API_URL || "https://perplex-edge-backend-copy-production.up.railway.app";
   const authHeader = req.headers.get("authorization");
@@ -68,15 +104,17 @@ async function tryDirectOpenAI(messages: any[], sport: string) {
     const { default: OpenAI } = await import("openai");
     const openai = new OpenAI({ apiKey });
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const model = "gpt-4o-mini";
+    const rawPayload = {
+      model,
       messages: [
         { role: "system", content: ORACLE_SYSTEM },
         ...messages.map((m: any) => ({ role: m.role, content: m.content })),
       ],
       max_tokens: 600,
       temperature: 0.7,
-    });
+    };
+    const response = await openai.chat.completions.create(sanitizeModelPayload(model, rawPayload));
 
     const text = response.choices[0]?.message?.content || "Oracle analysis complete.";
     return streamText(text);

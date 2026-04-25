@@ -18,7 +18,7 @@ export default function EVPlusPage() {
   const router = useRouter();
   const { token, loading: authLoading } = useAuth();
   const [sport, setSport] = useState<SportKey>("basketball_nba");
-  const [minEv, setMinEv] = useState(3);
+  const [minEv, setMinEv] = useState(2);
   const [rows, setRows] = useState<EvRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,9 +33,17 @@ export default function EVPlusPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/props/live?sport=${sport}&min_ev=${minEv}&limit=200`);
+        const res = await fetch(`${API_BASE}/api/ev?sport=${sport}&min_ev=${minEv}`);
         const json = await res.json();
-        const data = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+        const data = Array.isArray(json?.data)
+          ? json.data
+          : Array.isArray(json?.items)
+            ? json.items
+            : Array.isArray(json?.results)
+              ? json.results
+              : Array.isArray(json)
+                ? json
+                : [];
         const mapped: EvRow[] = data
           .map((r: any, idx: number) => ({
             id: String(r?.id ?? idx),

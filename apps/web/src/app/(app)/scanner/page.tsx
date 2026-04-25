@@ -48,9 +48,9 @@ export default function ScannerPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/props/live?sport=${sport}&min_ev=1&limit=100`);
+        const res = await fetch(`${API_BASE}/api/scanner?sport=${sport}`);
         const json = await res.json();
-        const data = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+        const data = Array.isArray(json?.data) ? json.data : Array.isArray(json?.items) ? json.items : Array.isArray(json) ? json : [];
         const mapped: ScannerRow[] = data.map((r: any, idx: number) => {
           const edge = Number(r?.ev_value ?? r?.ev_percentage ?? 0) || 0;
           return {

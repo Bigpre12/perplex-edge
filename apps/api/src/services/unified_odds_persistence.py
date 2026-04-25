@@ -1,7 +1,12 @@
 # services/unified_odds_persistence.py
 from datetime import datetime, timezone
 from typing import List, Dict, Any
+import logging
+import os
 from services.db import db
+
+logger = logging.getLogger(__name__)
+UNIFIED_ODDS_DIAGNOSTICS = os.getenv("UNIFIED_ODDS_DIAGNOSTICS", "false").strip().lower() == "true"
 
 async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
     """
@@ -53,21 +58,33 @@ async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
 
     try:
         if player_rows:
-            import logging
-            logging.getLogger(__name__).warning(f"⚠️ [TEMP DIAGNOSTIC] upsert_unified_odds -> {len(player_rows)} PLAYER rows. Using ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker) WHERE player_name IS NOT NULL.")
+            if UNIFIED_ODDS_DIAGNOSTICS:
+                logger.debug(
+                    "[DIAGNOSTIC] upsert_unified_odds player_rows=%s conflict_key=(sport,event_id,player_name,market_key,outcome_key,bookmaker) where player_name is not null",
+                    len(player_rows),
+                )
             q_player = base_insert + " ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker) WHERE player_name IS NOT NULL " + update_clause
             await db.executemany(q_player, player_rows)
             
         if team_rows:
-            import logging
-            logging.getLogger(__name__).warning(f"⚠️ [TEMP DIAGNOSTIC] upsert_unified_odds -> {len(team_rows)} TEAM rows. Using ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker) WHERE player_name IS NULL.")
+            if UNIFIED_ODDS_DIAGNOSTICS:
+                logger.debug(
+                    "[DIAGNOSTIC] upsert_unified_odds team_rows=%s conflict_key=(sport,event_id,market_key,outcome_key,bookmaker) where player_name is null",
+                    len(team_rows),
+                )
             q_team = base_insert + " ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker) WHERE player_name IS NULL " + update_clause
             await db.executemany(q_team, team_rows)
+        if UNIFIED_ODDS_DIAGNOSTICS:
+            logger.debug(
+                "[DIAGNOSTIC] upsert_unified_odds summary total=%s player=%s team=%s",
+                len(rows),
+                len(player_rows),
+                len(team_rows),
+            )
     except Exception as e:
         # If the unique constraint is missing, we might need to handle it differently or just log.
-        import logging
         error_msg = f"UnifiedOdds: Upsert failed for {len(rows)} rows: {e}"
-        logging.getLogger(__name__).error(error_msg)
+        logger.error(error_msg)
         # Log sample row for debugging if possible
         if rows:
-            logging.getLogger(__name__).debug(f"Sample row causing failure: {rows[0]}")
+            logger.debug(f"Sample row causing failure: {rows[0]}")

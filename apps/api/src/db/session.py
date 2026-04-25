@@ -72,12 +72,22 @@ from contextlib import asynccontextmanager
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for async database sessions."""
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            # Ensure failed requests never leave an invalid transaction attached
+            # to the pooled connection (prevents PendingRollbackError cascades).
+            await session.rollback()
+            raise
 
 async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
     """Alias for get_db for backward compatibility."""
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
 
 # Legacy alias: many routers/services still import async_session_maker
 async_session_maker = AsyncSessionLocal

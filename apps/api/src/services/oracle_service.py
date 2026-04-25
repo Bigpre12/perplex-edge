@@ -10,6 +10,7 @@ from services.steam_service import steam_service
 from services.whale_service import detect_whale_signals
 from services.injury_service import injury_service
 from services.brain_service import brain_service
+from services.llm.model_policy import sanitize_llm_payload, log_sanitizer_drops
 
 # We'll use openai for the streaming implementation as requested
 try:
@@ -20,6 +21,7 @@ except ImportError:
     logging.warning("OpenAI library not installed. Oracle chat will be disabled.")
 
 logger = logging.getLogger(__name__)
+logger.info("LLM model-policy sanitizer enabled for oracle_service")
 
 class OracleService:
     def __init__(self):
@@ -139,16 +141,20 @@ RULES:
             # Use islice to avoid slice operator issues
             msg_list: List[Dict[str, str]] = list(islice(messages, max(0, len(messages)-10), len(messages)))
             
-            stream = await self.client.chat.completions.create(
-                model=settings.ORACLE_MODEL,
-                messages=[
+            payload = {
+                "model": settings.ORACLE_MODEL,
+                "messages": [
                     {"role": "system", "content": system_prompt},
-                    *msg_list
+                    *msg_list,
                 ],
-                stream=True,
-                max_tokens=settings.ORACLE_MAX_TOKENS,
-                temperature=settings.ORACLE_TEMPERATURE
-            )
+                "stream": True,
+                "max_tokens": settings.ORACLE_MAX_TOKENS,
+                "temperature": settings.ORACLE_TEMPERATURE,
+            }
+            payload, dropped = sanitize_llm_payload(settings.ORACLE_MODEL, payload)
+            log_sanitizer_drops("oracle_service", "openai_sdk", settings.ORACLE_MODEL, dropped)
+
+            stream = await self.client.chat.completions.create(**payload)
 
             async for chunk in stream:
                 if chunk.choices[0].delta.content is not None:

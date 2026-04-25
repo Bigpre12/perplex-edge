@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 // Mobile-first subset aligned with docs/PRODUCT_BLUEPRINT.md (Desk → Scanner → core → risk)
 const TABS = [
     { id: 'desk', label: 'Desk', icon: '▣', href: '/dashboard' },
-    { id: 'scanner', label: 'Scan', icon: '◎', href: '/institutional/scanner' },
+    { id: 'scanner', label: 'Scan', icon: '◎', href: '/scanner' },
     { id: 'props', label: 'Props', icon: '◆', href: '/player-props' },
     { id: 'ev', label: 'EV+', icon: '▲', href: '/ev' },
     { id: 'clv', label: 'CLV', icon: '◇', href: '/clv' },

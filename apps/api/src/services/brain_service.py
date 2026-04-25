@@ -7,8 +7,10 @@ import logging
 from datetime import datetime, timezone, timedelta
 # from .prop_service import get_all_props # Moved to local to avoid circularity
 from .alert_service import alert_service
+from services.llm.model_policy import sanitize_llm_payload, log_sanitizer_drops
 
 logger = logging.getLogger(__name__)
+logger.info("LLM model-policy sanitizer enabled for brain_service")
 
 # Serialize Groq calls across the process so parallel ingest / brain jobs do not burst 429s.
 _groq_llm_lock = asyncio.Lock()
@@ -72,6 +74,8 @@ class BrainService:
             "temperature": 0.7,
             "max_tokens": 1024
         }
+        payload, dropped = sanitize_llm_payload(self.model, payload)
+        log_sanitizer_drops("brain_service", "groq", self.model, dropped)
         
         delay_s = float(os.getenv("GROQ_REQUEST_DELAY_SECONDS", "0.55"))
         try:
@@ -123,6 +127,8 @@ class BrainService:
         }
 
         payload["model"] = fallback_model
+        payload, dropped = sanitize_llm_payload(fallback_model, payload)
+        log_sanitizer_drops("brain_service", "fallback", fallback_model, dropped)
 
         try:
             async with httpx.AsyncClient() as client:

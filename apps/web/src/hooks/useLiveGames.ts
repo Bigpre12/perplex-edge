@@ -28,14 +28,21 @@ export const useLiveGames = () => {
   const [socketStatus, setSocketStatus] = useState<'connecting' | 'open' | 'closed'>('connecting');
   const socketRef = useRef<WebSocket | null>(null);
 
-  // Initial Fetch & Polling Fallback (15s)
+  // Initial fetch + polling fallback (30s) against /api/live/scores
   const query = useQuery({
     queryKey: ['live-games'],
     queryFn: async () => {
-      const { data } = await api.get('/api/live/games');
-      return (data.games || []) as LiveGame[];
+      const { data } = await api.get('/api/live/scores?sport=basketball_nba');
+      const rows = Array.isArray(data?.games)
+        ? data.games
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
+      return rows as LiveGame[];
     },
-    refetchInterval: 15000, 
+    refetchInterval: 30000,
   });
 
   // WebSocket for Real-time pushing

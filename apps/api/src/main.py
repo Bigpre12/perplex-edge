@@ -28,6 +28,7 @@ from services.kalshi_ws import kalshi_ws_manager
 
 logger = logging.getLogger(__name__)
 logging.getLogger("apscheduler").setLevel(logging.INFO)
+RUN_INTERNAL_SCHEDULER = os.getenv("RUN_INTERNAL_SCHEDULER", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 def validate_env():
     """Fail fast if critical environment variables are missing, but with descriptive error logs."""
@@ -361,142 +362,145 @@ async def initialize_backend_services():
         logger.error(f"❌ [Background Init] Failed to start WebSocket Redis Listener: {e}")
 
     # 4. Scheduler & Jobs
-    try:
-        logger.info("📡 [Background Init] Configuring Scheduler...")
-        scheduler = AsyncIOScheduler()
-        ingest_job_specs, ingest_meta = build_unified_ingest_schedule()
-        sports_to_ingest = scheduled_sport_keys(ingest_job_specs)
+    if not RUN_INTERNAL_SCHEDULER:
+        logger.info("📡 [Background Init] Internal scheduler disabled (RUN_INTERNAL_SCHEDULER=false).")
+    else:
+        try:
+            logger.info("📡 [Background Init] Configuring Scheduler...")
+            scheduler = AsyncIOScheduler()
+            ingest_job_specs, ingest_meta = build_unified_ingest_schedule()
+            sports_to_ingest = scheduled_sport_keys(ingest_job_specs)
 
-        if ingest_meta.get("mode") == "legacy":
-            logger.info(
-                "📡 [Scheduler] Unified ingestion (legacy): %s sports every %s min — set INGEST_USE_LEGACY_SCHEDULER=false for tiered polling",
-                ingest_meta.get("sport_count"),
-                ingest_meta.get("interval_minutes"),
-            )
-        else:
-            floor = ingest_meta.get("active_interval_minutes_floor")
-            floor_note = f", active floor={floor} min" if floor else ""
-            logger.info(
-                "📡 [Scheduler] Tiered ingest: %s jobs — active=%s (per-sport min interval%s), inactive=%s every %s h, disabled=%s",
-                ingest_meta.get("sport_count"),
-                len(ingest_meta.get("active_sports") or []),
-                floor_note,
-                len(ingest_meta.get("inactive_sports") or []),
-                ingest_meta.get("inactive_interval_hours"),
-                ingest_meta.get("disabled") or [],
-            )
-
-        for spec in ingest_job_specs:
-            job_kw: dict = {
-                "args": [spec.sport_key],
-                "id": f"ingest_{spec.sport_key}",
-                "replace_existing": True,
-                "jitter": 30,
-            }
-            if spec.minutes is not None:
-                job_kw["minutes"] = spec.minutes
+            if ingest_meta.get("mode") == "legacy":
+                logger.info(
+                    "📡 [Scheduler] Unified ingestion (legacy): %s sports every %s min — set INGEST_USE_LEGACY_SCHEDULER=false for tiered polling",
+                    ingest_meta.get("sport_count"),
+                    ingest_meta.get("interval_minutes"),
+                )
             else:
-                job_kw["hours"] = spec.hours
-            job = scheduler.add_job(
-                unified_ingestion.run_with_retries,
-                "interval",
-                **job_kw,
-            )
-            logger.debug("📡 [Scheduler] Added unified ingestion job %s", job.id)
+                floor = ingest_meta.get("active_interval_minutes_floor")
+                floor_note = f", active floor={floor} min" if floor else ""
+                logger.info(
+                    "📡 [Scheduler] Tiered ingest: %s jobs — active=%s (per-sport min interval%s), inactive=%s every %s h, disabled=%s",
+                    ingest_meta.get("sport_count"),
+                    len(ingest_meta.get("active_sports") or []),
+                    floor_note,
+                    len(ingest_meta.get("inactive_sports") or []),
+                    ingest_meta.get("inactive_interval_hours"),
+                    ingest_meta.get("disabled") or [],
+                )
 
-        from services.grading_service import grading_service
-        from services.kalshi_ingestion import kalshi_ingestion
-        from services.whale_service import whale_service
-        from services.grader import run_full_grading_pipeline
+            for spec in ingest_job_specs:
+                job_kw: dict = {
+                    "args": [spec.sport_key],
+                    "id": f"ingest_{spec.sport_key}",
+                    "replace_existing": True,
+                    "jitter": 30,
+                }
+                if spec.minutes is not None:
+                    job_kw["minutes"] = spec.minutes
+                else:
+                    job_kw["hours"] = spec.hours
+                job = scheduler.add_job(
+                    unified_ingestion.run_with_retries,
+                    "interval",
+                    **job_kw,
+                )
+                logger.debug("📡 [Scheduler] Added unified ingestion job %s", job.id)
+
+            from services.grading_service import grading_service
+            from services.kalshi_ingestion import kalshi_ingestion
+            from services.whale_service import whale_service
+            from services.grader import run_full_grading_pipeline
         
-        scheduler.add_job(
-            grading_service.run_grading_cycle,
-            'interval',
-            minutes=10,
-            id="auto_grading",
-            replace_existing=True,
-            jitter=30,
-        )
-        
-        scheduler.add_job(
-            run_full_grading_pipeline,
-            'interval',
-            minutes=5,
-            id="sql_grading",
-            replace_existing=True,
-            jitter=30,
-        )
-        
-        # Kalshi Sync (NBA, MLB)
-        for k_sport in ["NBA", "MLB"]:
             scheduler.add_job(
-                kalshi_ingestion.run,
+                grading_service.run_grading_cycle,
                 'interval',
-                minutes=8,
-                args=[k_sport],
-                id=f"kalshi_sync_{k_sport.lower()}",
+                minutes=10,
+                id="auto_grading",
                 replace_existing=True,
                 jitter=30,
             )
         
-        # Periodic Global Whale Check
-        scheduler.add_job(
-            whale_service.detect_whale_signals,
-            'interval',
-            minutes=12,
-            id="whale_global_check",
-            replace_existing=True,
-            jitter=30,
-        )
-
-        # Live scores → live_scores table (ESPN / waterfall) for instant /api/live reads
-        scheduler.add_job(
-            live_data_service.poll_scores,
-            "interval",
-            seconds=max(15, int(settings.LIVE_DATA_POLLING_INTERVAL)),
-            id="live_scores_cache_upsert",
-            replace_existing=True,
-            jitter=10,
-        )
+            scheduler.add_job(
+                run_full_grading_pipeline,
+                'interval',
+                minutes=5,
+                id="sql_grading",
+                replace_existing=True,
+                jitter=30,
+            )
         
-        scheduler.start()
-        logger.info("📡 [Background Init] Internal scheduler active.")
-        logger.info("📡 [Background Init] Scheduler started.")
+            # Kalshi Sync (NBA, MLB)
+            for k_sport in ["NBA", "MLB"]:
+                scheduler.add_job(
+                    kalshi_ingestion.run,
+                    'interval',
+                    minutes=8,
+                    args=[k_sport],
+                    id=f"kalshi_sync_{k_sport.lower()}",
+                    replace_existing=True,
+                    jitter=30,
+                )
+        
+            # Periodic Global Whale Check
+            scheduler.add_job(
+                whale_service.detect_whale_signals,
+                'interval',
+                minutes=12,
+                id="whale_global_check",
+                replace_existing=True,
+                jitter=30,
+            )
 
-        # 5. Initial Ingest (bounded concurrency to avoid DB pool exhaustion)
-        ingest_semaphore = asyncio.Semaphore(3)
+            # Live scores → live_scores table (ESPN / waterfall) for instant /api/live reads
+            scheduler.add_job(
+                live_data_service.poll_scores,
+                "interval",
+                seconds=max(15, int(settings.LIVE_DATA_POLLING_INTERVAL)),
+                id="live_scores_cache_upsert",
+                replace_existing=True,
+                jitter=10,
+            )
+        
+            scheduler.start()
+            logger.info("📡 [Background Init] Internal scheduler active.")
+            logger.info("📡 [Background Init] Scheduler started.")
 
-        async def run_parallel_ingest():
-            logger.info("📡 [Background Init] Starting parallel initial ingestion phase...")
-            async def bounded_ingest(coro):
-                async with ingest_semaphore:
-                    return await coro
+            # 5. Initial Ingest (bounded concurrency to avoid DB pool exhaustion)
+            ingest_semaphore = asyncio.Semaphore(3)
 
-            ingest_tasks = [
-                bounded_ingest(unified_ingestion.run_with_retries(sport)) for sport in sports_to_ingest
-            ]
-            ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("NBA")))
-            ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("MLB")))
+            async def run_parallel_ingest():
+                logger.info("📡 [Background Init] Starting parallel initial ingestion phase...")
+                async def bounded_ingest(coro):
+                    async with ingest_semaphore:
+                        return await coro
+
+                ingest_tasks = [
+                    bounded_ingest(unified_ingestion.run_with_retries(sport)) for sport in sports_to_ingest
+                ]
+                ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("NBA")))
+                ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("MLB")))
             
-            results = await asyncio.gather(*ingest_tasks, return_exceptions=True)
-            for sport, res in zip(sports_to_ingest + ["Kalshi_NBA", "Kalshi_MLB"], results):
-                if isinstance(res, Exception):
-                    logger.error(f"❌ [Initial Ingest Failed] {sport}: {res}")
-                else:
-                    logger.info(f"✅ [Initial Ingest Complete] {sport}")
+                results = await asyncio.gather(*ingest_tasks, return_exceptions=True)
+                for sport, res in zip(sports_to_ingest + ["Kalshi_NBA", "Kalshi_MLB"], results):
+                    if isinstance(res, Exception):
+                        logger.error(f"❌ [Initial Ingest Failed] {sport}: {res}")
+                    else:
+                        logger.info(f"✅ [Initial Ingest Complete] {sport}")
             
-            # Post-ingest graders hook
-            logger.info("📡 [Background Init] Running post-ingest SQL grading pipeline...")
-            try:
-                from services.grader import run_full_grading_pipeline
-                await run_full_grading_pipeline()
-            except Exception as e:
-                logger.error(f"❌ [Background Init] Post-ingest grader failed: {e}")
+                # Post-ingest graders hook
+                logger.info("📡 [Background Init] Running post-ingest SQL grading pipeline...")
+                try:
+                    from services.grader import run_full_grading_pipeline
+                    await run_full_grading_pipeline()
+                except Exception as e:
+                    logger.error(f"❌ [Background Init] Post-ingest grader failed: {e}")
 
-        asyncio.create_task(run_parallel_ingest())
+            asyncio.create_task(run_parallel_ingest())
 
-    except Exception as e:
-        logger.error(f"❌ [Background Init] Scheduler setup failed: {e}")
+        except Exception as e:
+            logger.error(f"❌ [Background Init] Scheduler setup failed: {e}")
 
     # 6. CLV Tracker
     try:

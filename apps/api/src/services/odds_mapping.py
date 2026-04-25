@@ -1,11 +1,14 @@
 # apps/api/src/services/odds_mapping.py
 import logging
+import os
 from typing import List, Dict, Any
 from datetime import datetime, timezone
 from decimal import Decimal
 from schemas.props import PropRecord
 
 logger = logging.getLogger(__name__)
+ODDS_MAPPING_VERBOSE = os.getenv("ODDS_MAPPING_VERBOSE", "false").strip().lower() == "true"
+ODDS_MAPPING_VERBOSE_LIMIT = max(0, int(os.getenv("ODDS_MAPPING_VERBOSE_LIMIT", "25")))
 
 class OddsMapper:
     @staticmethod
@@ -36,12 +39,28 @@ class OddsMapper:
         Groups OddsAPI response into consolidated PropRecord rows.
         Groups Over/Under outcomes into a single record per (game, player, market, book).
         """
-        logger.info(f"OddsMapper: Processing {len(odds_raw)} raw event entries for {sport}")
+        logger.debug("OddsMapper: Processing %s raw event entries for %s", len(odds_raw), sport)
         now = datetime.now(timezone.utc)
         records = []
+        verbose_count = 0
+
+        def _verbose_log(msg: str, *args) -> None:
+            nonlocal verbose_count
+            if not ODDS_MAPPING_VERBOSE:
+                return
+            if verbose_count < ODDS_MAPPING_VERBOSE_LIMIT:
+                logger.debug(msg, *args)
+                verbose_count += 1
+                if verbose_count == ODDS_MAPPING_VERBOSE_LIMIT:
+                    logger.debug(
+                        "OddsMapper verbose log limit reached (%s); suppressing further per-outcome logs.",
+                        ODDS_MAPPING_VERBOSE_LIMIT,
+                    )
         
         # Intermediate grouping map: (game_id, market_key, player_name, bookmaker) -> data
         grouped_data = {}
+        market_counts: Dict[str, int] = {}
+        bookmaker_counts: Dict[str, int] = {}
 
         for event in odds_raw:
             eid = event.get('id')
@@ -52,20 +71,29 @@ class OddsMapper:
             
             for bookmaker in event.get('bookmakers', []):
                 book_key = bookmaker.get('key')
-                logger.info(f"  Bookmaker: {book_key}")
+                bookmaker_counts[book_key or "unknown"] = bookmaker_counts.get(book_key or "unknown", 0) + 1
+                _verbose_log("OddsMapper book=%s event=%s", book_key, eid)
                 last_update = bookmaker.get('last_update')
                 source_ts = datetime.fromisoformat(last_update.replace('Z', '+00:00')) if last_update else now
                 
                 for market in bookmaker.get('markets', []):
                     m_key = market.get('key')
-                    logger.info(f"    Market: {m_key}")
+                    market_counts[m_key or "unknown"] = market_counts.get(m_key or "unknown", 0) + 1
+                    _verbose_log("OddsMapper market=%s book=%s event=%s", m_key, book_key, eid)
                     
                     for outcome in market.get('outcomes', []):
                         name = outcome.get('name')
                         desc = outcome.get('description') # Player name
                         price = outcome.get('price')
                         line = outcome.get('point')
-                        logger.info(f"      Outcome: {name} | {desc} | {price} | {line}")
+                        _verbose_log(
+                            "OddsMapper outcome name=%s desc=%s price=%s line=%s market=%s",
+                            name,
+                            desc,
+                            price,
+                            line,
+                            m_key,
+                        )
                         
                         if name is None or price is None: continue
 
@@ -100,7 +128,7 @@ class OddsMapper:
                         group_key = (eid, m_key, p_name or "team", book_key)
                         
                         if group_key not in grouped_data:
-                            print(f"DEBUG: New group key created: {group_key}")
+                            _verbose_log("OddsMapper new_group_key=%s", group_key)
                             grouped_data[group_key] = {
                                 "sport": sport,
                                 "league": league,
@@ -120,7 +148,7 @@ class OddsMapper:
                             }
                         
                         implied = self.american_to_implied(int(price)) if isinstance(price, (int, float)) else Decimal('0')
-                        print(f"DEBUG: Outcome side={side}, implied={implied}")
+                        _verbose_log("OddsMapper side=%s implied=%s", side, implied)
                         
                         # Better H2H/Main mapping: 'Home' -> Over slot, 'Away' -> Under slot
                         is_home = 'over' in side or 'home' in side or side == (meta.get('home_team') or "").lower()
@@ -142,7 +170,13 @@ class OddsMapper:
                                     grouped_data[group_key]["odds_under"] = Decimal(str(price))
                                     grouped_data[group_key]["implied_under"] = implied
  
-        print(f"DEBUG: Final grouped_data count: {len(grouped_data)}")
+        logger.info(
+            "OddsMapper summary sport=%s grouped=%s markets=%s books=%s",
+            sport,
+            len(grouped_data),
+            market_counts,
+            bookmaker_counts,
+        )
         for data in grouped_data.values():
             try:
                 records.append(PropRecord(**data))

@@ -8,8 +8,10 @@ from sqlalchemy import select
 from models.prop import PropLine
 from models.bet import BetSlip, BetLog
 from models.user import User
+from services.llm.model_policy import sanitize_llm_payload, log_sanitizer_drops
 
 logger = logging.getLogger(__name__)
+logger.info("LLM model-policy sanitizer enabled for ai_service")
 
 class AIService:
     def __init__(self):
@@ -95,6 +97,9 @@ If a user asks about their performance, refer to the provided user context.
             "temperature": 0.5,
             "max_tokens": 500
         }
+        payload, dropped = sanitize_llm_payload(model, payload)
+        provider = "groq" if self.groq_key else ("openrouter" if self.openrouter_key else "openai")
+        log_sanitizer_drops("ai_service", provider, model, dropped)
 
         try:
             async with httpx.AsyncClient() as client:
