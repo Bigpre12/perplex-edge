@@ -58,7 +58,7 @@ function DashboardContent() {
     const { data: dashboardData, isLoading: dashboardLoading, isError: dashboardError, error: dashboardErrorMsg, refetch, lastUpdated } = useDashboard(sportParam || 'basketball_nba');
     const liveProps = dashboardData?.props || [];
     const propsLoading = dashboardLoading;
-    const injuries = [];
+    const injuries: any[] = [];
     const healthData = dashboardData?.health || {};
 
     return (
