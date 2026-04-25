@@ -46,6 +46,7 @@ if _is_pg:
     connect_args = {
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+                "server_settings": {"statement_timeout": "0"},
     }
 else:
     connect_args = {"check_same_thread": False}
