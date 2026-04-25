@@ -14,11 +14,15 @@ export interface PropRecord {
   sport: string;
   book: string;
   commence_time: string;
+  updated_at?: string;
 }
 
-export const useProps = (sport = "basketball_nba") => {
+export const useProps = (sport = "basketball_nba", limit = 50) => {
   const normalizedSport = normalizeSportKey(sport);
-  const req = useBackendData<any>("/api/props", { params: { sport: normalizedSport }, pollMs: 30_000 });
+  const req = useBackendData<any>("/api/props", {
+    params: { sport: normalizedSport, limit },
+    pollMs: 30_000,
+  });
   const rows = useMemo(() => {
     const raw = req.data;
     if (Array.isArray(raw)) return raw as PropRecord[];

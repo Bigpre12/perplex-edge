@@ -114,7 +114,9 @@ async function tryDirectOpenAI(messages: any[], sport: string) {
       max_tokens: 600,
       temperature: 0.7,
     };
-    const response = await openai.chat.completions.create(sanitizeModelPayload(model, rawPayload));
+    const response = await openai.chat.completions.create(
+      sanitizeModelPayload(model, rawPayload) as any,
+    );
 
     const text = response.choices[0]?.message?.content || "Oracle analysis complete.";
     return streamText(text);

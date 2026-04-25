@@ -132,7 +132,7 @@ function PlayerPropsContent() {
                     lastUpdated={lastUpdated}
                     isStale={isStale}
                     loading={loading}
-                    error={error?.message}
+                    error={typeof error === "string" ? error : undefined}
                     onRefresh={refresh}
                     refreshInterval={120}
                 />
