@@ -64,22 +64,16 @@ class AuthCircuitBreaker:
 # Global instance
 auth_breaker = AuthCircuitBreaker(threshold=10, cooldown=60)
 
-HEALTH_BYPASS_PATHS = {
-    "/health",
-    "/api/health",
-    "/api/health/",
-    "/api/health/ready",
-    "/api/health/deps",
-}
-
 class AuthCircuitBreakerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        path = (request.url.path or "/").rstrip("/") or "/"
+
         # Skip circuit breaker for internal admin reset
-        if request.url.path == "/api/admin/reset-circuit-breaker":
+        if path == "/api/admin/reset-circuit-breaker":
             return await call_next(request)
 
         # Never block liveness/readiness with auth circuit state.
-        if request.url.path in HEALTH_BYPASS_PATHS:
+        if path == "/health" or path.startswith("/api/health"):
             return await call_next(request)
 
         if not auth_breaker.can_proceed():

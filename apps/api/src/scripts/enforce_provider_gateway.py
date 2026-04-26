@@ -35,7 +35,8 @@ def main() -> int:
         if any(part in IGNORED_PARTS for part in path.parts):
             continue
         full = str(path.resolve()).lower()
-        if "\\apps\\api\\src\\scripts\\" in full and not full.endswith("enforce_provider_gateway.py"):
+        # Keep enforcement focused on application code, not helper scripts.
+        if "scripts" in path.parts and path.name != "enforce_provider_gateway.py":
             continue
         if full in ALLOWED_FILES:
             continue
