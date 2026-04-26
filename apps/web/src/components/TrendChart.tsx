@@ -1,6 +1,7 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 
 interface TrendData {
@@ -16,6 +17,15 @@ interface TrendChartProps {
 }
 
 export default function TrendChart({ data, line, statType }: TrendChartProps) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return <div className="w-full h-32 mt-2 min-w-0" />;
+    }
+
     return (
         <div className="w-full h-32 mt-2 min-w-0">
             <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>

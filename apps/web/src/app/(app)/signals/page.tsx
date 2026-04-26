@@ -44,7 +44,7 @@ function SignalsContent() {
       <div className="p-6 pt-10 max-w-lg mx-auto">
         <EmptyState
           title="No market anomalies detected for this slate."
-          description="The engine requires fresh odds data to compute signals. Check API sync status and try again."
+          description="Unable to connect to backend. Data will populate once API is online."
           onRetry={() => refetch()}
         />
       </div>
@@ -92,7 +92,7 @@ function SignalsContent() {
         {isFetched && signalList.length === 0 && (
           <EmptyState
             title="No market anomalies detected for this slate."
-            description="The engine requires fresh odds data to compute signals."
+            description="No data available. Waiting for market sync."
             onRetry={() => refetch()}
           />
         )}

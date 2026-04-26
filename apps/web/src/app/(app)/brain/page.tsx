@@ -7,6 +7,7 @@ import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { ErrorRetry } from "@/components/shared/ErrorRetry";
 import DataFreshnessBanner from "@/components/shared/DataFreshnessBanner";
 import SportSelector from "@/components/shared/SportSelector";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function BrainPage() {
   const { sport } = useSport();
@@ -40,18 +41,26 @@ export default function BrainPage() {
             <MetricCard label="ROI 7d" value={Number(metrics?.roi_7d || 0).toFixed(1) + "%"} />
             <MetricCard label="Avg confidence" value={Number(metrics?.avg_confidence || 0).toFixed(1) + "%"} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(decisions || []).map((d: any, i: number) => (
-              <div key={d?.id || i} className="rounded-2xl border border-lucrix-border bg-lucrix-surface p-4">
-                <div className="text-sm font-black">{d?.details?.player_name || d?.player || "Unknown Player"}</div>
-                <div className="text-xs text-textMuted mt-1">{d?.details?.stat_type || d?.market || "Market"}</div>
-                <div className="text-xs mt-2">{d?.reasoning || "No reasoning provided."}</div>
-                <div className="mt-3 text-[11px] text-brand-cyan">
-                  Rec: {d?.action || d?.recommendation || d?.details?.side || "PASS"}
+          {(decisions || []).length === 0 ? (
+            <EmptyState
+              title="No data available. Waiting for market sync."
+              description="Neural decisions will appear once the market ingestion cycle completes."
+              onRetry={() => refetch()}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(decisions || []).map((d: any, i: number) => (
+                <div key={d?.id || i} className="rounded-2xl border border-lucrix-border bg-lucrix-surface p-4">
+                  <div className="text-sm font-black">{d?.details?.player_name || d?.player || "Unknown Player"}</div>
+                  <div className="text-xs text-textMuted mt-1">{d?.details?.stat_type || d?.market || "Market"}</div>
+                  <div className="text-xs mt-2">{d?.reasoning || "No reasoning provided."}</div>
+                  <div className="mt-3 text-[11px] text-brand-cyan">
+                    Rec: {d?.action || d?.recommendation || d?.details?.side || "PASS"}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       ) : null}
     </div>

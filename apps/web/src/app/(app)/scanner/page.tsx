@@ -2,87 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE } from "@/lib/api";
 import { SPORTS_CONFIG, DISPLAY_SPORTS, SportKey } from "@/lib/sports.config";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import DataFreshnessBanner from "@/components/shared/DataFreshnessBanner";
-
-type ScannerRow = {
-  id: string;
-  player: string;
-  market: string;
-  line: string;
-  bookOdds: string;
-  fairValue: string;
-  edgePct: number;
-  signal: "SHARP" | "CLV" | "EV+" | "FADE";
-};
+import { useScannerFeed } from "@/hooks/useScannerFeed";
 
 const PILL_LABELS = ["NBA", "NFL", "MLB", "NHL", "NCAAF", "NCAAB", "WNBA", "EPL", "UCL", "UFC", "MLS"];
 const PILL_SPORTS = DISPLAY_SPORTS.filter((k) => PILL_LABELS.includes(SPORTS_CONFIG[k].label)).sort(
   (a: SportKey, b: SportKey) => PILL_LABELS.indexOf(SPORTS_CONFIG[a].label) - PILL_LABELS.indexOf(SPORTS_CONFIG[b].label)
 );
 
-function edgeToSignal(edge: number): ScannerRow["signal"] {
-  if (edge >= 8) return "SHARP";
-  if (edge >= 5) return "CLV";
-  if (edge >= 2) return "EV+";
-  return "FADE";
-}
-
 export default function ScannerPage() {
   const router = useRouter();
   const { token, loading: authLoading } = useAuth();
   const [sport, setSport] = useState<SportKey>("basketball_nba");
-  const [rows, setRows] = useState<ScannerRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const { rows, isLoading: loading, isError, refetch, lastUpdated } = useScannerFeed(sport);
+  const error = isError ? "Unable to connect to backend. Data will populate once API is online." : null;
 
   useEffect(() => {
     if (!authLoading && !token) router.replace("/login");
   }, [authLoading, token, router]);
-
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_BASE}/api/props?sport=${sport}`);
-        const json = await res.json();
-        const data = Array.isArray(json?.props) ? json.props : Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
-        const mapped: ScannerRow[] = data.map((r: any, idx: number) => {
-          const edge = Number(r?.ev_value ?? r?.ev_percentage ?? 0) || 0;
-          return {
-            id: String(r?.id ?? `${r?.player_name ?? "row"}-${idx}`),
-            player: r?.player_name ?? "—",
-            market: r?.market_label ?? r?.market_key ?? "—",
-            line: r?.line != null ? String(r.line) : "—",
-            bookOdds: r?.book_odds != null ? String(r.book_odds) : "—",
-            fairValue: r?.fair_value != null ? String(r.fair_value) : "—",
-            edgePct: Math.abs(edge),
-            signal: edgeToSignal(edge),
-          };
-        });
-        mapped.sort((a, b) => Math.abs(b.edgePct) - Math.abs(a.edgePct));
-        if (mounted) setRows(mapped);
-        if (mounted) setLastUpdated(new Date().toISOString());
-      } catch {
-        if (mounted) {
-          setRows([]);
-          setError("Unable to connect to backend. Data will populate once API is online.");
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [sport]);
 
   const stats = useMemo(() => {
     const edgesFound = rows.length;
@@ -102,7 +42,7 @@ export default function ScannerPage() {
         <div className="mt-3"><DataFreshnessBanner lastUpdated={lastUpdated} label="Scanner source" /></div>
       </div>
 
-      {error ? <div className="border border-red-500/30 bg-red-500/10 p-3 rounded-xl text-sm">{error}</div> : null}
+      {error ? <div className="border border-red-500/30 bg-red-500/10 p-3 rounded-xl text-sm">{error} <button onClick={() => refetch()} className="ml-2 underline">Retry</button></div> : null}
       {!error && allZeroEdges ? (
         <div className="border border-amber-500/30 bg-amber-500/10 p-3 rounded-xl text-sm text-amber-200">
           Odds loaded but edges are still flat. Compute cycle may still be warming.

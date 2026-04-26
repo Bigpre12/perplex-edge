@@ -19,7 +19,7 @@ import time
 import httpx # type: ignore
 import logging
 import asyncio
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Set, Tuple
 from datetime import datetime, timezone
 
 from core.config import settings # type: ignore
@@ -88,6 +88,12 @@ class OddsApiClient(ResilientBaseClient):
         self.default_ttl = 300  # 5 min — standard odds
         self.long_ttl = 3600    # 1 hour — sports/metadata
         self.timeout = 15.0
+        self.event_ids_ttl_seconds = int(os.getenv("THE_ODDS_API_EVENT_IDS_TTL_SECONDS", "300"))
+        self._event_ids_cache: Dict[str, Tuple[float, Set[str]]] = {}
+        self._last_all_dead_warn_ts: float = 0.0
+        self._all_dead_warn_interval_seconds = int(
+            os.getenv("ODDS_API_ALL_KEYS_DEAD_WARN_INTERVAL_SECONDS", "60")
+        )
 
         # Limit per day (approx 100k/mo tier)
         self.max_daily_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
@@ -103,7 +109,7 @@ class OddsApiClient(ResilientBaseClient):
         if not self.api_keys:
             logger.warning(
                 "OddsApiClient: no keys configured — The Odds API disabled "
-                "(set ODDS_API_KEYS, THE_ODDS_API_KEY, or ODDS_API_KEY)"
+                "(set ODDS_API_KEYS, THE_ODDS_API_KEY, ODDS_API_KEY, or THE_ODDS_API_KEY_0..N)"
             )
         else:
             safe_keys = [f"{k[:4]}****" for k in self.api_keys if k]
@@ -142,6 +148,12 @@ class OddsApiClient(ResilientBaseClient):
         if not self.api_keys:
             return True
         return all(self._is_key_dead(i) for i in range(len(self.api_keys)))
+
+    def _log_all_keys_dead_throttled(self) -> None:
+        now = time.time()
+        if now - self._last_all_dead_warn_ts >= self._all_dead_warn_interval_seconds:
+            logger.warning("🚨 All Odds API keys are dead/cooling down. Skipping request.")
+            self._last_all_dead_warn_ts = now
 
     def all_keys_unavailable(self) -> bool:
         """
@@ -218,6 +230,28 @@ class OddsApiClient(ResilientBaseClient):
         r = self._last_requests_remaining
         return r is not None and r < self.min_remaining_before_stop
 
+    @staticmethod
+    def is_valid_event_id(event_id: str) -> bool:
+        return isinstance(event_id, str) and len(event_id) == 32
+
+    async def get_valid_event_ids(self, sport: str, force_refresh: bool = False) -> Set[str]:
+        now = time.time()
+        cached = self._event_ids_cache.get(sport)
+        if not force_refresh and cached and now < cached[0]:
+            return cached[1]
+
+        events = await self.get_events(sport, use_cache=False, ttl=self.event_ids_ttl_seconds)
+        valid_ids: Set[str] = set()
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            eid = event.get("id")
+            if self.is_valid_event_id(eid):
+                valid_ids.add(eid)
+
+        self._event_ids_cache[sport] = (now + self.event_ids_ttl_seconds, valid_ids)
+        return valid_ids
+
     async def _make_request(
         self,
         endpoint: str,
@@ -275,7 +309,7 @@ class OddsApiClient(ResilientBaseClient):
 
         # 3. Short-circuit if all keys are dead (prevents log spam)
         if self._all_keys_dead():
-            logger.warning("🚨 All Odds API keys are dead/cooling down. Skipping request.")
+            self._log_all_keys_dead_throttled()
             return None
 
         # 4. Execute Request with Rotation
@@ -375,6 +409,13 @@ class OddsApiClient(ResilientBaseClient):
                             continue
                         logger.critical("ALL Odds API keys rate-limited. Ingestion will stall.")
                         break
+                    elif resp.status_code == 422:
+                        logger.warning(
+                            "TheOddsAPI returned 422 for %s. Treating as data/config issue (non-auth); response=%s",
+                            endpoint,
+                            resp.text[:200],
+                        )
+                        return None
                     else:
                         logger.error(f"❌ Odds API error {resp.status_code}: {resp.text[:200]}")
                         return None
@@ -434,6 +475,18 @@ class OddsApiClient(ResilientBaseClient):
 
     async def get_player_props(self, sport: str, event_id: str, markets: str, regions: str = "us", use_cache: bool = True, ttl: Optional[int] = None) -> Dict:
         """Fetch specific player props for an event."""
+        if not self.is_valid_event_id(event_id):
+            logger.warning("Skipping TheOddsAPI request: invalid event_id '%s'", event_id)
+            return {}
+        valid_ids = await self.get_valid_event_ids(sport)
+        if valid_ids and event_id not in valid_ids:
+            logger.warning(
+                "Skipping TheOddsAPI request: stale/unknown event_id '%s' for sport '%s'",
+                event_id,
+                sport,
+            )
+            return {}
+
         params = {
             "regions": regions,
             "markets": markets,
@@ -460,6 +513,18 @@ class OddsApiClient(ResilientBaseClient):
 
     async def get_event_odds(self, sport: str, event_id: str, regions: str = "us", markets: Optional[str] = None) -> Dict:
         """Fetch odds for a specific event ID."""
+        if not self.is_valid_event_id(event_id):
+            logger.warning("Skipping TheOddsAPI request: invalid event_id '%s'", event_id)
+            return {}
+        valid_ids = await self.get_valid_event_ids(sport)
+        if valid_ids and event_id not in valid_ids:
+            logger.warning(
+                "Skipping TheOddsAPI request: stale/unknown event_id '%s' for sport '%s'",
+                event_id,
+                sport,
+            )
+            return {}
+
         params = {
             "regions": regions,
             "markets": markets or self.get_markets_for_sport(sport),

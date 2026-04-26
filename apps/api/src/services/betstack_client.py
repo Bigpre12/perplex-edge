@@ -12,6 +12,7 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import httpx
 
@@ -73,6 +74,8 @@ class BetstackClient:
         self._missing_url_logged = False
         self._warned_remote = False
         self._remote_disabled = False
+        if not self.base_url:
+            logger.warning("Betstack: BETSTACK_BASE_URL missing; Betstack client will stay disabled.")
 
     @property
     def available(self) -> bool:
@@ -112,7 +115,7 @@ class BetstackClient:
             }
         )
         rel = path.lstrip("/")
-        url = f"{self.base_url}/{rel}"
+        url = urljoin(f"{self.base_url}/", rel)
 
         async with _betstack_http_lock:
             now_m = time.monotonic()
@@ -139,7 +142,15 @@ class BetstackClient:
                         "Betstack rate limit (429): free tier allows ~1 req/60s per key. Skipping this call."
                     )
                     return None
-                if code in (401, 403, 404):
+                if code == 404:
+                    parsed = urlsplit(str(e.response.url))
+                    sanitized_url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, ""))
+                    logger.warning(
+                        "Betstack 404 at: %s — check base URL and path config",
+                        sanitized_url,
+                    )
+                    return None
+                if code in (401, 403):
                     if not self._warned_remote:
                         logger.warning(
                             "Betstack API HTTP %s for %s — check API key and BETSTACK_BASE_URL.",

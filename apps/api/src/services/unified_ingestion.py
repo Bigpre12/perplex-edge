@@ -50,6 +50,23 @@ from brain.engine import brain_governor  # type: ignore
 
 logger = logging.getLogger(__name__)
 
+
+def _is_auth_failure_error(err: Exception) -> bool:
+    msg = str(err).lower()
+    return "authentication" in msg or "password authentication failed" in msg
+
+
+def _is_transient_retryable_error(err: Exception) -> bool:
+    msg = str(err).lower()
+    transient_markers = (
+        "timeout",
+        "temporarily unavailable",
+        "connection reset",
+        "connection refused",
+        "network",
+    )
+    return any(marker in msg for marker in transient_markers)
+
 class UnifiedIngestionService:
     @staticmethod
     def american_to_implied(american: int) -> Decimal:
@@ -338,9 +355,16 @@ class UnifiedIngestionService:
             # Quota: cap per-event TOA calls (INGEST_TOA_MAX_EVENTS_PER_CYCLE, default 15)
             max_events = max(1, int(os.getenv("INGEST_TOA_MAX_EVENTS_PER_CYCLE", "15")))
             active_events: List[str] = []
-            for i, k in enumerate(metadata_map.keys()):
-                if i >= max_events:
+            valid_event_ids = await odds_api_client.get_valid_event_ids(sport_key)
+            for k in metadata_map.keys():
+                if len(active_events) >= max_events:
                     break
+                if not odds_api_client.is_valid_event_id(k):
+                    logger.warning("UnifiedIngestion: skipping invalid TheOddsAPI event_id '%s'", k)
+                    continue
+                if valid_event_ids and k not in valid_event_ids:
+                    logger.warning("UnifiedIngestion: skipping stale TheOddsAPI event_id '%s'", k)
+                    continue
                 active_events.append(k)
 
             toa_keys_cooldown = odds_api_client.all_keys_unavailable()
@@ -449,7 +473,7 @@ class UnifiedIngestionService:
                     )
                 logger.info(f"UnifiedIngestion: Merged {len(betstack_records)} Betstack records.")
         except Exception as e:
-            logger.error(f"UnifiedIngestion: Betstack fetch failed: {e}")
+            logger.warning("UnifiedIngestion: Betstack fetch failed (non-fatal): %s", e)
 
         odds_raw = UnifiedIngestionService._filter_stale_odds_events(odds_raw, sport_key)
         metadata_map = UnifiedIngestionService._build_metadata_map(odds_raw)
@@ -602,12 +626,26 @@ class UnifiedIngestionService:
                 await self.run(sport_key)
                 return
             except Exception as e:
+                if _is_auth_failure_error(e):
+                    logger.critical(
+                        "UnifiedIngestion: AUTH failure for %s (no retry): %s",
+                        sport_key,
+                        e,
+                    )
+                    raise
+
+                retryable = _is_transient_retryable_error(e)
                 logger.error(f"UnifiedIngestion: Attempt {i+1}/{retries} failed for {sport_key}: {e}")
-                if i < retries - 1:
+                if retryable and i < retries - 1:
                     wait = 2 ** i
                     logger.info(f"UnifiedIngestion: Retrying in {wait}s...")
                     await asyncio.sleep(wait)
                 else:
+                    if not retryable:
+                        logger.error(
+                            "UnifiedIngestion: Non-transient failure for %s (no further retries).",
+                            sport_key,
+                        )
                     logger.critical(f"UnifiedIngestion: ALL ATTEMPTS FAILED for {sport_key}")
                     async with async_session_maker() as session:
                         await HeartbeatService.log_heartbeat(

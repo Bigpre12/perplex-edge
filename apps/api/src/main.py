@@ -20,7 +20,7 @@ from core.ingest_scheduler_config import build_unified_ingest_schedule, schedule
 from middleware.request_id import RequestIDMiddleware, get_request_id
 from middleware.auth_circuit_breaker import AuthCircuitBreakerMiddleware, auth_breaker # Import new circuit breaker
 from db.base import Base
-from db.session import engine, get_db
+from db.session import engine, get_db, validate_db_connection
 from services.unified_ingestion import unified_ingestion
 from core.connection_manager import manager
 from services.live_data_service import live_data_service
@@ -29,6 +29,7 @@ from services.kalshi_ws import kalshi_ws_manager
 logger = logging.getLogger(__name__)
 logging.getLogger("apscheduler").setLevel(logging.INFO)
 RUN_INTERNAL_SCHEDULER = os.getenv("RUN_INTERNAL_SCHEDULER", "true").strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_STARTUP_DDL = os.getenv("ENABLE_STARTUP_DDL", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 def validate_env():
     """Fail fast if critical environment variables are missing, but with descriptive error logs."""
@@ -147,8 +148,15 @@ async def initialize_backend_services():
             await conn.run_sync(Base.metadata.create_all)
 
         # 2. Schema Migrations (safe: IF NOT EXISTS)
-        logger.info("📡 [Background Init] Running schema migrations...")
-        is_sqlite = "sqlite" in str(engine.url)
+        if not ENABLE_STARTUP_DDL:
+            logger.info(
+                "📡 [Background Init] Startup DDL disabled (ENABLE_STARTUP_DDL=false). "
+                "Expect Alembic-managed schema in this environment."
+            )
+            is_sqlite = True
+        else:
+            logger.info("📡 [Background Init] Running schema migrations...")
+            is_sqlite = "sqlite" in str(engine.url)
         
         async def run_migration_step(query: str):
             try:
@@ -543,6 +551,9 @@ async def backend_lifespan(app: FastAPI):
     logger.info(f"   ► DB Host      : {db_host}")
     logger.info(f"   ► Service Role : API + Ingest Worker + Heartbeat")
     logger.info("=" * 60)
+
+    # Fail fast on invalid DB auth/config before spinning up background services.
+    await validate_db_connection()
 
     async def _safe_initialize_backend_services() -> None:
         try:

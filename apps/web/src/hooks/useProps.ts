@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useBackendData } from "@/hooks/useBackendData";
 import { normalizeSportKey } from "@/constants/sports";
+import { unwrapList } from "@/lib/contracts";
 
 export interface PropRecord {
   id: string;
@@ -24,9 +25,7 @@ export const useProps = (sport = "basketball_nba", limit = 50) => {
     pollMs: 30_000,
   });
   const rows = useMemo(() => {
-    const raw = req.data;
-    if (Array.isArray(raw)) return raw as PropRecord[];
-    return ((raw?.props || raw?.data || raw?.results || []) as PropRecord[]);
+    return unwrapList<PropRecord>(req.data);
   }, [req.data]);
   const freshness = useMemo(() => {
     const newest = rows.find((row: any) => row?.updated_at)?.updated_at;

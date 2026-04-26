@@ -9,6 +9,10 @@ from services.espn_client import espn_client
 
 logger = logging.getLogger(__name__)
 
+
+class InvalidEspnEventIdError(Exception):
+    pass
+
 STAT_TYPE_MAP = {
     "player_points": "points",
     "points": "points",
@@ -49,8 +53,19 @@ class GradingService:
     Uses ESPN box score data for real stat-based settlement.
     """
 
+    def __init__(self) -> None:
+        self._invalid_espn_event_ids: Dict[str, set[str]] = {}
+
+    def _mark_invalid_event_id(self, sport_key: str, event_id: str) -> None:
+        self._invalid_espn_event_ids.setdefault(sport_key, set()).add(str(event_id))
+
+    def _is_invalid_event_id(self, sport_key: str, event_id: str) -> bool:
+        return str(event_id) in self._invalid_espn_event_ids.get(sport_key, set())
+
     async def _fetch_box_score(self, sport_key: str, game_id: str) -> Optional[Dict[str, Any]]:
         """Fetch ESPN box score for a completed game."""
+        if self._is_invalid_event_id(sport_key, game_id):
+            return None
         mapping = ESPN_SPORT_MAP.get(sport_key)
         if not mapping:
             return None
@@ -59,11 +74,61 @@ class GradingService:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 resp = await client.get(url)
+                if resp.status_code == 400:
+                    raise InvalidEspnEventIdError(
+                        f"ESPN summary rejected event_id={game_id} for sport={sport_key}"
+                    )
                 resp.raise_for_status()
                 return resp.json()
+        except InvalidEspnEventIdError:
+            raise
+        except httpx.HTTPStatusError as e:
+            logger.warning("ESPN box score fetch failed for %s: %s", game_id, e)
+            return None
         except Exception as e:
             logger.warning(f"ESPN box score fetch failed for {game_id}: {e}")
             return None
+
+    async def _fetch_box_score_with_refresh(
+        self,
+        sport_key: str,
+        game_id: str,
+        game_map: Dict[str, Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Attempt summary fetch once; on 400, force-refresh scoreboard IDs and retry once.
+        If still invalid/missing, mark event ID bad to avoid repeated non-transient retries.
+        """
+        gid = str(game_id)
+        try:
+            return await self._fetch_box_score(sport_key, gid)
+        except InvalidEspnEventIdError:
+            logger.warning(
+                "ESPN returned 400 for event_id=%s (%s). Refreshing scoreboard IDs and retrying once.",
+                gid,
+                sport_key,
+            )
+            fresh_games = await espn_client.get_scoreboard(sport_key, force_refresh=True)
+            game_map.clear()
+            game_map.update({str(g["id"]): g for g in fresh_games if g.get("id") is not None})
+            if gid not in game_map:
+                self._mark_invalid_event_id(sport_key, gid)
+                logger.warning(
+                    "Dropping stale ESPN event_id=%s for %s; not present in refreshed scoreboard IDs.",
+                    gid,
+                    sport_key,
+                )
+                return None
+            try:
+                return await self._fetch_box_score(sport_key, gid)
+            except InvalidEspnEventIdError:
+                self._mark_invalid_event_id(sport_key, gid)
+                logger.warning(
+                    "Dropping ESPN event_id=%s for %s after refresh+retry still returned 400.",
+                    gid,
+                    sport_key,
+                )
+                return None
 
     def _extract_player_stat(self, box_score: Dict, player_name: str, stat_type: str) -> Optional[float]:
         """Extract a specific stat value for a player from ESPN box score data."""
@@ -139,8 +204,10 @@ class GradingService:
 
                         if is_over:
                             gid = str(pick.game_id)
+                            if self._is_invalid_event_id(sport, gid):
+                                continue
                             if gid not in box_cache:
-                                box_cache[gid] = await self._fetch_box_score(sport, gid)
+                                box_cache[gid] = await self._fetch_box_score_with_refresh(sport, gid, game_map)
                             await self.settle_pick(pick, session, box_score=box_cache.get(gid))
 
             except Exception as e:
@@ -213,8 +280,10 @@ class GradingService:
 
                         if is_over:
                             gid = str(pick.game_id)
+                            if self._is_invalid_event_id(s, gid):
+                                continue
                             if gid not in box_cache:
-                                box_cache[gid] = await self._fetch_box_score(s, gid)
+                                box_cache[gid] = await self._fetch_box_score_with_refresh(s, gid, game_map)
                             await self.settle_pick(pick, session, box_score=box_cache.get(gid))
                             results.append({"pick_id": pick.id, "player": pick.player_name, "status": "graded"})
             except Exception as e:

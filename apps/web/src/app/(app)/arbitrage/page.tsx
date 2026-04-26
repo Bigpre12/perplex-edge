@@ -71,7 +71,7 @@ function ArbitrageContent() {
       <div className="p-6 pt-10 max-w-lg mx-auto">
         <EmptyState
           title="No arbitrage opportunities found."
-          description="Arb detection requires live multi-book odds. Check API sync status."
+          description="Unable to connect to backend. Data will populate once API is online."
           onRetry={() => refetch()}
         />
       </div>
@@ -180,7 +180,7 @@ function ArbitrageContent() {
           <div className="col-span-full">
             <EmptyState
               title="No arbitrage opportunities found."
-              description="Arb detection requires live multi-book odds. Check API sync status."
+              description="No data available. Waiting for market sync."
               onRetry={() => refetch()}
             />
           </div>

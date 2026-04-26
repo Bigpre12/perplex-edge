@@ -8,6 +8,7 @@ import logging
 import os
 
 from db.session import get_db
+from routers.schemas.health_contracts import HealthResponse, HealthDepsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -27,23 +28,28 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         except Exception:
             pass
 
+    db_error: Optional[str] = None
     try:
         await db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
         db_status = f"disconnected: {str(e)}"
+        db_error = str(e)
         logger.error(f"Health Check: DB failure: {e}")
         await _rollback_quietly()
 
+    odds_error: Optional[str] = None
     try:
         from core.config import settings
 
         if not settings.ODDS_API_KEYS:
             odds_status = "error: missing_key"
+            odds_error = "missing_key"
         else:
             odds_status = "active"
     except Exception as e:
         odds_status = f"error: {str(e)}"
+        odds_error = str(e)
 
     kalshi_status = "not_configured"
     if os.getenv("KALSHI_API_KEY") or os.getenv("KALSHI_EMAIL"):
@@ -52,6 +58,18 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     sportmonks_status = "not_configured"
     if os.getenv("SPORTMONKS_KEY", "").strip():
         sportmonks_status = "configured"
+
+    betstack_key = (os.getenv("BETSTACK_API_KEY") or "").strip()
+    betstack_url = (os.getenv("BETSTACK_BASE_URL") or "").strip()
+    if betstack_key and betstack_url:
+        betstack_status = "configured"
+        betstack_error: Optional[str] = None
+    elif betstack_key and not betstack_url:
+        betstack_status = "degraded"
+        betstack_error = "missing BETSTACK_BASE_URL"
+    else:
+        betstack_status = "not_configured"
+        betstack_error = None
 
     from services.odds_api_client import odds_api_client
 
@@ -206,8 +224,24 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     elif ingest_quota_blocked and ingest_quota_block_reason == "odds_api_quota_hard_stop_pct":
         overall_status = "degraded"
 
+    dependencies = {
+        "database": {
+            "status": "ok" if db_status == "connected" else "unavailable",
+            **({"error": db_error} if db_error else {}),
+        },
+        "theoddsapi": {
+            "status": "ok" if odds_status == "active" else "degraded",
+            **({"error": odds_error} if odds_error else {}),
+        },
+        "betstack": {
+            "status": "ok" if betstack_status == "configured" else ("degraded" if betstack_status == "degraded" else "degraded"),
+            **({"error": betstack_error} if betstack_error else {}),
+        },
+    }
+
     return {
         "status": overall_status,
+        "dependencies": dependencies,
         "database": db_status,
         "odds_api": odds_status,
         "kalshi": kalshi_status,
@@ -299,7 +333,7 @@ def _build_degradation_payload(base: Dict[str, Any], internal: Dict[str, Any]) -
 
 @router.get("")
 @router.get("/")
-async def health_check(db: AsyncSession = Depends(get_db)):
+async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     """
     Enhanced Health check endpoint (legacy shape).
     Reports DB, Odds API, Cache, and Kalshi status.
@@ -310,7 +344,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/deps")
-async def health_dependencies(db: AsyncSession = Depends(get_db)):
+async def health_dependencies(db: AsyncSession = Depends(get_db)) -> HealthDepsResponse:
     """
     Dependency-aware health: explicit degradation level for UI truthfulness.
     Prefer this over inferring health from HTTP 200 alone.
@@ -320,6 +354,8 @@ async def health_dependencies(db: AsyncSession = Depends(get_db)):
     level, reasons, user_message = _build_degradation_payload(base, internal)
 
     return {
+        "status": base.get("status"),
+        "dependencies": base.get("dependencies"),
         "overall": base.get("status"),
         "system_status": base.get("system_status"),
         "degradation": {

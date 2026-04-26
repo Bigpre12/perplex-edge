@@ -135,7 +135,16 @@ class WhaleService:
                 if new_signals:
                     signals.extend(new_signals)
         except Exception as e:
-            logger.error(f"WhaleService database failure: {e}")
+            err = str(e)
+            if "whale_moves.market_key" in err or ("whale_moves" in err and "does not exist" in err):
+                logger.error(
+                    "WhaleService schema mismatch detected. Run: "
+                    "ALTER TABLE whale_moves ADD COLUMN IF NOT EXISTS market_key TEXT; "
+                    "Original error: %s",
+                    err,
+                )
+            else:
+                logger.error("WhaleService database failure: %s", e)
             signals = [] # Ensure it falls through to mock data fallback
 
         if not signals:

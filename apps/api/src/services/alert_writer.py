@@ -216,6 +216,16 @@ async def _run_detection(sport: str, db: AsyncSession) -> int:
         await db.commit()
         return total_inserted
     except Exception as e:
-        logger.error(f"❌ [INTELLIGENCE ENGINE] Signal detection failure: {str(e)}", exc_info=True)
+        err = str(e)
+        if "whale_moves.market_key" in err or ("whale_moves" in err and "does not exist" in err):
+            logger.error(
+                "❌ [INTELLIGENCE ENGINE] Whale schema mismatch. Run SQL hotfix: "
+                "ALTER TABLE whale_moves ADD COLUMN IF NOT EXISTS market_key TEXT; "
+                "Error: %s",
+                err,
+                exc_info=True,
+            )
+        else:
+            logger.error(f"❌ [INTELLIGENCE ENGINE] Signal detection failure: {err}", exc_info=True)
         await db.rollback()
         return 0

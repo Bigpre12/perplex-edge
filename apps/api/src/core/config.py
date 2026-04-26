@@ -74,6 +74,14 @@ class Settings:
             raw_list = ""
 
         backup = os.getenv("ODDS_API_KEY_BACKUP", "")
+        indexed_keys = []
+        idx = 0
+        while True:
+            k = (os.getenv(f"THE_ODDS_API_KEY_{idx}") or "").strip()
+            if not k:
+                break
+            indexed_keys.append(k)
+            idx += 1
         
         # Aggregate all unique keys
         all_keys = [k.strip() for k in raw_list.split(",") if k.strip()]
@@ -82,6 +90,9 @@ class Settings:
             all_keys.insert(0, primary)
         if backup and backup not in all_keys:
             all_keys.append(backup)
+        for idx_key in indexed_keys:
+            if idx_key and idx_key not in all_keys:
+                all_keys.append(idx_key)
             
         self.ODDS_API_KEYS = all_keys
         self.ODDS_API_KEY = all_keys[0] if all_keys else ""

@@ -63,7 +63,7 @@ function KalshiContent() {
       <div className="p-10 max-w-lg mx-auto">
         <EmptyState
           title="Kalshi market data unavailable."
-          description="Running in polling mode. Next attempt in 10s."
+          description="Unable to connect to backend. Data will populate once API is online."
           onRetry={() => refetch()}
         />
       </div>
@@ -224,7 +224,7 @@ function KalshiContent() {
           <div className="col-span-full">
             <EmptyState
               title="Kalshi market data unavailable."
-              description="Running in polling mode. Next attempt in 10s."
+              description="No data available. Waiting for market sync."
               onRetry={() => refetch()}
             />
           </div>

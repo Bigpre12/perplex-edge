@@ -3,8 +3,10 @@ import re
 import logging
 logger = logging.getLogger(__name__)
 from typing import AsyncGenerator
+from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 from db.base import Base # Re-export Base for convenience
 
 # --- CONFIGURATION ---
@@ -33,9 +35,9 @@ if _is_pg and "pooler" in DATABASE_URL and ":5432" in DATABASE_URL:
 _raw_db_url = os.environ.get("DATABASE_URL", "NOT SET")
 if _raw_db_url != "NOT SET":
     try:
-        from urllib.parse import urlparse
-        parsed = urlparse(_raw_db_url.replace("postgresql+asyncpg://", "http://").replace("postgresql://", "http://"))
-        logger.info(f"Database Initialization: Attempting connection to host={parsed.hostname} user={parsed.username} port={parsed.port}")
+        parsed = urlparse(DATABASE_URL)
+        safe_url = DATABASE_URL.replace(parsed.password or "", "****")
+        logger.info("Database Initialization: Connecting to DB: %s", safe_url)
     except Exception:
         logger.info("Database Initialization: Connecting to redacted URL (Parsing failed)")
 else:
@@ -44,9 +46,8 @@ else:
 # --- ASYNC ENGINE SETUP ---
 if _is_pg:
     connect_args = {
-        "statement_cache_size": 0,
-        "prepared_statement_cache_size": 0,
-                "server_settings": {"statement_timeout": "0"},
+        "ssl": "require",
+        "server_settings": {"application_name": "perplex_edge_backend"},
     }
 else:
     connect_args = {"check_same_thread": False}
@@ -56,16 +57,24 @@ engine = create_async_engine(
     echo=False,
     connect_args=connect_args,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=5,
-    pool_timeout=60,
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
     pool_recycle=300,
 )
 
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # Standard exports for various utilities
-__all__ = ["engine", "AsyncSessionLocal", "get_db", "get_async_db", "Base", "SessionLocal"]
+__all__ = [
+    "engine",
+    "AsyncSessionLocal",
+    "get_db",
+    "get_async_db",
+    "validate_db_connection",
+    "Base",
+    "SessionLocal",
+]
 
 from contextlib import asynccontextmanager
 
@@ -89,6 +98,23 @@ async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+async def validate_db_connection() -> None:
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        logger.info("Database connection verified successfully.")
+    except Exception as e:
+        err = str(e)
+        if "authentication" in err.lower() or "password" in err.lower():
+            logger.critical(
+                "DATABASE AUTH FAILED: Check DATABASE_URL username/password/SSL. "
+                "The app cannot start safely."
+            )
+        else:
+            logger.critical("Database connection failed at startup: %s", err)
+        raise
 
 # Legacy alias: many routers/services still import async_session_maker
 async_session_maker = AsyncSessionLocal

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useBackendData } from "@/hooks/useBackendData";
 import { normalizeSportKey } from "@/constants/sports";
+import { unwrapList } from "@/lib/contracts";
 
 export interface EVRecord {
   id: string;
@@ -29,10 +30,7 @@ export const useEV = (sport = "all") => {
       .catch(() => undefined);
   }, [normalizedSport]);
 
-  const rowsRaw = evTop.data;
-  const rows = Array.isArray(rowsRaw)
-    ? rowsRaw
-    : (rowsRaw?.data || rowsRaw?.results || rowsRaw?.edges || []) as EVRecord[];
+  const rows = unwrapList<EVRecord>(evTop.data);
 
   return {
     data: rows as EVRecord[],

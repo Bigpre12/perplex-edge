@@ -55,13 +55,16 @@ class ESPNClient:
             return entry["data"]
         return None
 
+    def invalidate_cache(self, key: str) -> None:
+        self._cache.pop(key, None)
+
     def _set_cache(self, key: str, data: Any, ttl: int = None):
         self._cache[key] = {
             "data": data,
             "expires_at": time.time() + (ttl or self.default_ttl),
         }
 
-    async def get_scoreboard(self, sport_key: str) -> List[Dict]:
+    async def get_scoreboard(self, sport_key: str, force_refresh: bool = False) -> List[Dict]:
         """
         Fetch today's scoreboard for a sport. Returns normalized game objects
         compatible with the real_data_connector format.
@@ -78,6 +81,8 @@ class ESPNClient:
         endpoint = f"/{sport}/{league}/scoreboard"
         cache_key = self._cache_key(endpoint)
 
+        if force_refresh:
+            self.invalidate_cache(cache_key)
         cached = self._get_cached(cache_key)
         if cached is not None:
             return cached

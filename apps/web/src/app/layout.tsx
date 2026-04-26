@@ -1,29 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import "./globals.css";
 import PWASetup from "@/components/PWASetup";
 import DeploymentChunkRecovery from "@/components/DeploymentChunkRecovery";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { Providers } from "@/components/Providers";
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const mono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-  display: 'swap',
-});
-
-const space = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-space',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: "LUCRIX | Quantum Analytics. Institutional Edge.",
@@ -55,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable} ${space.variable}`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head />
       <body className="antialiased bg-lucrix-dark text-textPrimary font-sans selection:bg-brand-purple selection:text-white relative" suppressHydrationWarning>
         <PWASetup />

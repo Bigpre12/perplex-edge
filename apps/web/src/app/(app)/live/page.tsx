@@ -8,6 +8,7 @@ import { Radio, Clock, Trophy, Activity, Zap } from 'lucide-react';
 import { clsx } from 'clsx';
 import { TeamAvatar } from '@/components/shared/TeamAvatar';
 import type { LiveGame } from '@/hooks/useLiveGames';
+import DataFreshnessBanner from '@/components/shared/DataFreshnessBanner';
 
 function isScheduledLike(game: LiveGame): boolean {
   const st = String(game.status ?? '').toLowerCase();
@@ -41,7 +42,7 @@ function scoreDisplay(game: LiveGame, side: 'home' | 'away'): string {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LivePage() {
-  const { data: games, isLoading, isError, refetch, socketStatus } = useLiveGames() as any;
+  const { data: games, isLoading, isError, refetch, socketStatus, dataUpdatedAt } = useLiveGames() as any;
 
   const statusMap = {
     connecting: { color: 'text-yellow-400', bg: 'bg-yellow-400/10', label: 'Syncing...' },
@@ -152,6 +153,10 @@ export default function LivePage() {
            </button>
         </div>
       </div>
+      <DataFreshnessBanner
+        lastUpdated={dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null}
+        label="Live games feed"
+      />
 
       {/* Main Content Area */}
       <AnimatePresence mode="wait">

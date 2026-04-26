@@ -3,14 +3,7 @@
 import { useMemo } from "react";
 import { useBackendData } from "@/hooks/useBackendData";
 import { normalizeSportKey } from "@/constants/sports";
-
-const toList = (value: unknown): any[] => {
-  if (Array.isArray(value)) return value;
-  if (!value || typeof value !== "object") return [];
-  const v = value as Record<string, unknown>;
-  const nested = v.data ?? v.results ?? v.items ?? v.props ?? v.alerts ?? [];
-  return Array.isArray(nested) ? nested : [];
-};
+import { unwrapList } from "@/lib/contracts";
 
 export function useDashboard(sport = "basketball_nba") {
   const normalizedSport = normalizeSportKey(sport);
@@ -28,9 +21,9 @@ export function useDashboard(sport = "basketball_nba") {
     () => ({
       health: health.data,
       brain: brain.data,
-      props: toList(props.data),
-      whales: toList(whale.data),
-      evTop: toList(evTop.data),
+      props: unwrapList<any>(props.data),
+      whales: unwrapList<any>(whale.data),
+      evTop: unwrapList<any>(evTop.data),
     }),
     [health.data, brain.data, props.data, whale.data, evTop.data],
   );
