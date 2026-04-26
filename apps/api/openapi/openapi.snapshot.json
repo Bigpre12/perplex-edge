@@ -382,8 +382,7 @@
             "title": "Last Odds Update"
           },
           "odds_api": {
-            "title": "Odds Api",
-            "type": "string"
+            "$ref": "#/components/schemas/OddsApiStatus"
           },
           "odds_api_all_keys_cooldown": {
             "title": "Odds Api All Keys Cooldown",
@@ -541,6 +540,52 @@
           "created_at"
         ],
         "title": "InjuryOut",
+        "type": "object"
+      },
+      "OddsApiStatus": {
+        "properties": {
+          "cooling_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cooling Until"
+          },
+          "keys_alive": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keys Alive"
+          },
+          "keys_dead": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keys Dead"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "OddsApiStatus",
         "type": "object"
       },
       "PropAnalysisRequest": {
