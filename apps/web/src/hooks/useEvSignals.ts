@@ -1,6 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { useBackendData } from "@/hooks/useBackendData";
+import { useAuth } from "@/hooks/useAuth";
 import { normalizeSportKey } from "@/constants/sports";
 
 export type EVSignal = {
@@ -24,9 +25,19 @@ export type EVSignal = {
 };
 
 export function useEvSignals(sport: string, minEv = 2.0) {
+  const { isSignedIn, loading } = useAuth();
   const normalizedSport = normalizeSportKey(sport);
-  const primary = useBackendData<any>("/api/signals/freshness", { params: { sport: normalizedSport }, pollMs: 30_000 });
-  const fallback = useBackendData<any>("/api/ev/top", { params: { sport: normalizedSport, limit: 50 }, pollMs: 30_000 });
+  const canQueryProtected = isSignedIn && !loading;
+  const primary = useBackendData<any>("/api/signals/freshness", {
+    params: { sport: normalizedSport },
+    pollMs: 30_000,
+  });
+  const fallback = useBackendData<any>("/api/ev/top", {
+    params: { sport: normalizedSport, limit: 50 },
+    pollMs: 30_000,
+    enabled: canQueryProtected,
+    requireAuth: true,
+  });
 
   const signals = useMemo(() => {
     const rawPrimary = primary.data?.results || primary.data?.signals || primary.data?.data || [];
@@ -61,6 +72,10 @@ export function useEvSignals(sport: string, minEv = 2.0) {
     error: primary.error || fallback.error,
     lastUpdated: primary.lastUpdated || fallback.lastUpdated,
     refetch: async () => {
+      if (!canQueryProtected) {
+        await primary.refetch();
+        return;
+      }
       await Promise.all([primary.refetch(), fallback.refetch()]);
     },
   };

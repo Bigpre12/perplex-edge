@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useBackendData } from "@/hooks/useBackendData";
+import { useAuth } from "@/hooks/useAuth";
 import { normalizeSportKey } from "@/constants/sports";
 import { unwrapList } from "@/lib/contracts";
 
@@ -17,11 +18,15 @@ export interface EVRecord {
 }
 
 export const useEV = (sport = "all") => {
+  const { isSignedIn, loading } = useAuth();
   const normalizedSport = normalizeSportKey(sport);
+  const canQueryProtected = isSignedIn && !loading;
 
   const evTop = useBackendData<any>("/api/ev/top", {
     params: { sport: normalizedSport, limit: 50 },
     pollMs: 15_000,
+    enabled: canQueryProtected,
+    requireAuth: true,
   });
 
   useEffect(() => {

@@ -8,6 +8,7 @@ type QueryParams = Record<string, string | number | boolean | undefined | null>;
 type UseBackendDataOptions = {
   params?: QueryParams;
   enabled?: boolean;
+  requireAuth?: boolean;
   pollMs?: number;
   timeoutMs?: number;
   method?: "GET" | "POST";
@@ -69,6 +70,7 @@ export function useBackendData<T = unknown>(
   const {
     params,
     enabled = true,
+    requireAuth = false,
     pollMs,
     timeoutMs = 10000,
     method = "GET",
@@ -103,14 +105,30 @@ export function useBackendData<T = unknown>(
     let lastErr: string | null = null;
     for (let attempt = 0; attempt < RETRY_DELAYS_MS.length + 1; attempt += 1) {
       try {
+        const requestHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+          ...(headers || {}),
+        };
+
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("access_token") || localStorage.getItem("accessToken")
+            : null;
+        if (token && !requestHeaders.Authorization) {
+          requestHeaders.Authorization = `Bearer ${token}`;
+        }
+
+        const authRequiredPath = path.includes("/api/ev/top") || path.includes("/api/whale");
+        const shouldRequireAuth = requireAuth || authRequiredPath;
+        if (shouldRequireAuth && !token) {
+          throw new Error("Authentication required for protected endpoint");
+        }
+
         const response = await fetchWithTimeout(
           requestUrl,
           {
             method,
-            headers: {
-              "Content-Type": "application/json",
-              ...(headers || {}),
-            },
+            headers: requestHeaders,
             body: body == null ? undefined : JSON.stringify(body),
           },
           timeoutMs,
@@ -140,7 +158,7 @@ export function useBackendData<T = unknown>(
     setIsLoading(false);
     setIsError(true);
     setError(lastErr || "Failed to fetch data");
-  }, [enabled, requestUrl, method, headers, body, timeoutMs]);
+  }, [enabled, requestUrl, method, headers, body, timeoutMs, path, requireAuth]);
 
   useEffect(() => {
     if (!enabled) return;

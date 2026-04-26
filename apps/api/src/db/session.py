@@ -85,14 +85,26 @@ engine_kwargs = {
     "connect_args": connect_args,
     "pool_pre_ping": True,
 }
-if _is_pg and (_is_pooler_url or ":6543" in DATABASE_URL):
-    # Let PgBouncer own pooling; avoid client-side pooling edge cases.
+#
+# IMPORTANT (Supabase pooler / PgBouncer):
+# Session-mode poolers enforce a hard max connection count. If we allow large
+# overflow (or unbounded connection creation), burst traffic trips:
+#   asyncpg.exceptions.InternalServerError: (EMAXCONNSESSION) max clients reached
+# Keep a small, explicit pool and do not allow large overflow.
+#
+_pool_size = max(1, int(os.getenv("DB_POOL_SIZE", "3")))
+_max_overflow = max(0, int(os.getenv("DB_MAX_OVERFLOW", "0")))
+_pool_timeout = max(1, int(os.getenv("DB_POOL_TIMEOUT_SECONDS", "30")))
+_pool_recycle = max(60, int(os.getenv("DB_POOL_RECYCLE_SECONDS", "300")))
+
+if _is_pg:
+    engine_kwargs["pool_size"] = _pool_size
+    engine_kwargs["max_overflow"] = _max_overflow
+    engine_kwargs["pool_timeout"] = _pool_timeout
+    engine_kwargs["pool_recycle"] = _pool_recycle
+elif _is_pooler_url or ":6543" in DATABASE_URL:
+    # Defensive: if a non-pg URL somehow matches pooler heuristics, avoid pooling.
     engine_kwargs["poolclass"] = NullPool
-else:
-    engine_kwargs["pool_size"] = 5
-    engine_kwargs["max_overflow"] = 10
-    engine_kwargs["pool_timeout"] = 30
-    engine_kwargs["pool_recycle"] = 300
 
 engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
@@ -159,11 +171,9 @@ from sqlalchemy.orm import sessionmaker as sync_sessionmaker
 sync_url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://").replace("sqlite+aiosqlite://", "sqlite://")
 _sync_connect_args = {"check_same_thread": False} if "sqlite" in sync_url else {}
 _sync_engine_kwargs = {"connect_args": _sync_connect_args}
-if _is_pg and (_is_pooler_url or ":6543" in DATABASE_URL):
-    _sync_engine_kwargs["poolclass"] = NullPool
-else:
-    _sync_engine_kwargs["pool_size"] = 3
-    _sync_engine_kwargs["max_overflow"] = 2
+if _is_pg:
+    _sync_engine_kwargs["pool_size"] = max(1, int(os.getenv("DB_SYNC_POOL_SIZE", "2")))
+    _sync_engine_kwargs["max_overflow"] = max(0, int(os.getenv("DB_SYNC_MAX_OVERFLOW", "0")))
 
 sync_engine = create_engine(sync_url, **_sync_engine_kwargs)
 SessionLocal = sync_sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)

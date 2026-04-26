@@ -2,16 +2,31 @@
 
 import { useMemo } from "react";
 import { useBackendData } from "@/hooks/useBackendData";
+import { useAuth } from "@/hooks/useAuth";
 import { normalizeSportKey } from "@/constants/sports";
 import { unwrapList } from "@/lib/contracts";
 
 export function useDashboard(sport = "basketball_nba") {
+  const { isSignedIn, loading, isPro, isElite } = useAuth();
   const normalizedSport = normalizeSportKey(sport);
+  const canQueryProtected = isSignedIn && !loading;
+  const canQueryEv = canQueryProtected && isPro;
+  const canQueryWhale = canQueryProtected && isElite;
   const health = useBackendData<any>("/api/health", { pollMs: 15_000 });
   const brain = useBackendData<any>("/api/brain/status", { pollMs: 15_000 });
   const props = useBackendData<any>("/api/props", { params: { sport: normalizedSport }, pollMs: 15_000 });
-  const whale = useBackendData<any>("/api/whale", { params: { sport: normalizedSport }, pollMs: 15_000 });
-  const evTop = useBackendData<any>("/api/ev/top", { params: { sport: normalizedSport, limit: 10 }, pollMs: 15_000 });
+  const whale = useBackendData<any>("/api/whale", {
+    params: { sport: normalizedSport },
+    pollMs: 15_000,
+    enabled: canQueryWhale,
+    requireAuth: true,
+  });
+  const evTop = useBackendData<any>("/api/ev/top", {
+    params: { sport: normalizedSport, limit: 10 },
+    pollMs: 15_000,
+    enabled: canQueryEv,
+    requireAuth: true,
+  });
 
   const isLoading = health.isLoading || brain.isLoading || props.isLoading || whale.isLoading || evTop.isLoading;
   const isError = health.isError || brain.isError || props.isError || whale.isError || evTop.isError;
@@ -22,10 +37,10 @@ export function useDashboard(sport = "basketball_nba") {
       health: health.data,
       brain: brain.data,
       props: unwrapList<any>(props.data),
-      whales: unwrapList<any>(whale.data),
-      evTop: unwrapList<any>(evTop.data),
+      whales: canQueryWhale ? unwrapList<any>(whale.data) : [],
+      evTop: canQueryEv ? unwrapList<any>(evTop.data) : [],
     }),
-    [health.data, brain.data, props.data, whale.data, evTop.data],
+    [health.data, brain.data, props.data, whale.data, evTop.data, canQueryWhale, canQueryEv],
   );
 
   const lastUpdated = [health.lastUpdated, brain.lastUpdated, props.lastUpdated, whale.lastUpdated, evTop.lastUpdated]

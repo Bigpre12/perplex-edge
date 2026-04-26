@@ -434,20 +434,6 @@ async def initialize_backend_services():
                     ingest_meta.get("disabled") or [],
                 )
 
-            for spec in ingest_job_specs:
-                job_kw: dict = {
-                    "args": [spec.sport_key],
-                    "id": f"ingest_{spec.sport_key}",
-                    "replace_existing": True,
-                    "jitter": 30,
-                }
-                if spec.minutes is not None:
-                    job_kw["minutes"] = spec.minutes
-                else:
-                    job_kw["hours"] = spec.hours
-                job = scheduler.add_job(guarded_unified_ingest, "interval", **job_kw)
-                logger.debug("📡 [Scheduler] Added unified ingestion job %s", job.id)
-
             from services.grading_service import grading_service
             from services.kalshi_ingestion import kalshi_ingestion
             from services.whale_service import whale_service
@@ -465,6 +451,20 @@ async def initialize_backend_services():
                     logger.debug("Skipping job — all keys cooling down")
                     return
                 await kalshi_ingestion.run(sport_key)
+
+            for spec in ingest_job_specs:
+                job_kw: dict = {
+                    "args": [spec.sport_key],
+                    "id": f"ingest_{spec.sport_key}",
+                    "replace_existing": True,
+                    "jitter": 30,
+                }
+                if spec.minutes is not None:
+                    job_kw["minutes"] = spec.minutes
+                else:
+                    job_kw["hours"] = spec.hours
+                job = scheduler.add_job(guarded_unified_ingest, "interval", **job_kw)
+                logger.debug("📡 [Scheduler] Added unified ingestion job %s", job.id)
         
             scheduler.add_job(
                 grading_service.run_grading_cycle,
