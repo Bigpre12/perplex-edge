@@ -24,5 +24,7 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r ../requirements.txt
       - name: Validate OpenAPI snapshot
+        env:
+          PYTHONPATH: ${{ github.workspace }}/apps/api/src
         run: python scripts/check_openapi_snapshot.py
 

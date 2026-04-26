@@ -30,17 +30,34 @@ class LiveDataService:
         
     async def poll_odds(self):
         """Polls live odds for all hot sports to warm the cache."""
+        if odds_api_client.all_keys_dead():
+            logger.debug("Skipping poll_odds — all keys cooling down")
+            return
+        from services.external_api_gateway import external_api_gateway
+        quota = await external_api_gateway.quota_status("theoddsapi")
+        mode = str(quota.get("mode") or "normal")
+        regions = "us"
+        markets = None if mode == "normal" else "h2h"
         for sport in self.hot_sports:
             try:
                 logger.info(f"🔥 [Live Polling] Refreshing cache for {sport} odds...")
                 # Use use_cache=False to force a fetch from the provider; 
                 # OddsApiClient._make_request will handle populating the cache.
-                await odds_api_client.get_live_odds(sport)
+                await odds_api_client.get_live_odds(sport, regions=regions, markets=markets)
             except Exception as e:
                 logger.error(f"❌ [Live Polling] Failed to refresh odds for {sport}: {e}")
 
     async def poll_props(self):
         """Polls player props for active games in hot sports."""
+        if odds_api_client.all_keys_dead():
+            logger.debug("Skipping poll_props — all keys cooling down")
+            return
+        from services.external_api_gateway import external_api_gateway
+        quota = await external_api_gateway.quota_status("theoddsapi")
+        mode = str(quota.get("mode") or "normal")
+        if mode in {"protection", "emergency_freeze"}:
+            logger.info("Skipping poll_props due to quota mode: %s", mode)
+            return
         for sport in self.hot_sports:
             try:
                 # 1. Get active events first (uses cache)

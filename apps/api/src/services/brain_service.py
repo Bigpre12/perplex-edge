@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 # from .prop_service import get_all_props # Moved to local to avoid circularity
 from .alert_service import alert_service
 from services.llm.model_policy import sanitize_llm_payload, log_sanitizer_drops
+from services.llm.ai_gateway_client import chat_completion as gateway_chat_completion, is_enabled as gateway_enabled
 
 logger = logging.getLogger(__name__)
 logger.info("LLM model-policy sanitizer enabled for brain_service")
@@ -74,6 +75,18 @@ class BrainService:
             "temperature": 0.7,
             "max_tokens": 1024
         }
+
+        if gateway_enabled():
+            gw_data, gw_err = await gateway_chat_completion(
+                service_name="brain_service",
+                model=self.model,
+                payload=payload,
+                timeout_s=15.0,
+            )
+            if gw_data and gw_data.get("choices"):
+                return gw_data["choices"][0]["message"]["content"]
+            logger.warning("brain_service gateway fallback activated: %s", gw_err)
+
         payload, dropped = sanitize_llm_payload(self.model, payload)
         log_sanitizer_drops("brain_service", "groq", self.model, dropped)
         

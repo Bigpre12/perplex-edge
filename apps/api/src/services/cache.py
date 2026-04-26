@@ -34,7 +34,7 @@ class CacheManager:
     """Dual-mode cache: Redis (production) or in-memory dict (local dev)."""
 
     def __init__(self):
-        self.redis_url = settings.REDIS_URL
+        self.redis_url = settings.REDIS_PRIMARY_URL
         self._redis = None
         self._memory: dict = {}
         self._connected = False
@@ -64,7 +64,7 @@ class CacheManager:
                 self._redis = None
                 self._connected = False
         else:
-            logger.info("No REDIS_URL set — using in-memory cache")
+            logger.info("No Redis URL set (REDIS_URL/CACHE_REDIS_URL) — using in-memory cache")
 
     async def get(self, key: str) -> Optional[str]:
         """Get a cached value."""
@@ -114,6 +114,24 @@ class CacheManager:
             except Exception:
                 pass
         self._memory.pop(key, None)
+
+    async def acquire_lock(self, key: str, ttl: int = 30) -> bool:
+        """Best-effort distributed lock (Redis NX) with memory fallback."""
+        if self._connected and self._redis:
+            try:
+                ok = await self._redis.set(key, "1", ex=ttl, nx=True)
+                return bool(ok)
+            except Exception:
+                pass
+        # In-memory fallback
+        entry = self._memory.get(key)
+        if entry and time.time() < entry.get("exp", 0):
+            return False
+        self._memory[key] = {"val": "1", "exp": time.time() + ttl}
+        return True
+
+    async def release_lock(self, key: str):
+        await self.delete(key)
 
     @property
     def is_redis(self) -> bool:

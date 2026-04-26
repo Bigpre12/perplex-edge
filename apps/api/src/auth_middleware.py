@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 # Load owner emails and bypass setting from environment
 OWNER_EMAILS = [e.strip().lower() for e in os.getenv("OWNER_EMAILS", "").split(",") if e.strip()]
-BYPASS_AUTH = os.getenv("BYPASS_AUTH", "false").lower() == "true"
 security = HTTPBearer(auto_error=False)
 
 # Mock user for bypass mode
@@ -20,7 +19,11 @@ BYPASS_USER = {
 
 async def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """FastAPI dependency to verify auth or bypass."""
-    if BYPASS_AUTH:
+    from core.config import settings
+    bypass_auth = settings.BYPASS_AUTH
+    if settings.IS_PRODUCTION and bypass_auth:
+        raise HTTPException(status_code=503, detail="BYPASS_AUTH is forbidden in production")
+    if bypass_auth:
         return BYPASS_USER
     if credentials is None:
         raise HTTPException(status_code=401, detail="Authorization required")
@@ -42,7 +45,8 @@ async def require_auth(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 async def require_pro(user=Depends(require_auth)):
     """FastAPI dependency to verify Pro plan or higher/bypass."""
-    if BYPASS_AUTH or user.get("email", "").lower() in OWNER_EMAILS:
+    from core.config import settings
+    if settings.BYPASS_AUTH or user.get("email", "").lower() in OWNER_EMAILS:
         return user
     if user.get("plan", "free") not in ("pro", "premium", "elite", "syndicate", "admin"):
         raise HTTPException(status_code=403, detail="Pro subscription required.")
@@ -50,7 +54,8 @@ async def require_pro(user=Depends(require_auth)):
 
 async def require_elite(user=Depends(require_auth)):
     """FastAPI dependency to verify Elite plan or higher/bypass."""
-    if BYPASS_AUTH or user.get("email", "").lower() in OWNER_EMAILS:
+    from core.config import settings
+    if settings.BYPASS_AUTH or user.get("email", "").lower() in OWNER_EMAILS:
         return user
     if user.get("plan", "free") not in ("elite", "syndicate", "admin"):
         raise HTTPException(status_code=403, detail="Elite subscription required.")
@@ -58,7 +63,8 @@ async def require_elite(user=Depends(require_auth)):
 
 async def require_syndicate(user=Depends(require_auth)):
     """FastAPI dependency to verify Syndicate plan or higher/bypass."""
-    if BYPASS_AUTH or user.get("email", "").lower() in OWNER_EMAILS:
+    from core.config import settings
+    if settings.BYPASS_AUTH or user.get("email", "").lower() in OWNER_EMAILS:
         return user
     if user.get("plan", "free") not in ("syndicate", "admin"):
         raise HTTPException(status_code=403, detail="Syndicate subscription required.")

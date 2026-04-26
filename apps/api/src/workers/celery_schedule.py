@@ -10,4 +10,8 @@ CELERYBEAT_SCHEDULE = {
         "task": "workers.arb_cleanup.arb_cleanup_task",
         "schedule": 1800.0,
     },
+    "stale-data-cleanup": {
+        "task": "workers.stale_data_cleanup.stale_data_cleanup_task",
+        "schedule": 86400.0,
+    },
 }

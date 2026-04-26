@@ -72,8 +72,14 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         betstack_error = None
 
     from services.odds_api_client import odds_api_client
+    from middleware.auth_circuit_breaker import auth_breaker
+    from core.config import settings
+    from api_utils.supabase_proxy import role_readiness
 
     odds_api_all_keys_cooldown = odds_api_client.all_keys_unavailable()
+    odds_api_key_health = odds_api_client.key_health() if hasattr(odds_api_client, "key_health") else {}
+    auth_reset_at = auth_breaker.reset_at() if hasattr(auth_breaker, "reset_at") else None
+    supabase_roles = role_readiness()
 
     try:
         heartbeats = await HeartbeatService.get_all_heartbeats(db)
@@ -233,6 +239,10 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
             "status": "ok" if odds_status == "active" else "degraded",
             **({"error": odds_error} if odds_error else {}),
         },
+        "supabase": {
+            "status": "ok" if supabase_roles.get("anon_present") and supabase_roles.get("service_present") and not supabase_roles.get("service_key_looks_anon") else "degraded",
+            **({"error": "service key appears to be anon key"} if supabase_roles.get("service_key_looks_anon") else {}),
+        },
         "betstack": {
             "status": "ok" if betstack_status == "configured" else ("degraded" if betstack_status == "degraded" else "degraded"),
             **({"error": betstack_error} if betstack_error else {}),
@@ -243,10 +253,25 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
         "status": overall_status,
         "dependencies": dependencies,
         "database": db_status,
-        "odds_api": odds_status,
+        "odds_api_status": odds_status,
+        "odds_api": {
+            "status": odds_status,
+            "keys_alive": odds_api_key_health.get("keys_alive"),
+            "keys_dead": odds_api_key_health.get("keys_dead"),
+            "cooling_until": odds_api_key_health.get("cooling_until"),
+        },
+        "auth_bypass_enabled": bool(settings.BYPASS_AUTH),
+        "supabase_role_split_ready": bool(settings.SUPABASE_ROLE_SPLIT_READY),
+        "supabase_service_key_looks_anon": bool(settings.SUPABASE_SERVICE_KEY_LOOKS_ANON),
         "kalshi": kalshi_status,
         "sportmonks": sportmonks_status,
         "odds_api_all_keys_cooldown": odds_api_all_keys_cooldown,
+        "odds_api_key_health": odds_api_key_health,
+        "auth_circuit_breaker": {
+            "state": getattr(auth_breaker, "state", "unknown"),
+            "failure_count": int(getattr(auth_breaker, "failures", 0)),
+            "reset_at": datetime.fromtimestamp(auth_reset_at, timezone.utc).isoformat() if auth_reset_at else None,
+        },
         "cache": "active",
         "inference_status": inference_status,
         "pipeline_status": pipeline_status,
@@ -265,6 +290,9 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
             "recent_ingest_heartbeat_ok": recent_ingest_heartbeat_ok,
             "odds_api_quota_exhausted": quota_exhausted,
             "odds_api_ingest_blocked_reason": ingest_quota_block_reason if ingest_quota_blocked else None,
+            "auth_bypass_enabled": bool(settings.BYPASS_AUTH),
+            "supabase_role_split_ready": bool(settings.SUPABASE_ROLE_SPLIT_READY),
+            "supabase_service_key_looks_anon": bool(settings.SUPABASE_SERVICE_KEY_LOOKS_ANON),
         },
         **sync_state,
     }
@@ -284,7 +312,7 @@ def _build_degradation_payload(base: Dict[str, Any], internal: Dict[str, Any]) -
     if oss in ("STALE", "ERROR", "EMPTY"):
         reasons.append(f"odds_stream_{str(oss).lower()}")
 
-    if str(base.get("odds_api", "")).startswith("error"):
+    if str(base.get("odds_api_status", "")).startswith("error"):
         reasons.append("odds_api_config")
 
     if internal.get("odds_api_quota_exhausted"):
@@ -428,42 +456,22 @@ async def health_ready(db: AsyncSession = Depends(get_db)):
 
 @router.get("/odds-api-status")
 async def odds_api_status():
-    """Check Odds API key health by calling the lightweight /sports endpoint."""
-    import os, httpx
+    """Check Odds API key health from persisted quota state and gateway metadata."""
     from services.odds_api_client import odds_api_client
-
-    from core.config import settings
-
-    keys = list(settings.ODDS_API_KEYS or [])
-    results = []
-
-    for i, key in enumerate(keys):
-        entry = {"key_index": i, "key_prefix": key[:8] + "..."}
-        try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                resp = await client.get(
-                    "https://api.the-odds-api.com/v4/sports",
-                    params={"apiKey": key},
-                )
-                entry["status_code"] = resp.status_code
-                entry["remaining"] = resp.headers.get("x-requests-remaining")
-                entry["used"] = resp.headers.get("x-requests-used")
-                entry["healthy"] = resp.status_code == 200
-        except Exception as e:
-            entry["healthy"] = False
-            entry["error"] = str(e)
-        results.append(entry)
+    from services.external_api_gateway import external_api_gateway
 
     if hasattr(odds_api_client, "_dead_until"):
         cooling = list(odds_api_client._dead_until.keys())
-    elif hasattr(odds_api_client, "_dead_keys"):
-        cooling = list(odds_api_client._dead_keys.keys())
     else:
         cooling = []
+    quota = await external_api_gateway.quota_status("theoddsapi")
+    key_health = odds_api_client.key_health() if hasattr(odds_api_client, "key_health") else {}
     return {
-        "keys_checked": len(results),
-        "results": results,
+        "keys_checked": key_health.get("keys_alive", 0) + key_health.get("keys_dead", 0),
+        "results": [],
         "circuit_breaker_dead_keys": len(cooling),
+        "key_health": key_health,
+        "budget": quota,
     }
 
 @router.get("/summary")

@@ -44,6 +44,18 @@ def resolve_kalshi_ws_url(
     return DEMO_WS
 
 
+def sanitize_kalshi_base_url(raw_url: Optional[str]) -> str:
+    """
+    Normalize malformed env values and enforce trade-api/v2 path.
+    """
+    cleaned = (raw_url or "").strip().strip("`").rstrip("/")
+    if not cleaned:
+        return default_kalshi_rest_url()
+    if "/trade-api/v2" not in cleaned:
+        cleaned = cleaned + "/trade-api/v2"
+    return cleaned
+
+
 def default_kalshi_rest_url() -> str:
     if os.getenv("KALSHI_ENV", "").strip().lower() in ("prod", "production", "live"):
         return PROD_REST

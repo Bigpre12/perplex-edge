@@ -63,7 +63,7 @@ def reject_absurd_future(
     latest = now + timedelta(days=max_future_days)
     if earliest <= dt <= latest:
         return dt
-    logger.warning(
+    logger.debug(
         "commence_time: rejecting timestamp outside ingest window (%s .. %s): %s",
         earliest.isoformat(),
         latest.isoformat(),

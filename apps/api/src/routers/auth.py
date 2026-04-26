@@ -152,6 +152,21 @@ async def get_current_user(
         raise
     except Exception as e:
         logger.warning(f"Auth process crash (DB or Network): {e}")
+        msg = str(e).lower()
+        infra_markers = (
+            "duplicatepreparedstatementerror",
+            "invalidsqlstatementnameerror",
+            "connection",
+            "timeout",
+            "database",
+            "asyncpg",
+            "sqlalchemy",
+        )
+        if any(m in msg for m in infra_markers):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication backend temporarily unavailable",
+            )
         raise credentials_exception
 
     raise credentials_exception

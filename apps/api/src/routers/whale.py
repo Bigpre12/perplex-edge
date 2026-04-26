@@ -61,15 +61,19 @@ async def whale_signals(
         )
 
     if len(out) < 50:
-        stmt = select(WhaleMove).where(WhaleMove.sport == sport)
-        if min_units > 0:
-            stmt = stmt.where(WhaleMove.whale_rating >= min_units)
-        stmt = stmt.where(WhaleMove.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
-        stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(50 - len(out))
-        result = await db.execute(stmt)
-        moves = result.scalars().all()
-        for m in moves:
-            out.append(WhaleEventSchema.model_validate(m))
+        try:
+            stmt = select(WhaleMove).where(WhaleMove.sport == sport)
+            if min_units > 0:
+                stmt = stmt.where(WhaleMove.whale_rating >= min_units)
+            stmt = stmt.where(WhaleMove.created_at >= datetime.now(timezone.utc) - timedelta(hours=24))
+            stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(50 - len(out))
+            result = await db.execute(stmt)
+            moves = result.scalars().all()
+            for m in moves:
+                out.append(WhaleEventSchema.model_validate(m))
+        except Exception as e:
+            logger.warning("whale_moves fallback query skipped due to schema mismatch: %s", e)
+            moves = []
     else:
         moves = []
 
@@ -93,11 +97,14 @@ async def whale_history(
     Returns historical whale moves for trend analysis.
     Access restricted to ELITE users.
     """
-    stmt = select(WhaleMove).where(WhaleMove.sport == sport)
-    stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(limit)
-    
-    result = await db.execute(stmt)
-    history = result.scalars().all()
+    try:
+        stmt = select(WhaleMove).where(WhaleMove.sport == sport)
+        stmt = stmt.order_by(desc(WhaleMove.created_at)).limit(limit)
+        result = await db.execute(stmt)
+        history = result.scalars().all()
+    except Exception as e:
+        logger.warning("whale history query skipped due to schema mismatch: %s", e)
+        history = []
     
     return {
         "status": "success",

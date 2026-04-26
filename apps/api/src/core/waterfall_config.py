@@ -194,6 +194,10 @@ def _config_version() -> str:
     return os.getenv("WATERFALL_CONFIG_VERSION", "2").strip()
 
 
+def _quota_mode() -> str:
+    return (os.getenv("ODDS_API_PROTECTION_MODE") or "").strip().lower()
+
+
 def get_provider_chain(sport_key: str, data_type: str = SCHEDULE) -> List[str]:
     """
     Return ordered provider IDs for ``sport_key`` and ``data_type``.
@@ -206,6 +210,10 @@ def get_provider_chain(sport_key: str, data_type: str = SCHEDULE) -> List[str]:
         return _chain_schedule_v1(sport_key) if ver == "1" else _chain_schedule_v2(sport_key)
 
     if canonical_dt in (ODDS_PREGAME, ODDS_LIVE):
+        mode = _quota_mode()
+        if mode in {"protection", "emergency_freeze"}:
+            # Quota-sensitive mode: prefer non-paid schedule-like providers first.
+            return ["espn", "thesportsdb", "balldontlie", "mysportsfeeds", "the_odds_api"]
         if ver == "1":
             return _chain_odds_pregame_v1(sport_key)
         if canonical_dt == ODDS_LIVE:

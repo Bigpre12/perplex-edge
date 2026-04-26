@@ -20,12 +20,13 @@ import httpx # type: ignore
 import logging
 import asyncio
 from typing import Dict, List, Optional, Any, Set, Tuple
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from core.config import settings # type: ignore
 from clients.base_client import ResilientBaseClient # type: ignore
 from services.cache import cache # type: ignore
 from api_utils.http import build_headers # type: ignore
+from services.external_api_gateway import external_api_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,7 @@ class OddsApiClient(ResilientBaseClient):
         self._all_dead_warn_interval_seconds = int(
             os.getenv("ODDS_API_ALL_KEYS_DEAD_WARN_INTERVAL_SECONDS", "60")
         )
+        self._all_keys_dead_until: Optional[datetime] = None
 
         # Limit per day (approx 100k/mo tier)
         self.max_daily_calls = int(os.getenv("THE_ODDS_API_MAX_CALLS_PER_DAY", 10000))
@@ -149,11 +151,25 @@ class OddsApiClient(ResilientBaseClient):
             return True
         return all(self._is_key_dead(i) for i in range(len(self.api_keys)))
 
+    def _in_global_dead_window(self) -> bool:
+        if not self._all_keys_dead_until:
+            return False
+        if datetime.now(timezone.utc) >= self._all_keys_dead_until:
+            self._all_keys_dead_until = None
+            return False
+        return True
+
     def _log_all_keys_dead_throttled(self) -> None:
         now = time.time()
         if now - self._last_all_dead_warn_ts >= self._all_dead_warn_interval_seconds:
             logger.warning("🚨 All Odds API keys are dead/cooling down. Skipping request.")
             self._last_all_dead_warn_ts = now
+
+    def _enter_global_dead_window(self) -> None:
+        now = datetime.now(timezone.utc)
+        if not self._all_keys_dead_until or now >= self._all_keys_dead_until:
+            self._all_keys_dead_until = now + timedelta(minutes=5)
+            logger.warning("🚨 All Odds API keys are dead/cooling down. Entering 5-minute global backoff window.")
 
     def all_keys_unavailable(self) -> bool:
         """
@@ -162,7 +178,20 @@ class OddsApiClient(ResilientBaseClient):
         """
         if not self.api_keys:
             return True
-        return self._all_keys_dead()
+        return self._in_global_dead_window() or self._all_keys_dead()
+
+    def all_keys_dead(self) -> bool:
+        return self.all_keys_unavailable()
+
+    def key_health(self) -> Dict[str, Any]:
+        total = len(self.api_keys)
+        dead = sum(1 for i in range(total) if self._is_key_dead(i))
+        alive = max(0, total - dead)
+        return {
+            "keys_alive": alive,
+            "keys_dead": dead,
+            "cooling_until": self._all_keys_dead_until.isoformat() if self._all_keys_dead_until else None,
+        }
 
     @property
     def is_configured(self) -> bool:
@@ -308,8 +337,10 @@ class OddsApiClient(ResilientBaseClient):
             logger.debug("Odds quota pre-check failed (continuing): %s", e)
 
         # 3. Short-circuit if all keys are dead (prevents log spam)
+        if self._in_global_dead_window():
+            return None
         if self._all_keys_dead():
-            self._log_all_keys_dead_throttled()
+            self._enter_global_dead_window()
             return None
 
         # 4. Execute Request with Rotation
@@ -332,93 +363,112 @@ class OddsApiClient(ResilientBaseClient):
             logger.info(f"🌐 Calling TheOddsAPI: {url} (params keys: {list(p.keys())})")
             
             try:
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    if method.upper() == "GET":
-                        resp = await client.get(url, params=p)
-                    elif method.upper() == "POST":
-                        resp = await client.post(url, params=p, json=json_data)
-                    else:
-                        logger.error(f"Unsupported HTTP method: {method}")
-                        return None
+                data_class = "pregame_odds"
+                if endpoint.endswith("/sports"):
+                    data_class = "sports"
+                elif endpoint.endswith("/events"):
+                    data_class = "events"
+                elif "/events/" in endpoint and "/odds" in endpoint:
+                    data_class = "player_props"
+                if params.get("markets") in ("h2h,spreads,totals", "h2h"):
+                    data_class = "pregame_odds"
 
-                    self._capture_quota_headers(resp)
+                gw = await external_api_gateway.request(
+                    provider="theoddsapi",
+                    endpoint=endpoint,
+                    url=url,
+                    params=p,
+                    method=method.upper(),
+                    timeout_s=self.timeout,
+                    data_class=data_class,
+                    sport=quota_sport,
+                    markets=(quota_market or str(params.get("markets") or ""))[:256] if params else quota_market,
+                    regions=str(params.get("regions") or "us") if params else "us",
+                    force_refresh=not use_cache,
+                    admin_override=False,
+                    live_essential=(data_class == "live_odds"),
+                )
+                if not gw:
+                    return None
+                self._capture_quota_headers(type("RespShim", (), {"headers": gw.headers})())
 
-                    # Log quota headers
-                    used = resp.headers.get("x-requests-used")
-                    rem = resp.headers.get("x-requests-remaining")
-                    log_msg = f"📡 TheOddsAPI Response [{resp.status_code}] | Path: {endpoint}"
-                    if rem:
-                        log_msg += f" | Quota: {rem} left (Used: {used})"
-                    logger.info(log_msg)
+                used = gw.headers.get("x-requests-used")
+                rem = gw.headers.get("x-requests-remaining")
+                log_msg = f"📡 TheOddsAPI Response [{gw.status_code}] | Path: {endpoint}"
+                if rem:
+                    log_msg += f" | Quota: {rem} left (Used: {used})"
+                logger.info(log_msg)
 
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        await self._increment_count()
-                        await self._increment_month_count()
-                        try:
-                            from db.session import async_session_maker
-                            from services.odds_quota_store import apply_quota_headers
+                if gw.status_code == 200:
+                    data = gw.data or {}
+                    await self._increment_count()
+                    await self._increment_month_count()
+                    try:
+                        from db.session import async_session_maker
+                        from services.odds_quota_store import apply_quota_headers
 
-                            async with async_session_maker() as _qs:
-                                await apply_quota_headers(
-                                    _qs,
-                                    remaining_header=resp.headers.get("x-requests-remaining")
-                                    or resp.headers.get("X-Requests-Remaining"),
-                                    used_header=resp.headers.get("x-requests-used")
-                                    or resp.headers.get("X-Requests-Used"),
-                                    sport=quota_sport,
-                                    market=quota_market,
-                                    endpoint_path=endpoint,
-                                )
-                        except Exception as e:
-                            logger.warning("Odds quota header persist failed: %s", e)
-                        # Always populate the cache on a successful fetch to keep data fresh for other consumers
-                        await cache.set_json(cache_key, data, ttl=ttl)
-                        return data
+                        async with async_session_maker() as _qs:
+                            await apply_quota_headers(
+                                _qs,
+                                remaining_header=gw.headers.get("x-requests-remaining")
+                                or gw.headers.get("X-Requests-Remaining"),
+                                used_header=gw.headers.get("x-requests-used")
+                                or gw.headers.get("X-Requests-Used"),
+                                sport=quota_sport,
+                                market=quota_market,
+                                endpoint_path=endpoint,
+                            )
+                    except Exception as e:
+                        logger.warning("Odds quota header persist failed: %s", e)
+                    # Always populate the cache on a successful fetch to keep data fresh for other consumers
+                    await cache.set_json(cache_key, data, ttl=ttl)
+                    return data
 
-                    elif resp.status_code in (401, 403):
-                        error_body = resp.text[:200]
-                        logger.error(
-                            "Key index %s auth failure (%s): %s",
-                            self.current_key_idx,
-                            resp.status_code,
-                            error_body,
-                        )
-                        self._mark_key_dead(
-                            self.current_key_idx,
-                            f"HTTP {resp.status_code}: {error_body[:80]}",
-                            status_code=resp.status_code,
-                        )
-                        if self._rotate_key():
-                            continue
-                        logger.critical("ALL Odds API keys exhausted (auth). Ingestion will stall.")
-                        break
-                    elif resp.status_code == 429:
-                        error_body = resp.text[:200]
-                        logger.error(
-                            "Key index %s rate limited (429): %s",
-                            self.current_key_idx,
-                            error_body,
-                        )
-                        self._mark_key_dead(
-                            self.current_key_idx,
-                            f"HTTP 429: {error_body[:80]}",
-                            status_code=429,
-                        )
-                        if self._rotate_key():
-                            continue
-                        logger.critical("ALL Odds API keys rate-limited. Ingestion will stall.")
-                        break
-                    elif resp.status_code == 422:
-                        logger.warning(
-                            "TheOddsAPI returned 422 for %s. Treating as data/config issue (non-auth); response=%s",
-                            endpoint,
-                            resp.text[:200],
-                        )
-                        return None
-                    else:
-                        logger.error(f"❌ Odds API error {resp.status_code}: {resp.text[:200]}")
-                        return None
+                elif gw.status_code in (401, 403):
+                    error_body = str(gw.data)[:200]
+                    logger.error(
+                        "Key index %s auth failure (%s): %s",
+                        self.current_key_idx,
+                        gw.status_code,
+                        error_body,
+                    )
+                    self._mark_key_dead(
+                        self.current_key_idx,
+                        f"HTTP {gw.status_code}: {error_body[:80]}",
+                        status_code=gw.status_code,
+                    )
+                    if self._rotate_key():
+                        continue
+                    self._enter_global_dead_window()
+                    logger.critical("ALL Odds API keys exhausted (auth). Ingestion will stall.")
+                    break
+                elif gw.status_code == 429:
+                    error_body = str(gw.data)[:200]
+                    logger.error(
+                        "Key index %s rate limited (429): %s",
+                        self.current_key_idx,
+                        error_body,
+                    )
+                    self._mark_key_dead(
+                        self.current_key_idx,
+                        f"HTTP 429: {error_body[:80]}",
+                        status_code=429,
+                    )
+                    if self._rotate_key():
+                        continue
+                    self._enter_global_dead_window()
+                    logger.critical("ALL Odds API keys rate-limited. Ingestion will stall.")
+                    break
+                elif gw.status_code == 422:
+                    logger.warning(
+                        "TheOddsAPI returned 422 for %s. Treating as data/config issue (non-auth); response=%s",
+                        endpoint,
+                        str(gw.data)[:200],
+                    )
+                    return None
+                else:
+                    logger.error(f"❌ Odds API error {gw.status_code}: {str(gw.data)[:200]}")
+                    return None
             except Exception as e:
                 logger.error(f"Odds API connection error: {e}")
                 return None
@@ -454,6 +504,10 @@ class OddsApiClient(ResilientBaseClient):
 
     async def get_live_odds(self, sport: str, regions: str = "us", markets: Optional[str] = None, use_cache: bool = True, ttl: Optional[int] = None) -> List[Dict]:
         """Fetch real-time odds for games."""
+        if os.getenv("ODDS_API_FORCE_US_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}:
+            regions = "us"
+        if os.getenv("ODDS_API_FORCE_CORE_MARKETS", "false").strip().lower() in {"1", "true", "yes", "on"}:
+            markets = "h2h"
         params = {
             "regions": regions,
             "markets": markets or self.get_markets_for_sport(sport),
@@ -475,6 +529,8 @@ class OddsApiClient(ResilientBaseClient):
 
     async def get_player_props(self, sport: str, event_id: str, markets: str, regions: str = "us", use_cache: bool = True, ttl: Optional[int] = None) -> Dict:
         """Fetch specific player props for an event."""
+        if os.getenv("ODDS_API_FORCE_US_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}:
+            regions = "us"
         if not self.is_valid_event_id(event_id):
             logger.warning("Skipping TheOddsAPI request: invalid event_id '%s'", event_id)
             return {}

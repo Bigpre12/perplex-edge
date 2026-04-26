@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
@@ -199,6 +200,8 @@ class WaterfallRouter:
                 return self._normalize_to_odds_events(raw, sk)
             return raw
         elif provider == "sportmonks":
+            if not (os.getenv("SPORTMONKS_KEY") or os.getenv("SPORTMONKS_API_KEY")):
+                return None
             return await sportmonks_client.get_fixtures()
         elif provider == "isports":
             raw = await isports_client.get_games(sport)
@@ -218,6 +221,8 @@ class WaterfallRouter:
                 return self._normalize_to_odds_events(raw, sk)
             return raw
         elif provider == "therundown":
+            if not os.getenv("THERUNDOWN_API_KEY"):
+                return None
             raw = await therundown_client.get_games(sk)
             if odds_like and raw:
                 return self._normalize_to_odds_events(raw, sk)

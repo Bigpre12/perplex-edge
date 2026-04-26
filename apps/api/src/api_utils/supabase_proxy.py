@@ -50,14 +50,36 @@ except ImportError:
     def create_client(url, key): 
         return MockSupabase()
 
-def get_supabase_client():
-    """
-    Initializes a Supabase client using environment variables.
-    Provides a fallback mock client if the library is missing or config is incomplete.
-    """
-    url = os.environ.get("SUPABASE_URL", "https://mock.supabase.co")
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "mock_service_key")
-    return create_client(url, key)
+def _supabase_env() -> tuple[str, str, str]:
+    url = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL") or "https://mock.supabase.co"
+    anon_key = os.environ.get("SUPABASE_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") or "mock_anon_key"
+    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_SERVICE_KEY") or "mock_service_key"
+    return url, anon_key, service_key
 
-# Export a singleton instance
-supabase: Client = get_supabase_client()
+
+def role_readiness() -> dict:
+    _, anon_key, service_key = _supabase_env()
+    return {
+        "anon_present": bool(anon_key and anon_key != "mock_anon_key"),
+        "service_present": bool(service_key and service_key != "mock_service_key"),
+        "service_key_looks_anon": bool(anon_key and service_key and anon_key == service_key),
+    }
+
+
+def get_supabase_clients() -> tuple[Client, Client]:
+    """
+    Returns (anon_client, admin_client) with role split validation.
+    """
+    url, anon_key, service_key = _supabase_env()
+    return create_client(url, anon_key), create_client(url, service_key)
+
+
+def get_supabase_client() -> Client:
+    """
+    Backwards-compatible alias returning admin client.
+    """
+    _, admin = get_supabase_clients()
+    return admin
+
+
+anon_supabase, supabase = get_supabase_clients()

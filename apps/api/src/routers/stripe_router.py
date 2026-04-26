@@ -28,8 +28,8 @@ async def create_checkout_session(req: CheckoutRequest):
                 raise HTTPException(status_code=400, detail="Stripe Secret Key not configured for production.")
             return {"session_url": settings.FRONTEND_URL + '/institutional/settings?checkout=success&mock=true'}
 
-        # Get the latest price ID dynamically at request time
-        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        if not settings.STRIPE_PRO_MONTHLY_PRICE_ID or not str(settings.STRIPE_PRO_MONTHLY_PRICE_ID).startswith("price_"):
+            raise HTTPException(status_code=400, detail="Invalid STRIPE_PRO_MONTHLY_PRICE_ID configuration.")
 
         # Create a new Stripe Checkout Session
         session = stripe.checkout.Session.create(

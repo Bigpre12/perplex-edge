@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
+from sqlalchemy.pool import NullPool
 from db.base import Base # Re-export Base for convenience
 
 # --- CONFIGURATION ---
@@ -27,7 +28,8 @@ if "sslmode=" in DATABASE_URL:
 
 # Auto-switch Supabase pooler URLs from Session Mode (5432) to Transaction Mode (6543)
 _is_pg = "postgresql" in DATABASE_URL
-if _is_pg and "pooler" in DATABASE_URL and ":5432" in DATABASE_URL:
+_is_pooler_url = _is_pg and "pooler" in DATABASE_URL
+if _is_pooler_url and ":5432" in DATABASE_URL:
     logger.info("Switching Supabase pooler from Session Mode (5432) to Transaction Mode (6543)")
     DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
 
@@ -48,20 +50,28 @@ if _is_pg:
     connect_args = {
         "ssl": "require",
         "server_settings": {"application_name": "perplex_edge_backend"},
+        # PgBouncer transaction/statement mode cannot safely support prepared statements.
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
     }
 else:
     connect_args = {"check_same_thread": False}
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    connect_args=connect_args,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=300,
-)
+engine_kwargs = {
+    "echo": False,
+    "connect_args": connect_args,
+    "pool_pre_ping": True,
+}
+if _is_pg and (_is_pooler_url or ":6543" in DATABASE_URL):
+    # Let PgBouncer own pooling; avoid client-side pooling edge cases.
+    engine_kwargs["poolclass"] = NullPool
+else:
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 10
+    engine_kwargs["pool_timeout"] = 30
+    engine_kwargs["pool_recycle"] = 300
+
+engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

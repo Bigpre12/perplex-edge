@@ -39,6 +39,8 @@ class StripeService:
         mode: str = "subscription"
     ):
         """Creates a Stripe Checkout Session with user_id metadata."""
+        if not price_id or not str(price_id).startswith("price_"):
+            raise ValueError("Invalid Stripe price id. Expected a value starting with 'price_'.")
         try:
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],

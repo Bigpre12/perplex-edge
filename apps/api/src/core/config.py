@@ -12,12 +12,23 @@ DATABASE_URL = os.getenv(
 )
 PORT = int(os.environ.get("PORT") or 8000)
 
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
 class Settings:
     def __init__(self):
         self.APP_NAME = APP_NAME
         self.DATABASE_URL = DATABASE_URL
         self.PORT = PORT
-        self.REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+        self.REDIS_URL = (os.getenv("REDIS_URL") or "").strip()
+        self.CACHE_REDIS_URL = (os.getenv("CACHE_REDIS_URL") or "").strip()
+        self.CELERY_REDIS_URL = (os.getenv("CELERY_REDIS_URL") or "").strip()
+        self.REDIS_PRIMARY_URL = self.CACHE_REDIS_URL or self.REDIS_URL or "redis://localhost:6379"
+        self.REDIS_WORKER_URL = self.CELERY_REDIS_URL or self.REDIS_PRIMARY_URL
         # Betstack: no URL unless set, unless API key is set (legacy default host for backwards compatibility)
         _betstack_url = (os.getenv("BETSTACK_BASE_URL") or "").strip().rstrip("/")
         _betstack_key = (os.getenv("BETSTACK_API_KEY") or "").strip()
@@ -31,8 +42,8 @@ class Settings:
         self.FRONTEND_URL = os.getenv("FRONTEND_URL", "https://perplex-edge.vercel.app")
 
         # Kalshi Trade API v2 (RSA). Demo default; set KALSHI_BASE_URL + keys for production.
-        from core.kalshi_urls import default_kalshi_rest_url
-        self.KALSHI_BASE_URL = os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()).strip().rstrip("/")
+        from core.kalshi_urls import sanitize_kalshi_base_url
+        self.KALSHI_BASE_URL = sanitize_kalshi_base_url(os.getenv("KALSHI_BASE_URL"))
         self.KALSHI_KEY_ID = os.getenv("KALSHI_KEY_ID", os.getenv("KALSHI_API_KEY_ID", "")).strip()
         self.KALSHI_PRIVATE_KEY = os.getenv("KALSHI_PRIVATE_KEY", "").strip()
         
@@ -63,6 +74,11 @@ class Settings:
         self.SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY", ""))
         self.SUPABASE_ANON_KEY: str = self.SUPABASE_KEY
         self.SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", os.getenv("SUPABASE_SERVICE_ROLE_KEY", ""))
+        self.SUPABASE_ROLE_SPLIT_READY = bool(self.SUPABASE_ANON_KEY and self.SUPABASE_SERVICE_KEY)
+        self.SUPABASE_SERVICE_KEY_LOOKS_ANON = (
+            bool(self.SUPABASE_SERVICE_KEY and self.SUPABASE_ANON_KEY)
+            and self.SUPABASE_SERVICE_KEY == self.SUPABASE_ANON_KEY
+        )
         
         # Odds API Configuration - Centralized for Rotation
         raw_list = os.getenv("ODDS_API_KEYS", "")
@@ -100,12 +116,24 @@ class Settings:
         self.ODDS_API_KEY_BACKUP = backup
         
         self.DEVELOPMENT_MODE = os.getenv("DEV_MODE", "false").lower() == "true"
+        self.IS_PRODUCTION = not self.DEVELOPMENT_MODE and (
+            _env_bool("PRODUCTION", False)
+            or _env_bool("RAILWAY_STATIC_URL", False)
+            or bool((os.getenv("RAILWAY_ENVIRONMENT_NAME") or "").strip())
+        )
+        self.BYPASS_AUTH = _env_bool("BYPASS_AUTH", False)
         self.DEBUG = os.getenv("DEBUG", "false").lower() == "true"
         self.ALGORITHM = os.getenv("ALGORITHM", "HS256")
         self.STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
         self.STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
         
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+        self.AI_GATEWAY_ENABLED = _env_bool("AI_GATEWAY_ENABLED", False)
+        self.AI_GATEWAY_API_KEY = (os.getenv("AI_GATEWAY_API_KEY") or "").strip()
+        self.AI_GATEWAY_BASE_URL = (
+            os.getenv("AI_GATEWAY_BASE_URL", "https://ai-gateway.vercel.sh/v1").strip().rstrip("/")
+        )
+        self.AI_GATEWAY_MODEL = (os.getenv("AI_GATEWAY_MODEL") or "").strip()
         self.ORACLE_MODEL = os.getenv("ORACLE_MODEL", "gpt-4o")
         self.ORACLE_MAX_TOKENS = int(os.getenv("ORACLE_MAX_TOKENS", "1000"))
         self.ORACLE_TEMPERATURE = float(os.getenv("ORACLE_TEMPERATURE", "0.2"))
@@ -191,5 +219,19 @@ class Settings:
         if missing:
             error_msg = f"WARNING: Missing Supabase configuration: {', '.join(missing)}. Auth features will be disabled."
             logging.warning(error_msg)
+        if self.SUPABASE_SERVICE_KEY_LOOKS_ANON:
+            logging.critical(
+                "Supabase key role split is invalid: service key matches anon key. "
+                "Set SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SERVICE_KEY to a real service-role secret."
+            )
+        if self.IS_PRODUCTION and self.BYPASS_AUTH:
+            logging.critical("BYPASS_AUTH=true is forbidden in production.")
+        if self.AI_GATEWAY_ENABLED and not self.AI_GATEWAY_API_KEY:
+            logging.warning("AI_GATEWAY_ENABLED=true but AI_GATEWAY_API_KEY is missing.")
+        if not self.AI_GATEWAY_BASE_URL.startswith("http"):
+            logging.warning(
+                "AI_GATEWAY_BASE_URL appears malformed (%s). Expected an http(s) URL.",
+                self.AI_GATEWAY_BASE_URL,
+            )
 
 settings = Settings()

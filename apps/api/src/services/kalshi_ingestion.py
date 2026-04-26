@@ -19,6 +19,9 @@ class KalshiIngestion:
     async def run(self, sport: str = "NBA"):
         """Fetches Kalshi markets and matches them against Sportsbook props to save EV signals."""
         logger.info(f"KalshiIngestion: Starting sync for {sport}")
+        if odds_api_client.all_keys_dead():
+            logger.debug("Skipping KalshiIngestion.run — all keys cooling down")
+            return []
         
         kalshi_sport = sport.upper()
         odds_sport = SPORT_MAP.get(sport.lower(), "basketball_nba")

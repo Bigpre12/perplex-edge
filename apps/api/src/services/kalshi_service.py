@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from core.kalshi_urls import default_kalshi_rest_url
+from core.kalshi_urls import sanitize_kalshi_base_url
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,8 @@ class KalshiService:
         self.api_key_id = os.getenv("KALSHI_API_KEY_ID") or os.getenv("KALSHI_API_KEY")
         self.private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH")
         self.private_key_content = os.getenv("KALSHI_PRIVATE_KEY")
-        self.base_url = os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()).strip().rstrip("/")
+        self.private_key_b64 = (os.getenv("KALSHI_PRIVATE_KEY_B64") or "").strip()
+        self.base_url = sanitize_kalshi_base_url(os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()))
         self.client = httpx.AsyncClient(base_url=self.base_url)
         self._private_key = None
         self._missing_credentials_warned = False
@@ -41,7 +43,18 @@ class KalshiService:
                 except OSError as e:
                     logger.error("KalshiService: Could not read private key file: %s", e)
 
-        if raw:
+        if self.private_key_b64:
+            try:
+                key_bytes = base64.b64decode(self.private_key_b64)
+                self._private_key = serialization.load_pem_private_key(
+                    key_bytes,
+                    password=None,
+                    backend=default_backend(),
+                )
+                logger.info("KalshiService: RSA private key loaded from base64 env")
+            except Exception as e:
+                logger.error("KalshiService: Failed to load base64 private key: %s", e)
+        elif raw:
             try:
                 key_bytes = raw.replace("\\n", "\n").encode("utf-8")
                 self._private_key = serialization.load_pem_private_key(

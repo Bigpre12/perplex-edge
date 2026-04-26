@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, WS_BASE } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
+import { TOKEN_STORAGE_KEY } from '@/lib/authStorage';
 
 export interface LiveGame {
   id: string;
@@ -49,9 +51,19 @@ export const useLiveGames = () => {
 
   // WebSocket for Real-time pushing
   useEffect(() => {
-    const connect = () => {
+    const connect = async () => {
       try {
-        const socket = new WebSocket(`${WS_BASE}/api/live/ws`);
+        const sess = await supabase.auth.getSession();
+        const supabaseToken = sess?.data?.session?.access_token;
+        const fallbackToken = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
+        const token = supabaseToken || fallbackToken || '';
+        if (!token) {
+          setSocketStatus('closed');
+          return;
+        }
+        const socket = new WebSocket(
+          `${WS_BASE}/api/live/ws?token=${encodeURIComponent(token)}&sport=basketball_nba`
+        );
         socketRef.current = socket;
 
         socket.onopen = () => {
@@ -63,12 +75,8 @@ export const useLiveGames = () => {
         socket.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === 'game_update' && data.game) {
-              // Update the cache immediately
-              queryClient.setQueryData(['live-games'], (old: LiveGame[] | undefined) => {
-                if (!old) return [data.game];
-                return old.map(g => g.id === data.game.id ? data.game : g);
-              });
+            if (data.type === 'game_update' && Array.isArray(data.games)) {
+              queryClient.setQueryData(['live-games'], data.games as LiveGame[]);
             }
           } catch (e) {
             console.error('[LiveWS] Parse Error', e);
@@ -106,6 +114,7 @@ export const useLiveGames = () => {
 
   return {
     ...query,
-    socketStatus
+    socketStatus,
+    lastUpdatedAt: query.dataUpdatedAt ? new Date(query.dataUpdatedAt).toISOString() : null,
   };
 };

@@ -33,6 +33,7 @@ class TheRundownClient:
     def __init__(self):
         self.api_key = os.getenv("THERUNDOWN_API_KEY", "")
         self._cache: Dict[str, dict] = {}
+        self._missing_key_warned = False
         self.default_ttl = 600  # 10 minutes — conserve quota
         self.timeout = 10.0
 
@@ -55,6 +56,9 @@ class TheRundownClient:
     async def get_games(self, sport_key: str) -> List[Dict]:
         """Fetch today's games for a sport from TheRundown."""
         if not self.available:
+            if not self._missing_key_warned:
+                logger.info("TheRundown disabled: THERUNDOWN_API_KEY not configured.")
+                self._missing_key_warned = True
             return []
 
         sport_id = SPORT_ID_MAP.get(sport_key)

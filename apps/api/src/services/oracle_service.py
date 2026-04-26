@@ -15,7 +15,15 @@ from services.llm.model_policy import sanitize_llm_payload, log_sanitizer_drops
 # We'll use openai for the streaming implementation as requested
 try:
     from openai import AsyncOpenAI
-    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+
+    if settings.AI_GATEWAY_ENABLED and settings.AI_GATEWAY_API_KEY:
+        client = AsyncOpenAI(
+            api_key=settings.AI_GATEWAY_API_KEY,
+            base_url=settings.AI_GATEWAY_BASE_URL,
+        )
+        logging.info("Oracle using AI Gateway transport")
+    else:
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 except ImportError:
     client = None
     logging.warning("OpenAI library not installed. Oracle chat will be disabled.")
@@ -152,7 +160,8 @@ RULES:
                 "temperature": settings.ORACLE_TEMPERATURE,
             }
             payload, dropped = sanitize_llm_payload(settings.ORACLE_MODEL, payload)
-            log_sanitizer_drops("oracle_service", "openai_sdk", settings.ORACLE_MODEL, dropped)
+            provider = "ai_gateway" if (settings.AI_GATEWAY_ENABLED and settings.AI_GATEWAY_API_KEY) else "openai_sdk"
+            log_sanitizer_drops("oracle_service", provider, settings.ORACLE_MODEL, dropped)
 
             stream = await self.client.chat.completions.create(**payload)
 

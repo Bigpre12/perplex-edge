@@ -8,6 +8,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -67,6 +68,13 @@ def validate_env():
         # Only hard crash on DATABASE_URL in production
         if os.getenv("RAILWAY_ENVIRONMENT_NAME") and not _strip(os.getenv("DATABASE_URL")):
             raise RuntimeError("CRITICAL: DATABASE_URL is missing. Backend cannot start.")
+
+    is_prod = bool((os.getenv("RAILWAY_ENVIRONMENT_NAME") or "").strip()) and (
+        os.getenv("DEV_MODE", "false").strip().lower() != "true"
+    )
+    bypass_auth = _strip(os.getenv("BYPASS_AUTH")).lower() in {"1", "true", "yes", "on"}
+    if is_prod and bypass_auth:
+        raise RuntimeError("CRITICAL: BYPASS_AUTH=true is forbidden in production.")
 
 
 # Run validation immediately
@@ -410,17 +418,26 @@ async def initialize_backend_services():
                     job_kw["minutes"] = spec.minutes
                 else:
                     job_kw["hours"] = spec.hours
-                job = scheduler.add_job(
-                    unified_ingestion.run_with_retries,
-                    "interval",
-                    **job_kw,
-                )
+                job = scheduler.add_job(guarded_unified_ingest, "interval", **job_kw)
                 logger.debug("📡 [Scheduler] Added unified ingestion job %s", job.id)
 
             from services.grading_service import grading_service
             from services.kalshi_ingestion import kalshi_ingestion
             from services.whale_service import whale_service
             from services.grader import run_full_grading_pipeline
+            from services.odds_api_client import odds_api_client
+
+            async def guarded_unified_ingest(sport_key: str):
+                if odds_api_client.all_keys_dead():
+                    logger.debug("Skipping job — all keys cooling down")
+                    return
+                await unified_ingestion.run_with_retries(sport_key)
+
+            async def guarded_kalshi_sync(sport_key: str):
+                if odds_api_client.all_keys_dead():
+                    logger.debug("Skipping job — all keys cooling down")
+                    return
+                await kalshi_ingestion.run(sport_key)
         
             scheduler.add_job(
                 grading_service.run_grading_cycle,
@@ -443,7 +460,7 @@ async def initialize_backend_services():
             # Kalshi Sync (NBA, MLB)
             for k_sport in ["NBA", "MLB"]:
                 scheduler.add_job(
-                    kalshi_ingestion.run,
+                    guarded_kalshi_sync,
                     'interval',
                     minutes=8,
                     args=[k_sport],
@@ -485,11 +502,9 @@ async def initialize_backend_services():
                     async with ingest_semaphore:
                         return await coro
 
-                ingest_tasks = [
-                    bounded_ingest(unified_ingestion.run_with_retries(sport)) for sport in sports_to_ingest
-                ]
-                ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("NBA")))
-                ingest_tasks.append(bounded_ingest(kalshi_ingestion.run("MLB")))
+                ingest_tasks = [bounded_ingest(guarded_unified_ingest(sport)) for sport in sports_to_ingest]
+                ingest_tasks.append(bounded_ingest(guarded_kalshi_sync("NBA")))
+                ingest_tasks.append(bounded_ingest(guarded_kalshi_sync("MLB")))
             
                 results = await asyncio.gather(*ingest_tasks, return_exceptions=True)
                 for sport, res in zip(sports_to_ingest + ["Kalshi_NBA", "Kalshi_MLB"], results):
@@ -552,8 +567,30 @@ async def backend_lifespan(app: FastAPI):
     logger.info(f"   ► Service Role : API + Ingest Worker + Heartbeat")
     logger.info("=" * 60)
 
-    # Fail fast on invalid DB auth/config before spinning up background services.
-    await validate_db_connection()
+    app.state.db_startup_degraded = False
+    app.state.db_startup_last_error = None
+    db_ok = False
+    for attempt in range(5):
+        try:
+            await validate_db_connection()
+            logger.info("DB connection validated.")
+            db_ok = True
+            break
+        except Exception as e:
+            wait_s = 2 ** attempt
+            app.state.db_startup_last_error = str(e)
+            logger.warning(
+                "DB connection attempt %s failed: %s. Retrying in %ss",
+                attempt + 1,
+                e,
+                wait_s,
+            )
+            await asyncio.sleep(wait_s)
+    if not db_ok:
+        app.state.db_startup_degraded = True
+        logger.critical(
+            "DB connection failed after 5 attempts. Starting in degraded mode."
+        )
 
     async def _safe_initialize_backend_services() -> None:
         try:
@@ -655,15 +692,16 @@ async def get_sharp_signals():
     """Smart Money endpoint."""
     return {"status": "processing", "signal": "captured"}
 
-@app.post("/admin/reset-circuit-breaker", tags=["admin"])
-async def reset_circuit_breaker():
-    """Manual reset for Odds API circuit breaker"""
+@app.post("/admin/reset-odds-circuit-breaker", tags=["admin"])
+@app.post("/api/admin/reset-odds-circuit-breaker", tags=["admin"])
+async def reset_odds_circuit_breaker():
+    """Manual reset for Odds API key cooldown state."""
     from services.odds_api_client import odds_api_client
 
     if hasattr(odds_api_client, "_dead_until"):
         odds_api_client._dead_until.clear()
-    elif hasattr(odds_api_client, "_dead_keys"):
-        odds_api_client._dead_keys.clear()
+    if hasattr(odds_api_client, "_all_keys_dead_until"):
+        odds_api_client._all_keys_dead_until = None
     return {"status": "ok", "message": "Circuit breaker reset. Keys will retry immediately."}
 
 # --- Router Registration (all guarded) ---
@@ -726,13 +764,24 @@ async def health():
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
-        return {"status": "alive", "database_connected": True}
+        return {
+            "status": "alive",
+            "database_connected": True,
+            "startup_degraded": bool(getattr(app.state, "db_startup_degraded", False)),
+            "startup_db_error": getattr(app.state, "db_startup_last_error", None),
+            "auth_bypass_enabled": bool(getattr(settings, "BYPASS_AUTH", False)),
+            "supabase_role_split_ready": bool(getattr(settings, "SUPABASE_ROLE_SPLIT_READY", False)),
+        }
     except Exception as e:
         logger.warning("Liveness /health: database check failed: %s", e)
         return {
             "status": "alive",
             "database_connected": False,
             "database_error": str(e),
+            "startup_degraded": bool(getattr(app.state, "db_startup_degraded", False)),
+            "startup_db_error": getattr(app.state, "db_startup_last_error", None),
+            "auth_bypass_enabled": bool(getattr(settings, "BYPASS_AUTH", False)),
+            "supabase_role_split_ready": bool(getattr(settings, "SUPABASE_ROLE_SPLIT_READY", False)),
         }
 
 @app.get("/")
@@ -774,6 +823,9 @@ async def admin_system_health(db: AsyncSession = Depends(get_db)):
             "odds_api_quota_exhausted": internal.get("odds_api_quota_exhausted"),
             "odds_api_ingest_blocked_reason": internal.get("odds_api_ingest_blocked_reason"),
             "recent_ingest_heartbeat_ok": internal.get("recent_ingest_heartbeat_ok"),
+            "auth_bypass_enabled": internal.get("auth_bypass_enabled"),
+            "supabase_role_split_ready": internal.get("supabase_role_split_ready"),
+            "supabase_service_key_looks_anon": internal.get("supabase_service_key_looks_anon"),
         },
         "freshness": {
             "last_odds_update": base.get("last_odds_update"),
@@ -789,8 +841,60 @@ async def admin_system_health(db: AsyncSession = Depends(get_db)):
     }
 
 
+@app.get("/api/admin/quota/status", tags=["admin"])
+async def admin_quota_status(request: Request):
+    _require_admin_bearer(request)
+    from services.external_api_gateway import external_api_gateway
+    from services.odds_api_client import odds_api_client
+
+    return {
+        "provider": "theoddsapi",
+        "budget": await external_api_gateway.quota_status("theoddsapi"),
+        "keys": odds_api_client.key_health() if hasattr(odds_api_client, "key_health") else {},
+    }
+
+
+@app.get("/api/admin/quota/logs", tags=["admin"])
+async def admin_quota_logs(request: Request, limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db)):
+    _require_admin_bearer(request)
+    rows = await db.execute(
+        text(
+            """
+            SELECT provider, endpoint, sport, markets, regions, status_code,
+                   x_requests_remaining, x_requests_used, x_requests_last,
+                   cache_hit, started_at, completed_at
+            FROM external_api_call_log
+            ORDER BY started_at DESC
+            LIMIT :limit
+            """
+        ),
+        {"limit": limit},
+    )
+    return {"items": [dict(r._mapping) for r in rows.fetchall()], "limit": limit}
+
+
+@app.get("/api/admin/quota/budgets", tags=["admin"])
+async def admin_quota_budgets(request: Request):
+    _require_admin_bearer(request)
+    import os
+    return {
+        "hourly_limit": int(os.getenv("EXT_API_HOURLY_BUDGET", "1200")),
+        "daily_limit": int(os.getenv("EXT_API_DAILY_BUDGET", "12000")),
+        "live_reserve_limit": int(os.getenv("EXT_API_LIVE_RESERVE_BUDGET", "250")),
+    }
+
+
+@app.get("/api/admin/quota/protection-mode", tags=["admin"])
+async def admin_quota_protection_mode(request: Request):
+    _require_admin_bearer(request)
+    from services.external_api_gateway import external_api_gateway
+    b = await external_api_gateway.quota_status("theoddsapi")
+    return {"provider": "theoddsapi", "protection_mode": b.get("mode"), "budget": b}
+
+
+@app.post("/api/admin/circuit-breaker/reset")
 @app.post("/api/admin/reset-circuit-breaker")
-async def reset_circuit_breaker(request: Request):
+async def reset_auth_circuit_breaker(request: Request):
     """Manually reset the auth circuit breaker."""
     # Simple check for ADMIN_SECRET_KEY
     import os

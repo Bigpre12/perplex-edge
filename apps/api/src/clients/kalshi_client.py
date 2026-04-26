@@ -1,6 +1,7 @@
 import logging
 import time
 import base64
+import os
 from typing import Optional, Dict, Any
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -26,6 +27,7 @@ class KalshiClient(ResilientBaseClient):
         self.key_id = settings.KALSHI_KEY_ID
         self.private_key_str = settings.KALSHI_PRIVATE_KEY
         self._private_key = None
+        self.enabled = bool(self.key_id and self.private_key_str)
 
     def _get_private_key(self):
         if self._private_key:
@@ -33,7 +35,10 @@ class KalshiClient(ResilientBaseClient):
         
         try:
             # Handle both file paths and raw keys
-            if "-----BEGIN" in self.private_key_str:
+            b64_key = (os.getenv("KALSHI_PRIVATE_KEY_B64") or "").strip()
+            if b64_key:
+                key_data = base64.b64decode(b64_key)
+            elif "-----BEGIN" in self.private_key_str:
                 key_data = self.private_key_str.encode()
             else:
                 with open(self.private_key_str, 'rb') as f:
@@ -71,6 +76,9 @@ class KalshiClient(ResilientBaseClient):
 
     async def kalshi_request(self, method: str, path: str, **kwargs) -> Any:
         """RSA-PSS signed request for Kalshi v2 Trade API"""
+        if not self.enabled:
+            logger.debug("Kalshi client disabled: missing key id/private key")
+            return {}
         full_path = f"/trade-api/v2{path}"
         timestamp = str(int(time.time() * 1000))
         signature = self._sign_message(timestamp, method, full_path)

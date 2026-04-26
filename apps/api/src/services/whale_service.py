@@ -136,10 +136,15 @@ class WhaleService:
                     signals.extend(new_signals)
         except Exception as e:
             err = str(e)
-            if "whale_moves.market_key" in err or ("whale_moves" in err and "does not exist" in err):
+            if (
+                "whale_moves.market_key" in err
+                or "whale_moves.selection" in err
+                or ("whale_moves" in err and "does not exist" in err)
+            ):
                 logger.error(
                     "WhaleService schema mismatch detected. Run: "
                     "ALTER TABLE whale_moves ADD COLUMN IF NOT EXISTS market_key TEXT; "
+                    "ALTER TABLE whale_moves ADD COLUMN IF NOT EXISTS selection TEXT; "
                     "Original error: %s",
                     err,
                 )

@@ -47,6 +47,7 @@ from services.commence_time import (  # type: ignore
     parse_commence_to_utc,
 )
 from brain.engine import brain_governor  # type: ignore
+from services.ingestion_job_guard import try_start_job, finish_job
 
 logger = logging.getLogger(__name__)
 
@@ -80,13 +81,16 @@ class UnifiedIngestionService:
 
     @staticmethod
     def _filter_stale_odds_events(odds_raw: List[Any], sport_key: str) -> List[Dict[str, Any]]:
-        """Drop odds-shaped events older than INGEST_DROP_EVENTS_OLDER_THAN_DAYS (default 10)."""
+        """Drop odds-shaped events outside ingest window before any deeper processing."""
         max_days = int(os.getenv("INGEST_DROP_EVENTS_OLDER_THAN_DAYS", "10"))
+        max_future_days = int(os.getenv("INGEST_MAX_FUTURE_GAME_DAYS", "21"))
         if max_days <= 0:
             return [e for e in odds_raw if isinstance(e, dict)]
         cutoff = datetime.now(timezone.utc) - timedelta(days=max_days)
+        future_cutoff = datetime.now(timezone.utc) + timedelta(days=max_future_days)
         out: List[Dict[str, Any]] = []
-        dropped = 0
+        dropped_old = 0
+        dropped_future = 0
         for e in odds_raw:
             if not isinstance(e, dict):
                 continue
@@ -94,16 +98,22 @@ class UnifiedIngestionService:
             if t is None:
                 out.append(e)
                 continue
+            if t < cutoff:
+                dropped_old += 1
+                continue
+            if t > future_cutoff:
+                dropped_future += 1
+                continue
             if t >= cutoff:
                 out.append(e)
-            else:
-                dropped += 1
-        if dropped:
-            logger.info(
-                "UnifiedIngestion: dropped %s stale odds_raw rows (commence before %sd cutoff) for %s",
-                dropped,
-                max_days,
+        total_dropped = dropped_old + dropped_future
+        if total_dropped:
+            logger.warning(
+                "UnifiedIngestion: skipped %s stale events outside ingest window for %s (old=%s future=%s)",
+                total_dropped,
                 sport_key,
+                dropped_old,
+                dropped_future,
             )
         return out
 
@@ -347,6 +357,14 @@ class UnifiedIngestionService:
         # NFL is in off-season, NHL/NBA/MLB are active.
         IN_SEASON_PROP_SPORTS = ["basketball_nba", "baseball_mlb", "icehockey_nhl"]
 
+        quota_mode = "normal"
+        try:
+            from services.external_api_gateway import external_api_gateway
+            quota_state = await external_api_gateway.quota_status("theoddsapi")
+            quota_mode = str(quota_state.get("mode") or "normal")
+        except Exception as quota_err:
+            logger.debug("UnifiedIngestion: quota status unavailable: %s", quota_err)
+
         if (
             odds_api_client.is_configured
             and sport_key in PROP_MARKETS_BY_SPORT
@@ -354,6 +372,10 @@ class UnifiedIngestionService:
         ):
             # Quota: cap per-event TOA calls (INGEST_TOA_MAX_EVENTS_PER_CYCLE, default 15)
             max_events = max(1, int(os.getenv("INGEST_TOA_MAX_EVENTS_PER_CYCLE", "15")))
+            if quota_mode in {"conservative", "protection"}:
+                max_events = min(max_events, 6)
+            elif quota_mode == "emergency_freeze":
+                max_events = 0
             active_events: List[str] = []
             valid_event_ids = await odds_api_client.get_valid_event_ids(sport_key)
             for k in metadata_map.keys():
@@ -384,6 +406,9 @@ class UnifiedIngestionService:
                 )
 
             prop_counts: int = 0
+            market_set = PROP_MARKETS_BY_SPORT[sport_key]
+            if quota_mode in {"conservative", "protection"}:
+                market_set = market_set.split(",")[0]
             for eid in ([] if toa_keys_cooldown else active_events):
                 if odds_api_client.quota_conserve_player_props():
                     logger.info(
@@ -398,7 +423,7 @@ class UnifiedIngestionService:
                     event_props = await odds_api_client.get_player_props(
                         sport=sport_key,
                         event_id=eid,
-                        markets=PROP_MARKETS_BY_SPORT[sport_key]
+                        markets=market_set
                     )
                     
                     # Task 3: Per-event prop fallback
@@ -621,9 +646,19 @@ class UnifiedIngestionService:
 
     async def run_with_retries(self, sport_key: str, retries: int = 3):
         """Robust entrypoint with exponential backoff for transient API failures."""
+        run_id = await try_start_job(f"ingest_{sport_key}")
+        if run_id is None:
+            logger.info("UnifiedIngestion: skip overlap for %s (already running)", sport_key)
+            return
         for i in range(retries):
             try:
-                await self.run(sport_key)
+                metrics = await self.run(sport_key)
+                await finish_job(
+                    run_id,
+                    status="ok",
+                    rows_written=int((metrics or {}).get("rows_upserted", 0)),
+                    error_message=None,
+                )
                 return
             except Exception as e:
                 if _is_auth_failure_error(e):
@@ -632,6 +667,7 @@ class UnifiedIngestionService:
                         sport_key,
                         e,
                     )
+                    await finish_job(run_id, status="auth_failure", rows_written=0, error_message=str(e))
                     raise
 
                 retryable = _is_transient_retryable_error(e)
@@ -647,6 +683,7 @@ class UnifiedIngestionService:
                             sport_key,
                         )
                     logger.critical(f"UnifiedIngestion: ALL ATTEMPTS FAILED for {sport_key}")
+                    await finish_job(run_id, status="failed", rows_written=0, error_message=str(e))
                     async with async_session_maker() as session:
                         await HeartbeatService.log_heartbeat(
                             session, 

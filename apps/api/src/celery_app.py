@@ -4,9 +4,14 @@ from core.config import settings
 
 celery_app = Celery(
     "perplex_edge_worker",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
-    include=["workers.ev_engine", "workers.ingest_coordinator", "workers.arb_cleanup"]
+    broker=settings.REDIS_WORKER_URL,
+    backend=settings.REDIS_WORKER_URL,
+    include=[
+        "workers.ev_engine",
+        "workers.ingest_coordinator",
+        "workers.arb_cleanup",
+        "workers.stale_data_cleanup",
+    ]
 )
 
 celery_app.conf.update(

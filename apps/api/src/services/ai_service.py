@@ -9,6 +9,7 @@ from models.prop import PropLine
 from models.bet import BetSlip, BetLog
 from models.user import User
 from services.llm.model_policy import sanitize_llm_payload, log_sanitizer_drops
+from services.llm.ai_gateway_client import chat_completion as gateway_chat_completion, is_enabled as gateway_enabled
 
 logger = logging.getLogger(__name__)
 logger.info("LLM model-policy sanitizer enabled for ai_service")
@@ -97,6 +98,18 @@ If a user asks about their performance, refer to the provided user context.
             "temperature": 0.5,
             "max_tokens": 500
         }
+
+        if gateway_enabled():
+            gw_data, gw_err = await gateway_chat_completion(
+                service_name="ai_service",
+                model=model,
+                payload=payload,
+                timeout_s=30.0,
+            )
+            if gw_data and gw_data.get("choices"):
+                return gw_data["choices"][0]["message"]["content"]
+            logger.warning("ai_service gateway fallback activated: %s", gw_err)
+
         payload, dropped = sanitize_llm_payload(model, payload)
         provider = "groq" if self.groq_key else ("openrouter" if self.openrouter_key else "openai")
         log_sanitizer_drops("ai_service", provider, model, dropped)

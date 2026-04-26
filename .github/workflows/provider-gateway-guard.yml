@@ -1,0 +1,22 @@
+name: provider-gateway-guard
+
+on:
+  push:
+    paths:
+      - "apps/**"
+      - ".github/workflows/provider-gateway-guard.yml"
+  pull_request:
+    paths:
+      - "apps/**"
+      - ".github/workflows/provider-gateway-guard.yml"
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Enforce provider gateway references
+        run: python apps/api/src/scripts/enforce_provider_gateway.py
