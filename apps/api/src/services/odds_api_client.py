@@ -338,6 +338,7 @@ class OddsApiClient(ResilientBaseClient):
 
         # 3. Short-circuit if all keys are dead (prevents log spam)
         if self._in_global_dead_window():
+            self._log_all_keys_dead_throttled()
             return None
         if self._all_keys_dead():
             self._enter_global_dead_window()

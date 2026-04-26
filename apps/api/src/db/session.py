@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 from typing import AsyncGenerator
 from urllib.parse import urlparse
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
@@ -32,6 +33,21 @@ _is_pooler_url = _is_pg and "pooler" in DATABASE_URL
 if _is_pooler_url and ":5432" in DATABASE_URL:
     logger.info("Switching Supabase pooler from Session Mode (5432) to Transaction Mode (6543)")
     DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
+
+def _ensure_pg_query_params(url: str, params: dict[str, str]) -> str:
+    parts = urlsplit(url)
+    q = dict(parse_qsl(parts.query, keep_blank_values=True))
+    q.update({k: v for k, v in params.items() if v is not None})
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+
+if _is_pg:
+    DATABASE_URL = _ensure_pg_query_params(
+        DATABASE_URL,
+        {
+            "statement_cache_size": "0",
+            "prepared_statement_cache_size": "0",
+        },
+    )
 
 # Redacted logging for debugging
 _raw_db_url = os.environ.get("DATABASE_URL", "NOT SET")
@@ -135,10 +151,12 @@ from sqlalchemy.orm import sessionmaker as sync_sessionmaker
 
 sync_url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://").replace("sqlite+aiosqlite://", "sqlite://")
 _sync_connect_args = {"check_same_thread": False} if "sqlite" in sync_url else {}
-sync_engine = create_engine(
-    sync_url,
-    connect_args=_sync_connect_args,
-    pool_size=3,
-    max_overflow=2,
-)
+_sync_engine_kwargs = {"connect_args": _sync_connect_args}
+if _is_pg and (_is_pooler_url or ":6543" in DATABASE_URL):
+    _sync_engine_kwargs["poolclass"] = NullPool
+else:
+    _sync_engine_kwargs["pool_size"] = 3
+    _sync_engine_kwargs["max_overflow"] = 2
+
+sync_engine = create_engine(sync_url, **_sync_engine_kwargs)
 SessionLocal = sync_sessionmaker(bind=sync_engine, autoflush=False, autocommit=False)

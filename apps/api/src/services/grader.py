@@ -1,6 +1,7 @@
 import logging
 from db.session import async_session_maker
 from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 
 logger = logging.getLogger(__name__)
 
@@ -72,17 +73,70 @@ async def compute_ev_signals(session):
           AND player_name IS NULL
         ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NULL DO NOTHING
     """
+    fallback_query = """
+        INSERT INTO ev_signals (
+            sport, event_id, player_name, market_key, outcome_key,
+            line, bookmaker, edge_percent, confidence, created_at, engine_version
+        )
+        SELECT 
+            pl.sport, pl.game_id, COALESCE(pl.player_name, pl.home_team), pl.market_key, 'over',
+            pl.line, pl.book, pl.ev_percentage, pl.confidence, NOW(), 'v2'
+        FROM props_live pl
+        WHERE pl.ev_percentage != 0
+          AND NOT EXISTS (
+              SELECT 1
+              FROM ev_signals es
+              WHERE es.sport = pl.sport
+                AND es.event_id = pl.game_id
+                AND COALESCE(es.player_name, '') = COALESCE(COALESCE(pl.player_name, pl.home_team), '')
+                AND es.market_key = pl.market_key
+                AND es.outcome_key = 'over'
+                AND es.bookmaker = pl.book
+                AND es.engine_version = 'v2'
+          )
+    """
+    fallback_query_team = """
+        INSERT INTO ev_signals (
+            sport, event_id, market_key, outcome_key,
+            line, bookmaker, edge_percent, confidence, created_at, engine_version
+        )
+        SELECT 
+            pl.sport, pl.game_id, pl.market_key, 'over',
+            pl.line, pl.book, pl.ev_percentage, pl.confidence, NOW(), 'v2'
+        FROM props_live pl
+        WHERE pl.ev_percentage != 0
+          AND pl.player_name IS NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM ev_signals es
+              WHERE es.sport = pl.sport
+                AND es.event_id = pl.game_id
+                AND es.player_name IS NULL
+                AND es.market_key = pl.market_key
+                AND es.outcome_key = 'over'
+                AND es.bookmaker = pl.book
+                AND es.engine_version = 'v2'
+          )
+    """
     try:
         await session.execute(text(query))
         await session.commit()
-        
+    except ProgrammingError as e:
+        await session.rollback()
+        logger.warning("Grader ON CONFLICT path unavailable; using NOT EXISTS fallback: %s", e)
+        await session.execute(text(fallback_query))
+        await session.commit()
+
+    try:
         await session.execute(text(query_team))
         await session.commit()
-        
-        logger.info("📡 [Grader] Successfully generated ev_signals")
-    except Exception as e:
+    except ProgrammingError as e:
         await session.rollback()
-        logger.error(f"❌ [Grader] Failed compute_ev_signals: {e}")
+        logger.warning("Grader team ON CONFLICT path unavailable; using NOT EXISTS fallback: %s", e)
+        await session.execute(text(fallback_query_team))
+        await session.commit()
+
+    logger.info("📡 [Grader] Successfully generated ev_signals")
 
 async def run_full_grading_pipeline():
     """Runs the full post-ingest SQL EV and grading pipeline."""
