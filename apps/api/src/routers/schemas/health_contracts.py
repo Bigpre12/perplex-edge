@@ -16,11 +16,18 @@ class DegradationStatus(BaseModel):
     user_message: str
 
 
+class OddsApiStatus(BaseModel):
+    status: str
+    keys_alive: Optional[int] = None
+    keys_dead: Optional[int] = None
+    cooling_until: Optional[str] = None
+
+
 class HealthResponse(BaseModel):
     status: str
     dependencies: Dict[str, DependencyStatus]
     database: str
-    odds_api: str
+    odds_api: OddsApiStatus
     kalshi: str
     sportmonks: str
     odds_api_all_keys_cooldown: bool
