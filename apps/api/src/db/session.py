@@ -27,10 +27,17 @@ if "sslmode=" in DATABASE_URL:
     if "&" in DATABASE_URL and "?" not in DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("&", "?", 1)
 
-# Auto-switch Supabase pooler URLs from Session Mode (5432) to Transaction Mode (6543)
+# Optional switch Supabase pooler URLs from Session Mode (5432) to Transaction Mode (6543).
+# Default OFF: transaction mode can still surface prepared-statement issues in some workloads.
 _is_pg = "postgresql" in DATABASE_URL
 _is_pooler_url = _is_pg and "pooler" in DATABASE_URL
-if _is_pooler_url and ":5432" in DATABASE_URL:
+_force_tx_pooler = os.getenv("SUPABASE_POOLER_FORCE_TRANSACTION_MODE", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+if _is_pooler_url and ":5432" in DATABASE_URL and _force_tx_pooler:
     logger.info("Switching Supabase pooler from Session Mode (5432) to Transaction Mode (6543)")
     DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
 

@@ -5,6 +5,7 @@ SQLAlchemy uses postgresql+asyncpg://...; asyncpg expects postgresql:// or postg
 Matches host/ssl/pooler behavior in db/session.py so ORM and raw asyncpg hit the same target.
 """
 import re
+import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,13 @@ def asyncpg_dsn_from_database_url(database_url: str) -> str:
         if "&" in url and "?" not in url:
             url = url.replace("&", "?", 1)
 
-    if "postgresql" in url and "pooler" in url and ":5432" in url:
+    force_tx_pooler = os.getenv("SUPABASE_POOLER_FORCE_TRANSACTION_MODE", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if "postgresql" in url and "pooler" in url and ":5432" in url and force_tx_pooler:
         logger.info(
             "Switching Supabase pooler from Session Mode (5432) to Transaction Mode (6543) (asyncpg DSN)"
         )

@@ -1,7 +1,7 @@
 import logging
 from db.session import async_session_maker
 from sqlalchemy import text
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import ProgrammingError, DBAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +35,28 @@ async def grade_props_live(session):
         WHERE 1=1
     """
     try:
-        await session.execute(text(query))
+        await _execute_with_pgbouncer_retry(session, query, "grade_props_live")
         await session.commit()
         logger.info("📡 [Grader] Successfully graded props_live")
     except Exception as e:
         await session.rollback()
         logger.error(f"❌ [Grader] Failed grade_props_live: {e}")
+
+
+async def _execute_with_pgbouncer_retry(session, sql: str, op_name: str):
+    """Retry once when PgBouncer invalidates asyncpg prepared statement handles."""
+    try:
+        return await session.execute(text(sql))
+    except DBAPIError as e:
+        msg = str(e)
+        if "InvalidSQLStatementNameError" in msg:
+            await session.rollback()
+            logger.warning(
+                "Grader DBAPI retry (%s): invalid prepared statement handle detected; retrying once.",
+                op_name,
+            )
+            return await session.execute(text(sql))
+        raise
 
 
 async def compute_ev_signals(session):
@@ -119,7 +135,7 @@ async def compute_ev_signals(session):
           )
     """
     try:
-        await session.execute(text(query))
+        await _execute_with_pgbouncer_retry(session, query, "compute_ev_signals_player")
         await session.commit()
     except ProgrammingError as e:
         await session.rollback()
@@ -128,7 +144,7 @@ async def compute_ev_signals(session):
         await session.commit()
 
     try:
-        await session.execute(text(query_team))
+        await _execute_with_pgbouncer_retry(session, query_team, "compute_ev_signals_team")
         await session.commit()
     except ProgrammingError as e:
         await session.rollback()

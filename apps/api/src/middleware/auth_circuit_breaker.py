@@ -90,7 +90,11 @@ class AuthCircuitBreakerMiddleware(BaseHTTPMiddleware):
             
             # We specifically look for 401/403 to trigger the breaker
             if response.status_code in [401, 403]:
-                auth_breaker.record_failure()
+                # Ignore anonymous probe traffic so expected unauthenticated requests
+                # do not trip the global auth circuit.
+                auth_header = request.headers.get("Authorization", "")
+                if auth_header.strip():
+                    auth_breaker.record_failure()
             elif response.status_code == 503:
                 # Infrastructure failures should not be treated as auth failures.
                 if auth_breaker.state == "HALF_OPEN":

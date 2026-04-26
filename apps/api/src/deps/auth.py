@@ -15,7 +15,7 @@ async def get_db_conn():
     if "sqlite" in url:
         return
 
-    conn = await asyncpg.connect(url)
+    conn = await asyncpg.connect(url, statement_cache_size=0)
     try:
         yield conn
     finally:

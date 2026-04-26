@@ -174,6 +174,29 @@ async def initialize_backend_services():
                 q_snippet = query[:100] if query else "NULL"
                 logger.debug("Migration step skipped or failed (continuing): %s... Error: %s", q_snippet, e)
 
+        async def run_sql_migration_file(path: str):
+            """Execute an idempotent SQL migration file with best-effort semantics."""
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    raw_sql = f.read()
+            except Exception as e:
+                logger.warning("Could not read migration file %s: %s", path, e)
+                return
+
+            statements = []
+            for chunk in raw_sql.split(";"):
+                stmt = chunk.strip()
+                if not stmt or stmt.startswith("--"):
+                    continue
+                cleaned = "\n".join(
+                    line for line in stmt.splitlines() if not line.strip().startswith("--")
+                ).strip()
+                if cleaned:
+                    statements.append(cleaned)
+
+            for stmt in statements:
+                await run_migration_step(stmt)
+
         if not is_sqlite:
             # Add columns
             await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS sport VARCHAR")
@@ -365,6 +388,10 @@ async def initialize_backend_services():
                 )
             """)
             await run_migration_step("INSERT INTO system_sync_state (id) VALUES (1) ON CONFLICT DO NOTHING")
+
+            # Runtime hotfix SQL is intentionally idempotent; execute it on startup to
+            # remove deploy-order dependency between code and manual DB migration steps.
+            await run_sql_migration_file("src/db/migrations/20260426_runtime_hotfix_whale_and_ev_indexes.sql")
 
             logger.info("📡 [Background Init] Schema migrations and indexes complete.")
     except Exception as e:

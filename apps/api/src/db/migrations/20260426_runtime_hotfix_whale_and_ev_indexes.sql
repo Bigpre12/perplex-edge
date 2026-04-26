@@ -2,6 +2,9 @@
 
 -- 1) Whale schema drift guard
 ALTER TABLE IF EXISTS whale_moves
+  ADD COLUMN IF NOT EXISTS market_key TEXT;
+
+ALTER TABLE IF EXISTS whale_moves
   ADD COLUMN IF NOT EXISTS selection TEXT;
 
 -- 2) Ensure ev_signals conflict targets used by grader exist.
