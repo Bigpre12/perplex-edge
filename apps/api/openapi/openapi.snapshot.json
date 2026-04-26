@@ -1196,10 +1196,10 @@
         "summary": "Root"
       }
     },
-    "/admin/reset-circuit-breaker": {
+    "/admin/reset-odds-circuit-breaker": {
       "post": {
-        "description": "Manual reset for Odds API circuit breaker",
-        "operationId": "reset_circuit_breaker_admin_reset_circuit_breaker_post",
+        "description": "Manual reset for Odds API key cooldown state.",
+        "operationId": "reset_odds_circuit_breaker_admin_reset_odds_circuit_breaker_post",
         "responses": {
           "200": {
             "content": {
@@ -1210,7 +1210,7 @@
             "description": "Successful Response"
           }
         },
-        "summary": "Reset Circuit Breaker",
+        "summary": "Reset Odds Circuit Breaker",
         "tags": [
           "admin"
         ]
@@ -1263,6 +1263,23 @@
         "summary": "Admin Trigger Ingestion"
       }
     },
+    "/api/admin/circuit-breaker/reset": {
+      "post": {
+        "description": "Manually reset the auth circuit breaker.",
+        "operationId": "reset_auth_circuit_breaker_api_admin_circuit_breaker_reset_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reset Auth Circuit Breaker"
+      }
+    },
     "/api/admin/odds-usage": {
       "get": {
         "description": "Monthly TheOddsAPI request usage (from DB + last known headers). Same fields as health/deps components.odds_quota.",
@@ -1283,10 +1300,9 @@
         ]
       }
     },
-    "/api/admin/reset-circuit-breaker": {
-      "post": {
-        "description": "Manually reset the auth circuit breaker.",
-        "operationId": "reset_circuit_breaker_api_admin_reset_circuit_breaker_post",
+    "/api/admin/quota/budgets": {
+      "get": {
+        "operationId": "admin_quota_budgets_api_admin_quota_budgets_get",
         "responses": {
           "200": {
             "content": {
@@ -1297,7 +1313,128 @@
             "description": "Successful Response"
           }
         },
-        "summary": "Reset Circuit Breaker"
+        "summary": "Admin Quota Budgets",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quota/logs": {
+      "get": {
+        "operationId": "admin_quota_logs_api_admin_quota_logs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Quota Logs",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quota/protection-mode": {
+      "get": {
+        "operationId": "admin_quota_protection_mode_api_admin_quota_protection_mode_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Admin Quota Protection Mode",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/quota/status": {
+      "get": {
+        "operationId": "admin_quota_status_api_admin_quota_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Admin Quota Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/reset-circuit-breaker": {
+      "post": {
+        "description": "Manually reset the auth circuit breaker.",
+        "operationId": "reset_auth_circuit_breaker_api_admin_reset_circuit_breaker_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reset Auth Circuit Breaker"
+      }
+    },
+    "/api/admin/reset-odds-circuit-breaker": {
+      "post": {
+        "description": "Manual reset for Odds API key cooldown state.",
+        "operationId": "reset_odds_circuit_breaker_api_admin_reset_odds_circuit_breaker_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reset Odds Circuit Breaker",
+        "tags": [
+          "admin"
+        ]
       }
     },
     "/api/admin/system-health": {
@@ -4215,7 +4352,7 @@
     },
     "/api/health/odds-api-status": {
       "get": {
-        "description": "Check Odds API key health by calling the lightweight /sports endpoint.",
+        "description": "Check Odds API key health from persisted quota state and gateway metadata.",
         "operationId": "odds_api_status_api_health_odds_api_status_get",
         "responses": {
           "200": {
