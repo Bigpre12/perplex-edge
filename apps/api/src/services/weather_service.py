@@ -1,6 +1,7 @@
 # backend/services/weather_service.py
 # Weather and venue impact for NFL/MLB props
 import httpx, os
+from services.api_telemetry import InstrumentedAsyncClient
 from typing import Optional
 
 OWM_KEY = os.getenv('OPENWEATHER_API_KEY')
@@ -42,7 +43,7 @@ class WeatherService:
             
         url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={self.owm_key}&units=imperial'
         try:
-            async with httpx.AsyncClient(timeout=5) as c:
+            async with InstrumentedAsyncClient(provider="openweathermap", timeout=5) as c:
                 r = await c.get(url)
                 if r.status_code != 200:
                     return {'error': 'Weather API unavailable'}

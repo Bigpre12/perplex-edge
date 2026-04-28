@@ -1,4 +1,5 @@
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import os
 from typing import Dict, List, Optional, Any
@@ -53,7 +54,7 @@ class ISportsClient:
                     "use only if upstream has a broken chain."
                 )
                 self._logged_insecure_tls = True
-            async with httpx.AsyncClient(timeout=self.timeout, verify=self._verify_tls) as client:
+            async with InstrumentedAsyncClient(provider="isports", timeout=self.timeout, verify=self._verify_tls) as client:
                 logger.info(f"🌐 iSports: Fetching {endpoint} (params={list(query_params.keys())})")
                 resp = await client.get(url, params=query_params)
                 

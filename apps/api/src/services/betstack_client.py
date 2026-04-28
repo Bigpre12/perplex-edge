@@ -7,6 +7,9 @@ Auth: X-API-Key header. Enterprise stack (api.betstack.io/bc, /be) is separate.
 from __future__ import annotations
 
 import asyncio
+import os
+import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import os
 import time
@@ -130,7 +133,7 @@ class BetstackClient:
             if min_iv > 0:
                 _betstack_last_request_monotonic = time.monotonic()
 
-        async with httpx.AsyncClient() as client:
+        async with InstrumentedAsyncClient(provider="betstack", purpose="polling", timeout=self.timeout) as client:
             try:
                 response = await client.get(url, headers=headers, params=params or {}, timeout=self.timeout)
                 response.raise_for_status()

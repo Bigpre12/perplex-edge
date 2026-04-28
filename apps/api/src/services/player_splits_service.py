@@ -3,6 +3,7 @@ BallDontLie v1 API — free tier, no key required.
 Fetches real player stat splits: L5, L10, L20, vs-opponent, home/away.
 """
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 from typing import Optional
 from datetime import datetime, timedelta
 import os
@@ -16,7 +17,7 @@ HEADERS = {"Authorization": _BDL_KEY} if _BDL_KEY else {}
 
 async def search_player(name: str) -> Optional[dict]:
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with InstrumentedAsyncClient(provider="balldontlie", timeout=10) as client:
             r = await client.get(f"{BALLDONTLIE_BASE}/players", params={"search": name}, headers=HEADERS)
             if r.status_code != 200:
                 logger.warning(f"BallDontLie API returned {r.status_code}: {r.text[:200]}")
@@ -30,7 +31,7 @@ async def search_player(name: str) -> Optional[dict]:
 async def get_player_stats(player_id: int, last_n: int = 10) -> list[dict]:
     """Fetch last N game stats for a player."""
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with InstrumentedAsyncClient(provider="balldontlie", timeout=15) as client:
             r = await client.get(
                 f"{BALLDONTLIE_BASE}/stats",
                 params={

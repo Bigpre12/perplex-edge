@@ -8,6 +8,7 @@ Docs: https://sportsgameodds.com/docs/v1/
 """
 import os
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import time
 from datetime import datetime, timezone
@@ -73,7 +74,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params, headers=headers)
                 resp.raise_for_status()
                 raw = resp.json()
@@ -141,7 +142,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -168,7 +169,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -198,7 +199,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -225,7 +226,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -252,7 +253,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -284,7 +285,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -314,7 +315,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
@@ -336,7 +337,7 @@ class SportsGameOddsClient:
         headers = {"x-api-key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="sportsgameodds", timeout=self.timeout) as client:
                 resp = await client.get(url, headers=headers)
                 resp.raise_for_status()
                 return resp.json()

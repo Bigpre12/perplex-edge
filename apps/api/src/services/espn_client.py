@@ -13,6 +13,7 @@ Endpoints used:
   Scoreboard: https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard
 """
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import time
 from datetime import datetime, timezone
@@ -89,7 +90,7 @@ class ESPNClient:
 
         url = f"{self.BASE_URL}{endpoint}"
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="espn", timeout=self.timeout) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 raw = resp.json()
@@ -169,7 +170,7 @@ class ESPNClient:
         url = f"{self.BASE_URL}/{sport}/{league}/injuries"
         
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="espn", timeout=self.timeout) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json()
@@ -192,7 +193,7 @@ class ESPNClient:
         url = f"{self.BASE_URL}/{sport}/{league}/news"
         
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="espn", timeout=self.timeout) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json()

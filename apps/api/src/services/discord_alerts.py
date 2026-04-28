@@ -1,4 +1,5 @@
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import os
 import logging
 from typing import Dict, Any
@@ -47,7 +48,7 @@ async def send_daily_top_edges():
             "embeds": embeds,
         }
 
-        async with httpx.AsyncClient() as client:
+        async with InstrumentedAsyncClient(provider="discord", purpose="webhook") as client:
             r = await client.post(DISCORD_WEBHOOK, json=payload, timeout=10)
             logger.info(f"Discord Edge Alert sent: {r.status_code}")
     except Exception as e:

@@ -1,4 +1,5 @@
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import asyncio
 import json
 import logging
@@ -7,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class WebhookManager:
     def __init__(self):
-        self.http_client = httpx.AsyncClient()
+        self.http_client = InstrumentedAsyncClient(provider="discord", purpose="webhook")
 
     async def send_discord_alert(self, webhook_url: str, pick_data: dict):
         """

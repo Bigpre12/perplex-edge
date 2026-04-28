@@ -1,4 +1,5 @@
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 from typing import Dict, List, Optional, Any
 from core.config import settings
@@ -46,7 +47,7 @@ class ApiSportsClient:
         url = f"{base_url}{endpoint}"
         
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, headers={"x-apisports-key": self.api_key}) as client:
+            async with InstrumentedAsyncClient(provider="api-sports", timeout=self.timeout, headers={"x-apisports-key": self.api_key}) as client:
                 logger.info(f"🌐 API-Sports: Fetching {endpoint} on {url}")
                 resp = await client.get(url, params=params)
                 

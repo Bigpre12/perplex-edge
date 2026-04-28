@@ -229,7 +229,6 @@ class EVService:
                             "source": f"brain_ev_{self.version}",
                         }
                     )
-
                 await session.commit()
 
                 if history_rows:

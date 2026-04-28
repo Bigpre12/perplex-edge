@@ -8,6 +8,7 @@ Docs: https://www.mysportsfeeds.com/data-feeds/api-docs
 """
 import os
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import time
 import base64
@@ -77,7 +78,7 @@ class MySportsFeedsClient:
         url = f"{self.BASE_URL}/{slug}/{season}/date/{date}/games.json"
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="mysportsfeeds", timeout=self.timeout) as client:
                 resp = await client.get(url, headers=self._auth_header())
                 resp.raise_for_status()
                 raw = resp.json()
@@ -148,7 +149,7 @@ class MySportsFeedsClient:
         params = {"player": player_name, "limit": limit, "sort": "game.starttime.D"}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="mysportsfeeds", timeout=self.timeout) as client:
                 resp = await client.get(url, headers=self._auth_header(), params=params)
                 resp.raise_for_status()
                 raw = resp.json()

@@ -1,4 +1,5 @@
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 from typing import Optional, Dict, Any
 
@@ -13,7 +14,7 @@ class WebhookService:
         if embed:
             payload["embeds"] = [embed]
             
-        async with httpx.AsyncClient() as client:
+        async with InstrumentedAsyncClient(provider="discord", purpose="webhook") as client:
             try:
                 response = await client.post(webhook_url, json=payload)
                 response.raise_for_status()
@@ -33,7 +34,7 @@ class WebhookService:
             "parse_mode": "HTML"
         }
         
-        async with httpx.AsyncClient() as client:
+        async with InstrumentedAsyncClient(provider="telegram", purpose="webhook") as client:
             try:
                 response = await client.post(url, json=payload)
                 response.raise_for_status()

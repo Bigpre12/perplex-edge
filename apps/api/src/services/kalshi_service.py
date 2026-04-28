@@ -1,5 +1,6 @@
 import os
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import datetime
 import base64
 import logging
@@ -26,7 +27,7 @@ class KalshiService:
         self.private_key_content = os.getenv("KALSHI_PRIVATE_KEY")
         self.private_key_b64 = (os.getenv("KALSHI_PRIVATE_KEY_B64") or "").strip()
         self.base_url = sanitize_kalshi_base_url(os.getenv("KALSHI_BASE_URL", default_kalshi_rest_url()))
-        self.client = httpx.AsyncClient(base_url=self.base_url)
+        self.client = InstrumentedAsyncClient(provider="kalshi", base_url=self.base_url, purpose="kalshi_sync")
         self._private_key = None
         self._missing_credentials_warned = False
 

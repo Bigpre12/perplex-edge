@@ -2,6 +2,7 @@ class AsyncSession: pass
 import os
 import json
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 from typing import List, Dict, Any, Optional
 from sqlalchemy import select
@@ -115,8 +116,9 @@ If a user asks about their performance, refer to the provided user context.
         log_sanitizer_drops("ai_service", provider, model, dropped)
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(self.base_url, headers=headers, json=payload, timeout=30.0)
+            _provider = "groq" if self.groq_key else ("openrouter" if self.openrouter_key else "openai")
+            async with InstrumentedAsyncClient(provider=_provider, purpose="inference", timeout=30.0) as client:
+                response = await client.post(self.base_url, headers=headers, json=payload)
                 response.raise_for_status()
                 data = response.json()
                 return data["choices"][0]["message"]["content"]

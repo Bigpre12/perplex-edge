@@ -103,7 +103,8 @@ class RealSportsAPI:
     
     async def generate_ai_analysis(self, prompt: str):
         """Generate AI analysis using Groq API (fast LLM)"""
-        async with httpx.AsyncClient() as client:
+        from services.api_telemetry import InstrumentedAsyncClient
+        async with InstrumentedAsyncClient(provider="groq", purpose="inference", timeout=30.0) as client:
             url = f"{self.groq_api_base_url}/chat/completions"
             headers = {
                 "Authorization": f"Bearer {self.ai_api_key}",

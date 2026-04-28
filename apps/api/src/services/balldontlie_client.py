@@ -1,4 +1,5 @@
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 from typing import Dict, List, Optional, Any
 from core.config import settings
@@ -30,7 +31,7 @@ class BallDontLieClient:
         headers = {"Authorization": self.api_key}
         
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, headers=headers) as client:
+            async with InstrumentedAsyncClient(provider="balldontlie", timeout=self.timeout, headers=headers) as client:
                 logger.info(f"🌐 BallDontLie: Fetching {endpoint} (params={params})")
                 resp = await client.get(url, params=params)
                 

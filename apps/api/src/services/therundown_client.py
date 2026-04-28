@@ -8,6 +8,7 @@ Docs: https://therundown.io/api
 """
 import os
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import time
 from datetime import datetime, timezone
@@ -75,7 +76,7 @@ class TheRundownClient:
         headers = {"X-TheRundown-Key": self.api_key}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
+            async with InstrumentedAsyncClient(provider="therundown", timeout=self.timeout, follow_redirects=True) as client:
                 resp = await client.get(url, headers=headers)
                 resp.raise_for_status()
                 raw = resp.json()

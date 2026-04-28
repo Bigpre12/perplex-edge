@@ -17,6 +17,7 @@ Methods:
 import os
 import time
 import httpx # type: ignore
+from services.api_telemetry import InstrumentedAsyncClient  # type: ignore
 import logging
 import asyncio
 from typing import Dict, List, Optional, Any, Set, Tuple

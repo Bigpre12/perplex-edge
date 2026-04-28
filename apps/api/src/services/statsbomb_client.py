@@ -1,4 +1,5 @@
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import json
 from typing import Dict, List, Optional, Any
@@ -40,7 +41,7 @@ class StatsBombClient:
         """Fetch data from GitHub Raw API."""
         url = f"{self.BASE_URL}{path}"
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with InstrumentedAsyncClient(provider="statsbomb", timeout=15.0) as client:
                 logger.info(f"🌐 StatsBomb: Fetching {url}")
                 resp = await client.get(url)
                 if resp.status_code == 200:

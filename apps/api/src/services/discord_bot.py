@@ -1,6 +1,7 @@
 # backend/services/discord_bot.py
 # Daily digest bot — posts top picks to Discord at 11am CST
 import httpx, os, asyncio
+from services.api_telemetry import InstrumentedAsyncClient
 from datetime import datetime
 from sqlalchemy.orm import Session
 from db.session import SessionLocal
@@ -56,7 +57,7 @@ async def send_daily_digest():
         if not embed:
             logger.info('No high-confidence props to send today')
             return
-        async with httpx.AsyncClient() as c:
+        async with InstrumentedAsyncClient(provider="discord", purpose="webhook") as c:
             r = await c.post(target_webhook, json=embed)
             logger.info(f'Discord digest sent: {r.status_code}')
     finally:

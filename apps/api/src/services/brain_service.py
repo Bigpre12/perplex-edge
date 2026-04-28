@@ -3,6 +3,7 @@ import json
 import asyncio
 import time
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 from datetime import datetime, timezone, timedelta
 # from .prop_service import get_all_props # Moved to local to avoid circularity
@@ -95,8 +96,8 @@ class BrainService:
             async with _groq_llm_lock:
                 if delay_s > 0:
                     await asyncio.sleep(delay_s)
-                async with httpx.AsyncClient() as client:
-                    response = await client.post(groq_url, headers=groq_headers, json=payload, timeout=15.0)
+                async with InstrumentedAsyncClient(provider="groq", purpose="inference", timeout=15.0) as client:
+                    response = await client.post(groq_url, headers=groq_headers, json=payload)
                     response.raise_for_status()
                     data = response.json()
                     return data["choices"][0]["message"]["content"]
@@ -144,8 +145,9 @@ class BrainService:
         log_sanitizer_drops("brain_service", "fallback", fallback_model, dropped)
 
         try:
-            async with httpx.AsyncClient() as client:
-                resp2 = await client.post(fallback_url, headers=fallback_headers, json=payload, timeout=20.0)
+            fallback_provider = "openrouter" if os.getenv("OPENROUTER_API_KEY") else "openai"
+            async with InstrumentedAsyncClient(provider=fallback_provider, purpose="inference", timeout=20.0) as client:
+                resp2 = await client.post(fallback_url, headers=fallback_headers, json=payload)
 
                 if resp2.status_code == 429:
                     self._openai_circuit_open = True

@@ -9,6 +9,7 @@ Docs: https://www.thesportsdb.com/api.php
 """
 import os
 import httpx
+from services.api_telemetry import InstrumentedAsyncClient
 import logging
 import time
 from datetime import datetime, timezone
@@ -74,7 +75,7 @@ class TheSportsDBClient:
         params = {"d": date, "l": league_id}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="thesportsdb", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params)
                 resp.raise_for_status()
                 raw = resp.json()
@@ -130,7 +131,7 @@ class TheSportsDBClient:
         params = {"p": player_name}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="thesportsdb", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params)
                 resp.raise_for_status()
                 raw = resp.json()
@@ -157,7 +158,7 @@ class TheSportsDBClient:
         params = {"t": team_name}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="thesportsdb", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params)
                 resp.raise_for_status()
                 raw = resp.json()
@@ -181,7 +182,7 @@ class TheSportsDBClient:
         params = {"id": event_id}
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with InstrumentedAsyncClient(provider="thesportsdb", timeout=self.timeout) as client:
                 resp = await client.get(url, params=params)
                 resp.raise_for_status()
                 raw = resp.json()
