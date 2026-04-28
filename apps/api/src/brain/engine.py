@@ -41,6 +41,13 @@ class BrainGovernor:
         quota_pct = float(usage.get("percent_used") or 0) / 100.0
 
         if blocked:
+            logger.warning(
+                "[QUOTA_HARD_BLOCK] %s — quota enforcement blocked network ingest "
+                "(reason=%s, quota_pct=%.3f)",
+                sport,
+                reason,
+                quota_pct,
+            )
             return IngestPlan(
                 sport=sport,
                 skip_network=True,

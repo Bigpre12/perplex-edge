@@ -189,6 +189,29 @@ class ExternalApiGateway:
             if data_class in {"historical", "player_props"}:
                 return None
 
+        # Monthly quota safety net for TheOddsAPI — last check before HTTP
+        if provider == "theoddsapi" and not admin_override:
+            try:
+                from services.odds_quota_store import raise_if_quota_blocked
+
+                async with async_session_maker() as _mq:
+                    mq_blocked, mq_reason = await raise_if_quota_blocked(_mq)
+                if mq_blocked:
+                    logger.warning(
+                        "[GATEWAY_MONTHLY_QUOTA] Blocked %s %s (%s)",
+                        provider,
+                        endpoint,
+                        mq_reason,
+                    )
+                    return None
+            except Exception as mq_err:
+                logger.warning(
+                    "[GATEWAY_MONTHLY_QUOTA] Check failed — blocking %s (fail-closed): %s",
+                    provider,
+                    mq_err,
+                )
+                return None
+
         if not force_refresh and ttl > 0:
             cached = await cache.get_json(req_key)
             if cached is not None:

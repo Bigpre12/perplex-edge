@@ -325,6 +325,8 @@ class OddsApiClient(ResilientBaseClient):
                 return cached
 
         # 2b. DB-backed monthly quota / hard stop (no HTTP when exhausted)
+        # FAIL-CLOSED: if the quota check itself fails, block the request rather
+        # than risk burning quota with stale state.
         try:
             from db.session import async_session_maker
             from services.odds_quota_store import raise_if_quota_blocked
@@ -332,10 +334,11 @@ class OddsApiClient(ResilientBaseClient):
             async with async_session_maker() as _qs:
                 blocked, reason = await raise_if_quota_blocked(_qs)
             if blocked:
-                logger.warning("Odds API request skipped (%s): monthly quota exhausted.", reason)
+                logger.warning("QUOTA BLOCKED before HTTP (%s): monthly quota exhausted.", reason)
                 return None
         except Exception as e:
-            logger.debug("Odds quota pre-check failed (continuing): %s", e)
+            logger.warning("Odds quota pre-check failed — BLOCKING request (fail-closed): %s", e)
+            return None
 
         # 3. Short-circuit if all keys are dead (prevents log spam)
         if self._in_global_dead_window():

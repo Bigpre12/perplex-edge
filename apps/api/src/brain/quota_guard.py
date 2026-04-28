@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 
 # Block HTTP when used/limit >= this (reserve tail of monthly budget).
-HARD_STOP_PCT = float(os.getenv("ODDS_API_HARD_STOP_PCT", "0.95"))
+HARD_STOP_PCT = float(os.getenv("ODDS_API_HARD_STOP_PCT", "0.85"))
 # Above this fraction used, prefer skipping redundant fetches when cache is still fresh.
 CONSERVATIVE_PCT = float(os.getenv("ODDS_API_QUOTA_CONSERVATIVE_PCT", "0.60"))
 WARNING_PCT = float(

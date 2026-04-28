@@ -22,7 +22,7 @@ USAGE_WARN_THRESHOLD = float(
     os.getenv("ODDS_API_WARN_PCT") or os.getenv("ODDS_API_USAGE_WARN_PCT", "0.8")
 )
 # Block outbound TheOddsAPI calls when this fraction of the monthly limit is used (reserve tail).
-HARD_STOP_PCT = float(os.getenv("ODDS_API_HARD_STOP_PCT", "0.95"))
+HARD_STOP_PCT = float(os.getenv("ODDS_API_HARD_STOP_PCT", "0.85"))
 
 
 def _month_key() -> str:

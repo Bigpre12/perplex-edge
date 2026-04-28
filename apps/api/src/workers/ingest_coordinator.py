@@ -52,12 +52,33 @@ async def run_ingest_coordinator_tick() -> None:
             last = now - required
         if now - last < required:
             continue
+
+        # Distributed lock: prevent concurrent workers from running the same sport
+        lock_key = f"ingest:lock:{sport}"
+        acquired = await cache.acquire_lock(lock_key, ttl=120)
+        if not acquired:
+            logger.info("[INGEST_LOCK] Skipped %s — another worker holds lock", sport)
+            continue
+
         try:
+            # Re-check quota after acquiring lock (another worker may have burned quota)
+            async with async_session_maker() as _recheck:
+                recheck_blocked, recheck_reason = await raise_if_quota_blocked(_recheck)
+            if recheck_blocked:
+                logger.warning(
+                    "ingest_coordinator: quota blocked after lock acquisition (%s) — stopping",
+                    recheck_reason,
+                )
+                break
+
             await unified_ingestion.run(sport)
             await cache.set(key, str(now), ttl=86400 * 7)
             ran += 1
         except Exception as e:
             logger.error("ingest_coordinator: unified_ingestion failed for %s: %s", sport, e)
+        finally:
+            await cache.release_lock(lock_key)
+
     if ran:
         logger.info("ingest_coordinator: completed %s sport ingests (quota_pct=%.3f)", ran, quota_pct)
 
