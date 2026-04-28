@@ -19,6 +19,8 @@ ALLOWED_FILES = {
     str((APPS / "api" / "src" / "services" / "odds_service.py").resolve()).lower(),
     str((APPS / "api" / "src" / "real_sports_api.py").resolve()).lower(),
     str((APPS / "api" / "src" / "routers" / "waterfall.py").resolve()).lower(),
+    str((APPS / "api" / "src" / "services" / "api_telemetry.py").resolve()).lower(),
+    str((APPS / "api" / ".env").resolve()).lower(),
 }
 
 IGNORED_SUFFIXES = {".md", ".txt", ".json", ".lock", ".svg", ".pyc"}
