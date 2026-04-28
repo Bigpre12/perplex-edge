@@ -24,10 +24,12 @@ async def grade_props_live(session):
                 ELSE 0 
             END,
             confidence = CASE
-                WHEN is_sharp_book = true THEN 0.85
-                WHEN is_best_over = true AND is_best_under = true THEN 0.70
-                WHEN is_best_over = true OR is_best_under = true THEN 0.55
-                ELSE 0.40
+                WHEN ev_percentage >= 10 THEN 0.95
+                WHEN ev_percentage >= 7 THEN 0.90
+                WHEN ev_percentage >= 5 THEN 0.85
+                WHEN ev_percentage >= 3 THEN 0.80
+                WHEN ev_percentage >= 1 THEN 0.75
+                ELSE 0.60
             END,
             steam_signal = CASE WHEN ABS(odds_over) > 150 AND is_sharp_book = true THEN true ELSE false END,
             whale_signal = CASE WHEN is_sharp_book = true AND is_best_over = true THEN true ELSE false END,
@@ -154,8 +156,114 @@ async def compute_ev_signals(session):
 
     logger.info("📡 [Grader] Successfully generated ev_signals")
 
+async def grade_model_picks_from_scores(session):
+    """
+    Grades ModelPicks for game totals/results using live_scores table.
+    This handles non-player-prop picks (where player_name is NULL).
+    """
+    logger.info("📡 [Grader] Joining live_scores to model_picks for game-level settlement...")
+    
+    # 1. Grade Game Totals (stat_type = 'totals')
+    query_totals = """
+        UPDATE model_picks mp
+        SET 
+            actual_value = (ls.home_score + ls.away_score),
+            won = CASE 
+                WHEN mp.side = 'over' THEN (ls.home_score + ls.away_score) > mp.line
+                WHEN mp.side = 'under' THEN (ls.home_score + ls.away_score) < mp.line
+                ELSE NULL
+            END,
+            profit_loss = CASE
+                WHEN (mp.side = 'over' AND (ls.home_score + ls.away_score) > mp.line) OR 
+                     (mp.side = 'under' AND (ls.home_score + ls.away_score) < mp.line) THEN
+                    CASE WHEN mp.odds < 0 THEN 100.0 / ABS(mp.odds) ELSE mp.odds / 100.0 END
+                WHEN (mp.side = 'over' AND (ls.home_score + ls.away_score) < mp.line) OR 
+                     (mp.side = 'under' AND (ls.home_score + ls.away_score) > mp.line) THEN -1.0
+                ELSE 0.0
+            END,
+            status = 'settled',
+            updated_at = NOW()
+        FROM live_scores ls
+        WHERE mp.game_id = ls.event_id
+          AND ls.status IN ('STATUS_FINAL', 'COMPLETED', 'Final')
+          AND mp.status = 'active'
+          AND mp.player_name IS NULL
+          AND mp.stat_type = 'totals'
+          AND ls.home_score IS NOT NULL AND ls.away_score IS NOT NULL
+    """
+
+    # 2. Grade Moneylines (stat_type = 'h2h')
+    # Note: side for h2h is usually the team name or 'home'/'away'
+    query_h2h = """
+        UPDATE model_picks mp
+        SET 
+            actual_value = CASE WHEN ls.home_score > ls.away_score THEN 1 ELSE 0 END, -- 1 for home win
+            won = CASE 
+                WHEN (mp.side = ls.home_team OR mp.side = 'home') THEN ls.home_score > ls.away_score
+                WHEN (mp.side = ls.away_team OR mp.side = 'away') THEN ls.away_score > ls.home_score
+                ELSE NULL
+            END,
+            profit_loss = CASE
+                WHEN ((mp.side = ls.home_team OR mp.side = 'home') AND ls.home_score > ls.away_score) OR 
+                     ((mp.side = ls.away_team OR mp.side = 'away') AND ls.away_score > ls.home_score) THEN
+                    CASE WHEN mp.odds < 0 THEN 100.0 / ABS(mp.odds) ELSE mp.odds / 100.0 END
+                WHEN ((mp.side = ls.home_team OR mp.side = 'home') AND ls.home_score < ls.away_score) OR 
+                     ((mp.side = ls.away_team OR mp.side = 'away') AND ls.away_score < ls.home_score) THEN -1.0
+                ELSE 0.0
+            END,
+            status = 'settled',
+            updated_at = NOW()
+        FROM live_scores ls
+        WHERE mp.game_id = ls.event_id
+          AND ls.status IN ('STATUS_FINAL', 'COMPLETED', 'Final')
+          AND mp.status = 'active'
+          AND mp.player_name IS NULL
+          AND mp.stat_type = 'h2h'
+          AND ls.home_score IS NOT NULL AND ls.away_score IS NOT NULL
+    """
+
+    # 3. Grade Spreads (stat_type = 'spreads')
+    query_spreads = """
+        UPDATE model_picks mp
+        SET 
+            actual_value = (ls.home_score - ls.away_score),
+            won = CASE 
+                WHEN (mp.side = ls.home_team OR mp.side = 'home') THEN (ls.home_score + mp.line) > ls.away_score
+                WHEN (mp.side = ls.away_team OR mp.side = 'away') THEN (ls.away_score + mp.line) > ls.home_score
+                ELSE NULL
+            END,
+            profit_loss = CASE
+                WHEN ((mp.side = ls.home_team OR mp.side = 'home') AND (ls.home_score + mp.line) > ls.away_score) OR 
+                     ((mp.side = ls.away_team OR mp.side = 'away') AND (ls.away_score + mp.line) > ls.home_score) THEN
+                    CASE WHEN mp.odds < 0 THEN 100.0 / ABS(mp.odds) ELSE mp.odds / 100.0 END
+                WHEN ((mp.side = ls.home_team OR mp.side = 'home') AND (ls.home_score + mp.line) < ls.away_score) OR 
+                     ((mp.side = ls.away_team OR mp.side = 'away') AND (ls.away_score + mp.line) < ls.home_score) THEN -1.0
+                ELSE 0.0
+            END,
+            status = 'settled',
+            updated_at = NOW()
+        FROM live_scores ls
+        WHERE mp.game_id = ls.event_id
+          AND ls.status IN ('STATUS_FINAL', 'COMPLETED', 'Final')
+          AND mp.status = 'active'
+          AND mp.player_name IS NULL
+          AND mp.stat_type = 'spreads'
+          AND ls.home_score IS NOT NULL AND ls.away_score IS NOT NULL
+    """
+
+    try:
+        await _execute_with_pgbouncer_retry(session, query_totals, "grade_model_picks_totals")
+        await _execute_with_pgbouncer_retry(session, query_h2h, "grade_model_picks_h2h")
+        await _execute_with_pgbouncer_retry(session, query_spreads, "grade_model_picks_spreads")
+        await session.commit()
+        logger.info("📡 [Grader] Successfully graded game-level picks from scores")
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"❌ [Grader] Failed grade_model_picks_from_scores: {e}")
+
 async def run_full_grading_pipeline():
     """Runs the full post-ingest SQL EV and grading pipeline."""
     async with async_session_maker() as session:
         await grade_props_live(session)
         await compute_ev_signals(session)
+        await grade_model_picks_from_scores(session)

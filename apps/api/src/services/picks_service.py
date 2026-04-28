@@ -382,7 +382,7 @@ class PicksService:
             async with async_session_maker() as session:
                 query = text("""
                     SELECT * FROM model_picks 
-                    WHERE status = 'graded' 
+                    WHERE status = 'settled' 
                     ORDER BY created_at DESC 
                     LIMIT :limit
                 """)

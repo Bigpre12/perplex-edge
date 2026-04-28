@@ -103,9 +103,9 @@ async def get_graded_props(
     db: AsyncSession = Depends(get_async_db)
 ):
     """Returns graded/scored props. Falls back to all props_live if no player props."""
-    if status == 'settled':
+    if status in ('settled', 'graded'):
         from models.brain import ModelPick
-        stmt = select(ModelPick).where(ModelPick.status == 'graded').order_by(desc(ModelPick.updated_at)).limit(limit)
+        stmt = select(ModelPick).where(ModelPick.status == 'settled').order_by(desc(ModelPick.updated_at)).limit(limit)
         if sport and sport != "all":
             stmt = stmt.where(ModelPick.sport_key == sport)
         

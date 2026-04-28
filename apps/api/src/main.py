@@ -516,57 +516,14 @@ async def initialize_backend_services():
                 jitter=10,
             )
         
+            # 7. High-Frequency Live Data Polling
+            try:
+                logger.info("📡 [Background Init] Starting Live Data Polling Service...")
+                asyncio.create_task(live_data_service.run_loop())
+            except Exception as e:
+                logger.error(f"❌ [Background Init] Live Data Polling failed: {e}")
+
             scheduler.start()
-            logger.info("📡 [Background Init] Internal scheduler active.")
-            logger.info("📡 [Background Init] Scheduler started.")
-
-            # 5. Initial Ingest (bounded concurrency to avoid DB pool exhaustion)
-            ingest_semaphore = asyncio.Semaphore(3)
-
-            async def run_parallel_ingest():
-                logger.info("📡 [Background Init] Starting parallel initial ingestion phase...")
-                async def bounded_ingest(coro):
-                    async with ingest_semaphore:
-                        return await coro
-
-                ingest_tasks = [bounded_ingest(guarded_unified_ingest(sport)) for sport in sports_to_ingest]
-                ingest_tasks.append(bounded_ingest(guarded_kalshi_sync("NBA")))
-                ingest_tasks.append(bounded_ingest(guarded_kalshi_sync("MLB")))
-            
-                results = await asyncio.gather(*ingest_tasks, return_exceptions=True)
-                for sport, res in zip(sports_to_ingest + ["Kalshi_NBA", "Kalshi_MLB"], results):
-                    if isinstance(res, Exception):
-                        logger.error(f"❌ [Initial Ingest Failed] {sport}: {res}")
-                    else:
-                        logger.info(f"✅ [Initial Ingest Complete] {sport}")
-            
-                # Post-ingest graders hook
-                logger.info("📡 [Background Init] Running post-ingest SQL grading pipeline...")
-                try:
-                    from services.grader import run_full_grading_pipeline
-                    await run_full_grading_pipeline()
-                except Exception as e:
-                    logger.error(f"❌ [Background Init] Post-ingest grader failed: {e}")
-
-            asyncio.create_task(run_parallel_ingest())
-
-        except Exception as e:
-            logger.error(f"❌ [Background Init] Scheduler setup failed: {e}")
-
-    # 6. CLV Tracker
-    try:
-        from services.brain_clv_tracker_loop import start_clv_tracker
-        asyncio.create_task(start_clv_tracker())
-        logger.info("📡 [Background Init] CLV Tracker started.")
-    except Exception as e:
-        logger.error(f"❌ [Background Init] CLV Tracker failed: {e}")
-
-    # 7. High-Frequency Live Data Polling
-    try:
-        logger.info("📡 [Background Init] Starting Live Data Polling Service...")
-        asyncio.create_task(live_data_service.run_loop())
-    except Exception as e:
-        logger.error(f"❌ [Background Init] Live Data Polling failed: {e}")
 
     # 8. Kalshi WebSocket Bridge
     try:

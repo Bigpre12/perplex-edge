@@ -19,7 +19,7 @@ class ProofEngine:
                 lookback = datetime.now(timezone.utc) - timedelta(days=days)
                 
                 # Base filters
-                filters = [ModelPick.status == 'graded', ModelPick.created_at >= lookback]
+                filters = [ModelPick.status == 'settled', ModelPick.created_at >= lookback]
                 if sport:
                     filters.append(ModelPick.sport_key == sport)
                 
@@ -72,7 +72,7 @@ class ProofEngine:
         """Fetch the most recent graded picks for the public results page."""
         async with async_session_maker() as session:
             try:
-                stmt = select(ModelPick).where(ModelPick.status == 'graded').order_by(ModelPick.created_at.desc()).limit(limit)
+                stmt = select(ModelPick).where(ModelPick.status == 'settled').order_by(ModelPick.created_at.desc()).limit(limit)
                 result = await session.execute(stmt)
                 picks = result.scalars().all()
                 
