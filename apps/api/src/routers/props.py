@@ -98,10 +98,43 @@ async def list_props_legacy(
 @router.get("/graded")
 async def get_graded_props(
     sport: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
     limit: int = Query(50),
     db: AsyncSession = Depends(get_async_db)
 ):
     """Returns graded/scored props. Falls back to all props_live if no player props."""
+    if status == 'settled':
+        from models.brain import ModelPick
+        stmt = select(ModelPick).where(ModelPick.status == 'graded').order_by(desc(ModelPick.updated_at)).limit(limit)
+        if sport and sport != "all":
+            stmt = stmt.where(ModelPick.sport_key == sport)
+        
+        result = await db.execute(stmt)
+        picks = result.scalars().all()
+        
+        mapped = []
+        for p in picks:
+            mapped.append({
+                "id": str(p.id),
+                "player_name": p.player_name,
+                "market_key": p.stat_type,
+                "line": p.line,
+                "actual_score": p.actual_value,
+                "result_value": p.actual_value,
+                "status": "HIT" if p.won else ("MISS" if p.won is False else "PENDING"),
+                "sport": p.sport_key,
+                "commence_time": p.created_at.isoformat() if p.created_at else None,
+                "confidence": p.confidence or p.ev_percentage or 0.85,
+                "prediction": p.side.upper() if p.side else None
+            })
+            
+        return {
+            "props": mapped,
+            "count": len(mapped),
+            "updated": datetime.utcnow().isoformat() + "Z",
+            "fallback": None
+        }
+
     t_lo, t_hi = props_live_window_params()
     params: Dict[str, Any] = {"limit": limit, "t_lo": t_lo, "t_hi": t_hi}
     rows: List[Any] = []

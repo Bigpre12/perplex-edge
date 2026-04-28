@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import DataFreshnessBanner from "@/components/shared/DataFreshnessBanner";
 import { useScannerFeed } from "@/hooks/useScannerFeed";
+import { useLucrixStore } from "@/store";
 
 const PILL_LABELS = ["NBA", "NFL", "MLB", "NHL", "NCAAF", "NCAAB", "WNBA", "EPL", "UCL", "UFC", "MLS"];
 const PILL_SPORTS = DISPLAY_SPORTS.filter((k) => PILL_LABELS.includes(SPORTS_CONFIG[k].label)).sort(
@@ -18,6 +19,7 @@ export default function ScannerPage() {
   const { token, loading: authLoading } = useAuth();
   const [sport, setSport] = useState<SportKey>("basketball_nba");
   const { rows, isLoading: loading, isError, refetch, lastUpdated } = useScannerFeed(sport);
+  const addLeg = useLucrixStore((state) => state.addLeg);
   const error = isError ? "Unable to connect to backend. Data will populate once API is online." : null;
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function ScannerPage() {
                   <td className="px-3 py-2">{r.player}</td><td className="px-3 py-2">{r.market}</td><td className="px-3 py-2">{r.line}</td>
                   <td className="px-3 py-2">{r.bookOdds}</td><td className="px-3 py-2">{r.fairValue}</td><td className="px-3 py-2">{r.edgePct.toFixed(2)}%</td>
                   <td className="px-3 py-2"><span className={`px-2 py-1 rounded text-[10px] font-black ${r.signal==="SHARP"?"bg-cyan-500/20 text-cyan-300":r.signal==="CLV"?"bg-green-500/20 text-green-300":r.signal==="EV+"?"bg-blue-500/20 text-blue-300":"bg-red-500/20 text-red-300"}`}>{r.signal}</span></td>
-                  <td className="px-3 py-2"><button className="px-2 py-1 text-[10px] font-black border border-[#333] rounded">+ ADD TO SLIP</button></td>
+                  <td className="px-3 py-2"><button onClick={() => addLeg({ id: r.id, player_name: r.player, market_key: r.market, line: parseFloat(r.line), odds: r.bookOdds })} className="px-2 py-1 text-[10px] font-black border border-[#333] rounded hover:bg-white/5 active:bg-white/10 transition-colors">+ ADD TO SLIP</button></td>
                 </tr>
               ))}
             </tbody>

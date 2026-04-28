@@ -66,7 +66,7 @@ class HitRateService:
         try:
             async with async_session_maker() as session:
                 # Basic breakdown grouping by player and market
-                filters = [ModelPick.won != None]
+                filters = [ModelPick.won != None, ModelPick.player_name != 'Antigravity Test']
                 if sport != "all":
                     filters.append(ModelPick.sport_key == sport)
                 

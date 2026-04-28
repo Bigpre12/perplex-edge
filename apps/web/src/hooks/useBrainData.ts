@@ -53,8 +53,8 @@ export const useBrainData = (requestedSportKey?: SportKey) => {
     health: (healthReq.data || null) as SystemHealth | null,
     metrics: metricsReq.data || {},
     marketIntel: (intelReq.data?.items || intelReq.data?.data || intelReq.data || []) as MarketIntelItem[],
-    loading: decisionsReq.isLoading || healthReq.isLoading || metricsReq.isLoading || intelReq.isLoading,
-    isError: decisionsReq.isError || healthReq.isError || metricsReq.isError || intelReq.isError,
+    loading: decisionsReq.isLoading || healthReq.isLoading,
+    isError: decisionsReq.isError && healthReq.isError, // Only hard-fail if both critical endpoints fail
     error: decisionsReq.error || healthReq.error || metricsReq.error || intelReq.error,
     lastUpdated: [decisionsReq.lastUpdated, healthReq.lastUpdated, metricsReq.lastUpdated, intelReq.lastUpdated].filter(Boolean).sort().at(-1) || null,
     refetch: async () => {

@@ -118,7 +118,7 @@ export function useBackendData<T = unknown>(
           requestHeaders.Authorization = `Bearer ${token}`;
         }
 
-        const authRequiredPath = path.includes("/api/ev/top") || path.includes("/api/whale");
+        const authRequiredPath = path.includes("/api/ev") || path.includes("/api/whale");
         const shouldRequireAuth = requireAuth || authRequiredPath;
         if (shouldRequireAuth && !token) {
           throw new Error("Authentication required for protected endpoint");

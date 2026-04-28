@@ -103,14 +103,7 @@ function PlayerPropsContent() {
                     <div className="mb-6">
                         <SportSelector />
                     </div>
-                    <DataFreshnessBanner lastUpdated={lastUpdated?.toISOString() || null} label="Props feed" />
-
                     <div className="flex flex-wrap items-center gap-4 mb-6">
-                        <FreshnessBadge
-                            oddsTs={fullDataRaw.length > 0 ? (lastUpdated?.toISOString() || new Date().toISOString()) : null}
-                            evTs={Object.keys(scoredMap).length > 0 ? new Date().toISOString() : null}
-                            isLoading={loading || scoredLoading}
-                        />
                         <LiveHistoricalToggle
                             isHistorical={isHistorical}
                             onChange={setIsHistorical}

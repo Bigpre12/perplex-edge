@@ -13,6 +13,16 @@ from api_utils.tier_guards import require_tier
 
 router = APIRouter(tags=["Intel Intelligence"])
 
+@router.get("")
+@router.get("/")
+async def get_intel_root():
+    """Fallback endpoint for general intel requests to prevent 404s."""
+    return UniversalResponse(
+        status="ok",
+        meta=ResponseMeta(source="intel_service", db_rows=0, request_id=get_request_id()),
+        data=[]
+    )
+
 @router.get("/ev-top", response_model=UniversalResponse[dict])
 async def get_ev_top(
     sport: str = Query("basketball_nba", description="sport key, e.g. 'basketball_nba'"),

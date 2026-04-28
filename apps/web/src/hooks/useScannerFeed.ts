@@ -32,13 +32,33 @@ export function useScannerFeed(sport: string) {
     const data = unwrapList<any>(query.data);
     const mapped = data.map((r: any, idx: number) => {
       const edge = Number(r?.ev_value ?? r?.ev_percentage ?? 0) || 0;
+      
+      const impliedOver = Number(r?.implied_over ?? 0);
+      const impliedUnder = Number(r?.implied_under ?? 0);
+      const recSide = impliedOver >= impliedUnder ? "OVER" : "UNDER";
+      
+      const rawOdds = recSide === "OVER" ? r?.odds_over : r?.odds_under;
+      let bookOddsStr = r?.book_odds != null ? String(r.book_odds) : "—";
+      if (bookOddsStr === "—" && rawOdds != null) {
+        bookOddsStr = rawOdds > 0 ? `+${Math.round(rawOdds)}` : `${Math.round(rawOdds)}`;
+      }
+
+      const fairProb = recSide === "OVER" ? impliedOver : impliedUnder;
+      let fairValStr = r?.fair_value != null ? String(r.fair_value) : "—";
+      if (fairValStr === "—" && fairProb > 0) {
+        const americanFair = fairProb > 0.5 
+          ? Math.round(fairProb / (1 - fairProb) * -100) 
+          : Math.round((1 - fairProb) / fairProb * 100);
+        fairValStr = americanFair > 0 ? `+${americanFair}` : `${americanFair}`;
+      }
+
       return {
         id: String(r?.id ?? `${r?.player_name ?? "row"}-${idx}`),
         player: r?.player_name ?? "—",
         market: r?.market_label ?? r?.market_key ?? "—",
         line: r?.line != null ? String(r.line) : "—",
-        bookOdds: r?.book_odds != null ? String(r.book_odds) : "—",
-        fairValue: r?.fair_value != null ? String(r.fair_value) : "—",
+        bookOdds: bookOddsStr,
+        fairValue: fairValStr,
         edgePct: Math.abs(edge),
         signal: edgeToSignal(edge),
       };
