@@ -537,9 +537,6 @@ async def initialize_backend_services():
 
     logger.info("✅ [Background Init] All background services synchronized.")
 
-    except Exception as e:
-        logger.error(f"❌ [Background Init] CRITICAL FAILURE: {e}")
-
 
 @asynccontextmanager
 async def backend_lifespan(app: FastAPI):
