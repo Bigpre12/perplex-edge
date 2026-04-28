@@ -524,6 +524,8 @@ async def initialize_backend_services():
                 logger.error(f"❌ [Background Init] Live Data Polling failed: {e}")
 
             scheduler.start()
+        except Exception as e:
+            logger.error(f"❌ [Background Init] Scheduler failed: {e}")
 
     # 8. Kalshi WebSocket Bridge
     try:
@@ -534,6 +536,10 @@ async def initialize_backend_services():
         logger.error(f"❌ [Background Init] Kalshi WS Bridge failed: {e}")
 
     logger.info("✅ [Background Init] All background services synchronized.")
+
+except Exception as e:
+    logger.error(f"❌ [Background Init] CRITICAL FAILURE: {e}")
+
 
 @asynccontextmanager
 async def backend_lifespan(app: FastAPI):
