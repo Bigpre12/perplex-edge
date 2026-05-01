@@ -377,6 +377,25 @@ async def initialize_backend_services():
                    OR l5_hit_rate != l5_hit_rate OR l10_hit_rate != l10_hit_rate OR l20_hit_rate != l20_hit_rate
             """)
 
+            # Line Movement table for CLV Engine tracking
+            await run_migration_step("""
+                CREATE TABLE IF NOT EXISTS line_movement (
+                    id SERIAL PRIMARY KEY,
+                    event_id TEXT NOT NULL,
+                    player_name TEXT,
+                    market_key TEXT NOT NULL,
+                    bookmaker TEXT NOT NULL,
+                    price FLOAT NOT NULL,
+                    line FLOAT,
+                    recorded_at TIMESTAMPTZ DEFAULT NOW(),
+                    is_closing BOOLEAN DEFAULT FALSE
+                )
+            """)
+            await run_migration_step("""
+                CREATE INDEX IF NOT EXISTS idx_line_movement_event
+                ON line_movement (event_id, market_key, bookmaker)
+            """)
+
             # System Sync State table for tracking waterfall pipeline timestamps
             await run_migration_step("""
                 CREATE TABLE IF NOT EXISTS system_sync_state (

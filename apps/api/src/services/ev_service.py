@@ -1,4 +1,13 @@
 # apps/api/src/services/ev_service.py
+"""
+EV Service — now powered by the Monte Carlo + CLV + Brains pipeline.
+
+Data flow:
+  unified_odds → Monte Carlo → CLV → Brains Scorer → ev_signals → Frontend
+
+The sharp-weighted devig is retained as a FALLBACK ONLY when the
+Monte Carlo engine has no historical data for a prop.
+"""
 import logging
 from typing import List, Dict, Any, Tuple
 from sqlalchemy import select, func, text
@@ -8,18 +17,21 @@ from db.session import async_session_maker, engine
 from models import UnifiedOdds, UnifiedEVSignal
 from services.heartbeat_service import HeartbeatService
 from services.persistence_helpers import insert_edges_ev_history
+from services.monte_carlo_service import monte_carlo_engine
+from services.brains_service import brains_scorer
+from services.clv_service import clv_service
 from core.config import settings
 
 logger = logging.getLogger(__name__)
 
 class EVService:
     def __init__(self):
-        self.version = "v2-sharp-weighted"
+        self.version = "v3-brains"
 
     async def run_ev_cycle(self, sport: str):
         try:
             async with async_session_maker() as session:
-                # 1. Load odds via Raw SQL for total visibility (bypassing model mapping issues)
+                # 1. Load odds via Raw SQL for total visibility
                 res = await session.execute(text("SELECT * FROM unified_odds"))
                 all_records = res.mappings().all()
                 
@@ -54,58 +66,150 @@ class EVService:
                     if price > 0 and prob > 0:
                         grouped[key][o["outcome_key"]][o["bookmaker"]] = (price, prob)
 
-                # 2. Compute Signals
+                # 2. Compute Signals — PRIMARY: Monte Carlo + Brains; FALLBACK: sharp-weighted devig
                 signals = []
                 for (eid, mkey, line, p_name), outcomes in grouped.items():
-                    if len(outcomes) < 2: continue # Need both sides (over/under)
-                    
-                    # Compute Weighted Fair Price
-                    # Logic: Sharp books get higher weight (e.g. 3.0x) vs Soft books (1.0x)
-                    fair_probs = self._calculate_sharp_weighted_fair_probs(outcomes)
-                    if not fair_probs: continue
+                    if len(outcomes) < 2: continue  # Need both sides
 
-                    # 3. Detect Edges against thresholds
-                    for outcome, side_books in outcomes.items():
-                        true_p = fair_probs.get(outcome, 0)
-                        if true_p <= 0: continue
+                    # --- PRIMARY PATH: Monte Carlo simulation ---
+                    mc_used = False
+                    if p_name:  # Player props only
+                        for outcome, side_books in outcomes.items():
+                            for book, (price, implied) in side_books.items():
+                                try:
+                                    # Run Monte Carlo for true probability
+                                    mc_prob = await monte_carlo_engine.simulate(
+                                        player_name=p_name,
+                                        market_key=mkey,
+                                        line=line,
+                                        over_under=outcome,
+                                    )
 
-                        for book, (price, implied) in side_books.items():
-                            edge = (true_p - implied) * 100
-                            
-                            # Only keep if edge > minimum threshold
-                            if edge >= settings.EV_MIN_THRESHOLD:
-                                signals.append({
-                                    'sport': sport,
-                                    'league': meta_map[eid][0],
-                                    'game_start_time': meta_map[eid][1],
-                                    'event_id': eid,
-                                    'market_key': mkey,
-                                    'outcome_key': outcome,
-                                    'player_name': p_name,
-                                    'bookmaker': book,
-                                    'book': book, # Alias
-                                    'price': price,
-                                    'odds': price, # Alias
-                                    'line': line,
-                                    'true_prob': true_p,
-                                    'fair_prob': true_p, # Legacy alias
-                                    'edge_percent': edge,
-                                    'ev_percent': edge, # Legacy alias
-                                    'ev_percentage': edge, # Frontend expected
-                                    'ev_score': edge / 100.0, # Decimal score
-                                    'implied_prob': implied,
-                                    'market_prob': implied, # Legacy alias
-                                    'confidence': 0.7, # Default confidence for EV signals
-                                    'recommendation': outcome.upper(),
-                                    'engine_version': self.version
-                                })
+                                    # Get CLV data
+                                    clv_val = await clv_service.compute_clv(eid, p_name, mkey, book)
+
+                                    # Record this line for future CLV tracking
+                                    await clv_service.record_opening_line(
+                                        event_id=eid,
+                                        player_name=p_name,
+                                        market_key=mkey,
+                                        line=line,
+                                        price=price,
+                                        bookmaker=book,
+                                    )
+
+                                    # Get steam & sharp signals
+                                    steam = await clv_service.get_steam_signal(eid, mkey, p_name)
+                                    sharp_cons = await clv_service.get_sharp_consensus(eid, mkey, outcome)
+
+                                    # Run Brains Scorer
+                                    brain_result = brains_scorer.score_prop(
+                                        monte_carlo_prob=mc_prob,
+                                        implied_prob=implied,
+                                        clv=clv_val,
+                                        steam_signal=steam,
+                                        sharp_consensus=sharp_cons,
+                                        player_name=p_name,
+                                        side=outcome,
+                                        line=line,
+                                    )
+
+                                    edge = brain_result["edge_percent"]
+
+                                    # Only keep if edge > minimum threshold
+                                    if edge >= settings.EV_MIN_THRESHOLD:
+                                        signals.append({
+                                            'sport': sport,
+                                            'league': meta_map[eid][0],
+                                            'game_start_time': meta_map[eid][1],
+                                            'event_id': eid,
+                                            'market_key': mkey,
+                                            'outcome_key': outcome,
+                                            'player_name': p_name,
+                                            'bookmaker': book,
+                                            'book': book,
+                                            'price': price,
+                                            'odds': price,
+                                            'line': line,
+                                            'true_prob': brain_result["true_prob"],
+                                            'fair_prob': brain_result["true_prob"],
+                                            'edge_percent': edge,
+                                            'ev_percent': edge,
+                                            'ev_percentage': edge,
+                                            'ev_score': edge / 100.0,
+                                            'implied_prob': implied,
+                                            'market_prob': implied,
+                                            'confidence': brain_result["confidence"] / 100.0,  # 0-1 for DB
+                                            'recommendation': brain_result["recommendation"],
+                                            'reason': brain_result["reason"],
+                                            'tier': brain_result["tier"],
+                                            'clv': brain_result["clv"],
+                                            'steam': brain_result["steam"],
+                                            'engine_version': self.version,
+                                        })
+                                        mc_used = True
+                                except Exception as mc_err:
+                                    logger.debug("MC path failed for %s/%s: %s", p_name, outcome, mc_err)
+
+                    # --- FALLBACK PATH: Sharp-weighted devig (same as v2) ---
+                    if not mc_used:
+                        fair_probs = self._calculate_sharp_weighted_fair_probs(outcomes)
+                        if not fair_probs:
+                            continue
+
+                        for outcome, side_books in outcomes.items():
+                            true_p = fair_probs.get(outcome, 0)
+                            if true_p <= 0:
+                                continue
+
+                            for book, (price, implied) in side_books.items():
+                                edge = (true_p - implied) * 100
+
+                                if edge >= settings.EV_MIN_THRESHOLD:
+                                    # Still route through Brains for consistent output
+                                    brain_result = brains_scorer.score_prop(
+                                        monte_carlo_prob=true_p,
+                                        implied_prob=implied,
+                                        player_name=p_name or "Matchup",
+                                        side=outcome,
+                                        line=line,
+                                    )
+
+                                    signals.append({
+                                        'sport': sport,
+                                        'league': meta_map[eid][0],
+                                        'game_start_time': meta_map[eid][1],
+                                        'event_id': eid,
+                                        'market_key': mkey,
+                                        'outcome_key': outcome,
+                                        'player_name': p_name,
+                                        'bookmaker': book,
+                                        'book': book,
+                                        'price': price,
+                                        'odds': price,
+                                        'line': line,
+                                        'true_prob': brain_result["true_prob"],
+                                        'fair_prob': brain_result["true_prob"],
+                                        'edge_percent': brain_result["edge_percent"],
+                                        'ev_percent': brain_result["edge_percent"],
+                                        'ev_percentage': brain_result["edge_percent"],
+                                        'ev_score': brain_result["edge_percent"] / 100.0,
+                                        'implied_prob': implied,
+                                        'market_prob': implied,
+                                        'confidence': brain_result["confidence"] / 100.0,
+                                        'recommendation': brain_result["recommendation"],
+                                        'reason': brain_result["reason"],
+                                        'tier': brain_result["tier"],
+                                        'clv': brain_result.get("clv", 0.0),
+                                        'steam': brain_result.get("steam", False),
+                                        'engine_version': self.version,
+                                    })
 
                 if signals:
                     logger.info(f"EVService: Generated {len(signals)} edges for sport={sport}")
                     await self.upsert_ev_signals(signals)
                     await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="ok", rows_written=len(signals))
                 else:
-                    # Lower threshold check
                     threshold = getattr(settings, "EV_MIN_THRESHOLD", 0.5)
                     logger.info(f"EVService: No edges exceeding {threshold}% found for sport={sport} (Found {len(grouped)} market groups)")
                     await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="idle_no_edges", rows_written=0)
@@ -117,7 +221,7 @@ class EVService:
 
     def _calculate_sharp_weighted_fair_probs(self, outcomes: Dict[str, Dict[str, Tuple[float, float]]]) -> Dict[str, float]:
         """
-        Logic:
+        FALLBACK devig method.
         1. For each outcome, compute a weighted average of implied probabilities.
         2. Sharp books (Pinnacle, etc) get higher weight.
         3. Normalize result to sum to 1.0.
@@ -129,7 +233,6 @@ class EVService:
             total_w = 0.0
             total_wp = 0.0
             for book, (price, prob) in books.items():
-                # Sharp check
                 is_sharp = any(s in book.lower() for s in settings.SHARP_BOOKMAKERS)
                 weight = 3.0 if is_sharp else 1.0
                 
@@ -177,7 +280,7 @@ class EVService:
                         )
                         await session.execute(stmt)
                     else:
-                        # Raw SQL fallback for Postgres as pg_insert is acting up with true_prob
+                        # Raw SQL fallback for Postgres
                         row["recommendation"] = s.get("recommendation")
                         base_sql = """
                         INSERT INTO ev_signals (sport, sport_key, prop_type, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, ev_percentage, implied_prob, confidence, engine_version, recommendation, created_at, updated_at)
@@ -210,7 +313,7 @@ class EVService:
                             await session.execute(text(del_sql), row)
                             await session.execute(text(base_sql), row)
                 
-                # 2. Historical edges_ev_history via shared persistence (market_label + validation)
+                # 2. Historical edges_ev_history via shared persistence
                 history_rows = []
                 for s in signals:
                     ln = s.get("line")

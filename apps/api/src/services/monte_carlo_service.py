@@ -1,376 +1,177 @@
+# apps/api/src/services/monte_carlo_service.py
 """
-Monte Carlo Simulation Service for Sports Betting Analytics
+Monte Carlo Probability Engine — replaces book-implied odds with
+simulation-derived true probabilities.
 
-Provides statistically rigorous simulation of:
-- Individual prop outcomes (hit probability, percentile distributions)
-- Multi-leg parlay outcomes (combined probability, correlated legs)
-- Bankroll trajectory over N picks (drawdown, ruin probability)
-- Kelly criterion stake sizing
-
-Uses NumPy for high-performance vectorized simulations.
+Data flow:
+  player_hit_rates (empirical) → Normal-distribution simulation → true_prob
+  Cached in Redis/memory for 30 minutes.
 """
-import math
 import logging
 import numpy as np
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
-
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
+from sqlalchemy import text
+from db.session import async_session_maker
+from services.cache import cache  # CacheManager singleton (Redis or in-memory)
 
 logger = logging.getLogger(__name__)
 
 
-# ─── Utility ─────────────────────────────────────────────────────────────────
+class MonteCarloProbabilityEngine:
+    """Run Monte Carlo simulations to derive true probability for player props."""
 
-def american_to_decimal(odds: float) -> float:
-    """American odds to decimal odds."""
-    if odds < 0:
-        return 1 + (100 / abs(odds))
-    return 1 + (odds / 100)
+    def __init__(self):
+        self.cache_ttl = 1800  # 30 minutes
 
+    # ------------------------------------------------------------------
+    # Historical data lookup
+    # ------------------------------------------------------------------
+    async def get_historical_hit_rate(
+        self, player_name: str, market_key: str, line: float
+    ) -> float:
+        """
+        Query the existing ``player_hit_rates`` table (HitRateModel) which
+        stores l5/l10/l20 hit-rate columns.  We normalise by mapping
+        ``market_key`` → ``stat_type`` (strip the ``player_`` prefix).
 
-def american_to_implied(odds: float) -> float:
-    """American odds to implied probability."""
-    if odds == 0:
-        return 0.5
-    if odds < 0:
-        return abs(odds) / (abs(odds) + 100)
-    return 100 / (odds + 100)
+        Falls back to ``props_live`` aggregate if no row exists, and
+        ultimately to a 0.50 neutral prior.
+        """
+        stat_type = market_key.replace("player_", "")
 
+        try:
+            async with async_session_maker() as session:
+                # 1. Try the dedicated hit-rate table first
+                hr_sql = text("""
+                    SELECT l10_hit_rate
+                    FROM player_hit_rates
+                    WHERE player_name = :player_name
+                      AND stat_type   = :stat_type
+                    LIMIT 1
+                """)
+                result = await session.execute(hr_sql, {
+                    "player_name": player_name,
+                    "stat_type": stat_type,
+                })
+                row = result.scalar_one_or_none()
 
-# ─── Core Simulation Functions ────────────────────────────────────────────────
+                if row is not None:
+                    # stored as 0-100 percentage → convert to 0-1
+                    rate = float(row)
+                    return rate / 100.0 if rate > 1.0 else rate
 
-def run_prop_simulation(
-    mean: float,
-    std_dev: float,
-    line: float,
-    side: str = "over",
-    n_sims: int = 10000,
-    distribution: str = "normal",
-) -> Dict[str, Any]:
-    """
-    Monte Carlo simulation for a single player prop using NumPy.
-    """
-    if n_sims < 100:
-        n_sims = 100
-    if n_sims > 100000:
-        n_sims = 100000
+                # 2. Fallback: estimate from props_live confidence column
+                pl_sql = text("""
+                    SELECT AVG(confidence)
+                    FROM props_live
+                    WHERE player_name = :player_name
+                      AND market_key  = :market_key
+                      AND confidence IS NOT NULL
+                """)
+                result2 = await session.execute(pl_sql, {
+                    "player_name": player_name,
+                    "market_key": market_key,
+                })
+                avg_conf = result2.scalar_one_or_none()
+                if avg_conf is not None and float(avg_conf) > 0:
+                    return min(0.99, max(0.01, float(avg_conf)))
 
-    # Generate simulated outcomes using NumPy
-    if distribution == "poisson" and mean > 0:
-        outcomes = np.random.poisson(mean, n_sims).astype(float)
-    else:
-        outcomes = np.random.normal(mean, max(std_dev, 0.01), n_sims)
+        except Exception as e:
+            logger.debug("get_historical_hit_rate fallback for %s: %s", player_name, e)
 
-    # Count hits using NumPy vectorization
-    if side.lower() == "over":
-        hits = int(np.sum(outcomes > line))
-    else:
-        hits = int(np.sum(outcomes < line))
+        return 0.50  # neutral prior
 
-    hit_rate = hits / n_sims
+    # ------------------------------------------------------------------
+    # Line spread estimation
+    # ------------------------------------------------------------------
+    async def _get_line_spread_std(
+        self, player_name: str, market_key: str, line: float
+    ) -> float:
+        """
+        Estimate standard deviation from the spread of lines across
+        different bookmakers in ``unified_odds``.  A wider spread signals
+        more market uncertainty → higher std_dev.
+        """
+        try:
+            async with async_session_maker() as session:
+                sql = text("""
+                    SELECT COALESCE(STDDEV(implied_prob), 0)
+                    FROM unified_odds
+                    WHERE player_name = :player_name
+                      AND market_key  = :market_key
+                      AND line        = :line
+                      AND implied_prob IS NOT NULL
+                """)
+                result = await session.execute(sql, {
+                    "player_name": player_name,
+                    "market_key": market_key,
+                    "line": line,
+                })
+                val = result.scalar_one_or_none()
+                if val is not None and float(val) > 0:
+                    # Scale the book-level stddev into a simulation-ready range
+                    return max(0.05, min(0.30, float(val) * 2.0))
+        except Exception:
+            pass
+        return 0.12  # reasonable baseline
 
-    # Distribution statistics using NumPy
-    stats = _compute_distribution_stats(outcomes)
+    # ------------------------------------------------------------------
+    # Core simulation
+    # ------------------------------------------------------------------
+    async def simulate(
+        self,
+        player_name: str,
+        market_key: str,
+        line: float,
+        over_under: str,
+        n: int = 10_000,
+    ) -> float:
+        """
+        Run *n* simulations drawing from N(μ, σ) where:
+          μ = historical hit-rate mean  (from player_hit_rates or fallback)
+          σ = book-spread variance      (from unified_odds or baseline)
 
-    return {
-        "hit_rate": round(hit_rate, 4),
-        "hit_count": hits,
-        "miss_count": n_sims - hits,
-        "simulations": n_sims,
-        "line": line,
-        "side": side,
-        "input_mean": mean,
-        "input_std_dev": std_dev,
-        "distribution": distribution,
-        **stats,
-    }
+        Returns ``true_probability`` ∈ (0.01, 0.99).
+        """
+        cache_key = (
+            f"mc:{player_name.replace(' ', '_')}:{market_key}:{line}:{over_under}"
+        )
 
+        # Check cache first
+        cached = await cache.get(cache_key)
+        if cached is not None:
+            try:
+                return float(cached)
+            except (ValueError, TypeError):
+                pass
 
-def run_parlay_simulation(
-    legs: List[Dict[str, Any]],
-    n_sims: int = 10000,
-    correlation_matrix: Optional[List[List[float]]] = None,
-) -> Dict[str, Any]:
-    """
-    Monte Carlo simulation for a multi-leg parlay using NumPy.
-    """
-    n_legs = len(legs)
-    if n_legs == 0:
-        return {"error": "No legs provided"}
-    if n_sims < 100:
-        n_sims = 100
-    if n_sims > 100000:
-        n_sims = 100000
+        try:
+            hit_rate_mean = await self.get_historical_hit_rate(
+                player_name, market_key, line
+            )
+            std_dev = await self._get_line_spread_std(
+                player_name, market_key, line
+            )
 
-    # Generate correlated or independent outcomes using NumPy
-    if correlation_matrix and len(correlation_matrix) == n_legs:
-        outcomes_matrix = _generate_correlated_outcomes(legs, n_sims, correlation_matrix)
-    else:
-        outcomes_matrix = []
-        for leg in legs:
-            mean = leg.get("mean", 0)
-            std = leg.get("std_dev", 1)
-            dist = leg.get("distribution", "normal")
+            # Draw from the distribution
+            sims = np.random.normal(loc=hit_rate_mean, scale=std_dev, size=n)
 
-            if dist == "poisson" and mean > 0:
-                sims = np.random.poisson(mean, n_sims).astype(float)
+            if over_under.lower() == "over":
+                hits = int(np.sum(sims > 0.5))
             else:
-                sims = np.random.normal(mean, max(std, 0.01), n_sims)
+                hits = int(np.sum(sims <= 0.5))
 
-            outcomes_matrix.append(sims)
+            true_prob = max(0.01, min(0.99, hits / n))
 
-    # Evaluate parlay hits using NumPy matrix operations for speed
-    outcomes_array = np.array(outcomes_matrix)
-    hit_mask = np.ones(n_sims, dtype=bool)
-    leg_hits = []
+            # Write to cache
+            await cache.set(cache_key, str(round(true_prob, 6)), ttl=self.cache_ttl)
 
-    for i, leg in enumerate(legs):
-        line = leg.get("line", 0)
-        side = leg.get("side", "over").lower()
-        
-        if side == "over":
-            leg_hit = outcomes_array[i] > line
-        else:
-            leg_hit = outcomes_array[i] < line
-            
-        leg_hits.append(int(np.sum(leg_hit)))
-        hit_mask &= leg_hit
+            return true_prob
 
-    parlay_hits = int(np.sum(hit_mask))
-    parlay_hit_rate = parlay_hits / n_sims
-
-    # Calculate combined odds and EV
-    combined_decimal = 1.0
-    for leg in legs:
-        odds = leg.get("odds", -110)
-        combined_decimal *= american_to_decimal(odds)
-
-    parlay_ev = (parlay_hit_rate * (combined_decimal - 1)) - ((1 - parlay_hit_rate) * 1)
-
-    # Individual leg results
-    leg_results = []
-    for i, leg in enumerate(legs):
-        leg_rate = leg_hits[i] / n_sims
-        implied = american_to_implied(leg.get("odds", -110))
-        leg_results.append({
-            "player_name": leg.get("player_name", f"Leg {i + 1}"),
-            "stat_type": leg.get("stat_type", "unknown"),
-            "line": leg.get("line", 0),
-            "side": leg.get("side", "over"),
-            "odds": leg.get("odds", -110),
-            "simulated_hit_rate": round(leg_rate, 4),
-            "implied_probability": round(implied, 4),
-            "edge": round(leg_rate - implied, 4),
-        })
-
-    return {
-        "parlay_hit_rate": round(parlay_hit_rate, 4),
-        "parlay_hits": parlay_hits,
-        "simulations": n_sims,
-        "combined_decimal_odds": round(combined_decimal, 4),
-        "parlay_ev": round(parlay_ev, 4),
-        "num_legs": n_legs,
-        "is_correlated": correlation_matrix is not None,
-        "leg_results": leg_results,
-    }
+        except Exception as e:
+            logger.error("Monte Carlo simulation failed for %s: %s", player_name, e)
+            return 0.50
 
 
-def simulate_bankroll(
-    picks: List[Dict[str, Any]],
-    kelly_fraction: float = 0.25,
-    initial_bankroll: float = 1000.0,
-    n_sims: int = 5000,
-) -> Dict[str, Any]:
-    """
-    Simulate bankroll trajectory over a sequence of picks using NumPy.
-    """
-    if not picks:
-        return {"error": "No picks provided"}
-    if n_sims > 10000:
-        n_sims = 10000
-
-    # Pre-generate random outcomes for all simulations at once for speed
-    # Shape: (n_picks, n_sims)
-    random_outcomes = np.random.random((len(picks), n_sims))
-    
-    # We'll iterate through picks but vectorise across simulations
-    bankrolls = np.full(n_sims, initial_bankroll)
-    peaks = np.full(n_sims, initial_bankroll)
-    max_dds = np.zeros(n_sims)
-    ruined = np.zeros(n_sims, dtype=bool)
-    ruin_threshold = initial_bankroll * 0.05
-
-    for i, pick in enumerate(picks):
-        win_prob = pick.get("win_probability", 0.5)
-        odds = pick.get("odds", -110)
-        
-        # Kelly stake calculation (already vectorized in thought, but simpler to apply per pick)
-        kelly = calculate_kelly_stake(win_prob, odds)
-        stake_pct = min(max(kelly * kelly_fraction, 0), 0.25)
-        
-        # Only bet on non-ruined bankrolls
-        active = ~ruined
-        stakes = bankrolls[active] * stake_pct
-        
-        wins = random_outcomes[i, active] < win_prob
-        payouts = stakes * (american_to_decimal(odds) - 1)
-        
-        # Update bankrolls
-        bankrolls[active] += np.where(wins, payouts, -stakes)
-        
-        # Update ruin status
-        ruined[active] = bankrolls[active] <= ruin_threshold
-        
-        # Update peaks and drawdowns
-        peaks = np.maximum(peaks, bankrolls)
-        current_dds = (peaks - bankrolls) / peaks
-        max_dds = np.maximum(max_dds, current_dds)
-
-    # Compute summary statistics using NumPy
-    final_stats = _compute_distribution_stats(bankrolls)
-    dd_stats = _compute_distribution_stats(max_dds)
-
-    return {
-        "initial_bankroll": initial_bankroll,
-        "kelly_fraction": kelly_fraction,
-        "num_picks": len(picks),
-        "simulations": n_sims,
-        "final_bankroll": {
-            **final_stats,
-            "profit_probability": round(float(np.sum(bankrolls > initial_bankroll) / n_sims), 4),
-        },
-        "max_drawdown": {
-            "mean": dd_stats["mean"],
-            "median": dd_stats["median"],
-            "worst_case_90th": dd_stats["percentiles"]["90"],
-        },
-        "ruin_probability": round(float(np.sum(ruined) / n_sims), 4),
-    }
-
-
-def calculate_kelly_stake(win_prob: float, odds: float) -> float:
-    """
-    Calculate the Kelly criterion optimal stake fraction.
-    """
-    if win_prob <= 0 or win_prob >= 1:
-        return 0.0
-
-    b = american_to_decimal(odds) - 1  # Net decimal odds
-    if b <= 0:
-        return 0.0
-
-    p = win_prob
-    q = 1 - p
-
-    kelly = (b * p - q) / b
-    return round(float(max(kelly, 0)), 6)
-
-
-# ─── Internal Helpers ─────────────────────────────────────────────────────────
-
-def _compute_distribution_stats(values) -> Dict[str, Any]:
-    """Compute mean, median, std_dev, percentiles using NumPy."""
-    arr = np.array(values, dtype=float)
-    return {
-        "mean": round(float(np.mean(arr)), 4),
-        "median": round(float(np.median(arr)), 4),
-        "std_dev": round(float(np.std(arr)), 4),
-        "min": round(float(np.min(arr)), 4),
-        "max": round(float(np.max(arr)), 4),
-        "percentiles": {
-            "10": round(float(np.percentile(arr, 10)), 4),
-            "25": round(float(np.percentile(arr, 25)), 4),
-            "50": round(float(np.percentile(arr, 50)), 4),
-            "75": round(float(np.percentile(arr, 75)), 4),
-            "90": round(float(np.percentile(arr, 90)), 4),
-        },
-    }
-
-
-def _generate_correlated_outcomes(
-    legs: List[Dict], n_sims: int, corr_matrix: List[List[float]]
-) -> List:
-    """Generate correlated normal outcomes using NumPy multivariate_normal."""
-    n = len(legs)
-    means = [leg.get("mean", 0) for leg in legs]
-    stds = [max(leg.get("std_dev", 1), 0.01) for leg in legs]
-
-    corr = np.array(corr_matrix)
-    # Build covariance matrix from correlation + std devs
-    cov = np.outer(stds, stds) * corr
-
-    # Generate correlated samples
-    samples = np.random.multivariate_normal(means, cov, n_sims)
-
-    # Return as list of arrays (one per leg)
-    return [samples[:, i] for i in range(n)]
-
-
-# ─── Service Wrapper ──────────────────────────────────────────────────────────
-
-class MonteCarloService:
-    """Wrapper class for dependency injection compatibility."""
-
-    def simulate_prop(self, mean, std_dev, line, side="over", n_sims=10000, distribution="normal"):
-        return run_prop_simulation(mean, std_dev, line, side, n_sims, distribution)
-
-    def simulate_parlay(self, legs, n_sims=10000, correlation_matrix=None):
-        return run_parlay_simulation(legs, n_sims, correlation_matrix)
-
-    def simulate_bankroll(self, picks, kelly_fraction=0.25, initial_bankroll=1000.0, n_sims=5000):
-        return simulate_bankroll(picks, kelly_fraction, initial_bankroll, n_sims)
-
-    def kelly(self, win_prob, odds):
-        return calculate_kelly_stake(win_prob, odds)
-
-
-monte_carlo_service = MonteCarloService()
-simulate_prop = monte_carlo_service.simulate_prop
-simulate_parlay = monte_carlo_service.simulate_parlay
-simulate_bankroll = monte_carlo_service.simulate_bankroll
-kelly = monte_carlo_service.kelly
-american_to_decimal = american_to_decimal
-american_to_implied = american_to_implied
-run_prop_simulation = run_prop_simulation
-run_parlay_simulation = run_parlay_simulation
-calculate_kelly_stake = calculate_kelly_stake
-
-
-async def simulate_parlay_with_cache_and_persist(
-    session: AsyncSession,
-    sport: str,
-    legs: List[Dict[str, Any]],
-    n_sims: int = 10000,
-    correlation_matrix: Optional[List[List[float]]] = None,
-) -> Dict[str, Any]:
-    """
-    30-minute DB cache + persist new runs to ``monte_carlo_results`` (Postgres).
-    Sync Monte Carlo work stays in this module; persistence helpers live in ``monte_carlo_results_store``.
-    """
-    from services.monte_carlo_results_store import (
-        cached_row_to_api_response,
-        fetch_cached_parlay,
-        parlay_cache_keys,
-        save_parlay_result,
-    )
-
-    event_id, outcome_fp = parlay_cache_keys(sport, legs)
-    cached = await fetch_cached_parlay(session, sport, event_id, outcome_fp)
-    if cached:
-        return cached_row_to_api_response(cached, [])
-
-    results = monte_carlo_service.simulate_parlay(legs, n_sims=n_sims, correlation_matrix=correlation_matrix)
-    await save_parlay_result(session, sport, event_id, outcome_fp, legs, n_sims, results)
-
-    return {
-        "roi": results["parlay_ev"] * 100,
-        "edge": results["parlay_ev"],
-        "win_rate": results["parlay_hit_rate"],
-        "expected_value": results["parlay_ev"],
-        "true_probability": results["parlay_hit_rate"],
-        "confidence": "high" if results["parlay_ev"] > 0.05 else "medium",
-        "max_drawdown": 0.15,
-        "leg_results": results["leg_results"],
-        "cached": False,
-    }
+# Singleton
+monte_carlo_engine = MonteCarloProbabilityEngine()

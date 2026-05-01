@@ -3,6 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from services.heartbeat_service import HeartbeatService
+from services.brains_service import brains_scorer
 
 logger = logging.getLogger(__name__)
 
@@ -75,15 +76,30 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
         
         inserted_count = 0
         for edge in edges:
-            # We use a default confidence since it's hard to derive from just odds
-            confidence = 0.75
             if edge["ev_over"] > 0.02:
+                # Route through Brains Scorer for confidence
+                brain_over = brains_scorer.score_prop(
+                    monte_carlo_prob=edge["fair_over_prob"],
+                    implied_prob=float(edge.get("implied_over") or 0),
+                    player_name=edge["player_name"] or "Matchup",
+                    side="over",
+                    line=float(edge.get("line") or 0),
+                )
                 inserted_count += await _upsert_ev_signal(
-                    db, sport, edge, "OVER", edge["ev_over"], edge["fair_over_prob"], confidence
+                    db, sport, edge, "OVER", edge["ev_over"], edge["fair_over_prob"],
+                    confidence=brain_over["confidence"] / 100.0,
                 )
             if edge["ev_under"] > 0.02:
+                brain_under = brains_scorer.score_prop(
+                    monte_carlo_prob=1.0 - edge["fair_over_prob"],
+                    implied_prob=float(edge.get("implied_under") or 0),
+                    player_name=edge["player_name"] or "Matchup",
+                    side="under",
+                    line=float(edge.get("line") or 0),
+                )
                 inserted_count += await _upsert_ev_signal(
-                    db, sport, edge, "UNDER", edge["ev_under"], 1.0 - edge["fair_over_prob"], confidence
+                    db, sport, edge, "UNDER", edge["ev_under"], 1.0 - edge["fair_over_prob"],
+                    confidence=brain_under["confidence"] / 100.0,
                 )
         
         # Log Heartbeat before commit

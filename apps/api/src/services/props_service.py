@@ -76,15 +76,21 @@ class PropsService:
                             "ev": ev_val
                         })
                         
-                        # Update best recommendation for this prop group
+                        # Update best recommendation — pull from Brains Scorer output in ev_signals
                         if ev_val > grouped[key]["max_edge"]:
                             grouped[key]["max_edge"] = ev_val
-                            tier = "S" if ev_val >= 5 else "A" if ev_val >= 3 else "B" if ev_val >= 1 else "C"
+                            # Use Brains-engine values from ev_signals row
+                            tier = getattr(signal, 'recommendation', None) or "C"
+                            if tier in ("BET", "LEAN", "WATCH", "SKIP"):
+                                # Map recommendation to tier from confidence
+                                sig_conf = float(signal.confidence or 0) * 100 if signal else 0
+                                tier = "S" if sig_conf >= 80 and ev_val >= 5 else "A" if sig_conf >= 65 and ev_val >= 3 else "B" if sig_conf >= 50 and ev_val >= 1 else "C"
+                            reason = f"{o.player_name} {o.outcome_key} {o.line}: Brains confidence {round(float(signal.confidence or 0) * 100, 1)}/100." if signal and signal.confidence else "Insufficient model data."
                             grouped[key]["recommendation"] = {
                                 "side": o.outcome_key,
                                 "tier": tier,
                                 "ev": ev_val,
-                                "reason": f"{o.player_name} {o.outcome_key} {o.line} shows a {ev_val}% edge vs market average."
+                                "reason": reason
                             }
 
                 # Finalize: Find best over/under lines for display
@@ -332,16 +338,19 @@ class PropsService:
                             group["_max_under"] = price
                             group["under_odds"] = price
                             
-                    # Update EV metrics
+                    # Update EV metrics — confidence comes from Brains Scorer (stored in ev_signals.confidence)
                     if r.get("edge_percent") and float(r["edge_percent"]) > group["_max_ev"]:
                         group["_max_ev"] = float(r["edge_percent"])
                         group["ev_percentage"] = round(float(r["edge_percent"]), 2)
                         group["model_probability"] = round(float(r["true_prob"]), 3) if r.get("true_prob") else 0.0
                         group["implied_probability"] = round(float(r["implied_prob"]), 3) if r.get("implied_prob") else 0.0
                         group["best_book"] = r["bookmaker"]
-                        # Set confidence based loosely on Ev or hardcoded for now
-                        group["confidence"] = min(100.0, max(50.0, 50.0 + (float(r["edge_percent"]) * 3)))
-                        # Ensure we capture what side the primary edge exists on for advisory logic
+                        # Pull confidence from ev_signals (Brains Scorer output, stored as 0-1)
+                        stored_conf = float(r.get("confidence") or 0)
+                        # Convert from 0-1 scale (DB) to 0-100 scale (UI) if needed
+                        group["confidence"] = round(stored_conf * 100, 1) if stored_conf <= 1.0 else round(stored_conf, 1)
+                        if group["confidence"] < 50.0 and group["ev_percentage"] > 0:
+                            group["confidence"] = 50.0  # floor for props with positive EV
                         group["_max_ev_side"] = r.get("outcome_key", "over")
                 
                 # Final filtering and cleanup
@@ -370,14 +379,32 @@ class PropsService:
                     g["under_odds"] = g["under_odds"] or -110
                     g["best_book"] = g["best_book"] or "Average"
                     
-                    # Restore Recommendation Advisory Payload
+                    # Recommendation from Brains Scorer — tier based on multi-factor confidence
                     ev_val = g.get("ev_percentage", 0.0)
-                    tier = "S" if ev_val >= 5 else "A" if ev_val >= 3 else "B" if ev_val >= 1 else "C"
-                    
-                    if ev_val > 0.5:
-                        reason = f"{g['player_name']} {best_ev_side} {g['line']} shows a {ev_val}% edge vs market average."
+                    conf = g.get("confidence", 50.0)
+                    # Tier from Brains multi-factor scoring (confidence + edge)
+                    if conf >= 80 and ev_val >= 5:
+                        tier = "S"
+                    elif conf >= 65 and ev_val >= 3:
+                        tier = "A"
+                    elif conf >= 50 and ev_val >= 1:
+                        tier = "B"
                     else:
-                        reason = "No significant market edge detected. Watch for late sharp movement."
+                        tier = "C"
+
+                    model_p = g.get("model_probability", 0)
+                    impl_p = g.get("implied_probability", 0)
+                    if ev_val > 0.5 and model_p > 0:
+                        reason = (
+                            f"{g['player_name']} {best_ev_side.upper()} {g['line']}: "
+                            f"Model gives {round(model_p * 100, 1)}% true probability "
+                            f"vs {round(impl_p * 100, 1)}% implied. "
+                            f"Confidence: {conf}/100."
+                        )
+                    elif ev_val > 0.5:
+                        reason = f"{g['player_name']} {best_ev_side.upper()} {g['line']}: {ev_val}% edge detected. Confidence: {conf}/100."
+                    else:
+                        reason = "Insufficient model data."
                         tier = "C"
 
                     g["recommendation"] = {
