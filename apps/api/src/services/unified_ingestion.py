@@ -347,15 +347,16 @@ class UnifiedIngestionService:
         # 2d. Fetch Player Props (Requires per-event calls)
         logger.debug(f"=== WATERFALL STAGE 2: FETCH PLAYER PROPS for {sport_key} START ===")
         PROP_MARKETS_BY_SPORT = {
-            "basketball_nba": "player_points,player_rebounds,player_assists",
+            "basketball_nba": "player_points,player_rebounds,player_assists,player_threes,player_blocks,player_steals,player_points_rebounds_assists,player_points_rebounds,player_points_assists,player_turnovers",
+            "basketball_wnba": "player_points,player_rebounds,player_assists,player_threes",
             "americanfootball_nfl": "player_pass_yds,player_rush_yds",
             "icehockey_nhl": "player_points,player_shots_on_goal",
-            "baseball_mlb": "pitcher_strikeouts,batter_hits"
+            "baseball_mlb": "pitcher_strikeouts,batter_hits,batter_home_runs,batter_rbis"
         }
         
         # Quota Safety: Only fetch props for sports currently in-season (March 2026)
         # NFL is in off-season, NHL/NBA/MLB are active.
-        IN_SEASON_PROP_SPORTS = ["basketball_nba", "baseball_mlb", "icehockey_nhl"]
+        IN_SEASON_PROP_SPORTS = ["basketball_nba", "basketball_wnba", "baseball_mlb", "icehockey_nhl"]
 
         quota_mode = "normal"
         try:

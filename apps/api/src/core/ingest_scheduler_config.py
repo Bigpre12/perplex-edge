@@ -19,6 +19,7 @@ ALL_SPORTS: Tuple[str, ...] = (
     "americanfootball_nfl",
     "americanfootball_ncaaf",
     "basketball_nba",
+    "basketball_wnba",
     "baseball_mlb",
     "icehockey_nhl",
     "soccer_usa_mls",
@@ -32,6 +33,8 @@ ALL_SPORTS: Tuple[str, ...] = (
 # Default “active” tier when INGEST_ACTIVE_SPORTS is unset (higher polling frequency).
 DEFAULT_ACTIVE_SPORTS: Tuple[str, ...] = (
     "basketball_nba",
+    "basketball_wnba",
+    "baseball_mlb",
     "icehockey_nhl",
     "soccer_usa_mls",
     "soccer_epl",
