@@ -42,17 +42,17 @@ class EVService:
                 grouped = {}
                 meta_map = {} # eid -> (league, game_time)
                 for o in all_odds:
-                    meta_map[o.event_id] = (o.league, o.game_time)
-                    key = (o.event_id, o.market_key, float(o.line) if o.line is not None else 0.0, o.player_name)
-                    outcome_lower = o.outcome_key.lower()
+                    meta_map[o["event_id"]] = (o["league"], o["game_time"])
+                    key = (o["event_id"], o["market_key"], float(o["line"]) if o["line"] is not None else 0.0, o["player_name"])
+                    outcome_lower = o["outcome_key"].lower()
                     if key not in grouped: grouped[key] = {}
                     if outcome_lower not in grouped[key]: grouped[key][outcome_lower] = {}
                     
-                    price = float(o.price or 0)
-                    prob = float(o.implied_prob or 0)
+                    price = float(o["price"] or 0)
+                    prob = float(o["implied_prob"] or 0)
                     
                     if price > 0 and prob > 0:
-                        grouped[key][o.outcome_key][o.bookmaker] = (price, prob)
+                        grouped[key][o["outcome_key"]][o["bookmaker"]] = (price, prob)
 
                 # 2. Compute Signals
                 signals = []
