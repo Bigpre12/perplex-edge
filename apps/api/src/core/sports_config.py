@@ -15,6 +15,18 @@ SPORT_MAP = {
     "golf_pga_tour": "PGA"
 }
 
+# The currently in-season/active sports (Fix for multi-sport support)
+ACTIVE_SPORTS = [
+    "basketball_nba",
+    "basketball_wnba",
+    "baseball_mlb",
+    "americanfootball_nfl",
+    "americanfootball_ncaaf",
+    "icehockey_nhl",
+    "soccer_epl",
+]
+
+
 SPORT_DISPLAY = SPORT_MAP
 ALL_SPORTS = list(SPORT_MAP.keys())
 VALID_SPORTS = ALL_SPORTS

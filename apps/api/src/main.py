@@ -17,6 +17,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.config import APP_NAME, settings
+from core.sports_config import ACTIVE_SPORTS, SPORT_DISPLAY
 from core.ingest_scheduler_config import build_unified_ingest_schedule, scheduled_sport_keys
 from middleware.request_id import RequestIDMiddleware, get_request_id
 from middleware.auth_circuit_breaker import AuthCircuitBreakerMiddleware, auth_breaker # Import new circuit breaker
@@ -539,17 +540,20 @@ async def initialize_backend_services():
                 jitter=30,
             )
         
-            # Kalshi Sync (NBA, MLB)
-            for k_sport in ["NBA", "MLB"]:
-                scheduler.add_job(
-                    guarded_kalshi_sync,
-                    'interval',
-                    minutes=8,
-                    args=[k_sport],
-                    id=f"kalshi_sync_{k_sport.lower()}",
-                    replace_existing=True,
-                    jitter=30,
-                )
+            # Kalshi Sync (Active major sports)
+            kalshi_supported = ["NBA", "MLB", "WNBA", "NFL", "NHL"]
+            for sport_key in ACTIVE_SPORTS:
+                k_sport = sport_key.split("_")[-1].upper()
+                if k_sport in kalshi_supported:
+                    scheduler.add_job(
+                        guarded_kalshi_sync,
+                        'interval',
+                        minutes=8,
+                        args=[k_sport],
+                        id=f"kalshi_sync_{k_sport.lower()}",
+                        replace_existing=True,
+                        jitter=30,
+                    )
         
             # Periodic Global Whale Check
             scheduler.add_job(

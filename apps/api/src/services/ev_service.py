@@ -11,6 +11,8 @@ Monte Carlo engine has no historical data for a prop.
 import logging
 from typing import List, Dict, Any, Tuple
 from sqlalchemy import select, func, text
+
+from core.sports_config import ACTIVE_SPORTS
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from db.session import async_session_maker, engine
