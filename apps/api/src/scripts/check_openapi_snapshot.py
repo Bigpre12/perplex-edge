@@ -32,8 +32,20 @@ def main() -> int:
 
     if current != expected:
         print("OpenAPI snapshot drift detected. Regenerate snapshot intentionally.")
+        import difflib
+        
+        current_str = json.dumps(current, indent=2, sort_keys=True)
+        expected_str = json.dumps(expected, indent=2, sort_keys=True)
+        
+        diff = difflib.unified_diff(
+            expected_str.splitlines(keepends=True),
+            current_str.splitlines(keepends=True),
+            fromfile="expected",
+            tofile="current",
+        )
+        print("".join(diff))
         return 1
-
+    
     print("OpenAPI snapshot check passed.")
     return 0
 
