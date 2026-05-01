@@ -132,6 +132,7 @@ props_history_router = safe_import("props_history", "router")
 alerts_router        = safe_import("alerts", "router")
 audit_router         = safe_import("audit", "router")
 waterfall_router     = safe_import("waterfall", "router")
+seed_router          = safe_import("seed_router", "router")
 
 if _failed_router_imports:
     parts = []
@@ -378,17 +379,31 @@ async def initialize_backend_services():
             """)
 
             # Track player historical hit rates for Monte Carlo
+            # Empirical hit rates for Monte Carlo engine
             await run_migration_step("""
                 CREATE TABLE IF NOT EXISTS player_mc_hit_rates (
-                    id SERIAL PRIMARY KEY,
                     player_name TEXT NOT NULL,
-                    market_key TEXT NOT NULL,
-                    line FLOAT NOT NULL,
-                    over_hits INT DEFAULT 0,
-                    total_games INT DEFAULT 0,
-                    hit_rate FLOAT,
-                    updated_at TIMESTAMPTZ DEFAULT now(),
-                    UNIQUE(player_name, market_key, line)
+                    stat_type TEXT NOT NULL,
+                    hit_rate REAL NOT NULL,
+                    sample_size INTEGER NOT NULL,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (player_name, stat_type)
+                )
+            """)
+
+            # PrizePicks staging for results grading
+            await run_migration_step("""
+                CREATE TABLE IF NOT EXISTS pp_projections_staging (
+                    id TEXT PRIMARY KEY,
+                    player_name TEXT NOT NULL,
+                    stat_type TEXT NOT NULL,
+                    line_score REAL NOT NULL,
+                    league TEXT,
+                    game_time TIMESTAMP,
+                    fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    graded BOOLEAN DEFAULT FALSE,
+                    actual_value REAL,
+                    hit BOOLEAN
                 )
             """)
 
@@ -562,6 +577,10 @@ async def initialize_backend_services():
                 asyncio.create_task(live_data_service.run_loop())
             except Exception as e:
                 logger.error(f"❌ [Background Init] Live Data Polling failed: {e}")
+
+            # 8. Nightly Seed Pipeline Scheduler
+            from services.seed_scheduler import setup_seed_scheduler
+            setup_seed_scheduler(scheduler)
 
             scheduler.start()
         except Exception as e:
@@ -767,6 +786,7 @@ if parlays_router:       app.include_router(parlays_router, prefix="/api/parlays
 if simulation_router:    app.include_router(simulation_router, prefix="/api/simulation", tags=["simulation"])
 if props_history_router: app.include_router(props_history_router, prefix="/api", tags=["props-history"])
 if waterfall_router:     app.include_router(waterfall_router, prefix="/api/waterfall", tags=["waterfall"])
+if seed_router:          app.include_router(seed_router)
 
 # Hero Stats (Analytics Modal)
 from routers.hero import router as hero_router

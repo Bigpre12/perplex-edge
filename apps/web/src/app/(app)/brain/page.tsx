@@ -33,7 +33,7 @@ export default function BrainPage() {
         <>
           <div className="rounded-2xl border border-lucrix-border bg-lucrix-surface p-4">
             <div className="text-xs uppercase text-textMuted mb-2">Engine status</div>
-            <div className="text-lg font-black">{health?.status || "UNKNOWN"}</div>
+            <div className="text-lg font-black">{health?.status ?? "INITIALIZING"}</div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <MetricCard label="Accuracy 7d" value={Number(metrics?.accuracy_7d || 0).toFixed(1) + "%"} />

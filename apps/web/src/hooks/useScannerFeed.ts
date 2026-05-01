@@ -55,10 +55,10 @@ export function useScannerFeed(sport: string) {
       return {
         id: String(r?.id ?? `${r?.player_name ?? "row"}-${idx}`),
         player: r?.player_name ?? "—",
-        market: r?.market_label ?? r?.market_key ?? "—",
+        market: r?.market_key ?? r?.prop_type ?? r?.market_label ?? "—",
         line: r?.line != null ? String(r.line) : "—",
-        bookOdds: bookOddsStr,
-        fairValue: fairValStr,
+        bookOdds: r?.book_price ?? r?.american_odds ?? bookOddsStr,
+        fairValue: r?.fair_odds ?? r?.true_prob_display ?? fairValStr,
         edgePct: Math.abs(edge),
         signal: edgeToSignal(edge),
       };

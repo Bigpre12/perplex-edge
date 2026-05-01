@@ -75,10 +75,13 @@ export default function ParlayPage() {
         }
     };
 
+    const americanToDecimal = (odds: number): number => {
+        return odds > 0 ? (odds / 100) + 1 : (100 / Math.abs(odds)) + 1;
+    };
+
     const totalOddsMultiplier = legs.reduce((acc, leg) => {
-        const odds = Number(leg.odds || leg.odds_over || -110);
-        const multiplier = odds > 0 ? (odds / 100) + 1 : (100 / Math.abs(odds)) + 1;
-        return acc * multiplier;
+        const odds = Number(leg.price || leg.odds || leg.odds_over || -110);
+        return acc * americanToDecimal(odds);
     }, 1);
 
     const americanOddsRaw = totalOddsMultiplier >= 2

@@ -13,13 +13,12 @@ interface Leg {
 export const BetSlipSidebar: React.FC = () => {
     const [legs, setLegs] = useState<Leg[]>([]);
 
+    const americanToDecimal = (odds: number): number => {
+        return odds > 0 ? (odds / 100) + 1 : (100 / Math.abs(odds)) + 1;
+    };
+
     const calculateParlayOdds = (legs: Leg[]) => {
-        // Standardized parlay multiplier logic
-        let multiplier = 1;
-        legs.forEach(leg => {
-            const dec = leg.odds > 0 ? (leg.odds / 100) + 1 : (100 / Math.abs(leg.odds)) + 1;
-            multiplier *= dec;
-        });
+        const multiplier = legs.reduce((acc, leg) => acc * americanToDecimal(leg.odds), 1);
         return Math.round((multiplier - 1) * 100);
     };
 

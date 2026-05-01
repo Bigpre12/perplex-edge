@@ -46,14 +46,12 @@ class MonteCarloProbabilityEngine:
                     SELECT hit_rate 
                     FROM player_mc_hit_rates 
                     WHERE player_name = :player_name 
-                      AND market_key = :market_key 
-                      AND line = :line
+                      AND stat_type = :stat_type
                     LIMIT 1
                 """)
                 result = await session.execute(hr_sql, {
                     "player_name": player_name,
-                    "market_key": market_key,
-                    "line": line
+                    "stat_type": stat_type
                 })
                 row = result.scalar_one_or_none()
 

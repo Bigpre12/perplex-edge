@@ -79,14 +79,10 @@ function WhaleAlertsContent() {
     );
   }
 
-  if (rawAlerts === null || rawAlerts === undefined) {
+  if (!alerts || alerts.length === 0) {
     return (
-      <div className="pb-24 pt-6 px-4">
-        <EmptyState
-          title="No whale signals in the current window."
-          description="Retry after the next ingest cycle or widen your filters."
-          onRetry={() => refetch()}
-        />
+      <div className="text-center py-20 text-gray-400 font-black uppercase italic tracking-widest">
+        NO WHALE ACTIVITY DETECTED. Waiting for volume data.
       </div>
     );
   }
