@@ -42,10 +42,20 @@ if _is_pooler_url and ":5432" in DATABASE_URL and _force_tx_pooler:
     DATABASE_URL = DATABASE_URL.replace(":5432", ":6543", 1)
 
 def _ensure_pg_query_params(url: str, params: dict[str, str]) -> str:
-    parts = urlsplit(url)
-    q = dict(parse_qsl(parts.query, keep_blank_values=True))
-    q.update({k: v for k, v in params.items() if v is not None})
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+    from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+    # Replace bracketed passwords temporarily to avoid urlsplit crashing in python 3.11
+    try:
+        parts = urlsplit(url)
+        q = dict(parse_qsl(parts.query, keep_blank_values=True))
+        q.update({k: v for k, v in params.items() if v is not None})
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+    except ValueError:
+        # Fallback if urlsplit crashes due to brackets in password
+        for k, v in params.items():
+            if v is not None:
+                if f"{k}=" not in url:
+                    url += f"&{k}={v}" if "?" in url else f"?{k}={v}"
+        return url
 
 if _is_pg:
     DATABASE_URL = _ensure_pg_query_params(

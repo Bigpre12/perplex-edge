@@ -382,8 +382,7 @@
             "title": "Last Odds Update"
           },
           "odds_api": {
-            "title": "Odds Api",
-            "type": "string"
+            "$ref": "#/components/schemas/OddsApiStatus"
           },
           "odds_api_all_keys_cooldown": {
             "title": "Odds Api All Keys Cooldown",
@@ -541,6 +540,52 @@
           "created_at"
         ],
         "title": "InjuryOut",
+        "type": "object"
+      },
+      "OddsApiStatus": {
+        "properties": {
+          "cooling_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cooling Until"
+          },
+          "keys_alive": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keys Alive"
+          },
+          "keys_dead": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keys Dead"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "OddsApiStatus",
         "type": "object"
       },
       "PropAnalysisRequest": {
@@ -1087,13 +1132,6 @@
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -5102,6 +5140,48 @@
         ]
       }
     },
+    "/api/intel": {
+      "get": {
+        "description": "Fallback endpoint for general intel requests to prevent 404s.",
+        "operationId": "get_intel_root_api_intel_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Intel Root",
+        "tags": [
+          "intel",
+          "Intel Intelligence"
+        ]
+      }
+    },
+    "/api/intel/": {
+      "get": {
+        "description": "Fallback endpoint for general intel requests to prevent 404s.",
+        "operationId": "get_intel_root_api_intel__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Intel Root",
+        "tags": [
+          "intel",
+          "Intel Intelligence"
+        ]
+      }
+    },
     "/api/intel/ev-history": {
       "get": {
         "description": "Returns historical EV signals for trend analysis using EdgeEVHistory.",
@@ -7391,6 +7471,22 @@
           },
           {
             "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
@@ -7839,6 +7935,67 @@
         "tags": [
           "search",
           "search"
+        ]
+      }
+    },
+    "/api/seed/run": {
+      "post": {
+        "description": "Manually trigger the full PrizePicks -> Grader -> Hit Rate pipeline.\nRuns as a background task to prevent request timeouts.",
+        "operationId": "trigger_seed_pipeline_api_seed_run_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-admin-key",
+            "required": false,
+            "schema": {
+              "title": "X-Admin-Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trigger Seed Pipeline",
+        "tags": [
+          "seed"
+        ]
+      }
+    },
+    "/api/seed/status": {
+      "get": {
+        "description": "Return summary metrics from the pp_projections_staging table.",
+        "operationId": "get_seed_status_api_seed_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Seed Status",
+        "tags": [
+          "seed"
         ]
       }
     },
