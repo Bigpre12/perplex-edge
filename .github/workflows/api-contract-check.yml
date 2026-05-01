@@ -24,7 +24,14 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r ../requirements.txt
       - name: Validate OpenAPI snapshot
+        id: validate
         env:
           PYTHONPATH: ${{ github.workspace }}/apps/api/src
         run: python scripts/check_openapi_snapshot.py
+      - name: Upload Current OpenAPI on Failure
+        if: failure() && steps.validate.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-current
+          path: apps/api/src/openapi.json # We'll modify the script to dump it here
 

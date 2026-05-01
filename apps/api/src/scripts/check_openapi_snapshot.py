@@ -32,8 +32,19 @@ def main() -> int:
 
     if current != expected:
         print("OpenAPI snapshot drift detected. Regenerate snapshot intentionally.")
-        import difflib
         
+        # Dump current for CI artifact upload
+        with open("openapi.json", "w", encoding="utf-8") as f:
+            json.dump(current, f, indent=2, sort_keys=True)
+            
+        # Debug failed imports
+        from main import _failed_router_imports
+        if _failed_router_imports:
+            print("\n❌ FAILED ROUTER IMPORTS:")
+            for name, err in _failed_router_imports:
+                print(f"  - {name}: {err}")
+        
+        import difflib
         current_str = json.dumps(current, indent=2, sort_keys=True)
         expected_str = json.dumps(expected, indent=2, sort_keys=True)
         
