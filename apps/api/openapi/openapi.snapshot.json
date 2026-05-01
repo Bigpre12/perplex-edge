@@ -6391,7 +6391,19 @@
     "/api/meta/force-ev": {
       "get": {
         "description": "Diagnostic endpoint to force EV cycle and show results.",
-        "operationId": "force_ev_nba_api_meta_force_ev_get",
+        "operationId": "force_ev_diag_api_meta_force_ev_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sport",
+            "required": false,
+            "schema": {
+              "default": "basketball_nba",
+              "title": "Sport",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -6400,9 +6412,19 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "summary": "Force Ev Nba",
+        "summary": "Force Ev Diag",
         "tags": [
           "meta"
         ]
@@ -6429,10 +6451,22 @@
         ]
       }
     },
-    "/api/meta/ingest-nba": {
+    "/api/meta/ingest-diag": {
       "get": {
-        "description": "One-click fix for NBA data:\n1. Wipe NBA odds (only basketball_nba)\n2. Run Injest (Normalized)\n3. Run EV Cycle\n4. Run ModelPick promotion",
-        "operationId": "ingest_nba_full_api_meta_ingest_nba_get",
+        "description": "One-click fix for specific sport data:\n1. Wipe odds for that sport\n2. Run Injest (Normalized)\n3. Run EV Cycle\n4. Run ModelPick promotion",
+        "operationId": "ingest_sport_full_api_meta_ingest_diag_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sport",
+            "required": false,
+            "schema": {
+              "default": "basketball_nba",
+              "title": "Sport",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -6441,9 +6475,19 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "summary": "Ingest Nba Full",
+        "summary": "Ingest Sport Full",
         "tags": [
           "meta"
         ]
