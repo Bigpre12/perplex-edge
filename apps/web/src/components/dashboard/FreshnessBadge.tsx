@@ -21,6 +21,14 @@ function timeAgo(ts: string | null): string {
   return `${days}d ago`;
 }
 
+function ageMs(ts: string | null): number {
+  if (!ts) return Infinity;
+  return Math.max(0, Date.now() - new Date(ts).getTime());
+}
+
+const SIX_HOURS = 6 * 60 * 60 * 1000;
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
 export function FreshnessBadge({ 
   oddsTs, 
   evTs, 
@@ -43,36 +51,65 @@ export function FreshnessBadge({
     );
   }
 
-  const isStale = (ts: string | null, thresholdSec: number) => {
-    if (!ts) return true;
-    const diffSec = (Date.now() - new Date(ts).getTime()) / 1000;
-    return diffSec > thresholdSec;
-  };
+  const oddsAge = ageMs(oddsTs);
+  const evAge = ageMs(evTs);
 
-  const oddsStale = isStale(oddsTs, 14400); // 4 hours
-  // No EV timestamp but odds are fresh: pipeline likely ran with zero edges — do not flash STALE.
-  const evStale = evTs
-    ? isStale(evTs, 14400)
-    : oddsStale;
+  // Tiered odds status
+  const oddsCritical = oddsAge >= TWENTY_FOUR_HOURS;
+  const oddsStale = oddsAge >= SIX_HOURS;
+  const oddsFresh = !oddsStale;
+
+  // EV status: if no EV timestamp but odds are fresh, show idle, not stale
+  const evStale = evTs ? evAge >= SIX_HOURS : oddsStale;
   const evIdleNoTimestamp = !evTs && !oddsStale;
 
   return (
-    <div className="flex gap-4 text-[10px] items-center font-medium opacity-80 mt-1">
-      <div className="flex items-center gap-1.5">
-        <span className={`w-1.5 h-1.5 rounded-full ${oddsStale ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"}`} />
-        <span className={oddsStale ? "text-red-400" : "text-emerald-400"}>
-          ODDS {oddsStale ? "STALE" : "LIVE"} · {timeAgo(oddsTs)}
-        </span>
+    <>
+      {/* Critical banner: shown on every page when odds are > 24h stale */}
+      {oddsCritical && (
+        <div className="w-full bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3 mb-2 animate-pulse">
+          <p className="text-red-400 text-xs font-black uppercase tracking-widest text-center">
+            ⚠ MARKET DATA OFFLINE — All signals reflect stale odds. Do not use for live betting decisions.
+          </p>
+        </div>
+      )}
+
+      <div className="flex gap-4 text-[10px] items-center font-medium opacity-80 mt-1">
+        {/* Odds badge */}
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            oddsCritical
+              ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse"
+              : oddsStale
+                ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+          }`} />
+          <span className={
+            oddsCritical
+              ? "text-red-400 animate-pulse font-black"
+              : oddsStale
+                ? "text-red-400"
+                : "text-emerald-400"
+          }>
+            {oddsCritical
+              ? `ODDS CRITICAL · ${timeAgo(oddsTs)}`
+              : oddsStale
+                ? `ODDS STALE · ${timeAgo(oddsTs)}`
+                : `ODDS · LIVE`}
+          </span>
+        </div>
+
+        {/* EV badge */}
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${evStale ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"}`} />
+          <span className={evStale ? "text-red-400" : "text-emerald-400"}>
+            EV {evStale ? "STALE" : "LIVE"} ·{" "}
+            {evIdleNoTimestamp
+              ? "idle (no edges)"
+              : timeAgo(evTs)}
+          </span>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className={`w-1.5 h-1.5 rounded-full ${evStale ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"}`} />
-        <span className={evStale ? "text-red-400" : "text-emerald-400"}>
-          EV {evStale ? "STALE" : "LIVE"} ·{" "}
-          {evIdleNoTimestamp
-            ? "idle (no edges)"
-            : timeAgo(evTs)}
-        </span>
-      </div>
-    </div>
+    </>
   );
 }

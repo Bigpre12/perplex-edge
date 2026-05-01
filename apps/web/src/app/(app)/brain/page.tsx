@@ -53,9 +53,17 @@ export default function BrainPage() {
                 <div key={d?.id || i} className="rounded-2xl border border-lucrix-border bg-lucrix-surface p-4">
                   <div className="text-sm font-black">{d?.details?.player_name || d?.player || "Unknown Player"}</div>
                   <div className="text-xs text-textMuted mt-1">{d?.details?.stat_type || d?.market || "Market"}</div>
-                  <div className="text-xs mt-2">{d?.reasoning || "No reasoning provided."}</div>
-                  <div className="mt-3 text-[11px] text-brand-cyan">
-                    Rec: {d?.action || d?.recommendation || d?.details?.side || "PASS"}
+                  <div className="text-xs mt-2">{d?.reasoning || "Awaiting Brains Scorer analysis — insufficient market data."}</div>
+                  <div className="mt-3 text-[11px]">
+                    {(() => {
+                      const rec = d?.action || d?.recommendation || d?.details?.side || null;
+                      if (!rec) return <span className="text-yellow-400 font-black">PENDING</span>;
+                      if (rec === "PASS") return <span className="text-slate-400">PASS</span>;
+                      if (rec === "BET") return <span className="text-brand-success font-black">BET</span>;
+                      if (rec === "LEAN") return <span className="text-brand-cyan font-black">LEAN</span>;
+                      if (rec === "WATCH") return <span className="text-amber-400">WATCH</span>;
+                      return <span className="text-brand-cyan">{rec}</span>;
+                    })()}
                   </div>
                 </div>
               ))}

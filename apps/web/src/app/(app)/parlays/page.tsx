@@ -75,20 +75,27 @@ export default function ParlayPage() {
         }
     };
 
-    const americanToDecimal = (odds: number): number => {
-        return odds > 0 ? (odds / 100) + 1 : (100 / Math.abs(odds)) + 1;
+    const americanToDecimal = (odds: any): number => {
+        const n = Number(odds);
+        if (!odds || isNaN(n) || n === 0) return 1.909; // default -110
+        if (n > 0) return (n / 100) + 1;
+        return (100 / Math.abs(n)) + 1;
     };
 
-    const totalOddsMultiplier = legs.reduce((acc, leg) => {
-        const odds = Number(leg.price || leg.odds || leg.odds_over || -110);
-        return acc * americanToDecimal(odds);
+    const totalOddsMultiplier = legs.reduce((acc: number, leg: any) => {
+        const o = leg.odds ?? leg.price ?? leg.odds_over ?? leg.american_odds ?? -110;
+        return acc * americanToDecimal(o);
     }, 1);
 
-    const americanOddsRaw = totalOddsMultiplier >= 2
-        ? Math.round((totalOddsMultiplier - 1) * 100)
-        : Math.round(-100 / (totalOddsMultiplier - 1));
+    const americanOddsRaw = (!Number.isFinite(totalOddsMultiplier) || totalOddsMultiplier <= 1)
+        ? 0
+        : totalOddsMultiplier >= 2
+            ? Math.round((totalOddsMultiplier - 1) * 100)
+            : Math.round(-100 / (totalOddsMultiplier - 1));
 
-    const displayAmericanOdds = americanOddsRaw > 0 ? `+${americanOddsRaw}` : americanOddsRaw;
+    const displayAmericanOdds = (!Number.isFinite(americanOddsRaw) || americanOddsRaw === 0)
+        ? "—"
+        : americanOddsRaw > 0 ? `+${americanOddsRaw}` : String(americanOddsRaw);
 
     // Grade Color Mappings
     const gradeStyles: Record<string, string> = {

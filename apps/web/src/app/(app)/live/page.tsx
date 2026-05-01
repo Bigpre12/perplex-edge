@@ -44,6 +44,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function LivePage() {
   const { data: games, isLoading, isError, refetch, socketStatus, dataUpdatedAt } = useLiveGames() as any;
 
+  // Staleness check: hide scores if data is > 3 hours old
+  const STALE_THRESHOLD_MS = 3 * 60 * 60 * 1000; // 3 hours
+  const lastSyncMs = dataUpdatedAt ? new Date(dataUpdatedAt).getTime() : 0;
+  const dataAge = lastSyncMs ? Date.now() - lastSyncMs : Infinity;
+  const isStale = dataAge > STALE_THRESHOLD_MS;
+  const lastSyncLabel = lastSyncMs
+    ? new Date(lastSyncMs).toLocaleString()
+    : "Never";
+
   const statusMap = {
     connecting: { color: 'text-yellow-400', bg: 'bg-yellow-400/10', label: 'Syncing...' },
     open: { color: 'text-emerald-400', bg: 'bg-emerald-400/10', label: 'Real-time Active' },
@@ -195,6 +204,31 @@ export default function LivePage() {
             className="max-w-md mx-auto py-32"
           >
             <ErrorRetry onRetry={() => refetch()} />
+          </motion.div>
+        ) : isStale ? (
+          <motion.div
+            key="stale"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-32 space-y-6 bg-red-500/5 rounded-[3rem] border border-dashed border-red-500/30"
+          >
+            <div className="px-6 py-3 bg-red-500/10 border border-red-500/30 rounded-2xl animate-pulse">
+              <span className="text-red-400 text-sm font-black uppercase tracking-widest">
+                ⚠ AWAITING LIVE DATA
+              </span>
+            </div>
+            <p className="text-red-300/70 text-xs font-bold uppercase tracking-widest">
+              Last sync: {lastSyncLabel}
+            </p>
+            <p className="text-textMuted text-xs max-w-md text-center italic">
+              Score data is more than 3 hours old and has been hidden to prevent displaying stale results as live.
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="px-8 py-3 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs font-black uppercase tracking-widest hover:bg-red-500/20 transition-all"
+            >
+              Force Refresh
+            </button>
           </motion.div>
         ) : !games || games.length === 0 ? (
           <motion.div 

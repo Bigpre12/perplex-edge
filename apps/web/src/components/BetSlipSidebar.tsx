@@ -13,13 +13,17 @@ interface Leg {
 export const BetSlipSidebar: React.FC = () => {
     const [legs, setLegs] = useState<Leg[]>([]);
 
-    const americanToDecimal = (odds: number): number => {
-        return odds > 0 ? (odds / 100) + 1 : (100 / Math.abs(odds)) + 1;
+    const americanToDecimal = (odds: any): number => {
+        const n = Number(odds);
+        if (!odds || isNaN(n) || n === 0) return 1.909; // default -110
+        if (n > 0) return (n / 100) + 1;
+        return (100 / Math.abs(n)) + 1;
     };
 
     const calculateParlayOdds = (legs: Leg[]) => {
         const multiplier = legs.reduce((acc, leg) => acc * americanToDecimal(leg.odds), 1);
-        return Math.round((multiplier - 1) * 100);
+        const raw = Math.round((multiplier - 1) * 100);
+        return Number.isFinite(raw) ? raw : 0;
     };
 
     const removeLeg = (id: string) => {
@@ -57,7 +61,7 @@ export const BetSlipSidebar: React.FC = () => {
                     <div className="flex justify-between items-center mb-4">
                         <span className="text-xs font-black uppercase text-textMuted tracking-widest">Parlay Odds:</span>
                         <span className="text-brand-success font-display font-black text-2xl">
-                            +{calculateParlayOdds(legs)}
+                            {(() => { const v = calculateParlayOdds(legs); return Number.isFinite(v) && v !== 0 ? (v > 0 ? `+${v}` : v) : "—"; })()}
                         </span>
                     </div>
                     <button className="w-full py-4 bg-brand-success hover:bg-brand-success/90 text-lucrix-dark rounded-xl font-black uppercase tracking-widest text-sm transition-all shadow-glow shadow-brand-success/20">

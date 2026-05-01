@@ -117,10 +117,16 @@ class EVService:
                                         line=line,
                                     )
 
-                                    edge = min(brain_result["edge_percent"], self.MAX_REALISTIC_EV)
+                                    raw_edge = brain_result["edge_percent"]
+                                    if raw_edge > self.MAX_REALISTIC_EV:
+                                        logger.warning(
+                                            "EVService: Capping inflated EV %.1f%% → %.1f%% for %s/%s",
+                                            raw_edge, self.MAX_REALISTIC_EV, p_name, outcome,
+                                        )
+                                    edge = min(raw_edge, self.MAX_REALISTIC_EV)
 
-                                    # Only keep if edge > minimum threshold
-                                    if edge >= settings.EV_MIN_THRESHOLD:
+                                    # Only keep if edge > 2% (sub-2% is noise, not a real edge)
+                                    if edge >= 2.0:
                                         signals.append({
                                             'sport': sport,
                                             'league': meta_map[eid][0],
@@ -166,9 +172,15 @@ class EVService:
                                 continue
 
                             for book, (price, implied) in side_books.items():
-                                edge = min((true_p - implied) * 100, self.MAX_REALISTIC_EV)
+                                raw_edge_fb = (true_p - implied) * 100
+                                if raw_edge_fb > self.MAX_REALISTIC_EV:
+                                    logger.warning(
+                                        "EVService: Capping fallback EV %.1f%% → %.1f%% for %s/%s",
+                                        raw_edge_fb, self.MAX_REALISTIC_EV, p_name or "Matchup", outcome,
+                                    )
+                                edge = min(raw_edge_fb, self.MAX_REALISTIC_EV)
 
-                                if edge >= settings.EV_MIN_THRESHOLD:
+                                if edge >= 2.0:
                                     # Still route through Brains for consistent output
                                     brain_result = brains_scorer.score_prop(
                                         monte_carlo_prob=true_p,

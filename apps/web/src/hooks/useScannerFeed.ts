@@ -31,7 +31,7 @@ export function useScannerFeed(sport: string) {
   const rows = useMemo<ScannerRow[]>(() => {
     const data = unwrapList<any>(query.data);
     const mapped = data.map((r: any, idx: number) => {
-      const edge = Number(r?.ev_value ?? r?.ev_percentage ?? 0) || 0;
+      const edge = Number(r?.ev_value ?? r?.ev_percentage ?? r?.edge_percent ?? r?.edge_pct ?? r?.ev ?? r?.edge ?? 0) || 0;
       
       const impliedOver = Number(r?.implied_over ?? 0);
       const impliedUnder = Number(r?.implied_under ?? 0);
@@ -54,11 +54,11 @@ export function useScannerFeed(sport: string) {
 
       return {
         id: String(r?.id ?? `${r?.player_name ?? "row"}-${idx}`),
-        player: r?.player_name ?? "—",
-        market: r?.market_key ?? r?.prop_type ?? r?.market_label ?? "—",
+        player: r?.player_name ?? r?.player ?? "—",
+        market: r?.market ?? r?.market_key ?? r?.stat_type ?? r?.prop_type ?? r?.market_label ?? "—",
         line: r?.line != null ? String(r.line) : "—",
-        bookOdds: r?.book_price ?? r?.american_odds ?? bookOddsStr,
-        fairValue: r?.fair_odds ?? r?.true_prob_display ?? fairValStr,
+        bookOdds: r?.bookOdds ?? r?.book_odds ?? r?.book_price ?? r?.american_odds ?? r?.odds ?? bookOddsStr,
+        fairValue: r?.fairValue ?? r?.fair_value ?? r?.model_prob ?? r?.fair_odds ?? r?.true_prob_display ?? fairValStr,
         edgePct: Math.abs(edge),
         signal: edgeToSignal(edge),
       };
