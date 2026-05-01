@@ -565,7 +565,7 @@ async def initialize_backend_services():
             scheduler.add_job(
                 live_data_service.poll_scores,
                 "interval",
-                seconds=max(15, int(settings.LIVE_DATA_POLLING_INTERVAL)),
+                seconds=max(60, int(settings.LIVE_DATA_POLLING_INTERVAL)),
                 id="live_scores_cache_upsert",
                 replace_existing=True,
                 jitter=10,

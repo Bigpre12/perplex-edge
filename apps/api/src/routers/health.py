@@ -126,9 +126,9 @@ async def compute_health(db: AsyncSession) -> Dict[str, Any]:
     try:
         query = text("""
             SELECT 
-                (SELECT COUNT(*) FROM props_live) as props_count,
+                COUNT(*) as props_count,
                 MAX(last_updated_at) as last_odds,
-                MAX(created_at) as last_ev
+                MAX(last_updated_at) as last_ev
             FROM props_live
         """)
         result = await db.execute(query)
@@ -366,8 +366,15 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     Enhanced Health check endpoint (legacy shape).
     Reports DB, Odds API, Cache, and Kalshi status.
     """
+    from services.cache import cache
+    cached = await cache.get_json("api_health_check")
+    if cached:
+        return cached
+
     base = await compute_health(db)
     base.pop("_internal", None)
+    
+    await cache.set_json("api_health_check", base, 5)
     return base
 
 

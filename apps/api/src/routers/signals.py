@@ -110,6 +110,12 @@ async def freshness(
     last_success_at advances; if props are updating but heartbeat is stuck, this endpoint still surfaces
     props_live / system_sync_state timestamps.
     """
+    from services.cache import cache
+    cache_key = f"api_signals_freshness_{sport}"
+    cached = await cache.get_json(cache_key)
+    if cached:
+        return cached
+
     try:
         ingest_hb = await HeartbeatService.get_heartbeat(db, f"ingest_{sport}")
         hb_odds = ingest_hb.last_success_at if ingest_hb else None
@@ -194,7 +200,7 @@ async def freshness(
         else:
             user_msg = ""
 
-        return {
+        result = {
             "sport": sport,
             "status": "fresh" if last_odds else "stale",
             "last_odds_update": last_odds.isoformat() if last_odds else None,
@@ -212,6 +218,8 @@ async def freshness(
                 },
             },
         }
+        await cache.set_json(cache_key, result, 10)
+        return result
     except Exception as e:
         logger.error(f"Freshness check failed: {e}")
         now = datetime.now(timezone.utc)

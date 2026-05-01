@@ -106,6 +106,11 @@ async def get_brain_overall_status(db: AsyncSession = Depends(get_async_db)):
     Unified Brain Status: Aggregates health, counts, and engine states.
     Bypasses tier gating for internal/owner dashboard.
     """
+    from services.cache import cache
+    cached = await cache.get_json("api_brain_status")
+    if cached:
+        return cached
+
     try:
         metrics = await brain_advanced_service.get_dashboard_metrics(db)
         
@@ -113,7 +118,7 @@ async def get_brain_overall_status(db: AsyncSession = Depends(get_async_db)):
         # ACTIVE = has picks today, IDLE = no picks today but db online, WARN = errors in log
         inference_status = "ACTIVE" if metrics.get("props_scored_today", 0) > 0 else "IDLE"
         
-        return {
+        result = {
             "overall_status": "ACTIVE" if state.system_online else "OFFLINE",
             "inference_engine": inference_status,
             "data_pipeline": "ACTIVE",
@@ -121,6 +126,8 @@ async def get_brain_overall_status(db: AsyncSession = Depends(get_async_db)):
             "metrics": metrics,
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
+        await cache.set_json("api_brain_status", result, 15)
+        return result
     except Exception as e:
         logger.error(f"Brain Status Error: {e}")
         return {

@@ -103,6 +103,10 @@ class KalshiWSManager:
         logger.info(f"KalshiWS: Subscribed to {tickers}")
 
     async def run(self, tickers: List[str]):
+        if not os.getenv("KALSHI_PRIVATE_KEY") or not os.getenv("KALSHI_API_KEY_ID"):
+            logger.warning("Kalshi credentials not configured — WebSocket disabled. Set KALSHI_PRIVATE_KEY and KALSHI_API_KEY_ID in Railway env vars to enable.")
+            return
+
         if self._disabled:
             if not self._disabled_logged:
                 logger.warning(
