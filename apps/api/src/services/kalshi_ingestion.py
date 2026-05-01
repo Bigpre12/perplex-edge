@@ -39,7 +39,8 @@ class KalshiIngestion:
                 return
                 
             real_props = []
-            markets_to_fetch = PROP_MARKETS.get(sport.lower(), "player_points")
+            # Use a default market for Kalshi sync, as it usually focuses on main props
+            markets_to_fetch = "player_points"
             
             # Fetch props for first 5 events to overlap with Kalshi
             for event in events[:5]:

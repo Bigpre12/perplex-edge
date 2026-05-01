@@ -137,9 +137,11 @@ seed_router          = safe_import("seed_router", "router")
 
 if _failed_router_imports:
     parts = []
+    print(f"\nFATAL: {len(_failed_router_imports)} routers failed to import!")
     for name, err in _failed_router_imports:
         short = err if len(err) <= 120 else err[:117] + "..."
         parts.append(f"{name} ({short})")
+        print(f"  - {name}: {err}")
     logger.warning(
         "Router import summary: %d module(s) not loaded — %s",
         len(_failed_router_imports),

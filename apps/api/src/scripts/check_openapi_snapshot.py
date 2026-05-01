@@ -30,33 +30,34 @@ def main() -> int:
     with open(SNAPSHOT_PATH, "r", encoding="utf-8") as f:
         expected = json.load(f)
 
-    if current != expected:
-        print("OpenAPI snapshot drift detected. Regenerate snapshot intentionally.")
-        
-        # Dump current for CI artifact upload
-        with open("openapi.json", "w", encoding="utf-8") as f:
-            json.dump(current, f, indent=2, sort_keys=True)
-            
-        # Debug failed imports
-        from main import _failed_router_imports
+    if current != expected or _failed_router_imports:
         if _failed_router_imports:
-            print("\n❌ FAILED ROUTER IMPORTS:")
-            with open("failed_imports.txt", "w", encoding="utf-8") as f_err:
-                for name, err in _failed_router_imports:
-                    print(f"  - {name}: {err}")
-                    f_err.write(f"{name}: {err}\n")
+            print("\n❌ HARD FAILURE: Routers failed to import. OpenAPI schema is incomplete.")
+            for name, err in _failed_router_imports:
+                print(f"  - {name}: {err}")
         
-        import difflib
-        current_str = json.dumps(current, indent=2, sort_keys=True)
-        expected_str = json.dumps(expected, indent=2, sort_keys=True)
-        
-        diff = difflib.unified_diff(
-            expected_str.splitlines(keepends=True),
-            current_str.splitlines(keepends=True),
-            fromfile="expected",
-            tofile="current",
-        )
-        print("".join(diff))
+        if current != expected:
+            print("OpenAPI snapshot drift detected. Regenerate snapshot intentionally.")
+            
+            # Dump current for CI artifact upload
+            with open("openapi.json", "w", encoding="utf-8") as f:
+                json.dump(current, f, indent=2, sort_keys=True)
+                
+            import difflib
+            current_str = json.dumps(current, indent=2, sort_keys=True)
+            expected_str = json.dumps(expected, indent=2, sort_keys=True)
+            
+            diff = difflib.unified_diff(
+                expected_str.splitlines(keepends=True),
+                current_str.splitlines(keepends=True),
+                fromfile="expected",
+                tofile="current",
+            )
+            print("".join(diff))
+            
+        if _failed_router_imports:
+            raise RuntimeError(f"CI Blocked: {len(_failed_router_imports)} routers failed to import.")
+            
         return 1
     
     print("OpenAPI snapshot check passed.")
