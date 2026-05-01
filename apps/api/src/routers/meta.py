@@ -151,25 +151,26 @@ async def meta_username():
     return {"username": "Edge Master", "role": "System Intelligence"}
 
 @router.get("/force-ev")
-async def force_ev_nba(db: AsyncSession = Depends(get_async_db)):
+async def force_ev_diag(sport: str = "basketball_nba", db: AsyncSession = Depends(get_async_db)):
     """Diagnostic endpoint to force EV cycle and show results."""
     from services.ev_service import ev_service
     from sqlalchemy import select
     from models.brain import UnifiedEVSignal
 
-    await ev_service.run_ev_cycle("basketball_nba")
+    await ev_service.run_ev_cycle(sport)
     
     # Also generate picks from these signals
     from services.brain_advanced_service import brain_advanced_service
-    await brain_advanced_service.generate_model_picks("basketball_nba", db)
+    await brain_advanced_service.generate_model_picks(sport, db)
 
     # Check results
-    stmt = select(UnifiedEVSignal).where(UnifiedEVSignal.sport == "basketball_nba")
+    stmt = select(UnifiedEVSignal).where(UnifiedEVSignal.sport == sport)
     res = await db.execute(stmt)
     signals = res.scalars().all()
     
     return {
         "status": "triggered",
+        "sport": sport,
         "count": len(signals),
         "debug": "Check /api/meta/inspect for bookmaker names",
         "samples": [
@@ -182,11 +183,11 @@ async def force_ev_nba(db: AsyncSession = Depends(get_async_db)):
         ]
     }
 
-@router.get("/ingest-nba")
-async def ingest_nba_full(db: AsyncSession = Depends(get_async_db)):
+@router.get("/ingest-diag")
+async def ingest_sport_full(sport: str = "basketball_nba", db: AsyncSession = Depends(get_async_db)):
     """
-    One-click fix for NBA data:
-    1. Wipe NBA odds (only basketball_nba)
+    One-click fix for specific sport data:
+    1. Wipe odds for that sport
     2. Run Injest (Normalized)
     3. Run EV Cycle
     4. Run ModelPick promotion
@@ -198,17 +199,17 @@ async def ingest_nba_full(db: AsyncSession = Depends(get_async_db)):
     from sqlalchemy import delete
 
     # 1. Wipe
-    await db.execute(delete(UnifiedOdds).where(UnifiedOdds.sport == "basketball_nba"))
+    await db.execute(delete(UnifiedOdds).where(UnifiedOdds.sport == sport))
     await db.commit()
     
     # 2. Ingest
-    await unified_ingestion.run("basketball_nba")
+    await unified_ingestion.run(sport)
     
     # 3. EV cycle
-    await ev_service.run_ev_cycle("basketball_nba")
+    await ev_service.run_ev_cycle(sport)
     
     # 4. Picks Promotion
-    await brain_advanced_service.generate_model_picks("basketball_nba", db)
+    await brain_advanced_service.generate_model_picks(sport, db)
     
-    return {"status": "ok", "message": "NBA Full Cycle Completed"}
+    return {"status": "ok", "sport": sport, "message": f"{sport} Full Cycle Completed"}
 
