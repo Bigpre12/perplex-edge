@@ -171,5 +171,115 @@ class MonteCarloProbabilityEngine:
             return 0.50
 
 
+    # ------------------------------------------------------------------
+    # Parlay simulation  (synchronous, called by brain_advanced_service)
+    # ------------------------------------------------------------------
+    def simulate_parlay(
+        self,
+        legs: list,
+        n_sims: int = 10_000,
+    ) -> dict:
+        """
+        Run a Monte Carlo parlay simulation over *legs*.
+
+        Each leg dict should contain:
+            player_name, mean, std_dev, line, side, odds
+
+        Returns dict with:
+            parlay_hit_rate, parlay_ev, combined_decimal_odds, leg_results
+        """
+        leg_results = []
+        parlay_hits = np.zeros(n_sims)
+        parlay_hits[:] = 1  # start assuming all parlays hit
+
+        for leg in legs:
+            mean = float(leg.get("mean", leg.get("line", 0)))
+            std = float(leg.get("std_dev", abs(mean) * 0.15 if mean else 1.0))
+            line = float(leg.get("line", mean))
+            side = str(leg.get("side", "over")).lower()
+
+            sims = np.random.normal(loc=mean, scale=std, size=n_sims)
+
+            if side == "over":
+                hits = sims > line
+            else:
+                hits = sims <= line
+
+            hit_rate = float(np.mean(hits))
+            parlay_hits *= hits.astype(float)
+
+            odds_raw = float(leg.get("odds", -110))
+            if odds_raw > 0:
+                decimal_odds = 1 + odds_raw / 100
+            else:
+                decimal_odds = 1 + 100 / abs(odds_raw)
+
+            leg_results.append({
+                "player_name": leg.get("player_name", "Unknown"),
+                "hit_rate": round(hit_rate, 4),
+                "decimal_odds": round(decimal_odds, 4),
+            })
+
+        parlay_hit_rate = float(np.mean(parlay_hits))
+        combined_decimal_odds = 1.0
+        for lr in leg_results:
+            combined_decimal_odds *= lr["decimal_odds"]
+
+        parlay_ev = parlay_hit_rate * combined_decimal_odds - 1.0
+
+        return {
+            "parlay_hit_rate": round(parlay_hit_rate, 4),
+            "parlay_ev": round(parlay_ev, 4),
+            "combined_decimal_odds": round(combined_decimal_odds, 4),
+            "leg_results": leg_results,
+        }
+
+
 # Singleton
 monte_carlo_engine = MonteCarloProbabilityEngine()
+
+# Alias kept for backward-compat imports (brain_advanced_service, parlays router)
+monte_carlo_service = monte_carlo_engine
+
+
+async def simulate_parlay_with_cache_and_persist(
+    session, sport: str, legs: list, n_sims: int = 10_000
+) -> dict:
+    """
+    Thin async wrapper around the synchronous simulate_parlay that
+    persists results to the database when possible.
+    """
+    results = monte_carlo_engine.simulate_parlay(legs, n_sims=n_sims)
+
+    # Persist attempt (best-effort)
+    try:
+        from models.brain import BrainLog
+        import uuid as _uuid
+
+        log_entry = BrainLog(
+            id=str(_uuid.uuid4()),
+            sport=sport,
+            player="Parlay Simulation",
+            stat_type="parlay",
+            line=0.0,
+            signal="PARLAY",
+            brain_score=int(results["parlay_hit_rate"] * 100),
+            reason=f"{len(legs)}-leg parlay simulated ({n_sims} sims). EV={results['parlay_ev']:.2%}",
+            result="PENDING",
+        )
+        session.add(log_entry)
+        await session.commit()
+    except Exception as e:
+        logger.debug("simulate_parlay persist skipped: %s", e)
+
+    return {
+        "roi": results["parlay_ev"] * 100,
+        "edge": results["parlay_ev"],
+        "win_rate": results["parlay_hit_rate"],
+        "expected_value": results["parlay_ev"],
+        "true_probability": results["parlay_hit_rate"],
+        "confidence": "high" if results["parlay_ev"] > 0.05 else "medium",
+        "max_drawdown": 0.15,
+        "leg_results": results["leg_results"],
+        "cached": False,
+    }
