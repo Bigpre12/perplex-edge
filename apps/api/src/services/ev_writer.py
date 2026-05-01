@@ -88,6 +88,10 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
                 inserted_count += await _upsert_ev_signal(
                     db, sport, edge, "OVER", edge["ev_over"], edge["fair_over_prob"],
                     confidence=brain_over["confidence"] / 100.0,
+                    reason=brain_over["reason"],
+                    tier=brain_over["tier"],
+                    clv=brain_over["clv"],
+                    steam=brain_over["steam"]
                 )
             if edge["ev_under"] > 0.02:
                 brain_under = brains_scorer.score_prop(
@@ -100,6 +104,10 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
                 inserted_count += await _upsert_ev_signal(
                     db, sport, edge, "UNDER", edge["ev_under"], 1.0 - edge["fair_over_prob"],
                     confidence=brain_under["confidence"] / 100.0,
+                    reason=brain_under["reason"],
+                    tier=brain_under["tier"],
+                    clv=brain_under["clv"],
+                    steam=brain_under["steam"]
                 )
         
         # Log Heartbeat before commit
@@ -117,12 +125,12 @@ async def _run_ev_grader(sport: str, db: AsyncSession) -> int:
         await db.rollback()
         return 0
 
-async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, ev_score: float, fair_prob: float, confidence: float = 0.7) -> int:
+async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, ev_score: float, fair_prob: float, confidence: float = 0.7, reason: str = None, tier: str = None, clv: float = 0.0, steam: bool = False) -> int:
     insert_sql = text("""
         INSERT INTO ev_signals 
-            (player_name, market_key, sport, sport_key, prop_type, event_id, outcome_key, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, confidence, engine_version, created_at, updated_at)
+            (player_name, market_key, sport, sport_key, prop_type, event_id, outcome_key, bookmaker, line, ev_score, edge_percent, ev_percentage, recommendation, fair_prob, true_prob, market_prob, implied_prob, confidence, reason, tier, clv, steam, engine_version, created_at, updated_at)
         VALUES 
-            (:player_name, :market_key, :sport, :sport, :prop_type, :event_id, :outcome_key, :bookmaker, :line, :ev_score, :edge_percent, :edge_percent, :recommendation, :fair_prob, :fair_prob, 0, 0, :confidence, 'v1-grader', NOW(), NOW())
+            (:player_name, :market_key, :sport, :sport, :prop_type, :event_id, :outcome_key, :bookmaker, :line, :ev_score, :edge_percent, :edge_percent, :recommendation, :fair_prob, :fair_prob, 0, 0, :confidence, :reason, :tier, :clv, :steam, 'v1-grader', NOW(), NOW())
         ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL
         DO UPDATE SET 
             ev_score = EXCLUDED.ev_score,
@@ -132,6 +140,10 @@ async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, e
             fair_prob = EXCLUDED.fair_prob,
             true_prob = EXCLUDED.true_prob,
             confidence = EXCLUDED.confidence,
+            reason = EXCLUDED.reason,
+            tier = EXCLUDED.tier,
+            clv = EXCLUDED.clv,
+            steam = EXCLUDED.steam,
             updated_at = NOW()
     """)
     try:
@@ -145,9 +157,13 @@ async def _upsert_ev_signal(db: AsyncSession, sport: str, row: dict, rec: str, e
             "line": row["line"],
             "ev_score": round(float(ev_score), 4),
             "edge_percent": round(float(ev_score * 100), 2),
-            "confidence": float(row.get("confidence") or 0.7),
+            "confidence": float(confidence),
             "recommendation": rec,
-            "fair_prob": round(float(fair_prob), 4)
+            "fair_prob": round(float(fair_prob), 4),
+            "reason": reason,
+            "tier": tier,
+            "clv": float(clv or 0),
+            "steam": bool(steam)
         })
         return 1
     except Exception as e:

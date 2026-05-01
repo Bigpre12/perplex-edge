@@ -434,6 +434,12 @@ class UnifiedEVSignal(Base):
     edge_percent = Column(Float, nullable=True)
     implied_prob = Column(Float, nullable=True)
     
+    # Brains Scorer Output
+    reason = Column(String, nullable=True)
+    tier = Column(String, nullable=True)
+    clv = Column(Float, nullable=True)
+    steam = Column(Boolean, nullable=True)
+    
     # Legacy/Rich Schema Compatibility
     ev_score = Column(Float, nullable=True)     # Often same as edge_percent/100
     ev_percent = Column(Float, nullable=True)   # Often same as edge_percent

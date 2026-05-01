@@ -260,7 +260,7 @@ class EVService:
                 for s in signals:
                     valid_cols = ["sport", "sport_key", "prop_type", "event_id", "market_key", "outcome_key", "player_name", 
                                   "bookmaker", "price", "line", "true_prob", "edge_percent", "ev_percentage",
-                                  "implied_prob", "confidence", "engine_version"]
+                                  "implied_prob", "confidence", "engine_version", "reason", "tier", "clv", "steam"]
                     row = {k: v for k, v in s.items() if k in valid_cols}
                     row.setdefault("sport_key", s["sport"])
                     row.setdefault("ev_percentage", row.get("edge_percent", 0))
@@ -268,7 +268,7 @@ class EVService:
                     if row.get("prop_type") is None:
                         row["prop_type"] = "unknown"
                     # Ensure numeric fields are floats
-                    for col in ["price", "line", "true_prob", "edge_percent", "implied_prob", "confidence"]:
+                    for col in ["price", "line", "true_prob", "edge_percent", "implied_prob", "confidence", "clv"]:
                         if col in row and row[col] is not None:
                             row[col] = float(row[col])
 
@@ -283,8 +283,8 @@ class EVService:
                         # Raw SQL fallback for Postgres
                         row["recommendation"] = s.get("recommendation")
                         base_sql = """
-                        INSERT INTO ev_signals (sport, sport_key, prop_type, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, ev_percentage, implied_prob, confidence, engine_version, recommendation, created_at, updated_at)
-                        VALUES (:sport, :sport_key, :prop_type, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :ev_percentage, :implied_prob, :confidence, :engine_version, :recommendation, now(), now())
+                        INSERT INTO ev_signals (sport, sport_key, prop_type, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, ev_percentage, implied_prob, confidence, engine_version, recommendation, reason, tier, clv, steam, created_at, updated_at)
+                        VALUES (:sport, :sport_key, :prop_type, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :ev_percentage, :implied_prob, :confidence, :engine_version, :recommendation, :reason, :tier, :clv, :steam, now(), now())
                         """
                         update_clause = """
                         DO UPDATE SET 
@@ -295,6 +295,10 @@ class EVService:
                             implied_prob = EXCLUDED.implied_prob, 
                             confidence = EXCLUDED.confidence,
                             recommendation = EXCLUDED.recommendation,
+                            reason = EXCLUDED.reason,
+                            tier = EXCLUDED.tier,
+                            clv = EXCLUDED.clv,
+                            steam = EXCLUDED.steam,
                             updated_at = now()
                         """
                         try:

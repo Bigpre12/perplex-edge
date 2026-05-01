@@ -41,24 +41,24 @@ class MonteCarloProbabilityEngine:
 
         try:
             async with async_session_maker() as session:
-                # 1. Try the dedicated hit-rate table first
+                # 1. Try the dedicated Monte Carlo hit-rate table first
                 hr_sql = text("""
-                    SELECT l10_hit_rate
-                    FROM player_hit_rates
-                    WHERE player_name = :player_name
-                      AND stat_type   = :stat_type
+                    SELECT hit_rate 
+                    FROM player_mc_hit_rates 
+                    WHERE player_name = :player_name 
+                      AND market_key = :market_key 
+                      AND line = :line
                     LIMIT 1
                 """)
                 result = await session.execute(hr_sql, {
                     "player_name": player_name,
-                    "stat_type": stat_type,
+                    "market_key": market_key,
+                    "line": line
                 })
                 row = result.scalar_one_or_none()
 
                 if row is not None:
-                    # stored as 0-100 percentage → convert to 0-1
-                    rate = float(row)
-                    return rate / 100.0 if rate > 1.0 else rate
+                    return float(row)
 
                 # 2. Fallback: estimate from props_live confidence column
                 pl_sql = text("""

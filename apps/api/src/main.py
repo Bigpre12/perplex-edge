@@ -377,6 +377,21 @@ async def initialize_backend_services():
                    OR l5_hit_rate != l5_hit_rate OR l10_hit_rate != l10_hit_rate OR l20_hit_rate != l20_hit_rate
             """)
 
+            # Track player historical hit rates for Monte Carlo
+            await run_migration_step("""
+                CREATE TABLE IF NOT EXISTS player_mc_hit_rates (
+                    id SERIAL PRIMARY KEY,
+                    player_name TEXT NOT NULL,
+                    market_key TEXT NOT NULL,
+                    line FLOAT NOT NULL,
+                    over_hits INT DEFAULT 0,
+                    total_games INT DEFAULT 0,
+                    hit_rate FLOAT,
+                    updated_at TIMESTAMPTZ DEFAULT now(),
+                    UNIQUE(player_name, market_key, line)
+                )
+            """)
+
             # Line Movement table for CLV Engine tracking
             await run_migration_step("""
                 CREATE TABLE IF NOT EXISTS line_movement (
@@ -395,6 +410,12 @@ async def initialize_backend_services():
                 CREATE INDEX IF NOT EXISTS idx_line_movement_event
                 ON line_movement (event_id, market_key, bookmaker)
             """)
+
+            # Add Brains engine columns to ev_signals if they don't exist
+            await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS reason TEXT")
+            await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS tier TEXT")
+            await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS clv FLOAT")
+            await run_migration_step("ALTER TABLE ev_signals ADD COLUMN IF NOT EXISTS steam BOOLEAN")
 
             # System Sync State table for tracking waterfall pipeline timestamps
             await run_migration_step("""
