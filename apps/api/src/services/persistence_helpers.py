@@ -69,21 +69,34 @@ async def upsert_props_live(records: List[PropRecord]):
                 away_team = EXCLUDED.away_team;
             """
             
-            if player_rows:
-                logger.debug(
-                    "upsert_props_live: %s player rows (ON CONFLICT player_name IS NOT NULL)",
-                    len(player_rows),
-                )
-                q_player = base_insert + " ON CONFLICT (sport, game_id, player_name, market_key, book) WHERE player_name IS NOT NULL " + update_clause
-                await session.execute(text(q_player), player_rows)
-            
-            if team_rows:
-                logger.debug(
-                    "upsert_props_live: %s team rows (ON CONFLICT player_name IS NULL)",
-                    len(team_rows),
-                )
-                q_team = base_insert + " ON CONFLICT (sport, game_id, market_key, book) WHERE player_name IS NULL " + update_clause
-                await session.execute(text(q_team), team_rows)
+            try:
+                if player_rows:
+                    logger.debug(
+                        "upsert_props_live: %s player rows (ON CONFLICT player_name IS NOT NULL)",
+                        len(player_rows),
+                    )
+                    q_player = base_insert + " ON CONFLICT (sport, game_id, player_name, market_key, book) WHERE player_name IS NOT NULL " + update_clause
+                    await session.execute(text(q_player), player_rows)
+                
+                if team_rows:
+                    logger.debug(
+                        "upsert_props_live: %s team rows (ON CONFLICT player_name IS NULL)",
+                        len(team_rows),
+                    )
+                    q_team = base_insert + " ON CONFLICT (sport, game_id, market_key, book) WHERE player_name IS NULL " + update_clause
+                    await session.execute(text(q_team), team_rows)
+            except Exception as e:
+                logger.warning(f"Persistence: props_live ON CONFLICT failed, attempting DELETE+INSERT fallback: {e}")
+                del_player_sql = "DELETE FROM props_live WHERE sport = :sport AND game_id = :game_id AND player_name = :player_name AND market_key = :market_key AND book = :book"
+                del_team_sql = "DELETE FROM props_live WHERE sport = :sport AND game_id = :game_id AND player_name IS NULL AND market_key = :market_key AND book = :book"
+                
+                if player_rows:
+                    await session.execute(text(del_player_sql), player_rows)
+                    await session.execute(text(base_insert), player_rows)
+                if team_rows:
+                    await session.execute(text(del_team_sql), team_rows)
+                    await session.execute(text(base_insert), team_rows)
+                logger.info(f"Persistence: Successfully used DELETE+INSERT fallback for {len(records)} props_live rows")
                 
             await session.commit()
             logger.debug("Persistence: upserted %s props to props_live", len(records))
