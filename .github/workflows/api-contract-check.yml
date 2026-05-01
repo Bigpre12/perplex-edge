@@ -33,5 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: openapi-current
-          path: apps/api/src/openapi.json # We'll modify the script to dump it here
+          path: |
+            apps/api/src/openapi.json
+            apps/api/src/failed_imports.txt
 

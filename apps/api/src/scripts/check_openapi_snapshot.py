@@ -41,8 +41,10 @@ def main() -> int:
         from main import _failed_router_imports
         if _failed_router_imports:
             print("\n❌ FAILED ROUTER IMPORTS:")
-            for name, err in _failed_router_imports:
-                print(f"  - {name}: {err}")
+            with open("failed_imports.txt", "w", encoding="utf-8") as f_err:
+                for name, err in _failed_router_imports:
+                    print(f"  - {name}: {err}")
+                    f_err.write(f"{name}: {err}\n")
         
         import difflib
         current_str = json.dumps(current, indent=2, sort_keys=True)
