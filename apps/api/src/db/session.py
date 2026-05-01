@@ -71,8 +71,11 @@ _raw_db_url = os.environ.get("DATABASE_URL", "NOT SET")
 if _raw_db_url != "NOT SET":
     try:
         parsed = urlparse(DATABASE_URL)
-        safe_url = DATABASE_URL.replace(parsed.password or "", "****")
-        logger.info("Database Initialization: Connecting to DB: %s", safe_url)
+        if parsed.password:
+            safe_url = DATABASE_URL.replace(parsed.password, "****")
+            logger.info("Database Initialization: Connecting to DB: %s", safe_url)
+        else:
+            logger.info("Database Initialization: Connecting to DB: %s", DATABASE_URL)
     except Exception:
         logger.info("Database Initialization: Connecting to redacted URL (Parsing failed)")
 else:
