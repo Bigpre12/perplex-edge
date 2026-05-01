@@ -25,6 +25,9 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 class EVService:
+    # Maximum realistic edge — anything above this is a data artifact
+    MAX_REALISTIC_EV = 15.0  # 15%
+
     def __init__(self):
         self.version = "v3-brains"
 
@@ -114,7 +117,7 @@ class EVService:
                                         line=line,
                                     )
 
-                                    edge = brain_result["edge_percent"]
+                                    edge = min(brain_result["edge_percent"], self.MAX_REALISTIC_EV)
 
                                     # Only keep if edge > minimum threshold
                                     if edge >= settings.EV_MIN_THRESHOLD:
@@ -163,7 +166,7 @@ class EVService:
                                 continue
 
                             for book, (price, implied) in side_books.items():
-                                edge = (true_p - implied) * 100
+                                edge = min((true_p - implied) * 100, self.MAX_REALISTIC_EV)
 
                                 if edge >= settings.EV_MIN_THRESHOLD:
                                     # Still route through Brains for consistent output

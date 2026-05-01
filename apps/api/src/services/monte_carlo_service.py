@@ -72,12 +72,23 @@ class MonteCarloProbabilityEngine:
                 })
                 avg_conf = result2.scalar_one_or_none()
                 if avg_conf is not None and float(avg_conf) > 0:
-                    return min(0.99, max(0.01, float(avg_conf)))
+                    # Clamp props_live fallback to a realistic range
+                    clamped = min(0.70, max(0.30, float(avg_conf)))
+                    logger.debug(
+                        "MC hit-rate for %s/%s: using props_live fallback=%.4f (raw=%.4f)",
+                        player_name, market_key, clamped, float(avg_conf),
+                    )
+                    return clamped
 
         except Exception as e:
             logger.debug("get_historical_hit_rate fallback for %s: %s", player_name, e)
 
-        return 0.50  # neutral prior
+        # No data at all — return neutral coin-flip prior (never assume an edge)
+        logger.warning(
+            "MC hit-rate for %s/%s: NO DATA — defaulting to 0.50 neutral prior",
+            player_name, market_key,
+        )
+        return 0.50
 
     # ------------------------------------------------------------------
     # Line spread estimation

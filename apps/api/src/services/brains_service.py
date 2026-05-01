@@ -91,6 +91,9 @@ class BrainsScorer:
     # ------------------------------------------------------------------
     # Main scoring method
     # ------------------------------------------------------------------
+    # Maximum edge the scorer will ever output (data-quality guard)
+    MAX_EDGE_PERCENT = 15.0  # 15%
+
     def score_prop(
         self,
         monte_carlo_prob: float,
@@ -109,6 +112,18 @@ class BrainsScorer:
             "reason", "clv", "steam", "recommendation"
         }
         """
+        # ------------------------------------------------------------------
+        # Sample-size gate: if MC returned the neutral 0.50 prior it means
+        # player_mc_hit_rates had no data.  Fall back to market-implied
+        # probability so we don't manufacture a phantom edge.
+        # ------------------------------------------------------------------
+        if monte_carlo_prob == 0.50:
+            logger.warning(
+                "Brains: No MC data for %s %s %s — falling back to implied prob %.4f",
+                player_name, side, line, implied_prob,
+            )
+            monte_carlo_prob = implied_prob  # no edge without data
+
         # Sub-scores
         mc_score = self._mc_confidence(monte_carlo_prob, implied_prob)
         clv_score = self._clv_confidence(clv)
@@ -122,7 +137,8 @@ class BrainsScorer:
             2,
         )
 
-        edge_percent = round((monte_carlo_prob - implied_prob) * 100, 2)
+        raw_edge = round((monte_carlo_prob - implied_prob) * 100, 2)
+        edge_percent = min(raw_edge, self.MAX_EDGE_PERCENT)  # cap at 15%
         tier = self._tier(confidence, edge_percent)
         rec = self._recommendation(confidence, edge_percent)
 
