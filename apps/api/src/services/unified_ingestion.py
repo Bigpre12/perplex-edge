@@ -423,7 +423,8 @@ class UnifiedIngestionService:
                     event_props = await odds_api_client.get_player_props(
                         sport=sport_key,
                         event_id=eid,
-                        markets=market_set
+                        markets=market_set,
+                        ttl=1800 # 30 mins TTL to prevent quota bleeding
                     )
                     
                     # Task 3: Per-event prop fallback

@@ -82,9 +82,20 @@ async def upsert_unified_odds(rows: List[Dict[str, Any]]) -> None:
                 len(team_rows),
             )
     except Exception as e:
-        # If the unique constraint is missing, we might need to handle it differently or just log.
-        error_msg = f"UnifiedOdds: Upsert failed for {len(rows)} rows: {e}"
-        logger.error(error_msg)
-        # Log sample row for debugging if possible
-        if rows:
-            logger.debug(f"Sample row causing failure: {rows[0]}")
+        error_msg = f"UnifiedOdds: Upsert failed with ON CONFLICT, attempting DELETE+INSERT fallback: {e}"
+        logger.warning(error_msg)
+        try:
+            delete_sql_player = f"DELETE FROM {table_name} WHERE sport = :sport AND event_id = :event_id AND player_name = :player_name AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker"
+            delete_sql_team = f"DELETE FROM {table_name} WHERE sport = :sport AND event_id = :event_id AND player_name IS NULL AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker"
+            
+            if player_rows:
+                await db.executemany(delete_sql_player, player_rows)
+                await db.executemany(base_insert, player_rows)
+            if team_rows:
+                await db.executemany(delete_sql_team, team_rows)
+                await db.executemany(base_insert, team_rows)
+            logger.info(f"UnifiedOdds: Successfully used DELETE+INSERT fallback for {len(rows)} rows")
+        except Exception as fallback_e:
+            logger.error(f"UnifiedOdds: Fallback DELETE+INSERT also failed: {fallback_e}")
+            if rows:
+                logger.debug(f"Sample row causing failure: {rows[0]}")

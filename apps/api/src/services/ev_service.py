@@ -194,12 +194,21 @@ class EVService:
                             recommendation = EXCLUDED.recommendation,
                             updated_at = now()
                         """
-                        if row.get("player_name"):
-                            sql = base_sql + " ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL " + update_clause
-                        else:
-                            sql = base_sql + " ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NULL " + update_clause
-                            
-                        await session.execute(text(sql), row)
+                        try:
+                            if row.get("player_name"):
+                                sql = base_sql + " ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL " + update_clause
+                            else:
+                                sql = base_sql + " ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NULL " + update_clause
+                                
+                            await session.execute(text(sql), row)
+                        except Exception as pg_err:
+                            logger.warning(f"EVService: ON CONFLICT failed for row, using DELETE+INSERT fallback: {pg_err}")
+                            if row.get("player_name"):
+                                del_sql = "DELETE FROM ev_signals WHERE sport = :sport AND event_id = :event_id AND player_name = :player_name AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker AND engine_version = :engine_version"
+                            else:
+                                del_sql = "DELETE FROM ev_signals WHERE sport = :sport AND event_id = :event_id AND player_name IS NULL AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker AND engine_version = :engine_version"
+                            await session.execute(text(del_sql), row)
+                            await session.execute(text(base_sql), row)
                 
                 # 2. Historical edges_ev_history via shared persistence (market_label + validation)
                 history_rows = []
