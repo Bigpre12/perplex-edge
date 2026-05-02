@@ -13,6 +13,27 @@ logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler(timezone="UTC")
 _scheduler_initialized = False
 
+# 1. Guarded Wrappers (Module level to ensure stable function references)
+async def guarded_unified_ingest(sport_key: str):
+    from services.odds_api_client import odds_api_client
+    from services.unified_ingestion import unified_ingestion
+    if odds_api_client.all_keys_dead():
+        logger.debug(f"Skipping ingest_{sport_key} — all Odds API keys cooling down")
+        return
+    await unified_ingestion.run_with_retries(sport_key)
+
+async def guarded_kalshi_sync(sport_key: str):
+    from services.kalshi_service import kalshi_service
+    from services.kalshi_ingestion import kalshi_ingestion
+    from services.odds_api_client import odds_api_client
+    if not kalshi_service.enabled:
+        logger.debug(f"Skipping kalshi_sync_{sport_key} — Kalshi service disabled")
+        return
+    if odds_api_client.all_keys_dead():
+        logger.debug(f"Skipping kalshi_sync_{sport_key} — all Odds API keys cooling down")
+        return
+    await kalshi_ingestion.run(sport_key)
+
 def init_scheduler_jobs():
     """
     Register all recurring background jobs in the global scheduler.
@@ -20,36 +41,16 @@ def init_scheduler_jobs():
     """
     global _scheduler_initialized
     if _scheduler_initialized:
-        logger.debug("📡 [Scheduler] Jobs already initialized. Skipping.")
+        logger.info("📡 [Scheduler] Jobs already initialized. Skipping to prevent duplicates.")
         return
     
     logger.info("📡 [Scheduler] Initializing background jobs...")
 
     from services.grading_service import grading_service
-    from services.kalshi_ingestion import kalshi_ingestion
     from services.whale_service import whale_service
     from services.grader import run_full_grading_pipeline
-    from services.odds_api_client import odds_api_client
-    from services.unified_ingestion import unified_ingestion
     from services.live_data_service import live_data_service
     from services.seed_scheduler import setup_seed_scheduler
-
-    # 1. Guarded Wrappers (moved here to ensure they use the correct context)
-    async def guarded_unified_ingest(sport_key: str):
-        if odds_api_client.all_keys_dead():
-            logger.debug(f"Skipping ingest_{sport_key} — all Odds API keys cooling down")
-            return
-        await unified_ingestion.run_with_retries(sport_key)
-
-    async def guarded_kalshi_sync(sport_key: str):
-        from services.kalshi_service import kalshi_service
-        if not kalshi_service.enabled:
-            logger.debug(f"Skipping kalshi_sync_{sport_key} — Kalshi service disabled")
-            return
-        if odds_api_client.all_keys_dead():
-            logger.debug(f"Skipping kalshi_sync_{sport_key} — all Odds API keys cooling down")
-            return
-        await kalshi_ingestion.run(sport_key)
 
     # Common job configuration for stability
     common_kw = {
@@ -131,7 +132,7 @@ def init_scheduler_jobs():
     setup_seed_scheduler(scheduler)
 
     _scheduler_initialized = True
-    logger.info("📡 [Scheduler] Job initialization complete.")
+    logger.info("📡 [Scheduler] Job initialization complete. Registered %d total jobs.", len(scheduler.get_jobs()))
 
 def start_scheduler():
     if not scheduler.running:
