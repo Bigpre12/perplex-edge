@@ -1,15 +1,9 @@
-# apps/api/src/services/monte_carlo_service.py
-"""
-Monte Carlo Probability Engine — replaces book-implied odds with
-simulation-derived true probabilities.
+from __future__ import annotations
 
-Data flow:
-  player_hit_rates (empirical) → Normal-distribution simulation → true_prob
-  Cached in Redis/memory for 30 minutes.
-"""
 import logging
 import numpy as np
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from db.session import async_session_maker
 from services.cache import cache  # CacheManager singleton (Redis or in-memory)

@@ -1,4 +1,6 @@
-class AsyncSession: pass
+from __future__ import annotations
+
+from sqlalchemy.ext.asyncio import AsyncSession
 """
 Defense vs Position (DvP) Service
 Provides real mapping of how well an opposing team defends a specific player position.

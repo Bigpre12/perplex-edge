@@ -1,15 +1,8 @@
-# apps/api/src/services/ev_service.py
-"""
-EV Service — now powered by the Monte Carlo + CLV + Brains pipeline.
+from __future__ import annotations
 
-Data flow:
-  unified_odds → Monte Carlo → CLV → Brains Scorer → ev_signals → Frontend
-
-The sharp-weighted devig is retained as a FALLBACK ONLY when the
-Monte Carlo engine has no historical data for a prop.
-"""
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 
 from core.sports_config import ACTIVE_SPORTS

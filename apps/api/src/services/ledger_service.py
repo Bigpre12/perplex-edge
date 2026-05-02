@@ -1,4 +1,6 @@
-class AsyncSession: pass
+from __future__ import annotations
+
+from sqlalchemy.ext.asyncio import AsyncSession
 from models import BetSlip, BetLog, BetLeg, BetResult
 from models.user import User
 from sqlalchemy import select, update

@@ -1,4 +1,6 @@
-class AsyncSession: pass
+from __future__ import annotations
+
+from sqlalchemy.ext.asyncio import AsyncSession
 # backend/services/sharpmush_service.py
 # LOLA Smart Money — aggregate signal from top-performing community users
 from sqlalchemy import select, func

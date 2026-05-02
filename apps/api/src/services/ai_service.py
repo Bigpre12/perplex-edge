@@ -1,4 +1,6 @@
-class AsyncSession: pass
+from __future__ import annotations
+
+from sqlalchemy.ext.asyncio import AsyncSession
 import os
 import json
 import httpx

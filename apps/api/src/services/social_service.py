@@ -1,4 +1,6 @@
-class AsyncSession: pass
+from __future__ import annotations
+
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from models.social import SharedIntel
 from models.bet import BetSlip

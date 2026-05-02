@@ -1,4 +1,6 @@
-class AsyncSession: pass
+from __future__ import annotations
+
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
