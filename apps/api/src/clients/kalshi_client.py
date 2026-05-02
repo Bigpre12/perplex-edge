@@ -34,23 +34,54 @@ class KalshiClient(ResilientBaseClient):
             return self._private_key
         
         try:
-            # Handle both file paths and raw keys
-            b64_key = (os.getenv("KALSHI_PRIVATE_KEY_B64") or "").strip()
-            if b64_key:
-                key_data = base64.b64decode(b64_key)
-            elif "-----BEGIN" in self.private_key_str:
-                key_data = self.private_key_str.encode()
-            else:
-                with open(self.private_key_str, 'rb') as f:
-                    key_data = f.read()
+            # Standardized robust key loader
+            b64_val = os.getenv("KALSHI_PRIVATE_KEY_B64")
+            raw_val = self.private_key_str
+            path_val = self.private_key_str # In KalshiClient, private_key_str might be a path
+
+            # 1. Try Base64-specific variable first
+            if b64_val:
+                try:
+                    clean_b64 = b64_val.strip().strip('"').strip("'").replace("\n", "").replace("\r", "")
+                    key_bytes = base64.b64decode(clean_b64)
+                    self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                    return self._private_key
+                except Exception as e:
+                    logger.error(f"[Kalshi] Failed to load B64 key: {e}")
+
+            # 2. Try Raw PEM or Base64 in KALSHI_PRIVATE_KEY
+            if raw_val:
+                raw_val = raw_val.strip().strip('"').strip("'")
+                # Case A: It's a raw PEM
+                if "-----BEGIN" in raw_val:
+                    try:
+                        key_bytes = raw_val.replace("\\n", "\n").encode("utf-8")
+                        self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                        return self._private_key
+                    except Exception as e:
+                        logger.error(f"[Kalshi] Failed to load raw PEM: {e}")
+                # Case B: It's Base64 (likely single-line from Railway)
+                else:
+                    try:
+                        clean_b64 = raw_val.replace("\n", "").replace("\r", "")
+                        key_bytes = base64.b64decode(clean_b64)
+                        self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                        return self._private_key
+                    except Exception as e:
+                        logger.error(f"[Kalshi] Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
+
+            # 3. Try File Path
+            if path_val and os.path.exists(path_val):
+                try:
+                    with open(path_val, "rb") as f:
+                        self._private_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+                        return self._private_key
+                except Exception as e:
+                    logger.error(f"[Kalshi] Failed to load key from file {path_val}: {e}")
             
-            self._private_key = serialization.load_pem_private_key(
-                key_data,
-                password=None
-            )
-            return self._private_key
+            return None
         except Exception as e:
-            logger.error(f"[Kalshi] Failed to load private key: {str(e)}")
+            logger.error(f"[Kalshi] Unexpected error loading private key: {str(e)}")
             return None
 
     def _sign_message(self, timestamp: str, method: str, path: str) -> str:

@@ -38,41 +38,51 @@ class KalshiService:
         self._private_key = None
         self._missing_credentials_warned = False
 
-        # Prefer inline PEM (KALSHI_PRIVATE_KEY), then file path (KALSHI_PRIVATE_KEY_PATH)
-        raw = (self.private_key_content or "").strip()
-        if not raw and self.private_key_path and os.path.exists(str(self.private_key_path)):
-            try:
-                with open(str(self.private_key_path), encoding="utf-8") as f:
-                    raw = f.read()
-            except OSError:
+        # Standardized robust key loader
+        def load_key(b64_val, raw_val, path_val):
+            # 1. Try Base64-specific variable first
+            if b64_val:
                 try:
-                    with open(str(self.private_key_path), "rb") as f:
-                        raw = f.read().decode("utf-8", errors="replace")
-                except OSError as e:
-                    logger.error("KalshiService: Could not read private key file: %s", e)
+                    clean_b64 = b64_val.strip().strip('"').strip("'").replace("\n", "").replace("\r", "")
+                    key_bytes = base64.b64decode(clean_b64)
+                    return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                except Exception as e:
+                    logger.error(f"KalshiService: Failed to load B64 key: {e}")
 
-        if self.private_key_b64:
-            try:
-                key_bytes = base64.b64decode(self.private_key_b64)
-                self._private_key = serialization.load_pem_private_key(
-                    key_bytes,
-                    password=None,
-                    backend=default_backend(),
-                )
-                logger.info("KalshiService: RSA private key loaded from base64 env")
-            except Exception as e:
-                logger.error("KalshiService: Failed to load base64 private key: %s", e)
-        elif raw:
-            try:
-                key_bytes = raw.replace("\\n", "\n").encode("utf-8")
-                self._private_key = serialization.load_pem_private_key(
-                    key_bytes,
-                    password=None,
-                    backend=default_backend(),
-                )
-                logger.info("KalshiService: RSA private key loaded")
-            except Exception as e:
-                logger.error("KalshiService: Failed to load private key: %s", e)
+            # 2. Try Raw PEM or Base64 in KALSHI_PRIVATE_KEY
+            if raw_val:
+                raw_val = raw_val.strip().strip('"').strip("'")
+                # Case A: It's a raw PEM
+                if "-----BEGIN" in raw_val:
+                    try:
+                        key_bytes = raw_val.replace("\\n", "\n").encode("utf-8")
+                        return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                    except Exception as e:
+                        logger.error(f"KalshiService: Failed to load raw PEM: {e}")
+                # Case B: It's Base64 (likely single-line from Railway)
+                else:
+                    try:
+                        clean_b64 = raw_val.replace("\n", "").replace("\r", "")
+                        key_bytes = base64.b64decode(clean_b64)
+                        return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                    except Exception as e:
+                        logger.error(f"KalshiService: Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
+
+            # 3. Try File Path
+            if path_val and os.path.exists(str(path_val)):
+                try:
+                    with open(str(path_val), "rb") as f:
+                        return serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+                except Exception as e:
+                    logger.error(f"KalshiService: Failed to load key from file {path_val}: {e}")
+            
+            return None
+
+        self._private_key = load_key(
+            self.private_key_b64,
+            self.private_key_content,
+            self.private_key_path
+        )
 
         self.available = bool(self.api_key_id and self._private_key)
         if not self.available:

@@ -29,28 +29,51 @@ class KalshiWSManager:
         self._stop_event = asyncio.Event()
         self._private_key = None
 
-        raw = (self.private_key_content or "").strip()
-        if not raw and self.private_key_path and os.path.exists(self.private_key_path):
-            try:
-                with open(self.private_key_path, encoding="utf-8") as f:
-                    raw = f.read()
-            except OSError:
+        # Standardized robust key loader
+        def load_key(b64_val, raw_val, path_val):
+            # 1. Try Base64-specific variable first
+            if b64_val:
                 try:
-                    with open(self.private_key_path, "rb") as f:
-                        raw = f.read().decode("utf-8", errors="replace")
-                except OSError as e:
-                    logger.error("KalshiWS: Could not read private key file: %s", e)
+                    clean_b64 = b64_val.strip().strip('"').strip("'").replace("\n", "").replace("\r", "")
+                    key_bytes = base64.b64decode(clean_b64)
+                    return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                except Exception as e:
+                    logger.error(f"KalshiWS: Failed to load B64 key: {e}")
 
-        if raw:
-            try:
-                key_bytes = raw.replace("\\n", "\n").encode("utf-8")
-                self._private_key = serialization.load_pem_private_key(
-                    key_bytes,
-                    password=None,
-                    backend=default_backend(),
-                )
-            except Exception as e:
-                logger.error("KalshiWS: Failed to load private key: %s", e)
+            # 2. Try Raw PEM or Base64 in KALSHI_PRIVATE_KEY
+            if raw_val:
+                raw_val = raw_val.strip().strip('"').strip("'")
+                # Case A: It's a raw PEM
+                if "-----BEGIN" in raw_val:
+                    try:
+                        key_bytes = raw_val.replace("\\n", "\n").encode("utf-8")
+                        return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                    except Exception as e:
+                        logger.error(f"KalshiWS: Failed to load raw PEM: {e}")
+                # Case B: It's Base64 (likely single-line from Railway)
+                else:
+                    try:
+                        clean_b64 = raw_val.replace("\n", "").replace("\r", "")
+                        key_bytes = base64.b64decode(clean_b64)
+                        return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                    except Exception as e:
+                        logger.error(f"KalshiWS: Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
+
+            # 3. Try File Path
+            if path_val and os.path.exists(path_val):
+                try:
+                    with open(path_val, "rb") as f:
+                        return serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+                except Exception as e:
+                    logger.error(f"KalshiWS: Failed to load key from file {path_val}: {e}")
+            
+            return None
+
+        self._private_key = load_key(
+            os.getenv("KALSHI_PRIVATE_KEY_B64"),
+            self.private_key_content,
+            self.private_key_path
+        )
 
         self.available = bool(self.api_key_id and self._private_key)
         if not self.available:
@@ -93,14 +116,31 @@ class KalshiWSManager:
             logger.warning("KalshiWS: REDIS_URL not configured, skipping Redis")
 
     async def subscribe(self, websocket, tickers: List[str]):
-        sub_msg = {
-            "id": 2,
-            "type": "subscribe",
-            "channels": ["orderbook_delta", "trade"],
-            "tickers": tickers
+        """Subscribe to ticker, orderbook, and trade updates"""
+        # 1. Subscribe to 'ticker' (all markets)
+        ticker_msg = {
+            "id": 1,
+            "cmd": "subscribe",
+            "params": {
+                "channels": ["ticker"]
+            }
         }
-        await websocket.send(json.dumps(sub_msg))
-        logger.info(f"KalshiWS: Subscribed to {tickers}")
+        await websocket.send(json.dumps(ticker_msg))
+        
+        # 2. Subscribe to 'orderbook_delta' and 'trade' for specific markets if provided
+        if tickers:
+            market_msg = {
+                "id": 2,
+                "cmd": "subscribe",
+                "params": {
+                    "channels": ["orderbook_delta", "trade"],
+                    "market_tickers": tickers
+                }
+            }
+            await websocket.send(json.dumps(market_msg))
+            logger.info(f"KalshiWS: Subscribed to ticker (all) and {tickers} for orderbook/trades")
+        else:
+            logger.info("KalshiWS: Subscribed to ticker (all)")
 
     async def run(self, tickers: List[str]):
         if not os.getenv("KALSHI_PRIVATE_KEY") or not os.getenv("KALSHI_API_KEY_ID"):
