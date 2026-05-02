@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { clsx } from 'clsx';
 
 const SPORTS = ['NBA', 'NFL', 'MLB', 'NHL', 'NCAAF', 'WNBA'];
 const BOOKS = ['PrizePicks', 'DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'Fliff'];
@@ -22,60 +23,126 @@ export default function OnboardingFlow() {
     router.push('/desk');
   };
 
-  const btnStyle = (active: boolean) => ({
-    padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontWeight: 600,
-    border: active ? '2px solid #3b82f6' : '1px solid #333',
-    background: active ? '#1d4ed8' : '#1a1a1a', color: '#fff'
-  });
+  const btnClass = (active: boolean) => clsx(
+    "px-4 py-2 rounded-lg cursor-pointer font-semibold transition-all",
+    active 
+      ? "border-2 border-brand-primary bg-brand-primary/20 text-white" 
+      : "border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+  );
 
   return (
-    <div style={{ maxWidth: 480, margin: '80px auto', padding: 32, background: '#111', borderRadius: 16, color: '#fff' }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {[1, 2, 3].map(i => <div key={i} style={{ height: 4, flex: 1, borderRadius: 4, background: i <= step ? '#3b82f6' : '#333' }} />)}
+    <div className="max-w-[480px] mx-auto my-20 p-8 bg-[#0c0c0c] border border-white/10 rounded-3xl text-white shadow-2xl">
+      <div className="mb-6">
+        <div className="flex gap-2 mb-4">
+          {[1, 2, 3].map(i => (
+            <div 
+              key={i} 
+              className={clsx(
+                "h-1 flex-1 rounded-full transition-all",
+                i <= step ? "bg-brand-primary shadow-[0_0_8px_rgba(34,211,238,0.5)]" : "bg-white/5"
+              )} 
+            />
+          ))}
         </div>
-        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Welcome to LOLA ✦</h1>
-        <p style={{ color: '#888' }}>Quick setup — takes 30 seconds</p>
+        <h1 className="text-2xl font-black italic uppercase tracking-tight">Welcome to Lucrix ✦</h1>
+        <p className="text-slate-500 text-sm font-medium mt-1">Quick setup — takes 30 seconds</p>
       </div>
 
       {step === 1 && (
-        <div>
-          <h2 style={{ marginBottom: 12 }}>Which sports do you bet?</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {SPORTS.map(s => <button key={s} onClick={() => toggleSport(s)} style={btnStyle(sports.includes(s))}>{s}</button>)}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Which sports do you bet?</h2>
+            <div className="flex flex-wrap gap-2">
+              {SPORTS.map(s => (
+                <button 
+                  key={s} 
+                  onClick={() => toggleSport(s)} 
+                  className={btnClass(sports.includes(s))}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-          <button onClick={() => setStep(2)} style={{ marginTop: 24, width: '100%', padding: '12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>Next →</button>
+          <button 
+            onClick={() => setStep(2)} 
+            className="w-full py-4 bg-brand-primary text-background-dark rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-brand-primary/20"
+          >
+            Next Step →
+          </button>
         </div>
       )}
 
       {step === 2 && (
-        <div>
-          <h2 style={{ marginBottom: 12 }}>What's your bankroll?</h2>
-          <input type='number' value={bankroll} onChange={e => setBankroll(Number(e.target.value))}
-            style={{ width: '100%', padding: 12, background: '#1a1a1a', border: '1px solid #333', borderRadius: 8, color: '#fff', fontSize: 18 }} />
-          <p style={{ color: '#888', marginTop: 8, fontSize: 13 }}>Used for Kelly Criterion stake sizing. You can change this anytime.</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
-            <button onClick={() => setStep(1)} style={{ flex: 1, padding: 12, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 8, cursor: 'pointer' }}>â†  Back</button>
-            <button onClick={() => setStep(3)} style={{ flex: 2, padding: 12, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>Next →</button>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">What's your bankroll?</h2>
+            <label htmlFor="bankroll-input" className="sr-only">Bankroll Amount</label>
+            <div className="relative group">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-primary font-bold text-xl">$</span>
+              <input 
+                id="bankroll-input"
+                type='number' 
+                value={bankroll} 
+                onChange={e => setBankroll(Number(e.target.value))}
+                placeholder="500"
+                title="Enter your total bankroll"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-10 pr-6 text-2xl font-black text-white focus:outline-none focus:border-brand-primary/50 transition-all"
+              />
+            </div>
+            <p className="text-slate-500 text-xs mt-3 leading-relaxed">
+              Used for <span className="text-brand-primary font-bold">Kelly Criterion</span> stake sizing. You can change this anytime in settings.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setStep(1)} 
+              className="flex-1 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+            >
+              Back
+            </button>
+            <button 
+              onClick={() => setStep(3)} 
+              className="flex-[2] py-4 bg-brand-primary text-background-dark rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-brand-primary/20"
+            >
+              Next Step →
+            </button>
           </div>
         </div>
       )}
 
       {step === 3 && (
-        <div>
-          <h2 style={{ marginBottom: 12 }}>Where do you bet?</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {BOOKS.map(b => <button key={b} onClick={() => toggleBook(b)} style={btnStyle(books.includes(b))}>{b}</button>)}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Where do you bet?</h2>
+            <div className="flex flex-wrap gap-2">
+              {BOOKS.map(b => (
+                <button 
+                  key={b} 
+                  onClick={() => toggleBook(b)} 
+                  className={btnClass(books.includes(b))}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
-            <button onClick={() => setStep(2)} style={{ flex: 1, padding: 12, background: '#1a1a1a', color: '#fff', border: '1px solid #333', borderRadius: 8, cursor: 'pointer' }}>â†  Back</button>
-            <button onClick={finish} style={{ flex: 2, padding: 12, background: '#16a34a', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>🚀 Launch LOLA</button>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setStep(2)} 
+              className="flex-1 py-4 bg-white/5 border border-white/10 text-white rounded-xl font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+            >
+              Back
+            </button>
+            <button 
+              onClick={finish} 
+              className="flex-[2] py-4 bg-emerald-500 text-background-dark rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+            >
+              🚀 Launch Neural Engine
+            </button>
           </div>
         </div>
       )}
     </div>
   );
 }
-// Usage: In middleware.ts, check if localStorage lola-onboarded is set.
-// If not, redirect new users to /onboarding route.
-// Add page: app/onboarding/page.tsx -> <OnboardingFlow />

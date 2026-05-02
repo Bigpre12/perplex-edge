@@ -71,6 +71,8 @@ export default function AIHandler() {
             <motion.button
                 layoutId="ai-bubble"
                 onClick={() => setIsOpen(true)}
+                title="Open AI Intelligence"
+                aria-label="Open AI Intelligence"
                 className="fixed bottom-6 right-6 z-50 p-4 bg-primary text-background-dark rounded-full shadow-2xl shadow-primary/30 hover:scale-110 active:scale-95 transition-all group"
             >
                 <Brain className="group-hover:animate-pulse" />
@@ -102,6 +104,8 @@ export default function AIHandler() {
                                 </div>
                                 <button
                                     onClick={() => setIsOpen(false)}
+                                    title="Close AI Intelligence"
+                                    aria-label="Close AI Intelligence"
                                     className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all"
                                 >
                                     <X size={18} />
@@ -162,6 +166,8 @@ export default function AIHandler() {
                                     <button
                                         onClick={handleSend}
                                         disabled={!query.trim() || isLoading}
+                                        title="Send message"
+                                        aria-label="Send message"
                                         className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-primary hover:text-white disabled:opacity-30 transition-colors"
                                     >
                                         <Send size={18} />
