@@ -209,21 +209,33 @@ async def live_scores_ws(
     websocket: WebSocket,
     user: Any = Depends(get_current_user_ws)
 ):
+    from starlette.websockets import WebSocketDisconnect, WebSocketState
+    
+    # 1. Origin Check
     origin = (websocket.headers.get("origin") or "").strip()
     parsed = urlparse(origin) if origin else None
     origin_base = f"{parsed.scheme}://{parsed.netloc}" if parsed and parsed.scheme and parsed.netloc else origin
     if origin_base not in ALLOWED_WS_ORIGINS:
-        await websocket.close(code=4003, reason="Origin not allowed")
+        try:
+            await websocket.close(code=4003, reason="Origin not allowed")
+        except Exception:
+            pass
         return
 
+    # 2. Auth Check
     if not user:
-        await websocket.close(code=4003, reason="Invalid token or missing auth")
+        try:
+            await websocket.close(code=4003, reason="Invalid token or missing auth")
+        except Exception:
+            pass
         return
 
     await websocket.accept()
     sport = websocket.query_params.get("sport") or "basketball_nba"
+    
     try:
         while True:
+            # 3. Fetch and Send Updates
             games = await real_data_connector.fetch_games_by_sport(sport)
             await websocket.send_json(
                 {
@@ -232,12 +244,27 @@ async def live_scores_ws(
                     "sport": sport,
                 }
             )
+            
+            # 4. Wait for Client Ping or Timeout
             try:
-                msg = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+                # We listen for messages while also sleeping to prevent blocking the loop
+                # If the client sends 'ping', we reply with 'pong'
+                msg = await asyncio.wait_for(websocket.receive_text(), timeout=5.0)
                 if msg.lower() == "ping":
                     await websocket.send_json({"type": "pong"})
             except asyncio.TimeoutError:
                 pass
-            await asyncio.sleep(15.0)
-    except Exception:
-        await websocket.close()
+            
+            await asyncio.sleep(10.0)
+            
+    except WebSocketDisconnect:
+        logger.info(f"Live scores WS disconnected for user {getattr(user, 'email', 'unknown')}")
+    except Exception as e:
+        logger.error(f"Live scores WS error: {e}")
+    finally:
+        # 5. Safe Cleanup: Only close if still open
+        if websocket.application_state == WebSocketState.CONNECTED:
+            try:
+                await websocket.close()
+            except Exception:
+                pass
