@@ -28,6 +28,12 @@ class KalshiWSManager:
         self.redis = None
         self._stop_event = asyncio.Event()
         self._private_key = None
+        self.enabled = False
+        self.available = False
+        self._disabled = True # Default until loaded
+        self._disabled_logged = False
+        self._auth_failure_count = 0
+        self._auth_disabled = False
 
         # Standardized robust key loader
         def load_key(b64_val, raw_val, path_val):
@@ -67,10 +73,6 @@ class KalshiWSManager:
                 except Exception as e:
                     logger.error(f"KalshiWS: Failed to load key from file {path_val}: {e}")
             
-            return None
-
-        self._private_key = None
-        self.enabled = False
         self._load_key_safely()
 
     def _load_key_safely(self):
@@ -84,14 +86,12 @@ class KalshiWSManager:
                 self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
                 self.enabled = True
                 logger.info("KalshiWS: key loaded successfully from B64")
-                return
             except Exception as e:
                 logger.error(f"KalshiWS: Failed to load B64 key: {e}")
 
         # 2. Try Raw PEM or Base64 in KALSHI_PRIVATE_KEY
-        raw_val = self.private_key_content
-        if raw_val:
-            raw_val = raw_val.strip().strip('"').strip("'")
+        if not self.enabled and self.private_key_content:
+            raw_val = self.private_key_content.strip().strip('"').strip("'")
             # Case A: It's a raw PEM
             if "-----BEGIN" in raw_val:
                 try:
@@ -99,10 +99,9 @@ class KalshiWSManager:
                     self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
                     self.enabled = True
                     logger.info("KalshiWS: key loaded successfully from raw PEM")
-                    return
                 except Exception as e:
                     logger.error(f"KalshiWS: Failed to load raw PEM: {e}")
-            # Case B: It's Base64 (likely single-line from Railway)
+            # Case B: It's Base64
             else:
                 try:
                     clean_b64 = raw_val.replace("\n", "").replace("\r", "")
@@ -110,35 +109,26 @@ class KalshiWSManager:
                     self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
                     self.enabled = True
                     logger.info("KalshiWS: key loaded successfully from potential B64")
-                    return
                 except Exception as e:
                     logger.error(f"KalshiWS: Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
 
         # 3. Try File Path
-        path_val = self.private_key_path
-        if path_val and os.path.exists(path_val):
+        if not self.enabled and self.private_key_path and os.path.exists(self.private_key_path):
             try:
-                with open(path_val, "rb") as f:
+                with open(self.private_key_path, "rb") as f:
                     self._private_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
                     self.enabled = True
-                    logger.info(f"KalshiWS: key loaded successfully from file {path_val}")
-                    return
+                    logger.info(f"KalshiWS: key loaded successfully from file {self.private_key_path}")
             except Exception as e:
-                logger.error(f"KalshiWS: Failed to load key from file {path_val}: {e}")
+                logger.error(f"KalshiWS: Failed to load key from file {self.private_key_path}: {e}")
         
         # Diagnostic logging for Railway debugging
         logger.info(f"KalshiWS Config: KEY_ID={bool(self.api_key_id)} (len={len(self.api_key_id) if self.api_key_id else 0}), PRIV_KEY={self.enabled}")
 
         self.available = self.enabled
-        if not self.enabled:
-            logger.warning(
-                "KalshiWS: Disabled — missing credentials or invalid key format."
-            )
-
         self._disabled = not self.available
-        self._disabled_logged = False
-        self._auth_failure_count = 0
-        self._auth_disabled = False
+        if not self.enabled:
+            logger.warning("KalshiWS: Disabled — missing credentials or invalid key format.")
 
     def _create_signature(self, timestamp: str, method: str, path: str) -> str:
         if not self._private_key: return ""

@@ -31,6 +31,41 @@ async def get_prop_score(sport: str = "basketball_nba", db: AsyncSession = Depen
         logger.error(f"Error in prop-score: {e}")
         return {"items": [], "decisions": []}
 
+@user_router.get("/picks")
+async def get_brain_picks(sport: str = "basketball_nba", limit: int = 50, db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
+    """Returns historical ModelPick records for the History tab."""
+    if tier not in ("pro", "elite"): return []
+    try:
+        from sqlalchemy import select, desc
+        stmt = select(ModelPick).order_by(desc(ModelPick.created_at)).limit(limit)
+        if sport and sport != "all":
+            stmt = stmt.where(ModelPick.sport_key == sport)
+            
+        result = await db.execute(stmt)
+        picks = result.scalars().all()
+        
+        # Map to format expected by usePropsHistory.ts / PropsHistoryRecord
+        mapped = []
+        for p in picks:
+            mapped.append({
+                "id": str(p.id),
+                "player_name": p.player_name or "Unknown",
+                "market_key": p.stat_type or "—",
+                "line": p.line,
+                "result_value": p.actual_value,
+                "actual_score": p.actual_value,
+                "status": "HIT" if p.won else ("MISS" if p.won is False else "PENDING"),
+                "sport": p.sport_key,
+                "commence_time": p.created_at.isoformat() if p.created_at else None,
+                "confidence": p.confidence,
+                "prediction": p.side.upper() if p.side else None
+            })
+        return mapped
+    except Exception as e:
+        logger.error(f"Error in brain-picks: {e}")
+        return []
+
+
 @user_router.get("/parlay-builder")
 async def get_parlay_builder(sport: str = "basketball_nba", legs: int = 3, min_score: int = 65, db: AsyncSession = Depends(get_async_db), tier: str = Depends(get_user_tier)):
     if tier not in ("pro", "elite"): return {"legs": [], "sport": sport, "message": "Pro or Elite subscription required"}

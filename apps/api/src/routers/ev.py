@@ -38,7 +38,10 @@ async def get_ev_signals(
         rows = result.mappings().all()
         if rows:
             return {
-                "props": [dict(r) for r in rows],
+                "props": [
+                    {**dict(r), "ev_pct": r.get("edge_percent", 0), "ev_percentage": r.get("edge_percent", 0)} 
+                    for r in rows
+                ],
                 "count": len(rows),
                 "updated": datetime.utcnow().isoformat() + "Z",
                 "source": "ev_signals"
@@ -104,6 +107,8 @@ async def get_ev_signals(
                 # Only keep edges in the 2–20% range (noise filter)
                 if 2.0 <= best_ev <= 20.0:
                     row['ev_pct'] = best_ev
+                    row['ev_percentage'] = best_ev
+                    row['edge_percent'] = best_ev
                     row['recommendation'] = recommendation
                     edges.append(row)
             except Exception:

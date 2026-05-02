@@ -71,12 +71,12 @@ export function usePropsBoard(sport = "basketball_nba", minEv?: number) {
                 best_book: p.book || 'Average',
                 books: [{ book: p.book, side: 'over', odds: p.odds_over }, { book: p.book, side: 'under', odds: p.odds_under }],
                 implied_probability: p.implied_over || 0,
-                model_probability: 0,
-                ev_percentage: 0,
-                confidence: 0,
-                steam_signal: false,
-                whale_signal: false,
-                sharp_conflict: false,
+                model_probability: p.true_prob || p.model_probability || 0,
+                ev_percentage: p.ev_percentage || p.edge_percent || 0,
+                confidence: p.confidence || 0,
+                steam_signal: !!p.steam_signal,
+                whale_signal: !!p.whale_signal,
+                sharp_conflict: !!p.sharp_conflict,
                 last_updated: p.last_updated_at || new Date().toISOString()
             }));
 

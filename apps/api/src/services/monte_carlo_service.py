@@ -27,7 +27,7 @@ class MonteCarloProbabilityEngine:
     # Historical data lookup
     # ------------------------------------------------------------------
     async def get_historical_hit_rate(
-        self, player_name: str, market_key: str, line: float
+        self, player_name: str, market_key: str, line: float, db: Optional[AsyncSession] = None
     ) -> float:
         """
         Query the existing ``player_hit_rates`` table (HitRateModel) which
@@ -40,46 +40,11 @@ class MonteCarloProbabilityEngine:
         stat_type = market_key.replace("player_", "")
 
         try:
+            if db:
+                return await self._execute_hit_rate_query(db, player_name, stat_type, market_key)
+            
             async with async_session_maker() as session:
-                # 1. Try the dedicated Monte Carlo hit-rate table first
-                hr_sql = text("""
-                    SELECT hit_rate 
-                    FROM player_mc_hit_rates 
-                    WHERE player_name = :player_name 
-                      AND stat_type = :stat_type
-                    LIMIT 1
-                """)
-                result = await session.execute(hr_sql, {
-                    "player_name": player_name,
-                    "stat_type": stat_type
-                })
-                row = result.scalar_one_or_none()
-
-                if row is not None:
-                    return float(row)
-
-                # 2. Fallback: estimate from props_live confidence column
-                pl_sql = text("""
-                    SELECT AVG(confidence)
-                    FROM props_live
-                    WHERE player_name = :player_name
-                      AND market_key  = :market_key
-                      AND confidence IS NOT NULL
-                """)
-                result2 = await session.execute(pl_sql, {
-                    "player_name": player_name,
-                    "market_key": market_key,
-                })
-                avg_conf = result2.scalar_one_or_none()
-                if avg_conf is not None and float(avg_conf) > 0:
-                    # Clamp props_live fallback to a realistic range
-                    clamped = min(0.70, max(0.30, float(avg_conf)))
-                    logger.debug(
-                        "MC hit-rate for %s/%s: using props_live fallback=%.4f (raw=%.4f)",
-                        player_name, market_key, clamped, float(avg_conf),
-                    )
-                    return clamped
-
+                return await self._execute_hit_rate_query(session, player_name, stat_type, market_key)
         except Exception as e:
             logger.debug("get_historical_hit_rate fallback for %s: %s", player_name, e)
 
@@ -90,11 +55,52 @@ class MonteCarloProbabilityEngine:
         )
         return 0.50
 
+    async def _execute_hit_rate_query(self, session, player_name, stat_type, market_key):
+        # 1. Try the dedicated Monte Carlo hit-rate table first
+        hr_sql = text("""
+            SELECT hit_rate 
+            FROM player_mc_hit_rates 
+            WHERE player_name = :player_name 
+              AND stat_type = :stat_type
+            LIMIT 1
+        """)
+        result = await session.execute(hr_sql, {
+            "player_name": player_name,
+            "stat_type": stat_type
+        })
+        row = result.scalar_one_or_none()
+
+        if row is not None:
+            return float(row)
+
+        # 2. Fallback: estimate from props_live confidence column
+        pl_sql = text("""
+            SELECT AVG(confidence)
+            FROM props_live
+            WHERE player_name = :player_name
+              AND market_key  = :market_key
+              AND confidence IS NOT NULL
+        """)
+        result2 = await session.execute(pl_sql, {
+            "player_name": player_name,
+            "market_key": market_key,
+        })
+        avg_conf = result2.scalar_one_or_none()
+        if avg_conf is not None and float(avg_conf) > 0:
+            # Clamp props_live fallback to a realistic range
+            clamped = min(0.70, max(0.30, float(avg_conf)))
+            logger.debug(
+                "MC hit-rate for %s/%s: using props_live fallback=%.4f (raw=%.4f)",
+                player_name, market_key, clamped, float(avg_conf),
+            )
+            return clamped
+        return 0.50
+
     # ------------------------------------------------------------------
     # Line spread estimation
     # ------------------------------------------------------------------
     async def _get_line_spread_std(
-        self, player_name: str, market_key: str, line: float
+        self, player_name: str, market_key: str, line: float, db: Optional[AsyncSession] = None
     ) -> float:
         """
         Estimate standard deviation from the spread of lines across
@@ -102,27 +108,33 @@ class MonteCarloProbabilityEngine:
         more market uncertainty → higher std_dev.
         """
         try:
+            if db:
+                return await self._execute_std_query(db, player_name, market_key, line)
             async with async_session_maker() as session:
-                sql = text("""
-                    SELECT COALESCE(STDDEV(implied_prob), 0)
-                    FROM unified_odds
-                    WHERE player_name = :player_name
-                      AND market_key  = :market_key
-                      AND line        = :line
-                      AND implied_prob IS NOT NULL
-                """)
-                result = await session.execute(sql, {
-                    "player_name": player_name,
-                    "market_key": market_key,
-                    "line": line,
-                })
-                val = result.scalar_one_or_none()
-                if val is not None and float(val) > 0:
-                    # Scale the book-level stddev into a simulation-ready range
-                    return max(0.05, min(0.30, float(val) * 2.0))
+                return await self._execute_std_query(session, player_name, market_key, line)
         except Exception:
             pass
         return 0.12  # reasonable baseline
+
+    async def _execute_std_query(self, session, player_name, market_key, line):
+        sql = text("""
+            SELECT COALESCE(STDDEV(implied_prob), 0)
+            FROM unified_odds
+            WHERE player_name = :player_name
+              AND market_key  = :market_key
+              AND line        = :line
+              AND implied_prob IS NOT NULL
+        """)
+        result = await session.execute(sql, {
+            "player_name": player_name,
+            "market_key": market_key,
+            "line": line,
+        })
+        val = result.scalar_one_or_none()
+        if val is not None and float(val) > 0:
+            # Scale the book-level stddev into a simulation-ready range
+            return max(0.05, min(0.30, float(val) * 2.0))
+        return 0.12
 
     # ------------------------------------------------------------------
     # Core simulation
@@ -134,6 +146,7 @@ class MonteCarloProbabilityEngine:
         line: float,
         over_under: str,
         n: int = 10_000,
+        db: Optional[AsyncSession] = None,
     ) -> float:
         """
         Run *n* simulations drawing from N(μ, σ) where:
@@ -156,10 +169,10 @@ class MonteCarloProbabilityEngine:
 
         try:
             hit_rate_mean = await self.get_historical_hit_rate(
-                player_name, market_key, line
+                player_name, market_key, line, db=db
             )
             std_dev = await self._get_line_spread_std(
-                player_name, market_key, line
+                player_name, market_key, line, db=db
             )
 
             # Draw from the distribution

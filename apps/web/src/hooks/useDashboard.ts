@@ -27,10 +27,14 @@ export function useDashboard(sport = "basketball_nba") {
     enabled: canQueryEv,
     requireAuth: true,
   });
+  const injuries = useBackendData<any>("/api/injuries", {
+    params: { sport: normalizedSport },
+    pollMs: 60_000,
+  });
 
-  const isLoading = health.isLoading || brain.isLoading || props.isLoading || whale.isLoading || evTop.isLoading;
-  const isError = health.isError || brain.isError || props.isError || whale.isError || evTop.isError;
-  const error = health.error || brain.error || props.error || whale.error || evTop.error;
+  const isLoading = health.isLoading || brain.isLoading || props.isLoading || whale.isLoading || evTop.isLoading || injuries.isLoading;
+  const isError = health.isError || brain.isError || props.isError || whale.isError || evTop.isError || injuries.isError;
+  const error = health.error || brain.error || props.error || whale.error || evTop.error || injuries.error;
 
   const data = useMemo(
     () => ({
@@ -39,11 +43,12 @@ export function useDashboard(sport = "basketball_nba") {
       props: unwrapList<any>(props.data),
       whales: canQueryWhale ? unwrapList<any>(whale.data) : [],
       evTop: canQueryEv ? unwrapList<any>(evTop.data) : [],
+      injuries: unwrapList<any>(injuries.data),
     }),
-    [health.data, brain.data, props.data, whale.data, evTop.data, canQueryWhale, canQueryEv],
+    [health.data, brain.data, props.data, whale.data, evTop.data, injuries.data, canQueryWhale, canQueryEv],
   );
 
-  const lastUpdated = [health.lastUpdated, brain.lastUpdated, props.lastUpdated, whale.lastUpdated, evTop.lastUpdated]
+  const lastUpdated = [health.lastUpdated, brain.lastUpdated, props.lastUpdated, whale.lastUpdated, evTop.lastUpdated, injuries.lastUpdated]
     .filter(Boolean)
     .sort()
     .at(-1) || null;
@@ -55,7 +60,8 @@ export function useDashboard(sport = "basketball_nba") {
     error,
     lastUpdated,
     refetch: async () => {
-      await Promise.all([health.refetch(), brain.refetch(), props.refetch(), whale.refetch(), evTop.refetch()]);
+      await Promise.all([health.refetch(), brain.refetch(), props.refetch(), whale.refetch(), evTop.refetch(), injuries.refetch()]);
     },
   };
+
 }

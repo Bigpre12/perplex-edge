@@ -173,12 +173,6 @@ class UnifiedIngestionService:
             metrics["status"] = "skipped"
             metrics["skipped_reason"] = "all_odds_keys_cooldown"
             metrics["odds_api_all_keys_cooldown"] = True
-            skip_hb = os.getenv("SKIP_HEARTBEAT_WHEN_ODDS_KEYS_COOLDOWN", "true").strip().lower() in (
-                "1",
-                "true",
-                "yes",
-                "on",
-            )
             if not skip_hb:
                 try:
                     async with async_session_maker() as session:
@@ -200,31 +194,30 @@ class UnifiedIngestionService:
                     )
             return metrics
 
-        # 0b. Active Brain governor — skip network when quota is hard-stopped or cache is fresh enough
-        async with async_session_maker() as _brain_sess:
-            plan = await brain_governor.plan_ingest(_brain_sess, sport_key)
-        async with async_session_maker() as _log_sess:
-            await brain_governor.log_decision(_log_sess, plan)
+        # Start a shared session for the rest of the pipeline
+        async with async_session_maker() as session:
+            # 0b. Active Brain governor — skip network when quota is hard-stopped or cache is fresh enough
+            plan = await brain_governor.plan_ingest(session, sport_key)
+            await brain_governor.log_decision(session, plan)
 
-        if plan.skip_network:
-            logger.info(
-                "[BRAIN] %s — skip_network (%s) quota_pct=%.3f cache_age_min=%s",
-                sport_key,
-                plan.reason,
-                plan.quota_pct,
-                plan.cache_age_minutes,
-            )
-            metrics["status"] = "skipped"
-            metrics["skipped_reason"] = plan.reason
-            metrics["brain"] = plan.to_metrics_dict()
-            await self.run_intelligence_pipeline(sport_key, [])
-            try:
-                async with async_session_maker() as session:
+            if plan.skip_network:
+                logger.info(
+                    "[BRAIN] %s — skip_network (%s) quota_pct=%.3f cache_age_min=%s",
+                    sport_key,
+                    plan.reason,
+                    plan.quota_pct,
+                    plan.cache_age_minutes,
+                )
+                metrics["status"] = "skipped"
+                metrics["skipped_reason"] = plan.reason
+                metrics["brain"] = plan.to_metrics_dict()
+                await self.run_intelligence_pipeline(sport_key, [])
+                try:
                     await brain_advanced_service.generate_model_picks(sport_key, session)
-            except Exception as e:
-                metrics["errors"].append(f"ModelPick Promotion: {str(e)}")
-                logger.error("UnifiedIngestion: ModelPick promotion failed (brain skip path): %s", e)
-            async with async_session_maker() as session:
+                except Exception as e:
+                    metrics["errors"].append(f"ModelPick Promotion: {str(e)}")
+                    logger.error("UnifiedIngestion: ModelPick promotion failed (brain skip path): %s", e)
+                
                 await HeartbeatService.log_heartbeat(
                     session,
                     f"ingest_{sport_key}",
@@ -233,7 +226,7 @@ class UnifiedIngestionService:
                     error_count=len(metrics["errors"]),
                     meta={"metrics": metrics, "brain_skip": True},
                 )
-            return metrics
+                return metrics
         
         # 1. Fetch odds-shaped events (multi-provider chain, not TOA-only)
         logger.debug(f"=== WATERFALL STAGE 1: FETCH ODDS for {sport_key} START ===")
@@ -321,10 +314,9 @@ class UnifiedIngestionService:
 
         if odds_raw:
             try:
-                async with async_session_maker() as _oc:
-                    await brain_governor.persist_odds_cache_snapshot(
-                        _oc, sport_key, odds_raw, source_name
-                    )
+                await brain_governor.persist_odds_cache_snapshot(
+                    session, sport_key, odds_raw, source_name
+                )
             except Exception as snap_err:
                 logger.debug("odds_cache snapshot: %s", snap_err)
             try:
@@ -334,12 +326,9 @@ class UnifiedIngestionService:
                 )
                 from services.arb_calculator import find_and_store_arbs
 
-                async with async_session_maker() as _lt:
-                    await snapshot_lines_from_odds_api(_lt, sport_key, odds_raw)
-                async with async_session_maker() as _cl:
-                    await cleanup_old_snapshots(_cl, 48)
-                async with async_session_maker() as _arb:
-                    await find_and_store_arbs(_arb, sport_key, odds_raw)
+                await snapshot_lines_from_odds_api(session, sport_key, odds_raw)
+                await cleanup_old_snapshots(session, 48)
+                await find_and_store_arbs(session, sport_key, odds_raw)
             except Exception as post_err:
                 logger.debug("post-odds snapshot/arb: %s", post_err)
 
@@ -531,13 +520,13 @@ class UnifiedIngestionService:
         # This prevents partial API responses or exhausted keys from wiping the table.
         MIN_RECORDS_FOR_DELETE = 10
         if sport_key in PROP_MARKETS_BY_SPORT and len(records) >= MIN_RECORDS_FOR_DELETE:
-            await delete_props_for_sport(sport_key)
+            await delete_props_for_sport(sport_key, session=session)
         elif sport_key in PROP_MARKETS_BY_SPORT and 0 < len(records) < MIN_RECORDS_FOR_DELETE:
             logger.warning(f"UnifiedIngestion: Only {len(records)} records for {sport_key} — skipping delete to preserve existing data")
             
         if records:
-            await upsert_props_live(records)
-            await insert_props_history(records)
+            await upsert_props_live(records, session=session)
+            await insert_props_history(records, session=session)
         metrics["rows_upserted"] = len(records)
         
         # 4b. Sync with UnifiedOdds for Brains (Split into discrete outcomes)
@@ -599,8 +588,7 @@ class UnifiedIngestionService:
         # 6. Promote EV signals to ModelPicks
         logger.debug(f"=== WATERFALL STAGE 6: MODEL PICK PROMOTION for {sport_key} START ===")
         try:
-            async with async_session_maker() as session:
-                await brain_advanced_service.generate_model_picks(sport_key, session)
+            await brain_advanced_service.generate_model_picks(sport_key, session)
             logger.info(f"UnifiedIngestion: Successfully promoted ModelPicks for {sport_key}")
         except Exception as e:
             metrics["errors"].append(f"ModelPick Promotion: {str(e)}")
@@ -612,8 +600,7 @@ class UnifiedIngestionService:
             from services.arb_calculator import find_and_store_arb_from_props
 
             props_arb = await get_all_props(sport_filter=sport_key)
-            async with async_session_maker() as _ab:
-                n_arb = await find_and_store_arb_from_props(_ab, sport_key, props_arb)
+            n_arb = await find_and_store_arb_from_props(session, sport_key, props_arb)
             if n_arb:
                 logger.info("UnifiedIngestion: stored %s prop-based arb rows for %s", n_arb, sport_key)
         except Exception as arb_err:
@@ -626,23 +613,21 @@ class UnifiedIngestionService:
         # Update system_sync_state timestamps
         try:
             from sqlalchemy import text as sa_text
-            async with async_session_maker() as ss:
-                await ss.execute(sa_text(
-                    "UPDATE system_sync_state SET last_odds_sync = NOW(), updated_at = NOW() WHERE id = 1"
-                ))
-                await ss.commit()
+            await session.execute(sa_text(
+                "UPDATE system_sync_state SET last_odds_sync = NOW(), updated_at = NOW() WHERE id = 1"
+            ))
+            await session.commit()
         except Exception as sync_err:
             logger.warning(f"UnifiedIngestion: Failed to update sync state: {sync_err}")
 
-        async with async_session_maker() as session:
-            await HeartbeatService.log_heartbeat(
-                session, 
-                f"ingest_{sport_key}", 
-                status="ok" if not metrics["errors"] else "error",
-                rows_written=metrics.get("rows_upserted", 0),
-                error_count=len(metrics["errors"]),
-                meta={"metrics": metrics}
-            )
+        await HeartbeatService.log_heartbeat(
+            session, 
+            f"ingest_{sport_key}", 
+            status="ok" if not metrics["errors"] else "error",
+            rows_written=metrics.get("rows_upserted", 0),
+            error_count=len(metrics["errors"]),
+            meta={"metrics": metrics}
+        )
 
         return metrics
 

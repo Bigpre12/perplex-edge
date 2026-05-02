@@ -21,16 +21,16 @@ class EVEngine:
         from services.odds_quota_store import raise_if_quota_blocked, fetch_usage_summary
         from brain.decisions import props_live_age_minutes, should_skip_fetch_for_fresh_cache
 
-        async with async_session_maker() as _q:
-            blocked, reason = await raise_if_quota_blocked(_q)
-        if blocked:
-            logger.warning("EVEngine: skip %s — quota blocked (%s)", sport, reason)
-            return
+        async with async_session_maker() as session:
+            blocked, reason = await raise_if_quota_blocked(session)
+            if blocked:
+                logger.warning("EVEngine: skip %s — quota blocked (%s)", sport, reason)
+                return
 
-        async with async_session_maker() as _sess:
-            usage = await fetch_usage_summary(_sess)
+            usage = await fetch_usage_summary(session)
             quota_pct = float(usage.get("percent_used") or 0) / 100.0
-            cache_age = await props_live_age_minutes(_sess, sport)
+            cache_age = await props_live_age_minutes(session, sport)
+
         skip, skip_reason = should_skip_fetch_for_fresh_cache(cache_age, quota_pct)
         if skip:
             logger.info(

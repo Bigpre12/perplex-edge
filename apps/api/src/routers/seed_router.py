@@ -33,7 +33,7 @@ async def trigger_seed_pipeline(admin: None = Depends(verify_admin)):
     }
 
 @router.get("/status")
-async def get_seed_status():
+async def get_seed_status(admin: None = Depends(verify_admin)):
     """
     Return summary metrics from the pp_projections_staging table.
     """

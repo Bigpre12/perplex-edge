@@ -36,48 +36,56 @@ class CLVEngine:
         line: float,
         price: float,
         bookmaker: str,
+        db: Optional[AsyncSession] = None,
     ) -> None:
         """
         Insert an opening-line snapshot into ``line_movement``.
         Idempotent: skips if we already have a row for this exact combo.
         """
         try:
+            if db:
+                await self._execute_record_opening(db, event_id, player_name, market_key, bookmaker, price, line)
+                return
+            
             async with async_session_maker() as session:
-                # Check existence first to avoid dupe opening lines
-                check = text("""
-                    SELECT 1 FROM line_movement
-                    WHERE event_id  = :event_id
-                      AND COALESCE(player_name, '') = COALESCE(:player_name, '')
-                      AND market_key = :market_key
-                      AND bookmaker  = :bookmaker
-                    LIMIT 1
-                """)
-                existing = await session.execute(check, {
-                    "event_id": event_id,
-                    "player_name": player_name,
-                    "market_key": market_key,
-                    "bookmaker": bookmaker,
-                })
-                if existing.scalar_one_or_none() is not None:
-                    return  # already recorded
-
-                ins = text("""
-                    INSERT INTO line_movement
-                        (event_id, player_name, market_key, bookmaker, price, line, is_closing)
-                    VALUES
-                        (:event_id, :player_name, :market_key, :bookmaker, :price, :line, FALSE)
-                """)
-                await session.execute(ins, {
-                    "event_id": event_id,
-                    "player_name": player_name,
-                    "market_key": market_key,
-                    "bookmaker": bookmaker,
-                    "price": price,
-                    "line": line,
-                })
-                await session.commit()
+                await self._execute_record_opening(session, event_id, player_name, market_key, bookmaker, price, line)
         except Exception as e:
             logger.debug("record_opening_line skipped: %s", e)
+
+    async def _execute_record_opening(self, session, event_id, player_name, market_key, bookmaker, price, line):
+        # Check existence first to avoid dupe opening lines
+        check = text("""
+            SELECT 1 FROM line_movement
+            WHERE event_id  = :event_id
+              AND COALESCE(player_name, '') = COALESCE(:player_name, '')
+              AND market_key = :market_key
+              AND bookmaker  = :bookmaker
+            LIMIT 1
+        """)
+        existing = await session.execute(check, {
+            "event_id": event_id,
+            "player_name": player_name,
+            "market_key": market_key,
+            "bookmaker": bookmaker,
+        })
+        if existing.scalar_one_or_none() is not None:
+            return  # already recorded
+
+        ins = text("""
+            INSERT INTO line_movement
+                (event_id, player_name, market_key, bookmaker, price, line, is_closing)
+            VALUES
+                (:event_id, :player_name, :market_key, :bookmaker, :price, :line, FALSE)
+        """)
+        await session.execute(ins, {
+            "event_id": event_id,
+            "player_name": player_name,
+            "market_key": market_key,
+            "bookmaker": bookmaker,
+            "price": price,
+            "line": line,
+        })
+        await session.commit()
 
     # ------------------------------------------------------------------
     # Compute CLV for a specific prop
@@ -88,120 +96,125 @@ class CLVEngine:
         player_name: Optional[str],
         market_key: str,
         bookmaker: str,
+        db: Optional[AsyncSession] = None,
     ) -> float:
         """
         Returns the American-odds delta between the earliest (opening)
         and latest (closing) recorded price for this prop line.
-        Positive CLV ⇒ you're beating the close ⇒ sharp money agrees.
         """
         try:
+            if db:
+                return await self._execute_compute_clv(db, event_id, player_name, market_key, bookmaker)
+            
             async with async_session_maker() as session:
-                sql = text("""
-                    SELECT price, recorded_at
-                    FROM line_movement
-                    WHERE event_id  = :event_id
-                      AND COALESCE(player_name, '') = COALESCE(:player_name, '')
-                      AND market_key = :market_key
-                      AND bookmaker  = :bookmaker
-                    ORDER BY recorded_at ASC
-                """)
-                rows = (await session.execute(sql, {
-                    "event_id": event_id,
-                    "player_name": player_name,
-                    "market_key": market_key,
-                    "bookmaker": bookmaker,
-                })).mappings().all()
-
-                if len(rows) < 2:
-                    return 0.0  # Not enough data
-
-                opening_price = float(rows[0]["price"])
-                closing_price = float(rows[-1]["price"])
-                return round(closing_price - opening_price, 2)
-
+                return await self._execute_compute_clv(session, event_id, player_name, market_key, bookmaker)
         except Exception as e:
             logger.debug("compute_clv error: %s", e)
             return 0.0
+
+    async def _execute_compute_clv(self, session: AsyncSession, event_id: str, player_name: Optional[str], market_key: str, bookmaker: str):
+        sql = text("""
+            SELECT price, recorded_at
+            FROM line_movement
+            WHERE event_id  = :event_id
+              AND COALESCE(player_name, '') = COALESCE(:player_name, '')
+              AND market_key = :market_key
+              AND bookmaker  = :bookmaker
+            ORDER BY recorded_at ASC
+        """)
+        result = await session.execute(sql, {
+            "event_id": event_id,
+            "player_name": player_name,
+            "market_key": market_key,
+            "bookmaker": bookmaker,
+        })
+        rows = result.mappings().all()
+
+        if len(rows) < 2:
+            return 0.0
+
+        opening_price = float(rows[0]["price"])
+        closing_price = float(rows[-1]["price"])
+        return round(closing_price - opening_price, 2)
+
 
     # ------------------------------------------------------------------
     # Steam signal detection
     # ------------------------------------------------------------------
     async def get_steam_signal(
-        self, event_id: str, market_key: str, player_name: Optional[str] = None
+        self, event_id: str, market_key: str, player_name: Optional[str] = None, db: Optional[AsyncSession] = None
     ) -> bool:
         """
         Returns True if the line has moved 2+ points in the same direction
         across 3+ bookmakers in the last 30 minutes.
-
-        Uses ``line_ticks`` (which records every price snapshot) for
-        higher-resolution data, falling back to ``line_movement``.
         """
         cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
-
         try:
+            if db:
+                return await self._execute_steam_check(db, event_id, market_key, cutoff)
+            
             async with async_session_maker() as session:
-                # Try line_ticks first (more granular)
-                sql = text("""
-                    WITH recent AS (
-                        SELECT bookmaker,
-                               MIN(line::float) AS min_line,
-                               MAX(line::float) AS max_line
-                        FROM line_ticks
-                        WHERE event_id   = :event_id
-                          AND market_key  = :market_key
-                          AND created_at >= :cutoff
-                        GROUP BY bookmaker
-                        HAVING MAX(line::float) - MIN(line::float) >= 2.0
-                    )
-                    SELECT COUNT(*) AS book_count FROM recent
-                """)
-                result = await session.execute(sql, {
-                    "event_id": event_id,
-                    "market_key": market_key,
-                    "cutoff": cutoff,
-                })
-                count = result.scalar_one_or_none()
-                if count is not None and int(count) >= 3:
-                    return True
-
+                return await self._execute_steam_check(session, event_id, market_key, cutoff)
         except Exception as e:
-            logger.debug("get_steam_signal line_ticks query failed: %s", e)
+            logger.debug("get_steam_signal failed: %s", e)
+            return False
+
+    async def _execute_steam_check(self, session: AsyncSession, event_id: str, market_key: str, cutoff: datetime):
+        # Try line_ticks first (more granular)
+        sql = text("""
+            WITH recent AS (
+                SELECT bookmaker,
+                        MIN(line::float) AS min_line,
+                        MAX(line::float) AS max_line
+                FROM line_ticks
+                WHERE event_id   = :event_id
+                    AND market_key  = :market_key
+                    AND created_at >= :cutoff
+                GROUP BY bookmaker
+                HAVING MAX(line::float) - MIN(line::float) >= 2.0
+            )
+            SELECT COUNT(*) AS book_count FROM recent
+        """)
+        result = await session.execute(sql, {
+            "event_id": event_id,
+            "market_key": market_key,
+            "cutoff": cutoff,
+        })
+        count = result.scalar_one_or_none()
+        if count is not None and int(count) >= 3:
+            return True
 
         # Fallback: check line_movement table
-        try:
-            async with async_session_maker() as session:
-                sql2 = text("""
-                    WITH recent AS (
-                        SELECT bookmaker,
-                               MIN(price) AS min_price,
-                               MAX(price) AS max_price
-                        FROM line_movement
-                        WHERE event_id   = :event_id
-                          AND market_key  = :market_key
-                          AND recorded_at >= :cutoff
-                        GROUP BY bookmaker
-                        HAVING MAX(price) - MIN(price) >= 2.0
-                    )
-                    SELECT COUNT(*) AS book_count FROM recent
-                """)
-                result2 = await session.execute(sql2, {
-                    "event_id": event_id,
-                    "market_key": market_key,
-                    "cutoff": cutoff,
-                })
-                count2 = result2.scalar_one_or_none()
-                if count2 is not None and int(count2) >= 3:
-                    return True
-        except Exception as e:
-            logger.debug("get_steam_signal line_movement fallback failed: %s", e)
-
+        sql2 = text("""
+            WITH recent AS (
+                SELECT bookmaker,
+                        MIN(price) AS min_price,
+                        MAX(price) AS max_price
+                FROM line_movement
+                WHERE event_id   = :event_id
+                    AND market_key  = :market_key
+                    AND recorded_at >= :cutoff
+                GROUP BY bookmaker
+                HAVING MAX(price) - MIN(price) >= 2.0
+            )
+            SELECT COUNT(*) AS book_count FROM recent
+        """)
+        result2 = await session.execute(sql2, {
+            "event_id": event_id,
+            "market_key": market_key,
+            "cutoff": cutoff,
+        })
+        count2 = result2.scalar_one_or_none()
+        if count2 is not None and int(count2) >= 3:
+            return True
         return False
+
 
     # ------------------------------------------------------------------
     # Sharp consensus estimation
     # ------------------------------------------------------------------
     async def get_sharp_consensus(
-        self, event_id: str, market_key: str, outcome_key: str
+        self, event_id: str, market_key: str, outcome_key: str, db: Optional[AsyncSession] = None
     ) -> float:
         """
         Returns fraction (0-1) of sharp books whose implied probability
@@ -210,41 +223,47 @@ class CLVEngine:
         from core.config import settings
 
         try:
+            if db:
+                return await self._execute_sharp_consensus(db, event_id, market_key, outcome_key)
+            
             async with async_session_maker() as session:
-                sql = text("""
-                    SELECT bookmaker, implied_prob
-                    FROM unified_odds
-                    WHERE event_id   = :event_id
-                      AND market_key = :market_key
-                      AND outcome_key = :outcome_key
-                      AND implied_prob IS NOT NULL
-                """)
-                rows = (await session.execute(sql, {
-                    "event_id": event_id,
-                    "market_key": market_key,
-                    "outcome_key": outcome_key,
-                })).mappings().all()
-
-                if not rows:
-                    return 0.5
-
-                avg_prob = sum(float(r["implied_prob"]) for r in rows) / len(rows)
-                sharp_books = [
-                    r for r in rows
-                    if any(s in r["bookmaker"].lower() for s in settings.SHARP_BOOKMAKERS)
-                ]
-
-                if not sharp_books:
-                    return 0.5
-
-                agrees = sum(
-                    1 for r in sharp_books if float(r["implied_prob"]) >= avg_prob
-                )
-                return round(agrees / len(sharp_books), 2)
-
+                return await self._execute_sharp_consensus(session, event_id, market_key, outcome_key)
         except Exception as e:
             logger.debug("get_sharp_consensus error: %s", e)
             return 0.5
+
+    async def _execute_sharp_consensus(self, session, event_id, market_key, outcome_key):
+        from core.config import settings
+        sql = text("""
+            SELECT bookmaker, implied_prob
+            FROM unified_odds
+            WHERE event_id   = :event_id
+              AND market_key = :market_key
+              AND outcome_key = :outcome_key
+              AND implied_prob IS NOT NULL
+        """)
+        rows = (await session.execute(sql, {
+            "event_id": event_id,
+            "market_key": market_key,
+            "outcome_key": outcome_key,
+        })).mappings().all()
+
+        if not rows:
+            return 0.5
+
+        avg_prob = sum(float(r["implied_prob"]) for r in rows) / len(rows)
+        sharp_books = [
+            r for r in rows
+            if any(s in r["bookmaker"].lower() for s in settings.SHARP_BOOKMAKERS)
+        ]
+
+        if not sharp_books:
+            return 0.5
+
+        agrees = sum(
+            1 for r in sharp_books if float(r["implied_prob"]) >= avg_prob
+        )
+        return round(agrees / len(sharp_books), 2)
 
 
 class CLVService(CLVEngine):

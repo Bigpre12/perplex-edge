@@ -40,16 +40,16 @@ async def get_line_movement_history(
 @router.get("/")
 async def get_line_movement(
     sport: str = "basketball_nba",
+    event_id: Optional[str] = Query(None),
     lookback: int = Query(15, description="Lookback minutes for movement detection"),
     tier: str = Depends(get_user_tier)
 ):
     """
     Returns active market movements (Steam, Whales, Sharp Moves) 
-    based on real-time LineTick analysis.
+    OR specific event history if event_id is provided.
     """
     # Tier check: Movement scanner usually requires Pro/Elite
     if tier == "free":
-        # Return empty but with a message for the UI to gate it if needed
         return {
             "status": "gated",
             "message": "Premium subscription required for Line Movement scanner.",
@@ -58,6 +58,15 @@ async def get_line_movement(
         }
 
     try:
+        if event_id:
+            # Return detailed book-level history for sparklines
+            res = await line_movement_service.get_movement_for_event(event_id, sport)
+            return {
+                "status": "active",
+                "event_id": event_id,
+                "books": res.get("books", [])
+            }
+
         moves = await line_movement_service.get_active_moves(sport, lookback_minutes=lookback)
         return {
             "status": "active",

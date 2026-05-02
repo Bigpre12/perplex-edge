@@ -88,10 +88,11 @@ class EVService:
                                         market_key=mkey,
                                         line=line,
                                         over_under=outcome,
+                                        db=session
                                     )
 
                                     # Get CLV data
-                                    clv_val = await clv_service.compute_clv(eid, p_name, mkey, book)
+                                    clv_val = await clv_service.compute_clv(eid, p_name, mkey, book, db=session)
 
                                     # Record this line for future CLV tracking
                                     await clv_service.record_opening_line(
@@ -101,11 +102,12 @@ class EVService:
                                         line=line,
                                         price=price,
                                         bookmaker=book,
+                                        db=session
                                     )
 
                                     # Get steam & sharp signals
-                                    steam = await clv_service.get_steam_signal(eid, mkey, p_name)
-                                    sharp_cons = await clv_service.get_sharp_consensus(eid, mkey, outcome)
+                                    steam = await clv_service.get_steam_signal(eid, mkey, p_name, db=session)
+                                    sharp_cons = await clv_service.get_sharp_consensus(eid, mkey, outcome, db=session)
 
                                     # Run Brains Scorer
                                     brain_result = brains_scorer.score_prop(
@@ -224,7 +226,7 @@ class EVService:
 
                 if signals:
                     logger.info(f"EVService: Generated {len(signals)} edges for sport={sport}")
-                    await self.upsert_ev_signals(signals)
+                    await self.upsert_ev_signals(signals, session=session)
                     await HeartbeatService.log_heartbeat(session, f"ev_grader_{sport}", status="ok", rows_written=len(signals))
                 else:
                     threshold = getattr(settings, "EV_MIN_THRESHOLD", 0.5)
@@ -267,108 +269,114 @@ class EVService:
         
         return {o: p / total_market_prob for o, p in weighted_probs.items()}
 
-    async def upsert_ev_signals(self, signals: List[Dict]):
+    async def upsert_ev_signals(self, signals: List[Dict], session: Optional[AsyncSession] = None):
+        if session:
+            await self._execute_upsert(signals, session)
+        else:
+            async with async_session_maker() as session:
+                await self._execute_upsert(signals, session)
+
+    async def _execute_upsert(self, signals: List[Dict], session: AsyncSession):
         from sqlalchemy import text
-        async with async_session_maker() as session:
-            try:
-                is_sqlite = "sqlite" in str(engine.url)
+        try:
+            is_sqlite = "sqlite" in str(engine.url)
 
-                # 1. UPSERT Live Signals
-                for s in signals:
-                    valid_cols = ["sport", "sport_key", "prop_type", "event_id", "market_key", "outcome_key", "player_name", 
-                                  "bookmaker", "price", "line", "true_prob", "edge_percent", "ev_percentage",
-                                  "implied_prob", "confidence", "engine_version", "reason", "tier", "clv", "steam"]
-                    row = {k: v for k, v in s.items() if k in valid_cols}
-                    row.setdefault("sport_key", s["sport"])
-                    row.setdefault("ev_percentage", row.get("edge_percent", 0))
-                    row.setdefault("prop_type", "unknown")
-                    if row.get("prop_type") is None:
-                        row["prop_type"] = "unknown"
-                    # Ensure numeric fields are floats
-                    for col in ["price", "line", "true_prob", "edge_percent", "implied_prob", "confidence", "clv"]:
-                        if col in row and row[col] is not None:
-                            row[col] = float(row[col])
+            # 1. UPSERT Live Signals
+            for s in signals:
+                valid_cols = ["sport", "sport_key", "prop_type", "event_id", "market_key", "outcome_key", "player_name", 
+                                "bookmaker", "price", "line", "true_prob", "edge_percent", "ev_percentage",
+                                "implied_prob", "confidence", "engine_version", "reason", "tier", "clv", "steam"]
+                row = {k: v for k, v in s.items() if k in valid_cols}
+                row.setdefault("sport_key", s["sport"])
+                row.setdefault("ev_percentage", row.get("edge_percent", 0))
+                row.setdefault("prop_type", "unknown")
+                if row.get("prop_type") is None:
+                    row["prop_type"] = "unknown"
+                # Ensure numeric fields are floats
+                for col in ["price", "line", "true_prob", "edge_percent", "implied_prob", "confidence", "clv"]:
+                    if col in row and row[col] is not None:
+                        row[col] = float(row[col])
 
-                    if is_sqlite:
-                        ins_obj = sqlite_insert(UnifiedEVSignal).values(row)
-                        stmt = ins_obj.on_conflict_do_update(
-                            index_elements=['sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version'],
-                            set_={k: v for k, v in row.items() if k not in ['sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', 'created_at']}
-                        )
-                        await session.execute(stmt)
-                    else:
-                        # Raw SQL fallback for Postgres
-                        row["recommendation"] = s.get("recommendation")
-                        base_sql = """
-                        INSERT INTO ev_signals (sport, sport_key, prop_type, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, ev_percentage, implied_prob, confidence, engine_version, recommendation, reason, tier, clv, steam, created_at, updated_at)
-                        VALUES (:sport, :sport_key, :prop_type, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :ev_percentage, :implied_prob, :confidence, :engine_version, :recommendation, :reason, :tier, :clv, :steam, now(), now())
-                        """
-                        update_clause = """
-                        DO UPDATE SET 
-                            price = EXCLUDED.price, 
-                            line = EXCLUDED.line, 
-                            true_prob = EXCLUDED.true_prob, 
-                            edge_percent = EXCLUDED.edge_percent, 
-                            implied_prob = EXCLUDED.implied_prob, 
-                            confidence = EXCLUDED.confidence,
-                            recommendation = EXCLUDED.recommendation,
-                            reason = EXCLUDED.reason,
-                            tier = EXCLUDED.tier,
-                            clv = EXCLUDED.clv,
-                            steam = EXCLUDED.steam,
-                            updated_at = now()
-                        """
-                        try:
-                            if row.get("player_name"):
-                                sql = base_sql + " ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL " + update_clause
-                            else:
-                                sql = base_sql + " ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NULL " + update_clause
-                                
-                            await session.execute(text(sql), row)
-                        except Exception as pg_err:
-                            logger.warning(f"EVService: ON CONFLICT failed for row, using DELETE+INSERT fallback: {pg_err}")
-                            if row.get("player_name"):
-                                del_sql = "DELETE FROM ev_signals WHERE sport = :sport AND event_id = :event_id AND player_name = :player_name AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker AND engine_version = :engine_version"
-                            else:
-                                del_sql = "DELETE FROM ev_signals WHERE sport = :sport AND event_id = :event_id AND player_name IS NULL AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker AND engine_version = :engine_version"
-                            await session.execute(text(del_sql), row)
-                            await session.execute(text(base_sql), row)
-                
-                # 2. Historical edges_ev_history via shared persistence
-                history_rows = []
-                for s in signals:
-                    ln = s.get("line")
-                    try:
-                        line_f = float(ln) if ln is not None else 0.0
-                    except (TypeError, ValueError):
-                        line_f = 0.0
-                    history_rows.append(
-                        {
-                            "sport": s["sport"],
-                            "league": s.get("league"),
-                            "game_id": s["event_id"],
-                            "game_start_time": s.get("game_start_time"),
-                            "player_id": s.get("player_name") or "unknown",
-                            "player_name": s.get("player_name"),
-                            "team": s.get("team") or s.get("home_team") or s.get("away_team"),
-                            "market_key": s["market_key"],
-                            "line": line_f,
-                            "book": s["bookmaker"],
-                            "side": s["outcome_key"],
-                            "odds": float(s["price"]),
-                            "model_prob": float(s["true_prob"]),
-                            "implied_prob": float(s["implied_prob"]),
-                            "edge_pct": float(s["edge_percent"]),
-                            "source": f"brain_ev_{self.version}",
-                        }
+                if is_sqlite:
+                    ins_obj = sqlite_insert(UnifiedEVSignal).values(row)
+                    stmt = ins_obj.on_conflict_do_update(
+                        index_elements=['sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version'],
+                        set_={k: v for k, v in row.items() if k not in ['sport', 'event_id', 'market_key', 'outcome_key', 'bookmaker', 'engine_version', 'created_at']}
                     )
-                await session.commit()
+                    await session.execute(stmt)
+                else:
+                    # Raw SQL fallback for Postgres
+                    row["recommendation"] = s.get("recommendation")
+                    base_sql = """
+                    INSERT INTO ev_signals (sport, sport_key, prop_type, event_id, market_key, outcome_key, player_name, bookmaker, price, line, true_prob, edge_percent, ev_percentage, implied_prob, confidence, engine_version, recommendation, reason, tier, clv, steam, created_at, updated_at)
+                    VALUES (:sport, :sport_key, :prop_type, :event_id, :market_key, :outcome_key, :player_name, :bookmaker, :price, :line, :true_prob, :edge_percent, :ev_percentage, :implied_prob, :confidence, :engine_version, :recommendation, :reason, :tier, :clv, :steam, now(), now())
+                    """
+                    update_clause = """
+                    DO UPDATE SET 
+                        price = EXCLUDED.price, 
+                        line = EXCLUDED.line, 
+                        true_prob = EXCLUDED.true_prob, 
+                        edge_percent = EXCLUDED.edge_percent, 
+                        implied_prob = EXCLUDED.implied_prob, 
+                        confidence = EXCLUDED.confidence,
+                        recommendation = EXCLUDED.recommendation,
+                        reason = EXCLUDED.reason,
+                        tier = EXCLUDED.tier,
+                        clv = EXCLUDED.clv,
+                        steam = EXCLUDED.steam,
+                        updated_at = now()
+                    """
+                    try:
+                        if row.get("player_name"):
+                            sql = base_sql + " ON CONFLICT (sport, event_id, player_name, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NOT NULL " + update_clause
+                        else:
+                            sql = base_sql + " ON CONFLICT (sport, event_id, market_key, outcome_key, bookmaker, engine_version) WHERE player_name IS NULL " + update_clause
+                            
+                        await session.execute(text(sql), row)
+                    except Exception as pg_err:
+                        logger.warning(f"EVService: ON CONFLICT failed for row, using DELETE+INSERT fallback: {pg_err}")
+                        if row.get("player_name"):
+                            del_sql = "DELETE FROM ev_signals WHERE sport = :sport AND event_id = :event_id AND player_name = :player_name AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker AND engine_version = :engine_version"
+                        else:
+                            del_sql = "DELETE FROM ev_signals WHERE sport = :sport AND event_id = :event_id AND player_name IS NULL AND market_key = :market_key AND outcome_key = :outcome_key AND bookmaker = :bookmaker AND engine_version = :engine_version"
+                        await session.execute(text(del_sql), row)
+                        await session.execute(text(base_sql), row)
+            
+            # 2. Historical edges_ev_history via shared persistence
+            history_rows = []
+            for s in signals:
+                ln = s.get("line")
+                try:
+                    line_f = float(ln) if ln is not None else 0.0
+                except (TypeError, ValueError):
+                    line_f = 0.0
+                history_rows.append(
+                    {
+                        "sport": s["sport"],
+                        "league": s.get("league"),
+                        "game_id": s["event_id"],
+                        "game_start_time": s.get("game_start_time"),
+                        "player_id": s.get("player_name") or "unknown",
+                        "player_name": s.get("player_name"),
+                        "team": s.get("team") or s.get("home_team") or s.get("away_team"),
+                        "market_key": s["market_key"],
+                        "line": line_f,
+                        "book": s["bookmaker"],
+                        "side": s["outcome_key"],
+                        "odds": float(s["price"]),
+                        "model_prob": float(s["true_prob"]),
+                        "implied_prob": float(s["implied_prob"]),
+                        "edge_pct": float(s["edge_percent"]),
+                        "source": f"brain_ev_{self.version}",
+                    }
+                )
+            await session.commit()
 
-                if history_rows:
-                    await insert_edges_ev_history(history_rows)
-            except Exception as e:
-                await session.rollback()
-                logger.error(f"EVService: Signal persistence failed: {e}")
-                raise e
+            if history_rows:
+                await insert_edges_ev_history(history_rows)
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"EVService: Signal persistence failed: {e}")
+            raise e
 
 ev_service = EVService()

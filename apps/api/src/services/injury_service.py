@@ -10,7 +10,7 @@ from db.session import async_session_maker # type: ignore
 logger = logging.getLogger(__name__)
 
 class InjuryService:
-    async def get_injuries(self, sport: str) -> List[Dict]:
+    async def get_injuries(self, sport: str, db: Optional[AsyncSession] = None) -> List[Dict]:
         """Fetch injuries using the resilient ESPN client with known error corrections."""
         try:
             # Standardizing on the long-form key "basketball_nba" etc.
@@ -62,7 +62,8 @@ class InjuryService:
                         })
             
             if db_rows:
-                await upsert_injuries(sport, db_rows)
+                await upsert_injuries(sport, db_rows, session=db)
+
                 
             return corrected_injuries
         except Exception as e:
@@ -104,24 +105,31 @@ class InjuryService:
             
         return [p for p in props if p.get(name_key, "").lower() not in injured_names]
 
-    async def get_impact_signals(self, sport: str) -> List[Dict[str, Any]]:
+    async def get_impact_signals(self, sport: str, db: Optional[AsyncSession] = None) -> List[Dict[str, Any]]:
         """Fetch processed injury impact signals from the database."""
         try:
+            if db:
+                return await self._execute_get_impact_signals(db, sport)
+            
             async with async_session_maker() as session:
-                stmt = select(InjuryImpact).where(InjuryImpact.sport == sport)
-                result = await session.execute(stmt)
-                rows = result.scalars().all()
-                return [
-                    {
-                        "player": row.player_name,
-                        "impact_score": row.impact_score,
-                        "affected_market": row.affected_market,
-                        "adjustment": row.adjustment
-                    } for row in rows
-                ]
+                return await self._execute_get_impact_signals(session, sport)
         except Exception as e:
             logger.error(f"InjuryService: Failed to fetch impact signals: {e}")
             return []
+
+    async def _execute_get_impact_signals(self, session: AsyncSession, sport: str) -> List[Dict[str, Any]]:
+        stmt = select(InjuryImpact).where(InjuryImpact.sport == sport)
+        result = await session.execute(stmt)
+        rows = result.scalars().all()
+        return [
+            {
+                "player": row.player_name,
+                "impact_score": row.impact_score,
+                "affected_market": row.affected_market,
+                "adjustment": row.adjustment
+            } for row in rows
+        ]
+
         
         return [] # Explicit final return to satisfy analyzer
 

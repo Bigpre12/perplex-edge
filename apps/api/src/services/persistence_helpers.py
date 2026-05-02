@@ -13,12 +13,19 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
-async def upsert_props_live(records: List[PropRecord]):
+async def upsert_props_live(records: List[PropRecord], session: Optional[AsyncSession] = None):
     """Standardized upsert into public.props_live using raw SQL for robustness."""
     if not records: 
         return
     
+    if session:
+        await _execute_upsert_props_live(session, records)
+        return
+
     async with async_session_maker() as session:
+        await _execute_upsert_props_live(session, records)
+
+async def _execute_upsert_props_live(session: AsyncSession, records: List[PropRecord]):
         try:
             now = datetime.now(timezone.utc)
             rows = []
@@ -105,9 +112,16 @@ async def upsert_props_live(records: List[PropRecord]):
             logger.error(f"Persistence: props_live upsert failed: {e}", exc_info=True)
             raise e
 
-async def delete_props_for_sport(sport: str):
+async def delete_props_for_sport(sport: str, session: Optional[AsyncSession] = None):
     """Clears all live props for a given sport to allow a fresh ingest."""
+    if session:
+        await _execute_delete_props_for_sport(session, sport)
+        return
+
     async with async_session_maker() as session:
+        await _execute_delete_props_for_sport(session, sport)
+
+async def _execute_delete_props_for_sport(session: AsyncSession, sport: str):
         try:
             from sqlalchemy import delete
             stmt = delete(PropLive).where(PropLive.sport == sport)
@@ -118,13 +132,19 @@ async def delete_props_for_sport(sport: str):
             await session.rollback()
             logger.error(f"Persistence: Failed to clear props for {sport}: {e}")
 
-async def insert_props_history(records: List[PropRecord], source: str = 'live_ingest', run_id: Optional[str] = None):
+async def insert_props_history(records: List[PropRecord], source: str = 'live_ingest', run_id: Optional[str] = None, session: Optional[AsyncSession] = None):
     """Appends records to props_history."""
     if not records: 
         return
     
-    now = datetime.now(timezone.utc)
+    if session:
+        await _execute_insert_props_history(session, records, source, run_id)
+        return
+
     async with async_session_maker() as session:
+        await _execute_insert_props_history(session, records, source, run_id)
+
+async def _execute_insert_props_history(session: AsyncSession, records: List[PropRecord], source: str, run_id: Optional[str]):
         try:
             is_sqlite = "sqlite" in str(engine.url)
             ins_obj = sqlite_insert(PropHistory) if is_sqlite else pg_insert(PropHistory)
@@ -197,7 +217,7 @@ def _sanitize_ev_history_row(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return out
 
 
-async def insert_edges_ev_history(ev_rows: List[Dict]):
+async def insert_edges_ev_history(ev_rows: List[Dict], session: Optional[AsyncSession] = None):
     """Standardized append into public.edges_ev_history (app code should use this path only)."""
     if not ev_rows:
         return
@@ -215,7 +235,14 @@ async def insert_edges_ev_history(ev_rows: List[Dict]):
     if not cleaned:
         return
 
+    if session:
+        await _execute_insert_edges_ev_history(session, cleaned, skipped)
+        return
+
     async with async_session_maker() as session:
+        await _execute_insert_edges_ev_history(session, cleaned, skipped)
+
+async def _execute_insert_edges_ev_history(session: AsyncSession, cleaned: List[Dict], skipped: int):
         try:
             is_sqlite = "sqlite" in str(engine.url)
             ins_obj = sqlite_insert(EdgeEVHistory) if is_sqlite else pg_insert(EdgeEVHistory)
@@ -235,24 +262,24 @@ async def insert_edges_ev_history(ev_rows: List[Dict]):
             await session.rollback()
             logger.error(f"Persistence: edges_ev_history insert failed: {e}")
 
-async def insert_whale_moves(moves: List[Dict]):
+async def insert_whale_moves(moves: List[Dict], session: Optional[AsyncSession] = None):
     if not moves:
         return
-    is_sqlite = "sqlite" in str(engine.url)
-    async with async_session_maker() as session:
-        try:
-            ins_obj = sqlite_insert(WhaleMove) if is_sqlite else pg_insert(WhaleMove)
-            await session.execute(ins_obj.values(moves))
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Persistence: whale_moves insert failed: {e}")
-            return
-
-    if is_sqlite:
+    
+    if session:
+        await _execute_insert_whale_moves(session, moves)
         return
+
     async with async_session_maker() as session:
-        try:
+        await _execute_insert_whale_moves(session, moves)
+
+async def _execute_insert_whale_moves(session: AsyncSession, moves: List[Dict]):
+    try:
+        is_sqlite = "sqlite" in str(engine.url)
+        ins_obj = sqlite_insert(WhaleMove) if is_sqlite else pg_insert(WhaleMove)
+        await session.execute(ins_obj.values(moves))
+        
+        if not is_sqlite:
             for m in moves:
                 po = m.get("price_after")
                 try:
@@ -289,50 +316,78 @@ async def insert_whale_moves(moves: List[Dict]):
                     )
                 except Exception as sig_err:
                     logger.debug("whale_signals dual-write skipped: %s", sig_err)
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            logger.debug("Persistence: whale_signals batch: %s", e)
+        
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Persistence: whale_moves insert failed: {e}")
 
-async def insert_clv_trades(records: List[Dict]):
+
+async def insert_clv_trades(records: List[Dict], session: Optional[AsyncSession] = None):
     """Persists CLV records to clv_trades table."""
     if not records: return
-    async with async_session_maker() as session:
-        try:
-            is_sqlite = "sqlite" in str(engine.url)
-            ins_obj = sqlite_insert(CLVRecord) if is_sqlite else pg_insert(CLVRecord)
-            await session.execute(ins_obj.values(records))
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Persistence: clv_tracking insert failed: {e}")
+    
+    if session:
+        await _execute_insert_clv_trades(session, records)
+        return
 
-async def insert_injury_events(events: List[Dict]):
+    async with async_session_maker() as session:
+        await _execute_insert_clv_trades(session, records)
+
+async def _execute_insert_clv_trades(session: AsyncSession, records: List[Dict]):
+    try:
+        is_sqlite = "sqlite" in str(engine.url)
+        ins_obj = sqlite_insert(CLVRecord) if is_sqlite else pg_insert(CLVRecord)
+        await session.execute(ins_obj.values(records))
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Persistence: clv_tracking insert failed: {e}")
+
+async def insert_injury_events(events: List[Dict], session: Optional[AsyncSession] = None):
     if not events: return
-    async with async_session_maker() as session:
-        try:
-            is_sqlite = "sqlite" in str(engine.url)
-            ins_obj = sqlite_insert(InjuryImpactEvent) if is_sqlite else pg_insert(InjuryImpactEvent)
-            await session.execute(ins_obj.values(events))
-            await session.commit()
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Persistence: injury_impact_events insert failed: {e}")
+    
+    if session:
+        await _execute_insert_injury_events(session, events)
+        return
 
-async def upsert_injuries(sport: str, rows: List[Dict]):
-    if not rows: return
     async with async_session_maker() as session:
-        try:
-            from models.injury import Injury
-            from sqlalchemy import delete
-            # Full refresh for the sport to ensure we don't have stale injury records
-            await session.execute(delete(Injury).where(Injury.sport == sport))
-            
-            is_sqlite = "sqlite" in str(engine.url)
-            ins_obj = sqlite_insert(Injury) if is_sqlite else pg_insert(Injury)
-            await session.execute(ins_obj.values(rows))
-            await session.commit()
-            logger.info(f"Persistence: Refreshed {len(rows)} injuries for {sport}")
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Persistence: Injury upsert failed: {e}")
+        await _execute_insert_injury_events(session, events)
+
+async def _execute_insert_injury_events(session: AsyncSession, events: List[Dict]):
+    try:
+        is_sqlite = "sqlite" in str(engine.url)
+        ins_obj = sqlite_insert(InjuryImpactEvent) if is_sqlite else pg_insert(InjuryImpactEvent)
+        await session.execute(ins_obj.values(events))
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Persistence: injury_impact_events insert failed: {e}")
+
+
+async def upsert_injuries(sport: str, rows: List[Dict], session: Optional[AsyncSession] = None):
+    if not rows: return
+    
+    if session:
+        await _execute_upsert_injuries(session, sport, rows)
+        return
+
+    async with async_session_maker() as session:
+        await _execute_upsert_injuries(session, sport, rows)
+
+async def _execute_upsert_injuries(session: AsyncSession, sport: str, rows: List[Dict]):
+    try:
+        from models.injury import Injury
+        from sqlalchemy import delete
+        # Full refresh for the sport to ensure we don't have stale injury records
+        await session.execute(delete(Injury).where(Injury.sport == sport))
+        
+        is_sqlite = "sqlite" in str(engine.url)
+        ins_obj = sqlite_insert(Injury) if is_sqlite else pg_insert(Injury)
+        await session.execute(ins_obj.values(rows))
+        await session.commit()
+        logger.info(f"Persistence: Refreshed {len(rows)} injuries for {sport}")
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Persistence: Injury upsert failed: {e}")
+

@@ -112,11 +112,13 @@ async def get_clv_history(
 @router.get("/summary")
 async def get_clv_summary(
     sport: Optional[str] = Query(None),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Provides institutional performance metrics: Beat Rate % and Avg CLV.
+    Includes recent results for the analytics table.
     """
+    # 1. Metrics
     stmt = select(
         func.count(CLVRecord.id).label("total"),
         func.sum(cast(CLVRecord.clv_beat, Integer)).label("beats"),
@@ -131,15 +133,55 @@ async def get_clv_summary(
     total = summary.total if summary and summary.total else 0
     beats = summary.beats if summary and summary.beats else 0
     avg_clv = float(summary.avg_clv) if summary and summary.avg_clv else 0.0
-    
     beat_rate = (beats / total * 100) if total > 0 else 0.0
+
+    # 2. Recent Results (Merge Main Markets and Props for the UI table)
+    results = []
     
+    # Recent CLVRecords
+    stmt_rec = select(CLVRecord).order_by(desc(CLVRecord.created_at)).limit(10)
+    if sport:
+        stmt_rec = stmt_rec.where(CLVRecord.sport == sport)
+    res_rec = await db.execute(stmt_rec)
+    records = res_rec.scalars().all()
+    for r in records:
+        results.append({
+            "player_name": r.selection,
+            "market": r.market_key,
+            "open_line": float(r.opening_line),
+            "close_line": float(r.closing_line),
+            "clv_edge": float(r.clv_percentage),
+            "status": "WIN" if r.clv_beat else "PENDING",
+            "timestamp": r.created_at.isoformat()
+        })
+
+    # Recent PropLines with CLV
+    stmt_prop = select(PropLine).where(PropLine.closing_line != None).order_by(desc(PropLine.created_at)).limit(10)
+    if sport:
+        stmt_prop = stmt_prop.where(PropLine.sport_key == sport)
+    res_prop = await db.execute(stmt_prop)
+    props = res_prop.scalars().all()
+    for p in props:
+        results.append({
+            "player_name": p.player_name,
+            "market": p.stat_type,
+            "open_line": float(p.line),
+            "close_line": float(p.closing_line),
+            "clv_edge": float(p.clv_val),
+            "status": "WIN" if p.beat_closing_line else "LOSS",
+            "timestamp": p.created_at.isoformat()
+        })
+    
+    results.sort(key=lambda x: x["timestamp"], reverse=True)
+
     return {
         "status": "active",
-        "metrics": {
+        "avg_clv_edge": float(f"{float(avg_clv):.2f}"),
+        "win_rate_vs_clv": float(f"{float(beat_rate):.2f}"),
+        "results": results[:15],
+        "meta": {
             "total_tracked": total,
-            "beat_rate_pct": float(f"{float(beat_rate):.2f}"),
-            "avg_clv_pct": float(f"{float(avg_clv):.2f}"),
-            "edge_proven": avg_clv > 2.0
+            "avg_edge": float(f"{float(avg_clv):.2f}"),
+            "win_rate": float(f"{float(beat_rate):.2f}")
         }
     }

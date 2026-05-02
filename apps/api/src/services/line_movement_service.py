@@ -91,4 +91,49 @@ class LineMovementService:
             moves.sort(key=lambda x: x["intensity"], reverse=True)
             return moves[:20]
 
+    async def get_movement_for_event(self, event_id: str, sport: str) -> Dict[str, Any]:
+        """
+        Returns book-level history for a specific event to populate sparklines.
+        """
+        async with async_session_maker() as session:
+            stmt = select(LineTick).where(
+                and_(
+                    LineTick.event_id == event_id,
+                    LineTick.sport == sport
+                )
+            ).order_by(LineTick.created_at.asc())
+            
+            result = await session.execute(stmt)
+            ticks = result.scalars().all()
+            
+            if not ticks:
+                return {"event_id": event_id, "books": []}
+                
+            books_data = {}
+            for t in ticks:
+                book = t.bookmaker
+                if book not in books_data:
+                    books_data[book] = {
+                        "name": book,
+                        "current_line": str(t.line) if t.line else "N/A",
+                        "history": []
+                    }
+                # Track line history for the sparkline
+                val = float(t.line) if t.line else float(t.price) if t.price else 0.0
+                books_data[book]["history"].append(val)
+                if t.line:
+                    books_data[book]["current_line"] = str(t.line)
+                elif t.price:
+                    books_data[book]["current_line"] = str(t.price)
+
+            # Cap history points for UI performance
+            for b in books_data.values():
+                if len(b["history"]) > 20:
+                    b["history"] = b["history"][-20:]
+
+            return {
+                "event_id": event_id,
+                "books": list(books_data.values())
+            }
+
 line_movement_service = LineMovementService()

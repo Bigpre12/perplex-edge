@@ -10,6 +10,7 @@ from real_data_connector import real_data_connector
 from db.session import get_db
 from services.live_scores_cache import read_cache_or_stale, upsert_live_scores_from_games
 from api_utils.supabase_proxy import supabase
+from deps.auth_ws import get_current_user_ws
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +205,10 @@ async def get_live_stream(sport: str = "basketball_nba"):
 
 
 @router.websocket("/ws")
-async def live_scores_ws(websocket: WebSocket):
+async def live_scores_ws(
+    websocket: WebSocket,
+    user: Any = Depends(get_current_user_ws)
+):
     origin = (websocket.headers.get("origin") or "").strip()
     parsed = urlparse(origin) if origin else None
     origin_base = f"{parsed.scheme}://{parsed.netloc}" if parsed and parsed.scheme and parsed.netloc else origin
@@ -212,22 +216,8 @@ async def live_scores_ws(websocket: WebSocket):
         await websocket.close(code=4003, reason="Origin not allowed")
         return
 
-    token = (websocket.query_params.get("token") or "").strip()
-    if not token:
-        await websocket.close(code=4001, reason="Missing token")
-        return
-
-    try:
-        user_resp = supabase.auth.get_user(token)
-        user = getattr(user_resp, "user", None) if user_resp else None
-        if not user and isinstance(user_resp, dict):
-            user = user_resp.get("user")
-    except Exception as e:
-        logger.warning("live/ws auth verification failed: %s", e)
-        user = None
-
     if not user:
-        await websocket.close(code=4003, reason="Invalid token")
+        await websocket.close(code=4003, reason="Invalid token or missing auth")
         return
 
     await websocket.accept()
@@ -248,5 +238,6 @@ async def live_scores_ws(websocket: WebSocket):
                     await websocket.send_json({"type": "pong"})
             except asyncio.TimeoutError:
                 pass
+            await asyncio.sleep(15.0)
     except Exception:
         await websocket.close()
