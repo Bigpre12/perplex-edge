@@ -43,9 +43,19 @@ STAT_TYPE_MAP = {
 
 ESPN_SPORT_MAP = {
     "basketball_nba": ("basketball", "nba"),
+    "basketball_wnba": ("basketball", "wnba"),
+    "basketball_ncaab": ("basketball", "mens-college-basketball"),
     "americanfootball_nfl": ("football", "nfl"),
+    "americanfootball_ncaaf": ("football", "college-football"),
     "icehockey_nhl": ("hockey", "nhl"),
     "baseball_mlb": ("baseball", "mlb"),
+    "soccer_uefa_champs_league": ("soccer", "uefa.champions"),
+    "soccer_epl": ("soccer", "eng.1"),
+    "soccer_la_liga": ("soccer", "esp.1"),
+    "soccer_italy_serie_a": ("soccer", "ita.1"),
+    "soccer_germany_bundesliga": ("soccer", "ger.1"),
+    "soccer_france_ligue_1": ("soccer", "fra.1"),
+    "soccer_mexico_liga_mx": ("soccer", "mex.1"),
 }
 
 
