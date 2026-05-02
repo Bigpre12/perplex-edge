@@ -17,6 +17,7 @@ export interface PropsHistoryRecord {
   odds_over?: number;
   odds_under?: number;
   snapshot_at?: string;
+  history_sparkline?: number[];
 }
 
 export const usePropsHistory = (sport: string = 'basketball_nba') => {
