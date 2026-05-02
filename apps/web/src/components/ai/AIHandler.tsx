@@ -161,6 +161,7 @@ export default function AIHandler() {
                                         onChange={(e) => setQuery(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                                         placeholder="Ask Perplex-Edge about market edges..."
+                                        aria-label="Ask Perplex-Edge a question"
                                         className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors pr-12"
                                     />
                                     <button

@@ -113,7 +113,16 @@ export default function EVPlusPage() {
 
       <div className="bg-[#111] border border-[#222] rounded-xl p-4">
         <div className="text-xs uppercase font-black text-white/60 mb-2">Min EV%: {minEv}</div>
-        <input type="range" min={1} max={20} value={minEv} onChange={(e) => setMinEv(Number(e.target.value))} className="w-full accent-cyan-400" />
+        <input 
+          type="range" 
+          min={1} 
+          max={20} 
+          value={minEv} 
+          onChange={(e) => setMinEv(Number(e.target.value))} 
+          className="w-full accent-cyan-400" 
+          title="Minimum EV percentage filter"
+          aria-label="Minimum EV percentage filter"
+        />
       </div>
 
       {loading ? (
