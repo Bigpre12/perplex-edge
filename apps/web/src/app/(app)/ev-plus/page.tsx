@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE } from "@/lib/api";
 import { DISPLAY_SPORTS, SPORTS_CONFIG, SportKey } from "@/lib/sports.config";
 import { useAuth } from "@/hooks/useAuth";
+import { useBackendData } from "@/hooks/useBackendData";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 
 const PILL_LABELS = ["NBA", "NFL", "MLB", "NHL", "NCAAF", "NCAAB", "WNBA", "EPL", "UCL", "UFC", "MLS"];
@@ -19,62 +19,44 @@ export default function EVPlusPage() {
   const { token, loading: authLoading } = useAuth();
   const [sport, setSport] = useState<SportKey>("basketball_nba");
   const [minEv, setMinEv] = useState(2);
-  const [rows, setRows] = useState<EvRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  const { data: rawData, isLoading: loading, isError, lastUpdated, refetch } = useBackendData<any>("/api/ev", {
+    params: { sport, min_ev: minEv },
+    enabled: !!token,
+    requireAuth: true,
+    pollMs: 30_000
+  });
+
+  const rows = useMemo<EvRow[]>(() => {
+    const data = Array.isArray(rawData?.data)
+      ? rawData.data
+      : Array.isArray(rawData?.props)
+        ? rawData.props
+        : Array.isArray(rawData?.items)
+          ? rawData.items
+          : Array.isArray(rawData)
+            ? rawData
+            : [];
+            
+    return data
+      .map((r: any, idx: number) => ({
+        id: String(r?.id ?? idx),
+        player: r?.player_name ?? "—",
+        market: r?.market_label ?? r?.market_key ?? "—",
+        line: r?.line != null ? String(r.line) : "—",
+        fairOdds: r?.fair_odds != null ? String(r.fair_odds) : "—",
+        bookOdds: r?.book_odds != null ? String(r.book_odds) : "—",
+        ev: Number(r?.ev_value ?? r?.ev_percentage ?? r?.edge_percent ?? 0) || 0,
+        expires: r?.expires_at ? new Date(r.expires_at).toLocaleTimeString() : "—",
+      }))
+      .sort((a: EvRow, b: EvRow) => b.ev - a.ev);
+  }, [rawData]);
+
+  const error = isError ? "Unable to connect to backend. Data will populate once API is online." : null;
 
   useEffect(() => {
     if (!authLoading && !token) router.replace("/login");
   }, [authLoading, token, router]);
-
-  useEffect(() => {
-    let mounted = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_BASE}/api/ev?sport=${sport}&min_ev=${minEv}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        const json = await res.json();
-        const data = Array.isArray(json?.data)
-          ? json.data
-          : Array.isArray(json?.items)
-            ? json.items
-            : Array.isArray(json?.results)
-              ? json.results
-              : Array.isArray(json)
-                ? json
-                : [];
-        const mapped: EvRow[] = data
-          .map((r: any, idx: number) => ({
-            id: String(r?.id ?? idx),
-            player: r?.player_name ?? "—",
-            market: r?.market_label ?? r?.market_key ?? "—",
-            line: r?.line != null ? String(r.line) : "—",
-            fairOdds: r?.fair_odds != null ? String(r.fair_odds) : "—",
-            bookOdds: r?.book_odds != null ? String(r.book_odds) : "—",
-            ev: Number(r?.ev_value ?? r?.ev_percentage ?? 0) || 0,
-            expires: r?.expires_at ? new Date(r.expires_at).toLocaleTimeString() : "—",
-          }))
-          .sort((a: EvRow, b: EvRow) => b.ev - a.ev);
-        if (mounted) setRows(mapped);
-      } catch {
-        if (mounted) {
-          setRows([]);
-          setError("Unable to connect to backend. Data will populate once API is online.");
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [sport, minEv]);
 
   const stats = useMemo(() => {
     const total = rows.length;

@@ -112,7 +112,9 @@ export function useBackendData<T = unknown>(
 
         const token =
           typeof window !== "undefined"
-            ? localStorage.getItem("access_token") || localStorage.getItem("accessToken")
+            ? localStorage.getItem("perplex_edge_token") || 
+              localStorage.getItem("accessToken") || 
+              localStorage.getItem("access_token")
             : null;
         if (token && !requestHeaders.Authorization) {
           requestHeaders.Authorization = `Bearer ${token}`;

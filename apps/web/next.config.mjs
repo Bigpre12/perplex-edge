@@ -9,8 +9,8 @@ const nextConfig = {
     async redirects() {
         return [
             {
-                source: "/props",
-                destination: "/scanner",
+                source: "/player-props",
+                destination: "/props",
                 permanent: true,
             },
         ];

@@ -42,7 +42,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }): JSX
 
     const fetchTier = useCallback(async () => {
         // GUARD: don't even try if there's no token
-        const token = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
+        const token = typeof window !== 'undefined' ? (localStorage.getItem("perplex_edge_token") || localStorage.getItem("accessToken")) : null;
         if (!token) {
             setStoreTier("free");        // default unauthenticated tier
             setLoading(false);

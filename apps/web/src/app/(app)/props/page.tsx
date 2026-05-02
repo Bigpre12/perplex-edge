@@ -21,6 +21,8 @@ export default function PropsPage() {
     return true;
   });
 
+  const { addLeg, parlayLegs } = useLucrixStore();
+  
   const columns = [
     { 
       header: 'Player', 
@@ -61,7 +63,6 @@ export default function PropsPage() {
     {
       header: 'Action',
       accessor: (p: PropRecord) => {
-        const { addLeg, parlayLegs } = useLucrixStore();
         const isInParlay = parlayLegs.some((l: any) => l.id === p.id);
         
         return (
