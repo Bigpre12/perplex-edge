@@ -186,6 +186,9 @@ class Settings:
             )
         except ValueError:
             self.ODDS_API_MONTHLY_LIMIT = 20_000
+
+        self.ODDS_API_ENABLED = _env_bool("ODDS_API_ENABLED", True)
+        self.ODDS_API_CONSERVATIVE_MODE = _env_bool("ODDS_API_CONSERVATIVE_MODE", False)
         
         # CORS Setup — allow Vercel preview/production domains automatically
         raw_origins = os.getenv("ALLOWED_ORIGINS", os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://localhost:5173"))

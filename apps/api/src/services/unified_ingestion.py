@@ -164,6 +164,13 @@ class UnifiedIngestionService:
             "odds_api_all_keys_cooldown": False,
         }
 
+        # 0. Kill-switch check
+        if not settings.ODDS_API_ENABLED:
+            logger.info("UnifiedIngestion: Odds API is globally disabled by config. Skipping network ingest.")
+            metrics["status"] = "skipped"
+            metrics["skipped_reason"] = "odds_api_disabled"
+            return metrics
+
         # All Odds API keys in cooldown: skip this cycle (avoids waterfall/TOA hammer + log spam).
         if odds_api_client.is_configured and odds_api_client.all_keys_unavailable():
             logger.info(
@@ -346,6 +353,11 @@ class UnifiedIngestionService:
         # Quota Safety: Only fetch props for sports currently in-season (March 2026)
         # NFL is in off-season, NHL/NBA/MLB are active.
         IN_SEASON_PROP_SPORTS = ["basketball_nba", "basketball_wnba", "baseball_mlb", "icehockey_nhl"]
+        
+        if settings.ODDS_API_CONSERVATIVE_MODE:
+            # In conservative mode, we might only want to focus on the top 2 active sports
+            IN_SEASON_PROP_SPORTS = ["basketball_nba", "baseball_mlb"]
+            logger.info(f"UnifiedIngestion: Conservative mode active. Restricting prop fetch to {IN_SEASON_PROP_SPORTS}")
 
         quota_mode = "normal"
         try:

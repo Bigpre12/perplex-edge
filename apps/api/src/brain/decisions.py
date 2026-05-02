@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from brain.env_reads import BRAIN_SKIP_WHEN_FRESH_MINUTES, brain_cache_skip_enabled
 from brain.quota_guard import CONSERVATIVE_PCT
+from core.config import settings
 
 
 async def props_live_age_minutes(session: AsyncSession, sport: str) -> Optional[float]:
@@ -44,9 +45,14 @@ def should_skip_fetch_for_fresh_cache(
         return False, "cache_skip_disabled"
     if cache_age_minutes is None:
         return False, "no_cache_timestamp"
-    if quota_pct < CONSERVATIVE_PCT:
-        return False, "quota_comfortable"
     fresh = max(1, BRAIN_SKIP_WHEN_FRESH_MINUTES)
+    if hasattr(settings, "ODDS_API_CONSERVATIVE_MODE") and settings.ODDS_API_CONSERVATIVE_MODE:
+        # In conservative mode, we are much stingier with the quota.
+        # We increase the 'fresh' window significantly.
+        fresh = max(fresh, 15)
+        if quota_pct >= 0.5: # Aggressive skip if half-way through quota
+            fresh = max(fresh, 30)
+
     if cache_age_minutes <= float(fresh):
         return True, f"cache_fresh_under_{fresh}m_quota_conservative"
     return False, "cache_stale_or_quota_ok"

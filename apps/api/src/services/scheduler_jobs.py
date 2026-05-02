@@ -4,6 +4,7 @@ import httpx
 import os
 from datetime import datetime, timezone, timedelta
 from services.odds_api_client import odds_api
+from core.config import settings
 from core.sports_config import SPORT_MAP
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,9 @@ SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_
 
 async def snapshot_lines(sport: str):
     """Pull current Odds API lines and store in clv_snapshots"""
+    if not settings.ODDS_API_ENABLED:
+        logger.debug("snapshot_lines: Odds API disabled by config. Skipping.")
+        return
     from db.session import async_session_maker
     from models import LineTick
     try:

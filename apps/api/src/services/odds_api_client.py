@@ -318,6 +318,10 @@ class OddsApiClient(ResilientBaseClient):
         quota_market: Optional[str] = None,
     ) -> Any:
         # 1. Configuration & Global Gating
+        if not settings.ODDS_API_ENABLED:
+            logger.debug("Odds API disabled by config (ODDS_API_ENABLED=false). Skipping request.")
+            return None
+
         if not self.is_configured:
             logger.warning("Odds API missing credentials: ODDS_API_KEYS not set or empty")
             return None
