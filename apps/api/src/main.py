@@ -726,15 +726,7 @@ async def health():
         }
     except Exception as e:
         logger.warning("Liveness /health: database check failed: %s", e)
-        return {
-            "status": "alive",
-            "database_connected": False,
-            "database_error": str(e),
-            "startup_degraded": bool(getattr(app.state, "db_startup_degraded", False)),
-            "startup_db_error": getattr(app.state, "db_startup_last_error", None),
-            "auth_bypass_enabled": bool(getattr(settings, "BYPASS_AUTH", False)),
-            "supabase_role_split_ready": bool(getattr(settings, "SUPABASE_ROLE_SPLIT_READY", False)),
-        }
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
 @app.get("/")
 async def root():

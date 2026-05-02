@@ -5,6 +5,8 @@ import json
 import logging
 import redis.asyncio as redis # Keep this import
 import os
+from core.config import settings
+from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -53,5 +55,10 @@ async def kalshi_ws_proxy(
     except Exception as e:
         logger.error(f"KalshiWSProxy: Error: {e}")
     finally:
-        await pubsub.unsubscribe("kalshi:prices")
-        await redis_conn.close()
+        try:
+            await pubsub.unsubscribe("kalshi:prices")
+            await redis_conn.close()
+            if websocket.application_state == WebSocketState.CONNECTED:
+                await websocket.close()
+        except Exception:
+            pass

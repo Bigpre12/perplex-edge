@@ -25,8 +25,13 @@ async def list_bets(db: AsyncSession = Depends(get_db)):
 async def list_my_bets(current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """List only the current user's bets"""
     try:
-        # Check if current_user has id or email to use as user_id
-        user_id = str(getattr(current_user, "id", "") or getattr(current_user, "email", ""))
+        user_id_raw = getattr(current_user, "id", "")
+        try:
+            user_id = int(user_id_raw)
+        except (ValueError, TypeError):
+            # Fallback if id is missing or not a number
+            return []
+            
         stmt = select(Bet).where(Bet.user_id == user_id).order_by(Bet.created_at.desc())
         result = await db.execute(stmt)
         return result.scalars().all()
@@ -47,7 +52,12 @@ async def create_bet(payload: BetCreate, db: AsyncSession = Depends(get_db)):
 async def bet_stats(current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Returns betting statistics for the ledger and bankroll pages."""
     try:
-        user_id = str(getattr(current_user, "id", "") or getattr(current_user, "email", ""))
+        user_id_raw = getattr(current_user, "id", "")
+        try:
+            user_id = int(user_id_raw)
+        except (ValueError, TypeError):
+            return {"total_bets": 0, "total_stake": 0, "profit_loss": 0, "win_rate": 0, "clv_avg": 0}
+            
         # Simple aggregate stats
         stmt = select(
             func.count(Bet.id).label("total_bets"),

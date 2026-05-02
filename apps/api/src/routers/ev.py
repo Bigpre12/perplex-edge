@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @router.get("/")
 async def get_ev_signals(
     sport: Optional[str] = Query(None),
+    min_ev: float = Query(2.0),
     limit: int = Query(50),
     db=Depends(get_db),
     current_user: User = Depends(require_tier("pro"))
@@ -25,9 +26,9 @@ async def get_ev_signals(
         sql = """
             SELECT *, edge_percent as ev_percentage, true_prob as fair_prob 
             FROM ev_signals 
-            WHERE 1=1
+            WHERE edge_percent >= :min_ev
         """
-        params = {"limit": limit}
+        params = {"limit": limit, "min_ev": min_ev}
         if sport:
             sql += " AND sport = :sport"
             params["sport"] = sport
@@ -38,6 +39,7 @@ async def get_ev_signals(
         rows = result.mappings().all()
         if rows:
             return {
+                "status": "ok",
                 "props": [
                     {**dict(r), "ev_pct": r.get("edge_percent", 0), "ev_percentage": r.get("edge_percent", 0)} 
                     for r in rows
@@ -104,8 +106,8 @@ async def get_ev_signals(
                 ev_under = round((fair_under * dec_under - 1) * 100, 2)
                 best_ev = max(ev_over, ev_under)
                 recommendation = 'OVER' if ev_over >= ev_under else 'UNDER'
-                # Only keep edges in the 2–20% range (noise filter)
-                if 2.0 <= best_ev <= 20.0:
+                # Only keep edges above min_ev (noise filter + user setting)
+                if best_ev >= min_ev:
                     row['ev_pct'] = best_ev
                     row['ev_percentage'] = best_ev
                     row['edge_percent'] = best_ev

@@ -45,10 +45,10 @@ async def websocket_ev_endpoint(
                 pass
                 
     except WebSocketDisconnect:
-        manager.disconnect(user_id)
+        manager.disconnect(websocket, user_id)
     except Exception as e:
         logger.error(f"[WS] WebSocket error for {user_id}: {str(e)}")
-        manager.disconnect(user_id)
+        manager.disconnect(websocket, user_id)
 
 async def notify_ev_update(sport: str):
     """

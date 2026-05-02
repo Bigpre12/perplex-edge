@@ -105,10 +105,10 @@ engine_kwargs = {
 #   asyncpg.exceptions.InternalServerError: (EMAXCONNSESSION) max clients reached
 # Keep a small, explicit pool and do not allow large overflow.
 #
-_pool_size = max(1, int(os.getenv("DB_POOL_SIZE", "20")))
-_max_overflow = max(0, int(os.getenv("DB_MAX_OVERFLOW", "10")))
-_pool_timeout = max(1, int(os.getenv("DB_POOL_TIMEOUT_SECONDS", "30")))
-_pool_recycle = max(60, int(os.getenv("DB_POOL_RECYCLE_SECONDS", "300")))
+_pool_size = 15
+_max_overflow = 5
+_pool_timeout = 30
+_pool_recycle = 1800
 
 if _is_pg:
     engine_kwargs["pool_size"] = _pool_size
