@@ -10,6 +10,7 @@ from services.market_labeling import derive_market_label
 from models.brain import WhaleMove, CLVRecord, InjuryImpactEvent
 from schemas.props import PropRecord
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
