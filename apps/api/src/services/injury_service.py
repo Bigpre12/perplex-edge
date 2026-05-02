@@ -1,7 +1,9 @@
-# apps/api/src/services/injury_service.py
+from __future__ import annotations
+
 import os
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
 from clients.espn_client import espn_client # type: ignore
 from models import InjuryImpact
 from sqlalchemy import select # type: ignore
