@@ -69,6 +69,7 @@ def init_scheduler_jobs():
         job_kw.update({
             "args": [spec.sport_key],
             "id": job_id,
+            "name": job_id,
         })
         if spec.minutes is not None:
             job_kw["minutes"] = spec.minutes
@@ -83,6 +84,7 @@ def init_scheduler_jobs():
         'interval',
         minutes=10,
         id="auto_grading",
+        name="auto_grading",
         **common_kw
     )
 
@@ -91,6 +93,7 @@ def init_scheduler_jobs():
         'interval',
         minutes=5,
         id="sql_grading",
+        name="sql_grading",
         **common_kw
     )
 
@@ -99,12 +102,14 @@ def init_scheduler_jobs():
     for sport_key in ACTIVE_SPORTS:
         k_sport = sport_key.split("_")[-1].upper()
         if k_sport in kalshi_supported:
+            job_id = f"kalshi_sync_{k_sport.lower()}"
             scheduler.add_job(
                 guarded_kalshi_sync,
                 'interval',
                 minutes=8,
                 args=[k_sport],
-                id=f"kalshi_sync_{k_sport.lower()}",
+                id=job_id,
+                name=job_id,
                 **common_kw
             )
 
@@ -114,6 +119,7 @@ def init_scheduler_jobs():
         'interval',
         minutes=12,
         id="whale_global_check",
+        name="whale_global_check",
         **common_kw
     )
 
@@ -125,6 +131,7 @@ def init_scheduler_jobs():
         "interval",
         seconds=max(60, int(settings.LIVE_DATA_POLLING_INTERVAL)),
         id="live_scores_cache_upsert",
+        name="live_scores_cache_upsert",
         **poll_kw
     )
 
