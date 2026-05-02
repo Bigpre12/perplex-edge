@@ -32,7 +32,7 @@ SPORT_MAP = {
     "baseball_mlb": ("baseball", "mlb"),
     "soccer_epl": ("soccer", "eng.1"),
     "soccer_usa_mls": ("soccer", "usa.1"),
-    "soccer_uefa_champs_league": ("soccer", "uefa.champions_league"),
+    "soccer_uefa_champs_league": ("soccer", "uefa.champions"),
     "rugby_league_nrl": ("rugby-league", "nrl"),
     "aussie_rules_afl": ("australian-football", "afl"),
     "mma_mixed_martial_arts": None,

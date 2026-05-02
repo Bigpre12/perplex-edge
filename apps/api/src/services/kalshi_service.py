@@ -44,7 +44,15 @@ class KalshiService:
 
     def _load_key_safely(self):
         """Standardized robust key loader with defensive error handling."""
+        self.enabled = False
+        self._private_key = None
+
         try:
+            # Feature flag to silence noise if keys aren't ready
+            if os.getenv("KALSHI_ENABLED", "true").lower() != "true":
+                logger.info("KalshiService: Disabled via KALSHI_ENABLED flag")
+                return
+
             # 1. Try Base64-specific variable first
             b64_val = self.private_key_b64
             if b64_val:
@@ -71,7 +79,7 @@ class KalshiService:
                             return
                         except Exception:
                             pass
-                    logger.error("KalshiService: Decoded B64 key does not contain PEM header or valid DER")
+                    logger.error(f"KalshiService: Decoded B64 key (len={len(key_bytes)}) does not contain PEM header or valid DER. Start: {key_bytes[:20].hex()}")
                 except Exception as e:
                     logger.error(f"KalshiService: Failed to load B64 key: {e}")
 
@@ -104,27 +112,30 @@ class KalshiService:
                         # Robust cleaning: remove all whitespace and potential non-b64 chars
                         import re
                         clean_b64 = re.sub(r'[^a-zA-Z0-9+/=]', '', raw_val)
-                        key_bytes = base64.b64decode(clean_b64)
-                        
-                        # Check if decoded bytes look like a PEM
-                        try:
-                            decoded_text = key_bytes.decode("utf-8")
-                            if "-----BEGIN" in decoded_text:
-                                self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
-                                self.enabled = True
-                                logger.info("KalshiService: key loaded successfully from B64 in KALSHI_PRIVATE_KEY")
-                                return
-                        except (UnicodeDecodeError, ValueError):
-                            # Not a PEM, maybe it's the DER bytes directly?
+                        if not clean_b64:
+                            logger.warning("KalshiService: clean_b64 is empty after filtering")
+                        else:
+                            key_bytes = base64.b64decode(clean_b64)
+                            
+                            # Check if decoded bytes look like a PEM
                             try:
-                                self._private_key = serialization.load_der_private_key(key_bytes, password=None, backend=default_backend())
-                                self.enabled = True
-                                logger.info("KalshiService: key loaded successfully from DER bytes in KALSHI_PRIVATE_KEY")
-                                return
-                            except Exception:
-                                pass
-                        
-                        logger.error("KalshiService: Potential B64 in KALSHI_PRIVATE_KEY is not a valid PEM or DER after decoding")
+                                decoded_text = key_bytes.decode("utf-8")
+                                if "-----BEGIN" in decoded_text:
+                                    self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                                    self.enabled = True
+                                    logger.info("KalshiService: key loaded successfully from B64 in KALSHI_PRIVATE_KEY")
+                                    return
+                            except (UnicodeDecodeError, ValueError):
+                                # Not a PEM, maybe it's the DER bytes directly?
+                                try:
+                                    self._private_key = serialization.load_der_private_key(key_bytes, password=None, backend=default_backend())
+                                    self.enabled = True
+                                    logger.info("KalshiService: key loaded successfully from DER bytes in KALSHI_PRIVATE_KEY")
+                                    return
+                                except Exception:
+                                    pass
+                            
+                            logger.error(f"KalshiService: Potential B64 in KALSHI_PRIVATE_KEY (len={len(key_bytes)}) is not a valid PEM or DER. Start: {key_bytes[:20].hex()}")
                     except Exception as e:
                         logger.error(f"KalshiService: Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
 

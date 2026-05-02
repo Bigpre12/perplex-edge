@@ -39,7 +39,15 @@ class KalshiWSManager:
 
     def _load_key_safely(self):
         """Standardized robust key loader with defensive error handling."""
+        self.enabled = False
+        self._private_key = None
+
         try:
+            # Feature flag to silence noise if keys aren't ready
+            if os.getenv("KALSHI_ENABLED", "true").lower() != "true":
+                logger.info("KalshiWS: Disabled via KALSHI_ENABLED flag")
+                return
+
             # 1. Try Base64-specific variable first
             b64_val = (os.getenv("KALSHI_PRIVATE_KEY_B64") or "").strip()
             if b64_val:
@@ -66,12 +74,12 @@ class KalshiWSManager:
                             return
                         except Exception:
                             pass
-                    logger.error("KalshiWS: Decoded B64 key does not contain PEM header or valid DER")
+                    logger.error(f"KalshiWS: Decoded B64 key (len={len(key_bytes)}) does not contain PEM header or valid DER. Start: {key_bytes[:20].hex()}")
                 except Exception as e:
                     logger.error(f"KalshiWS: Failed to load B64 key: {e}")
 
             # 2. Try Raw PEM or Base64 in KALSHI_PRIVATE_KEY
-            raw_val = self.private_key_content
+            raw_val = os.getenv("KALSHI_PRIVATE_KEY")
             if raw_val:
                 # Remove common surrounding noise from env vars
                 raw_val = raw_val.strip().strip('"').strip("'")
@@ -99,27 +107,30 @@ class KalshiWSManager:
                         # Robust cleaning: remove all whitespace and potential non-b64 chars
                         import re
                         clean_b64 = re.sub(r'[^a-zA-Z0-9+/=]', '', raw_val)
-                        key_bytes = base64.b64decode(clean_b64)
-                        
-                        # Check if decoded bytes look like a PEM
-                        try:
-                            decoded_text = key_bytes.decode("utf-8")
-                            if "-----BEGIN" in decoded_text:
-                                self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
-                                self.enabled = True
-                                logger.info("KalshiWS: key loaded successfully from B64 in KALSHI_PRIVATE_KEY")
-                                return
-                        except (UnicodeDecodeError, ValueError):
-                            # Not a PEM, maybe it's the DER bytes directly?
+                        if not clean_b64:
+                            logger.warning("KalshiWS: clean_b64 is empty after filtering")
+                        else:
+                            key_bytes = base64.b64decode(clean_b64)
+                            
+                            # Check if decoded bytes look like a PEM
                             try:
-                                self._private_key = serialization.load_der_private_key(key_bytes, password=None, backend=default_backend())
-                                self.enabled = True
-                                logger.info("KalshiWS: key loaded successfully from DER bytes in KALSHI_PRIVATE_KEY")
-                                return
-                            except Exception:
-                                pass
-                        
-                        logger.error("KalshiWS: Potential B64 in KALSHI_PRIVATE_KEY is not a valid PEM or DER after decoding")
+                                decoded_text = key_bytes.decode("utf-8")
+                                if "-----BEGIN" in decoded_text:
+                                    self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                                    self.enabled = True
+                                    logger.info("KalshiWS: key loaded successfully from B64 in KALSHI_PRIVATE_KEY")
+                                    return
+                            except (UnicodeDecodeError, ValueError):
+                                # Not a PEM, maybe it's the DER bytes directly?
+                                try:
+                                    self._private_key = serialization.load_der_private_key(key_bytes, password=None, backend=default_backend())
+                                    self.enabled = True
+                                    logger.info("KalshiWS: key loaded successfully from DER bytes in KALSHI_PRIVATE_KEY")
+                                    return
+                                except Exception:
+                                    pass
+                            
+                            logger.error(f"KalshiWS: Potential B64 in KALSHI_PRIVATE_KEY (len={len(key_bytes)}) is not a valid PEM or DER. Start: {key_bytes[:20].hex()}")
                     except Exception as e:
                         logger.error(f"KalshiWS: Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
 
