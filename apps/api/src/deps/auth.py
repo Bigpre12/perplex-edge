@@ -3,6 +3,8 @@ import logging
 from typing import Dict, Any
 from core.config import settings
 from core.asyncpg_dsn import asyncpg_dsn_from_database_url
+from fastapi import Header, HTTPException
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -54,3 +56,15 @@ async def provision_user_jit(user_payload: Dict[str, Any], db):
         )
         
     return row
+
+async def verify_admin(x_admin_key: str = Header(None)):
+    """
+    Security middleware to ensure only authorized admins can trigger seeding or administrative tasks.
+    """
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret:
+        # If no secret is configured, deny all requests for safety
+        logger.warning("ADMIN_SECRET environment variable is missing on server.")
+        raise HTTPException(status_code=500, detail="ADMIN_SECRET environment variable is missing on server.")
+    if x_admin_key != admin_secret:
+        raise HTTPException(status_code=403, detail="Access denied: Invalid X-Admin-Key.")

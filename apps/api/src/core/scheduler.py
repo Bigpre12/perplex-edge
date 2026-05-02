@@ -11,12 +11,18 @@ logger = logging.getLogger(__name__)
 
 # Global singleton instance
 scheduler = AsyncIOScheduler(timezone="UTC")
+_scheduler_initialized = False
 
 def init_scheduler_jobs():
     """
     Register all recurring background jobs in the global scheduler.
     Uses fixed IDs and 'replace_existing=True' to prevent duplication.
     """
+    global _scheduler_initialized
+    if _scheduler_initialized:
+        logger.debug("📡 [Scheduler] Jobs already initialized. Skipping.")
+        return
+    
     logger.info("📡 [Scheduler] Initializing background jobs...")
 
     from services.grading_service import grading_service
@@ -45,17 +51,24 @@ def init_scheduler_jobs():
             return
         await kalshi_ingestion.run(sport_key)
 
+    # Common job configuration for stability
+    common_kw = {
+        "replace_existing": True,
+        "max_instances": 1,
+        "coalesce": True,
+        "jitter": 30,
+    }
+
     # 2. Build Ingest Schedule
     ingest_job_specs, ingest_meta = build_unified_ingest_schedule()
     
     for spec in ingest_job_specs:
         job_id = f"ingest_{spec.sport_key}"
-        job_kw: dict = {
+        job_kw: dict = common_kw.copy()
+        job_kw.update({
             "args": [spec.sport_key],
             "id": job_id,
-            "replace_existing": True,
-            "jitter": 30,
-        }
+        })
         if spec.minutes is not None:
             job_kw["minutes"] = spec.minutes
         else:
@@ -69,8 +82,7 @@ def init_scheduler_jobs():
         'interval',
         minutes=10,
         id="auto_grading",
-        replace_existing=True,
-        jitter=30,
+        **common_kw
     )
 
     scheduler.add_job(
@@ -78,8 +90,7 @@ def init_scheduler_jobs():
         'interval',
         minutes=5,
         id="sql_grading",
-        replace_existing=True,
-        jitter=30,
+        **common_kw
     )
 
     # 4. Kalshi Sync
@@ -93,8 +104,7 @@ def init_scheduler_jobs():
                 minutes=8,
                 args=[k_sport],
                 id=f"kalshi_sync_{k_sport.lower()}",
-                replace_existing=True,
-                jitter=30,
+                **common_kw
             )
 
     # 5. Whale Service
@@ -103,23 +113,24 @@ def init_scheduler_jobs():
         'interval',
         minutes=12,
         id="whale_global_check",
-        replace_existing=True,
-        jitter=30,
+        **common_kw
     )
 
     # 6. Live Scores Polling
+    poll_kw = common_kw.copy()
+    poll_kw["jitter"] = 10
     scheduler.add_job(
         live_data_service.poll_scores,
         "interval",
         seconds=max(60, int(settings.LIVE_DATA_POLLING_INTERVAL)),
         id="live_scores_cache_upsert",
-        replace_existing=True,
-        jitter=10,
+        **poll_kw
     )
 
     # 7. Seed Pipeline (PrizePicks Nightly)
     setup_seed_scheduler(scheduler)
 
+    _scheduler_initialized = True
     logger.info("📡 [Scheduler] Job initialization complete.")
 
 def start_scheduler():

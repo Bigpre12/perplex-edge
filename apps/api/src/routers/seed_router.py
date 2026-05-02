@@ -4,21 +4,10 @@ import asyncio
 from fastapi import APIRouter, Header, HTTPException, Depends
 from sqlalchemy import text
 from db.session import AsyncSessionLocal
+from deps.auth import verify_admin
 from services.seed_scheduler import run_seed_pipeline
 
 router = APIRouter(prefix="/api/seed", tags=["seed"])
-
-ADMIN_SECRET = os.getenv("ADMIN_SECRET")
-
-async def verify_admin(x_admin_key: str = Header(None)):
-    """
-    Security middleware to ensure only authorized admins can trigger seeding.
-    """
-    if not ADMIN_SECRET:
-        # If no secret is configured, deny all requests for safety
-        raise HTTPException(status_code=500, detail="ADMIN_SECRET environment variable is missing on server.")
-    if x_admin_key != ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="Access denied: Invalid X-Admin-Key.")
 
 @router.post("/run")
 async def trigger_seed_pipeline(admin: None = Depends(verify_admin)):
