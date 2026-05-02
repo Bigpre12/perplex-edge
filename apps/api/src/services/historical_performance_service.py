@@ -432,7 +432,7 @@ class HistoricalPerformanceService:
                 hit_rate_trend = last_hit_rate - first_hit_rate
                 
                 first_ev = trend_data[0]['avg_ev']
-                last_ev = trend_data[-1']['avg_ev']
+                last_ev = trend_data[-1]['avg_ev']
                 ev_trend = last_ev - first_ev
                 
                 if hit_rate_trend > 5:
