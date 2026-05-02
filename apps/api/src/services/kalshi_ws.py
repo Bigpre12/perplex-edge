@@ -69,20 +69,70 @@ class KalshiWSManager:
             
             return None
 
-        self._private_key = load_key(
-            os.getenv("KALSHI_PRIVATE_KEY_B64"),
-            self.private_key_content,
-            self.private_key_path
-        )
+        self._private_key = None
+        self.enabled = False
+        self._load_key_safely()
+
+    def _load_key_safely(self):
+        """Standardized robust key loader with defensive error handling."""
+        # 1. Try Base64-specific variable first
+        b64_val = os.getenv("KALSHI_PRIVATE_KEY_B64")
+        if b64_val:
+            try:
+                clean_b64 = b64_val.strip().strip('"').strip("'").replace("\n", "").replace("\r", "")
+                key_bytes = base64.b64decode(clean_b64)
+                self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                self.enabled = True
+                logger.info("KalshiWS: key loaded successfully from B64")
+                return
+            except Exception as e:
+                logger.error(f"KalshiWS: Failed to load B64 key: {e}")
+
+        # 2. Try Raw PEM or Base64 in KALSHI_PRIVATE_KEY
+        raw_val = self.private_key_content
+        if raw_val:
+            raw_val = raw_val.strip().strip('"').strip("'")
+            # Case A: It's a raw PEM
+            if "-----BEGIN" in raw_val:
+                try:
+                    key_bytes = raw_val.replace("\\n", "\n").encode("utf-8")
+                    self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                    self.enabled = True
+                    logger.info("KalshiWS: key loaded successfully from raw PEM")
+                    return
+                except Exception as e:
+                    logger.error(f"KalshiWS: Failed to load raw PEM: {e}")
+            # Case B: It's Base64 (likely single-line from Railway)
+            else:
+                try:
+                    clean_b64 = raw_val.replace("\n", "").replace("\r", "")
+                    key_bytes = base64.b64decode(clean_b64)
+                    self._private_key = serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
+                    self.enabled = True
+                    logger.info("KalshiWS: key loaded successfully from potential B64")
+                    return
+                except Exception as e:
+                    logger.error(f"KalshiWS: Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
+
+        # 3. Try File Path
+        path_val = self.private_key_path
+        if path_val and os.path.exists(path_val):
+            try:
+                with open(path_val, "rb") as f:
+                    self._private_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+                    self.enabled = True
+                    logger.info(f"KalshiWS: key loaded successfully from file {path_val}")
+                    return
+            except Exception as e:
+                logger.error(f"KalshiWS: Failed to load key from file {path_val}: {e}")
         
         # Diagnostic logging for Railway debugging
-        logger.info(f"KalshiWS Config: KEY_ID={bool(self.api_key_id)} (len={len(self.api_key_id) if self.api_key_id else 0}), PRIV_KEY={bool(self._private_key)}")
+        logger.info(f"KalshiWS Config: KEY_ID={bool(self.api_key_id)} (len={len(self.api_key_id) if self.api_key_id else 0}), PRIV_KEY={self.enabled}")
 
-        self.available = bool(self.api_key_id and self._private_key)
-        if not self.available:
+        self.available = self.enabled
+        if not self.enabled:
             logger.warning(
-                "Kalshi: no private key configured (KALSHI_PRIVATE_KEY or KALSHI_PRIVATE_KEY_PATH) "
-                "and/or key id (KALSHI_API_KEY_ID or KALSHI_API_KEY)"
+                "KalshiWS: Disabled — missing credentials or invalid key format."
             )
 
         self._disabled = not self.available

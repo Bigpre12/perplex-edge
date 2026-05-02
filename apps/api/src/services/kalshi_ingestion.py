@@ -18,6 +18,10 @@ KALSHI_CACHE_KEY = "kalshi:ev_signals:{sport}"
 class KalshiIngestion:
     async def run(self, sport: str = "NBA"):
         """Fetches Kalshi markets and matches them against Sportsbook props to save EV signals."""
+        if not kalshi_service.enabled:
+            logger.debug("KalshiIngestion: Skipping run — Kalshi service is disabled/not configured.")
+            return []
+
         logger.info(f"KalshiIngestion: Starting sync for {sport}")
         if odds_api_client.all_keys_dead():
             logger.debug("Skipping KalshiIngestion.run — all keys cooling down")
@@ -31,7 +35,7 @@ class KalshiIngestion:
             markets = await kalshi_service.get_kalshi_sports_markets(kalshi_sport)
             if not markets:
                 logger.info(f"KalshiIngestion: No markets found for {kalshi_sport}")
-                return
+                return []
 
             # 2. Get Sportsbook Odds (first few events)
             events = await odds_api_client.get_events(odds_sport)
