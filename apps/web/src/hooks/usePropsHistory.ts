@@ -13,7 +13,10 @@ export interface PropsHistoryRecord {
   actual_score?: number;
   confidence?: number;
   prediction?: 'OVER' | 'UNDER';
-  history_sparkline?: number[];
+  book?: string;
+  odds_over?: number;
+  odds_under?: number;
+  snapshot_at?: string;
 }
 
 export const usePropsHistory = (sport: string = 'basketball_nba') => {
@@ -21,14 +24,23 @@ export const usePropsHistory = (sport: string = 'basketball_nba') => {
     queryKey: ['props-history', sport],
     queryFn: async () => {
       try {
-        // Fallback to /api/props/graded as suggested if /api/history is specialized
-        const { data } = await api.get(`/api/props/graded?sport=${sport}&status=settled`);
-        const results = Array.isArray(data) ? data : (data.props || data.data || []);
-        return (results as PropsHistoryRecord[]).map((r, i) => ({
+        // Migrated from /api/props/graded to unified /api/history/props
+        const { data } = await api.get(`/api/history/props?sport=${sport}&limit=50`);
+        
+        if (data.status !== 'ok') {
+          console.warn('History API returned error status', data.message);
+          return [];
+        }
+
+        const results = data.data || [];
+        return (results as any[]).map((r, i) => ({
           ...r,
-          id: r?.id ?? `ph-${i}`,
+          id: r?.id ?? `ph-${i}-${r.snapshot_at}`,
           player_name: r?.player_name ?? "Unknown",
           market_key: r?.market_key ?? "—",
+          // Map legacy fields if needed for UI components
+          commence_time: r.snapshot_at,
+          status: 'PENDING' // Props history from snapshots is inherently pending/observational
         }));
       } catch (err) {
         console.warn('History fetch failed', err);

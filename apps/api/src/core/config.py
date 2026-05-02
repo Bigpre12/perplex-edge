@@ -5,7 +5,7 @@ from core.env_loader import load_project_dotenv
 
 load_project_dotenv()
 
-APP_NAME = os.getenv("APP_NAME", "Lucrix")
+APP_NAME = os.getenv("APP_NAME", "Perplex-Edge")
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'perplex_local.db'))}"

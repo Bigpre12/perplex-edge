@@ -2,7 +2,7 @@ import { API_BASE } from "./api";
 import { TOKEN_STORAGE_KEY, handleUnauthorized } from "./authStorage";
 
 /**
- * Standardized API Client for LUCRIX.
+ * Standardized API Client for Perplex-Edge.
  * Handles auth headers, retries, and type-safe responses.
  */
 interface RequestOptions extends RequestInit {

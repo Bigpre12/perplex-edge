@@ -2,15 +2,16 @@
 <!-- Add to <head> of index.html to enable PWA -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Lucrix Edge">
+<meta name="apple-mobile-web-app-title" content="Perplex-Edge">
+<meta name="application-name" content="Perplex-Edge">
 <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
 <link rel="manifest" href="/manifest.json">
+
+<!-- Service Worker Registration -->
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/js/sw.js')
-        .then(reg => console.log('Lucrix SW Registered!', reg))
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Perplex-Edge SW Registered!', reg))
         .catch(err => console.log('SW Registration Failed:', err));
-    });
-  }
+    }
 </script>

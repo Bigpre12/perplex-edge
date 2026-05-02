@@ -11,7 +11,7 @@ from services.heartbeat_service import HeartbeatService
 from middleware.request_id import get_request_id
 from core.waterfall_config import KNOWN_PROVIDER_IDS
 
-LUCRIX_API_VERSION = os.getenv("LUCRIX_API_VERSION", "1.0.0")
+PERPLEX_EDGE_API_VERSION = os.getenv("PERPLEX_EDGE_API_VERSION", "1.0.0")
 
 router = APIRouter()
 
@@ -63,8 +63,8 @@ async def api_build_metadata():
     Deploy and API contract metadata for clients (versioning, support, debugging).
     """
     return {
-        "api_version": LUCRIX_API_VERSION,
-        "app": os.getenv("APP_NAME", "Lucrix"),
+        "api_version": PERPLEX_EDGE_API_VERSION,
+        "app": os.getenv("APP_NAME", "Perplex-Edge"),
         "git_sha": os.getenv("RAILWAY_GIT_COMMIT_SHA", os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown")),
         "environment": os.getenv("RAILWAY_ENVIRONMENT_NAME", os.getenv("VERCEL_ENV", "local")),
         "timestamp": datetime.now(timezone.utc).isoformat(),

@@ -33,7 +33,7 @@ _betstack_last_request_monotonic: float = 0.0
 _betstack_http_lock = asyncio.Lock()
 
 # Lucrix sport_key -> BetStack `league` query param (see /docs Events section)
-LUCRIX_TO_BETSTACK_LEAGUE: Dict[str, str] = {
+PERPLEX_EDGE_TO_BETSTACK_LEAGUE: Dict[str, str] = {
     "basketball_nba": "basketball_nba",
     "americanfootball_nfl": "americanfootball_nfl",
     "baseball_mlb": "baseball_mlb",
@@ -59,8 +59,8 @@ SHORT_SPORT_TO_LEAGUE = {
 
 def resolve_betstack_league_key(sport: str) -> str:
     s = (sport or "").strip().lower()
-    if s in LUCRIX_TO_BETSTACK_LEAGUE:
-        return LUCRIX_TO_BETSTACK_LEAGUE[s]
+    if s in PERPLEX_EDGE_TO_BETSTACK_LEAGUE:
+        return PERPLEX_EDGE_TO_BETSTACK_LEAGUE[s]
     if s in SHORT_SPORT_TO_LEAGUE:
         return SHORT_SPORT_TO_LEAGUE[s]
     if "_" in s:

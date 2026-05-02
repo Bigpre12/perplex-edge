@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class HitRateService:
     """
-    Historical Performance Engine (LUCRIX Analytics)
+    Historical Performance Engine (Perplex-Edge Analytics)
     Calculates Win Rate, ROI, Streaks and Player Accuracy.
     """
 

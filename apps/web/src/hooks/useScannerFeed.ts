@@ -12,61 +12,36 @@ export type ScannerRow = {
   fairValue: string;
   edgePct: number;
   signal: "SHARP" | "CLV" | "EV+" | "FADE";
+  recommendation?: string;
+  tier?: string;
 };
-
-function edgeToSignal(edge: number): ScannerRow["signal"] {
-  if (edge >= 8) return "SHARP";
-  if (edge >= 5) return "CLV";
-  if (edge >= 2) return "EV+";
-  return "FADE";
-}
 
 export function useScannerFeed(sport: string) {
   const normalizedSport = normalizeSportKey(sport);
-  const query = useBackendData<any>("/api/props", {
-    params: { sport: normalizedSport },
+  const query = useBackendData<any>("/api/scanner", {
+    params: { sport: normalizedSport, min_ev: 2.0 },
     pollMs: 30_000,
   });
 
   const rows = useMemo<ScannerRow[]>(() => {
-    const data = unwrapList<any>(query.data);
-    const mapped = data.map((r: any, idx: number) => {
-      const edge = Number(r?.ev_value ?? r?.ev_percentage ?? r?.edge_percent ?? r?.edge_pct ?? r?.ev ?? r?.edge ?? 0) || 0;
-      
-      const impliedOver = Number(r?.implied_over ?? 0);
-      const impliedUnder = Number(r?.implied_under ?? 0);
-      const recSide = impliedOver >= impliedUnder ? "OVER" : "UNDER";
-      
-      const rawOdds = recSide === "OVER" ? r?.odds_over : r?.odds_under;
-      let bookOddsStr = r?.book_odds != null ? String(r.book_odds) : "—";
-      if (bookOddsStr === "—" && rawOdds != null) {
-        bookOddsStr = rawOdds > 0 ? `+${Math.round(rawOdds)}` : `${Math.round(rawOdds)}`;
-      }
-
-      const fairProb = recSide === "OVER" ? impliedOver : impliedUnder;
-      let fairValStr = r?.fair_value != null ? String(r.fair_value) : "—";
-      if (fairValStr === "—" && fairProb > 0) {
-        const americanFair = fairProb > 0.5 
-          ? Math.round(fairProb / (1 - fairProb) * -100) 
-          : Math.round((1 - fairProb) / fairProb * 100);
-        fairValStr = americanFair > 0 ? `+${americanFair}` : `${americanFair}`;
-      }
-
-      return {
-        id: String(r?.id ?? `${r?.player_name ?? "row"}-${idx}`),
-        player: r?.player_name ?? r?.player ?? "—",
-        market: r?.market ?? r?.market_key ?? r?.stat_type ?? r?.prop_type ?? r?.market_label ?? "—",
-        line: r?.line != null ? String(r.line) : "—",
-        bookOdds: r?.bookOdds ?? r?.book_odds ?? r?.book_price ?? r?.american_odds ?? r?.odds ?? bookOddsStr,
-        fairValue: r?.fairValue ?? r?.fair_value ?? r?.model_prob ?? r?.fair_odds ?? r?.true_prob_display ?? fairValStr,
-        edgePct: Math.abs(edge),
-        signal: edgeToSignal(edge),
-      };
-    });
-    mapped.sort((a, b) => Math.abs(b.edgePct) - Math.abs(a.edgePct));
-    return mapped;
+    // Backend returns { status: "ok", data: [...] }
+    const responseData = query.data;
+    if (!responseData || responseData.status !== "ok") return [];
+    
+    const data = unwrapList<any>(responseData.data);
+    return data.map((r: any) => ({
+      id: r.id,
+      player: r.player || "—",
+      market: r.market || "—",
+      line: r.line != null ? String(r.line) : "—",
+      bookOdds: r.bookOdds || "—",
+      fairValue: r.fairValue != null ? String(r.fairValue) : "—",
+      edgePct: r.edgePct || 0,
+      signal: (r.signal as any) || "EV+",
+      recommendation: r.recommendation,
+      tier: r.tier
+    }));
   }, [query.data]);
 
   return { ...query, rows };
 }
-

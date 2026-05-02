@@ -54,7 +54,7 @@ export default function BooksPage() {
             <div className="bg-[#12121e] border border-[#F5C518]/10 p-6 rounded-2xl">
                 <h3 className="text-sm font-bold text-[#F5C518] uppercase tracking-widest mb-2">Bookmaker Coverage</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                    LUCRIX monitors over 40+ US and Global sportsbooks. For optimal results, we recommend using Pinnacle for market signals and local books like DraftKings or FanDuel for execution.
+                    Perplex-Edge monitors over 40+ US and Global sportsbooks. For optimal results, we recommend using Pinnacle for market signals and local books like DraftKings or FanDuel for execution.
                 </p>
             </div>
         </div>

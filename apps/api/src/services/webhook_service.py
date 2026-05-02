@@ -57,7 +57,7 @@ class WebhookService:
         book = prop_data.get('sportsbook', 'Unknown Book')
 
         return (
-            f"🚨 <b>LUCRIX SIGNAL</b> 🚨\n\n"
+            f"🚨 <b>PERPLEX-EDGE SIGNAL</b> 🚨\n\n"
             f"<b>Player:</b> {player}\n"
             f"<b>Sport:</b> {sport}\n"
             f"<b>Market:</b> {market}\n"

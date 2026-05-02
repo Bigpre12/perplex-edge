@@ -1,5 +1,5 @@
 """
-Celery beat schedule for LUCRIX ingest jobs.
+Celery beat schedule for Perplex-Edge ingest jobs.
 
 Canonical definition lives in ``workers.celery_schedule`` (imported by ``celery_app``).
 APScheduler tiered jobs are configured in ``core.ingest_scheduler_config``.

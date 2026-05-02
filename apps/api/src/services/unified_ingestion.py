@@ -9,7 +9,7 @@ Layers (conceptual)::
         iSports, API-Sports, …) until a provider returns events. Player props still use
         ``odds_api_client`` when keys exist (no multi-provider props client in-repo yet).
     [2] BetStack consensus — ``_real_sports_api_instance.fetch_props_from_betstack``: extra
-        consensus rows where configured (see ``LUCRIX_TO_BETSTACK_LEAGUE``).
+        consensus rows where configured (see ``PERPLEX_EDGE_TO_BETSTACK_LEAGUE``).
     [3] Optional Kalshi — cross-signal / contract context when tier flags allow
         (not wired as the primary American-odds waterfall slot).
     [4] Persistence — ``upsert_props_live``, ``upsert_unified_odds``, props history,

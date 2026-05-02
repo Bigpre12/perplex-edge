@@ -168,7 +168,7 @@ function TrendHunterContent() {
                         </div>
                     </div>
                     <div>
-                        LUCRIX Institutional Grade Analytics
+                        Perplex-Edge Institutional Grade Analytics
                     </div>
                 </div>
             </div>

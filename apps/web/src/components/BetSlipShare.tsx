@@ -63,7 +63,7 @@ export default function BetSlipShare({ pick }: any) {
                             <div className="flex items-center gap-4 mb-6">
                                 <span className="px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-3xl font-black uppercase tracking-[0.4em]">Verified</span>
                             </div>
-                            <h1 className="text-white text-[120px] font-black tracking-[-0.05em] leading-[0.8] mb-2">LUCRIX</h1>
+                            <h1 className="text-white text-[120px] font-black tracking-[-0.05em] leading-[0.8] mb-2">PERPLEX-EDGE</h1>
                             <h1 className="text-emerald-500 text-[120px] font-black tracking-[-0.05em] leading-[0.8]">EDGE</h1>
                         </div>
                         <div className="size-48 bg-emerald-500 rounded-[3rem] flex items-center justify-center shadow-[0_0_80px_rgba(16,185,129,0.4)] rotate-3">
@@ -116,7 +116,7 @@ export default function BetSlipShare({ pick }: any) {
                     <div className="relative z-10 flex items-center justify-between border-t-4 border-white/10 pt-20">
                         <div className="space-y-4">
                             <p className="text-slate-500 text-4xl font-bold">Access the Engine:</p>
-                            <p className="text-white text-5xl font-black tracking-tight">lucrix.ai</p>
+                            <p className="text-white text-5xl font-black tracking-tight">perplex-edge.ai</p>
                         </div>
                         <div className="flex flex-col items-end gap-3 text-emerald-500">
                             <div className="flex items-center gap-4">

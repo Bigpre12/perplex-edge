@@ -68,7 +68,7 @@ function TopNavContent() {
             <div className="flex items-center gap-4 flex-shrink-0 min-w-[11rem] max-w-[14rem]">
                 <Link href="/dashboard" className="flex flex-col hover:opacity-80 transition-opacity min-w-0">
                     <span className="text-white font-display font-bold text-[20px] tracking-tight leading-none">
-                        LUCRIX
+                        PERPLEX-EDGE
                     </span>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <APIHealth />

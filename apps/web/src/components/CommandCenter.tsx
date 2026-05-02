@@ -102,7 +102,7 @@ export default function CommandCenter() {
                     <div className="command-header-row">
                         <span>⚡</span>
                         <span className="command-logo-text">
-                            LUCRIX COMMAND CENTER
+                            PERPLEX-EDGE COMMAND CENTER
                         </span>
                         <span className="command-esc-tag">ESC to close</span>
                     </div>
