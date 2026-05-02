@@ -10,7 +10,7 @@ const nextConfig = {
         return [
             {
                 source: "/props",
-                destination: "/player-props",
+                destination: "/scanner",
                 permanent: true,
             },
         ];

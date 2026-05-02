@@ -1,5 +1,5 @@
-import LucrixLanding from "@/components/LucrixLanding";
+import { redirect } from "next/navigation";
 
 export default function RootPage() {
-    return <LucrixLanding />;
+    redirect("/scanner");
 }

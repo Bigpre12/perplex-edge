@@ -6,7 +6,7 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Perplex-Edge | Quantum Analytics. Institutional Edge.",
+  title: "Lucrix | Quantum Analytics. Institutional Edge.",
   description: "Professional betting intelligence platform",
   icons: {
     icon: [
