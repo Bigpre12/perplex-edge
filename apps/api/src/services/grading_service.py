@@ -327,6 +327,10 @@ class GradingService:
             logger.info(f"✅ [Graded] Pick {pick.id}: {pick.player_name} {pick.stat_type} {side.upper()} {pick.line} | Actual: {actual_value} -> {result_label} (P/L: {pick.profit_loss:.2f})")
             return True
 
+        except Exception as e:
+            logger.error(f"settle_pick error for pick {pick.id}: {e}")
+            return False
+
     async def grade_recent_props(self, sport: Optional[str] = None) -> List[Dict]:
         """Grade all active picks for a sport (or all sports). Called by POST /api/props/grade."""
         results: List[Dict] = []
