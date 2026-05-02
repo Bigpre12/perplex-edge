@@ -15,8 +15,8 @@ function SportFilterBarContent() {
     }, []);
 
     // Filter Logic based on Active Tab
-    const isPropsTab = pathname.startsWith("/player-props");
-    const isEVTab = pathname.startsWith("/ev");
+    const isPropsTab = pathname.startsWith("/props");
+    const isEVTab = pathname.startsWith("/ev-plus");
     const isSharpTab = pathname.startsWith("/sharp");
     const isLiveTab = pathname.startsWith("/live");
 

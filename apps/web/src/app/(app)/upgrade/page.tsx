@@ -45,7 +45,7 @@ export default function UpgradePage() {
                     </div>
 
                     <button
-                        onClick={() => router.push('/dashboard')}
+                        onClick={() => router.push('/desk')}
                         className="w-full py-3.5 bg-[#1E1E35] hover:bg-[#2A2A45] text-white rounded-xl font-bold transition-all"
                     >
                         Current Plan

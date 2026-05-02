@@ -34,7 +34,7 @@ class StripeService:
         price_id: str,
         customer_email: str,
         user_id: str,
-        success_path: str = "/dashboard?upgraded=true",
+        success_path: str = "/desk?upgraded=true",
         cancel_path: str = "/pricing",
         mode: str = "subscription"
     ):
@@ -64,7 +64,7 @@ class StripeService:
         try:
             session = stripe.billing_portal.Session.create(
                 customer=customer_id,
-                return_url=f"{self.frontend_url}/dashboard",
+                return_url=f"{self.frontend_url}/desk",
             )
             return session.url
         except Exception as e:

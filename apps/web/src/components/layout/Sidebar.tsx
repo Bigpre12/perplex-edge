@@ -62,10 +62,10 @@ export default function Sidebar() {
 
     // IA: Command → Scanner → core markets → risk → intel (see docs/PRODUCT_BLUEPRINT.md)
     const navItems = [
-        { href: "/dashboard", icon: <LayoutDashboard size={20} />, label: "Desk" },
+        { href: "/desk", icon: <LayoutDashboard size={20} />, label: "Desk" },
         { href: "/scanner", icon: <ScanSearch size={20} />, label: "Scanner" },
-        { href: "/player-props", icon: <Target size={20} />, label: "Props" },
-        { href: "/ev", icon: <Zap size={20} />, label: "EV+" },
+        { href: "/props", icon: <Target size={20} />, label: "Props" },
+        { href: "/ev-plus", icon: <Zap size={20} />, label: "EV+" },
         { href: "/clv", icon: <LineChart size={20} />, label: "CLV" },
         { href: "/hit-rate", icon: <BarChart2 size={20} />, label: "Hit rate" },
         { href: "/signals", icon: <Radio size={20} />, label: "Signals" },
@@ -88,7 +88,7 @@ export default function Sidebar() {
             <div className="flex flex-col gap-1 p-3 flex-1 overflow-y-auto scrollbar-none">
                 <nav className="flex flex-col gap-1">
                     {navItems.map((item) => {
-                        const isActive = mounted && (activePath === item.href || (item.href !== "/dashboard" && activePath.startsWith(item.href)));
+                        const isActive = mounted && (activePath === item.href || (item.href !== "/desk" && activePath.startsWith(item.href)));
                         
                         return (
                             <Link

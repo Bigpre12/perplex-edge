@@ -45,7 +45,7 @@ export default function LoginPage() {
             localStorage.setItem("accessToken", token); // apiFetch reads this key
             if (data.user) authStorage.saveUser(data.user);
             // Hard redirect to dashboard
-            window.location.href = "/dashboard";
+            window.location.href = "/desk";
         } catch (err: any) {
             // Don't redirect on login errors - just show the error
             const msg = err?.response?.data?.detail || err?.message || "Cannot connect to server — make sure backend is running";

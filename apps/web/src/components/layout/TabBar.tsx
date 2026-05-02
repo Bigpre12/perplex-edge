@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation";
 
 // Mobile-first subset aligned with docs/PRODUCT_BLUEPRINT.md (Desk → Scanner → core → risk)
 const TABS = [
-    { id: 'desk', label: 'Desk', icon: '▣', href: '/dashboard' },
+    { id: 'desk', label: 'Desk', icon: '▣', href: '/desk' },
     { id: 'scanner', label: 'Scan', icon: '◎', href: '/scanner' },
-    { id: 'props', label: 'Props', icon: '◆', href: '/player-props' },
-    { id: 'ev', label: 'EV+', icon: '▲', href: '/ev' },
+    { id: 'props', label: 'Props', icon: '◆', href: '/props' },
+    { id: 'ev', label: 'EV+', icon: '▲', href: '/ev-plus' },
     { id: 'clv', label: 'CLV', icon: '◇', href: '/clv' },
     { id: 'trends', label: 'Hit', icon: '◉', href: '/hit-rate' },
     { id: 'signals', label: 'Sig', icon: '◈', href: '/signals' },
@@ -31,7 +31,7 @@ export function TabBar() {
     const isActive = (href: string) => {
         if (!mounted) return false;
         if (activePath === href) return true;
-        if (href !== '/dashboard' && href !== '/settings' && activePath.startsWith(href)) return true;
+        if (href !== '/desk' && href !== '/settings' && activePath.startsWith(href)) return true;
         return false;
     };
 

@@ -36,8 +36,8 @@ export function MobileNav() {
 
     const mainNav = [
         { label: "Home", href: "/", icon: Home },
-        { label: "Props", href: "/player-props", icon: Target },
-        { label: "EV+", href: "/ev", icon: Zap },
+        { label: "Props", href: "/props", icon: Target },
+        { label: "EV+", href: "/ev-plus", icon: Zap },
         { label: "Parlay", href: "/parlays", icon: LinkIcon },
     ];
 

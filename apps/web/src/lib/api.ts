@@ -190,7 +190,7 @@ export function isLivePingReachable(res: unknown): boolean {
   const s = (res as Record<string, unknown>).status;
   if (typeof s !== 'string') return false;
   const u = s.toLowerCase();
-  return u === 'ok' || u === 'healthy' || u === 'alive';
+  return u === 'ok' || u === 'healthy' || u === 'alive' || u === 'degraded';
 }
 export const unwrap = (d: any): any[] => {
   if (!d) return [];
