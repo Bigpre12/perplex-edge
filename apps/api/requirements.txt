@@ -44,6 +44,7 @@ pywebpush>=1.14.0
 resend>=0.6.0
 numpy>=1.26.0
 supabase>=2.3.0; python_version < "3.13"
+kalshi-python>=0.1.0
 
 gunicorn==22.0.0
 

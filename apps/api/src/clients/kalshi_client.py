@@ -20,8 +20,8 @@ class KalshiClient(ResilientBaseClient):
     def __init__(self):
         super().__init__(
             name="Kalshi",
-            base_url=settings.KALSHI_BASE_URL,
-            timeout=20,
+            base_url=settings.KALSHI_BASE_URL if settings.KALSHI_BASE_URL.endswith("/") else settings.KALSHI_BASE_URL + "/",
+            timeout=30,
             max_retries=3
         )
         self.key_id = settings.KALSHI_KEY_ID
@@ -65,7 +65,7 @@ class KalshiClient(ResilientBaseClient):
                 message.encode(),
                 padding.PSS(
                     mgf=padding.MGF1(hashes.SHA256()),
-                    salt_length=padding.PSS.MAX_LENGTH
+                    salt_length=padding.PSS.DIGEST_LENGTH
                 ),
                 hashes.SHA256()
             )
@@ -79,7 +79,9 @@ class KalshiClient(ResilientBaseClient):
         if not self.enabled:
             logger.debug("Kalshi client disabled: missing key id/private key")
             return {}
-        full_path = f"/trade-api/v2{path}"
+        # Ensure path is relative for proper base_url joining
+        rel_path = path.lstrip('/')
+        full_path = f"/trade-api/v2/{rel_path}".replace('//', '/')
         timestamp = str(int(time.time() * 1000))
         signature = self._sign_message(timestamp, method, full_path)
         
@@ -92,7 +94,7 @@ class KalshiClient(ResilientBaseClient):
         })
         kwargs["headers"] = headers
         
-        return await self.request(method, full_path, **kwargs)
+        return await self.request(method, rel_path, **kwargs)
 
     async def get_exchange_status(self) -> Dict[str, Any]:
         return await self.kalshi_request("GET", "/exchange/status")
