@@ -38,46 +38,6 @@ class KalshiService:
         self._private_key = None
         self._missing_credentials_warned = False
 
-        # Standardized robust key loader
-        def load_key(b64_val, raw_val, path_val):
-            # 1. Try Base64-specific variable first
-            if b64_val:
-                try:
-                    clean_b64 = b64_val.strip().strip('"').strip("'").replace("\n", "").replace("\r", "")
-                    key_bytes = base64.b64decode(clean_b64)
-                    return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
-                except Exception as e:
-                    logger.error(f"KalshiService: Failed to load B64 key: {e}")
-
-            # 2. Try Raw PEM or Base64 in KALSHI_PRIVATE_KEY
-            if raw_val:
-                raw_val = raw_val.strip().strip('"').strip("'")
-                # Case A: It's a raw PEM
-                if "-----BEGIN" in raw_val:
-                    try:
-                        key_bytes = raw_val.replace("\\n", "\n").encode("utf-8")
-                        return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
-                    except Exception as e:
-                        logger.error(f"KalshiService: Failed to load raw PEM: {e}")
-                # Case B: It's Base64 (likely single-line from Railway)
-                else:
-                    try:
-                        clean_b64 = raw_val.replace("\n", "").replace("\r", "")
-                        key_bytes = base64.b64decode(clean_b64)
-                        return serialization.load_pem_private_key(key_bytes, password=None, backend=default_backend())
-                    except Exception as e:
-                        logger.error(f"KalshiService: Failed to load potential B64 in KALSHI_PRIVATE_KEY: {e}")
-
-            # 3. Try File Path
-            if path_val and os.path.exists(str(path_val)):
-                try:
-                    with open(str(path_val), "rb") as f:
-                        return serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
-                except Exception as e:
-                    logger.error(f"KalshiService: Failed to load key from file {path_val}: {e}")
-            
-            return None
-
         self._private_key = None
         self.enabled = False
         self._load_key_safely()
