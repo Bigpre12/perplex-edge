@@ -33,7 +33,11 @@ export default function EVPlusPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/ev?sport=${sport}&min_ev=${minEv}`);
+        const res = await fetch(`${API_BASE}/api/ev?sport=${sport}&min_ev=${minEv}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         const json = await res.json();
         const data = Array.isArray(json?.data)
           ? json.data

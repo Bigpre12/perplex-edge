@@ -4,6 +4,7 @@ from sqlalchemy import select, func
 from db.session import get_db
 from models.bet import Bet
 from schemas.bet import BetOut, BetCreate
+from routers.auth import get_current_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,12 +12,26 @@ router = APIRouter()
 
 @router.get("", response_model=list[BetOut])
 async def list_bets(db: AsyncSession = Depends(get_db)):
+    """List all bets (Admin/System view)"""
     try:
         stmt = select(Bet).order_by(Bet.created_at.desc())
         result = await db.execute(stmt)
         return result.scalars().all()
     except Exception as e:
         logger.error(f"Error listing bets: {e}")
+        return []
+
+@router.get("/my", response_model=list[BetOut])
+async def list_my_bets(current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """List only the current user's bets"""
+    try:
+        # Check if current_user has id or email to use as user_id
+        user_id = str(getattr(current_user, "id", "") or getattr(current_user, "email", ""))
+        stmt = select(Bet).where(Bet.user_id == user_id).order_by(Bet.created_at.desc())
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        logger.error(f"Error listing user bets: {e}")
         return []
 
 @router.post("", response_model=BetOut)
@@ -29,21 +44,22 @@ async def create_bet(payload: BetCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/stats")
-async def bet_stats(db: AsyncSession = Depends(get_db)):
+async def bet_stats(current_user = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Returns betting statistics for the ledger and bankroll pages."""
     try:
+        user_id = str(getattr(current_user, "id", "") or getattr(current_user, "email", ""))
         # Simple aggregate stats
         stmt = select(
             func.count(Bet.id).label("total_bets"),
             func.sum(Bet.stake).label("total_stake"),
             func.sum(Bet.profit_loss).label("total_profit_loss")
-        )
+        ).where(Bet.user_id == user_id)
         result = await db.execute(stmt)
         # Use result.one_or_none() for better mapping
         stats = result.one_or_none()
         
         # Calculate win rate
-        win_stmt = select(func.count(Bet.id)).where(Bet.status == "won")
+        win_stmt = select(func.count(Bet.id)).where(Bet.status == "won", Bet.user_id == user_id)
         win_count_res = await db.execute(win_stmt)
         win_count = win_count_res.scalar() or 0
         

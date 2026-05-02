@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, WS_BASE } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { TOKEN_STORAGE_KEY } from '@/lib/authStorage';
+import { useAuth } from './useAuth';
 
 export interface LiveGame {
   id: string;
@@ -27,6 +28,7 @@ export interface LiveGame {
 
 export const useLiveGames = () => {
   const queryClient = useQueryClient();
+  const { token: authStateToken } = useAuth();
   const [socketStatus, setSocketStatus] = useState<'connecting' | 'open' | 'closed'>('connecting');
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -53,11 +55,11 @@ export const useLiveGames = () => {
   useEffect(() => {
     const connect = async () => {
       try {
-        const sess = await supabase.auth.getSession();
-        const supabaseToken = sess?.data?.session?.access_token;
-        const fallbackToken = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null;
-        const token = supabaseToken || fallbackToken || '';
+        // Try getting token from auth state first, fallback to storage
+        const token = authStateToken || (typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null);
+        
         if (!token) {
+          console.log('[LiveWS] No token available yet. Waiting...');
           setSocketStatus('closed');
           return;
         }
@@ -110,7 +112,7 @@ export const useLiveGames = () => {
         socketRef.current.close();
       }
     };
-  }, [queryClient]);
+  }, [queryClient, authStateToken]);
 
   return {
     ...query,
