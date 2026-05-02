@@ -84,6 +84,12 @@ class KalshiService:
             self.private_key_path
         )
 
+        # Diagnostic logging for Railway debugging
+        logger.info(f"KalshiService Config: KEY_ID={bool(self.api_key_id)} (len={len(self.api_key_id) if self.api_key_id else 0}), PRIV_KEY={bool(self._private_key)}")
+        if self.private_key_content:
+            pk_raw = self.private_key_content.strip()
+            logger.info(f"KalshiService Debug: Raw Key starts with '{pk_raw[:15]}...' and ends with '...{pk_raw[-15:]}' (len={len(pk_raw)})")
+
         self.available = bool(self.api_key_id and self._private_key)
         if not self.available:
             logger.warning(

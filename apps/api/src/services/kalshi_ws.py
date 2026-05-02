@@ -74,6 +74,9 @@ class KalshiWSManager:
             self.private_key_content,
             self.private_key_path
         )
+        
+        # Diagnostic logging for Railway debugging
+        logger.info(f"KalshiWS Config: KEY_ID={bool(self.api_key_id)} (len={len(self.api_key_id) if self.api_key_id else 0}), PRIV_KEY={bool(self._private_key)}")
 
         self.available = bool(self.api_key_id and self._private_key)
         if not self.available:
